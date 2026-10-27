@@ -1,0 +1,1153 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vCraft — Moodboard thương hiệu</title>
+<meta name="description" content="Moodboard thương hiệu vCraft: ý tưởng Ấn của người thợ, logo ấn bình, bảng màu, chữ, chất liệu, chuyển động, định hướng ảnh, giọng văn và mascot Cáo.">
+<!--
+  Moodboard vCraft v1.0 · 27/10/2026.
+  Nguồn chuẩn: docs/BRAND.md. Giá trị màu/token chép từ packages/ui/src/tokens/theme.css;
+  hình học ấn bình chép từ packages/ui/src/ornaments/seal-geometry.ts.
+  Khi BRAND.md hoặc theme.css đổi, cập nhật lại file này.
+  Không có ảnh ngoài: mọi hình là CSS/SVG nội tuyến. Chỉ phụ thuộc Google Fonts (Fraunces,
+  Be Vietnam Pro, JetBrains Mono; Google tự phục vụ phần subset vietnamese theo unicode-range).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* ── Token (khớp theme.css) ─────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+  --color-paper: #f5efe4;
+  --color-surface: #fbf8f2;
+  --color-ink: #1c1814;
+  --color-ash: #6b635a;
+  --color-clay: #a8482a;
+  --color-glaze: #1e3a6e;
+  --color-seal: #c2261c;
+  --color-celadon: #5e8a7d;
+  --color-lacquer: #8c6a24;
+  --shadow-warm: 0 1px 0 rgb(28 24 20 / 0.04), 0 12px 32px -12px rgb(120 60 30 / 0.18);
+  --grain-opacity: 0.04;
+  --grain-size: 160px;
+  --grain-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .11 0 0 0 0 .094 0 0 0 0 .078 0 0 0 3 -1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .945 0 0 0 0 .914 0 0 0 0 .863 0 0 0 3 -1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-image: var(--grain-light);
+
+  /* Bảng cố định (không đổi theo theme) để hiển thị cả hai chế độ cạnh nhau. */
+  --l-paper: #f5efe4; --l-surface: #fbf8f2; --l-ink: #1c1814; --l-ash: #6b635a; --l-clay: #a8482a;
+  --l-glaze: #1e3a6e; --l-seal: #c2261c; --l-celadon: #5e8a7d; --l-lacquer: #8c6a24;
+  --d-paper: #14110f; --d-surface: #1f1a16; --d-ink: #f1e9dc; --d-ash: #a89c8e; --d-clay: #e2703a;
+  --d-glaze: #8fb0e6; --d-seal: #f06a55; --d-celadon: #9cc7b8; --d-lacquer: #c9a24d;
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Be Vietnam Pro", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --text-display: clamp(3.5rem, 2.5rem + 5vw, 7rem);
+  --text-h1: clamp(2.5rem, 2.0714rem + 2.1429vw, 4rem);
+  --text-h2: clamp(2rem, 1.7857rem + 1.0714vw, 2.75rem);
+  --text-h3: clamp(1.5rem, 1.3929rem + 0.5357vw, 1.875rem);
+  --text-body: clamp(1rem, 0.9821rem + 0.0893vw, 1.0625rem);
+  --text-small: 0.875rem;
+
+  --spacing-gutter: clamp(1rem, 0.4286rem + 2.8571vw, 3rem);
+  --spacing-section: clamp(4rem, 2.2857rem + 8.5714vw, 10rem);
+  --container-editorial: 90rem;
+  --container-prose-vn: 42rem;
+
+  --radius-input: 4px;
+  --radius-card: 12px;
+  --radius-chip: 999px;
+
+  --ease-clay: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-kiln: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-press: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-instant: 90ms;
+  --duration-quick: 160ms;
+  --duration-base: 280ms;
+  --duration-slow: 520ms;
+  --duration-story: 900ms;
+
+  --line: color-mix(in srgb, var(--color-ink) 14%, transparent);
+  --line-strong: color-mix(in srgb, var(--color-ink) 32%, transparent);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-paper: #14110f;
+    --color-surface: #1f1a16;
+    --color-ink: #f1e9dc;
+    --color-ash: #a89c8e;
+    --color-clay: #e2703a;
+    --color-glaze: #8fb0e6;
+    --color-seal: #f06a55;
+    --color-celadon: #9cc7b8;
+    --color-lacquer: #c9a24d;
+    --shadow-warm: 0 1px 0 rgb(241 233 220 / 0.05), 0 12px 32px -12px rgb(0 0 0 / 0.55);
+    --grain-image: var(--grain-dark);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-paper: #14110f;
+  --color-surface: #1f1a16;
+  --color-ink: #f1e9dc;
+  --color-ash: #a89c8e;
+  --color-clay: #e2703a;
+  --color-glaze: #8fb0e6;
+  --color-seal: #f06a55;
+  --color-celadon: #9cc7b8;
+  --color-lacquer: #c9a24d;
+  --shadow-warm: 0 1px 0 rgb(241 233 220 / 0.05), 0 12px 32px -12px rgb(0 0 0 / 0.55);
+  --grain-image: var(--grain-dark);
+}
+
+/* ── Nền tảng ───────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font: 400 var(--text-body)/1.65 var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-wrap: break-word;
+}
+/* Hạt giấy / bụi than phủ cả trang (BRAND §5). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  background-image: var(--grain-image);
+  background-size: var(--grain-size);
+  opacity: var(--grain-opacity);
+}
+h1, h2, h3, h4, p, figure, dl, dd, ul, ol { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img, svg { max-width: 100%; }
+a { color: var(--color-clay); text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--color-glaze); outline-offset: 3px; border-radius: 2px; }
+code, .mono { font-family: var(--font-mono); font-size: 0.875em; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.f-display, h1, h2, h3, h4 { font-family: var(--font-display); font-optical-sizing: auto; font-variation-settings: "SOFT" 100, "WONK" 0; letter-spacing: -0.02em; font-weight: 600; }
+h1 { font-size: var(--text-display); line-height: 1.02; }
+h2 { font-size: var(--text-h2); line-height: 1.15; }
+h3 { font-size: var(--text-h3); line-height: 1.25; letter-spacing: -0.01em; }
+h4 { font-size: 1.125rem; line-height: 1.3; letter-spacing: -0.01em; }
+.eyebrow { font: 500 0.75rem/1.4 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-ash); }
+.small { font-size: var(--text-small); line-height: 1.5; }
+.muted { color: var(--color-ash); }
+.prose { max-width: var(--container-prose-vn); }
+
+/* ── Khung bảng ghim ────────────────────────────────────────────────── */
+.wrap { max-width: var(--container-editorial); margin-inline: auto; padding-inline: var(--spacing-gutter); }
+section.sec { padding-block: calc(var(--spacing-section) * 0.6) 0; scroll-margin-top: 3.5rem; }
+.sec-head { display: grid; gap: 0.75rem; margin-bottom: clamp(1.5rem, 3vw, 3rem); max-width: 46rem; }
+.board { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--spacing-gutter); align-items: start; }
+.board > * { grid-column: 1 / -1; min-width: 0; }
+@media (min-width: 720px) {
+  .c3, .c4, .c5, .c6 { grid-column: span 6; }
+  .c7, .c8, .c9, .c12 { grid-column: 1 / -1; }
+}
+@media (min-width: 1000px) {
+  .c3 { grid-column: span 3; } .c4 { grid-column: span 4; } .c5 { grid-column: span 5; }
+  .c6 { grid-column: span 6; } .c7 { grid-column: span 7; } .c8 { grid-column: span 8; }
+  .c9 { grid-column: span 9; } .c12 { grid-column: 1 / -1; }
+  .drop { margin-top: 2.5rem; } .drop2 { margin-top: 4.5rem; }
+  .tl { transform: rotate(-0.6deg); } .tr { transform: rotate(0.5deg); } .tl2 { transform: rotate(-1.2deg); }
+}
+
+.card {
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: clamp(1.25rem, 1rem + 1.2vw, 2rem);
+  box-shadow: var(--shadow-warm);
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+.card.flat { background: transparent; box-shadow: none; border-style: dashed; }
+.card.glaze { background: var(--color-glaze); color: var(--color-paper); border-color: transparent; }
+.card.glaze .eyebrow, .card.glaze .muted { color: color-mix(in srgb, var(--color-paper) 72%, transparent); }
+.card.night { background: var(--d-paper); color: var(--d-ink); border-color: transparent; }
+.card.night .eyebrow, .card.night .muted { color: var(--d-ash); }
+/* Ghim & băng dính: gợi bảng ghim cảm hứng. */
+.pin::before {
+  content: ""; position: absolute; top: -7px; left: 50%; width: 14px; height: 14px; margin-left: -7px;
+  border-radius: 50%; background: var(--color-clay);
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.22), inset -2px -2px 0 rgb(0 0 0 / 0.18);
+}
+.tape::before {
+  content: ""; position: absolute; top: -12px; left: 18%; width: 96px; height: 24px; transform: rotate(-3deg);
+  background: color-mix(in srgb, var(--color-lacquer) 38%, transparent);
+  border-inline: 1px dashed color-mix(in srgb, var(--color-lacquer) 55%, transparent);
+}
+
+.chip {
+  display: inline-flex; align-items: center; gap: 0.4em; padding: 0.2em 0.85em; border-radius: var(--radius-chip);
+  border: 1px solid var(--line-strong); font-size: var(--text-small); line-height: 1.5; white-space: nowrap;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.tag { display: inline-block; font: 500 0.75rem/1 var(--font-mono); padding: 0.35em 0.6em; border-radius: var(--radius-input); background: color-mix(in srgb, var(--color-ink) 8%, transparent); color: var(--color-ash); }
+
+.wave { display: block; width: 100%; height: 16px; color: var(--color-glaze); margin-top: calc(var(--spacing-section) * 0.6); }
+
+/* ── Thanh trên ─────────────────────────────────────────────────────── */
+.top {
+  position: sticky; top: 0; z-index: 50;
+  background: color-mix(in srgb, var(--color-paper) 88%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 3.5rem; }
+.top nav { display: none; gap: 1.25rem; font-size: var(--text-small); }
+.top nav a { color: var(--color-ink); text-decoration: none; }
+.top nav a:hover { color: var(--color-clay); text-decoration: underline; }
+@media (min-width: 1100px) { .top nav { display: flex; } }
+.brandlink { display: inline-flex; line-height: 0; }
+.brandlink svg { width: 123px; height: 30px; }
+.theme { margin: 0; min-width: 0; display: inline-flex; border: 1px solid var(--line-strong); border-radius: var(--radius-chip); padding: 2px; }
+.theme button {
+  font: 500 0.8125rem/1 var(--font-sans); color: var(--color-ink); background: transparent; border: 0; cursor: pointer;
+  padding: 0.5rem 0.7rem; border-radius: var(--radius-chip);
+  transition: background var(--duration-quick) var(--ease-clay), color var(--duration-quick) var(--ease-clay);
+}
+.theme button[aria-pressed="true"] { background: var(--color-ink); color: var(--color-paper); }
+@media (max-width: 420px) { .theme button { padding: 0.5rem 0.5rem; font-size: 0.75rem; } }
+
+/* ── Hero ───────────────────────────────────────────────────────────── */
+.hero { padding-top: clamp(2.5rem, 6vw, 6rem); }
+.hero-grid { display: grid; gap: var(--spacing-gutter); align-items: center; }
+@media (min-width: 900px) { .hero-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); } }
+.hero h1 { font-variation-settings: "SOFT" 100, "WONK" 1; color: var(--color-glaze); }
+.hero h1 em { font-style: italic; color: var(--color-clay); }
+.brush { display: block; width: min(100%, 420px); height: auto; margin-top: 0.5rem; }
+.brush path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw var(--duration-story) var(--ease-clay) 0.2s forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.tagline { font: italic 400 var(--text-h3)/1.3 var(--font-display); font-variation-settings: "SOFT" 100, "WONK" 1; margin-top: 1.5rem; }
+.hero-card { justify-items: center; text-align: center; padding-block: 2.5rem; }
+.hero-seal { width: min(55%, 190px); color: var(--color-seal); animation: stamp var(--duration-slow) var(--ease-press) 0.4s both; }
+@keyframes stamp {
+  from { opacity: 0; transform: scale(1.4) rotate(-6deg); }
+  60% { opacity: 1; }
+  to { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+/* ── Ba chất liệu ───────────────────────────────────────────────────── */
+.mat-vis { position: relative; height: 190px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); isolation: isolate; }
+.mat-vis > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mat-vis::after { content: ""; position: absolute; inset: 0; background-image: var(--grain-light); background-size: 160px; opacity: 0.22; mix-blend-mode: multiply; pointer-events: none; }
+.mat-dat {
+  background:
+    radial-gradient(circle at 20% 30%, rgb(255 255 255 / 0.1) 0 2px, transparent 3px) 0 0 / 23px 29px,
+    radial-gradient(circle at 70% 60%, rgb(0 0 0 / 0.14) 0 1.5px, transparent 2.5px) 0 0 / 17px 21px,
+    repeating-linear-gradient(176deg, rgb(0 0 0 / 0.06) 0 2px, transparent 2px 9px),
+    linear-gradient(160deg, color-mix(in srgb, var(--l-clay) 78%, #3b1d10), var(--l-clay));
+}
+.mat-lua {
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 105%, var(--d-lacquer) 0 8%, var(--d-clay) 30%, transparent 70%),
+    radial-gradient(ellipse 90% 80% at 50% 110%, var(--l-seal), transparent 75%),
+    linear-gradient(180deg, #1a0f0b, #2b1510 55%, #3a1a10);
+}
+.mat-men {
+  background:
+    radial-gradient(ellipse 45% 35% at 28% 22%, rgb(255 255 255 / 0.38), transparent 70%),
+    linear-gradient(145deg, var(--l-glaze), color-mix(in oklch, var(--l-glaze) 58%, var(--l-celadon)) 70%, var(--l-celadon));
+}
+.mat-men::after { mix-blend-mode: soft-light; opacity: 0.35; }
+.mat h3 { margin-top: 0.25rem; }
+.swdots { display: flex; gap: 0.4rem; }
+.swdots i { width: 1.25rem; height: 1.25rem; border-radius: 50%; border: 1px solid var(--line-strong); background: var(--c); }
+
+.kv { display: grid; gap: 0.25rem; }
+.struck li { text-decoration: line-through; text-decoration-color: var(--color-seal); text-decoration-thickness: 2px; color: var(--color-ash); }
+.struck li + li, .plain li + li { margin-top: 0.35rem; }
+.bigquote { font: 500 var(--text-h2)/1.15 var(--font-display); font-variation-settings: "SOFT" 100, "WONK" 1; letter-spacing: -0.02em; }
+.bigquote em { font-style: normal; color: var(--color-clay); }
+
+/* ── Logo ───────────────────────────────────────────────────────────── */
+.mini { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+.panel { border-radius: 8px; display: grid; place-items: center; min-height: 150px; padding: 1.25rem; border: 1px solid var(--line); gap: 0.5rem; text-align: center; }
+.panel.paper { background: var(--l-paper); color: var(--l-ink); --mark: var(--l-seal); --wm: var(--l-ink); }
+.panel.ink { background: var(--l-paper); color: var(--l-ink); --mark: var(--l-ink); --wm: var(--l-ink); }
+.panel.night { background: var(--d-paper); color: var(--d-ink); --mark: var(--l-paper); --wm: var(--l-paper); border-color: transparent; }
+.panel.glaze { background: var(--l-glaze); color: var(--l-paper); --mark: var(--l-paper); --wm: var(--l-paper); border-color: transparent; }
+.panel .lab { font: 500 0.75rem/1.4 var(--font-mono); opacity: 0.8; }
+.mk { display: block; color: var(--mark, var(--color-seal)); }
+.lockup { display: block; width: min(100%, 360px); height: auto; aspect-ratio: 164 / 40; }
+.sizes { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 1.25rem; }
+.sizes figure { display: grid; justify-items: center; gap: 0.4rem; }
+.sizes figcaption { font: 500 0.6875rem/1 var(--font-mono); color: var(--color-ash); }
+.safe-wrap { position: relative; display: inline-block; justify-self: start; }
+.safe-box { --h: 96px; position: relative; padding: calc(var(--h) / 2); outline: 1.5px dashed var(--color-glaze); outline-offset: 0; background: color-mix(in srgb, var(--color-glaze) 7%, transparent); line-height: 0; }
+.safe-box .core { outline: 1px solid var(--line-strong); }
+.safe-box b { position: absolute; font: 500 0.6875rem/1 var(--font-mono); color: var(--color-glaze); }
+.safe-box .t { top: 12px; left: 50%; transform: translateX(-50%); }
+.safe-box .l { left: 6px; top: 50%; transform: translateY(-50%); }
+.trace-grid { display: grid; gap: 1.5rem; align-items: center; }
+@media (min-width: 560px) { .trace-grid { grid-template-columns: auto 1fr; } }
+.trace-seal { width: 168px; height: 168px; display: block; }
+.trace-code { font: 500 1.125rem/1 var(--font-mono); letter-spacing: 0.22em; text-align: center; margin-top: 0.5rem; }
+.bottom {
+  position: relative; width: 240px; max-width: 100%; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; justify-self: center;
+  background: radial-gradient(circle at 38% 30%, color-mix(in srgb, var(--l-clay) 60%, #e9c9a8), var(--l-clay) 55%, color-mix(in srgb, var(--l-clay) 70%, #2a1008));
+  box-shadow: inset 0 0 0 10px rgb(0 0 0 / 0.12), inset 0 0 40px rgb(0 0 0 / 0.25), var(--shadow-warm);
+  isolation: isolate; overflow: hidden;
+}
+.bottom::after { content: ""; position: absolute; inset: 0; background-image: var(--grain-light); background-size: 160px; opacity: 0.25; mix-blend-mode: multiply; }
+.bottom .stampd { width: 52%; transform: rotate(-5deg); filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.2)); z-index: 1; }
+
+/* ── Màu ────────────────────────────────────────────────────────────── */
+.sw-grid { display: grid; gap: var(--spacing-gutter); grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr)); }
+.sw { display: grid; gap: 0.4rem; align-content: start; }
+.sw .chipbig { height: 110px; border-radius: 8px; border: 1px solid var(--line-strong); background: linear-gradient(105deg, var(--l) 0 50%, var(--d) 50% 100%); }
+.sw h4 { margin-top: 0.4rem; }
+.sw dl { display: grid; gap: 0.15rem; font: 400 0.75rem/1.5 var(--font-mono); }
+.sw dl div { display: flex; gap: 0.5rem; }
+.sw dt { color: var(--color-ash); min-width: 2.2rem; }
+.sw p { font-size: var(--text-small); line-height: 1.5; color: var(--color-ash); }
+.ratio { display: flex; height: 64px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line-strong); }
+.ratio > div { display: grid; align-items: end; padding: 0.4rem 0.5rem; font: 500 0.75rem/1.2 var(--font-mono); }
+.ratio .r-paper { flex: 60; background: var(--l-paper); color: var(--l-ink); }
+.ratio .r-ink { flex: 25; background: linear-gradient(90deg, var(--l-ink) 0 50%, var(--l-glaze) 50%); color: var(--l-paper); }
+.ratio .r-clay { flex: 10; background: var(--l-clay); color: var(--l-paper); }
+.ratio .r-acc { flex: 5; background: linear-gradient(90deg, var(--l-seal) 0 34%, var(--l-lacquer) 34% 67%, var(--l-celadon) 67%); min-width: 0; }
+.legend { display: grid; gap: 0.35rem 1.25rem; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); font-size: var(--text-small); }
+.tone { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+.tone div { padding: 1rem 0.75rem; border-radius: var(--radius-card); border: 1px solid var(--line); background: color-mix(in oklch, var(--color-paper) 92%, var(--dom)); font: 500 0.6875rem/1.4 var(--font-mono); display: grid; gap: 0.6rem; }
+.tone i { height: 36px; border-radius: 6px; background: var(--dom); }
+
+/* ── Chữ ────────────────────────────────────────────────────────────── */
+.font-card .aa { font-size: clamp(4rem, 8vw, 6.5rem); line-height: 1; }
+.font-card.fr .aa { font-family: var(--font-display); font-variation-settings: "SOFT" 100, "WONK" 1; font-weight: 600; letter-spacing: -0.02em; }
+.font-card.be .aa { font-family: var(--font-sans); font-weight: 500; }
+.font-card.jb .aa { font-family: var(--font-mono); font-weight: 500; }
+.glyphs { font-size: 1.125rem; line-height: 1.7; word-spacing: 0.15em; }
+.scale { display: grid; }
+.scale > div { display: grid; gap: 0.5rem; padding-block: 1.1rem; border-top: 1px solid var(--line); }
+.scale > div:first-child { border-top: 0; padding-top: 0; }
+@media (min-width: 900px) { .scale > div { grid-template-columns: 11rem minmax(0, 1fr); gap: 1.5rem; align-items: baseline; } }
+.scale .spec { font: 400 0.75rem/1.5 var(--font-mono); color: var(--color-ash); }
+.scale .spec b { display: block; color: var(--color-ink); font-weight: 500; }
+.s-display { font: 600 var(--text-display)/1.02 var(--font-display); letter-spacing: -0.02em; font-variation-settings: "SOFT" 100, "WONK" 0; color: var(--color-glaze); }
+.s-h1 { font: 600 var(--text-h1)/1.08 var(--font-display); letter-spacing: -0.02em; font-variation-settings: "SOFT" 100, "WONK" 0; }
+.s-h2 { font: 600 var(--text-h2)/1.15 var(--font-display); letter-spacing: -0.02em; font-variation-settings: "SOFT" 100, "WONK" 0; }
+.s-h3 { font: 600 var(--text-h3)/1.25 var(--font-display); letter-spacing: -0.01em; font-variation-settings: "SOFT" 100, "WONK" 0; }
+.s-body { font: 400 var(--text-body)/1.65 var(--font-sans); max-width: var(--container-prose-vn); }
+.s-small { font: 400 var(--text-small)/1.5 var(--font-sans); color: var(--color-ash); }
+.s-mono { font: 500 1.5rem/1.3 var(--font-mono); letter-spacing: 0.22em; }
+.varrow { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.varrow div { display: grid; gap: 0.4rem; }
+.varrow .w { font: 600 clamp(2rem, 4vw, 3rem)/1.1 var(--font-display); letter-spacing: -0.02em; }
+
+/* ── Chất liệu & hoa văn ────────────────────────────────────────────── */
+.tex { position: relative; height: 150px; border-radius: 8px; border: 1px solid var(--line); overflow: hidden; isolation: isolate; }
+.tex > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tex.grainA { background: var(--l-paper); }
+.tex.grainA::before, .tex.grainB::before { content: ""; position: absolute; inset: 0; background-size: 160px; }
+.tex.grainA::before { background-image: var(--grain-light); opacity: 0.04; }
+.tex.grainA.x5::before { opacity: 0.2; }
+.tex.grainB { background: var(--d-paper); }
+.tex.grainB::before { background-image: var(--grain-dark); opacity: 0.04; }
+.tex.grainB.x5::before { opacity: 0.2; }
+.tex.crk { background: var(--l-paper); }
+.tex.crk.glz { background: linear-gradient(145deg, var(--l-glaze), color-mix(in oklch, var(--l-glaze) 60%, var(--l-celadon))); }
+.tex.waveA { background: var(--l-paper); display: grid; place-items: center; }
+.tex.waveA svg { position: static; height: 16px; color: var(--l-glaze); }
+.brush-demo { width: 100%; height: auto; }
+.radii { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+.radii span { display: grid; place-items: center; min-width: 5rem; height: 3rem; border: 1.5px solid var(--color-ink); font: 500 0.75rem/1 var(--font-mono); padding-inline: 0.8rem; }
+.shadow-demo { height: 90px; border-radius: var(--radius-card); background: var(--color-surface); box-shadow: var(--shadow-warm); border: 1px solid var(--line); display: grid; place-items: center; font: 500 0.75rem/1.4 var(--font-mono); color: var(--color-ash); text-align: center; padding: 0.5rem; }
+.ruler { display: grid; gap: 0.5rem; }
+.ruler div { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; font: 500 0.75rem/1 var(--font-mono); color: var(--color-ash); }
+.ruler i { display: block; height: 14px; background: var(--color-clay); border-radius: 2px; flex: none; opacity: 0.85; }
+.ruler.sec i { background: var(--color-glaze); }
+
+/* ── Chuyển động ────────────────────────────────────────────────────── */
+.ease-row { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: 1rem; align-items: center; padding-block: 0.9rem; border-top: 1px solid var(--line); }
+.ease-row:first-of-type { border-top: 0; }
+.ease-row .curve { width: 72px; height: 72px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--color-paper); }
+.ease-row .meta { display: grid; gap: 0.5rem; min-width: 0; }
+.ease-row .meta code { font-size: 0.75rem; color: var(--color-ash); overflow-wrap: anywhere; }
+.track { position: relative; height: 22px; border-radius: var(--radius-chip); background: color-mix(in srgb, var(--color-ink) 8%, transparent); }
+.puck { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--color-clay); transition: left var(--dur, 520ms) var(--ease); }
+.run .puck { left: calc(100% - 20px); }
+.btn {
+  font: 600 0.875rem/1 var(--font-sans); border: 0; cursor: pointer; border-radius: var(--radius-input);
+  background: var(--color-clay); color: var(--color-paper); padding: 0.75rem 1rem; min-height: 44px;
+  transition: transform var(--duration-quick) var(--ease-press), background var(--duration-quick) var(--ease-clay);
+}
+.btn:hover { background: color-mix(in srgb, var(--color-clay) 88%, var(--color-ink)); }
+.btn:active { transform: scale(0.96); }
+.btn.alt { background: transparent; color: var(--color-ink); border: 1px solid var(--line-strong); }
+.durs { display: grid; gap: 0.6rem; }
+.durs .track { --ease: var(--ease-clay); }
+.durs .row { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: 0.75rem; align-items: center; font: 500 0.75rem/1.3 var(--font-mono); }
+.stamp-demo { display: grid; justify-items: center; gap: 1rem; padding: 1rem 0; }
+.stamp-pad { position: relative; width: 120px; height: 120px; display: grid; place-items: center; border-radius: 8px; border: 1px dashed var(--line-strong); background: var(--color-paper); }
+.stamp-pad svg { width: 72px; color: var(--color-seal); position: relative; z-index: 1; }
+.stamp-pad .ink { position: absolute; inset: 22px; border-radius: 50%; background: var(--color-seal); opacity: 0; }
+.stamp-pad.stamping svg { animation: stamp var(--duration-slow) var(--ease-press) both; }
+.stamp-pad.stamping .ink { animation: bleed var(--duration-story) var(--ease-clay) both; }
+.stamp-pad.stamping { animation: shake var(--duration-base) var(--ease-kiln) var(--duration-slow); }
+@keyframes bleed { 0% { opacity: 0.35; transform: scale(0.6); } 100% { opacity: 0; transform: scale(1.9); } }
+@keyframes shake { 0%, 100% { transform: translate(0); } 25% { transform: translate(-2px, 1px); } 60% { transform: translate(2px, -1px); } }
+.principles { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.principles h4 { color: var(--color-clay); }
+.moments { counter-reset: m; display: grid; gap: 0.5rem 2rem; }
+@media (min-width: 720px) { .moments { grid-template-columns: 1fr 1fr; } }
+.moments li { counter-increment: m; display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); gap: 0.5rem; padding-block: 0.6rem; border-top: 1px solid var(--line); font-size: var(--text-small); line-height: 1.5; }
+.moments li::before { content: counter(m, decimal-leading-zero); font: 500 0.8125rem/1.5 var(--font-mono); color: var(--color-clay); }
+.moments b { font-family: var(--font-display); font-weight: 600; font-size: 1.0625rem; letter-spacing: -0.01em; display: block; }
+.moments .where { color: var(--color-ash); }
+
+/* ── Hình ảnh ───────────────────────────────────────────────────────── */
+.shots { display: grid; gap: var(--spacing-gutter); grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); align-items: start; }
+.shot { display: grid; gap: 0.6rem; }
+.shot .frame { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); isolation: isolate; aspect-ratio: var(--ar); display: grid; align-content: end; padding: 0.75rem; color: var(--l-paper); }
+.shot .frame::after { content: ""; position: absolute; inset: 0; background-image: var(--grain-light); background-size: 160px; opacity: 0.2; mix-blend-mode: multiply; z-index: -1; }
+.shot .frame .tag { justify-self: start; background: rgb(0 0 0 / 0.4); color: #fff; }
+.shot h4 { font-size: 1rem; }
+.shot p { font-size: var(--text-small); line-height: 1.5; color: var(--color-ash); }
+.ph-hands { background: radial-gradient(ellipse 50% 40% at 50% 62%, color-mix(in srgb, var(--l-clay) 55%, #e8c7a4), transparent 70%), linear-gradient(170deg, #5a2c18, var(--l-clay) 60%, #7b3a1f); }
+.ph-kiln { background: radial-gradient(ellipse 40% 42% at 50% 62%, var(--d-lacquer), var(--d-clay) 40%, transparent 75%), linear-gradient(180deg, #170d09, #2b1510); }
+.ph-yard { background: repeating-linear-gradient(90deg, transparent 0 34px, rgb(60 30 15 / 0.22) 34px 40px), linear-gradient(180deg, color-mix(in srgb, var(--l-paper) 80%, var(--l-clay)), color-mix(in srgb, var(--l-paper) 45%, var(--l-clay))); color: var(--l-ink); }
+.ph-portrait { background: radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--l-clay) 35%, #f0d3b4) 0 17%, transparent 18%), radial-gradient(ellipse 36% 26% at 50% 88%, color-mix(in srgb, var(--l-clay) 35%, #f0d3b4) 0 70%, transparent 72%), linear-gradient(180deg, #4a2d1e, #2a1a12); }
+.ph-glaze { background: radial-gradient(circle at 34% 28%, rgb(255 255 255 / 0.4), transparent 38%), linear-gradient(145deg, var(--l-glaze), var(--l-celadon)); }
+.srcs { display: grid; gap: 0.75rem; }
+.srcs a { font-weight: 600; word-break: break-all; }
+.srcs li { display: grid; gap: 0.15rem; padding-block: 0.6rem; border-top: 1px solid var(--line); }
+.srcs li:first-child { border-top: 0; }
+
+/* ── Giọng văn & mascot ─────────────────────────────────────────────── */
+.voice { display: grid; }
+.voice > div { display: grid; gap: 0.6rem; padding-block: 1rem; border-top: 1px solid var(--line); }
+.voice > div:first-child { border-top: 0; padding-top: 0; }
+@media (min-width: 720px) { .voice > div { grid-template-columns: 7rem minmax(0, 1fr) minmax(0, 1fr); gap: 1.25rem; align-items: start; } }
+.voice .ctx { font: 500 0.75rem/1.5 var(--font-mono); color: var(--color-ash); text-transform: uppercase; letter-spacing: 0.06em; }
+.do, .dont { display: block; position: relative; padding-top: 1.15rem; font-size: var(--text-small); line-height: 1.5; }
+.do::before { content: "Nên"; position: absolute; left: 0; top: 0; font: 600 0.6875rem/1 var(--font-mono); color: var(--color-celadon); }
+.dont::before { content: "Tránh"; position: absolute; left: 0; top: 0; font: 600 0.6875rem/1 var(--font-mono); color: var(--color-seal); }
+.do span { font-family: var(--font-display); font-variation-settings: "SOFT" 100, "WONK" 0; font-size: 1.0625rem; line-height: 1.4; }
+.dont span { color: var(--color-ash); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--color-seal) 70%, transparent); }
+.fox-grid { display: grid; gap: 1.5rem; align-items: center; }
+@media (min-width: 640px) { .fox-grid { grid-template-columns: minmax(0, 220px) minmax(0, 1fr); } }
+.fox { width: 100%; max-width: 220px; height: auto; justify-self: center; }
+.bubble { position: relative; background: var(--color-paper); border: 1.5px solid var(--color-ink); border-radius: 18px 22px 16px 24px / 22px 16px 24px 18px; padding: 0.75rem 1rem; font-size: var(--text-small); line-height: 1.5; justify-self: start; }
+
+footer { margin-top: var(--spacing-section); border-top: 1px solid var(--line); padding-block: 2.5rem 3rem; }
+footer .wrap { display: grid; gap: 1rem; }
+footer p { max-width: 60ch; }
+
+/* Lò đêm (BRAND §6.3 #10): chuyển sáng ⇄ tối lan tròn từ nút. */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+
+/* Giảm chuyển động (BRAND §6.4): tắt mọi hoạt ảnh/chuyển tiếp; ô demo nhảy tức thì. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .brush path { stroke-dashoffset: 0 !important; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- Định nghĩa dùng chung: hình học đúng theo seal-geometry.ts / assets/brand/*.svg -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <mask id="ml" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40">
+      <rect width="40" height="40" fill="#fff"/>
+      <path d="M15 7 H25 Q24.6 8.2 23.4 8.8 C23 10.8 23.2 12.8 24.5 14.3 C29.5 16.8 31.5 20.2 31.2 23.6 C30.8 27.4 28 30 26 31 L25 32.6 H15 L14 31 C12 30 9.2 27.4 8.8 23.6 C8.5 20.2 10.5 16.8 15.5 14.3 C16.8 12.8 17 10.8 16.6 8.8 Q15.4 8.2 15 7 Z" fill="#000"/>
+      <path d="M11.2 22.4 q2.2 -2 4.4 0 t4.4 0 t4.4 0 t4.4 0" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>
+    </mask>
+    <filter id="bl" filterUnits="userSpaceOnUse" x="-2" y="-2" width="44" height="44" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="7" result="warp"/>
+      <feDisplacementMap in="SourceGraphic" in2="warp" scale="1.4" xChannelSelector="R" yChannelSelector="G" result="rough"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" result="speck"/>
+      <feColorMatrix in="speck" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -12 8.68" result="holes"/>
+      <feComposite in="rough" in2="holes" operator="in"/>
+    </filter>
+    <!-- Ấn bình: màu theo currentColor của phần tử <svg> bao ngoài. -->
+    <symbol id="seal-shape" viewBox="0 0 40 40">
+      <g filter="url(#bl)"><path d="M5 4.5 Q20 2.5 35.5 5 Q37.5 20 35 35.5 Q20 37.8 4.6 35.2 Q2.4 20 5 4.5 Z" fill="currentColor" mask="url(#ml)"/></g>
+    </symbol>
+    <!-- Logo đầy đủ: ấn (--mark) + chữ vCraft (--wm), chữ đã chuyển thành đường nét từ Fraunces 600 / SOFT 100 / WONK 1. -->
+    <symbol id="logo-full" viewBox="0 0 164 40">
+      <use href="#seal-shape" width="40" height="40" style="color:var(--mark,var(--color-seal))"/>
+      <path d="M62.83 29.84H61.18Q60.48 29.84 60 29.43Q59.52 29.01 59.17 28.18L54.31 16.4Q54.11 15.92 53.89 15.52Q53.67 15.13 53.37 15L52.86 14.82Q52.48 14.6 52.28 14.35Q52.07 14.1 52.07 13.69Q52.07 13.17 52.41 12.89Q52.75 12.6 53.31 12.6H60.79Q61.93 12.6 61.93 13.69Q61.93 14.11 61.66 14.36Q61.4 14.61 60.97 14.83L60.43 15.01Q59.8 15.23 59.71 15.76Q59.62 16.28 59.97 17.24L64 27.68L62.83 27.71L66.91 17.2Q67.25 16.31 67.1 15.76Q66.95 15.22 66.39 15L65.79 14.83Q65.36 14.62 65.12 14.36Q64.88 14.11 64.88 13.69Q64.88 13.17 65.22 12.89Q65.55 12.6 66.12 12.6H70.9Q71.49 12.6 71.81 12.89Q72.14 13.17 72.14 13.69Q72.14 14.06 71.96 14.32Q71.78 14.57 71.35 14.82L70.85 15Q70.57 15.14 70.29 15.55Q70.01 15.97 69.58 17.01L64.88 28.33Q64.51 29.2 64 29.52Q63.48 29.84 62.83 29.84ZM95.43 23.12Q95.39 24.17 94.71 25.38Q94.02 26.59 92.74 27.68Q91.46 28.76 89.59 29.45Q87.72 30.14 85.3 30.14Q81.47 30.14 78.67 28.45Q75.88 26.75 74.35 23.78Q72.82 20.8 72.82 16.93Q72.82 14.11 73.74 11.7Q74.66 9.29 76.3 7.49Q77.94 5.7 80.13 4.7Q82.32 3.71 84.86 3.71Q86.65 3.71 87.74 4.04Q88.83 4.37 89.48 4.71Q90.12 5.04 90.53 5.04Q90.9 5.04 91.14 4.75Q91.38 4.45 91.64 4.16Q91.9 3.87 92.3 3.87Q92.82 3.87 93.05 4.16Q93.29 4.44 93.49 5.15L95.3 11.1Q95.47 11.68 95.16 12.1Q94.85 12.53 94.25 12.62Q93.77 12.68 93.34 12.46Q92.92 12.24 92.64 11.66Q91.7 9.61 90.61 8.42Q89.51 7.23 88.23 6.72Q86.94 6.21 85.43 6.21Q83.84 6.21 82.55 6.95Q81.25 7.68 80.33 9.01Q79.4 10.35 78.9 12.17Q78.4 13.99 78.4 16.16Q78.4 19.42 79.5 21.73Q80.6 24.04 82.51 25.26Q84.42 26.48 86.84 26.48Q88.97 26.48 90.61 25.59Q92.25 24.69 93.46 22.96Q93.92 22.43 94.25 22.26Q94.59 22.09 94.89 22.19Q95.17 22.26 95.3 22.51Q95.44 22.75 95.43 23.12ZM103.28 20.1Q103.28 17.48 104.02 15.72Q104.75 13.96 105.99 13.07Q107.22 12.19 108.72 12.19Q110.33 12.19 111.26 13.19Q112.19 14.19 112.19 16.05Q112.19 17.64 111.54 18.41Q110.89 19.18 109.83 19.18Q108.75 19.18 108.18 18.64Q107.62 18.11 107.62 17.19V16.54Q107.62 15.97 107.34 15.72Q107.06 15.46 106.59 15.46Q105.94 15.46 105.36 15.96Q104.79 16.46 104.43 17.45Q104.07 18.43 104.07 19.89ZM103.79 13.66 104.07 17.48V25.6Q104.07 26.28 104.31 26.65Q104.55 27.02 105.07 27.1L106.44 27.27Q106.97 27.34 107.21 27.65Q107.45 27.96 107.45 28.41Q107.45 28.92 107.13 29.21Q106.8 29.5 106.21 29.5H98.38Q97.81 29.5 97.48 29.21Q97.14 28.92 97.14 28.41Q97.14 28.01 97.35 27.74Q97.56 27.48 97.94 27.27L98.46 27.1Q98.8 26.95 98.98 26.64Q99.16 26.33 99.16 25.6V17.46Q99.16 16.81 98.97 16.55Q98.79 16.29 98.44 16.18L97.63 16.1Q97.28 15.95 97.08 15.72Q96.87 15.48 96.87 15.11Q96.87 14.7 97.14 14.41Q97.4 14.12 97.96 13.91L100.99 12.81Q101.57 12.59 102.01 12.44Q102.44 12.29 102.74 12.29Q103.19 12.29 103.45 12.59Q103.71 12.9 103.79 13.66ZM124.09 27.11V26.53L123.66 26.24V16.65Q123.66 15.49 123.01 14.85Q122.36 14.21 121.22 14.21Q120.21 14.21 119.65 14.62Q119.08 15.04 119.08 15.66V16.78Q119.08 17.86 118.37 18.44Q117.66 19.03 116.36 19.03Q115.22 19.03 114.65 18.49Q114.07 17.95 114.07 17.03Q114.07 15.86 115.04 14.76Q116.01 13.65 117.9 12.94Q119.8 12.23 122.56 12.23Q125.61 12.23 127.11 13.57Q128.61 14.91 128.61 17.19V25.94Q128.61 26.29 128.8 26.53Q128.98 26.76 129.36 26.76Q129.61 26.76 129.76 26.69Q129.91 26.61 130.02 26.51Q130.13 26.42 130.24 26.35Q130.35 26.28 130.49 26.28Q130.84 26.28 131.04 26.52Q131.24 26.76 131.24 27.15Q131.24 27.82 130.8 28.46Q130.36 29.11 129.56 29.53Q128.77 29.95 127.69 29.95Q126.14 29.95 125.11 29.18Q124.09 28.41 124.09 27.11ZM113.33 25.71Q113.33 23.41 115.39 22.01Q117.45 20.6 120.93 20.6Q121.98 20.6 122.93 20.75Q123.88 20.91 124.54 21.17L124.06 22.82Q123.47 22.58 122.83 22.44Q122.19 22.3 121.46 22.3Q120.06 22.3 119.23 22.96Q118.41 23.63 118.41 24.77Q118.41 25.91 119.1 26.51Q119.8 27.11 120.88 27.11Q121.91 27.11 122.82 26.64Q123.73 26.17 124.35 25.37L124.79 26.92Q123.79 28.37 122.09 29.16Q120.39 29.95 118.49 29.95Q116.17 29.95 114.75 28.79Q113.33 27.63 113.33 25.71ZM140.06 25.6Q140.06 26.28 140.3 26.66Q140.54 27.04 141.06 27.1L142.75 27.27Q143.29 27.33 143.53 27.64Q143.77 27.95 143.77 28.41Q143.77 29.5 142.54 29.5H133.71Q133.14 29.5 132.8 29.22Q132.47 28.93 132.47 28.43Q132.47 27.94 132.71 27.66Q132.96 27.39 133.47 27.22L134.06 27.07Q134.53 26.94 134.8 26.59Q135.06 26.24 135.06 25.56V16.91Q135.06 16.42 134.84 16.16Q134.62 15.89 133.98 15.65L133.44 15.45Q132.74 15.17 132.42 14.85Q132.1 14.52 132.1 14.08Q132.1 13.64 132.4 13.36Q132.7 13.08 133.21 13.08H136.48L135.13 13.94V13.11Q135.13 12.74 134.83 12.3Q134.52 11.87 134.12 11.32Q133.73 10.77 133.42 10.05Q133.11 9.33 133.11 8.38Q133.11 6.27 134.79 4.87Q136.47 3.46 139.4 3.46Q141.26 3.46 142.53 4.03Q143.81 4.61 144.47 5.57Q145.13 6.53 145.13 7.69Q145.13 8.84 144.53 9.44Q143.93 10.04 142.98 10.04Q141.92 10.04 141.29 9.4Q140.65 8.76 140.65 7.67V6.96Q140.65 6.17 140.23 5.77Q139.8 5.36 139.01 5.36Q138.06 5.36 137.55 5.91Q137.04 6.47 137.04 7.45Q137.04 8.14 137.31 8.75Q137.58 9.36 137.97 9.91Q138.36 10.46 138.76 10.98Q139.15 11.49 139.42 11.99Q139.69 12.49 139.69 13V14.1L138.87 13.08H143.3Q143.87 13.08 144.18 13.32Q144.49 13.56 144.49 14.04Q144.49 14.72 143.89 15.16Q143.3 15.61 141.95 15.61H140.06ZM146.35 14.94 145.69 14.8Q145.31 14.63 145.11 14.36Q144.91 14.08 144.91 13.68Q144.91 13.21 145.24 12.91Q145.58 12.6 146.11 12.6H146.91Q147.34 12.6 147.66 12.36Q147.99 12.12 148.32 11.53L149.41 9.4Q149.74 8.88 150.2 8.55Q150.66 8.22 151.09 8.22Q151.64 8.22 151.98 8.55Q152.32 8.89 152.32 9.51V24.02Q152.32 25.13 152.8 25.71Q153.28 26.3 154.16 26.3Q154.67 26.3 155.05 26.12Q155.43 25.94 155.72 25.7Q156.01 25.46 156.26 25.28Q156.51 25.11 156.75 25.13Q157.03 25.14 157.22 25.39Q157.41 25.64 157.37 26.09Q157.34 27.07 156.66 27.93Q155.97 28.8 154.83 29.34Q153.7 29.87 152.32 29.87Q149.96 29.87 148.64 28.69Q147.33 27.5 147.33 25.07V16.39Q147.33 15.71 147.08 15.4Q146.84 15.1 146.35 14.94ZM150.3 15.13V12.6H156.24Q156.81 12.6 157.11 12.85Q157.42 13.09 157.42 13.57Q157.42 14.24 156.83 14.69Q156.24 15.13 154.89 15.13Z" style="fill:var(--wm,var(--color-ink))"/>
+    </symbol>
+    <!-- Dải sóng hoa lam (wave-divider.tsx) -->
+    <pattern id="wave-pat" width="32" height="16" patternUnits="userSpaceOnUse">
+      <path d="M0 9 q8 -7 16 0 t16 0" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      <circle cx="16" cy="13.5" r="0.9" fill="currentColor" opacity="0.6"/>
+    </pattern>
+    <!-- Men rạn (crackle.tsx), ô lặp 120px -->
+    <pattern id="crk-ink" width="120" height="120" patternUnits="userSpaceOnUse">
+      <path d="M0 18 L22 24 L41 9 L60 0 M41 9 L48 33 L30 52 L22 24 M48 33 L74 38 L92 20 L120 18 M92 20 L86 0 M74 38 L80 61 L104 70 L120 64 M80 61 L62 78 L30 52 L8 66 L0 64 M62 78 L70 104 L96 99 L104 70 M70 104 L60 120 M96 99 L120 112 M30 52 L36 86 L12 98 L0 96 M36 86 L62 78 M36 86 L44 120 M12 98 L18 120" fill="none" stroke="#1c1814" stroke-width="0.8" stroke-linejoin="round"/>
+    </pattern>
+    <pattern id="crk-light" width="120" height="120" patternUnits="userSpaceOnUse">
+      <path d="M0 18 L22 24 L41 9 L60 0 M41 9 L48 33 L30 52 L22 24 M48 33 L74 38 L92 20 L120 18 M92 20 L86 0 M74 38 L80 61 L104 70 L120 64 M80 61 L62 78 L30 52 L8 66 L0 64 M62 78 L70 104 L96 99 L104 70 M70 104 L60 120 M96 99 L120 112 M30 52 L36 86 L12 98 L0 96 M36 86 L62 78 M36 86 L44 120 M12 98 L18 120" fill="none" stroke="#f5efe4" stroke-width="0.8" stroke-linejoin="round"/>
+    </pattern>
+  </defs>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brandlink" href="#top">
+      <span class="sr">vCraft — về đầu trang</span>
+      <svg viewBox="0 0 164 40" aria-hidden="true" focusable="false"><use href="#logo-full"/></svg>
+    </a>
+    <nav aria-label="Mục lục">
+      <a href="#y-tuong">Ý tưởng</a>
+      <a href="#logo">Logo</a>
+      <a href="#mau">Màu</a>
+      <a href="#chu">Chữ</a>
+      <a href="#chat-lieu">Chất liệu</a>
+      <a href="#chuyen-dong">Chuyển động</a>
+      <a href="#hinh-anh">Hình ảnh</a>
+      <a href="#giong-van">Giọng văn &amp; Cáo</a>
+    </nav>
+    <fieldset class="theme">
+      <legend class="sr">Chế độ màu</legend>
+      <button type="button" data-theme-set="light" aria-pressed="false">Sáng</button>
+      <button type="button" data-theme-set="auto" aria-pressed="true">Tự động</button>
+      <button type="button" data-theme-set="dark" aria-pressed="false">Lò đêm</button>
+    </fieldset>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ── Hero ───────────────────────────────────────────────────────── -->
+<div class="wrap hero">
+  <div class="hero-grid">
+    <div>
+      <p class="eyebrow">Moodboard thương hiệu · v1.0 · 27/10/2026</p>
+      <h1 style="margin-top:1rem">Ấn của <em>người thợ</em></h1>
+      <svg class="brush" viewBox="0 0 300 20" aria-hidden="true" focusable="false">
+        <path d="M3 12 C50 4 100 16 160 9 S250 11 297 6" pathLength="1" fill="none" stroke="var(--color-clay)" stroke-width="7" stroke-linecap="round"/>
+      </svg>
+      <p class="tagline">Tinh hoa làng nghề, muôn phương lan tỏa</p>
+      <p class="prose muted" style="margin-top:1rem">Bảng ghim cảm hứng cho Bát Tràng số: một bảo tàng nhỏ ấm cúng, nơi mỗi món gốm mang theo con dấu của người làm ra nó.</p>
+    </div>
+    <div class="card pin tr hero-card">
+      <svg class="hero-seal" viewBox="0 0 40 40" role="img" aria-label="Ấn bình vCraft"><use href="#seal-shape"/></svg>
+      <p class="small muted">Chữ <b style="color:var(--color-ink)">v</b> là <b style="color:var(--color-ink)">Việt</b>, cũng là hình chiếc bình nhìn nghiêng và vệt men chảy.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── 01 Ý tưởng cốt lõi ─────────────────────────────────────────── -->
+<section class="sec" id="y-tuong">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">01 — Ý tưởng cốt lõi</p>
+      <h2>Con dấu dưới đáy gốm, được số hóa</h2>
+    </div>
+    <div class="board">
+      <article class="card pin c7">
+        <p class="bigquote">Dưới đáy mỗi món gốm Bát Tràng có <em>dấu triện của lò</em>. vCraft số hóa con dấu đó.</p>
+        <p class="prose muted">Mỗi sản phẩm mang một <b style="color:var(--color-ink)">ấn truy xuất</b>: QR trong khung triện, chứng thực <em>ai làm, làm thế nào, làm khi nào</em>.</p>
+      </article>
+      <article class="card tape tr c5 drop">
+        <p class="eyebrow">Tính cách</p>
+        <div class="chips">
+          <span class="chip">Mộc mạc</span><span class="chip">Ấm áp</span><span class="chip">Tự hào</span><span class="chip">Minh bạch</span><span class="chip">Tinh tế</span>
+        </div>
+        <p class="eyebrow" style="margin-top:0.5rem">Không phải</p>
+        <ul class="struck">
+          <li>Sàn TMĐT ồn ào</li>
+          <li>Giảm giá, banner nhấp nháy</li>
+          <li>“Phong cách template”</li>
+        </ul>
+        <p class="eyebrow" style="margin-top:0.5rem">Cảm giác cần đạt</p>
+        <p class="s-h3" style="font-size:var(--text-h3);font-family:var(--font-display);font-weight:600;line-height:1.25;letter-spacing:-0.01em">Bước vào một bảo tàng nhỏ ấm cúng, không phải một cửa hàng.</p>
+      </article>
+
+      <article class="card mat c4">
+        <div class="mat-vis mat-dat" role="img" aria-label="Mẫu chất liệu Đất: đất nung thô, ấm"></div>
+        <p class="eyebrow">Chất liệu I</p>
+        <h3>Đất</h3>
+        <p class="small muted">Nung, thô, ấm. Vân đất, hạt thô, giấy dó thay cho trắng tinh.</p>
+        <div class="swdots" aria-hidden="true"><i style="--c:var(--color-clay)"></i><i style="--c:var(--color-paper)"></i><i style="--c:var(--color-ash)"></i></div>
+      </article>
+      <article class="card mat c4 drop">
+        <div class="mat-vis mat-lua" role="img" aria-label="Mẫu chất liệu Lửa: than hồng trong lò"></div>
+        <p class="eyebrow">Chất liệu II</p>
+        <h3>Lửa</h3>
+        <p class="small muted">Lò nung, chuyển hóa. Màu ấm dần, ánh sáng lan như vào lò; than hồng trong chế độ tối.</p>
+        <div class="swdots"><i style="--c:var(--color-seal)"></i><i style="--c:var(--color-lacquer)"></i><i style="--c:var(--d-clay)"></i></div>
+      </article>
+      <article class="card mat c4 drop2 tl">
+        <div class="mat-vis mat-men" role="img" aria-label="Mẫu chất liệu Men: lam, ngọc, bóng, có vết rạn">
+          <svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#crk-light)" opacity="0.5"/></svg>
+        </div>
+        <p class="eyebrow">Chất liệu III</p>
+        <h3>Men</h3>
+        <p class="small muted">Lam, ngọc, bóng, rạn. Nền của hoa văn hoa lam và khối xác thực.</p>
+        <div class="swdots"><i style="--c:var(--color-glaze)"></i><i style="--c:var(--color-celadon)"></i></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><svg class="wave" aria-hidden="true" focusable="false"><line x1="0" y1="1" x2="100%" y2="1" stroke="currentColor" stroke-width="0.8" opacity="0.5"/><rect y="2" width="100%" height="14" fill="url(#wave-pat)"/></svg></div>
+
+<!-- ── 02 Logo ────────────────────────────────────────────────────── -->
+<section class="sec" id="logo">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">02 — Logo &amp; ấn triện</p>
+      <h2>Ấn bình: con dấu khắc tay có chiếc bình khoét âm bản</h2>
+      <p class="muted">Hình vuông bo góc không đều, màu son. Bình gốm dáng tỏi khoét âm, một dải sóng hoa lam ngang bụng bình. Viền có vết mực loang nhẹ. Chữ vCraft dựng bằng Fraunces (SOFT cao, WONK bật).</p>
+    </div>
+    <div class="board">
+      <article class="card pin c7">
+        <p class="eyebrow">Đầy đủ: ấn + chữ</p>
+        <div class="panel paper"><svg class="lockup" viewBox="0 0 164 40" role="img" aria-label="Logo vCraft đầy đủ"><use href="#logo-full"/></svg><span class="lab">logo.svg</span></div>
+        <div class="mini">
+          <div class="panel paper"><svg class="mk" viewBox="0 0 40 40" width="72" height="72" role="img" aria-label="Ấn bình màu son"><use href="#seal-shape"/></svg><span class="lab">seal.svg · màu son</span></div>
+          <div class="panel ink"><svg class="mk" viewBox="0 0 40 40" width="72" height="72" role="img" aria-label="Ấn bình đơn sắc mực"><use href="#seal-shape"/></svg><span class="lab">seal-ink.svg · in tem</span></div>
+          <div class="panel night"><svg class="mk" viewBox="0 0 40 40" width="72" height="72" role="img" aria-label="Ấn bình đảo màu trên nền tối"><use href="#seal-shape"/></svg><span class="lab">seal-inverse.svg · Lò đêm</span></div>
+          <div class="panel glaze"><svg class="mk" viewBox="0 0 40 40" width="72" height="72" role="img" aria-label="Ấn bình đảo màu trên nền men lam"><use href="#seal-shape"/></svg><span class="lab">seal-inverse · nền men lam</span></div>
+        </div>
+      </article>
+
+      <article class="card c5 drop tr">
+        <p class="eyebrow">Kích thước tối thiểu</p>
+        <div class="sizes" style="color:var(--color-seal)">
+          <figure><svg class="mk" viewBox="0 0 40 40" width="20" height="20" role="img" aria-label="Ấn 20px"><use href="#seal-shape"/></svg><figcaption>20px</figcaption></figure>
+          <figure><svg class="mk" viewBox="0 0 40 40" width="32" height="32" role="img" aria-label="Ấn 32px"><use href="#seal-shape"/></svg><figcaption>32px</figcaption></figure>
+          <figure><svg class="mk" viewBox="0 0 40 40" width="48" height="48" role="img" aria-label="Ấn 48px"><use href="#seal-shape"/></svg><figcaption>48px</figcaption></figure>
+          <figure><svg class="mk" viewBox="0 0 40 40" width="72" height="72" role="img" aria-label="Ấn 72px"><use href="#seal-shape"/></svg><figcaption>72px</figcaption></figure>
+        </div>
+        <p class="small muted">Tối thiểu <b style="color:var(--color-ink)">20px</b> trên màn hình, <b style="color:var(--color-ink)">8mm</b> khi in. Dưới ngưỡng này nét triện mất đọc được.</p>
+        <p class="eyebrow" style="margin-top:0.5rem">Vùng an toàn = ½ chiều cao ấn</p>
+        <div class="safe-wrap">
+          <div class="safe-box">
+            <b class="t">½H</b><b class="l">½H</b>
+            <svg class="mk core" viewBox="0 0 40 40" width="96" height="96" role="img" aria-label="Ấn với vùng an toàn"><use href="#seal-shape"/></svg>
+          </div>
+        </div>
+        <p class="small muted">Không đặt chữ, ảnh hay mép khung vào vùng nét đứt.</p>
+      </article>
+
+      <article class="card c12 flat">
+        <p class="eyebrow">Ấn truy xuất — thứ người dùng cầm trên tay</p>
+        <div class="board" style="align-items:center">
+          <div class="c4" style="display:grid;gap:0.5rem;justify-items:center">
+            <svg class="trace-seal" viewBox="0 0 100 100" role="img" aria-label="Minh họa ấn truy xuất: khung triện, mã QR, ấn bình ở giữa">
+              <path fill-rule="evenodd" fill="var(--color-seal)" d="M3.5 3 Q50 0.6 96.5 3.4 Q99.3 50 96.6 96.5 Q50 99.4 3.4 96.6 Q0.7 50 3.5 3 Z M8.5 8 Q50 6.2 91.5 8.4 Q93.7 50 91.6 91.5 Q50 93.6 8.4 91.6 Q6.3 50 8.5 8 Z"/>
+              <path d="M8.5 8 Q50 6.2 91.5 8.4 Q93.7 50 91.6 91.5 Q50 93.6 8.4 91.6 Q6.3 50 8.5 8 Z" fill="var(--color-paper)"/>
+              <g transform="translate(14 14) scale(2.88)"><path d="M0 0h7v1h-7zM8 0h6v1h-6zM15 0h2v1h-2zM18 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM12 1h1v1h-1zM14 1h3v1h-3zM18 1h1v1h-1zM24 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM9 2h5v1h-5zM15 2h2v1h-2zM18 2h1v1h-1zM20 2h3v1h-3zM24 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM8 3h5v1h-5zM18 3h1v1h-1zM20 3h3v1h-3zM24 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h1v1h-1zM10 4h1v1h-1zM13 4h1v1h-1zM15 4h1v1h-1zM18 4h1v1h-1zM20 4h3v1h-3zM24 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM12 5h4v1h-4zM18 5h1v1h-1zM24 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h7v1h-7zM10 7h3v1h-3zM14 7h2v1h-2zM1 8h1v1h-1zM5 8h5v1h-5zM12 8h2v1h-2zM16 8h1v1h-1zM20 8h1v1h-1zM22 8h2v1h-2zM0 9h4v1h-4zM5 9h1v1h-1zM17 9h1v1h-1zM20 9h2v1h-2zM1 10h3v1h-3zM6 10h1v1h-1zM8 10h1v1h-1zM17 10h1v1h-1zM21 10h1v1h-1zM23 10h2v1h-2zM0 11h1v1h-1zM2 11h1v1h-1zM7 11h2v1h-2zM16 11h1v1h-1zM19 11h1v1h-1zM21 11h4v1h-4zM0 12h1v1h-1zM3 12h1v1h-1zM6 12h1v1h-1zM17 12h4v1h-4zM1 13h1v1h-1zM3 13h2v1h-2zM7 13h2v1h-2zM16 13h1v1h-1zM20 13h1v1h-1zM23 13h2v1h-2zM0 14h2v1h-2zM3 14h1v1h-1zM6 14h1v1h-1zM16 14h1v1h-1zM18 14h4v1h-4zM23 14h1v1h-1zM0 15h1v1h-1zM2 15h3v1h-3zM16 15h2v1h-2zM19 15h1v1h-1zM24 15h1v1h-1zM1 16h6v1h-6zM8 16h1v1h-1zM12 16h1v1h-1zM15 16h3v1h-3zM22 16h2v1h-2zM10 17h3v1h-3zM15 17h1v1h-1zM17 17h4v1h-4zM24 17h1v1h-1zM0 18h7v1h-7zM10 18h5v1h-5zM18 18h1v1h-1zM20 18h2v1h-2zM24 18h1v1h-1zM0 19h1v1h-1zM6 19h1v1h-1zM8 19h1v1h-1zM10 19h1v1h-1zM16 19h1v1h-1zM18 19h2v1h-2zM21 19h1v1h-1zM24 19h1v1h-1zM0 20h1v1h-1zM2 20h3v1h-3zM6 20h1v1h-1zM8 20h2v1h-2zM11 20h2v1h-2zM14 20h1v1h-1zM16 20h2v1h-2zM23 20h2v1h-2zM0 21h1v1h-1zM2 21h3v1h-3zM6 21h1v1h-1zM8 21h2v1h-2zM13 21h1v1h-1zM15 21h1v1h-1zM19 21h3v1h-3zM24 21h1v1h-1zM0 22h1v1h-1zM2 22h3v1h-3zM6 22h1v1h-1zM10 22h2v1h-2zM17 22h1v1h-1zM19 22h3v1h-3zM24 22h1v1h-1zM0 23h1v1h-1zM6 23h1v1h-1zM9 23h1v1h-1zM12 23h3v1h-3zM17 23h1v1h-1zM21 23h2v1h-2zM0 24h7v1h-7zM8 24h2v1h-2zM13 24h1v1h-1zM17 24h4v1h-4zM23 24h2v1h-2z" fill="var(--color-ink)"/></g>
+              <rect x="38.6" y="38.6" width="22.8" height="22.8" fill="var(--color-paper)"/>
+              <svg aria-hidden="true" x="40.5" y="40.5" width="19" height="19" viewBox="0 0 40 40" style="color:var(--color-seal)"><use href="#seal-shape"/></svg>
+            </svg>
+            <p class="trace-code">BT7K2QXM</p>
+          </div>
+          <div class="c4"><div class="bottom" role="img" aria-label="Đáy một món gốm đất nung có dán ấn truy xuất"><svg class="stampd" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><path fill-rule="evenodd" fill="#f5efe4" d="M3.5 3 Q50 0.6 96.5 3.4 Q99.3 50 96.6 96.5 Q50 99.4 3.4 96.6 Q0.7 50 3.5 3 Z M8.5 8 Q50 6.2 91.5 8.4 Q93.7 50 91.6 91.5 Q50 93.6 8.4 91.6 Q6.3 50 8.5 8 Z"/><g transform="translate(14 14) scale(2.88)"><path d="M0 0h7v1h-7zM8 0h6v1h-6zM15 0h2v1h-2zM18 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM12 1h1v1h-1zM14 1h3v1h-3zM18 1h1v1h-1zM24 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM9 2h5v1h-5zM15 2h2v1h-2zM18 2h1v1h-1zM20 2h3v1h-3zM24 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM8 3h5v1h-5zM18 3h1v1h-1zM20 3h3v1h-3zM24 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h1v1h-1zM10 4h1v1h-1zM13 4h1v1h-1zM15 4h1v1h-1zM18 4h1v1h-1zM20 4h3v1h-3zM24 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM12 5h4v1h-4zM18 5h1v1h-1zM24 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h7v1h-7zM10 7h3v1h-3zM14 7h2v1h-2zM1 8h1v1h-1zM5 8h5v1h-5zM12 8h2v1h-2zM16 8h1v1h-1zM20 8h1v1h-1zM22 8h2v1h-2zM0 9h4v1h-4zM5 9h1v1h-1zM17 9h1v1h-1zM20 9h2v1h-2zM1 10h3v1h-3zM6 10h1v1h-1zM8 10h1v1h-1zM17 10h1v1h-1zM21 10h1v1h-1zM23 10h2v1h-2zM0 11h1v1h-1zM2 11h1v1h-1zM7 11h2v1h-2zM16 11h1v1h-1zM19 11h1v1h-1zM21 11h4v1h-4zM0 12h1v1h-1zM3 12h1v1h-1zM6 12h1v1h-1zM17 12h4v1h-4zM1 13h1v1h-1zM3 13h2v1h-2zM7 13h2v1h-2zM16 13h1v1h-1zM20 13h1v1h-1zM23 13h2v1h-2zM0 14h2v1h-2zM3 14h1v1h-1zM6 14h1v1h-1zM16 14h1v1h-1zM18 14h4v1h-4zM23 14h1v1h-1zM0 15h1v1h-1zM2 15h3v1h-3zM16 15h2v1h-2zM19 15h1v1h-1zM24 15h1v1h-1zM1 16h6v1h-6zM8 16h1v1h-1zM12 16h1v1h-1zM15 16h3v1h-3zM22 16h2v1h-2zM10 17h3v1h-3zM15 17h1v1h-1zM17 17h4v1h-4zM24 17h1v1h-1zM0 18h7v1h-7zM10 18h5v1h-5zM18 18h1v1h-1zM20 18h2v1h-2zM24 18h1v1h-1zM0 19h1v1h-1zM6 19h1v1h-1zM8 19h1v1h-1zM10 19h1v1h-1zM16 19h1v1h-1zM18 19h2v1h-2zM21 19h1v1h-1zM24 19h1v1h-1zM0 20h1v1h-1zM2 20h3v1h-3zM6 20h1v1h-1zM8 20h2v1h-2zM11 20h2v1h-2zM14 20h1v1h-1zM16 20h2v1h-2zM23 20h2v1h-2zM0 21h1v1h-1zM2 21h3v1h-3zM6 21h1v1h-1zM8 21h2v1h-2zM13 21h1v1h-1zM15 21h1v1h-1zM19 21h3v1h-3zM24 21h1v1h-1zM0 22h1v1h-1zM2 22h3v1h-3zM6 22h1v1h-1zM10 22h2v1h-2zM17 22h1v1h-1zM19 22h3v1h-3zM24 22h1v1h-1zM0 23h1v1h-1zM6 23h1v1h-1zM9 23h1v1h-1zM12 23h3v1h-3zM17 23h1v1h-1zM21 23h2v1h-2zM0 24h7v1h-7zM8 24h2v1h-2zM13 24h1v1h-1zM17 24h4v1h-4zM23 24h2v1h-2z" fill="#f5efe4"/></g><rect x="38.6" y="38.6" width="22.8" height="22.8" fill="#a8482a"/><svg aria-hidden="true" x="40.5" y="40.5" width="19" height="19" viewBox="0 0 40 40" style="color:#f5efe4"><use href="#seal-shape"/></svg></svg></div></div>
+          <div class="c4" style="display:grid;gap:0.6rem">
+            <p>Mã QR đặt trong khung triện vuông, <b>ấn bình ở giữa</b> (mức sửa lỗi H), mã 8 ký tự bằng JetBrains Mono dưới khung.</p>
+            <p class="small muted">Đây là tem dán đáy sản phẩm: cầu nối thương hiệu từ ngoài đời thật sang trang truy xuất. Mô hình QR trong hình chỉ minh họa, không quét được.</p>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><svg class="wave" aria-hidden="true" focusable="false"><line x1="0" y1="1" x2="100%" y2="1" stroke="currentColor" stroke-width="0.8" opacity="0.5"/><rect y="2" width="100%" height="14" fill="url(#wave-pat)"/></svg></div>
+
+<!-- ── 03 Màu ─────────────────────────────────────────────────────── -->
+<section class="sec" id="mau">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">03 — Màu sắc</p>
+      <h2>Giấy dó ban ngày, Lò đêm ban tối</h2>
+      <p class="muted">Mỗi ô chia chéo: nửa trái là chế độ sáng, nửa phải là chế độ tối. Tỉ lệ tương phản tính trên nền giấy của chính chế độ đó.</p>
+    </div>
+    <div class="card pin" style="gap:1.75rem">
+      <div class="sw-grid">
+        <article class="sw" style="--l:var(--l-paper);--d:var(--d-paper)">
+          <div class="chipbig" role="img" aria-label="Giấy dó, sáng và tối"></div>
+          <h4>Giấy dó</h4><code>--color-paper</code>
+          <dl><div><dt>Sáng</dt><dd>#F5EFE4</dd></div><div><dt>Tối</dt><dd>#14110F · than lò</dd></div></dl>
+          <p>Nền chính. Không dùng trắng tinh.</p>
+        </article>
+        <article class="sw" style="--l:var(--l-surface);--d:var(--d-surface)">
+          <div class="chipbig" role="img" aria-label="Mặt thẻ, sáng và tối"></div>
+          <h4>Mặt thẻ</h4><code>--color-surface</code>
+          <dl><div><dt>Sáng</dt><dd>#FBF8F2</dd></div><div><dt>Tối</dt><dd>#1F1A16</dd></div></dl>
+          <p>Thẻ, panel. Giá trị sáng lấy từ theme.css.</p>
+        </article>
+        <article class="sw" style="--l:var(--l-ink);--d:var(--d-ink)">
+          <div class="chipbig" role="img" aria-label="Mực tàu, sáng và tối"></div>
+          <h4>Mực tàu</h4><code>--color-ink</code>
+          <dl><div><dt>Sáng</dt><dd>#1C1814 · 15.4:1</dd></div><div><dt>Tối</dt><dd>#F1E9DC · 15.6:1</dd></div></dl>
+          <p>Chữ chính.</p>
+        </article>
+        <article class="sw" style="--l:var(--l-ash);--d:var(--d-ash)">
+          <div class="chipbig" role="img" aria-label="Tro lò, sáng và tối"></div>
+          <h4>Tro lò</h4><code>--color-ash</code>
+          <dl><div><dt>Sáng</dt><dd>#6B635A · 5.2:1</dd></div><div><dt>Tối</dt><dd>#A89C8E · 7.0:1</dd></div></dl>
+          <p>Chữ phụ, chú thích.</p>
+        </article>
+        <article class="sw" style="--l:var(--l-clay);--d:var(--d-clay)">
+          <div class="chipbig" role="img" aria-label="Đất nung, sáng và tối"></div>
+          <h4>Đất nung</h4><code>--color-clay</code>
+          <dl><div><dt>Sáng</dt><dd>#A8482A · 5.1:1</dd></div><div><dt>Tối</dt><dd>#E2703A · 5.9:1 · than hồng</dd></div></dl>
+          <p>Màu chủ đạo: nút chính, liên kết, nhấn.</p>
+        </article>
+        <article class="sw" style="--l:var(--l-glaze);--d:var(--d-glaze)">
+          <div class="chipbig" role="img" aria-label="Men lam, sáng và tối"></div>
+          <h4>Men lam</h4><code>--color-glaze</code>
+          <dl><div><dt>Sáng</dt><dd>#1E3A6E · 9.7:1</dd></div><div><dt>Tối</dt><dd>#8FB0E6 · 8.5:1</dd></div></dl>
+          <p>Tiêu đề lớn, nền khối tương phản, hoa văn lam.</p>
+        </article>
+        <article class="sw" style="--l:var(--l-seal);--d:var(--d-seal)">
+          <div class="chipbig" role="img" aria-label="Son triện, sáng và tối"></div>
+          <h4>Son triện</h4><code>--color-seal</code>
+          <dl><div><dt>Sáng</dt><dd>#C2261C · 5.1:1</dd></div><div><dt>Tối</dt><dd>#F06A55 · 6.2:1</dd></div></dl>
+          <p><b style="color:var(--color-ink)">Chỉ</b> cho ấn, xác thực, khoảnh khắc quan trọng. Hiếm nên có sức nặng.</p>
+        </article>
+        <article class="sw" style="--l:var(--l-celadon);--d:var(--d-celadon)">
+          <div class="chipbig" role="img" aria-label="Men ngọc, sáng và tối"></div>
+          <h4>Men ngọc</h4><code>--color-celadon</code>
+          <dl><div><dt>Sáng</dt><dd>#5E8A7D · 3.4:1</dd></div><div><dt>Tối</dt><dd>#9CC7B8 · 10.1:1</dd></div></dl>
+          <p>Trạng thái “đang mở cửa”, thành công. Chế độ sáng: <b style="color:var(--color-ink)">chỉ</b> chữ lớn hoặc biểu tượng.</p>
+        </article>
+        <article class="sw" style="--l:var(--l-lacquer);--d:var(--d-lacquer)">
+          <div class="chipbig" role="img" aria-label="Vàng sơn mài, sáng và tối"></div>
+          <h4>Vàng sơn mài</h4><code>--color-lacquer</code>
+          <dl><div><dt>Sáng</dt><dd>#8C6A24 · 4.4:1</dd></div><div><dt>Tối</dt><dd>#C9A24D · 7.8:1</dd></div></dl>
+          <p>Chứng nhận, huy hiệu nghệ nhân. Chữ từ 18px trở lên.</p>
+        </article>
+      </div>
+
+      <div style="display:grid;gap:0.75rem">
+        <p class="eyebrow">Tỉ lệ sử dụng</p>
+        <div class="ratio" role="img" aria-label="Thanh tỉ lệ: 60% giấy, 25% mực và lam, 10% đất nung, tối đa 5% son, vàng, ngọc">
+          <div class="r-paper">60</div><div class="r-ink">25</div><div class="r-clay">10</div><div class="r-acc"></div>
+        </div>
+        <ul class="legend">
+          <li><b>60%</b> giấy</li><li><b>25%</b> mực / lam</li><li><b>10%</b> đất nung</li><li><b>≤ 5%</b> son · vàng · ngọc</li>
+        </ul>
+      </div>
+
+      <div style="display:grid;gap:0.75rem">
+        <p class="eyebrow">Tông ảnh tự động: giao diện “ăn” theo sản phẩm</p>
+        <p class="small muted prose">Backend sinh <code>dominantColor</code> cho từng ảnh; khung thẻ và nền hero nhuốm nhẹ bằng <code>color-mix(in oklch, var(--paper) 92%, dominant)</code>.</p>
+        <div class="tone">
+          <div style="--dom:#a8482a"><i></i>ấm đất nung</div>
+          <div style="--dom:#1e3a6e"><i></i>men lam</div>
+          <div style="--dom:#5e8a7d"><i></i>men ngọc</div>
+          <div style="--dom:#8c6a24"><i></i>sơn mài</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><svg class="wave" aria-hidden="true" focusable="false"><line x1="0" y1="1" x2="100%" y2="1" stroke="currentColor" stroke-width="0.8" opacity="0.5"/><rect y="2" width="100%" height="14" fill="url(#wave-pat)"/></svg></div>
+
+<!-- ── 04 Chữ ─────────────────────────────────────────────────────── -->
+<section class="sec" id="chu">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">04 — Chữ</p>
+      <h2>Serif mềm có chất tay, sans sinh ra cho dấu tiếng Việt</h2>
+      <p class="muted">Cả ba có subset vietnamese trên Google Fonts; sản phẩm thật tự host qua <code>next/font</code>, không gọi CDN lúc chạy.</p>
+    </div>
+    <div class="board">
+      <article class="card font-card fr c4 pin">
+        <p class="eyebrow">Hiển thị</p>
+        <p class="aa" aria-hidden="true">Aa</p>
+        <h3>Fraunces</h3>
+        <p class="small muted">Variable: opsz, wght, SOFT, WONK. H1–H3, số liệu lớn, trích dẫn nghệ nhân.</p>
+      </article>
+      <article class="card font-card be c4 drop">
+        <p class="eyebrow">Giao diện &amp; nội dung</p>
+        <p class="aa" aria-hidden="true">Aa</p>
+        <h3 style="font-family:var(--font-sans);font-weight:600">Be Vietnam Pro</h3>
+        <p class="small muted">Thiết kế riêng cho dấu tiếng Việt, rõ ở cỡ nhỏ. Thân bài, form, bảng, nút.</p>
+      </article>
+      <article class="card font-card jb c4 drop2">
+        <p class="eyebrow">Mã &amp; số kỹ thuật</p>
+        <p class="aa" aria-hidden="true">0O1l</p>
+        <h3 style="font-family:var(--font-mono);font-weight:500;font-size:1.5rem">JetBrains Mono</h3>
+        <p class="small muted">Phân biệt 0/O, 1/l. Mã truy xuất, mã RFQ, hash.</p>
+      </article>
+
+      <article class="card c12">
+        <p class="eyebrow">Thang chữ fluid (clamp, viewport 320–1440px) — thử kéo rộng/hẹp cửa sổ</p>
+        <div class="scale">
+          <div><div class="spec"><b>display</b>3.5–7rem · 1.02 · −0.02em</div><p class="s-display">Tinh hoa làng nghề</p></div>
+          <div><div class="spec"><b>h1</b>2.5–4rem · 1.08 · −0.02em</div><p class="s-h1">Tinh hoa làng nghề, muôn phương lan tỏa</p></div>
+          <div><div class="spec"><b>h2</b>2–2.75rem · 1.15 · −0.02em</div><p class="s-h2">Mỗi món gốm mang một ấn truy xuất</p></div>
+          <div><div class="spec"><b>h3</b>1.5–1.875rem · 1.25 · −0.01em</div><p class="s-h3">Ai làm, làm thế nào, làm khi nào</p></div>
+          <div><div class="spec"><b>body</b>1–1.0625rem · 1.65</div><p class="s-body">Dưới đáy mỗi món gốm Bát Tràng thường có dấu triện của lò. vCraft số hóa con dấu đó để bạn biết món đồ trong tay được nặn, vẽ và nung bởi ai, vào lúc nào.</p></div>
+          <div><div class="spec"><b>small</b>0.875rem · 1.5</div><p class="s-small">Quét QR dưới đáy cốc để xem hành trình của món gốm.</p></div>
+          <div><div class="spec"><b>mono</b>JetBrains Mono · tracking rộng</div><p class="s-mono">BT7K2QXM</p></div>
+        </div>
+      </article>
+
+      <article class="card c7 tl">
+        <p class="eyebrow">Fraunces: trục SOFT &amp; WONK</p>
+        <div class="varrow">
+          <div><span class="w" style="font-variation-settings:'SOFT' 0,'WONK' 0">Bát Tràng</span><code class="muted">SOFT 0 · WONK 0</code></div>
+          <div><span class="w" style="font-variation-settings:'SOFT' 100,'WONK' 0">Bát Tràng</span><code class="muted">SOFT 100 · WONK 0 · tiêu đề</code></div>
+          <div><span class="w" style="font-variation-settings:'SOFT' 100,'WONK' 1">Bát Tràng</span><code class="muted">SOFT 100 · WONK 1 · wordmark, hero</code></div>
+        </div>
+        <p class="small muted">Tiêu đề lớn: <code>letter-spacing: -0.02em</code>, SOFT 100. Khoảnh khắc “Chữ nặn” cho trục này biến thiên từ mềm sang cứng như đất khô.</p>
+      </article>
+      <article class="card c5 drop tr">
+        <p class="eyebrow">Đủ dấu tiếng Việt</p>
+        <p class="glyphs" style="font-family:var(--font-display);font-variation-settings:'SOFT' 100,'WONK' 0">Ă Â Đ Ê Ô Ơ Ư<br>ắ ằ ẳ ẵ ặ ầ ẩ ẫ ậ ế ề ể ễ ệ<br>ố ồ ổ ỗ ộ ớ ờ ở ỡ ợ ứ ừ ử ữ ự ỳ ỷ ỹ ỵ</p>
+        <p class="glyphs small muted" style="font-family:var(--font-sans)">Gốm men rạn Bát Tràng nung ở khoảng 1.300°C.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><svg class="wave" aria-hidden="true" focusable="false"><line x1="0" y1="1" x2="100%" y2="1" stroke="currentColor" stroke-width="0.8" opacity="0.5"/><rect y="2" width="100%" height="14" fill="url(#wave-pat)"/></svg></div>
+
+<!-- ── 05 Chất liệu & hoa văn ─────────────────────────────────────── -->
+<section class="sec" id="chat-lieu">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">05 — Chất liệu &amp; hoa văn</p>
+      <h2>Giấy có hạt, men có vết rạn, mực có nét bút</h2>
+      <p class="muted">Lưới biên tập 12 cột, bất đối xứng kiểu tạp chí; ảnh là nhân vật chính. Bento cho hồ sơ hộ.</p>
+    </div>
+    <div class="board">
+      <article class="card c3 pin">
+        <div class="tex grainA" role="img" aria-label="Hạt giấy thật, độ mờ 4%"></div>
+        <div class="tex grainA x5" role="img" aria-label="Hạt giấy phóng đại 5 lần"></div>
+        <h4>Hạt giấy</h4>
+        <p class="small muted">SVG noise (<code>feTurbulence</code>), opacity 4% phủ toàn trang. Ô dưới phóng đại 5 lần (20%) để thấy hạt.</p>
+      </article>
+      <article class="card c3 drop">
+        <div class="tex grainB" role="img" aria-label="Bụi than thật, độ mờ 4%"></div>
+        <div class="tex grainB x5" role="img" aria-label="Bụi than phóng đại 5 lần"></div>
+        <h4>Bụi than</h4>
+        <p class="small muted">Chế độ Lò đêm: cùng bộ lọc nhưng hạt sáng nhạt.</p>
+      </article>
+      <article class="card c6 tr">
+        <div class="mini" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+          <div class="tex crk" role="img" aria-label="Men rạn trên nền giấy"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#crk-ink)" opacity="0.35"/></svg></div>
+          <div class="tex crk glz" role="img" aria-label="Men rạn trên nền men lam"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#crk-light)" opacity="0.55"/></svg></div>
+        </div>
+        <h4>Men rạn (crackle)</h4>
+        <p class="small muted">Vết nứt cắt nhau không đều như men rạn Bát Tràng. Làm nền khối xác thực, nền QR, trạng thái rỗng; chuyển đỏ khi tổng chia đơn sai.</p>
+      </article>
+
+      <article class="card c5 tl">
+        <div class="tex waveA" role="img" aria-label="Dải sóng hoa lam"><svg width="100%" height="16" aria-hidden="true" focusable="false"><line x1="0" y1="1" x2="100%" y2="1" stroke="currentColor" stroke-width="0.8" opacity="0.5"/><rect y="2" width="100%" height="14" fill="url(#wave-pat)"/></svg></div>
+        <h4>Hoa văn lam</h4>
+        <p class="small muted">Dải sóng nước kiểu gốm hoa lam, màu <code>--glaze</code>, làm vạch ngăn section (như các vạch trên trang này).</p>
+        <div class="tex" style="height:90px;display:grid;place-items:center;background:var(--color-paper)" role="img" aria-label="Nét bút lông">
+          <svg class="brush-demo" viewBox="0 0 300 40" aria-hidden="true" focusable="false" style="padding:0 1rem"><path d="M6 24 C60 8 110 34 170 18 S260 22 294 12" fill="none" stroke="var(--color-clay)" stroke-width="8" stroke-linecap="round"/><path d="M30 31 C100 25 190 34 270 24" fill="none" stroke="var(--color-clay)" stroke-width="2.5" stroke-linecap="round" opacity=".55"/></svg>
+        </div>
+        <h4>Nét bút lông</h4>
+        <p class="small muted">Gạch chân tiêu đề, khung highlight; SVG path vẽ dần (DrawSVG), như gạch chân ở đầu trang.</p>
+      </article>
+
+      <article class="card c4 drop">
+        <p class="eyebrow">Bo góc</p>
+        <div class="radii">
+          <span style="border-radius:4px">4px · input</span>
+          <span style="border-radius:12px">12px · thẻ</span>
+          <span style="border-radius:999px">999px · chip</span>
+        </div>
+        <p class="eyebrow" style="margin-top:0.5rem">Bóng ấm, mềm</p>
+        <div class="shadow-demo"><span>0 1px 0 + 0 12px 32px −12px<br>nâu ấm; tối: đổ bóng sâu</span></div>
+      </article>
+
+      <article class="card c3 drop2 tr">
+        <p class="eyebrow">Khoảng cách</p>
+        <p class="small muted">Bước cơ sở 4px. Hai nhịp fluid theo viewport 320–1440px.</p>
+        <div class="ruler">
+          <div><i style="width:16px"></i>gutter 16</div>
+          <div><i style="width:32px"></i>gutter 32</div>
+          <div><i style="width:48px"></i>gutter 48</div>
+        </div>
+        <div class="ruler sec">
+          <div><i style="width:64px"></i>section 64</div>
+          <div><i style="width:112px"></i>section 112</div>
+          <div><i style="width:160px;max-width:100%"></i>section 160</div>
+        </div>
+        <p class="small muted">Khung lưới tối đa 1440px; cột chữ đọc dài tối đa 672px.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><svg class="wave" aria-hidden="true" focusable="false"><line x1="0" y1="1" x2="100%" y2="1" stroke="currentColor" stroke-width="0.8" opacity="0.5"/><rect y="2" width="100%" height="14" fill="url(#wave-pat)"/></svg></div>
+
+<!-- ── 06 Chuyển động ─────────────────────────────────────────────── -->
+<section class="sec" id="chuyen-dong">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">06 — Ngôn ngữ chuyển động</p>
+      <h2>Nặn, Nung, Tỏa</h2>
+      <p class="muted">Chuyển động hữu cơ, có quán tính như tay nặn đất; không bao giờ tuyến tính. Mỗi hoạt ảnh giúp hiểu hoặc tạo cảm xúc, không trang trí vô cớ.</p>
+    </div>
+    <div class="board">
+      <article class="card c7 pin">
+        <p class="eyebrow">Đường cong easing — bấm “Chạy” để so sánh</p>
+        <div>
+          <div class="ease-row" style="--ease:var(--ease-clay)">
+            <svg class="curve" viewBox="0 0 100 100" role="img" aria-label="Đường cong ease.clay"><path d="M10 90 C27.6 40 38.8 40 90 40" fill="none" stroke="var(--color-clay)" stroke-width="3"/><path d="M10 90 H90 M10 90 V10" stroke="var(--line-strong)" fill="none"/><path d="M10 40 H90" stroke="var(--line)" stroke-dasharray="3 3" fill="none"/></svg>
+            <div class="meta"><div><b>ease.clay</b> <span class="muted small">mặc định: vào khung, mở rộng</span></div><div class="track"><span class="puck"></span></div><code>cubic-bezier(0.22, 1, 0.36, 1)</code></div>
+            <button class="btn" type="button" data-run>Chạy</button>
+          </div>
+          <div class="ease-row" style="--ease:var(--ease-kiln)">
+            <svg class="curve" viewBox="0 0 100 100" role="img" aria-label="Đường cong ease.kiln"><path d="M10 90 C62 90 38 40 90 40" fill="none" stroke="var(--color-glaze)" stroke-width="3"/><path d="M10 90 H90 M10 90 V10" stroke="var(--line-strong)" fill="none"/><path d="M10 40 H90" stroke="var(--line)" stroke-dasharray="3 3" fill="none"/></svg>
+            <div class="meta"><div><b>ease.kiln</b> <span class="muted small">chuyển cảnh, đổi trạng thái</span></div><div class="track"><span class="puck" style="background:var(--color-glaze)"></span></div><code>cubic-bezier(0.65, 0, 0.35, 1)</code></div>
+            <button class="btn" type="button" data-run>Chạy</button>
+          </div>
+          <div class="ease-row" style="--ease:var(--ease-press)">
+            <svg class="curve" viewBox="0 0 100 100" role="img" aria-label="Đường cong ease.press, vọt qua đích rồi nảy lại"><path d="M10 90 C37.2 12 61.2 40 90 40" fill="none" stroke="var(--color-seal)" stroke-width="3"/><path d="M10 90 H90 M10 90 V10" stroke="var(--line-strong)" fill="none"/><path d="M10 40 H90" stroke="var(--line)" stroke-dasharray="3 3" fill="none"/></svg>
+            <div class="meta"><div><b>ease.press</b> <span class="muted small">ấn triện, nút bấm (nảy nhẹ)</span></div><div class="track"><span class="puck" style="background:var(--color-seal)"></span></div><code>cubic-bezier(0.34, 1.56, 0.64, 1)</code></div>
+            <button class="btn" type="button" data-run>Chạy</button>
+          </div>
+        </div>
+        <p class="small muted"><code>spring.clay</code> <code>{ stiffness: 260, damping: 26, mass: 0.9 }</code> cho kéo-thả, layout. <code>stagger.list</code> 40ms, tối đa 12 phần tử.</p>
+      </article>
+
+      <article class="card c5 drop tr">
+        <p class="eyebrow">Thời lượng — cùng ease.clay</p>
+        <div class="durs" id="durs">
+          <div class="row"><span>instant 90ms</span><div class="track"><span class="puck" style="--dur:90ms"></span></div></div>
+          <div class="row"><span>quick 160ms</span><div class="track"><span class="puck" style="--dur:160ms"></span></div></div>
+          <div class="row"><span>base 280ms</span><div class="track"><span class="puck" style="--dur:280ms"></span></div></div>
+          <div class="row"><span>slow 520ms</span><div class="track"><span class="puck" style="--dur:520ms"></span></div></div>
+          <div class="row"><span>story 900ms</span><div class="track"><span class="puck" style="--dur:900ms"></span></div></div>
+        </div>
+        <button class="btn alt" type="button" id="run-durs">Chạy cả năm</button>
+        <hr style="border:0;border-top:1px solid var(--line);width:100%;margin:0.5rem 0">
+        <p class="eyebrow">Khoảnh khắc #2 — Đóng ấn</p>
+        <div class="stamp-demo">
+          <div class="stamp-pad" id="stamp-pad"><span class="ink"></span><svg viewBox="0 0 40 40" role="img" aria-label="Ấn son"><use href="#seal-shape"/></svg></div>
+          <button class="btn" type="button" id="stamp-btn">Đóng ấn</button>
+          <p class="small muted" style="text-align:center">Scale 1.4 → 1 với ease.press, mực loang, khung rung nhẹ.</p>
+        </div>
+      </article>
+
+      <article class="card c12 flat">
+        <div class="principles">
+          <div><h4>Nặn</h4><p class="small muted">Hữu cơ, có quán tính như tay nặn đất.</p></div>
+          <div><h4>Nung</h4><p class="small muted">Chuyển trạng thái có “nhiệt”: màu ấm dần, ánh sáng lan.</p></div>
+          <div><h4>Tỏa</h4><p class="small muted">Nội dung lan từ tâm điểm như mực thấm giấy.</p></div>
+          <div><h4>Có chủ đích</h4><p class="small muted">Giúp hiểu thứ tự, quan hệ, trạng thái, hoặc tạo cảm xúc.</p></div>
+        </div>
+      </article>
+
+      <article class="card c12">
+        <p class="eyebrow">Mười khoảnh khắc đặc trưng</p>
+        <ol class="moments">
+          <li><div><b>Bình gốm thành hình</b>Hero 3D, cuộn trang vuốt đất thành bình, qua năm công đoạn.<span class="where"> · Trang chủ</span></div></li>
+          <li><div><b>Đóng ấn</b>Ấn son giáng xuống, mực loang, khung rung.<span class="where"> · Duyệt, chốt giá, xác thực</span></div></li>
+          <li><div><b>Dòng thời gian lửa</b>Đường nối “cháy” dần từ màu đất sang màu lửa theo cuộn.<span class="where"> · Truy xuất, sản phẩm</span></div></li>
+          <li><div><b>Mực thấm ảnh</b>Ảnh lộ ra qua mặt nạ vệt bút lông.<span class="where"> · Hồ sơ hộ</span></div></li>
+          <li><div><b>Chữ nặn</b>Tiêu đề trồi lên với SOFT/wght biến thiên.<span class="where"> · Hero các trang</span></div></li>
+          <li><div><b>Ảnh bay về chỗ</b>Ảnh thẻ bay thành ảnh lớn trang chi tiết.<span class="where"> · Danh mục → chi tiết</span></div></li>
+          <li><div><b>Ghim thở</b>Ghim xưởng đang mở có vòng sóng men ngọc lan ra chậm.<span class="where"> · Bản đồ</span></div></li>
+          <li><div><b>Chào giá rơi vào bàn</b>Bid mới trượt vào, ô tốt nhất sáng vàng sơn mài.<span class="where"> · RFQ (Buyer)</span></div></li>
+          <li><div><b>Chia đơn như chia đất</b>Kéo tay cầm chia khối đất; tổng sai thì khối rạn đỏ.<span class="where"> · Admin điều phối</span></div></li>
+          <li><div><b>Lò đêm</b>Sáng ⇄ tối lan tròn từ nút như mở cửa lò. Thử nút “Lò đêm” ở thanh trên.<span class="where"> · Toàn site</span></div></li>
+        </ol>
+        <p class="small muted">Giảm chuyển động (<code>prefers-reduced-motion</code>): tắt Lenis, parallax, 3D tự xoay, chữ nặn; thay bằng mờ dần 150ms. Studio &amp; Admin dùng chuyển động tiết chế (≤ 280ms), giữ #2, #8, #9. Trang moodboard này cũng tắt mọi hoạt ảnh khi bật chế độ đó.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><svg class="wave" aria-hidden="true" focusable="false"><line x1="0" y1="1" x2="100%" y2="1" stroke="currentColor" stroke-width="0.8" opacity="0.5"/><rect y="2" width="100%" height="14" fill="url(#wave-pat)"/></svg></div>
+
+<!-- ── 07 Hình ảnh ────────────────────────────────────────────────── -->
+<section class="sec" id="hinh-anh">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">07 — Định hướng hình ảnh</p>
+      <h2>Ánh sáng tự nhiên, ấm; bàn tay đang làm là nhân vật chính</h2>
+      <p class="muted">Các ô dưới đây chỉ là khối màu giữ chỗ, mô tả khung hình cần tìm. Không có ảnh thật nào được nhúng trong file này.</p>
+    </div>
+    <div class="card pin" style="gap:1.75rem">
+      <div class="shots">
+        <figure class="shot"><div class="frame ph-hands" style="--ar:4/5" role="img" aria-label="Khối màu đất nung giữ chỗ cho ảnh bàn tay vuốt đất"><span class="tag">4:5 · sản phẩm</span></div><h4>Bàn tay vuốt đất</h4><p>Cận cảnh hai tay ướt đất trên bàn xoay, ánh cửa sổ nghiêng; vân đất và giọt nước là chi tiết chính.</p></figure>
+        <figure class="shot"><div class="frame ph-kiln" style="--ar:3/2" role="img" aria-label="Khối màu cam lửa giữ chỗ cho ảnh cửa lò"><span class="tag">3:2 · xưởng</span></div><h4>Cửa lò</h4><p>Cửa lò hé lửa trong bóng tối, vệt than hồng; ánh cam duy nhất trong khung.</p></figure>
+        <figure class="shot"><div class="frame ph-yard" style="--ar:3/2" role="img" aria-label="Khối màu đất sáng giữ chỗ cho ảnh sân phơi"><span class="tag">3:2 · xưởng</span></div><h4>Sân phơi</h4><p>Hàng bình mộc xếp dài dưới nắng sớm, bóng đổ dài; tông đất nhạt, nhịp lặp.</p></figure>
+        <figure class="shot"><div class="frame ph-portrait" style="--ar:3/4" role="img" aria-label="Khối màu nâu ấm giữ chỗ cho ảnh chân dung nghệ nhân"><span class="tag">3:4 · chân dung</span></div><h4>Chân dung nghệ nhân</h4><p>Nhìn thẳng, đứng giữa xưởng của mình, giữ tông da; hậu cảnh mờ nhẹ, không studio lạnh.</p></figure>
+        <figure class="shot"><div class="frame ph-glaze" style="--ar:1/1" role="img" aria-label="Khối màu men lam giữ chỗ cho ảnh giọt men"><span class="tag">1:1 · thumbnail</span></div><h4>Giọt men</h4><p>Macro một giọt men lam chảy trên thân bình; điểm sáng bóng rõ.</p></figure>
+      </div>
+
+      <div class="board" style="align-items:start">
+        <div class="c5" style="display:grid;gap:0.6rem">
+          <p class="eyebrow">Tiêu chuẩn mỗi hộ</p>
+          <ul class="plain small">
+            <li>Tối thiểu <b>1</b> chân dung nghệ nhân, <b>3</b> ảnh xưởng, <b>1</b> ảnh bàn tay làm việc.</li>
+            <li>Chỉnh màu thống nhất bằng preset nhẹ: <b>ấm +5, bão hòa −8</b>, giữ tông da.</li>
+            <li>Ưu tiên ảnh chụp tại Bát Tràng; ánh sáng tự nhiên, ấm.</li>
+          </ul>
+        </div>
+        <div class="c7" style="display:grid;gap:0.6rem">
+          <p class="eyebrow">Nguồn ảnh có giấy phép — để nhóm tìm</p>
+          <ul class="srcs">
+            <li><a href="https://commons.wikimedia.org/wiki/Category:B%C3%A1t_Tr%C3%A0ng" target="_blank" rel="noopener noreferrer">commons.wikimedia.org/wiki/Category:Bát_Tràng</a><span class="small muted">Wikimedia Commons: thư mục Bát Tràng. Mỗi tệp có giấy phép riêng ghi trên trang tệp.</span></li>
+            <li><a href="https://unsplash.com/s/photos/bat-trang-pottery" target="_blank" rel="noopener noreferrer">unsplash.com/s/photos/bat-trang-pottery</a><span class="small muted">Unsplash: tìm “bat trang pottery”. Dùng theo Unsplash License.</span></li>
+          </ul>
+          <p class="small muted"><b style="color:var(--color-ink)">Ghi công:</b> với mỗi ảnh, ghi lại tác giả, tên tệp, loại giấy phép (kèm liên kết) và nguồn. CC BY phải ghi công; CC BY-SA phải ghi công và giữ giấy phép tương tự cho bản phái sinh; CC0 không bắt buộc nhưng nên ghi. Luôn đọc điều khoản trên trang tệp trước khi dùng, và lưu bản ghi công để đưa vào chú thích ảnh hoặc trang Giới thiệu.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><svg class="wave" aria-hidden="true" focusable="false"><line x1="0" y1="1" x2="100%" y2="1" stroke="currentColor" stroke-width="0.8" opacity="0.5"/><rect y="2" width="100%" height="14" fill="url(#wave-pat)"/></svg></div>
+
+<!-- ── 08 Giọng văn & mascot ──────────────────────────────────────── -->
+<section class="sec" id="giong-van">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">08 — Giọng văn &amp; mascot</p>
+      <h2>Ấm, trân trọng, ngắn gọn; xưng “bạn”</h2>
+      <p class="muted">Ẩn dụ nghề dùng có chừng mực ở khoảnh khắc cảm xúc. Thông tin nghiệp vụ (giá, hạn, số lượng) luôn nói thẳng.</p>
+    </div>
+    <div class="board">
+      <article class="card c8 pin">
+        <div class="voice">
+          <div><p class="ctx">Chung</p><div class="do"><span>Ấm, trân trọng, ngắn gọn, xưng “bạn”.</span></div><div class="dont"><span>Ngôn ngữ bán hàng giật gân.</span></div></div>
+          <div><p class="ctx">Trạng thái rỗng</p><div class="do"><span>Xưởng chưa có sản phẩm nào ra lò. Hãy đăng món đầu tiên.</span></div><div class="dont"><span>Không có dữ liệu</span></div></div>
+          <div><p class="ctx">Đang tải</p><div class="do"><span>Đang nhóm lò… (chỉ khi lâu hơn 1 giây)</span></div><div class="dont"><span>Spinner trơ trọi</span></div></div>
+          <div><p class="ctx">Thành công</p><div class="do"><span>Đã đóng ấn. Hồ sơ hộ Minh Hải chính thức có mặt trong làng.</span></div><div class="dont"><span>Success!</span></div></div>
+          <div><p class="ctx">Lỗi nhập</p><div class="do"><span>Hạn giao phải sau hạn chào giá ít nhất 1 ngày.</span></div><div class="dont"><span>Invalid date</span></div></div>
+          <div><p class="ctx">Lỗi hệ thống</p><div class="do"><span>Lò hơi trục trặc, bạn thử lại sau ít phút nhé. (kèm mã lỗi)</span></div><div class="dont"><span>Stack trace</span></div></div>
+        </div>
+      </article>
+
+      <article class="card c4 drop tr tape">
+        <p class="eyebrow">Mascot — Cáo, trợ lý hỏi đáp</p>
+        <div class="fox-grid" style="grid-template-columns:1fr">
+          <svg class="fox" viewBox="0 0 230 240" role="img" aria-label="Phác thảo chú cáo con: lông đất nung, đuôi chóp kem, khăn men lam, ôm bình gốm nhỏ">
+            <g stroke="var(--color-ink)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">
+              <path d="M140 205 C192 222 232 176 204 116 C190 150 168 172 134 178 Z" fill="var(--l-clay)"/>
+              <path d="M204 116 C216 146 212 172 196 190 C190 176 188 164 192 152 C196 140 202 128 204 116 Z" fill="var(--l-paper)"/>
+              <ellipse cx="110" cy="188" rx="44" ry="40" fill="var(--l-clay)"/>
+              <ellipse cx="88" cy="226" rx="14" ry="7" fill="var(--l-clay)"/>
+              <ellipse cx="132" cy="226" rx="14" ry="7" fill="var(--l-clay)"/>
+              <path d="M62 66 L54 18 L96 46 Z" fill="var(--l-clay)"/>
+              <path d="M158 66 L166 18 L124 46 Z" fill="var(--l-clay)"/>
+              <path d="M64 54 L61 32 L80 46 Z" fill="var(--l-ink)" fill-opacity="0.85" stroke="none"/>
+              <path d="M156 54 L159 32 L140 46 Z" fill="var(--l-ink)" fill-opacity="0.85" stroke="none"/>
+              <ellipse cx="110" cy="96" rx="58" ry="46" fill="var(--l-clay)"/>
+              <path d="M54 104 C62 130 92 142 110 134 C128 142 158 130 166 104 C152 112 132 110 110 108 C88 110 68 112 54 104 Z" fill="var(--l-paper)"/>
+              <circle cx="86" cy="92" r="5.5" fill="var(--l-ink)" stroke="none"/>
+              <circle cx="134" cy="92" r="5.5" fill="var(--l-ink)" stroke="none"/>
+              <circle cx="87.8" cy="90" r="1.7" fill="var(--l-paper)" stroke="none"/>
+              <circle cx="135.8" cy="90" r="1.7" fill="var(--l-paper)" stroke="none"/>
+              <ellipse cx="110" cy="110" rx="5.5" ry="4" fill="var(--l-ink)" stroke="none"/>
+              <path d="M101 119 Q110 126 119 119" fill="none" stroke-width="2"/>
+              <path d="M64 134 C84 150 136 150 156 134 L160 148 C138 166 82 166 60 148 Z" fill="var(--l-glaze)"/>
+              <path d="M72 152 q6 -5 12 0 t12 0 t12 0 t12 0 t12 0 t12 0" fill="none" stroke="var(--l-paper)" stroke-width="1.8"/>
+              <path d="M132 158 L150 196 L130 198 L120 162 Z" fill="var(--l-glaze)"/>
+              <g transform="translate(80 164) scale(1.5)">
+                <path d="M15 7 H25 Q24.6 8.2 23.4 8.8 C23 10.8 23.2 12.8 24.5 14.3 C29.5 16.8 31.5 20.2 31.2 23.6 C30.8 27.4 28 30 26 31 L25 32.6 H15 L14 31 C12 30 9.2 27.4 8.8 23.6 C8.5 20.2 10.5 16.8 15.5 14.3 C16.8 12.8 17 10.8 16.6 8.8 Q15.4 8.2 15 7 Z" fill="var(--l-celadon)" stroke-width="1.5"/>
+                <path d="M11.2 22.4 q2.2 -2 4.4 0 t4.4 0 t4.4 0 t4.4 0" fill="none" stroke="var(--l-glaze)" stroke-width="1.3"/>
+              </g>
+              <circle cx="82" cy="196" r="9" fill="var(--l-clay)"/>
+              <circle cx="138" cy="196" r="9" fill="var(--l-clay)"/>
+            </g>
+          </svg>
+          <div style="display:grid;gap:0.6rem">
+            <p class="bubble">Quét QR dưới đáy cốc là xem được ai làm ra nó!</p>
+            <p class="small muted">Cáo con ở làng gốm: lông <b style="color:var(--color-ink)">đất nung</b>, đuôi chóp kem như men rạn, khăn <b style="color:var(--color-ink)">men lam</b> viền sóng hoa lam, hai tay ôm bình dáng tỏi (gợi logo ấn bình). Nét viền mực mảnh như vẽ tay, không bóng 3D.</p>
+            <p class="small muted">Tò mò, nhanh nhảu, tự hào về làng; xưng “tớ”, gọi bạn là “bạn”. Biết lúc nào đùa, lúc nào nói thẳng. Nút nổi 56/64px. Đây là phác thảo ý tưởng, không phải asset cuối.</p>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <svg viewBox="0 0 164 40" width="123" height="30" role="img" aria-label="vCraft"><use href="#logo-full"/></svg>
+    <p class="small"><b>Nguồn chuẩn: <code>docs/BRAND.md</code></b> · phiên bản 27/10/2026. Màu và token chép từ <code>packages/ui/src/tokens/theme.css</code>; hình học ấn bình từ <code>packages/ui/src/ornaments/seal-geometry.ts</code>. Khi có khác biệt, BRAND.md thắng.</p>
+    <p class="small muted">Moodboard là bản trình bày để cả nhóm cùng nhìn một hướng; không thay thế đặc tả.</p>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* Nút ép sáng / tự động / Lò đêm (khoảnh khắc #10: lan tròn từ nút). */
+  const apply = (mode) => {
+    if (mode === 'auto') root.removeAttribute('data-theme');
+    else root.setAttribute('data-theme', mode);
+    for (const b of document.querySelectorAll('[data-theme-set]')) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-theme-set') === mode));
+    }
+  };
+  for (const btn of document.querySelectorAll('[data-theme-set]')) {
+    btn.addEventListener('click', () => {
+      const mode = btn.getAttribute('data-theme-set');
+      if (!document.startViewTransition || reduce.matches) {
+        apply(mode);
+        return;
+      }
+      const r = btn.getBoundingClientRect();
+      const x = r.left + r.width / 2;
+      const y = r.top + r.height / 2;
+      const end = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+      const vt = document.startViewTransition(() => apply(mode));
+      vt.ready
+        .then(() => {
+          root.animate(
+            { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${end}px at ${x}px ${y}px)`] },
+            {
+              duration: 520,
+              easing: 'cubic-bezier(0.65, 0, 0.35, 1)',
+              pseudoElement: '::view-transition-new(root)',
+            },
+          );
+        })
+        .catch(() => {});
+    });
+  }
+
+  /* Demo easing: bấm để chạy / chạy lại. */
+  for (const b of document.querySelectorAll('[data-run]')) {
+    b.addEventListener('click', () => b.closest('.ease-row').classList.toggle('run'));
+  }
+  const durs = document.getElementById('durs');
+  document.getElementById('run-durs').addEventListener('click', () => {
+    durs.classList.toggle('run');
+    for (const t of durs.querySelectorAll('.track')) t.classList.toggle('run');
+  });
+
+  /* Đóng ấn. */
+  const pad = document.getElementById('stamp-pad');
+  document.getElementById('stamp-btn').addEventListener('click', () => {
+    pad.classList.remove('stamping');
+    void pad.offsetWidth;
+    pad.classList.add('stamping');
+  });
+})();
+</script>
+</body>
+</html>

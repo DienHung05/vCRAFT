@@ -1,3 +1,344 @@
 {
-  "nav": {}
+  "meta": {
+    "title": "vCraft · Tinh hoa làng nghề, muôn phương lan tỏa",
+    "description": "Xem tận mắt xưởng gốm Bát Tràng, quét ấn dưới đáy món đồ để biết nó được làm ra thế nào, và đặt hàng trực tiếp từ người thợ."
+  },
+  "common": {
+    "skip": "Bỏ qua, tới nội dung chính",
+    "oneOfAKind": "Độc bản",
+    "verified": "Đã xác thực",
+    "unverified": "Chờ xác thực",
+    "openNow": "Đang mở cửa",
+    "closed": "Đang nghỉ",
+    "generation": "Đời thứ {n}",
+    "since": "Từ năm {year}"
+  },
+  "nav": {
+    "home": "Về trang chủ vCraft",
+    "label": "Điều hướng chính",
+    "menu": "Menu",
+    "language": "Chuyển sang tiếng Anh",
+    "switchTo": "English",
+    "products": "Sản phẩm",
+    "artisans": "Nghệ nhân",
+    "map": "Bản đồ",
+    "news": "Tin tức",
+    "quotes": "Yêu cầu báo giá"
+  },
+  "footer": {
+    "tagline": "Tinh hoa làng nghề, muôn phương lan tỏa.",
+    "explore": "Khám phá",
+    "business": "Đặt hàng số lượng",
+    "rights": "© {year} vCraft. Giữ mọi quyền.",
+    "demo": "Bản trình diễn: tên hộ, nghệ nhân và số liệu là dữ liệu mẫu."
+  },
+  "notFound": {
+    "title": "Trang này chưa ra lò",
+    "text": "Đường dẫn bạn mở không có trong làng. Có thể nó đã đổi chỗ, hoặc bị gõ nhầm một ký tự.",
+    "back": "Về trang chủ"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Bát Tràng · làng gốm bảy trăm năm",
+      "title": "Mỗi món gốm mang ấn của người làm ra nó.",
+      "lead": "vCraft đưa bạn vào xưởng của các hộ làng nghề. Xem họ làm, quét ấn dưới đáy món đồ để biết nó đã đi qua những công đoạn nào, rồi đặt hàng trực tiếp từ người thợ.",
+      "ctaExplore": "Khám phá sản phẩm",
+      "ctaTrace": "Xem hành trình một món gốm",
+      "vaseAlt": "Chiếc bình gốm men lam dáng tỏi",
+      "sealAlt": "Ấn truy xuất vCraft"
+    },
+    "day": {
+      "title": "Một ngày ở Bát Tràng",
+      "lead": "Từ nhào đất tới ra lò là sáu chặng mà món gốm nào cũng đi qua. Vuốt ngang để xem từng chặng."
+    },
+    "artisans": {
+      "title": "Những bàn tay giữ nghề",
+      "lead": "Mỗi hộ có một câu chuyện, một thứ men riêng và một cách vuốt đất không lẫn vào đâu được.",
+      "all": "Xem tất cả nghệ nhân",
+      "portraitAlt": "Chân dung {name}"
+    },
+    "map": {
+      "title": "Xưởng nào đang mở cửa?",
+      "lead": "Ghé xưởng để tận mắt xem bàn xoay và lò nung. Chấm xanh ngọc là xưởng đang đón khách.",
+      "open": "Mở cửa · {hours}",
+      "closed": "Đang nghỉ",
+      "cta": "Mở bản đồ",
+      "mapLabel": "Bản đồ thu nhỏ các xưởng gốm ở Bát Tràng"
+    },
+    "stats": {
+      "title": "Làng nghề qua những con số",
+      "households": "Hộ làng nghề",
+      "products": "Sản phẩm có ấn truy xuất",
+      "scans": "Lượt quét ấn",
+      "years": "Năm làng gốm giữ lửa"
+    },
+    "news": {
+      "title": "Tin từ làng",
+      "all": "Mọi tin tức"
+    }
+  },
+  "stages": {
+    "clay": { "name": "Nhào đất", "text": "Đất sét được lọc, ủ rồi nhào kỹ cho hết bọt khí." },
+    "throw": { "name": "Vuốt dáng", "text": "Đất lên bàn xoay, tay thợ kéo dần thành dáng bình." },
+    "dry": { "name": "Phơi mộc", "text": "Phơi bóng râm cho khô đều để không nứt khi vào lò." },
+    "paint": { "name": "Vẽ lam", "text": "Họa tiết được vẽ bằng bút lông với men lam." },
+    "glaze": { "name": "Tráng men", "text": "Men phủ mỏng hay dày quyết định độ bóng và sắc lam." },
+    "fire": {
+      "name": "Nung lò",
+      "text": "Lò lên hơn 1.200°C. Ra lò mới biết men lên màu thế nào."
+    },
+    "finish": {
+      "name": "Ra lò",
+      "text": "Mỗi món được kiểm từng chiếc và đóng ấn dưới đáy trước khi rời xưởng."
+    }
+  },
+  "artisan": {
+    "portraitAlt": "Chân dung {name}",
+    "breadcrumb": "Đường dẫn trang",
+    "allArtisans": "Tất cả nghệ nhân",
+    "ctaRfq": "Gửi yêu cầu báo giá",
+    "ctaVisit": "Ghé thăm xưởng",
+    "bentoLabel": "Thông tin về hộ",
+    "story": "Câu chuyện của hộ",
+    "lineage": "Truyền nghề",
+    "lineageText": "Đời thứ {n} giữ lửa, từ năm {year}.",
+    "certs": "Chứng nhận",
+    "mapLabel": "Vị trí xưởng trên bản đồ Bát Tràng",
+    "workshop": "Xưởng",
+    "hours": "Giờ mở cửa",
+    "capacity": "Năng lực",
+    "capacityValue": "{count, number} sản phẩm mỗi tháng",
+    "rating": "Uy tín",
+    "ratingValue": "{rating} sao · {orders, plural, other {# đơn đã giao}}",
+    "timeline": "Dòng thời gian của gia đình",
+    "timelineHint": "Kéo ngang để xem qua các đời.",
+    "gallery": "Trong xưởng",
+    "products": "Sản phẩm của hộ",
+    "productsEmpty": "Xưởng chưa có sản phẩm nào ra lò. Bạn quay lại sau nhé."
+  },
+  "product": {
+    "breadcrumb": "Đường dẫn trang",
+    "allProducts": "Tất cả sản phẩm",
+    "gallery": "Ảnh các công đoạn làm ra sản phẩm",
+    "by": "Do <link>{household}</link> làm",
+    "stock": "{count, plural, =1 {Chỉ còn 1 món} other {Còn # món}}",
+    "soldOut": "Đã hết hàng",
+    "ctaRfq": "Gửi yêu cầu báo giá",
+    "ctaWorkshop": "Xem xưởng của hộ",
+    "journey": "Hành trình của món gốm",
+    "journeySummary": "{count, plural, other {# mốc}} nhật ký, từ {from} đến {to}.",
+    "journeyCta": "Xem hành trình",
+    "material": "Chất liệu",
+    "dimensions": "Kích thước",
+    "weight": "Khối lượng",
+    "code": "Mã truy xuất",
+    "more": "Cùng hộ này làm"
+  },
+  "trace": {
+    "home": "Về trang chủ vCraft",
+    "book": "Sổ nghề",
+    "notFoundTitle": "Mã này không có trong vCraft",
+    "notFoundText": "Không tìm thấy mã {code}. Món đồ này có thể không do làng nghề trên vCraft làm ra, hoặc tem đã bị làm giả. Hãy kiểm lại mã dưới đáy sản phẩm.",
+    "scanned": "Bạn vừa quét ấn của",
+    "verifiedSeal": "Ấn xác thực của vCraft",
+    "verifiedTitle": "Đã đóng ấn xác thực",
+    "verifiedText": "Mã này khớp với một sản phẩm của {household}. Nhật ký sản xuất được nối bằng chuỗi băm nên không ai sửa lại được.",
+    "chainOk": "Chuỗi nhật ký toàn vẹn · {count, plural, other {# mốc}}",
+    "scans": "{count, plural, other {# lượt quét}}",
+    "timelineTitle": "Hành trình qua lửa",
+    "timelineLead": "Từng công đoạn do chính người thợ ghi lại, kèm ảnh và dấu băm.",
+    "whereTitle": "Nơi món gốm ra đời",
+    "certsTitle": "Chứng nhận của hộ",
+    "qrLabel": "Ấn truy xuất mã {code}",
+    "ctaVisit": "Ghé xưởng",
+    "ctaRfq": "Đặt số lượng",
+    "proofAlt": "Ảnh minh chứng công đoạn {stage}",
+    "hashHint": "Dấu băm SHA-256 của mốc này, nối với mốc trước đó."
+  },
+  "rfq": {
+    "breadcrumb": "Đường dẫn trang",
+    "allRequests": "Yêu cầu báo giá",
+    "stepperLabel": "Tiến trình của yêu cầu báo giá",
+    "status": {
+      "DRAFT": "Bản nháp",
+      "SENT": "Đã gửi",
+      "BIDDING": "Đang chào giá",
+      "ACCEPTED": "Đã chốt",
+      "IN_PRODUCTION": "Đang sản xuất",
+      "DELIVERED": "Đã giao",
+      "CANCELLED": "Đã hủy",
+      "EXPIRED": "Hết hạn"
+    },
+    "event": {
+      "SUBMIT": "Gửi yêu cầu",
+      "RECEIVE_BID": "Nhận chào giá",
+      "ACCEPT_BID": "Chốt chào giá",
+      "START_PRODUCTION": "Bắt đầu sản xuất",
+      "CONFIRM_DELIVERY": "Xác nhận đã nhận hàng",
+      "CANCEL": "Hủy yêu cầu",
+      "ADMIN_CANCEL": "Hủy theo quyết định quản trị",
+      "EXPIRE": "Đánh dấu hết hạn"
+    },
+    "error": {
+      "INVALID_TRANSITION": "Yêu cầu không ở trạng thái cho phép thao tác này.",
+      "MISSING_CONTEXT": "Còn thiếu thông tin để thực hiện thao tác này.",
+      "ACTOR_NOT_ALLOWED": "Bạn không có quyền thực hiện thao tác này.",
+      "EMAIL_NOT_VERIFIED": "Bạn cần xác minh email trước khi gửi yêu cầu.",
+      "BIDDING_DEADLINE_TOO_SOON": "Hạn chào giá phải cách thời điểm gửi ít nhất 24 giờ.",
+      "DELIVERY_BEFORE_BIDDING_DEADLINE": "Hạn giao phải sau hạn chào giá.",
+      "BIDDING_CLOSED": "Đã quá hạn chào giá.",
+      "DUPLICATE_BID": "Hộ này đã có chào giá cho yêu cầu này.",
+      "BID_NOT_SUBMITTED": "Chỉ chốt được chào giá đang còn hiệu lực.",
+      "BID_QUANTITY_MISMATCH": "Chỉ chốt được chào giá đáp ứng đủ số lượng.",
+      "ALLOCATIONS_NOT_CONFIRMED": "Chưa phải hộ nào cũng xác nhận phần việc của mình.",
+      "ALLOCATIONS_NOT_DONE": "Chưa phải hộ nào cũng hoàn thành phần việc của mình.",
+      "REASON_REQUIRED": "Bạn cần ghi lý do hủy.",
+      "NOT_YET_EXPIRED": "Chưa tới lúc yêu cầu hết hạn."
+    },
+    "actions": {
+      "title": "Hành động",
+      "none": "Ở trạng thái này, bạn không cần làm gì thêm.",
+      "acceptInTable": "Muốn chốt, bấm “Chốt” ở chào giá bạn chọn bên dưới.",
+      "demoNote": "Bản trình diễn: thao tác chỉ thay đổi trên trình duyệt của bạn, chưa gửi lên máy chủ."
+    },
+    "accepted": {
+      "title": "Đã đóng ấn.",
+      "text": "Bạn đã chốt chào giá của {bidder}. Đơn hàng được tạo, các chào giá còn lại bị từ chối và mọi hộ sẽ nhận thông báo."
+    },
+    "halted": {
+      "cancelledTitle": "Yêu cầu đã hủy",
+      "expiredTitle": "Yêu cầu đã hết hạn",
+      "reason": "Lý do: {reason}",
+      "text": "Yêu cầu này không còn nhận chào giá. Bạn có thể tạo yêu cầu mới bất cứ lúc nào."
+    },
+    "dialog": {
+      "back": "Quay lại",
+      "reasonLabel": "Lý do hủy",
+      "reasonPlaceholder": "Ví dụ: đổi kế hoạch, cần số lượng khác.",
+      "confirmText": "Bạn có chắc muốn thực hiện thao tác này không?"
+    },
+    "acceptDialog": {
+      "title": "Chốt chào giá của {bidder}?",
+      "text": "Bạn chốt {quantity} {unit} với đơn giá {price}, tổng {total}. Các chào giá còn lại sẽ bị từ chối và mọi hộ nhận thông báo. Việc này không hoàn tác được.",
+      "confirm": "Chốt chào giá",
+      "back": "Xem lại"
+    },
+    "summary": {
+      "title": "Tóm tắt yêu cầu",
+      "quantity": "Số lượng",
+      "budget": "Ngân sách",
+      "budgetRange": "{min} – {max}",
+      "biddingCloses": "Hạn chào giá",
+      "requiredBy": "Hạn giao",
+      "customization": "Yêu cầu riêng",
+      "noCustomization": "Không có yêu cầu riêng.",
+      "deliverTo": "Giao tới",
+      "invited": "Đã gửi tới {count, plural, other {# hộ phù hợp}}.",
+      "daysLeft": "{days, plural, other {Còn # ngày}}",
+      "closed": "Đã hết hạn chào giá"
+    },
+    "bids": {
+      "title": "Chào giá nhận được",
+      "count": "{count, plural, =0 {Chưa có chào giá nào} other {# chào giá}}",
+      "empty": "Chưa có hộ nào chào giá. Khi có, chào giá sẽ hiện ở đây ngay, bạn không cần tải lại trang.",
+      "caption": "So sánh các chào giá theo đơn giá, thành tiền, mức đáp ứng, ngày giao và uy tín",
+      "best": "tốt nhất",
+      "legend": "Ô vàng là lựa chọn tốt nhất theo từng tiêu chí. Thành tiền chỉ so các chào giá đủ số lượng.",
+      "sortBy": "Sắp xếp theo",
+      "col": {
+        "bidder": "Người chào",
+        "unitPrice": "Đơn giá",
+        "total": "Thành tiền",
+        "coverage": "Đáp ứng",
+        "delivery": "Ngày giao",
+        "reputation": "Uy tín",
+        "action": "Hành động"
+      },
+      "cooperative": "Liên kết BQL",
+      "revision": "Bản sửa {n}",
+      "status": {
+        "SUBMITTED": "Đang chờ",
+        "ACCEPTED": "Đã chốt",
+        "REJECTED": "Không được chọn",
+        "WITHDRAWN": "Đã rút",
+        "LAPSED": "Hết hiệu lực"
+      },
+      "coverageFull": "Đủ số lượng",
+      "coveragePartial": "Một phần · {percent}% ({count, number})",
+      "accept": "Chốt",
+      "acceptBlocked": "Chỉ chốt được chào giá đủ {quantity} {unit}."
+    }
+  },
+  "admin": {
+    "home": "Về trang chủ vCraft",
+    "badge": "Quản trị",
+    "nav": {
+      "label": "Điều hướng quản trị",
+      "queue": "Hàng đợi duyệt",
+      "coordination": "Điều phối",
+      "news": "Tin tức",
+      "audit": "Nhật ký",
+      "soon": "Sắp có"
+    },
+    "coordination": {
+      "breadcrumb": "Đường dẫn trang",
+      "section": "Điều phối",
+      "buyer": "Bên mua",
+      "quantity": "Số lượng",
+      "requiredBy": "Hạn giao",
+      "reasonLabel": "Cần điều phối",
+      "reason": {
+        "requested": "Bên mua nhờ ban quản lý chia đơn cho nhiều hộ.",
+        "no-full-bid": "Không hộ nào chào đủ số lượng, cần ghép nhiều hộ lại."
+      }
+    },
+    "board": {
+      "strategyTitle": "Phương án đề xuất",
+      "strategy": {
+        "capacity": {
+          "name": "Theo năng lực",
+          "text": "Chia theo tỉ lệ năng lực của từng hộ; phần lẻ dồn cho hộ có số dư lớn nhất."
+        },
+        "cheapest": {
+          "name": "Giá thấp trước",
+          "text": "Hộ giá thấp nhất nhận đủ năng lực trước, rồi tới hộ kế tiếp cho đến khi đủ."
+        },
+        "balanced": {
+          "name": "Cân bằng",
+          "text": "Chia đều cho các hộ, hộ nào chạm trần năng lực thì phần thừa chia cho hộ còn lại."
+        }
+      },
+      "strategyCost": "Tổng chi phí {cost}",
+      "barTitle": "Chia {quantity} {unit} cho các hộ",
+      "barLabel": "Đã chia {sum} trên {quantity} {unit}",
+      "statusOk": "Đã chia đủ {quantity} {unit}. Bạn có thể gửi chào giá liên kết.",
+      "problem": {
+        "short": "Còn thiếu {count} {unit}.",
+        "excess": "Đang chia thừa {count} {unit}.",
+        "over": "{name} vượt năng lực còn trống ({capacity}).",
+        "invalid": "Số lượng của mỗi hộ phải là số nguyên từ 0 trở lên."
+      },
+      "partMeta": "Năng lực {capacity} · đơn giá {price} · giao sau {days} ngày",
+      "slider": "Số lượng giao cho {name}",
+      "quantityOf": "Nhập số lượng cho {name}",
+      "stat": {
+        "sum": "Đã chia",
+        "missing": "Còn thiếu",
+        "excess": "Đang thừa",
+        "cost": "Tổng chi phí",
+        "average": "Đơn giá bình quân",
+        "eta": "Dự kiến hoàn thành",
+        "etaDays": "{days, plural, other {# ngày}}",
+        "onTime": "Kịp hạn giao {date}.",
+        "late": "Trễ hạn giao {date}."
+      },
+      "send": "Gửi chào giá liên kết",
+      "reset": "Về phương án đề xuất",
+      "sendBlocked": "Chia đủ số lượng và không hộ nào vượt năng lực thì mới gửi được.",
+      "sent": {
+        "title": "Đã đóng ấn.",
+        "text": "Chào giá liên kết cho yêu cầu {code} đã gửi tới bên mua. Các hộ tham gia sẽ nhận thông báo."
+      }
+    }
+  }
 }

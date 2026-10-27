@@ -7,6 +7,11 @@ import { extendTailwindMerge } from 'tailwind-merge';
  */
 const twMerge = extendTailwindMerge({
   extend: {
+    theme: {
+      // Nhịp biên tập (`px-gutter`, `py-section`) và khung (`max-w-editorial`, `max-w-prose-vn`).
+      spacing: ['gutter', 'section'],
+      container: ['editorial', 'prose-vn'],
+    },
     classGroups: {
       'font-size': [{ text: ['display', 'h1', 'h2', 'h3', 'body', 'small'] }],
       rounded: [{ rounded: ['input', 'card', 'chip'] }],

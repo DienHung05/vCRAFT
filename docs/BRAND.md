@@ -2,6 +2,7 @@
 
 > Phiên bản 1.0 · 27/10/2026 · Phục vụ tiêu chí chấm (3) *Giao diện: responsive, đẹp, hiện đại, có bản sắc, đặc trưng nhận dạng thương hiệu nổi bật* (hệ số 0.2 — lớn thứ hai).
 > Mọi token ở đây được cài trong `packages/ui/src/tokens` và `packages/ui/src/motion`.
+> Moodboard: [docs/design/moodboard.html](design/moodboard.html)
 
 ---
 
@@ -85,6 +86,7 @@ Thang chữ (fluid, `clamp`): `display 3.5–7rem` · `h1 2.5–4rem` · `h2 2�
 - **Men rạn (crackle)**: hoa văn rạn sinh thủ tục (Voronoi SVG) dùng làm nền khối xác thực, nền QR, trạng thái rỗng.
 - **Hoa văn lam**: dải viền hoa cúc dây / sóng nước kiểu gốm hoa lam (SVG, `--glaze`) làm vạch ngăn section.
 - **Nét bút lông**: gạch chân tiêu đề, khung highlight — SVG path vẽ dần (DrawSVG).
+- **Khoảng cách**: bước cơ sở 4px. Lề trang `gutter` 16–48px, nhịp giữa section `section` 64–160px (cả hai fluid theo viewport 320–1440px). Khung lưới tối đa 1440px, cột chữ đọc dài tối đa 672px.
 - **Bo góc**: 4px (input), 12px (thẻ), 999px (chip). Bóng đổ ấm, mềm: `0 1px 0 rgb(28 24 20 / .04), 0 12px 32px -12px rgb(120 60 30 / .18)`.
 - **Biểu tượng**: Lucide (nét 1.5) + bộ icon nghề tự vẽ cùng nét: bàn xoay, lò nung, khuôn, cọ vẽ, khung dệt, kén tằm.
 

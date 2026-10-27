@@ -55,6 +55,17 @@
   --text-small: 0.875rem;
   --text-small--line-height: 1.5;
 
+  /*
+   * ── Khoảng cách & khung (BRAND §5) ───────────────────────────────────
+   * Bước cơ sở giữ mặc định Tailwind (--spacing: 0.25rem = 4px). Thêm nhịp biên tập:
+   * `px-gutter` lề trang, `py-section` / `gap-section` nhịp giữa các section,
+   * `max-w-editorial` khung lưới 12 cột, `max-w-prose-vn` cột chữ đọc dài.
+   */
+  --spacing-gutter: clamp(1rem, 0.4286rem + 2.8571vw, 3rem);
+  --spacing-section: clamp(4rem, 2.2857rem + 8.5714vw, 10rem);
+  --container-editorial: 90rem;
+  --container-prose-vn: 42rem;
+
   /* ── Bo góc (BRAND §5) ─────────────────────────────────────────────── */
   --radius-input: 4px;
   --radius-card: 12px;
@@ -74,6 +85,33 @@
   --duration-base: 280ms;
   --duration-slow: 520ms;
   --duration-story: 900ms;
+
+  /* ── Đóng ấn (BRAND §6.3 #2): ấn giáng xuống 1.4 → 1, nảy nhẹ ─────────── */
+  --animate-stamp: stamp var(--duration-slow) var(--ease-press) both;
+  @keyframes stamp {
+    from {
+      opacity: 0;
+      transform: scale(1.4) rotate(-6deg);
+    }
+    60% {
+      opacity: 1;
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+    }
+  }
+
+  /* ── Ô tốt nhất phát sáng vàng sơn mài (BRAND §6.3 #8): một nhịp lan ra rồi tắt ─ */
+  --animate-glow: glow calc(var(--duration-slow) * 2) var(--ease-clay) both;
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 0 0 color-mix(in oklch, var(--color-lacquer) 55%, transparent);
+    }
+    to {
+      box-shadow: 0 0 0 12px transparent;
+    }
+  }
 }
 
 /* ── Hạt giấy (BRAND §5): SVG noise, opacity 4% ────────────────────────
@@ -175,6 +213,17 @@
     --duration-base: 150ms;
     --duration-slow: 150ms;
     --duration-story: 150ms;
+    /* Đóng ấn chỉ còn mờ dần, không phóng to/xoay. */
+    --animate-stamp: stamp-fade var(--duration-slow) linear both;
+    --animate-glow: none;
+  }
+  @keyframes stamp-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
   html {
     scroll-behavior: auto;
