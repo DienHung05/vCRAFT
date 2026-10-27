@@ -8,8 +8,16 @@ module.exports = {
       name: 'domain-is-pure',
       comment: 'packages/domain không được phụ thuộc framework, ORM hay workspace khác',
       severity: 'error',
-      from: { path: '^packages/domain' },
+      from: { path: '^packages/domain/src' },
       to: { path: '^(apps|packages/(?!domain))|node_modules' },
+    },
+    {
+      name: 'domain-test-no-workspace',
+      comment:
+        'Test của domain được dùng thư viện test (vitest, fast-check) nhưng vẫn không import workspace khác',
+      severity: 'error',
+      from: { path: '^packages/domain/test' },
+      to: { path: '^(apps|packages/(?!domain))' },
     },
     {
       name: 'web-no-database',

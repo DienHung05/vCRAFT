@@ -1,0 +1,95 @@
+/**
+ * Danh mục mã lỗi ổn định của API (ARCHITECTURE §4.2, SRS §4.1 và §4.4).
+ *
+ * - `code` là hợp đồng giữa BE và FE: FE tra i18n theo `code`, không phụ thuộc `title`/`detail`.
+ * - Đã phát hành thì không đổi tên, không tái sử dụng cho nghĩa khác; thêm mã mới ở cuối nhóm.
+ * - `title` là chuỗi tiếng Anh ngắn cho nhà phát triển / log (RFC 9457 §3.1.4). Thông điệp hiển thị
+ *   cho người dùng nằm ở `packages/i18n`.
+ * - `status` là HTTP status mặc định; endpoint có thể ghi đè khi thật sự cần.
+ */
+export const ERROR_CATALOG = {
+  // --- AUTH: xác thực & phân quyền (FR-AUTH, NFR-SEC-02/04) ---
+  AUTH_UNAUTHENTICATED: { status: 401, title: 'Authentication required' },
+  AUTH_TOKEN_INVALID: { status: 401, title: 'Invalid access token' },
+  AUTH_TOKEN_EXPIRED: { status: 401, title: 'Access token expired' },
+  AUTH_FORBIDDEN: { status: 403, title: 'Permission denied' },
+  /** FR-AUTH-10: tài khoản bị tạm khóa, chặn ngay ở request kế tiếp. */
+  AUTH_ACCOUNT_SUSPENDED: { status: 403, title: 'Account suspended' },
+  /** NFR-SEC: Admin cần phiên `aal2` (đã qua MFA). */
+  AUTH_MFA_REQUIRED: { status: 403, title: 'Multi-factor authentication required' },
+
+  // --- VALIDATION: dữ liệu vào ---
+  /** Zod không qua; `errors[]` liệt kê lỗi theo field. */
+  VALIDATION_FAILED: { status: 422, title: 'Validation failed' },
+  /** Body không phải JSON hợp lệ, thiếu body, sai Content-Type. */
+  VALIDATION_MALFORMED_REQUEST: { status: 400, title: 'Malformed request' },
+
+  // --- NOT_FOUND ---
+  NOT_FOUND: { status: 404, title: 'Resource not found' },
+
+  // --- CONFLICT: xung đột trạng thái / khóa (SRS §4.4) ---
+  /** BR-L1: `If-Match` / `version` cũ (khóa lạc quan). */
+  STALE_VERSION: { status: 409, title: 'Stale version' },
+  /** BR-L1: thiếu `If-Match` ở endpoint cập nhật. */
+  VERSION_REQUIRED: { status: 428, title: 'Version precondition required' },
+  /** SRS §4.1: sự kiện không có trong bảng chuyển trạng thái (RFQ/Bid/Allocation). */
+  INVALID_TRANSITION: { status: 409, title: 'Invalid state transition' },
+  /** Vi phạm ràng buộc UNIQUE không thuộc mã nghiệp vụ riêng (email, slug...). */
+  CONFLICT_DUPLICATE: { status: 409, title: 'Duplicate resource' },
+
+  // --- RFQ: yêu cầu báo giá, chào giá, phân bổ (SRS §4) ---
+  /** BR-L3: mỗi hộ tối đa một bid cho mỗi RFQ (sửa = tăng revision). */
+  RFQ_BID_ALREADY_EXISTS: { status: 409, title: 'Bid already exists for this RFQ' },
+  /** BR-L4: quá `biddingClosesAt` hoặc RFQ không còn ở SENT/BIDDING. */
+  RFQ_BIDDING_CLOSED: { status: 409, title: 'Bidding is closed' },
+  /** BR-02: chỉ hộ APPROVED mới nhận lời mời / chào giá. */
+  RFQ_ARTISAN_NOT_ELIGIBLE: { status: 403, title: 'Artisan is not eligible for this RFQ' },
+  /** SRS §4.1 T3: `quantityOffered` phải bằng `quantity` của RFQ. */
+  RFQ_QUANTITY_MISMATCH: { status: 422, title: 'Offered quantity does not match' },
+  /** BR-L6: Σ allocation.quantity phải bằng order.quantity. */
+  RFQ_ALLOCATION_SUM_MISMATCH: { status: 422, title: 'Allocation quantities do not add up' },
+  /** BR-L6: allocation vượt năng lực còn trống của hộ. */
+  RFQ_CAPACITY_EXCEEDED: { status: 422, title: 'Artisan capacity exceeded' },
+
+  // --- IDEMPOTENCY: BR-L5 ---
+  IDEMPOTENCY_KEY_REQUIRED: { status: 400, title: 'Idempotency-Key header required' },
+  /** Cùng key nhưng payload khác (so `requestHash`). */
+  IDEMPOTENCY_KEY_REUSED: { status: 422, title: 'Idempotency-Key reused with a different request' },
+  /** Request đầu với key này vẫn đang xử lý. */
+  IDEMPOTENCY_IN_PROGRESS: { status: 409, title: 'Original request is still in progress' },
+
+  // --- MEDIA: upload (NFR-SEC-05) ---
+  MEDIA_UNSUPPORTED_TYPE: { status: 415, title: 'Unsupported media type' },
+  MEDIA_TOO_LARGE: { status: 413, title: 'Media too large' },
+
+  // --- HẠ TẦNG ---
+  /** NFR-SEC-04: rate limit; kèm header `Retry-After`. */
+  RATE_LIMITED: { status: 429, title: 'Too many requests' },
+  INTERNAL_ERROR: { status: 500, title: 'Internal server error' },
+  SERVICE_UNAVAILABLE: { status: 503, title: 'Service unavailable' },
+} as const satisfies Record<string, { status: number; title: string }>;
+
+/** Mã lỗi hợp lệ, dùng như union chuỗi: `'STALE_VERSION' | 'NOT_FOUND' | ...`. */
+export type ErrorCode = keyof typeof ERROR_CATALOG;
+
+/** Tra cứu kiểu enum: `ERROR_CODES.STALE_VERSION === 'STALE_VERSION'`. */
+export const ERROR_CODES = Object.fromEntries(
+  Object.keys(ERROR_CATALOG).map((code) => [code, code]),
+) as { readonly [K in ErrorCode]: K };
+
+/** Danh sách mã lỗi (cho `z.enum`). */
+export const ERROR_CODE_LIST = Object.keys(ERROR_CATALOG) as [ErrorCode, ...ErrorCode[]];
+
+/** HTTP status mặc định của mã lỗi. */
+export function defaultStatusOf(code: ErrorCode): number {
+  return ERROR_CATALOG[code].status;
+}
+
+/** Tiêu đề (tiếng Anh, cho dev/log) mặc định của mã lỗi. */
+export function defaultTitleOf(code: ErrorCode): string {
+  return ERROR_CATALOG[code].title;
+}
+
+export function isErrorCode(value: unknown): value is ErrorCode {
+  return typeof value === 'string' && Object.hasOwn(ERROR_CATALOG, value);
+}

@@ -1,5 +1,13 @@
-/* Design tokens vCraft — nguồn: docs/BRAND.md §3, §6.2 */
-@theme {
+/*
+ * Design tokens vCraft — nguồn chuẩn: docs/BRAND.md (§3 màu, §4 chữ, §5 bố cục, §6.2 chuyển động).
+ * Token chuyển động cho JS (Motion/GSAP) nằm ở ../motion/tokens.ts và phải khớp các giá trị dưới đây.
+ *
+ * `@theme static`: phát ra mọi biến CSS kể cả khi Tailwind không thấy utility dùng tới, để
+ * component có thể tham chiếu `var(--color-seal)`… trong SVG/inline style mà không phụ thuộc
+ * vào việc quét class.
+ */
+@theme static {
+  /* ── Màu (BRAND §3.1, chế độ sáng "Giấy dó") ───────────────────────── */
   --color-paper: #f5efe4;
   --color-surface: #fbf8f2;
   --color-ink: #1c1814;
@@ -10,18 +18,159 @@
   --color-celadon: #5e8a7d;
   --color-lacquer: #8c6a24;
 
-  --font-display: "Fraunces", serif;
-  --font-sans: "Be Vietnam Pro", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  /*
+   * Font: next/font gán tên font thật vào các biến --font-fraunces / --font-be-vietnam /
+   * --font-jetbrains-mono trên thẻ <html> (xem apps/web/src/app/layout.tsx); tên font
+   * gốc đứng sau làm dự phòng.
+   */
+  --font-display: var(--font-fraunces), "Fraunces", Georgia, serif;
+  --font-sans: var(--font-be-vietnam), "Be Vietnam Pro", system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, monospace;
 
+  /*
+   * ── Thang chữ fluid (BRAND §4) ────────────────────────────────────────
+   * clamp(min, intercept + slope·vw, max), nội suy tuyến tính giữa viewport 20rem (320px) và 90rem (1440px).
+   * Tailwind v4: `--text-<tên>--line-height` / `--text-<tên>--letter-spacing` đi kèm tự động
+   * khi dùng utility `text-<tên>`.
+   */
+  --text-display: clamp(3.5rem, 2.5rem + 5vw, 7rem);
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.02em;
+
+  --text-h1: clamp(2.5rem, 2.0714rem + 2.1429vw, 4rem);
+  --text-h1--line-height: 1.08;
+  --text-h1--letter-spacing: -0.02em;
+
+  --text-h2: clamp(2rem, 1.7857rem + 1.0714vw, 2.75rem);
+  --text-h2--line-height: 1.15;
+  --text-h2--letter-spacing: -0.02em;
+
+  --text-h3: clamp(1.5rem, 1.3929rem + 0.5357vw, 1.875rem);
+  --text-h3--line-height: 1.25;
+  --text-h3--letter-spacing: -0.01em;
+
+  --text-body: clamp(1rem, 0.9821rem + 0.0893vw, 1.0625rem);
+  --text-body--line-height: 1.65;
+
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.5;
+
+  /*
+   * ── Khoảng cách & khung (BRAND §5) ───────────────────────────────────
+   * Bước cơ sở giữ mặc định Tailwind (--spacing: 0.25rem = 4px). Thêm nhịp biên tập:
+   * `px-gutter` lề trang, `py-section` / `gap-section` nhịp giữa các section,
+   * `max-w-editorial` khung lưới 12 cột, `max-w-prose-vn` cột chữ đọc dài.
+   */
+  --spacing-gutter: clamp(1rem, 0.4286rem + 2.8571vw, 3rem);
+  --spacing-section: clamp(4rem, 2.2857rem + 8.5714vw, 10rem);
+  --container-editorial: 90rem;
+  --container-prose-vn: 42rem;
+
+  /* ── Bo góc (BRAND §5) ─────────────────────────────────────────────── */
+  --radius-input: 4px;
+  --radius-card: 12px;
+  --radius-chip: 999px;
+
+  /* ── Bóng ấm, mềm (BRAND §5) ───────────────────────────────────────── */
+  --shadow-warm: 0 1px 0 rgb(28 24 20 / 0.04), 0 12px 32px -12px rgb(120 60 30 / 0.18);
+
+  /* ── Easing (BRAND §6.2) ───────────────────────────────────────────── */
   --ease-clay: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-kiln: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-press: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── Thời lượng (BRAND §6.2: 90 / 160 / 280 / 520 / 900 ms) ────────── */
+  --duration-instant: 90ms;
+  --duration-quick: 160ms;
+  --duration-base: 280ms;
+  --duration-slow: 520ms;
+  --duration-story: 900ms;
+
+  /* ── Đóng ấn (BRAND §6.3 #2): ấn giáng xuống 1.4 → 1, nảy nhẹ ─────────── */
+  --animate-stamp: stamp var(--duration-slow) var(--ease-press) both;
+  @keyframes stamp {
+    from {
+      opacity: 0;
+      transform: scale(1.4) rotate(-6deg);
+    }
+    60% {
+      opacity: 1;
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+    }
+  }
+
+  /* ── Ô tốt nhất phát sáng vàng sơn mài (BRAND §6.3 #8): một nhịp lan ra rồi tắt ─ */
+  --animate-glow: glow calc(var(--duration-slow) * 2) var(--ease-clay) both;
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 0 0 color-mix(in oklch, var(--color-lacquer) 55%, transparent);
+    }
+    to {
+      box-shadow: 0 0 0 12px transparent;
+    }
+  }
 }
 
-/* Chế độ tối "Lò đêm" */
+/* ── Hạt giấy (BRAND §5): SVG noise, opacity 4% ────────────────────────
+ * Không thuộc @theme vì không sinh utility Tailwind. Dùng utility `grain`
+ * (phủ một khối `relative`) hoặc `grain-fixed` (phủ cả viewport, đặt trên <body>).
+ * Sáng: hạt mực sẫm trên giấy. Tối: bụi than — hạt sáng nhạt (đổi ở khối dark bên dưới).
+ */
+:root {
+  color-scheme: light;
+  --grain-opacity: 0.04;
+  --grain-size: 160px;
+  --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .11 0 0 0 0 .094 0 0 0 0 .078 0 0 0 3 -1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@utility grain {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: var(--grain-image);
+    background-size: var(--grain-size);
+    opacity: var(--grain-opacity);
+  }
+}
+
+@utility grain-fixed {
+  &::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    pointer-events: none;
+    background-image: var(--grain-image);
+    background-size: var(--grain-size);
+    opacity: var(--grain-opacity);
+  }
+}
+
+/* Fraunces "mềm" cho tiêu đề lớn (BRAND §4: SOFT 100; WONK bật cho wordmark/hero). */
+@utility type-soft {
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 0;
+}
+@utility type-wonk {
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 1;
+}
+
+/*
+ * Chế độ tối "Lò đêm" (BRAND §3.2). Hai khối dưới phải giữ giống nhau:
+ * một theo hệ điều hành (trừ khi người dùng ép sáng), một theo thuộc tính ép tối.
+ */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --color-paper: #14110f;
     --color-surface: #1f1a16;
     --color-ink: #f1e9dc;
@@ -30,9 +179,16 @@
     --color-glaze: #8fb0e6;
     --color-seal: #f06a55;
     --color-celadon: #9cc7b8;
+    /* BRAND §3.2 chưa quy định: vàng sơn mài sáng, 7.8:1 trên #14110F và 7.2:1 trên #1F1A16 (≥ 4.5:1). */
+    --color-lacquer: #c9a24d;
+    /* Bóng trên nền tối: nâng viền sáng mảnh, đổ bóng sâu thay vì bóng nâu. */
+    --shadow-warm: 0 1px 0 rgb(241 233 220 / 0.05), 0 12px 32px -12px rgb(0 0 0 / 0.55);
+    /* Bụi than: hạt sáng nhạt. */
+    --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .945 0 0 0 0 .914 0 0 0 0 .863 0 0 0 3 -1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 }
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --color-paper: #14110f;
   --color-surface: #1f1a16;
   --color-ink: #f1e9dc;
@@ -41,4 +197,35 @@
   --color-glaze: #8fb0e6;
   --color-seal: #f06a55;
   --color-celadon: #9cc7b8;
+  --color-lacquer: #c9a24d;
+  --shadow-warm: 0 1px 0 rgb(241 233 220 / 0.05), 0 12px 32px -12px rgb(0 0 0 / 0.55);
+  --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .945 0 0 0 0 .914 0 0 0 0 .863 0 0 0 3 -1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/*
+ * Giảm chuyển động (BRAND §6.4): phản hồi trạng thái tức thì (≈ 0), còn lại thu về một
+ * lần mờ dần 150ms. JS đọc `useReducedMotion()` để tắt Lenis/parallax/SplitText/3D xoay.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0.01ms;
+    --duration-quick: 0.01ms;
+    --duration-base: 150ms;
+    --duration-slow: 150ms;
+    --duration-story: 150ms;
+    /* Đóng ấn chỉ còn mờ dần, không phóng to/xoay. */
+    --animate-stamp: stamp-fade var(--duration-slow) linear both;
+    --animate-glow: none;
+  }
+  @keyframes stamp-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  html {
+    scroll-behavior: auto;
+  }
 }

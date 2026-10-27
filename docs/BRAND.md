@@ -2,6 +2,7 @@
 
 > Phiên bản 1.0 · 27/10/2026 · Phục vụ tiêu chí chấm (3) *Giao diện: responsive, đẹp, hiện đại, có bản sắc, đặc trưng nhận dạng thương hiệu nổi bật* (hệ số 0.2 — lớn thứ hai).
 > Mọi token ở đây được cài trong `packages/ui/src/tokens` và `packages/ui/src/motion`.
+> Moodboard: [docs/design/moodboard.html](design/moodboard.html)
 
 ---
 
@@ -22,9 +23,9 @@
 
 ## 2. Logo & ấn triện
 
-- **Logomark — "Ấn v"**: hình vuông bo góc không đều như con dấu khắc tay, màu son, chữ *v* âm bản cách điệu thành dáng bình gốm (hai nét thuôn gặp nhau ở đáy). Viền có vết mực loang nhẹ (SVG `feTurbulence` + `feDisplacementMap`, tĩnh khi xuất file).
+- **Logomark — "Ấn bình"**: hình vuông bo góc không đều như con dấu khắc tay, màu son, khoét âm bản một **bình gốm dáng tỏi** (miệng loe, cổ thon, bụng tròn, chân đế) với một **dải sóng hoa lam** ngang bụng bình. Viền có vết mực loang nhẹ (SVG `feTurbulence` + `feDisplacementMap`, tĩnh khi xuất file).
 - **Wordmark**: `vCraft` dựng bằng Fraunces (trục `SOFT` cao, `WONK` bật) — chữ *v* thường, *C* hoa như vành miệng bình.
-- **Ấn truy xuất (Trace seal)**: mã QR đặt trong khung triện vuông, logo ấn v ở giữa (mức sửa lỗi H), mã 8 ký tự dưới khung bằng JetBrains Mono. Đây là **thứ người dùng thấy ngoài đời thật** (tem dán đáy sản phẩm) ⇒ cầu nối thương hiệu offline → online.
+- **Ấn truy xuất (Trace seal)**: mã QR đặt trong khung triện vuông, logo ấn bình ở giữa (mức sửa lỗi H), mã 8 ký tự dưới khung bằng JetBrains Mono. Đây là **thứ người dùng thấy ngoài đời thật** (tem dán đáy sản phẩm) ⇒ cầu nối thương hiệu offline → online.
 - Biến thể: đầy đủ (ấn + chữ), ấn đơn (favicon, app icon, ghim bản đồ), đơn sắc mực (in tem), đảo màu (nền tối).
 - Vùng an toàn = ½ chiều cao ấn; kích thước tối thiểu 20px (màn hình), 8mm (in).
 
@@ -85,6 +86,7 @@ Thang chữ (fluid, `clamp`): `display 3.5–7rem` · `h1 2.5–4rem` · `h2 2�
 - **Men rạn (crackle)**: hoa văn rạn sinh thủ tục (Voronoi SVG) dùng làm nền khối xác thực, nền QR, trạng thái rỗng.
 - **Hoa văn lam**: dải viền hoa cúc dây / sóng nước kiểu gốm hoa lam (SVG, `--glaze`) làm vạch ngăn section.
 - **Nét bút lông**: gạch chân tiêu đề, khung highlight — SVG path vẽ dần (DrawSVG).
+- **Khoảng cách**: bước cơ sở 4px. Lề trang `gutter` 16–48px, nhịp giữa section `section` 64–160px (cả hai fluid theo viewport 320–1440px). Khung lưới tối đa 1440px, cột chữ đọc dài tối đa 672px.
 - **Bo góc**: 4px (input), 12px (thẻ), 999px (chip). Bóng đổ ấm, mềm: `0 1px 0 rgb(28 24 20 / .04), 0 12px 32px -12px rgb(120 60 30 / .18)`.
 - **Biểu tượng**: Lucide (nét 1.5) + bộ icon nghề tự vẽ cùng nét: bàn xoay, lò nung, khuôn, cọ vẽ, khung dệt, kén tằm.
 
@@ -138,7 +140,7 @@ Vi tương tác bổ sung: nút từ tính (desktop), con trỏ chấm mực đ�
 - Ánh sáng tự nhiên, ấm; cận cảnh **bàn tay đang làm**, vân đất, giọt men; toàn cảnh lò, sân phơi.
 - Mỗi hộ tối thiểu: 1 chân dung nghệ nhân, 3 ảnh xưởng, 1 ảnh bàn tay làm việc.
 - Chỉnh màu thống nhất (preset nhẹ: ấm +5, bão hòa −8, giữ tông da).
-- Nhóm dành **một buổi thực địa tại Bát Tràng** (Sprint 0–1) để chụp ảnh/quay video gốc ⇒ nội dung thật, có bản quyền, là lợi thế lớn khi chấm "bản sắc".
+- Ảnh/video lấy từ nguồn có giấy phép rõ ràng (CC BY/CC0, Unsplash, Wikimedia Commons…), ưu tiên ảnh chụp tại Bát Tràng; ghi công theo đúng điều khoản giấy phép.
 
 ---
 
@@ -155,6 +157,8 @@ Vi tương tác bổ sung: nút từ tính (desktop), con trỏ chấm mực đ�
 
 Ẩn dụ nghề dùng **có chừng mực** ở khoảnh khắc cảm xúc; thông tin nghiệp vụ (giá, hạn, số lượng) luôn nói thẳng.
 
+Riêng trợ lý Cáo (§10) xưng **"tớ"**, gọi người dùng là "bạn", hóm hỉnh hơn giao diện chung một chút nhưng vẫn ngắn gọn.
+
 ---
 
 ## 9. Định hướng các màn hình chủ chốt
@@ -169,3 +173,26 @@ Vi tương tác bổ sung: nút từ tính (desktop), con trỏ chấm mực đ�
 | **RFQ (Buyer)** | Stepper trạng thái dạng "các công đoạn lò" phía trên; bảng so sánh bid có highlight tốt nhất theo cột; nút chốt to rõ. |
 | **Studio (Hộ)** | Mobile-first, nút nổi "+ Thêm mốc" luôn sẵn; thẻ lời mời RFQ có đồng hồ đếm ngược; thống kê lượt quét QR. |
 | **Admin** | Sạch, mật độ cao, nền giấy; hàng đợi duyệt dạng 3 cột song song; bảng điều phối kéo-thả (#9); biểu đồ giá vật liệu. |
+
+---
+
+## 10. Mascot — Cáo
+
+Trợ lý hỏi đáp của vCraft (FR-AST, [SRS §3.13](SRS.md#313-trợ-lý-cáo-chatbot--fr-ast)) là một chú **cáo con ở làng gốm**.
+
+| | |
+|---|---|
+| **Ngoại hình** | Cáo chibi, lông màu **đất nung** (`--clay`), đuôi chóp kem như men rạn; quàng khăn **men lam** (`--glaze`) có viền sóng hoa lam; hai tay ôm một bình gốm nhỏ dáng tỏi (gợi logo ấn bình). Nét viền mực mảnh như vẽ tay, không bóng 3D. |
+| **Tính cách** | Tò mò, nhanh nhảu, tự hào về làng; xưng "tớ"; biết lúc nào đùa, lúc nào nói thẳng (giá, hạn, số lượng). |
+| **Asset** | Sinh bằng skill `page-mascot`: 2 sprite sheet WebP căn khớp nhau. **9 hướng đầu** (nhìn theo con trỏ) và **9 biểu cảm**: idle, chào (vẫy tay), nghe, nghĩ, nói, vui, bối rối, từ chối (lắc đầu, ôm bình chặt), lỗi/ngủ (Zzz). Bản gốc lưu ở `packages/ui/assets/mascot/`. |
+| **Kích thước** | Nút nổi 56px (mobile) / 64px (desktop); trong panel 96px ở đầu khung chat. Vùng an toàn quanh nút 16px, né safe-area. |
+
+**Chuyển động** (dùng token §6.2):
+- **Chớp mắt**: ngẫu nhiên mỗi 3–6 s, 120 ms, thỉnh thoảng chớp đôi.
+- **Thở**: nhấp nhô 2px chu kỳ 3 s (`ease.clay`); lâu không dùng thì ngủ gật.
+- **Nhìn theo**: đầu xoay theo con trỏ hoặc ô nhập, đổi frame có độ trễ nhẹ cho tự nhiên.
+- **Bong bóng suy nghĩ**: ba bọt mây nhỏ nổi lên lần lượt (`stagger.list`), rồi bong bóng lớn hiện câu thú vị; mỗi câu đổi sau ~2,5 s bằng mờ chéo. Nền bong bóng là giấy dó, viền mực, góc bo không đều như ấn triện.
+- **Chào hỏi**: vẫy tay + `ease.press` nảy nhẹ khi mở panel lần đầu trong phiên.
+- `prefers-reduced-motion` ⇒ tắt chớp mắt, thở, xoay đầu; bong bóng hiện tĩnh, đổi câu không hiệu ứng.
+
+**Câu thú vị trong bong bóng** (i18n `assistant.thoughts.*`, ~30 câu vi/en) xen kẽ ba nhóm: (1) lời "đang làm việc" của cáo ("Đợi tớ lục lại kho gốm một chút…"), (2) chuyện làng ("Gốm Bát Tràng nung tới khoảng 1.300°C đấy!"), (3) mẹo dùng vCraft ("Quét QR dưới đáy cốc là xem được ai làm ra nó"). Mỗi câu ≤ 60 ký tự; không lặp câu trong cùng một phiên.

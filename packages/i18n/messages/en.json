@@ -1,3 +1,359 @@
 {
-  "nav": {}
+  "meta": {
+    "title": "vCraft · The finest of the craft villages, shared far and wide",
+    "description": "See Bat Trang pottery workshops up close, scan the seal under a piece to learn how it was made, and order straight from the maker."
+  },
+  "common": {
+    "skip": "Skip to main content",
+    "oneOfAKind": "One of a kind",
+    "verified": "Verified",
+    "unverified": "Awaiting verification",
+    "openNow": "Open now",
+    "closed": "Closed",
+    "generation": "Generation {n}",
+    "since": "Since {year}"
+  },
+  "nav": {
+    "home": "Back to the vCraft home page",
+    "label": "Main navigation",
+    "menu": "Menu",
+    "language": "Switch to Vietnamese",
+    "switchTo": "Tiếng Việt",
+    "products": "Products",
+    "artisans": "Artisans",
+    "map": "Map",
+    "news": "News",
+    "quotes": "Quote requests"
+  },
+  "footer": {
+    "tagline": "The finest of the craft villages, shared far and wide.",
+    "explore": "Explore",
+    "business": "Bulk orders",
+    "rights": "© {year} vCraft. All rights reserved.",
+    "demo": "Demo build: household names, artisans and figures are sample data."
+  },
+  "notFound": {
+    "title": "This page hasn't come out of the kiln",
+    "text": "The link you opened isn't in the village. It may have moved, or a character may have been mistyped.",
+    "back": "Back to the home page"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Bat Trang · a seven-hundred-year pottery village",
+      "title": "Every piece of pottery carries the seal of its maker.",
+      "lead": "vCraft takes you into the workshops of the craft village's households. Watch them work, scan the seal under a piece to see every step it went through, then order straight from the maker.",
+      "ctaExplore": "Explore products",
+      "ctaTrace": "See one piece's journey",
+      "vaseAlt": "A garlic-shaped vase in blue glaze",
+      "sealAlt": "vCraft trace seal"
+    },
+    "day": {
+      "title": "A day in Bat Trang",
+      "lead": "From kneading clay to opening the kiln, six steps that every piece goes through. Swipe sideways to follow each one."
+    },
+    "artisans": {
+      "title": "The hands that keep the craft alive",
+      "lead": "Every household has its own story, its own glaze and its own way of shaping clay that nobody else shares.",
+      "all": "See all artisans",
+      "portraitAlt": "Portrait of {name}"
+    },
+    "map": {
+      "title": "Which workshops are open?",
+      "lead": "Visit a workshop to see the wheel and the kiln for yourself. A jade dot means the workshop is welcoming visitors.",
+      "open": "Open · {hours}",
+      "closed": "Closed today",
+      "cta": "Open the map",
+      "mapLabel": "Mini map of the pottery workshops in Bat Trang"
+    },
+    "stats": {
+      "title": "The village in numbers",
+      "households": "Craft households",
+      "products": "Products with a trace seal",
+      "scans": "Seal scans",
+      "years": "Years the village has kept the fire"
+    },
+    "news": {
+      "title": "News from the village",
+      "all": "All news"
+    }
+  },
+  "stages": {
+    "clay": {
+      "name": "Kneading",
+      "text": "The clay is filtered, rested and kneaded until every air bubble is gone."
+    },
+    "throw": {
+      "name": "Throwing",
+      "text": "The clay goes on the wheel and the maker's hands pull it into shape."
+    },
+    "dry": {
+      "name": "Drying",
+      "text": "It dries evenly in the shade so it won't crack in the kiln."
+    },
+    "paint": {
+      "name": "Painting",
+      "text": "Patterns are brushed on by hand with blue underglaze."
+    },
+    "glaze": {
+      "name": "Glazing",
+      "text": "How thick the glaze goes on decides the shine and the shade of blue."
+    },
+    "fire": {
+      "name": "Firing",
+      "text": "The kiln climbs past 1,200°C. Only when it opens do you see how the glaze turned out."
+    },
+    "finish": {
+      "name": "Out of the kiln",
+      "text": "Each piece is checked one by one and sealed underneath before it leaves the workshop."
+    }
+  },
+  "artisan": {
+    "portraitAlt": "Portrait of {name}",
+    "breadcrumb": "Breadcrumb",
+    "allArtisans": "All artisans",
+    "ctaRfq": "Request a quote",
+    "ctaVisit": "Visit the workshop",
+    "bentoLabel": "About this household",
+    "story": "The household's story",
+    "lineage": "Handed down",
+    "lineageText": "Generation {n} keeping the fire, since {year}.",
+    "certs": "Certifications",
+    "mapLabel": "Workshop location on the Bat Trang map",
+    "workshop": "Workshop",
+    "hours": "Opening hours",
+    "capacity": "Capacity",
+    "capacityValue": "{count, number} pieces a month",
+    "rating": "Reputation",
+    "ratingValue": "{rating} stars · {orders, plural, one {# order delivered} other {# orders delivered}}",
+    "timeline": "The family timeline",
+    "timelineHint": "Drag sideways to move through the generations.",
+    "gallery": "Inside the workshop",
+    "products": "Products from this household",
+    "productsEmpty": "Nothing has come out of this workshop's kiln yet. Check back soon."
+  },
+  "product": {
+    "breadcrumb": "Breadcrumb",
+    "allProducts": "All products",
+    "gallery": "Photos of the steps that made this piece",
+    "by": "Made by <link>{household}</link>",
+    "stock": "{count, plural, =1 {Only 1 left} other {# in stock}}",
+    "soldOut": "Sold out",
+    "ctaRfq": "Request a quote",
+    "ctaWorkshop": "See the workshop",
+    "journey": "The piece's journey",
+    "journeySummary": "{count, plural, one {# log entry} other {# log entries}}, from {from} to {to}.",
+    "journeyCta": "See the journey",
+    "material": "Material",
+    "dimensions": "Dimensions",
+    "weight": "Weight",
+    "code": "Trace code",
+    "more": "Also from this household"
+  },
+  "trace": {
+    "home": "Back to the vCraft home page",
+    "book": "Craft book",
+    "notFoundTitle": "This code isn't in vCraft",
+    "notFoundText": "We couldn't find code {code}. This piece may not come from a craft village on vCraft, or the label may be counterfeit. Please check the code under the product again.",
+    "scanned": "You just scanned the seal of",
+    "verifiedSeal": "vCraft verification seal",
+    "verifiedTitle": "Verification seal stamped",
+    "verifiedText": "This code matches a product from {household}. The production log is chained with hashes, so nobody can rewrite it afterwards.",
+    "chainOk": "Log chain intact · {count, plural, one {# entry} other {# entries}}",
+    "scans": "{count, plural, one {# scan} other {# scans}}",
+    "timelineTitle": "A journey through fire",
+    "timelineLead": "Each step was recorded by the maker themselves, with a photo and a hash.",
+    "whereTitle": "Where it was made",
+    "certsTitle": "The household's certifications",
+    "qrLabel": "Trace seal for code {code}",
+    "ctaVisit": "Visit the workshop",
+    "ctaRfq": "Order in bulk",
+    "proofAlt": "Photo of the {stage} step",
+    "hashHint": "SHA-256 hash of this entry, chained to the one before it."
+  },
+  "rfq": {
+    "breadcrumb": "Breadcrumb",
+    "allRequests": "Quote requests",
+    "stepperLabel": "Progress of the quote request",
+    "status": {
+      "DRAFT": "Draft",
+      "SENT": "Sent",
+      "BIDDING": "Receiving bids",
+      "ACCEPTED": "Accepted",
+      "IN_PRODUCTION": "In production",
+      "DELIVERED": "Delivered",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired"
+    },
+    "event": {
+      "SUBMIT": "Send request",
+      "RECEIVE_BID": "Receive a bid",
+      "ACCEPT_BID": "Accept a bid",
+      "START_PRODUCTION": "Start production",
+      "CONFIRM_DELIVERY": "Confirm goods received",
+      "CANCEL": "Cancel request",
+      "ADMIN_CANCEL": "Cancel by admin decision",
+      "EXPIRE": "Mark as expired"
+    },
+    "error": {
+      "INVALID_TRANSITION": "The request isn't in a state that allows this action.",
+      "MISSING_CONTEXT": "Some information is missing to do this.",
+      "ACTOR_NOT_ALLOWED": "You aren't allowed to do this.",
+      "EMAIL_NOT_VERIFIED": "Please verify your email before sending the request.",
+      "BIDDING_DEADLINE_TOO_SOON": "The bidding deadline must be at least 24 hours after sending.",
+      "DELIVERY_BEFORE_BIDDING_DEADLINE": "The delivery date must be after the bidding deadline.",
+      "BIDDING_CLOSED": "The bidding deadline has passed.",
+      "DUPLICATE_BID": "This household already has a bid on this request.",
+      "BID_NOT_SUBMITTED": "Only a bid that is still active can be accepted.",
+      "BID_QUANTITY_MISMATCH": "Only a bid that covers the full quantity can be accepted.",
+      "ALLOCATIONS_NOT_CONFIRMED": "Not every household has confirmed its share yet.",
+      "ALLOCATIONS_NOT_DONE": "Not every household has finished its share yet.",
+      "REASON_REQUIRED": "Please give a reason for cancelling.",
+      "NOT_YET_EXPIRED": "It isn't time for this request to expire yet."
+    },
+    "actions": {
+      "title": "Actions",
+      "none": "Nothing more for you to do in this state.",
+      "acceptInTable": "To accept, press “Accept” on the bid you choose below.",
+      "demoNote": "Demo build: actions only change this browser, nothing is sent to a server."
+    },
+    "accepted": {
+      "title": "Sealed.",
+      "text": "You accepted the bid from {bidder}. The order is created, the other bids are declined and every household gets a notification."
+    },
+    "halted": {
+      "cancelledTitle": "Request cancelled",
+      "expiredTitle": "Request expired",
+      "reason": "Reason: {reason}",
+      "text": "This request no longer takes bids. You can start a new one any time."
+    },
+    "dialog": {
+      "back": "Go back",
+      "reasonLabel": "Reason for cancelling",
+      "reasonPlaceholder": "For example: plans changed, need a different quantity.",
+      "confirmText": "Are you sure you want to do this?"
+    },
+    "acceptDialog": {
+      "title": "Accept the bid from {bidder}?",
+      "text": "You accept {quantity} {unit} at {price} each, {total} in total. The other bids will be declined and every household notified. This can't be undone.",
+      "confirm": "Accept bid",
+      "back": "Review again"
+    },
+    "summary": {
+      "title": "Request summary",
+      "quantity": "Quantity",
+      "budget": "Budget",
+      "budgetRange": "{min} – {max}",
+      "biddingCloses": "Bidding deadline",
+      "requiredBy": "Delivery date",
+      "customization": "Special requirements",
+      "noCustomization": "No special requirements.",
+      "deliverTo": "Deliver to",
+      "invited": "Sent to {count, plural, one {# matching household} other {# matching households}}.",
+      "daysLeft": "{days, plural, one {# day left} other {# days left}}",
+      "closed": "Bidding has closed"
+    },
+    "bids": {
+      "title": "Bids received",
+      "count": "{count, plural, =0 {No bids yet} one {# bid} other {# bids}}",
+      "empty": "No household has bid yet. When one does, the bid appears here right away, no need to reload.",
+      "caption": "Bids compared by unit price, total, coverage, delivery date and reputation",
+      "best": "best",
+      "legend": "A gold cell is the best choice in that column. Total only compares bids that cover the full quantity.",
+      "sortBy": "Sort by",
+      "col": {
+        "bidder": "Bidder",
+        "unitPrice": "Unit price",
+        "total": "Total",
+        "coverage": "Coverage",
+        "delivery": "Delivery date",
+        "reputation": "Reputation",
+        "action": "Action"
+      },
+      "cooperative": "Co-op bid",
+      "revision": "Revision {n}",
+      "status": {
+        "SUBMITTED": "Pending",
+        "ACCEPTED": "Accepted",
+        "REJECTED": "Not chosen",
+        "WITHDRAWN": "Withdrawn",
+        "LAPSED": "No longer valid"
+      },
+      "coverageFull": "Full quantity",
+      "coveragePartial": "Partial · {percent}% ({count, number})",
+      "accept": "Accept",
+      "acceptBlocked": "Only a bid for the full {quantity} {unit} can be accepted."
+    }
+  },
+  "admin": {
+    "home": "Back to the vCraft home page",
+    "badge": "Admin",
+    "nav": {
+      "label": "Admin navigation",
+      "queue": "Approval queue",
+      "coordination": "Coordination",
+      "news": "News",
+      "audit": "Audit log",
+      "soon": "Soon"
+    },
+    "coordination": {
+      "breadcrumb": "Breadcrumb",
+      "section": "Coordination",
+      "buyer": "Buyer",
+      "quantity": "Quantity",
+      "requiredBy": "Delivery date",
+      "reasonLabel": "Needs coordination",
+      "reason": {
+        "requested": "The buyer asked the management board to split the order across households.",
+        "no-full-bid": "No household bid for the full quantity, so several need to be combined."
+      }
+    },
+    "board": {
+      "strategyTitle": "Suggested plan",
+      "strategy": {
+        "capacity": {
+          "name": "By capacity",
+          "text": "Split in proportion to each household's capacity; leftovers go to the largest remainders."
+        },
+        "cheapest": {
+          "name": "Cheapest first",
+          "text": "The cheapest household fills its capacity first, then the next, until the order is covered."
+        },
+        "balanced": {
+          "name": "Balanced",
+          "text": "Split evenly; if a household hits its capacity, the rest is shared among the others."
+        }
+      },
+      "strategyCost": "Total cost {cost}",
+      "barTitle": "Splitting {quantity} {unit} across households",
+      "barLabel": "{sum} of {quantity} {unit} allocated",
+      "statusOk": "All {quantity} {unit} allocated. You can send the co-op bid.",
+      "problem": {
+        "short": "{count} {unit} still missing.",
+        "excess": "{count} {unit} too many allocated.",
+        "over": "{name} is over its free capacity ({capacity}).",
+        "invalid": "Each household's quantity must be a whole number, 0 or more."
+      },
+      "partMeta": "Capacity {capacity} · unit price {price} · ready in {days} days",
+      "slider": "Quantity for {name}",
+      "quantityOf": "Enter the quantity for {name}",
+      "stat": {
+        "sum": "Allocated",
+        "missing": "Still missing",
+        "excess": "Over-allocated",
+        "cost": "Total cost",
+        "average": "Average unit price",
+        "eta": "Expected completion",
+        "etaDays": "{days, plural, one {# day} other {# days}}",
+        "onTime": "Meets the delivery date of {date}.",
+        "late": "Misses the delivery date of {date}."
+      },
+      "send": "Send co-op bid",
+      "reset": "Back to suggested plan",
+      "sendBlocked": "You can send once the full quantity is allocated and no household is over capacity.",
+      "sent": {
+        "title": "Sealed.",
+        "text": "The co-op bid for request {code} has gone to the buyer. The households involved will be notified."
+      }
+    }
+  }
 }
