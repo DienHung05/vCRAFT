@@ -48,6 +48,16 @@ function resolvePort(env: DbEnv, driver: DbDriver): number {
 }
 
 /**
+ * `DB_SSL=true` bật TLS (bắt buộc với Postgres của Supabase, ADR-15). Pooler của Supabase dùng chứng chỉ
+ * do CA riêng ký nên không kiểm chuỗi CA; kết nối vẫn được mã hóa.
+ */
+function resolveDriverOptions(env: DbEnv): Record<string, unknown> | undefined {
+  if (env.DB_SSL?.trim().toLowerCase() !== 'true') return undefined;
+  // `pg` và `mysql2` cùng nhận khóa `ssl` trong tùy chọn pool
+  return { ssl: { rejectUnauthorized: false } };
+}
+
+/**
  * Factory cấu hình MikroORM dùng chung cho CLI (migration, seeder) và `apps/api`/`apps/worker`
  * (qua `@mikro-orm/nestjs`: `MikroOrmModule.forRoot(createMikroOrmOptions())`).
  *
@@ -67,6 +77,7 @@ export function createMikroOrmOptions(
     dbName: env.DB_NAME ?? 'vcraft',
     user: env.DB_USER ?? 'vcraft',
     password: env.DB_PASSWORD ?? 'vcraft',
+    driverOptions: resolveDriverOptions(env),
     entities: [BaseEntity, OutboxEvent],
     metadataProvider: ReflectMetadataProvider,
     extensions: [Migrator, SeedManager],
@@ -75,12 +86,39 @@ export function createMikroOrmOptions(
       path: migrationsDir,
       pathTs: migrationsDir,
       snapshot: true,
+      // Cố định tên snapshot: mặc định MikroORM đặt theo dbName (`postgres` trên Supabase, `vcraft` khi chạy MySQL cục bộ)
+      snapshotName: '.snapshot-vcraft',
       emit: 'ts',
     },
     seeder: {
       path: join(PACKAGE_ROOT, 'src', 'seeders'),
       pathTs: join(PACKAGE_ROOT, 'src', 'seeders'),
       defaultSeeder: 'DatabaseSeeder',
+    },
+    // ADR-15: bảng nghiệp vụ trên Supabase luôn bật RLS (không policy) để Data API không đọc/ghi được.
+    // Khai báo ở đây để schema diff không sinh lệnh tắt RLS; MySQL không có khái niệm này.
+    ...(driver === 'postgresql' && {
+      discovery: {
+        onMetadata: (meta: { rowLevelSecurity?: boolean | 'force' }) => {
+          meta.rowLevelSecurity ??= true;
+        },
+      },
+    }),
+    schemaGenerator: {
+      // ADR-15: schema hệ thống của Supabase và vector store của trợ lý (ADR-13) không thuộc MikroORM quản lý
+      ignoreSchema: [
+        'auth',
+        'extensions',
+        'graphql',
+        'graphql_public',
+        'pgbouncer',
+        'private',
+        'realtime',
+        'storage',
+        'supabase_migrations',
+        'vault',
+      ],
+      skipTables: ['knowledge_chunks'],
     },
     debug: env.DB_DEBUG === 'true',
     ...overrides,

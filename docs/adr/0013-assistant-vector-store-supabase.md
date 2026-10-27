@@ -33,4 +33,5 @@ Nhóm đã có sẵn một project Supabase dùng cho Auth (ADR-11). Postgres c�
 
 - Tốt: CSDL nghiệp vụ vẫn độc lập, đổi sang MySQL thì trợ lý vẫn chạy. Có thêm một ví dụ Adapter/Port để trình bày khi vấn đáp.
 - Cần lưu ý: phụ thuộc thêm vào Supabase (project Free tự tạm dừng sau 7 ngày không dùng, xem rủi ro trong PLAN §9). Khi Supabase không truy cập được, trợ lý chuyển sang `InMemoryVectorStore` nạp từ snapshot hoặc báo "Cáo đi ngủ"; luồng nghiệp vụ không bị ảnh hưởng.
+- Từ ADR-15, CSDL nghiệp vụ cũng nằm trên Postgres của Supabase. Quyết định này vẫn giữ: vector store là bảng riêng, chỉ truy cập qua port `VectorStore`, migration riêng trong `supabase/migrations`. Đổi `DB_DRIVER=mysql` thì trợ lý vẫn chạy.
 - Có hai nơi chạy migration (MikroORM cho CSDL nghiệp vụ, Supabase CLI cho vector store); CI phải chạy cả hai.

@@ -188,7 +188,8 @@
       "checks": [],
       "triggers": [],
       "foreignKeys": {},
-      "comment": null
+      "comment": null,
+      "rlsEnabled": true
     }
   ],
   "views": [],

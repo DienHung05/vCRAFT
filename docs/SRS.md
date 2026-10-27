@@ -105,7 +105,7 @@ Làng nghề gặp ba vấn đề: (1) sản phẩm thật bị trà trộn hàn
 - A2 — Hộ có điện thoại chụp ảnh và kết nối 4G.
 - A3 — Dữ liệu địa giới dùng mô hình **2 cấp (Tỉnh/Thành → Xã/Phường)** sau sắp xếp đơn vị hành chính có hiệu lực 01/07/2025.
 - A4 — Ảnh seed lấy từ nguồn có giấy phép phù hợp, ghi công đầy đủ.
-- A5 — Danh tính người dùng do **Supabase Auth** (project `owwxkyumisfcqzahfhbn`) cấp; CSDL nghiệp vụ của vCraft độc lập với Supabase và chỉ tham chiếu `user.id` (UUID) của Supabase.
+- A5 — Danh tính người dùng do **Supabase Auth** (project `aaltayglwiusqybuiycd`) cấp. CSDL nghiệp vụ chạy trên Postgres của cùng project ([ADR-15](adr/0015-business-db-on-supabase.md)) nhưng chỉ tham chiếu `user.id` (UUID), không khóa ngoại sang `auth.users`, để vẫn chạy được trên MySQL.
 
 ---
 
