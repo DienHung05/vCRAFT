@@ -22,9 +22,9 @@
 
 ## 2. Logo & ấn triện
 
-- **Logomark — "Ấn v"**: hình vuông bo góc không đều như con dấu khắc tay, màu son, chữ *v* âm bản cách điệu thành dáng bình gốm (hai nét thuôn gặp nhau ở đáy). Viền có vết mực loang nhẹ (SVG `feTurbulence` + `feDisplacementMap`, tĩnh khi xuất file).
+- **Logomark — "Ấn bình"**: hình vuông bo góc không đều như con dấu khắc tay, màu son, khoét âm bản một **bình gốm dáng tỏi** (miệng loe, cổ thon, bụng tròn, chân đế) với một **dải sóng hoa lam** ngang bụng bình. Viền có vết mực loang nhẹ (SVG `feTurbulence` + `feDisplacementMap`, tĩnh khi xuất file).
 - **Wordmark**: `vCraft` dựng bằng Fraunces (trục `SOFT` cao, `WONK` bật) — chữ *v* thường, *C* hoa như vành miệng bình.
-- **Ấn truy xuất (Trace seal)**: mã QR đặt trong khung triện vuông, logo ấn v ở giữa (mức sửa lỗi H), mã 8 ký tự dưới khung bằng JetBrains Mono. Đây là **thứ người dùng thấy ngoài đời thật** (tem dán đáy sản phẩm) ⇒ cầu nối thương hiệu offline → online.
+- **Ấn truy xuất (Trace seal)**: mã QR đặt trong khung triện vuông, logo ấn bình ở giữa (mức sửa lỗi H), mã 8 ký tự dưới khung bằng JetBrains Mono. Đây là **thứ người dùng thấy ngoài đời thật** (tem dán đáy sản phẩm) ⇒ cầu nối thương hiệu offline → online.
 - Biến thể: đầy đủ (ấn + chữ), ấn đơn (favicon, app icon, ghim bản đồ), đơn sắc mực (in tem), đảo màu (nền tối).
 - Vùng an toàn = ½ chiều cao ấn; kích thước tối thiểu 20px (màn hình), 8mm (in).
 

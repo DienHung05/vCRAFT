@@ -185,7 +185,7 @@ gantt
 
 | Sprint               | Mục tiêu (sản phẩm demo được cuối sprint)                  | A — Frontend/Brand                                                                                        | B — Backend/Domain                                                                                                  | C — Platform                                                                                                                                                                                        |
 | -------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **S0** 27/10–01/11   | Repo chạy được, CI xanh, có hướng thương hiệu              | Moodboard, logo ấn v, token màu/chữ, Figma 6 màn chính                                                    | Mô hình domain, schema Zod đầu tiên, bảng state machine + test                                                      | `create-next-app`, `nest new`, MikroORM + 2 driver, compose, CI; cấu hình Supabase Auth (Site URL, redirect URLs, SMTP riêng, JWT 15′, MFA, Turnstile); **thực địa Bát Tràng** (cả nhóm, cuối tuần) |
+| **S0** 27/10–01/11   | Repo chạy được, CI xanh, có hướng thương hiệu              | Moodboard, logo ấn bình, token màu/chữ, Figma 6 màn chính                                                    | Mô hình domain, schema Zod đầu tiên, bảng state machine + test                                                      | `create-next-app`, `nest new`, MikroORM + 2 driver, compose, CI; cấu hình Supabase Auth (Site URL, redirect URLs, SMTP riêng, JWT 15′, MFA, Turnstile); **thực địa Bát Tràng** (cả nhóm, cuối tuần) |
 | **S1** 02/11–08/11   | Đăng ký/đăng nhập, hộ nộp hồ sơ, admin duyệt               | `packages/ui` (button, input, card, dialog, toast…), layout, header/footer, trang auth, wizard đăng ký hộ | `SupabaseAuthGuard` (JWKS), cấp hồ sơ lần đầu, CASL, throttler, kiểm duyệt hộ (+ invite/ban qua Supabase admin API) | Entities User/LoginEvent/Artisan/Workshop, migration, seeder cơ bản, mail (Mailpit), mã hóa trường CCCD                                                                                             |
 | **S2** 09/11–15/11   | Hộ đăng sản phẩm có nhiều ảnh + nhật ký                    | Studio (mobile-first): hồ sơ hộ, form sản phẩm, uploader nhiều ảnh, thêm mốc nhật ký                      | Module products, production-logs, chuỗi băm (domain), mẫu công đoạn                                                 | **Media pipeline**: upload, magic bytes, worker sharp AVIF/WebP, thumbhash, SSE `media.ready`                                                                                                       |
 | **S3** 16/11–22/11   | Khách quét QR xem hành trình; xem bản đồ; duyệt danh mục   | Trang danh mục (lọc + URL + cuộn vô hạn), chi tiết sản phẩm, hồ sơ hộ công khai, landing truy xuất        | Module catalog (Specification, cursor, tìm không dấu), gợi ý ⌘K                                                     | Traceability (mã, QR, `/q` redirect, lượt quét), **bản đồ** (style, ghim bbox, popup, đang mở, cluster), seed 200 sản phẩm                                                                          |
@@ -212,7 +212,7 @@ Ký hiệu: **[A] [B] [C]** = người phụ trách; mã FR tham chiếu [SRS.md
 - [ ] [C] CI chạy đủ job; `pnpm deps:check` xanh
 - [ ] [B] `packages/domain/rfq`: bảng chuyển trạng thái + `transition()` + `availableEvents()` + test mọi cặp trạng thái×sự kiện
 - [ ] [B] `packages/contracts`: quy ước schema, mã lỗi, Problem Details
-- [ ] [A] Moodboard, logo ấn v (SVG), token màu/chữ/khoảng cách/bóng, Figma: Trang chủ, Hồ sơ hộ, Sản phẩm, Truy xuất, RFQ, Điều phối
+- [ ] [A] Moodboard, logo ấn bình (SVG), token màu/chữ/khoảng cách/bóng, Figma: Trang chủ, Hồ sơ hộ, Sản phẩm, Truy xuất, RFQ, Điều phối
 - [ ] [ALL] Thực địa Bát Tràng: phỏng vấn 1–2 hộ (xin phép), chụp ảnh quy trình đủ 7 công đoạn, chân dung, xưởng; quay 10–20s video bàn xoay
 
 ### E1 — Xác thực & phiên (FR-AUTH) — Supabase Auth
@@ -406,7 +406,7 @@ Diễn tập: ≥ 3 lần có bấm giờ; mỗi người tập được **toàn
 1. Cả nhóm đọc [SRS.md](SRS.md) và góp ý trong 24h (đặc biệt §4 máy trạng thái).
 2. Tạo GitHub Projects, nhập backlog §5 thành issue, gán người.
 3. C: `corepack use pnpm@latest && pnpm install`, khởi tạo Next/Nest vào khung có sẵn, compose chạy được; commit lockfile rồi bật CI bằng repo variable `CI_ENABLED=true`.
-4. A: moodboard + logo ấn v bản nháp trước thứ Sáu 30/10.
+4. A: moodboard + logo ấn bình bản nháp trước thứ Sáu 30/10.
 5. B: PR đầu tiên `feat(domain): rfq state machine` kèm test.
 6. C: cấu hình Supabase Auth theo E1, xác thực MCP `supabase` (`claude /mcp` trong terminal).
 7. Chốt lịch thực địa Bát Tràng (thứ Bảy 31/10 hoặc Chủ nhật 01/11).

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 164 40" width="164" height="40" role="img" aria-label="vCraft">
+  <!-- Xuất từ packages/ui/src/ornaments (SealMark). Màu lấy từ biến CSS token, hex chỉ là dự phòng khi nhúng qua <img>. -->
+  <title>vCraft</title>
+  <defs>
+    <mask id="ml" maskUnits="userSpaceOnUse" x="0" y="0" width="40" height="40">
+      <rect width="40" height="40" fill="#fff"/>
+      <path d="M15 7 H25 Q24.6 8.2 23.4 8.8 C23 10.8 23.2 12.8 24.5 14.3 C29.5 16.8 31.5 20.2 31.2 23.6 C30.8 27.4 28 30 26 31 L25 32.6 H15 L14 31 C12 30 9.2 27.4 8.8 23.6 C8.5 20.2 10.5 16.8 15.5 14.3 C16.8 12.8 17 10.8 16.6 8.8 Q15.4 8.2 15 7 Z" fill="#000"/>
+      <path d="M11.2 22.4 q2.2 -2 4.4 0 t4.4 0 t4.4 0 t4.4 0" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>
+    </mask>
+    <filter id="bl" filterUnits="userSpaceOnUse" x="-2" y="-2" width="44" height="44" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="7" result="warp"/>
+      <feDisplacementMap in="SourceGraphic" in2="warp" scale="1.4" xChannelSelector="R" yChannelSelector="G" result="rough"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" result="speck"/>
+      <feColorMatrix in="speck" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -12 8.68" result="holes"/>
+      <feComposite in="rough" in2="holes" operator="in"/>
+    </filter>
+  </defs>
+  <g filter="url(#bl)">
+    <path d="M5 4.5 Q20 2.5 35.5 5 Q37.5 20 35 35.5 Q20 37.8 4.6 35.2 Q2.4 20 5 4.5 Z" fill="var(--color-seal, #C2261C)" mask="url(#ml)"/>
+  </g>
+  <!-- TODO(brand): chuyển chữ thành đường nét (outline) từ Fraunces SOFT 100 / WONK 1 để file không phụ thuộc font cài sẵn. -->
+  <text x="52" y="29.5" font-family="Fraunces, Georgia, serif" font-size="36" font-weight="600" letter-spacing="-0.72" style="font-variation-settings: 'SOFT' 100, 'WONK' 1" fill="var(--color-ink, #1C1814)">vCraft</text>
+</svg>
