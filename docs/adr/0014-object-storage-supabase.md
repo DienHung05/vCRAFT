@@ -30,4 +30,4 @@ Kế hoạch ban đầu dùng MinIO khi dev và Cloudflare R2 khi demo. Như v�
 
 - Tốt: bớt MinIO khỏi compose; một dashboard cho Auth, vector, file; có CDN sẵn của Supabase.
 - Cần lưu ý: gói Free có 1 GB lưu trữ và giới hạn băng thông; ảnh seed phải tối ưu trước. Project Free tạm dừng sau 7 ngày không dùng (PLAN §9). Mất mạng khi demo thì chuyển `STORAGE_DRIVER=local`.
-- **CSDL nghiệp vụ không chuyển sang Supabase**: vẫn là PostgreSQL/MySQL tự chạy để giữ NFR-PORT-01 (demo đổi `DB_DRIVER=mysql`).
+- CSDL nghiệp vụ sau đó cũng chuyển lên Supabase, xem [ADR-15](0015-business-db-on-supabase.md).

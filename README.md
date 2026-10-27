@@ -53,12 +53,13 @@ Luật phụ thuộc giữa các gói được kiểm tự động (`pnpm deps:c
 corepack enable pnpm
 pnpm install
 cp .env.example .env
-pnpm infra:up          # postgres, redis, mailpit, caddy (file lưu trên Supabase Storage)
-pnpm db:migrate && pnpm db:seed
+pnpm infra:up          # redis, mailpit, caddy (CSDL + file nằm trên Supabase, ADR-14/15)
+# CSDL dùng chung: chỉ chạy db:migrate từ develop; hạn chế db:seed (ADR-15)
+pnpm db:migrate
 pnpm dev               # web :3000 · api :4000 · truy cập qua Caddy http://localhost:8080
 ```
 
-Kiểm chứng độc lập CSDL: `docker compose -f infra/compose/compose.dev.yml --profile mysql up -d mysql`, đặt `DB_DRIVER=mysql`, `DB_PORT=3306`, chạy lại migrate/seed.
+Kiểm chứng độc lập CSDL: `docker compose -f infra/compose/compose.dev.yml --profile mysql up -d mysql`, đặt `DB_DRIVER=mysql`, `DB_HOST=localhost`, `DB_PORT=3306`, `DB_NAME`/`DB_USER`/`DB_PASSWORD=vcraft`, `DB_SSL=false`, chạy lại migrate/seed.
 
 ## Quy ước
 

@@ -56,6 +56,14 @@ describe('createMikroOrmOptions', () => {
     });
   });
 
+  it('chỉ bật TLS khi DB_SSL=true', () => {
+    expect(createMikroOrmOptions({}).driverOptions).toBeUndefined();
+    expect(createMikroOrmOptions({ DB_SSL: 'false' }).driverOptions).toBeUndefined();
+    expect(createMikroOrmOptions({ DB_SSL: 'TRUE' }).driverOptions).toEqual({
+      ssl: { rejectUnauthorized: false },
+    });
+  });
+
   it('từ chối DB_PORT không hợp lệ', () => {
     expect(() => createMikroOrmOptions({ DB_PORT: 'abc' })).toThrow(/DB_PORT/);
   });

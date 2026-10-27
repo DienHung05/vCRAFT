@@ -48,6 +48,16 @@ function resolvePort(env: DbEnv, driver: DbDriver): number {
 }
 
 /**
+ * `DB_SSL=true` bật TLS (bắt buộc với Postgres của Supabase, ADR-15). Pooler của Supabase dùng chứng chỉ
+ * do CA riêng ký nên không kiểm chuỗi CA; kết nối vẫn được mã hóa.
+ */
+function resolveDriverOptions(env: DbEnv): Record<string, unknown> | undefined {
+  if (env.DB_SSL?.trim().toLowerCase() !== 'true') return undefined;
+  // `pg` và `mysql2` cùng nhận khóa `ssl` trong tùy chọn pool
+  return { ssl: { rejectUnauthorized: false } };
+}
+
+/**
  * Factory cấu hình MikroORM dùng chung cho CLI (migration, seeder) và `apps/api`/`apps/worker`
  * (qua `@mikro-orm/nestjs`: `MikroOrmModule.forRoot(createMikroOrmOptions())`).
  *
@@ -67,6 +77,7 @@ export function createMikroOrmOptions(
     dbName: env.DB_NAME ?? 'vcraft',
     user: env.DB_USER ?? 'vcraft',
     password: env.DB_PASSWORD ?? 'vcraft',
+    driverOptions: resolveDriverOptions(env),
     entities: [BaseEntity, OutboxEvent],
     metadataProvider: ReflectMetadataProvider,
     extensions: [Migrator, SeedManager],
