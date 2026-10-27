@@ -13,6 +13,8 @@ Hướng dẫn cho mọi AI agent (Claude Code, Codex, Copilot, Cursor…) làm 
 
 Đề bài gốc: [docs/requirements/vCraft.pdf](docs/requirements/vCraft.pdf).
 
+**Chia việc cho subagent:** trước khi giao task, đọc các định nghĩa agent trong [.claude/agents/](.claude/agents/) (tên, mô tả, model, effort, quy trình) để chọn đúng agent. Phiên chính (Opus) đọc tài liệu, lập kế hoạch, viết brief có phạm vi rõ và rà lại kết quả. Phần cài đặt code giao cho agent `coder` (Sonnet, effort high), không tự viết ở phiên chính, trừ sửa nhỏ một vài dòng hoặc sửa câu chữ trong tài liệu.
+
 ## 2. Bản đồ thư mục
 
 | Thư mục | Chứa gì | Đặt code mới ở đây khi… |
@@ -30,6 +32,7 @@ Hướng dẫn cho mọi AI agent (Claude Code, Codex, Copilot, Cursor…) làm 
 | `tooling/typescript` | tsconfig dùng chung | — |
 | `tests/e2e`, `tests/load` | Playwright, k6 | Test hành trình người dùng, test tranh chấp |
 | `infra/` | compose, docker, caddy, scripts | Hạ tầng, reverse proxy, triển khai |
+| `supabase/` | Migration SQL cho vector store của trợ lý Cáo (pgvector) | Đổi bảng/index/RPC/RLS của chỉ mục tri thức (ADR-13) |
 | `docs/` | SRS, kiến trúc, kế hoạch, thương hiệu, ADR | Quyết định kiến trúc mới: `docs/adr/NNNN-*.md` |
 
 ## 3. Luật bắt buộc khi viết code

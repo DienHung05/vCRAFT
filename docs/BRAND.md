@@ -155,6 +155,8 @@ Vi tương tác bổ sung: nút từ tính (desktop), con trỏ chấm mực đ�
 
 Ẩn dụ nghề dùng **có chừng mực** ở khoảnh khắc cảm xúc; thông tin nghiệp vụ (giá, hạn, số lượng) luôn nói thẳng.
 
+Riêng trợ lý Cáo (§10) xưng **"tớ"**, gọi người dùng là "bạn", hóm hỉnh hơn giao diện chung một chút nhưng vẫn ngắn gọn.
+
 ---
 
 ## 9. Định hướng các màn hình chủ chốt
@@ -169,3 +171,26 @@ Vi tương tác bổ sung: nút từ tính (desktop), con trỏ chấm mực đ�
 | **RFQ (Buyer)** | Stepper trạng thái dạng "các công đoạn lò" phía trên; bảng so sánh bid có highlight tốt nhất theo cột; nút chốt to rõ. |
 | **Studio (Hộ)** | Mobile-first, nút nổi "+ Thêm mốc" luôn sẵn; thẻ lời mời RFQ có đồng hồ đếm ngược; thống kê lượt quét QR. |
 | **Admin** | Sạch, mật độ cao, nền giấy; hàng đợi duyệt dạng 3 cột song song; bảng điều phối kéo-thả (#9); biểu đồ giá vật liệu. |
+
+---
+
+## 10. Mascot — Cáo
+
+Trợ lý hỏi đáp của vCraft (FR-AST, [SRS §3.13](SRS.md#313-trợ-lý-cáo-chatbot--fr-ast)) là một chú **cáo con ở làng gốm**.
+
+| | |
+|---|---|
+| **Ngoại hình** | Cáo chibi, lông màu **đất nung** (`--clay`), đuôi chóp kem như men rạn; quàng khăn **men lam** (`--glaze`) có viền sóng hoa lam; hai tay ôm một bình gốm nhỏ dáng tỏi (gợi logo ấn bình). Nét viền mực mảnh như vẽ tay, không bóng 3D. |
+| **Tính cách** | Tò mò, nhanh nhảu, tự hào về làng; xưng "tớ"; biết lúc nào đùa, lúc nào nói thẳng (giá, hạn, số lượng). |
+| **Asset** | Sinh bằng skill `page-mascot`: 2 sprite sheet WebP căn khớp nhau. **9 hướng đầu** (nhìn theo con trỏ) và **9 biểu cảm**: idle, chào (vẫy tay), nghe, nghĩ, nói, vui, bối rối, từ chối (lắc đầu, ôm bình chặt), lỗi/ngủ (Zzz). Bản gốc lưu ở `packages/ui/assets/mascot/`. |
+| **Kích thước** | Nút nổi 56px (mobile) / 64px (desktop); trong panel 96px ở đầu khung chat. Vùng an toàn quanh nút 16px, né safe-area. |
+
+**Chuyển động** (dùng token §6.2):
+- **Chớp mắt**: ngẫu nhiên mỗi 3–6 s, 120 ms, thỉnh thoảng chớp đôi.
+- **Thở**: nhấp nhô 2px chu kỳ 3 s (`ease.clay`); lâu không dùng thì ngủ gật.
+- **Nhìn theo**: đầu xoay theo con trỏ hoặc ô nhập, đổi frame có độ trễ nhẹ cho tự nhiên.
+- **Bong bóng suy nghĩ**: ba bọt mây nhỏ nổi lên lần lượt (`stagger.list`), rồi bong bóng lớn hiện câu thú vị; mỗi câu đổi sau ~2,5 s bằng mờ chéo. Nền bong bóng là giấy dó, viền mực, góc bo không đều như ấn triện.
+- **Chào hỏi**: vẫy tay + `ease.press` nảy nhẹ khi mở panel lần đầu trong phiên.
+- `prefers-reduced-motion` ⇒ tắt chớp mắt, thở, xoay đầu; bong bóng hiện tĩnh, đổi câu không hiệu ứng.
+
+**Câu thú vị trong bong bóng** (i18n `assistant.thoughts.*`, ~30 câu vi/en) xen kẽ ba nhóm: (1) lời "đang làm việc" của cáo ("Đợi tớ lục lại kho gốm một chút…"), (2) chuyện làng ("Gốm Bát Tràng nung tới khoảng 1.300°C đấy!"), (3) mẹo dùng vCraft ("Quét QR dưới đáy cốc là xem được ai làm ra nó"). Mỗi câu ≤ 60 ký tự; không lặp câu trong cùng một phiên.

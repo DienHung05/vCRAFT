@@ -265,6 +265,21 @@ Xác thực dùng **Supabase Auth** làm nhà cung cấp danh tính (IdP) bên n
 | FR-MEDIA-04 | Ảnh giấy tờ xác minh lưu **bucket riêng tư**, chỉ Admin xem qua URL ký có hạn 5 phút.                                                                                                                                              | M       | —                                                                               |
 | FR-MEDIA-05 | Chống trùng lặp theo checksum SHA-256 (cùng chủ sở hữu).                                                                                                                                                                           | C       | —                                                                               |
 
+### 3.13 Trợ lý Cáo (chatbot) — `FR-AST`
+
+Trợ lý hỏi đáp có mascot cáo ở góc dưới bên phải trang công khai. Trợ lý **chỉ đọc** và chỉ dùng dữ liệu công khai. Thiết kế ở [ARCHITECTURE §7.6](ARCHITECTURE.md#76-trợ-lý-cáo-rag--guardrail), quyết định lưu vector ở [ADR-13](adr/0013-assistant-vector-store-supabase.md).
+
+| ID        | Yêu cầu                                                                                                                                                                                                                                       | Ưu tiên | Tiêu chí chấp nhận                                                                                                   |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
+| FR-AST-01 | Nút mascot cáo nổi góc dưới phải trên mọi trang công khai; mở panel chat (desktop: popover; mobile: bottom sheet). Không che CTA, không tự bật popup.                                                                                         | S       | Ở 360px panel không tràn ngang, bàn phím ảo không che ô nhập.                                                       |
+| FR-AST-02 | Trả lời câu hỏi về vCraft (đặt hàng, RFQ, truy xuất QR, đăng ký hộ), làng Bát Tràng, hộ và sản phẩm **công khai** dựa trên chỉ mục tri thức (RAG); mỗi câu trả lời có **trích dẫn** link nội bộ; tiếng Việt và tiếng Anh.                  | S       | "Làm sao đặt 5.000 cốc?" ⇒ hướng dẫn kèm link tới trang tạo RFQ.                                                    |
+| FR-AST-03 | Trả lời câu **đời thường**: chào hỏi/cảm ơn (đường nhanh không gọi LLM), ngày giờ và âm lịch, thời tiết (mặc định Bát Tràng), xưởng đang mở cửa. Câu lạc đề vô hại thì trả lời ngắn rồi gợi ý quay về chủ đề.                                | S       | "chao cao" phản hồi < 100 ms; "thời tiết Bát Tràng hôm nay" có nhiệt độ; không câu chào/ngày giờ/thời tiết nào bị chặn. |
+| FR-AST-04 | Phản hồi **stream** (SSE). Trong lúc chờ token đầu tiên, cáo ở trạng thái "đang nghĩ" với **bong bóng suy nghĩ** hiện các câu thú vị (i18n).                                                                                                 | S       | Có phản hồi thị giác < 100 ms sau khi gửi; first token p50 ≤ 1,5 s.                                                 |
+| FR-AST-05 | Hiểu ngữ cảnh trang đang xem (`pagePath`); chip gợi ý câu hỏi đổi theo trang; giữ hội thoại khi chuyển trang trong phiên; có copy, 👍/👎, thử lại, cuộc trò chuyện mới.                                                                          | S       | Ở trang sản phẩm, "cái này làm ở đâu" trả lời đúng hộ của sản phẩm đó.                                               |
+| FR-AST-06 | Mascot: chớp mắt ngẫu nhiên, đầu nhìn theo con trỏ, biểu cảm theo trạng thái (chào, nghĩ, nói, vui, từ chối, lỗi, ngủ). Tôn trọng `prefers-reduced-motion`.                                                                                  | S       | Bật reduced-motion ⇒ không còn chuyển động lặp.                                                                      |
+| FR-AST-07 | **Guardrail**: chặn prompt injection, lạm dụng, dò dữ liệu riêng tư; không tiết lộ system prompt; không có tool ghi dữ liệu; rate limit và trần ngân sách token (BR-AST-01…04).                                                                  | S       | Bộ red-team: ≥ 95% câu tấn công bị chặn, 0 lần rò canary/PII, chặn nhầm ≤ 3% trên bộ câu hợp lệ.                     |
+| FR-AST-08 | Admin xem thống kê trợ lý: số lượt, tỷ lệ chặn, câu chưa trả lời được, 👍/👎, thời gian phản hồi.                                                                                                                                                | C       | —                                                                                                                    |
+
 ---
 
 ## 4. Đặc tả máy trạng thái & quy tắc khóa
@@ -346,6 +361,10 @@ stateDiagram-v2
 | BR-05 | **Ghép hộ**: lọc (cùng danh mục ∧ APPROVED ∧ không tạm khóa ∧ năng lực > 0) rồi chấm `score = 0.4·capacityFit + 0.25·rating + 0.2·responseRate + 0.15·onTimeRate`; mời top 10 (cấu hình được) hoặc tất cả.                                                                |
 | BR-06 | **Chiến lược chia đơn**: _Theo năng lực_ — chia tỉ lệ năng lực, phần dư theo phương pháp số dư lớn nhất (Hamilton); _Giá thấp trước_ — tham lam theo đơn giá tăng dần tới khi đủ; _Cân bằng_ — chia đều có trần năng lực. Mọi chiến lược tôn trọng BR-L6 và lô tối thiểu. |
 | BR-07 | Tiền lưu số nguyên VND; hiển thị `1.250.000 ₫`; quy đổi USD chỉ để tham khảo, tỉ giá cập nhật hằng ngày.                                                                                                                                                                  |
+| BR-AST-01 | Chỉ mục tri thức chỉ chứa nội dung **công khai**: sản phẩm của hộ `APPROVED` (BR-02), hồ sơ hộ công khai, tin `PUBLIC`, FAQ. Không bao giờ chứa CCCD, giấy tờ, giá chào, tin "chỉ hộ", email/SĐT. Gỡ/ẩn/khóa ở CSDL chính ⇒ xóa khỏi chỉ mục. |
+| BR-AST-02 | Trợ lý chỉ có tool **đọc** trong allowlist (`get_current_datetime`, `get_weather`, `search_catalog`, `get_open_workshops`), gọi API với quyền Guest. Mọi hành động chỉ là link để người dùng tự bấm.                                    |
+| BR-AST-03 | Phân loại ý định quyết định chặn: chỉ `injection`, `abuse` hoặc dò dữ liệu riêng bị chặn; heuristic chỉ cộng điểm nghi ngờ, không tự chặn.                                                                                                |
+| BR-AST-04 | Giới hạn: tin ≤ 1.000 ký tự, lịch sử ≤ 10 lượt, 10 tin/phút và 60 tin/ngày mỗi IP/phiên; vượt trần token/ngày toàn hệ thống ⇒ trợ lý tạm nghỉ, trang vẫn chạy bình thường.                                                              |
 
 ---
 
@@ -379,6 +398,8 @@ Yêu cầu chung UI: trạng thái loading (skeleton), rỗng (minh họa + lờ
 - Object storage tương thích S3 (MinIO / Cloudflare R2). SMTP cho email.
 - Dữ liệu đơn vị hành chính Việt Nam 2 cấp (tệp JSON tĩnh đóng gói cùng app).
 - Tùy chọn: Claude API cho gợi ý/dịch câu chuyện (FR-ART-08).
+- Trợ lý Cáo (FR-AST): Claude API (Haiku 5.5) để trả lời và phân loại; Voyage AI để sinh embedding đa ngữ; **Supabase Postgres + pgvector** làm chỉ mục tri thức (tách khỏi CSDL nghiệp vụ, ADR-13); Open-Meteo (thời tiết, geocoding) không cần khóa API.
+- SSE `POST /api/v1/assistant/messages` trả stream câu trả lời.
 
 ### 5.3 Giao diện phần cứng
 
@@ -403,6 +424,7 @@ HTTPS (TLS 1.2+), HTTP/2 hoặc HTTP/3 qua reverse proxy Caddy; nén zstd/gzip.
 | NFR-PERF-05 | JS khởi tạo mỗi route (gzip)                                                                                                                               | ≤ 180 KB; cảnh 3D, bản đồ, editor tải lười                                        |
 | NFR-PERF-06 | Ảnh danh sách                                                                                                                                              | Dùng biến thể ≤ 640px, `srcset`/`sizes`, lazy-load ngoài màn hình, có placeholder |
 | NFR-PERF-07 | Hoạt ảnh                                                                                                                                                   | Chỉ animate `transform`/`opacity`/`filter`; ≥ 55 fps trên điện thoại tầm trung    |
+| NFR-PERF-08 | Trợ lý Cáo: phản hồi thị giác sau khi gửi; câu chào; token đầu tiên; widget tải lười                                                                        | < 100 ms · < 100 ms · p50 ≤ 1,5 s / p95 ≤ 3 s · không tính vào ngân sách JS route  |
 
 ### 6.2 Bảo mật — `NFR-SEC`
 
@@ -416,6 +438,7 @@ HTTPS (TLS 1.2+), HTTP/2 hoặc HTTP/3 qua reverse proxy Caddy; nén zstd/gzip.
 | NFR-SEC-06 | Log không chứa mật khẩu/token/CCCD; IP lưu dạng băm có salt.                                                                                                                                                                                                                                       |
 | NFR-SEC-07 | Tuân thủ quy định bảo vệ dữ liệu cá nhân của Việt Nam: có trang chính sách quyền riêng tư, xin đồng ý khi thu thập giấy tờ, cho phép người dùng tải/xóa dữ liệu của mình.                                                                                                                          |
 | NFR-SEC-08 | Bí mật chỉ nằm trong biến môi trường; `pnpm audit` + Renovate trong CI.                                                                                                                                                                                                                            |
+| NFR-SEC-09 | Trợ lý AI phòng thủ theo OWASP LLM Top 10: chuẩn hóa và giới hạn đầu vào, phân loại trước, tài liệu truy hồi và kết quả tool đánh dấu không tin cậy (chống indirect injection), canary token, che PII và allowlist link ở đầu ra, không render HTML/ảnh ngoài, log ẩn danh lưu 30 ngày. Bộ red-team chạy trong CI. |
 
 ### 6.3 Khả dụng & tiếp cận — `NFR-UX`
 
@@ -442,7 +465,7 @@ HTTPS (TLS 1.2+), HTTP/2 hoặc HTTP/3 qua reverse proxy Caddy; nén zstd/gzip.
 
 | ID          | Yêu cầu                                                                                                                                                                                                                                                     |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| NFR-PORT-01 | **Độc lập CSDL**: chạy trên PostgreSQL và MySQL chỉ bằng đổi `DB_DRIVER`; không dùng tính năng riêng của một hệ (PostGIS, mảng, toán tử JSONB, full-text riêng). Khóa chính UUID v7 sinh ở ứng dụng; tìm kiếm không dấu dùng cột chuẩn hóa sinh ở ứng dụng. |
+| NFR-PORT-01 | **Độc lập CSDL**: chạy trên PostgreSQL và MySQL chỉ bằng đổi `DB_DRIVER`; không dùng tính năng riêng của một hệ (PostGIS, mảng, toán tử JSONB, full-text riêng). Khóa chính UUID v7 sinh ở ứng dụng; tìm kiếm không dấu dùng cột chuẩn hóa sinh ở ứng dụng. Chỉ mục vector của trợ lý nằm ngoài CSDL nghiệp vụ (Supabase pgvector, ADR-13) nên không ảnh hưởng yêu cầu này. |
 | NFR-PORT-02 | Toàn bộ hệ thống khởi động bằng Docker Compose một lệnh.                                                                                                                                                                                                    |
 | NFR-PORT-03 | Lưu trữ file qua cổng trừu tượng (S3-compatible / local disk).                                                                                                                                                                                              |
 
@@ -463,7 +486,7 @@ HTTPS (TLS 1.2+), HTTP/2 hoặc HTTP/3 qua reverse proxy Caddy; nén zstd/gzip.
 
 Thực thể chính (chi tiết thuộc tính, quan hệ, chỉ mục ở [ARCHITECTURE §6](ARCHITECTURE.md#6-mô-hình-dữ-liệu)):
 
-`User` (hồ sơ + vai trò, khóa chính = id người dùng Supabase), `LoginEvent`, `ArtisanProfile`, `VerificationDocument`, `FamilyHistoryEvent`, `Certification`, `Workshop`, `ProductionCapacity`, `Category`, `StageTemplate`, `Product`, `ProductMedia`, `ProductionLogEntry`, `TraceScan`, `MediaAsset`, `QuoteRequest`, `QuoteInvitation`, `Bid`, `BidRevision`, `Order`, `Allocation`, `AllocationProgress`, `News`, `MaterialPrice`, `PowerOutage`, `Notification`, `AuditLog`, `OutboxEvent`, `IdempotencyKey`.
+`User` (hồ sơ + vai trò, khóa chính = id người dùng Supabase), `LoginEvent`, `ArtisanProfile`, `VerificationDocument`, `FamilyHistoryEvent`, `Certification`, `Workshop`, `ProductionCapacity`, `Category`, `StageTemplate`, `Product`, `ProductMedia`, `ProductionLogEntry`, `TraceScan`, `MediaAsset`, `QuoteRequest`, `QuoteInvitation`, `Bid`, `BidRevision`, `Order`, `Allocation`, `AllocationProgress`, `News`, `MaterialPrice`, `PowerOutage`, `Notification`, `AuditLog`, `OutboxEvent`, `IdempotencyKey`, `AssistantMessageLog`. Ngoài CSDL nghiệp vụ: `knowledge_chunks` (Supabase pgvector, dữ liệu dẫn xuất dựng lại được).
 
 Yêu cầu lưu trữ:
 - DR-01 — Xóa mềm (`deletedAt`) cho Product, News, ArtisanProfile; xóa cứng dữ liệu cá nhân khi người dùng yêu cầu (trừ bản ghi giao dịch cần giữ, được ẩn danh hóa).
@@ -476,13 +499,13 @@ Yêu cầu lưu trữ:
 
 | #   | Tiêu chí (hệ số)                           | Yêu cầu đáp ứng                                                              | Bằng chứng khi demo                                                                                                                                          |
 | --- | ------------------------------------------ | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | Chức năng & features (0.35)                | Toàn bộ FR-AUTH…FR-MEDIA mức M + S; nhóm C làm điểm cộng                     | Kịch bản demo 3 vai trò ([PLAN §6](PLAN.md#6-kịch-bản-demo-vấn-đáp))                                                                                         |
+| 1   | Chức năng & features (0.35)                | Toàn bộ FR-AUTH…FR-AST mức M + S; nhóm C làm điểm cộng                       | Kịch bản demo 3 vai trò ([PLAN §6](PLAN.md#6-kịch-bản-demo-vấn-đáp))                                                                                         |
 | 2   | Thiết kế: logic, dễ dùng (0.1)             | FR-RFQ-12, NFR-UX-04/05/06, §5.1                                             | Stepper trạng thái, hành động theo ngữ cảnh, wizard, kết quả SUS                                                                                             |
 | 3   | Giao diện: responsive, đẹp, bản sắc (0.2)  | NFR-UX-01/02/03, [BRAND.md](BRAND.md)                                        | Hero 3D bình gốm, hiệu ứng ấn triện, landing truy xuất; thu nhỏ trình duyệt về 360px                                                                         |
 | 4   | Hiệu năng: fetch/AJAX, JSON, DOM (0.1)     | NFR-PERF-01…07, FR-CAT-02/03, FR-RFQ-07, FR-NOTI-01, FR-MAP-04               | DevTools Network: chỉ Fetch/XHR JSON khi lọc/cuộn/chào giá; Lighthouse                                                                                       |
 | 5   | Phong cách lập trình (0.05)                | NFR-MAIN-01…05, [ARCHITECTURE §4, §5](ARCHITECTURE.md)                       | Cây monorepo, design patterns có tên, domain thuần, JSDoc                                                                                                    |
 | 6   | Xử lý nhập liệu (0.05)                     | FR-AUTH-02, FR-ART-01/05, FR-PRD-03/04, FR-RFQ-01/11, FR-MEDIA-02, FR-CAT-04 | Kiểm tra realtime, tự điền EXIF/địa chỉ/mẫu công đoạn, gợi ý giá, đọc số thành chữ, định dạng tiền                                                           |
-| 7   | An ninh (0.05)                             | FR-AUTH-01…10, NFR-SEC-01…08                                                 | Đăng nhập Admin có MFA, đăng xuất mọi thiết bị, giải mã JWT trên jwt.io và giải thích kiểm chứng JWKS, thử truy cập trái phép ⇒ 403, CCCD đã mã hóa trong DB |
+| 7   | An ninh (0.05)                             | FR-AUTH-01…10, NFR-SEC-01…09, FR-AST-07                                      | Đăng nhập Admin có MFA, đăng xuất mọi thiết bị, giải mã JWT trên jwt.io và giải thích kiểm chứng JWKS, thử truy cập trái phép ⇒ 403, CCCD đã mã hóa trong DB |
 | 8   | Viết lại / định tuyến URL (0.05)           | §5.1, FR-TRC-03, NFR-I18N-01/02                                              | `/q/<code>` 308 → URL bản địa hóa; slug tiếng Việt; slug cũ 301 sang slug mới                                                                                |
 | 9   | CSDL hướng đối tượng & độc lập CSDL (0.05) | NFR-PORT-01, §4.4, DR-01…03                                                  | Entity class + Unit of Work; đổi `DB_DRIVER=mysql` chạy lại demo; CI matrix 2 CSDL                                                                           |
 

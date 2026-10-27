@@ -56,8 +56,10 @@ flowchart LR
     tiles[(Vector tiles<br/>OpenFreeMap / PMTiles)]
     mail[(SMTP)]
     s3[(Object storage<br/>S3 / R2)]
-    llm[(Claude API<br/>tùy chọn)]
+    llm[(Claude API · Voyage AI<br/>trợ lý Cáo, gợi ý câu chuyện)]
     idp[(Supabase Auth<br/>danh tính, phiên, MFA)]
+    vec[(Supabase pgvector<br/>chỉ mục tri thức)]
+    wx[(Open-Meteo<br/>thời tiết)]
 
     guest --> vcraft
     buyer --> vcraft
@@ -68,6 +70,8 @@ flowchart LR
     vcraft --> s3
     vcraft --> idp
     vcraft -.-> llm
+    vcraft -.-> vec
+    vcraft -.-> wx
 ```
 
 ### 2.2 Mức 2 — Container
@@ -85,6 +89,8 @@ flowchart TB
     redis[("Redis<br/>cache · queue · pub/sub")]
     s3[("MinIO / R2<br/>public + private bucket")]
     supa[["Supabase Auth<br/>đăng nhập · refresh · MFA · OAuth"]]
+    vec[("Supabase Postgres + pgvector<br/>knowledge_chunks (dẫn xuất)")]
+    ai[["Claude API · Voyage AI"]]
 
     browser -->|HTTPS| caddy
     browser -->|supabase-js: sign in/up, refresh| supa
@@ -100,6 +106,10 @@ flowchart TB
     worker --> redis
     worker --> s3
     redis -. pub/sub sự kiện .-> api
+    api -->|RPC match_knowledge (secret key)| vec
+    worker -->|upsert chunk + embedding| vec
+    api -->|trả lời, phân loại| ai
+    worker -->|embedding| ai
 ```
 
 Điểm then chốt: **web và api cùng origin** sau Caddy ⇒ không cần CORS, QR luôn trỏ về một domain. Trình duyệt nói chuyện trực tiếp với Supabase **chỉ** cho việc xác thực; mọi dữ liệu nghiệp vụ đi qua `apps/api`.
@@ -160,7 +170,7 @@ vCRAFT/
 │   │       │   └── q/[code]/               # redirect QR ngắn
 │   │       ├── features/         # "feature slices": components + hooks + view-models theo nghiệp vụ
 │   │       │   ├── catalog/  artisan-profile/  products/  production-log/  traceability/
-│   │       │   ├── village-map/  rfq/  orders/  news/  notifications/  auth/  admin/
+│   │       │   ├── village-map/  rfq/  orders/  news/  notifications/  auth/  admin/  assistant/
 │   │       ├── experience/       # lớp trải nghiệm thương hiệu: hero-vase (R3F), scroll-story (GSAP), transitions
 │   │       ├── providers/        # QueryClient, Theme, Motion, Lenis, Auth, SSE
 │   │       ├── lib/              # cấu hình app (env, metadata, fonts)
@@ -169,19 +179,19 @@ vCRAFT/
 │   │   ├── src/
 │   │   │   ├── modules/          # auth, users, artisans, workshops, products, production-logs,
 │   │   │   │                     # traceability, catalog, village-map, rfq, bids, orders,
-│   │   │   │                     # news, notifications, media, admin, health
+│   │   │   │                     # news, notifications, media, admin, assistant, health
 │   │   │   ├── common/           # guards, interceptors, filters, pipes, decorators, policies
-│   │   │   ├── infrastructure/   # storage, mail, cache, queue, realtime, crypto (adapters)
+│   │   │   ├── infrastructure/   # storage, mail, cache, queue, realtime, crypto, vector, llm, weather (adapters)
 │   │   │   └── config/           # cấu hình có kiểm tra bằng Zod
 │   │   └── test/                 # integration/, concurrency/
 │   └── worker/                   # tiến trình nền BullMQ
-│       └── src/processors/       # media, qr-labels, mail, notifications, outbox, scheduler
+│       └── src/processors/       # media, qr-labels, mail, notifications, outbox, scheduler, assistant-ingest
 ├── packages/
 │   ├── domain/        # lõi nghiệp vụ THUẦN: rfq/, allocation/, matching/, traceability/, shared/
 │   ├── contracts/     # Zod schemas + kiểu DTO + mã lỗi — hợp đồng API giữa FE và BE
 │   ├── database/      # MikroORM: entities/, repositories/, migrations/{postgresql,mysql}/, seeders/
 │   ├── api-client/    # http/ (fetch có kiểu, refresh token, idempotency), queries/ (query keys + hooks), realtime/ (SSE)
-│   ├── ui/            # design system: tokens/, components/, motion/, ornaments/, hooks/, assets/
+│   ├── ui/            # design system: tokens/, components/, motion/, ornaments/, mascot/, hooks/, assets/
 │   ├── i18n/          # messages/vi.json, en.json + pathnames
 │   └── utils/         # vn/ (slug, đọc số, SĐT, địa giới), format/, validation/
 ├── tooling/
@@ -194,7 +204,8 @@ vCRAFT/
 │   ├── docker/        # Dockerfile đa tầng cho web, api, worker
 │   ├── caddy/         # Caddyfile: rewrite, header bảo mật, HTTPS tự động
 │   └── scripts/       # gen-keys.sh, backup.sh, pmtiles-extract.sh
-├── docs/              # SRS, ARCHITECTURE, PLAN, BRAND, adr/, requirements/
+├── supabase/          # migrations/ cho vector store của trợ lý (pgvector, HNSW, RPC, RLS) — ADR-13
+├── docs/              # SRS, ARCHITECTURE, PLAN, BRAND, adr/, requirements/, assistant-kb/ (FAQ vi/en)
 ├── scripts/           # script tiện ích phát triển
 ├── .github/           # workflows/ci.yml, pull_request_template.md
 ├── package.json · pnpm-workspace.yaml · turbo.json · biome.json
@@ -285,6 +296,7 @@ Quy tắc: Controller **mỏng** → Application service **điều phối** → 
 | `notifications`   | Thông báo in-app, SSE hub, email                                                                                                                                   | FR-NOTI             |
 | `media`           | Upload, kiểm tra, đẩy job xử lý, URL ký                                                                                                                            | FR-MEDIA            |
 | `admin`           | Dashboard, audit log                                                                                                                                               | FR-ADM              |
+| `assistant`       | Trợ lý Cáo: định tuyến ý định, guardrail pipeline, truy hồi qua `VectorStore`, tool đọc, stream SSE, log ẩn danh                                                   | FR-AST              |
 | `health`          | Kiểm tra sức khỏe                                                                                                                                                  | NFR-REL             |
 
 ### 4.4 Tầng dữ liệu — MikroORM (OOP & độc lập CSDL)
@@ -298,11 +310,13 @@ Quy tắc: Controller **mỏng** → Application service **điều phối** → 
   - Tìm kiếm không dấu: cột `search_text` (chữ thường, bỏ dấu, đ→d) sinh trong hook `@BeforeCreate/@BeforeUpdate` ⇒ `LIKE` hoạt động y hệt trên mọi CSDL. Cổng `SearchPort` cho phép thay bằng Meilisearch (tùy chọn).
   - Migrations sinh **riêng cho từng driver** (`migrations/postgresql`, `migrations/mysql`); seeder dùng chung (viết bằng entity).
   - CI chạy integration test trên **cả hai** CSDL.
+- **SQL tay** (theo [AGENTS.md §3](../AGENTS.md#3-luật-bắt-buộc-khi-viết-code)): chỉ khi ORM không diễn đạt được hoặc quá chậm; chỉ nằm trong repository/migration; luôn tham số hóa; SQL chuẩn chạy được cả hai CSDL hoặc tách cài đặt theo driver sau cùng interface repository.
+- **Vector store** của trợ lý không thuộc tầng này: nằm ở Supabase (pgvector), truy cập qua port `VectorStore` trong `apps/api/src/infrastructure/vector` (ADR-13).
 
 ### 4.5 Sự kiện, hàng đợi, realtime
 
 - **Domain events** phát trong application service → ghi **Outbox** cùng giao dịch (BR-L8) → worker đọc outbox → (a) đẩy Redis pub/sub cho SSE, (b) tạo `Notification`, (c) gửi email.
-- **BullMQ queues**: `media.process`, `qr.labels`, `mail.send`, `outbox.dispatch`, `rfq.expire` (job hẹn giờ theo `biddingClosesAt`), `rfq.coordination-check`.
+- **BullMQ queues**: `media.process`, `qr.labels`, `mail.send`, `outbox.dispatch`, `rfq.expire` (job hẹn giờ theo `biddingClosesAt`), `rfq.coordination-check`, `assistant.ingest` (nghe outbox `product/workshop/news.*` để cập nhật chỉ mục tri thức).
 - **SSE**: `GET /api/v1/events/stream` (fetch-based EventSource kèm `Authorization`), mỗi người dùng một kênh `user:{id}` + kênh chủ đề `rfq:{id}` khi đang mở trang RFQ. Nhiều instance API đồng bộ qua Redis pub/sub.
 
 ---
@@ -316,14 +330,14 @@ Quy tắc: Controller **mỏng** → Application service **điều phối** → 
 | **Repository + Unit of Work + Data Mapper**         | `packages/database` (MikroORM)                                                     | Thao tác CSDL hướng đối tượng, độc lập CSDL              |
 | **Specification**                                   | `catalog/specs/*.ts` (lọc giá, danh mục, mở cửa)                                   | Kết hợp điều kiện lọc có thể tái dùng                    |
 | **Observer / Domain Events + Transactional Outbox** | `*.events.ts`, `OutboxEvent`, worker                                               | Tách tác dụng phụ (thông báo, mail) khỏi giao dịch chính |
-| **Adapter / Port**                                  | `infrastructure/storage` (S3/Local), `mail` (SMTP/Console), `search`               | Hoán đổi hạ tầng, test bằng fake                         |
+| **Adapter / Port**                                  | `infrastructure/storage` (S3/Local), `mail` (SMTP/Console), `search`, `vector` (Supabase/InMemory), `llm` (Claude/Fake) | Hoán đổi hạ tầng, test bằng fake                         |
 | **Factory**                                         | `MediaVariantFactory`, `TraceCodeFactory`, `QrFactory`                             | Đóng gói quy tắc tạo đối tượng                           |
 | **Value Object**                                    | `Money`, `GeoPoint`, `OpeningHours`, `TraceCode`                                   | Bất biến, tự kiểm tra hợp lệ                             |
 | **Policy (ABAC)**                                   | `*.policy.ts` + CASL                                                               | Ủy quyền theo vai trò + sở hữu ở một chỗ                 |
 | **Decorator**                                       | `@Roles()`, `@CurrentUser()`, `@Idempotent()`, `@Audit()`                          | Cắt ngang (cross-cutting) khai báo                       |
 | **Facade**                                          | `packages/api-client`                                                              | Che giấu refresh token, retry, idempotency khỏi UI       |
 | **Container / Presentational + custom hooks**       | `apps/web/src/features/*`                                                          | Tách mã tạo giao diện khỏi mã nghiệp vụ (tiêu chí 5)     |
-| **Chain of Responsibility**                         | Pipeline xử lý ảnh: validate → decode → strip → resize → encode → hash             | Mỗi bước độc lập, dễ test                                |
+| **Chain of Responsibility**                         | Pipeline xử lý ảnh: validate → decode → strip → resize → encode → hash; `GuardrailPipeline` của trợ lý | Mỗi bước độc lập, dễ test                                |
 
 Ví dụ lõi State pattern (minh họa thiết kế):
 
@@ -400,6 +414,9 @@ Thuộc tính chính (rút gọn):
 | `IdempotencyKey`       | `key`, `userId`, `requestHash`, `responseStatus`, `responseBody json`, `expiresAt`                                                                                                                         | UNIQUE(userId, key)                                                 |
 | `AuditLog`             | `actorId`, `action`, `entity`, `entityId`, `before json`, `after json`, `ipHash`                                                                                                                           | IDX(entity, entityId) · append-only                                 |
 | `SlugRedirect`         | `entity`, `oldSlug`, `entityId`                                                                                                                                                                            | UNIQUE(entity, oldSlug) — phục vụ 301                               |
+| `AssistantMessageLog`  | `conversationId`, `ipHash`, `locale`, `pagePath`, `intent`, `blocked bool`, `blockReason`, `latencyFirstTokenMs`, `tokensIn/Out`, `feedback {UP,DOWN,null}`, `createdAt` (không lưu nguyên văn tin bị chặn chứa PII) | IDX(createdAt) · xóa sau 30 ngày bằng job                           |
+
+Ngoài CSDL nghiệp vụ (Supabase, ADR-13): `knowledge_chunks(id, source_type, source_id, locale, url, visibility, content, embedding vector, source_updated_at)` + index HNSW; dựng lại toàn bộ bằng `pnpm assistant:reindex`.
 
 ---
 
@@ -506,6 +523,44 @@ Nguyên tắc:
 - Secret key Supabase chỉ có trong `apps/api`/`apps/worker`; frontend chỉ dùng publishable key.
 - Email xác thực gửi qua **SMTP riêng** cấu hình trong Supabase (SMTP mặc định giới hạn vài email/giờ), mẫu email tiếng Việt theo [BRAND](BRAND.md).
 
+### 7.6 Trợ lý Cáo (RAG + guardrail)
+
+```mermaid
+sequenceDiagram
+    participant W as Widget (features/assistant)
+    participant A as API (modules/assistant)
+    participant G as GuardrailPipeline
+    participant V as VectorStore (Supabase pgvector)
+    participant L as Claude (Haiku 5.5)
+    W->>W: < 100 ms: hiện tin, cáo "thinking" + bong bóng câu thú vị
+    W->>A: POST /assistant/messages {message, history, locale, pagePath} (SSE)
+    A->>G: chuẩn hóa · Zod · rate limit · ngân sách token
+    alt câu chào / cảm ơn
+      G-->>W: đường nhanh: câu chào i18n + chip gợi ý (không gọi LLM)
+    else còn lại
+      par song song
+        G->>L: phân loại ý định (structured output)
+      and
+        A->>V: embed câu hỏi → match_knowledge (visibility = public)
+      end
+      alt injection / abuse / dò dữ liệu riêng
+        A-->>W: event blocked ⇒ cáo "refuse", câu từ chối thân thiện
+      else hợp lệ
+        A->>L: system prompt (cache) + <document untrusted> + tool đọc
+        L-->>A: stream token (có thể gọi get_weather / get_current_datetime …)
+        A->>G: lọc đầu ra theo câu: canary, PII, allowlist link
+        A-->>W: event delta … citations · done ⇒ cáo "talking" → "idle"
+      end
+    end
+    A->>A: ghi AssistantMessageLog (ẩn danh)
+```
+
+Nguyên tắc:
+- Trợ lý **chỉ đọc**: tool trong allowlist (BR-AST-02) gọi API với quyền Guest, không mượn token người dùng.
+- Mọi văn bản đi vào prompt từ nguồn ngoài (tài liệu truy hồi, mô tả do hộ tự viết, kết quả tool) được bọc là **dữ liệu không tin cậy**.
+- Chỉ mục tri thức là dữ liệu dẫn xuất: worker cập nhật từ outbox; xóa/dựng lại được bất cứ lúc nào (ADR-13).
+- `VectorStore` và `LlmClient` là port; test và CI dùng `InMemoryVectorStore` + `FakeLlmClient` nên không cần mạng.
+
 ---
 
 ## 8. Bảo mật
@@ -522,6 +577,7 @@ Nguyên tắc:
 | Đầu vào        | Zod ở biên API; ORM tham số hóa; HTML tin tức làm sạch bằng sanitize-html theo whitelist                                                                                                  |
 | CSRF           | API nghiệp vụ chỉ nhận `Authorization: Bearer` (trình duyệt không tự gửi) ⇒ miễn nhiễm CSRF; cookie phiên của `@supabase/ssr` là `SameSite=Lax`                                           |
 | Upload         | Magic bytes, cấm SVG, giới hạn kích thước/pixel, mã hóa lại bằng sharp, bucket riêng tư cho giấy tờ                                                                                       |
+| Trợ lý AI      | `GuardrailPipeline` 7 lớp (§7.6, NFR-SEC-09): chuẩn hóa + giới hạn, phân loại trước, prompt có ranh giới dữ liệu, chỉ mục chỉ có dữ liệu công khai, chỉ tool đọc, lọc đầu ra (canary, PII, allowlist link, không HTML/ảnh ngoài), giám sát + red-team |
 | Dữ liệu nghỉ   | AES-256-GCM mức trường (số CCCD, giấy tờ), khóa có phiên bản `v1:` để xoay; IP băm có salt                                                                                                |
 | Lạm dụng       | `@nestjs/throttler` (Redis): 100 req/phút/IP cho API; endpoint xác thực có rate limit + CAPTCHA của Supabase                                                                              |
 | Kiểm toán      | `@Audit()` ghi `AuditLog` cho hành động Admin và từ chối truy cập                                                                                                                         |
@@ -530,6 +586,8 @@ Nguyên tắc:
 ### 8.2 Bảng OWASP Top 10 (2021) → biện pháp
 
 A01 Broken Access Control → CASL + kiểm sở hữu + test 403 · A02 Cryptographic Failures → JWT bất đối xứng + JWKS, AES-GCM, TLS · A03 Injection → ORM + Zod + sanitize · A04 Insecure Design → máy trạng thái + khóa + idempotency · A05 Misconfiguration → header bảo mật, config kiểm bằng Zod · A06 Vulnerable Components → audit/Renovate · A07 Auth Failures → Supabase Auth (MFA, CAPTCHA, rate limit, rotation) · A08 Integrity Failures → chuỗi băm nhật ký, lockfile · A09 Logging Failures → pino + audit, không log bí mật · A10 SSRF → không fetch URL do người dùng nhập (geocode qua danh sách endpoint cố định).
+
+**OWASP LLM Top 10 (trợ lý Cáo):** LLM01 Prompt Injection → phân loại trước + tài liệu đánh dấu không tin cậy + canary · LLM02 Sensitive Info Disclosure → chỉ mục chỉ có dữ liệu công khai + che PII đầu ra · LLM05 Improper Output Handling → markdown đã sanitize, allowlist link, không ảnh ngoài · LLM06 Excessive Agency → chỉ tool đọc, quyền Guest · LLM07 System Prompt Leakage → không để bí mật trong prompt + canary · LLM08 Vector Weaknesses → RLS chặn `anon`/`authenticated`, lọc `visibility` · LLM10 Unbounded Consumption → rate limit, `max_tokens`, trần token/ngày.
 
 ### 8.3 Ma trận phân quyền (RBAC + ABAC)
 
@@ -544,6 +602,7 @@ A01 Broken Access Control → CASL + kiểm sở hữu + test 403 · A02 Cryptog
 | Xem bid                                            | —     | ✓_(mọi bid trên RFQ của mình)_ | ✓**_chỉ bid của mình_**  | ✓                 |
 | Xác nhận phân bổ, cập nhật tiến độ                 | —     | —                              | ✓_(phân bổ của mình)_    | ✓                 |
 | Duyệt hộ, chia đơn, quản lý tin, xem audit         | —     | —                              | —                        | ✓                 |
+| Hỏi trợ lý Cáo (chỉ thấy dữ liệu công khai)        | ✓     | ✓                              | ✓                        | ✓ (+ thống kê)    |
 
 ---
 
@@ -633,6 +692,7 @@ Quy tắc:
 | Concurrency | Integration + k6                                              | 50 request chốt đồng thời ⇒ đúng 1 thành công                                                                                                    | Xanh               |
 | E2E         | Playwright                                                    | 3 hành trình vai trò + quét QR (mở URL) + responsive 360/1440                                                                                    | Xanh trên CI       |
 | A11y        | `@axe-core/playwright`                                        | Trang chính                                                                                                                                      | 0 lỗi nghiêm trọng |
+| Red-team AI | Vitest (`tests/assistant-redteam/`), mock mỗi PR + API thật nightly | ≥ 60 câu tấn công + ≥ 80 câu hợp lệ (chào, ngày giờ, thời tiết, xã giao, nghiệp vụ)                                                             | ≥ 95% chặn đúng · 0 rò canary/PII · chặn nhầm ≤ 3% |
 | Hiệu năng   | Lighthouse CI                                                 | Trang chủ, danh mục, truy xuất                                                                                                                   | Ngưỡng NFR-PERF-02 |
 
 ---
@@ -673,5 +733,6 @@ Log JSON (pino) có `requestId` xuyên suốt web → api → worker; `/api/v1/h
 | ADR-10 | Chuỗi băm nhật ký                                                       | Blockchain                                                       | Đủ chứng minh toàn vẹn, không cần hạ tầng phi tập trung                                                                                                 |
 | ADR-11 | **Supabase Auth** làm IdP; vCraft giữ vai trò/trạng thái trong DB riêng | Tự cài JWT + refresh rotation + Argon2id; session cookie (Redis) | Có sẵn xác minh email, OAuth, MFA, rotation, CAPTCHA ⇒ tiết kiệm ~1 sprint; tách danh tính khỏi phân quyền giữ CSDL nghiệp vụ độc lập                   |
 | ADR-12 | Zod là nguồn sự thật cho DTO + OpenAPI                                  | class-validator                                                  | Một schema cho cả FE và BE ⇒ kiểm tra nhất quán (tiêu chí 6)                                                                                            |
+| ADR-13 | [Vector store trợ lý trên **Supabase pgvector**, tách CSDL nghiệp vụ](adr/0013-assistant-vector-store-supabase.md) | pgvector trong CSDL chính; Pinecone/Qdrant; tìm kiếm từ khóa thuần | Đã có project Supabase (Auth); chỉ mục là dữ liệu dẫn xuất nên CSDL nghiệp vụ vẫn chạy MySQL; port `VectorStore` cho phép thay adapter |
 
 Rủi ro kỹ thuật cần kiểm chứng ở Sprint 0: (0) project Supabase gói Free tự tạm dừng sau 7 ngày không hoạt động ⇒ giữ hoạt động trước buổi thi và cấu hình SMTP riêng cho email xác thực; (1) adapter NestJS của `@supabase/server` chỉ hỗ trợ Nest 10/11 ⇒ tự viết guard bọc `verifyAuth()`. (Đã xử lý 27/10: package dùng ở backend được build bằng tsdown — xem §3.2.)
