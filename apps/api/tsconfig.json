@@ -1,4 +1,5 @@
 {
   "extends": "@vcraft/tsconfig/nestjs.json",
-  "include": ["src", "test"]
+  "compilerOptions": { "rootDir": "src", "outDir": "dist", "types": ["node"] },
+  "include": ["src"]
 }

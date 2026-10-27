@@ -5,6 +5,7 @@
 ---
 
 ## Mục lục
+
 1. [Động lực kiến trúc](#1-động-lực-kiến-trúc)
 2. [Tổng quan (C4)](#2-tổng-quan-c4)
 3. [Monorepo](#3-monorepo)
@@ -26,16 +27,16 @@
 
 Kiến trúc được chọn để mỗi tiêu chí chấm điểm có **bằng chứng nhìn thấy được** (demo) và **bằng chứng trong mã** (vấn đáp):
 
-| Tiêu chí | Quyết định kiến trúc tương ứng |
-|---|---|
-| (1) Chức năng | Modular monolith theo nghiệp vụ — mỗi nhóm FR là một module NestJS độc lập, làm song song được |
-| (3) Giao diện | Lớp "experience" tách riêng trong frontend (3D, scroll story, transitions) + design system có token thương hiệu |
-| (4) Hiệu năng / AJAX | Backend **chỉ là REST JSON API**; frontend lấy dữ liệu tương tác bằng `fetch` (TanStack Query), cập nhật DOM cục bộ; SSE đẩy thay đổi |
-| (5) Phong cách code | Monorepo nhiều package có ranh giới cưỡng chế; domain thuần không phụ thuộc framework; pattern có tên |
-| (6) Nhập liệu | Một bộ schema Zod dùng chung FE/BE |
-| (7) An ninh | Xác thực/phiên/ủy quyền tập trung trong guards + policies; mã hóa nhiều tầng |
-| (8) URL | Định tuyến bản địa hóa ở Next, rewrite ở reverse proxy, redirect QR và slug cũ |
-| (9) CSDL | ORM Data Mapper (MikroORM): entity class, Unit of Work, đổi driver là đổi CSDL |
+| Tiêu chí             | Quyết định kiến trúc tương ứng                                                                                                           |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| (1) Chức năng        | Modular monolith theo nghiệp vụ — mỗi nhóm FR là một module NestJS độc lập, làm song song được                                           |
+| (3) Giao diện        | Lớp "experience" tách riêng trong frontend (3D, scroll story, transitions) + design system có token thương hiệu                          |
+| (4) Hiệu năng / AJAX | Backend **chỉ là REST JSON API**; frontend lấy dữ liệu tương tác bằng `fetch` (TanStack Query), cập nhật DOM cục bộ; SSE đẩy thay đổi    |
+| (5) Phong cách code  | Monorepo nhiều package có ranh giới cưỡng chế; domain thuần không phụ thuộc framework; pattern có tên                                    |
+| (6) Nhập liệu        | Một bộ schema Zod dùng chung FE/BE                                                                                                       |
+| (7) An ninh          | Danh tính ủy thác cho Supabase Auth (IdP), API tự kiểm chứng JWT qua JWKS; ủy quyền tập trung trong guards + policies; mã hóa nhiều tầng |
+| (8) URL              | Định tuyến bản địa hóa ở Next, rewrite ở reverse proxy, redirect QR và slug cũ                                                           |
+| (9) CSDL             | ORM Data Mapper (MikroORM): entity class, Unit of Work, đổi driver là đổi CSDL                                                           |
 
 Thuộc tính chất lượng ưu tiên: **Tính đúng nghiệp vụ (khóa, trạng thái) > Trải nghiệm & thương hiệu > Hiệu năng > Khả năng mở rộng**.
 
@@ -56,6 +57,7 @@ flowchart LR
     mail[(SMTP)]
     s3[(Object storage<br/>S3 / R2)]
     llm[(Claude API<br/>tùy chọn)]
+    idp[(Supabase Auth<br/>danh tính, phiên, MFA)]
 
     guest --> vcraft
     buyer --> vcraft
@@ -64,6 +66,7 @@ flowchart LR
     vcraft --> tiles
     vcraft --> mail
     vcraft --> s3
+    vcraft --> idp
     vcraft -.-> llm
 ```
 
@@ -81,8 +84,11 @@ flowchart TB
     db[("PostgreSQL 17<br/>(hoặc MySQL 8.4)")]
     redis[("Redis<br/>cache · queue · pub/sub")]
     s3[("MinIO / R2<br/>public + private bucket")]
+    supa[["Supabase Auth<br/>đăng nhập · refresh · MFA · OAuth"]]
 
     browser -->|HTTPS| caddy
+    browser -->|supabase-js: sign in/up, refresh| supa
+    api -->|JWKS + admin API (secret key)| supa
     caddy --> web
     caddy --> api
     caddy --> s3
@@ -96,7 +102,7 @@ flowchart TB
     redis -. pub/sub sự kiện .-> api
 ```
 
-Điểm then chốt: **web và api cùng origin** sau Caddy ⇒ cookie refresh là first-party, không cần CORS, QR luôn trỏ về một domain.
+Điểm then chốt: **web và api cùng origin** sau Caddy ⇒ không cần CORS, QR luôn trỏ về một domain. Trình duyệt nói chuyện trực tiếp với Supabase **chỉ** cho việc xác thực; mọi dữ liệu nghiệp vụ đi qua `apps/api`.
 
 ### 2.3 Mức 3 — Thành phần trong `apps/api`
 
@@ -104,7 +110,7 @@ flowchart TB
 flowchart LR
     subgraph http [Tầng giao tiếp]
       ctrl[Controllers] --> pipes[ZodValidationPipe]
-      guards[JwtAuthGuard · PoliciesGuard · Throttler]
+      guards[SupabaseAuthGuard · PoliciesGuard · Throttler]
     end
     subgraph app [Tầng ứng dụng — Use cases]
       svc[Application services<br/>AcceptBidService, SplitOrderService…]
@@ -220,16 +226,18 @@ Luật (cưỡng chế bằng `.dependency-cruiser.cjs`, chạy trong CI):
 Package nội bộ dùng mô hình **"just-in-time"** (export trực tiếp `src/index.ts`, app tự biên dịch) ⇒ không cần bước build riêng cho package, dev nhanh.
 
 ### 3.3 Công cụ monorepo
+
 - **pnpm workspaces** — cài đặt nhanh, `workspace:*`, chặn phụ thuộc ma.
 - **Turborepo** — chạy tác vụ theo đồ thị, cache kết quả `build/test/typecheck` (local + remote).
 - **Biome** — lint + format một công cụ; **Lefthook** — pre-commit + kiểm tra Conventional Commits.
-- **TypeScript 7** (trình biên dịch native) cho typecheck; backend build bằng **SWC** (giữ decorator metadata cho NestJS).
+- **TypeScript 6.0** (strict) cho typecheck; backend build bằng **SWC** (giữ decorator metadata cho NestJS). TypeScript 7 (native) chưa có API JavaScript mà Next, Nest CLI, MikroORM CLI cần ⇒ nâng cấp sau.
 
 ---
 
 ## 4. Backend
 
 ### 4.1 Phong cách: Modular Monolith + Clean Architecture nhẹ
+
 Mỗi module trong `apps/api/src/modules/<tên>/`:
 
 ```
@@ -248,6 +256,7 @@ rfq/
 Quy tắc: Controller **mỏng** → Application service **điều phối** → Domain **quyết định** → Repository **lưu**. Không gọi ORM trong controller; không gọi HTTP/framework trong domain.
 
 ### 4.2 Hợp đồng API
+
 - Tiền tố `/api/v1`, danh từ số nhiều, hành động trạng thái là **sub-resource động từ** rõ nghĩa:
   `POST /rfqs/{id}/submit`, `POST /rfqs/{id}/bids`, `POST /rfqs/{id}/bids/{bidId}/accept`, `POST /orders/{id}/allocations:split`, `POST /allocations/{id}/confirm`.
 - Phân trang **con trỏ**: `?cursor=…&limit=24` → `{ data: [...], nextCursor }`.
@@ -257,26 +266,27 @@ Quy tắc: Controller **mỏng** → Application service **điều phối** → 
 
 ### 4.3 Danh sách module
 
-| Module | Trách nhiệm | FR |
-|---|---|---|
-| `auth` | Đăng ký, đăng nhập, refresh xoay vòng, phiên, quên mật khẩu, lời mời, 2FA | FR-AUTH |
-| `users` | Hồ sơ người dùng, tùy chọn thông báo, xuất/xóa dữ liệu | FR-AUTH, NFR-SEC-07 |
-| `artisans` | Hồ sơ hộ, lịch sử gia đình, chứng nhận, năng lực, kiểm duyệt | FR-ART, FR-ADM |
-| `workshops` | Xưởng, giờ mở cửa, trạng thái mở | FR-ART-05 |
-| `products` | CRUD sản phẩm, media sản phẩm | FR-PRD |
-| `production-logs` | Mốc nhật ký, mẫu công đoạn, chuỗi băm | FR-PRD-03…05 |
-| `traceability` | Mã truy xuất, QR, landing data, lượt quét | FR-TRC |
-| `catalog` | Truy vấn danh mục/tìm kiếm/gợi ý | FR-CAT |
-| `village-map` | Ghim theo bbox, trạng thái mở cửa | FR-MAP |
-| `rfq` / `bids` | Máy trạng thái RFQ, ghép hộ, chào giá kín | FR-RFQ |
-| `orders` | Đơn hàng, phân bổ, chia đơn, tiến độ | FR-ORD |
-| `news` | Tin tức, giá vật liệu, lịch cúp điện | FR-NEWS |
-| `notifications` | Thông báo in-app, SSE hub, email | FR-NOTI |
-| `media` | Upload, kiểm tra, đẩy job xử lý, URL ký | FR-MEDIA |
-| `admin` | Dashboard, audit log | FR-ADM |
-| `health` | Kiểm tra sức khỏe | NFR-REL |
+| Module            | Trách nhiệm                                                                                                                                                        | FR                  |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- |
+| `auth`            | `SupabaseAuthGuard` (kiểm chứng JWT/JWKS), cấp hồ sơ người dùng lần đầu, lời mời & khóa tài khoản qua Supabase admin API, lịch sử đăng nhập, kiểm `aal2` cho Admin | FR-AUTH             |
+| `users`           | Hồ sơ người dùng, tùy chọn thông báo, xuất/xóa dữ liệu                                                                                                             | FR-AUTH, NFR-SEC-07 |
+| `artisans`        | Hồ sơ hộ, lịch sử gia đình, chứng nhận, năng lực, kiểm duyệt                                                                                                       | FR-ART, FR-ADM      |
+| `workshops`       | Xưởng, giờ mở cửa, trạng thái mở                                                                                                                                   | FR-ART-05           |
+| `products`        | CRUD sản phẩm, media sản phẩm                                                                                                                                      | FR-PRD              |
+| `production-logs` | Mốc nhật ký, mẫu công đoạn, chuỗi băm                                                                                                                              | FR-PRD-03…05        |
+| `traceability`    | Mã truy xuất, QR, landing data, lượt quét                                                                                                                          | FR-TRC              |
+| `catalog`         | Truy vấn danh mục/tìm kiếm/gợi ý                                                                                                                                   | FR-CAT              |
+| `village-map`     | Ghim theo bbox, trạng thái mở cửa                                                                                                                                  | FR-MAP              |
+| `rfq` / `bids`    | Máy trạng thái RFQ, ghép hộ, chào giá kín                                                                                                                          | FR-RFQ              |
+| `orders`          | Đơn hàng, phân bổ, chia đơn, tiến độ                                                                                                                               | FR-ORD              |
+| `news`            | Tin tức, giá vật liệu, lịch cúp điện                                                                                                                               | FR-NEWS             |
+| `notifications`   | Thông báo in-app, SSE hub, email                                                                                                                                   | FR-NOTI             |
+| `media`           | Upload, kiểm tra, đẩy job xử lý, URL ký                                                                                                                            | FR-MEDIA            |
+| `admin`           | Dashboard, audit log                                                                                                                                               | FR-ADM              |
+| `health`          | Kiểm tra sức khỏe                                                                                                                                                  | NFR-REL             |
 
 ### 4.4 Tầng dữ liệu — MikroORM (OOP & độc lập CSDL)
+
 - **Entity là class TypeScript** có hành vi (vd. `Product.publish()`, `QuoteRequest.apply(event)` ủy quyền cho domain). Repository tùy biến cho truy vấn phức tạp (`ProductRepository.findCatalog(spec)`).
 - **Unit of Work + Identity Map**: một request = một `EntityManager` fork; mọi thay đổi `flush()` một lần trong một giao dịch.
 - **Khóa**: `@Property({ version: true }) version` (lạc quan); `em.findOne(QuoteRequest, id, { lockMode: LockMode.PESSIMISTIC_WRITE })` (bi quan) — API ORM, không SQL tay.
@@ -288,6 +298,7 @@ Quy tắc: Controller **mỏng** → Application service **điều phối** → 
   - CI chạy integration test trên **cả hai** CSDL.
 
 ### 4.5 Sự kiện, hàng đợi, realtime
+
 - **Domain events** phát trong application service → ghi **Outbox** cùng giao dịch (BR-L8) → worker đọc outbox → (a) đẩy Redis pub/sub cho SSE, (b) tạo `Notification`, (c) gửi email.
 - **BullMQ queues**: `media.process`, `qr.labels`, `mail.send`, `outbox.dispatch`, `rfq.expire` (job hẹn giờ theo `biddingClosesAt`), `rfq.coordination-check`.
 - **SSE**: `GET /api/v1/events/stream` (fetch-based EventSource kèm `Authorization`), mỗi người dùng một kênh `user:{id}` + kênh chủ đề `rfq:{id}` khi đang mở trang RFQ. Nhiều instance API đồng bộ qua Redis pub/sub.
@@ -296,33 +307,35 @@ Quy tắc: Controller **mỏng** → Application service **điều phối** → 
 
 ## 5. Design patterns
 
-| Pattern | Ở đâu | Vì sao |
-|---|---|---|
-| **State** (bảng chuyển trạng thái + guard) | `packages/domain/src/rfq/rfq-state-machine.ts` | Luồng báo giá phức tạp; dùng chung FE/BE; test đầy đủ |
-| **Strategy** | `domain/allocation/strategies/{capacity,cheapest,balanced}.ts`, `domain/matching/` | Thay thuật toán chia đơn/ghép hộ không sửa client |
-| **Repository + Unit of Work + Data Mapper** | `packages/database` (MikroORM) | Thao tác CSDL hướng đối tượng, độc lập CSDL |
-| **Specification** | `catalog/specs/*.ts` (lọc giá, danh mục, mở cửa) | Kết hợp điều kiện lọc có thể tái dùng |
-| **Observer / Domain Events + Transactional Outbox** | `*.events.ts`, `OutboxEvent`, worker | Tách tác dụng phụ (thông báo, mail) khỏi giao dịch chính |
-| **Adapter / Port** | `infrastructure/storage` (S3/Local), `mail` (SMTP/Console), `search` | Hoán đổi hạ tầng, test bằng fake |
-| **Factory** | `MediaVariantFactory`, `TraceCodeFactory`, `QrFactory` | Đóng gói quy tắc tạo đối tượng |
-| **Value Object** | `Money`, `GeoPoint`, `OpeningHours`, `TraceCode` | Bất biến, tự kiểm tra hợp lệ |
-| **Policy (ABAC)** | `*.policy.ts` + CASL | Ủy quyền theo vai trò + sở hữu ở một chỗ |
-| **Decorator** | `@Roles()`, `@CurrentUser()`, `@Idempotent()`, `@Audit()` | Cắt ngang (cross-cutting) khai báo |
-| **Facade** | `packages/api-client` | Che giấu refresh token, retry, idempotency khỏi UI |
-| **Container / Presentational + custom hooks** | `apps/web/src/features/*` | Tách mã tạo giao diện khỏi mã nghiệp vụ (tiêu chí 5) |
-| **Chain of Responsibility** | Pipeline xử lý ảnh: validate → decode → strip → resize → encode → hash | Mỗi bước độc lập, dễ test |
+| Pattern                                             | Ở đâu                                                                              | Vì sao                                                   |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| **State** (bảng chuyển trạng thái + guard)          | `packages/domain/src/rfq/rfq-state-machine.ts`                                     | Luồng báo giá phức tạp; dùng chung FE/BE; test đầy đủ    |
+| **Strategy**                                        | `domain/allocation/strategies/{capacity,cheapest,balanced}.ts`, `domain/matching/` | Thay thuật toán chia đơn/ghép hộ không sửa client        |
+| **Repository + Unit of Work + Data Mapper**         | `packages/database` (MikroORM)                                                     | Thao tác CSDL hướng đối tượng, độc lập CSDL              |
+| **Specification**                                   | `catalog/specs/*.ts` (lọc giá, danh mục, mở cửa)                                   | Kết hợp điều kiện lọc có thể tái dùng                    |
+| **Observer / Domain Events + Transactional Outbox** | `*.events.ts`, `OutboxEvent`, worker                                               | Tách tác dụng phụ (thông báo, mail) khỏi giao dịch chính |
+| **Adapter / Port**                                  | `infrastructure/storage` (S3/Local), `mail` (SMTP/Console), `search`               | Hoán đổi hạ tầng, test bằng fake                         |
+| **Factory**                                         | `MediaVariantFactory`, `TraceCodeFactory`, `QrFactory`                             | Đóng gói quy tắc tạo đối tượng                           |
+| **Value Object**                                    | `Money`, `GeoPoint`, `OpeningHours`, `TraceCode`                                   | Bất biến, tự kiểm tra hợp lệ                             |
+| **Policy (ABAC)**                                   | `*.policy.ts` + CASL                                                               | Ủy quyền theo vai trò + sở hữu ở một chỗ                 |
+| **Decorator**                                       | `@Roles()`, `@CurrentUser()`, `@Idempotent()`, `@Audit()`                          | Cắt ngang (cross-cutting) khai báo                       |
+| **Facade**                                          | `packages/api-client`                                                              | Che giấu refresh token, retry, idempotency khỏi UI       |
+| **Container / Presentational + custom hooks**       | `apps/web/src/features/*`                                                          | Tách mã tạo giao diện khỏi mã nghiệp vụ (tiêu chí 5)     |
+| **Chain of Responsibility**                         | Pipeline xử lý ảnh: validate → decode → strip → resize → encode → hash             | Mỗi bước độc lập, dễ test                                |
 
 Ví dụ lõi State pattern (minh họa thiết kế):
 
 ```ts
 // packages/domain/src/rfq/rfq-state-machine.ts
 export const RFQ_TRANSITIONS = {
-  DRAFT:         { SUBMIT: 'SENT', CANCEL: 'CANCELLED' },
-  SENT:          { RECEIVE_BID: 'BIDDING', CANCEL: 'CANCELLED', EXPIRE: 'EXPIRED' },
-  BIDDING:       { ACCEPT_BID: 'ACCEPTED', CANCEL: 'CANCELLED', EXPIRE: 'EXPIRED' },
-  ACCEPTED:      { START_PRODUCTION: 'IN_PRODUCTION', ADMIN_CANCEL: 'CANCELLED' },
+  DRAFT: { SUBMIT: 'SENT', CANCEL: 'CANCELLED' },
+  SENT: { RECEIVE_BID: 'BIDDING', CANCEL: 'CANCELLED', EXPIRE: 'EXPIRED' },
+  BIDDING: { ACCEPT_BID: 'ACCEPTED', CANCEL: 'CANCELLED', EXPIRE: 'EXPIRED' },
+  ACCEPTED: { START_PRODUCTION: 'IN_PRODUCTION', ADMIN_CANCEL: 'CANCELLED' },
   IN_PRODUCTION: { CONFIRM_DELIVERY: 'DELIVERED' },
-  DELIVERED: {}, CANCELLED: {}, EXPIRED: {},
+  DELIVERED: {},
+  CANCELLED: {},
+  EXPIRED: {},
 } as const satisfies Record<RfqStatus, Partial<Record<RfqEvent, RfqStatus>>>;
 
 /** Trả về trạng thái kế tiếp hoặc ném DomainError('INVALID_TRANSITION' | <guard code>). (SRS §4.1) */
@@ -338,7 +351,7 @@ export function availableEvents(rfq: RfqSnapshot, actor: Actor, now: Date): RfqE
 
 ```mermaid
 erDiagram
-    USER ||--o{ SESSION : has
+    USER ||--o{ LOGIN_EVENT : logs
     USER ||--o| ARTISAN_PROFILE : owns
     ARTISAN_PROFILE ||--o{ VERIFICATION_DOCUMENT : submits
     ARTISAN_PROFILE ||--o{ FAMILY_HISTORY_EVENT : tells
@@ -366,25 +379,25 @@ erDiagram
 
 Thuộc tính chính (rút gọn):
 
-| Entity | Thuộc tính đáng chú ý | Ràng buộc / chỉ mục |
-|---|---|---|
-| `User` | `id uuidv7`, `email`, `phone`, `passwordHash`, `role {ADMIN,ARTISAN,BUYER}`, `status`, `emailVerifiedAt`, `totpSecretEnc?`, `locale`, `version` | UNIQUE(email), UNIQUE(phone) |
-| `Session` | `userId`, `familyId`, `refreshTokenHash`, `userAgent`, `ipHash`, `lastUsedAt`, `expiresAt`, `revokedAt`, `replacedById` | IDX(userId), UNIQUE(refreshTokenHash) |
-| `ArtisanProfile` | `householdName`, `slug`, `story`, `foundedYear`, `generations`, `status {DRAFT,PENDING_REVIEW,NEEDS_INFO,APPROVED,REJECTED,SUSPENDED}`, `ratingAvg`, `responseRate`, `onTimeRate`, `searchText`, `version` | UNIQUE(slug), IDX(status) |
-| `VerificationDocument` | `kind {CCCD,RESIDENCE,WORKSHOP_PHOTO}`, `numberEnc` (AES-GCM), `mediaId` (private) | — |
-| `Workshop` | `address`, `communeCode`, `lat decimal(9,6)`, `lng decimal(9,6)`, `openingHours json`, `acceptsVisitors`, `experience json?`, `temporarilyClosed`, `closedReason` | IDX(lat, lng) |
-| `Product` | `artisanId`, `categoryId`, `name`, `slug`, `traceCode`, `priceVnd bigint`, `isUnique`, `stock`, `status`, `coverMediaId`, `searchText`, `publishedAt`, `deletedAt`, `version` | UNIQUE(traceCode), UNIQUE(slug), IDX(categoryId,status,publishedAt) |
-| `ProductionLogEntry` | `productId`, `seq`, `stageCode`, `occurredAt`, `note`, `mediaIds json`, `correctsEntryId?`, `prevHash`, `hash` | UNIQUE(productId, seq) · append-only |
-| `MediaAsset` | `ownerId`, `visibility`, `status {PROCESSING,READY,FAILED}`, `originalKey`, `width`, `height`, `checksum`, `thumbhash`, `dominantColor`, `variants json` | IDX(ownerId, checksum) |
-| `QuoteRequest` | `code`, `buyerId`, `categoryId`, `quantity`, `unit`, `budgetMinVnd?`, `budgetMaxVnd?`, `requiredBy`, `biddingClosesAt`, `status`, `needsCoordination`, `coordinatorId?`, `acceptedBidId?`, `version` | UNIQUE(code), IDX(status, biddingClosesAt) |
-| `Bid` | `rfqId`, `artisanId?`, `type {INDIVIDUAL,COOPERATIVE}`, `unitPriceVnd`, `quantityOffered`, `leadTimeDays`, `deliveryDate`, `allocationPlan json?`, `status`, `revision`, `version` | **UNIQUE(rfqId, artisanId)** |
-| `Order` | `rfqId`, `buyerId`, `quantity`, `totalVnd`, `dueDate`, `version` | UNIQUE(rfqId) |
-| `Allocation` | `orderId`, `artisanId`, `quantity`, `unitPriceVnd`, `dueDate`, `status`, `completedQty`, `version` | IDX(orderId), IDX(artisanId, status) |
-| `News` | `slug`, `category`, `audience {PUBLIC,ARTISANS}`, `contentJson`, `contentHtml` (đã làm sạch), `pinned`, `status`, `publishAt` | UNIQUE(slug) |
-| `OutboxEvent` | `type`, `payload json`, `status`, `attempts`, `availableAt` | IDX(status, availableAt) |
-| `IdempotencyKey` | `key`, `userId`, `requestHash`, `responseStatus`, `responseBody json`, `expiresAt` | UNIQUE(userId, key) |
-| `AuditLog` | `actorId`, `action`, `entity`, `entityId`, `before json`, `after json`, `ipHash` | IDX(entity, entityId) · append-only |
-| `SlugRedirect` | `entity`, `oldSlug`, `entityId` | UNIQUE(entity, oldSlug) — phục vụ 301 |
+| Entity                 | Thuộc tính đáng chú ý                                                                                                                                                                                      | Ràng buộc / chỉ mục                                                 |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `User`                 | `id uuid` (= `sub` của Supabase, **không** FK sang schema `auth`), `email`, `fullName`, `phone`, `role {ADMIN,ARTISAN,BUYER}`, `status {ACTIVE,SUSPENDED}`, `locale`, `version`                            | UNIQUE(email)                                                       |
+| `LoginEvent`           | `userId`, `occurredAt`, `userAgent`, `ipHash`, `country`, `method {PASSWORD,OAUTH,MFA}`                                                                                                                    | IDX(userId, occurredAt) · append-only                               |
+| `ArtisanProfile`       | `householdName`, `slug`, `story`, `foundedYear`, `generations`, `status {DRAFT,PENDING_REVIEW,NEEDS_INFO,APPROVED,REJECTED,SUSPENDED}`, `ratingAvg`, `responseRate`, `onTimeRate`, `searchText`, `version` | UNIQUE(slug), IDX(status)                                           |
+| `VerificationDocument` | `kind {CCCD,RESIDENCE,WORKSHOP_PHOTO}`, `numberEnc` (AES-GCM), `mediaId` (private)                                                                                                                         | —                                                                   |
+| `Workshop`             | `address`, `communeCode`, `lat decimal(9,6)`, `lng decimal(9,6)`, `openingHours json`, `acceptsVisitors`, `experience json?`, `temporarilyClosed`, `closedReason`                                          | IDX(lat, lng)                                                       |
+| `Product`              | `artisanId`, `categoryId`, `name`, `slug`, `traceCode`, `priceVnd bigint`, `isUnique`, `stock`, `status`, `coverMediaId`, `searchText`, `publishedAt`, `deletedAt`, `version`                              | UNIQUE(traceCode), UNIQUE(slug), IDX(categoryId,status,publishedAt) |
+| `ProductionLogEntry`   | `productId`, `seq`, `stageCode`, `occurredAt`, `note`, `mediaIds json`, `correctsEntryId?`, `prevHash`, `hash`                                                                                             | UNIQUE(productId, seq) · append-only                                |
+| `MediaAsset`           | `ownerId`, `visibility`, `status {PROCESSING,READY,FAILED}`, `originalKey`, `width`, `height`, `checksum`, `thumbhash`, `dominantColor`, `variants json`                                                   | IDX(ownerId, checksum)                                              |
+| `QuoteRequest`         | `code`, `buyerId`, `categoryId`, `quantity`, `unit`, `budgetMinVnd?`, `budgetMaxVnd?`, `requiredBy`, `biddingClosesAt`, `status`, `needsCoordination`, `coordinatorId?`, `acceptedBidId?`, `version`       | UNIQUE(code), IDX(status, biddingClosesAt)                          |
+| `Bid`                  | `rfqId`, `artisanId?`, `type {INDIVIDUAL,COOPERATIVE}`, `unitPriceVnd`, `quantityOffered`, `leadTimeDays`, `deliveryDate`, `allocationPlan json?`, `status`, `revision`, `version`                         | **UNIQUE(rfqId, artisanId)**                                        |
+| `Order`                | `rfqId`, `buyerId`, `quantity`, `totalVnd`, `dueDate`, `version`                                                                                                                                           | UNIQUE(rfqId)                                                       |
+| `Allocation`           | `orderId`, `artisanId`, `quantity`, `unitPriceVnd`, `dueDate`, `status`, `completedQty`, `version`                                                                                                         | IDX(orderId), IDX(artisanId, status)                                |
+| `News`                 | `slug`, `category`, `audience {PUBLIC,ARTISANS}`, `contentJson`, `contentHtml` (đã làm sạch), `pinned`, `status`, `publishAt`                                                                              | UNIQUE(slug)                                                        |
+| `OutboxEvent`          | `type`, `payload json`, `status`, `attempts`, `availableAt`                                                                                                                                                | IDX(status, availableAt)                                            |
+| `IdempotencyKey`       | `key`, `userId`, `requestHash`, `responseStatus`, `responseBody json`, `expiresAt`                                                                                                                         | UNIQUE(userId, key)                                                 |
+| `AuditLog`             | `actorId`, `action`, `entity`, `entityId`, `before json`, `after json`, `ipHash`                                                                                                                           | IDX(entity, entityId) · append-only                                 |
+| `SlugRedirect`         | `entity`, `oldSlug`, `entityId`                                                                                                                                                                            | UNIQUE(entity, oldSlug) — phục vụ 301                               |
 
 ---
 
@@ -455,28 +468,41 @@ sequenceDiagram
 ```
 
 ### 7.4 Điều phối & chia nhỏ đơn
+
 1. Job `rfq.coordination-check` đánh dấu `needsCoordination` (FR-ORD-01) → thông báo Admin.
 2. Admin `POST /rfqs/{id}/coordination:claim` (khóa lạc quan trên `coordinatorId`).
 3. `GET /rfqs/{id}/allocation-proposals?strategy=capacity|cheapest|balanced` → domain trả 3 phương án (số lượng, chi phí, ngày xong dự kiến).
 4. Admin chỉnh trên **bảng kéo-thả** → `POST /rfqs/{id}/bids` với `type=COOPERATIVE, allocationPlan[]` (domain kiểm BR-L6).
 5. Buyer chốt như thường (§7.3) ⇒ Order + Allocations `PROPOSED` ⇒ hộ xác nhận ⇒ `START_PRODUCTION`.
 
-### 7.5 Xác thực & xoay vòng refresh token
+### 7.5 Xác thực với Supabase Auth
 
 ```mermaid
 sequenceDiagram
-    participant C as Client
-    participant A as API /auth
-    participant D as DB
-    C->>A: POST /auth/login {email, password}
-    A->>D: verify Argon2id, tạo Session(familyId, hash(rt1))
-    A-->>C: {accessToken (15′, giữ trong RAM)} + Set-Cookie rt1 (HttpOnly, Secure, SameSite=Strict, Path=/api/v1/auth)
-    Note over C: access token hết hạn → api-client tự gọi refresh (1 lần, gom request đang chờ)
-    C->>A: POST /auth/refresh (cookie rt1, header X-Requested-With)
-    A->>D: tìm hash(rt1) → hợp lệ → thu hồi rt1, tạo rt2 cùng familyId
-    A-->>C: access mới + Set-Cookie rt2
-    Note over C,A: Kẻ gian dùng lại rt1 ⇒ phát hiện token đã thu hồi ⇒ thu hồi CẢ family ⇒ mọi thiết bị phiên đó phải đăng nhập lại
+    participant C as Client (Next + @supabase/ssr)
+    participant S as Supabase Auth
+    participant A as API (SupabaseAuthGuard)
+    participant D as DB vCraft
+    C->>S: signInWithPassword / OAuth Google (+ Turnstile token)
+    S-->>C: session {access JWT 15′, refresh token} → cookie do @supabase/ssr quản lý
+    opt Admin
+      C->>S: mfa.challengeAndVerify (TOTP) ⇒ JWT aal2
+    end
+    C->>A: GET /api/v1/me (Authorization: Bearer <access JWT>)
+    A->>A: verifyAuth(): kiểm chữ ký qua JWKS (cache), iss, aud, exp
+    A->>D: tìm User theo sub (cache Redis 60s); chưa có ⇒ tạo hồ sơ (role BUYER); ghi LoginEvent
+    A->>A: status = SUSPENDED ⇒ 403 · route Admin cần aal2
+    A-->>C: 200 {user, role, permissions}
+    Note over C,S: access token hết hạn ⇒ supabase-js tự refresh (xoay vòng, phát hiện dùng lại)
+    Note over A,S: Admin duyệt/khóa hộ ⇒ API cập nhật DB vCraft + gọi auth.admin (ban, invite) bằng secret key
 ```
+
+Nguyên tắc:
+- **Supabase = danh tính** (ai đó là ai), **vCraft = quyền** (người đó được làm gì). Vai trò, trạng thái, quyền sở hữu nằm trong CSDL vCraft, vì vậy CSDL nghiệp vụ vẫn độc lập và chuyển sang MySQL được.
+- Hồ sơ `User` được tạo **lười** ở request đầu tiên (không dùng trigger trong schema `auth`, vì trigger không di động được).
+- `SupabaseAuthGuard` là guard NestJS tự viết, bọc `verifyAuth()` của `@supabase/server`. Không dùng adapter NestJS có sẵn vì adapter chỉ hỗ trợ Nest 10/11 và sẽ bị gỡ vào 01/12/2026.
+- Secret key Supabase chỉ có trong `apps/api`/`apps/worker`; frontend chỉ dùng publishable key.
+- Email xác thực gửi qua **SMTP riêng** cấu hình trong Supabase (SMTP mặc định giới hạn vài email/giờ), mẫu email tiếng Việt theo [BRAND](BRAND.md).
 
 ---
 
@@ -484,37 +510,38 @@ sequenceDiagram
 
 ### 8.1 Phòng thủ theo lớp
 
-| Lớp | Biện pháp |
-|---|---|
-| Truyền tải | HTTPS bắt buộc (Caddy, Let's Encrypt), HSTS, HTTP/2–3 |
-| Trình duyệt | CSP có nonce (`script-src 'self' 'nonce-…'`), `frame-ancestors 'none'`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` |
-| Xác thực | Argon2id; JWT EdDSA 15′; refresh xoay vòng + phát hiện dùng lại; khóa tăng dần; 2FA TOTP cho Admin |
-| Phiên | Bảng `Session` hiển thị/thu hồi được; đổi mật khẩu ⇒ thu hồi phiên khác |
-| Ủy quyền | `JwtAuthGuard` → `PoliciesGuard` (CASL) ở **mọi** route; kiểm sở hữu ở tầng truy vấn (`where: { artisan: user.artisanId }`) chống IDOR |
-| Đầu vào | Zod ở biên API; ORM tham số hóa; HTML tin tức làm sạch bằng sanitize-html theo whitelist |
-| CSRF | Cookie `SameSite=Strict` + endpoint dùng cookie yêu cầu header tùy biến; API còn lại dùng Bearer (không bị CSRF) |
-| Upload | Magic bytes, cấm SVG, giới hạn kích thước/pixel, mã hóa lại bằng sharp, bucket riêng tư cho giấy tờ |
-| Dữ liệu nghỉ | AES-256-GCM mức trường (CCCD, TOTP secret), khóa có phiên bản `v1:` để xoay; IP băm có salt |
-| Lạm dụng | `@nestjs/throttler` (Redis): 100 req/phút/IP chung, 5 req/phút cho login/refresh/forgot |
-| Kiểm toán | `@Audit()` ghi `AuditLog` cho hành động Admin và từ chối truy cập |
-| Chuỗi cung ứng | `pnpm audit`, Renovate, lockfile cố định, không commit `.env` |
+| Lớp            | Biện pháp                                                                                                                                                                                 |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Truyền tải     | HTTPS bắt buộc (Caddy, Let's Encrypt), HSTS, HTTP/2–3                                                                                                                                     |
+| Trình duyệt    | CSP có nonce (`script-src 'self' 'nonce-…'`, `connect-src 'self' https://<ref>.supabase.co`), `frame-ancestors 'none'`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` |
+| Xác thực       | Supabase Auth (bcrypt, chặn mật khẩu đã lộ); JWT ký bất đối xứng, API kiểm qua JWKS; refresh xoay vòng + phát hiện dùng lại; MFA TOTP bắt buộc với Admin (`aal2`); CAPTCHA Turnstile      |
+| Phiên          | Access token 15′; đăng xuất thiết bị khác / toàn bộ; lịch sử đăng nhập (`LoginEvent`); khóa tài khoản ⇒ chặn ngay ở API (trạng thái trong DB) + ban trên Supabase                         |
+| Ủy quyền       | `SupabaseAuthGuard` → `PoliciesGuard` (CASL) ở **mọi** route; kiểm sở hữu ở tầng truy vấn (`where: { artisan: user.artisanId }`) chống IDOR                                               |
+| Đầu vào        | Zod ở biên API; ORM tham số hóa; HTML tin tức làm sạch bằng sanitize-html theo whitelist                                                                                                  |
+| CSRF           | API nghiệp vụ chỉ nhận `Authorization: Bearer` (trình duyệt không tự gửi) ⇒ miễn nhiễm CSRF; cookie phiên của `@supabase/ssr` là `SameSite=Lax`                                           |
+| Upload         | Magic bytes, cấm SVG, giới hạn kích thước/pixel, mã hóa lại bằng sharp, bucket riêng tư cho giấy tờ                                                                                       |
+| Dữ liệu nghỉ   | AES-256-GCM mức trường (số CCCD, giấy tờ), khóa có phiên bản `v1:` để xoay; IP băm có salt                                                                                                |
+| Lạm dụng       | `@nestjs/throttler` (Redis): 100 req/phút/IP cho API; endpoint xác thực có rate limit + CAPTCHA của Supabase                                                                              |
+| Kiểm toán      | `@Audit()` ghi `AuditLog` cho hành động Admin và từ chối truy cập                                                                                                                         |
+| Chuỗi cung ứng | `pnpm audit`, Renovate, lockfile cố định, không commit `.env`                                                                                                                             |
 
 ### 8.2 Bảng OWASP Top 10 (2021) → biện pháp
-A01 Broken Access Control → CASL + kiểm sở hữu + test 403 · A02 Cryptographic Failures → Argon2id, AES-GCM, TLS · A03 Injection → ORM + Zod + sanitize · A04 Insecure Design → máy trạng thái + khóa + idempotency · A05 Misconfiguration → header bảo mật, config kiểm bằng Zod · A06 Vulnerable Components → audit/Renovate · A07 Auth Failures → rate limit, lockout, rotation · A08 Integrity Failures → chuỗi băm nhật ký, lockfile · A09 Logging Failures → pino + audit, không log bí mật · A10 SSRF → không fetch URL do người dùng nhập (geocode qua danh sách endpoint cố định).
+
+A01 Broken Access Control → CASL + kiểm sở hữu + test 403 · A02 Cryptographic Failures → JWT bất đối xứng + JWKS, AES-GCM, TLS · A03 Injection → ORM + Zod + sanitize · A04 Insecure Design → máy trạng thái + khóa + idempotency · A05 Misconfiguration → header bảo mật, config kiểm bằng Zod · A06 Vulnerable Components → audit/Renovate · A07 Auth Failures → Supabase Auth (MFA, CAPTCHA, rate limit, rotation) · A08 Integrity Failures → chuỗi băm nhật ký, lockfile · A09 Logging Failures → pino + audit, không log bí mật · A10 SSRF → không fetch URL do người dùng nhập (geocode qua danh sách endpoint cố định).
 
 ### 8.3 Ma trận phân quyền (RBAC + ABAC)
 
-| Tài nguyên / Hành động | Guest | Buyer | Artisan | Admin |
-|---|---|---|---|---|
-| Xem sản phẩm, hộ, bản đồ, truy xuất, tin công khai | ✓ | ✓ | ✓ | ✓ |
-| Xem tin "chỉ hộ" | — | — | ✓ | ✓ |
-| Tạo/sửa sản phẩm, mốc nhật ký | — | — | ✓ *(của mình)* | ✓ (khóa/ẩn) |
-| Tạo RFQ, chốt bid, xác nhận nhận hàng | — | ✓ *(RFQ của mình)* | — | ✓ *(thay mặt)* |
-| Xem RFQ | — | ✓ *(của mình)* | ✓ *(được mời)* | ✓ |
-| Chào giá / sửa / rút | — | — | ✓ *(được mời, trước hạn)* | ✓ *(bid liên kết)* |
-| Xem bid | — | ✓ *(mọi bid trên RFQ của mình)* | ✓ ***chỉ bid của mình*** | ✓ |
-| Xác nhận phân bổ, cập nhật tiến độ | — | — | ✓ *(phân bổ của mình)* | ✓ |
-| Duyệt hộ, chia đơn, quản lý tin, xem audit | — | — | — | ✓ |
+| Tài nguyên / Hành động                             | Guest | Buyer                          | Artisan                  | Admin             |
+| -------------------------------------------------- | ----- | ------------------------------ | ------------------------ | ----------------- |
+| Xem sản phẩm, hộ, bản đồ, truy xuất, tin công khai | ✓     | ✓                              | ✓                        | ✓                 |
+| Xem tin "chỉ hộ"                                   | —     | —                              | ✓                        | ✓                 |
+| Tạo/sửa sản phẩm, mốc nhật ký                      | —     | —                              | ✓_(của mình)_            | ✓ (khóa/ẩn)       |
+| Tạo RFQ, chốt bid, xác nhận nhận hàng              | —     | ✓_(RFQ của mình)_              | —                        | ✓_(thay mặt)_     |
+| Xem RFQ                                            | —     | ✓_(của mình)_                  | ✓_(được mời)_            | ✓                 |
+| Chào giá / sửa / rút                               | —     | —                              | ✓_(được mời, trước hạn)_ | ✓_(bid liên kết)_ |
+| Xem bid                                            | —     | ✓_(mọi bid trên RFQ của mình)_ | ✓**_chỉ bid của mình_**  | ✓                 |
+| Xác nhận phân bổ, cập nhật tiến độ                 | —     | —                              | ✓_(phân bổ của mình)_    | ✓                 |
+| Duyệt hộ, chia đơn, quản lý tin, xem audit         | —     | —                              | —                        | ✓                 |
 
 ---
 
@@ -522,17 +549,18 @@ A01 Broken Access Control → CASL + kiểm sở hữu + test 403 · A02 Cryptog
 
 ### 9.1 Chiến lược render
 
-| Khu vực | Render | Lý do |
-|---|---|---|
-| Trang chủ, hồ sơ hộ, chi tiết sản phẩm, tin tức | SSR + revalidate (ISR 60s) cho **khung & SEO**; phần tương tác là client component | SEO, OG image, LCP tốt |
-| Truy xuất QR | SSR (dữ liệu nhỏ, mobile, cần nhanh) | Người quét chờ ít nhất |
-| Danh mục, bản đồ, tìm kiếm | Shell SSR + **dữ liệu client (fetch JSON)** đồng bộ URL | Lọc/cuộn không tải lại |
-| Studio, Admin, RFQ của tôi | **CSR hoàn toàn** sau đăng nhập (`'use client'` + TanStack Query) | Dữ liệu cá nhân, tương tác dày đặc |
+| Khu vực                                         | Render                                                                             | Lý do                              |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------- |
+| Trang chủ, hồ sơ hộ, chi tiết sản phẩm, tin tức | SSR + revalidate (ISR 60s) cho **khung & SEO**; phần tương tác là client component | SEO, OG image, LCP tốt             |
+| Truy xuất QR                                    | SSR (dữ liệu nhỏ, mobile, cần nhanh)                                               | Người quét chờ ít nhất             |
+| Danh mục, bản đồ, tìm kiếm                      | Shell SSR + **dữ liệu client (fetch JSON)** đồng bộ URL                            | Lọc/cuộn không tải lại             |
+| Studio, Admin, RFQ của tôi                      | **CSR hoàn toàn** sau đăng nhập (`'use client'` + TanStack Query)                  | Dữ liệu cá nhân, tương tác dày đặc |
 
 Nguyên tắc cho tiêu chí (4): **mọi dữ liệu tương tác đi qua `@vcraft/api-client` → `fetch` → REST JSON → TanStack Query cache → React cập nhật DOM**. Không dùng Server Actions cho nghiệp vụ (để mọi thao tác đều là API JSON quan sát được trong tab Network).
 
 ### 9.2 Lớp dữ liệu
-- `api-client/http`: wrapper `fetch` có kiểu (sinh từ OpenAPI bằng openapi-typescript + openapi-fetch), tự gắn access token, gom refresh một lần khi 401, tự sinh `Idempotency-Key`, chuyển Problem Details thành `ApiError`.
+
+- `api-client/http`: wrapper `fetch` có kiểu (sinh từ OpenAPI bằng openapi-typescript + openapi-fetch), lấy access token từ phiên Supabase (`supabase.auth.getSession()`), gặp 401 thì làm mới phiên rồi thử lại một lần, tự sinh `Idempotency-Key`, chuyển Problem Details thành `ApiError`.
 - `api-client/queries`: **query key factory** (`rfqKeys.detail(id)`), hooks `useRfq`, `useAcceptBid`… với **cập nhật lạc quan** + rollback.
 - `api-client/realtime`: SSE → `queryClient.invalidateQueries` / `setQueryData` theo loại sự kiện.
 - **URL state** (bộ lọc, tab, trang) bằng `nuqs` ⇒ chia sẻ được, back/forward đúng.
@@ -553,8 +581,9 @@ features/rfq/
 ```
 
 ### 9.4 Định tuyến & URL (tiêu chí 8)
+
 - `next-intl` với **pathnames bản địa hóa**: `/vi/san-pham` ↔ `/en/products`, `/vi/truy-xuat/[code]` ↔ `/en/trace/[code]`.
-- `proxy.ts` (Next 16): phát hiện locale, redirect `/q/:code` (308), chặn route `studio/*` & `admin/*` khi không có cookie phiên (kiểm tra thật vẫn ở API), 301 slug cũ (tra `SlugRedirect`).
+- `proxy.ts` (Next 16): phát hiện locale, redirect `/q/:code` (308), làm mới cookie phiên Supabase (`@supabase/ssr`) và chặn route `studio/*` & `admin/*` khi chưa đăng nhập (phân quyền thật vẫn ở API), 301 slug cũ (tra `SlugRedirect`).
 - Slug sản phẩm = `slugify(tên)` + `-` + `traceCode` viết thường ⇒ đổi tên không gãy link.
 - `sitemap.ts`, `robots.ts`, `generateMetadata` + `opengraph-image.tsx` động.
 - Caddy rewrite `/api/*`, `/media/*` cùng origin.
@@ -563,14 +592,14 @@ features/rfq/
 
 ## 10. Kiến trúc hoạt ảnh
 
-| Lớp | Công cụ | Dùng cho |
-|---|---|---|
-| Cuộn | **Lenis** (cuộn mượt) đồng bộ với GSAP ticker | Toàn trang công khai (tắt ở Studio/Admin) |
-| Kể chuyện theo cuộn | **GSAP 3 + ScrollTrigger + SplitText + DrawSVG** (`@gsap/react` `useGSAP`) | Hero, timeline nhật ký, lịch sử gia đình |
-| Hoạt ảnh component/layout/cử chỉ | **Motion** (`motion/react`): `layout`, `AnimatePresence`, spring, drag | Thẻ, modal, danh sách, bảng chia đơn |
-| Chuyển trang | **View Transitions API** (phần tử chia sẻ: ảnh thẻ → ảnh chi tiết), fallback Motion `layoutId` | Danh mục ↔ chi tiết |
-| 3D | **React Three Fiber + drei** — bình gốm `LatheGeometry` thủ tục + shader men | Hero trang chủ, landing truy xuất (tùy chọn) |
-| Vi tương tác | CSS (`@starting-style`, transitions) + SVG filter | Nút, ấn triện, ghim bản đồ |
+| Lớp                              | Công cụ                                                                                        | Dùng cho                                     |
+| -------------------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| Cuộn                             | **Lenis** (cuộn mượt) đồng bộ với GSAP ticker                                                  | Toàn trang công khai (tắt ở Studio/Admin)    |
+| Kể chuyện theo cuộn              | **GSAP 3 + ScrollTrigger + SplitText + DrawSVG** (`@gsap/react` `useGSAP`)                     | Hero, timeline nhật ký, lịch sử gia đình     |
+| Hoạt ảnh component/layout/cử chỉ | **Motion** (`motion/react`): `layout`, `AnimatePresence`, spring, drag                         | Thẻ, modal, danh sách, bảng chia đơn         |
+| Chuyển trang                     | **View Transitions API** (phần tử chia sẻ: ảnh thẻ → ảnh chi tiết), fallback Motion `layoutId` | Danh mục ↔ chi tiết                          |
+| 3D                               | **React Three Fiber + drei** — bình gốm `LatheGeometry` thủ tục + shader men                   | Hero trang chủ, landing truy xuất (tùy chọn) |
+| Vi tương tác                     | CSS (`@starting-style`, transitions) + SVG filter                                              | Nút, ấn triện, ghim bản đồ                   |
 
 Quy tắc:
 - Token thời lượng/easing tập trung ở `packages/ui/src/motion/tokens.ts` (xem [BRAND §6](BRAND.md#6-ngôn-ngữ-chuyển-động)).
@@ -581,63 +610,66 @@ Quy tắc:
 
 ## 11. Hiệu năng & cache
 
-| Tầng | Kỹ thuật |
-|---|---|
-| Trình duyệt | TanStack Query (staleTime theo loại dữ liệu), prefetch khi hover link, ảnh `srcset` + lazy + thumbhash, font tự host `font-display: swap` + subset vietnamese, tách bundle theo route, `dynamic()` cho MapLibre/R3F/Tiptap, ảo hóa danh sách dài (TanStack Virtual) |
-| Edge / proxy | zstd/gzip, `Cache-Control: immutable` cho media & static, HTTP/2 |
-| Next | ISR 60s trang công khai, OG image cache |
-| API | ETag/304 cho GET công khai; Redis cache-aside (danh mục cây, ghim bản đồ, landing truy xuất — TTL 60s, xóa khi có thay đổi qua event) |
-| CSDL | Chỉ mục theo truy vấn (§6), phân trang con trỏ (không OFFSET), `populate` có chọn lọc, tránh N+1 bằng dataloader của ORM |
-| Nền | Xử lý ảnh, email, PDF chạy ở worker, API phản hồi ngay |
+| Tầng         | Kỹ thuật                                                                                                                                                                                                                                                            |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trình duyệt  | TanStack Query (staleTime theo loại dữ liệu), prefetch khi hover link, ảnh `srcset` + lazy + thumbhash, font tự host `font-display: swap` + subset vietnamese, tách bundle theo route, `dynamic()` cho MapLibre/R3F/Tiptap, ảo hóa danh sách dài (TanStack Virtual) |
+| Edge / proxy | zstd/gzip, `Cache-Control: immutable` cho media & static, HTTP/2                                                                                                                                                                                                    |
+| Next         | ISR 60s trang công khai, OG image cache                                                                                                                                                                                                                             |
+| API          | ETag/304 cho GET công khai; Redis cache-aside (danh mục cây, ghim bản đồ, landing truy xuất — TTL 60s, xóa khi có thay đổi qua event)                                                                                                                               |
+| CSDL         | Chỉ mục theo truy vấn (§6), phân trang con trỏ (không OFFSET), `populate` có chọn lọc, tránh N+1 bằng dataloader của ORM                                                                                                                                            |
+| Nền          | Xử lý ảnh, email, PDF chạy ở worker, API phản hồi ngay                                                                                                                                                                                                              |
 
 ---
 
 ## 12. Kiểm thử
 
-| Loại | Công cụ | Phạm vi | Mục tiêu |
-|---|---|---|---|
-| Unit | Vitest | `packages/domain` (máy trạng thái — mọi cặp trạng thái×sự kiện, chiến lược chia đơn — property-based với fast-check: Σ = Q, ≤ năng lực), `utils` | ≥ 95% |
-| Component | Vitest + Testing Library | Form, bảng so sánh, stepper | Luồng chính |
-| Integration | Vitest + Testcontainers (PostgreSQL **và** MySQL) + Supertest | Module API, phân quyền (403), khóa | ≥ 70% API |
-| Concurrency | Integration + k6 | 50 request chốt đồng thời ⇒ đúng 1 thành công | Xanh |
-| E2E | Playwright | 3 hành trình vai trò + quét QR (mở URL) + responsive 360/1440 | Xanh trên CI |
-| A11y | `@axe-core/playwright` | Trang chính | 0 lỗi nghiêm trọng |
-| Hiệu năng | Lighthouse CI | Trang chủ, danh mục, truy xuất | Ngưỡng NFR-PERF-02 |
+| Loại        | Công cụ                                                       | Phạm vi                                                                                                                                          | Mục tiêu           |
+| ----------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------ |
+| Unit        | Vitest                                                        | `packages/domain` (máy trạng thái — mọi cặp trạng thái×sự kiện, chiến lược chia đơn — property-based với fast-check: Σ = Q, ≤ năng lực), `utils` | ≥ 95%              |
+| Component   | Vitest + Testing Library                                      | Form, bảng so sánh, stepper                                                                                                                      | Luồng chính        |
+| Integration | Vitest + Testcontainers (PostgreSQL **và** MySQL) + Supertest | Module API, phân quyền (403), khóa                                                                                                               | ≥ 70% API          |
+| Concurrency | Integration + k6                                              | 50 request chốt đồng thời ⇒ đúng 1 thành công                                                                                                    | Xanh               |
+| E2E         | Playwright                                                    | 3 hành trình vai trò + quét QR (mở URL) + responsive 360/1440                                                                                    | Xanh trên CI       |
+| A11y        | `@axe-core/playwright`                                        | Trang chính                                                                                                                                      | 0 lỗi nghiêm trọng |
+| Hiệu năng   | Lighthouse CI                                                 | Trang chủ, danh mục, truy xuất                                                                                                                   | Ngưỡng NFR-PERF-02 |
 
 ---
 
 ## 13. Triển khai & vận hành
 
 ### 13.1 Môi trường
-| Môi trường | Cách chạy |
-|---|---|
-| Dev | `pnpm infra:up` (Postgres, Redis, MinIO, Mailpit, Caddy) + `pnpm dev` (turbo chạy web/api/worker song song) |
-| Demo/Prod | 1 VPS (2 vCPU / 4 GB) + Docker Compose: caddy, web, api, worker, postgres, redis, minio; tên miền thật ⇒ Caddy tự cấp HTTPS (QR quét được từ điện thoại giám khảo) |
-| Dự phòng demo | Toàn bộ chạy local + Cloudflare Tunnel để có URL HTTPS công khai; bản đồ dùng PMTiles tự host (không phụ thuộc mạng ngoài) |
+
+| Môi trường    | Cách chạy                                                                                                                                                          |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Dev           | `pnpm infra:up` (Postgres, Redis, MinIO, Mailpit, Caddy) + `pnpm dev` (turbo chạy web/api/worker song song)                                                        |
+| Demo/Prod     | 1 VPS (2 vCPU / 4 GB) + Docker Compose: caddy, web, api, worker, postgres, redis, minio; tên miền thật ⇒ Caddy tự cấp HTTPS (QR quét được từ điện thoại giám khảo) |
+| Dự phòng demo | Toàn bộ chạy local + Cloudflare Tunnel để có URL HTTPS công khai; bản đồ dùng PMTiles tự host (không phụ thuộc mạng ngoài)                                         |
 
 ### 13.2 CI/CD
+
 GitHub Actions ([.github/workflows/ci.yml](../.github/workflows/ci.yml)): lint → kiểm ranh giới gói → typecheck → unit test → build → integration test **ma trận PostgreSQL × MySQL** → E2E. Merge `main` ⇒ build image ⇒ deploy qua SSH + `docker compose pull && up -d` ⇒ chạy migration ⇒ smoke test `/api/v1/health`.
 
 ### 13.3 Quan sát
+
 Log JSON (pino) có `requestId` xuyên suốt web → api → worker; `/api/v1/health` (terminus); bảng Bull Board cho Admin xem hàng đợi; Sentry (tùy chọn).
 
 ---
 
 ## 14. Quyết định kiến trúc (ADR)
 
-| # | Quyết định | Phương án đã cân nhắc | Lý do chọn |
-|---|---|---|---|
-| ADR-01 | Monorepo pnpm + Turborepo | Nx; polyrepo | Nhẹ, đủ dùng cho 3 người, cache tốt, cấu hình ít |
-| ADR-02 | Frontend Next.js 16 tách khỏi backend | Vite SPA; Next full-stack (Server Actions) | Cần SSR/OG cho QR & chia sẻ; backend riêng để API JSON rõ ràng cho tiêu chí 4 & 5 |
-| ADR-03 | Backend NestJS (adapter Fastify) | Express thuần; Hono | DI, module, guard, interceptor ⇒ thể hiện design pattern; hệ sinh thái lớn |
-| ADR-04 | ORM **MikroORM** | Prisma; Drizzle; TypeORM | Entity class + Unit of Work + Identity Map (OOP thật), khóa lạc quan/bi quan qua API, đổi driver ⇒ đáp ứng trực tiếp tiêu chí 9 và yêu cầu khóa bản ghi |
-| ADR-05 | PostgreSQL chính, MySQL kiểm chứng | Chỉ Postgres + PostGIS | PostGIS phá vỡ độc lập CSDL; dữ liệu bản đồ ít ⇒ bbox thường là đủ |
-| ADR-06 | Máy trạng thái tự viết trong `domain` | XState | Ít phụ thuộc, dễ giải thích khi vấn đáp, dùng chung FE/BE |
-| ADR-07 | SSE thay WebSocket | Socket.IO | Chỉ cần server → client; đơn giản qua proxy; tự kết nối lại |
-| ADR-08 | MapLibre GL + OpenFreeMap/PMTiles | Google Maps; Leaflet | Vector tiles, xoay/nghiêng 3D, style theo màu thương hiệu, miễn phí, chạy offline được |
-| ADR-09 | Xử lý ảnh bất đồng bộ (BullMQ + sharp) | Xử lý trong request | API phản hồi nhanh; không nghẽn khi upload hàng loạt |
-| ADR-10 | Chuỗi băm nhật ký | Blockchain | Đủ chứng minh toàn vẹn, không cần hạ tầng phi tập trung |
-| ADR-11 | JWT ngắn hạn + refresh xoay vòng lưu DB | Session cookie thuần (Redis) | Vừa có quản lý phiên (thu hồi, danh sách thiết bị), vừa stateless cho API |
-| ADR-12 | Zod là nguồn sự thật cho DTO + OpenAPI | class-validator | Một schema cho cả FE và BE ⇒ kiểm tra nhất quán (tiêu chí 6) |
+| #      | Quyết định                                                              | Phương án đã cân nhắc                                            | Lý do chọn                                                                                                                                              |
+| ------ | ----------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ADR-01 | Monorepo pnpm + Turborepo                                               | Nx; polyrepo                                                     | Nhẹ, đủ dùng cho 3 người, cache tốt, cấu hình ít                                                                                                        |
+| ADR-02 | Frontend Next.js 16 tách khỏi backend                                   | Vite SPA; Next full-stack (Server Actions)                       | Cần SSR/OG cho QR & chia sẻ; backend riêng để API JSON rõ ràng cho tiêu chí 4 & 5                                                                       |
+| ADR-03 | Backend NestJS (adapter Fastify)                                        | Express thuần; Hono                                              | DI, module, guard, interceptor ⇒ thể hiện design pattern; hệ sinh thái lớn                                                                              |
+| ADR-04 | ORM **MikroORM**                                                        | Prisma; Drizzle; TypeORM                                         | Entity class + Unit of Work + Identity Map (OOP thật), khóa lạc quan/bi quan qua API, đổi driver ⇒ đáp ứng trực tiếp tiêu chí 9 và yêu cầu khóa bản ghi |
+| ADR-05 | PostgreSQL chính, MySQL kiểm chứng                                      | Chỉ Postgres + PostGIS                                           | PostGIS phá vỡ độc lập CSDL; dữ liệu bản đồ ít ⇒ bbox thường là đủ                                                                                      |
+| ADR-06 | Máy trạng thái tự viết trong `domain`                                   | XState                                                           | Ít phụ thuộc, dễ giải thích khi vấn đáp, dùng chung FE/BE                                                                                               |
+| ADR-07 | SSE thay WebSocket                                                      | Socket.IO                                                        | Chỉ cần server → client; đơn giản qua proxy; tự kết nối lại                                                                                             |
+| ADR-08 | MapLibre GL + OpenFreeMap/PMTiles                                       | Google Maps; Leaflet                                             | Vector tiles, xoay/nghiêng 3D, style theo màu thương hiệu, miễn phí, chạy offline được                                                                  |
+| ADR-09 | Xử lý ảnh bất đồng bộ (BullMQ + sharp)                                  | Xử lý trong request                                              | API phản hồi nhanh; không nghẽn khi upload hàng loạt                                                                                                    |
+| ADR-10 | Chuỗi băm nhật ký                                                       | Blockchain                                                       | Đủ chứng minh toàn vẹn, không cần hạ tầng phi tập trung                                                                                                 |
+| ADR-11 | **Supabase Auth** làm IdP; vCraft giữ vai trò/trạng thái trong DB riêng | Tự cài JWT + refresh rotation + Argon2id; session cookie (Redis) | Có sẵn xác minh email, OAuth, MFA, rotation, CAPTCHA ⇒ tiết kiệm ~1 sprint; tách danh tính khỏi phân quyền giữ CSDL nghiệp vụ độc lập                   |
+| ADR-12 | Zod là nguồn sự thật cho DTO + OpenAPI                                  | class-validator                                                  | Một schema cho cả FE và BE ⇒ kiểm tra nhất quán (tiêu chí 6)                                                                                            |
 
-Rủi ro kỹ thuật cần kiểm chứng ở Sprint 0: (1) thư viện Nest bên thứ ba chưa khai báo peer NestJS 12 ⇒ pin 11.x nếu cần; (2) TypeScript 7 với `emitDecoratorMetadata` ⇒ backend build bằng SWC, typecheck có thể giữ TS 5.9 cho `apps/api` nếu TS 7 chưa hỗ trợ.
+Rủi ro kỹ thuật cần kiểm chứng ở Sprint 0: (0) project Supabase gói Free tự tạm dừng sau 7 ngày không hoạt động ⇒ giữ hoạt động trước buổi thi và cấu hình SMTP riêng cho email xác thực; (1) adapter NestJS của `@supabase/server` chỉ hỗ trợ Nest 10/11 ⇒ tự viết guard bọc `verifyAuth()`; (2) internal package export mã TS nguồn chạy được ở Next (transpilePackages) nhưng **không** chạy trực tiếp ở Node cho `apps/api`/`apps/worker` ⇒ khi backend bắt đầu import package, thêm bước build cho package (tsdown/tsup) hoặc bundle backend.

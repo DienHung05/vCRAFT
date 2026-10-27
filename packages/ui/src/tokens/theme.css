@@ -1,0 +1,44 @@
+/* Design tokens vCraft — nguồn: docs/BRAND.md §3, §6.2 */
+@theme {
+  --color-paper: #f5efe4;
+  --color-surface: #fbf8f2;
+  --color-ink: #1c1814;
+  --color-ash: #6b635a;
+  --color-clay: #a8482a;
+  --color-glaze: #1e3a6e;
+  --color-seal: #c2261c;
+  --color-celadon: #5e8a7d;
+  --color-lacquer: #8c6a24;
+
+  --font-display: "Fraunces", serif;
+  --font-sans: "Be Vietnam Pro", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --ease-clay: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-kiln: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-press: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Chế độ tối "Lò đêm" */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-paper: #14110f;
+    --color-surface: #1f1a16;
+    --color-ink: #f1e9dc;
+    --color-ash: #a89c8e;
+    --color-clay: #e2703a;
+    --color-glaze: #8fb0e6;
+    --color-seal: #f06a55;
+    --color-celadon: #9cc7b8;
+  }
+}
+:root[data-theme="dark"] {
+  --color-paper: #14110f;
+  --color-surface: #1f1a16;
+  --color-ink: #f1e9dc;
+  --color-ash: #a89c8e;
+  --color-clay: #e2703a;
+  --color-glaze: #8fb0e6;
+  --color-seal: #f06a55;
+  --color-celadon: #9cc7b8;
+}

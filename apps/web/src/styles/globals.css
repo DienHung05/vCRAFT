@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@import "@vcraft/ui/theme.css";
+@source "../../../../packages/ui/src";
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}

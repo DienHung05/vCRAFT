@@ -32,5 +32,8 @@ module.exports = {
       to: { path: '^apps' },
     },
   ],
-  options: { tsConfig: { fileName: 'tooling/typescript/base.json' } },
+  options: {
+    doNotFollow: { path: 'node_modules' },
+    exclude: { path: '(^|/)(dist|\\.next|coverage)/' },
+  },
 };

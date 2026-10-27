@@ -8,4 +8,8 @@ pre-commit:
 commit-msg:
   commands:
     conventional:
-      run: grep -Eq '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?!?: .+' {1} || (echo "Commit message phải theo Conventional Commits, vd: feat(rfq): accept bid with pessimistic lock" && exit 1)
+      run: |
+        grep -Eq '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?!?: .+' {1} || {
+          echo "Commit message phải theo Conventional Commits, ví dụ: feat(rfq): accept bid with pessimistic lock"
+          exit 1
+        }

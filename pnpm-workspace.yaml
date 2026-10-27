@@ -3,3 +3,13 @@ packages:
   - "packages/*"
   - "tooling/*"
   - "tests/*"
+
+# Gói được phép chạy build script khi cài (pnpm mặc định chặn tất cả)
+allowBuilds:
+  "@swc/core": true
+  "@parcel/watcher": true
+  lefthook: true
+  msgpackr-extract: true
+  protobufjs: true
+  cpu-features: false
+  ssh2: false

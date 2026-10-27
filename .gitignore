@@ -30,3 +30,4 @@ uploads/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+next-env.d.ts

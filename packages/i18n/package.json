@@ -4,11 +4,15 @@
   "private": true,
   "type": "module",
   "description": "Từ điển vi/en và cấu hình locale/pathnames dùng chung.",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {},
-  "devDependencies": { "@vcraft/tsconfig": "workspace:*" }
+  "devDependencies": {
+    "@vcraft/tsconfig": "workspace:*"
+  }
 }

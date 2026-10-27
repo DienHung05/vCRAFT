@@ -4,11 +4,19 @@
   "private": true,
   "type": "module",
   "description": "Hợp đồng API dùng chung FE/BE: Zod schemas, DTO types, mã lỗi.",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"
   },
-  "dependencies": { "@vcraft/domain": "workspace:*", "@vcraft/utils": "workspace:*", "zod": "^4.6.7" },
-  "devDependencies": { "@vcraft/tsconfig": "workspace:*" }
+  "dependencies": {
+    "@vcraft/domain": "workspace:*",
+    "@vcraft/utils": "workspace:*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@vcraft/tsconfig": "workspace:*"
+  }
 }

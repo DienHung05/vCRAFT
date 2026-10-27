@@ -4,15 +4,46 @@
   "private": true,
   "description": "Tiến trình nền BullMQ: tối ưu ảnh (sharp), sinh tem QR, gửi mail, outbox, job hẹn giờ (hết hạn chào giá).",
   "scripts": {
-    "dev": "nest start --watch -b swc",
-    "build": "nest build -b swc",
+    "dev": "nest start --watch",
+    "build": "nest build",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1156.0",
+    "@mikro-orm/core": "^7.2.5",
+    "@mikro-orm/nestjs": "^7.1.0",
+    "@nestjs/bullmq": "^12.0.0",
+    "@nestjs/common": "^12.2.0",
+    "@nestjs/core": "^12.2.0",
+    "@nestjs/schedule": "^12.0.2",
+    "@supabase/supabase-js": "^2.118.0",
     "@vcraft/database": "workspace:*",
     "@vcraft/domain": "workspace:*",
-    "@vcraft/utils": "workspace:*"
+    "@vcraft/utils": "workspace:*",
+    "bullmq": "^6.4.2",
+    "ioredis": "^6.0.0",
+    "nestjs-pino": "^5.3.1",
+    "nodemailer": "^10.2.1",
+    "pdf-lib": "^1.17.1",
+    "pino": "^10.4.0",
+    "pino-http": "^11.0.0",
+    "qrcode": "^1.5.4",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "sharp": "^0.35.5",
+    "thumbhash": "^0.1.1",
+    "zod": "^4.6.7"
   },
-  "devDependencies": { "@vcraft/tsconfig": "workspace:*" }
+  "devDependencies": {
+    "@nestjs/cli": "^12.0.10",
+    "@nestjs/schematics": "^12.0.10",
+    "@swc/cli": "^0.8.1",
+    "@swc/core": "^1.16.20",
+    "@types/node": "^26.6.5",
+    "@types/nodemailer": "^8.0.2",
+    "@types/qrcode": "^1.5.6",
+    "@vcraft/tsconfig": "workspace:*",
+    "vitest": "^5.0.5"
+  }
 }

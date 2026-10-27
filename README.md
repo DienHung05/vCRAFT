@@ -6,7 +6,7 @@
 
 Triển lãm số · Truy xuất nguồn gốc bằng QR · Báo giá & điều phối đơn sỉ · Bản đồ làng nghề
 
-*Bài tập lớn INT3306 — Phát triển ứng dụng web · Fall 2026*
+_Bài tập lớn INT3306 — Phát triển ứng dụng web · Fall 2026_
 
 </div>
 
@@ -14,13 +14,13 @@ Triển lãm số · Truy xuất nguồn gốc bằng QR · Báo giá & điều 
 
 ## Tài liệu
 
-| Tài liệu | Nội dung |
-|---|---|
-| [docs/SRS.md](docs/SRS.md) | Đặc tả yêu cầu: chức năng theo vai trò, máy trạng thái báo giá, quy tắc khóa, phi chức năng, truy vết tiêu chí chấm |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Kiến trúc C4, monorepo & luật ranh giới, backend, design patterns, mô hình dữ liệu, bảo mật, frontend, hoạt ảnh, ADR |
-| [docs/PLAN.md](docs/PLAN.md) | Tech stack, phân vai, lộ trình sprint, backlog, kịch bản demo, chuẩn bị vấn đáp, rủi ro |
-| [docs/BRAND.md](docs/BRAND.md) | Nhận diện thương hiệu: ấn triện, màu, chữ, hoa văn, ngôn ngữ chuyển động, giọng văn |
-| [docs/requirements/vCraft.pdf](docs/requirements/vCraft.pdf) | Đề bài gốc |
+| Tài liệu                                                     | Nội dung                                                                                                             |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| [docs/SRS.md](docs/SRS.md)                                   | Đặc tả yêu cầu: chức năng theo vai trò, máy trạng thái báo giá, quy tắc khóa, phi chức năng, truy vết tiêu chí chấm  |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)                 | Kiến trúc C4, monorepo & luật ranh giới, backend, design patterns, mô hình dữ liệu, bảo mật, frontend, hoạt ảnh, ADR |
+| [docs/PLAN.md](docs/PLAN.md)                                 | Tech stack, phân vai, lộ trình sprint, backlog, kịch bản demo, chuẩn bị vấn đáp, rủi ro                              |
+| [docs/BRAND.md](docs/BRAND.md)                               | Nhận diện thương hiệu: ấn triện, màu, chữ, hoa văn, ngôn ngữ chuyển động, giọng văn                                  |
+| [docs/requirements/vCraft.pdf](docs/requirements/vCraft.pdf) | Đề bài gốc                                                                                                           |
 
 ## Cấu trúc monorepo
 
@@ -48,7 +48,9 @@ Luật phụ thuộc giữa các gói được kiểm tự động (`pnpm deps:c
 ## Bắt đầu
 
 ```bash
-corepack enable && corepack use pnpm@latest
+# Yêu cầu: Node ≥ 24, Docker. pnpm được ghim trong package.json (field packageManager).
+# Node ≥ 25 không còn kèm corepack: chạy `npm i -g corepack` trước.
+corepack enable pnpm
 pnpm install
 cp .env.example .env
 pnpm infra:up          # postgres, redis, minio, mailpit, caddy
