@@ -53,7 +53,7 @@ Luật phụ thuộc giữa các gói được kiểm tự động (`pnpm deps:c
 corepack enable pnpm
 pnpm install
 cp .env.example .env
-pnpm infra:up          # postgres, redis, minio, mailpit, caddy
+pnpm infra:up          # postgres, redis, mailpit, caddy (file lưu trên Supabase Storage)
 pnpm db:migrate && pnpm db:seed
 pnpm dev               # web :3000 · api :4000 · truy cập qua Caddy http://localhost:8080
 ```

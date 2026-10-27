@@ -395,7 +395,7 @@ Yêu cầu chung UI: trạng thái loading (skeleton), rỗng (minh họa + lờ
 - **SSE** `/api/v1/events/stream` cho thông báo/realtime.
 - **Supabase Auth** (GoTrue): đăng ký, đăng nhập, OAuth Google, MFA TOTP, khôi phục mật khẩu, mời người dùng; backend kiểm chứng JWT qua JWKS bằng `@supabase/server`.
 - Bản đồ: MapLibre GL JS + vector tiles (OpenFreeMap; dự phòng tệp PMTiles tự host cho khu vực Bát Tràng).
-- Object storage tương thích S3 (MinIO / Cloudflare R2). SMTP cho email.
+- Object storage: **Supabase Storage** qua giao thức S3 (cùng project với Auth, [ADR-14](adr/0014-object-storage-supabase.md)); ổ đĩa cục bộ khi test/offline. SMTP cho email.
 - Dữ liệu đơn vị hành chính Việt Nam 2 cấp (tệp JSON tĩnh đóng gói cùng app).
 - Tùy chọn: Claude API cho gợi ý/dịch câu chuyện (FR-ART-08).
 - Trợ lý Cáo (FR-AST): Claude API (Haiku 5.5) để trả lời và phân loại; Voyage AI để sinh embedding đa ngữ; **Supabase Postgres + pgvector** làm chỉ mục tri thức (tách khỏi CSDL nghiệp vụ, ADR-13); Open-Meteo (thời tiết, geocoding) không cần khóa API.
