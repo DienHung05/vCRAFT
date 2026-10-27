@@ -1,0 +1,4 @@
+{
+  "extends": "@vcraft/tsconfig/library.json",
+  "include": ["src", "test"]
+}

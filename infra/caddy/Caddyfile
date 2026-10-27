@@ -1,0 +1,36 @@
+# Dev: http://localhost:8080 ; Prod: thay ":8080" bằng tên miền để Caddy tự cấp HTTPS (Let's Encrypt)
+{
+	auto_https off
+}
+
+:8080 {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(self), geolocation=(self), microphone=()"
+		-Server
+	}
+
+	# REST JSON API + SSE (flush ngay để stream sự kiện không bị đệm)
+	handle /api/* {
+		reverse_proxy host.docker.internal:4000 {
+			flush_interval -1
+		}
+	}
+
+	# Ảnh đã tối ưu: cache dài hạn vì key chứa hash nội dung
+	handle_path /media/* {
+		header Cache-Control "public, max-age=31536000, immutable"
+		reverse_proxy host.docker.internal:9000 {
+			rewrite /vcraft-media{uri}
+		}
+	}
+
+	# Mọi thứ còn lại (gồm /q/{code} -> 308 sang trang truy xuất, xử lý trong Next proxy.ts)
+	handle {
+		reverse_proxy host.docker.internal:3000
+	}
+}

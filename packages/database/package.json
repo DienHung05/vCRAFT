@@ -1,0 +1,14 @@
+{
+  "name": "@vcraft/database",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Tầng dữ liệu hướng đối tượng: MikroORM entities, repositories, migrations theo từng driver, seeders.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": { "@vcraft/domain": "workspace:*", "@vcraft/utils": "workspace:*" },
+  "devDependencies": { "@vcraft/tsconfig": "workspace:*" }
+}

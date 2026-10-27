@@ -1,0 +1,50 @@
+# Hạ tầng phát triển cục bộ: `pnpm infra:up`
+# MySQL nằm trong profile "mysql" để kiểm chứng độc lập CSDL: `docker compose --profile mysql ... up -d`
+name: vcraft
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: vcraft
+      POSTGRES_USER: vcraft
+      POSTGRES_PASSWORD: vcraft
+    ports: ["5432:5432"]
+    volumes: ["./.data/postgres:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vcraft"]
+      interval: 5s
+
+  mysql:
+    image: mysql:8.4
+    profiles: ["mysql"]
+    environment:
+      MYSQL_DATABASE: vcraft
+      MYSQL_USER: vcraft
+      MYSQL_PASSWORD: vcraft
+      MYSQL_ROOT_PASSWORD: root
+    ports: ["3306:3306"]
+    volumes: ["./.data/mysql:/var/lib/mysql"]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: vcraft
+      MINIO_ROOT_PASSWORD: vcraft-secret
+    ports: ["9000:9000", "9001:9001"]
+    volumes: ["./.data/minio:/data"]
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports: ["1025:1025", "8025:8025"]
+
+  # Reverse proxy cùng origin: /api/* -> api, /q/* rewrite, còn lại -> web (xem infra/caddy/Caddyfile)
+  caddy:
+    image: caddy:2-alpine
+    ports: ["8080:8080"]
+    volumes: ["../caddy/Caddyfile:/etc/caddy/Caddyfile:ro"]
+    extra_hosts: ["host.docker.internal:host-gateway"]

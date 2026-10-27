@@ -1,0 +1,14 @@
+{
+  "name": "@vcraft/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Client fetch có kiểu cho REST JSON API + query key factory/TanStack Query hooks + SSE client.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": { "@vcraft/contracts": "workspace:*" },
+  "devDependencies": { "@vcraft/tsconfig": "workspace:*" }
+}

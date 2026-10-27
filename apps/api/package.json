@@ -1,0 +1,20 @@
+{
+  "name": "@vcraft/api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Backend NestJS: REST JSON API /api/v1, SSE realtime, xác thực & phân quyền, điều phối nghiệp vụ.",
+  "scripts": {
+    "dev": "nest start --watch -b swc",
+    "build": "nest build -b swc",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@vcraft/contracts": "workspace:*",
+    "@vcraft/database": "workspace:*",
+    "@vcraft/domain": "workspace:*",
+    "@vcraft/utils": "workspace:*"
+  },
+  "devDependencies": { "@vcraft/tsconfig": "workspace:*" }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@vcraft/worker",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Tiến trình nền BullMQ: tối ưu ảnh (sharp), sinh tem QR, gửi mail, outbox, job hẹn giờ (hết hạn chào giá).",
+  "scripts": {
+    "dev": "nest start --watch -b swc",
+    "build": "nest build -b swc",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@vcraft/database": "workspace:*",
+    "@vcraft/domain": "workspace:*",
+    "@vcraft/utils": "workspace:*"
+  },
+  "devDependencies": { "@vcraft/tsconfig": "workspace:*" }
+}

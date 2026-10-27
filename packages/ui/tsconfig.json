@@ -1,0 +1,4 @@
+{
+  "extends": "@vcraft/tsconfig/nextjs.json",
+  "include": ["src", "test"]
+}

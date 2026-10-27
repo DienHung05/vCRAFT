@@ -1,0 +1,10 @@
+{
+  "name": "@vcraft/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Playwright E2E theo hành trình 3 vai trò + kiểm tra a11y (axe) và tranh chấp chốt giá.",
+  "scripts": {
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": { "@vcraft/tsconfig": "workspace:*" }
+}

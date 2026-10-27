@@ -1,0 +1,14 @@
+{
+  "name": "@vcraft/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Design system vCraft: design tokens, components, motion primitives, hoa văn thương hiệu.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": { "@vcraft/utils": "workspace:*" },
+  "devDependencies": { "@vcraft/tsconfig": "workspace:*" }
+}

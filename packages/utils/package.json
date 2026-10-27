@@ -1,0 +1,14 @@
+{
+  "name": "@vcraft/utils",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Tiện ích không nghiệp vụ: slug tiếng Việt, đọc số thành chữ, chuẩn hóa SĐT, định dạng tiền/ngày.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {},
+  "devDependencies": { "@vcraft/tsconfig": "workspace:*" }
+}

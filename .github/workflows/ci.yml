@@ -1,0 +1,57 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Tắt cho tới khi Sprint 0 có pnpm-lock.yaml + field packageManager; bật bằng repo variable CI_ENABLED=true
+  quality:
+    if: vars.CI_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm deps:check
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  # Chứng minh "độc lập CSDL": cùng bộ integration test chạy trên 2 hệ quản trị
+  integration:
+    needs: quality
+    if: vars.CI_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        db: [postgresql, mysql]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @vcraft/api test:integration
+        env:
+          DB_DRIVER: ${{ matrix.db }}
+
+  e2e:
+    needs: quality
+    if: vars.CI_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
