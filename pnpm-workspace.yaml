@@ -13,3 +13,9 @@ allowBuilds:
   protobufjs: true
   cpu-features: false
   ssh2: false
+
+permissions:
+  '@supabase/server':
+    skills: true
+  '@tanstack/react-table':
+    skills: true

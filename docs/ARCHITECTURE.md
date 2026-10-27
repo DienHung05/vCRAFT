@@ -223,7 +223,9 @@ Luật (cưỡng chế bằng `.dependency-cruiser.cjs`, chạy trong CI):
 3. `ui` không biết nghiệp vụ (không import `domain`, `contracts`, `api-client`).
 4. `packages/*` không import `apps/*`.
 
-Package nội bộ dùng mô hình **"just-in-time"** (export trực tiếp `src/index.ts`, app tự biên dịch) ⇒ không cần bước build riêng cho package, dev nhanh.
+Hai kiểu package nội bộ:
+- **Compiled** (`domain`, `contracts`, `utils`, `database`): backend Node dùng nên build bằng **tsdown** ra `dist/index.mjs` (ESM, giữ decorator metadata cho MikroORM). Backend CommonJS nạp được nhờ `require(esm)` của Node ≥ 22. Trường `types` vẫn trỏ `src/` nên IDE/typecheck không phải chờ build; `turbo dev` chạy `tsdown --watch`.
+- **Just-in-time** (`ui`, `i18n`, `api-client`): chỉ frontend dùng, export thẳng `src/index.ts`, Next tự biên dịch (`transpilePackages`).
 
 ### 3.3 Công cụ monorepo
 
@@ -672,4 +674,4 @@ Log JSON (pino) có `requestId` xuyên suốt web → api → worker; `/api/v1/h
 | ADR-11 | **Supabase Auth** làm IdP; vCraft giữ vai trò/trạng thái trong DB riêng | Tự cài JWT + refresh rotation + Argon2id; session cookie (Redis) | Có sẵn xác minh email, OAuth, MFA, rotation, CAPTCHA ⇒ tiết kiệm ~1 sprint; tách danh tính khỏi phân quyền giữ CSDL nghiệp vụ độc lập                   |
 | ADR-12 | Zod là nguồn sự thật cho DTO + OpenAPI                                  | class-validator                                                  | Một schema cho cả FE và BE ⇒ kiểm tra nhất quán (tiêu chí 6)                                                                                            |
 
-Rủi ro kỹ thuật cần kiểm chứng ở Sprint 0: (0) project Supabase gói Free tự tạm dừng sau 7 ngày không hoạt động ⇒ giữ hoạt động trước buổi thi và cấu hình SMTP riêng cho email xác thực; (1) adapter NestJS của `@supabase/server` chỉ hỗ trợ Nest 10/11 ⇒ tự viết guard bọc `verifyAuth()`; (2) internal package export mã TS nguồn chạy được ở Next (transpilePackages) nhưng **không** chạy trực tiếp ở Node cho `apps/api`/`apps/worker` ⇒ khi backend bắt đầu import package, thêm bước build cho package (tsdown/tsup) hoặc bundle backend.
+Rủi ro kỹ thuật cần kiểm chứng ở Sprint 0: (0) project Supabase gói Free tự tạm dừng sau 7 ngày không hoạt động ⇒ giữ hoạt động trước buổi thi và cấu hình SMTP riêng cho email xác thực; (1) adapter NestJS của `@supabase/server` chỉ hỗ trợ Nest 10/11 ⇒ tự viết guard bọc `verifyAuth()`. (Đã xử lý 27/10: package dùng ở backend được build bằng tsdown — xem §3.2.)

@@ -5,9 +5,14 @@
   "type": "module",
   "description": "Tầng dữ liệu hướng đối tượng: MikroORM entities, repositories, migrations theo từng driver, seeders.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.mjs"
+    }
   },
   "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"
   },
@@ -26,6 +31,11 @@
   "devDependencies": {
     "@mikro-orm/cli": "^7.2.5",
     "@vcraft/tsconfig": "workspace:*",
+    "tsdown": "^0.23.2",
     "vitest": "^5.0.5"
-  }
+  },
+  "files": [
+    "dist",
+    "src"
+  ]
 }

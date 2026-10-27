@@ -5,9 +5,14 @@
   "type": "module",
   "description": "Lõi nghiệp vụ thuần TypeScript: máy trạng thái báo giá, chiến lược chia đơn, ghép hộ phù hợp, chuỗi băm nhật ký, value objects.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.mjs"
+    }
   },
   "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"
   },
@@ -15,6 +20,11 @@
   "devDependencies": {
     "@vcraft/tsconfig": "workspace:*",
     "fast-check": "^4.10.2",
+    "tsdown": "^0.23.2",
     "vitest": "^5.0.5"
-  }
+  },
+  "files": [
+    "dist",
+    "src"
+  ]
 }

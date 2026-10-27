@@ -31,3 +31,6 @@ uploads/
 .vscode/*
 !.vscode/extensions.json
 next-env.d.ts
+
+# Claude Code: cấu hình cá nhân
+.claude/settings.local.json

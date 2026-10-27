@@ -93,7 +93,7 @@ Phiên bản đã đối chiếu npm ngày 27/10/2026. Sprint 0 khóa phiên b�
 | CSS                     | **Tailwind CSS** (token qua `@theme`)                                                                        | 4.3          |
 | Primitive truy cập được | Radix UI qua shadcn/ui (tùy biến hoàn toàn theo brand)                                                       | —            |
 | Dữ liệu server          | **TanStack Query**                                                                                           | 5.105        |
-| Bảng / danh sách dài    | TanStack Table 8 · TanStack Virtual 3                                                                        | —            |
+| Bảng / danh sách dài    | TanStack Table 9 · TanStack Virtual 3                                                                        | —            |
 | URL state               | nuqs                                                                                                         | 2.10         |
 | UI state                | Zustand                                                                                                      | 5            |
 | Form                    | React Hook Form 7.91 + Zod 4.6                                                                               | —            |

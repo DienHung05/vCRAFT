@@ -5,15 +5,25 @@
   "type": "module",
   "description": "Tiện ích không nghiệp vụ: slug tiếng Việt, đọc số thành chữ, chuẩn hóa SĐT, định dạng tiền/ngày.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.mjs"
+    }
   },
   "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {},
   "devDependencies": {
     "@vcraft/tsconfig": "workspace:*",
+    "tsdown": "^0.23.2",
     "vitest": "^5.0.5"
-  }
+  },
+  "files": [
+    "dist",
+    "src"
+  ]
 }

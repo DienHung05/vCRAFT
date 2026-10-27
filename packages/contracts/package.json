@@ -5,9 +5,14 @@
   "type": "module",
   "description": "Hợp đồng API dùng chung FE/BE: Zod schemas, DTO types, mã lỗi.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.mjs"
+    }
   },
   "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"
   },
@@ -17,6 +22,11 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@vcraft/tsconfig": "workspace:*"
-  }
+    "@vcraft/tsconfig": "workspace:*",
+    "tsdown": "^0.23.2"
+  },
+  "files": [
+    "dist",
+    "src"
+  ]
 }
