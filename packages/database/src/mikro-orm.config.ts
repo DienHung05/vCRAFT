@@ -86,12 +86,39 @@ export function createMikroOrmOptions(
       path: migrationsDir,
       pathTs: migrationsDir,
       snapshot: true,
+      // Cố định tên snapshot: mặc định MikroORM đặt theo dbName (`postgres` trên Supabase, `vcraft` khi chạy MySQL cục bộ)
+      snapshotName: '.snapshot-vcraft',
       emit: 'ts',
     },
     seeder: {
       path: join(PACKAGE_ROOT, 'src', 'seeders'),
       pathTs: join(PACKAGE_ROOT, 'src', 'seeders'),
       defaultSeeder: 'DatabaseSeeder',
+    },
+    // ADR-15: bảng nghiệp vụ trên Supabase luôn bật RLS (không policy) để Data API không đọc/ghi được.
+    // Khai báo ở đây để schema diff không sinh lệnh tắt RLS; MySQL không có khái niệm này.
+    ...(driver === 'postgresql' && {
+      discovery: {
+        onMetadata: (meta: { rowLevelSecurity?: boolean | 'force' }) => {
+          meta.rowLevelSecurity ??= true;
+        },
+      },
+    }),
+    schemaGenerator: {
+      // ADR-15: schema hệ thống của Supabase và vector store của trợ lý (ADR-13) không thuộc MikroORM quản lý
+      ignoreSchema: [
+        'auth',
+        'extensions',
+        'graphql',
+        'graphql_public',
+        'pgbouncer',
+        'private',
+        'realtime',
+        'storage',
+        'supabase_migrations',
+        'vault',
+      ],
+      skipTables: ['knowledge_chunks'],
     },
     debug: env.DB_DEBUG === 'true',
     ...overrides,

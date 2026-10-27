@@ -64,6 +64,24 @@ describe('createMikroOrmOptions', () => {
     });
   });
 
+  it('PostgreSQL mặc định bật RLS cho mọi entity, MySQL thì không (ADR-15)', () => {
+    const meta: { rowLevelSecurity?: boolean | 'force' } = {};
+    createMikroOrmOptions({ DB_DRIVER: 'postgresql' }).discovery?.onMetadata?.(
+      meta as never,
+      undefined as never,
+    );
+    expect(meta.rowLevelSecurity).toBe(true);
+
+    const optOut: { rowLevelSecurity?: boolean | 'force' } = { rowLevelSecurity: false };
+    createMikroOrmOptions({ DB_DRIVER: 'postgresql' }).discovery?.onMetadata?.(
+      optOut as never,
+      undefined as never,
+    );
+    expect(optOut.rowLevelSecurity).toBe(false);
+
+    expect(createMikroOrmOptions({ DB_DRIVER: 'mysql' }).discovery?.onMetadata).toBeUndefined();
+  });
+
   it('từ chối DB_PORT không hợp lệ', () => {
     expect(() => createMikroOrmOptions({ DB_PORT: 'abc' })).toThrow(/DB_PORT/);
   });
