@@ -104,7 +104,7 @@ Làng nghề gặp ba vấn đề: (1) sản phẩm thật bị trà trộn hàn
 - A1 — Một triển khai phục vụ một làng nghề (single-tenant), cấu hình được tên/màu nhấn/danh mục.
 - A2 — Hộ có điện thoại chụp ảnh và kết nối 4G.
 - A3 — Dữ liệu địa giới dùng mô hình **2 cấp (Tỉnh/Thành → Xã/Phường)** sau sắp xếp đơn vị hành chính có hiệu lực 01/07/2025.
-- A4 — Ảnh seed do nhóm tự chụp tại Bát Tràng hoặc nguồn có giấy phép phù hợp.
+- A4 — Ảnh seed lấy từ nguồn có giấy phép phù hợp, ghi công đầy đủ.
 - A5 — Danh tính người dùng do **Supabase Auth** (project `owwxkyumisfcqzahfhbn`) cấp; CSDL nghiệp vụ của vCraft độc lập với Supabase và chỉ tham chiếu `user.id` (UUID) của Supabase.
 
 ---

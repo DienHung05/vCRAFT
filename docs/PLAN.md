@@ -27,7 +27,7 @@
 | #   | Tiêu chí                | Hệ số    | Công sức | Cách "chốt" điểm tối đa                                                                                                                                                     |
 | --- | ----------------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | Chức năng               | **0.35** | ~40%     | Làm **đủ 100% chức năng trong đề** (mức M) trước 06/12, sau đó mới thêm "wow" (mức S/C). Mỗi chức năng trong đề có ít nhất một điểm vượt kỳ vọng (bảng 1.2).                |
-| 3   | Giao diện & bản sắc     | **0.2**  | ~25%     | Hệ thống thương hiệu hoàn chỉnh ([BRAND.md](BRAND.md)), 10 khoảnh khắc chuyển động đặc trưng, ảnh thật từ Bát Tràng, responsive kiểm từng màn ở 360/768/1440.               |
+| 3   | Giao diện & bản sắc     | **0.2**  | ~25%     | Hệ thống thương hiệu hoàn chỉnh ([BRAND.md](BRAND.md)), 10 khoảnh khắc chuyển động đặc trưng, ảnh Bát Tràng có giấy phép rõ ràng, responsive kiểm từng màn ở 360/768/1440.               |
 | 2   | Thiết kế logic, dễ dùng | 0.1      | ~8%      | Stepper trạng thái thống nhất, chỉ hiện hành động hợp lệ, wizard, trạng thái rỗng/lỗi có hướng dẫn, test với 5 người.                                                       |
 | 4   | Hiệu năng / AJAX / JSON | 0.1      | ~8%      | Mọi tương tác là fetch → JSON → cập nhật DOM; SSE realtime; Lighthouse ≥ 90; chứng minh bằng tab Network.                                                                   |
 | 5   | Phong cách lập trình    | 0.05     | ~5%      | Monorepo có ranh giới cưỡng chế, domain thuần, 12+ pattern có tên, JSDoc tham chiếu mã yêu cầu.                                                                             |
@@ -130,6 +130,8 @@ Phiên bản đã đối chiếu npm ngày 27/10/2026. Sprint 0 khóa phiên b�
 | Log / health         | nestjs-pino · @nestjs/terminus                                                                                                                                                      | —                                             |
 | ID                   | uuid v7 · nanoid (mã truy xuất, bảng chữ tùy chỉnh)                                                                                                                                 | —                                             |
 | AI (Could)           | Claude API — Haiku 5.5 cho dịch/gợi ý câu chuyện                                                                                                                                    | —                                             |
+| Trợ lý Cáo (S)       | `@anthropic-ai/sdk` (Haiku 5.5: trả lời + phân loại guardrail) · embedding đa ngữ Voyage AI (chốt model hỗ trợ tiếng Việt ở S5) · **pgvector trên Supabase** (cùng project với Auth) qua `@supabase/supabase-js` | —                                             |
+| Mascot               | `page-mascot` (skill vẽ sprite sheet 9 hướng đầu + 9 biểu cảm) — chỉ dùng để **sinh asset**; component hiển thị tự viết trong `packages/ui` nếu gói npm chưa đạt (kiểm license, kích thước, a11y) | —                                             |
 
 ### 2.4 Kiểm thử, hạ tầng, triển khai
 
@@ -151,7 +153,7 @@ Phiên bản đã đối chiếu npm ngày 27/10/2026. Sprint 0 khóa phiên b�
 
 | Thành viên                          | Vai trò chính                            | Sở hữu                                                                                                    | Hỗ trợ                                 |
 | ----------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| **A — Frontend & Brand lead**       | Design system, hoạt ảnh, trang công khai | `packages/ui`, `apps/web/experience`, trang chủ, hồ sơ hộ, chi tiết sản phẩm, landing truy xuất, BRAND.md | Figma, ảnh thực địa, kiểm thử khả dụng |
+| **A — Frontend & Brand lead**       | Design system, hoạt ảnh, trang công khai | `packages/ui`, `apps/web/experience`, trang chủ, hồ sơ hộ, chi tiết sản phẩm, landing truy xuất, BRAND.md | Figma, tuyển chọn ảnh có giấy phép, kiểm thử khả dụng |
 | **B — Backend & Domain lead**       | Nghiệp vụ lõi, bảo mật                   | `packages/domain`, `packages/contracts`, module auth/rfq/bids/orders, khóa & state machine, phân quyền    | Màn RFQ/điều phối (cùng A)             |
 | **C — Platform & Integration lead** | Dữ liệu, media, bản đồ, hạ tầng          | `packages/database`, media pipeline, worker, traceability/QR, bản đồ, i18n, CI/CD, deploy                 | Studio nghệ nhân, Admin dashboard      |
 
@@ -185,14 +187,14 @@ gantt
 
 | Sprint               | Mục tiêu (sản phẩm demo được cuối sprint)                  | A — Frontend/Brand                                                                                        | B — Backend/Domain                                                                                                  | C — Platform                                                                                                                                                                                        |
 | -------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **S0** 27/10–01/11   | Repo chạy được, CI xanh, có hướng thương hiệu              | Moodboard, logo ấn bình, token màu/chữ, Figma 6 màn chính                                                    | Mô hình domain, schema Zod đầu tiên, bảng state machine + test                                                      | `create-next-app`, `nest new`, MikroORM + 2 driver, compose, CI; cấu hình Supabase Auth (Site URL, redirect URLs, SMTP riêng, JWT 15′, MFA, Turnstile); **thực địa Bát Tràng** (cả nhóm, cuối tuần) |
+| **S0** 27/10–01/11   | Repo chạy được, CI xanh, có hướng thương hiệu              | Moodboard, logo ấn bình, token màu/chữ, Figma 6 màn chính                                                    | Mô hình domain, schema Zod đầu tiên, bảng state machine + test                                                      | `create-next-app`, `nest new`, MikroORM + 2 driver, compose, CI; cấu hình Supabase Auth (Site URL, redirect URLs, SMTP riêng, JWT 15′, MFA, Turnstile) |
 | **S1** 02/11–08/11   | Đăng ký/đăng nhập, hộ nộp hồ sơ, admin duyệt               | `packages/ui` (button, input, card, dialog, toast…), layout, header/footer, trang auth, wizard đăng ký hộ | `SupabaseAuthGuard` (JWKS), cấp hồ sơ lần đầu, CASL, throttler, kiểm duyệt hộ (+ invite/ban qua Supabase admin API) | Entities User/LoginEvent/Artisan/Workshop, migration, seeder cơ bản, mail (Mailpit), mã hóa trường CCCD                                                                                             |
 | **S2** 09/11–15/11   | Hộ đăng sản phẩm có nhiều ảnh + nhật ký                    | Studio (mobile-first): hồ sơ hộ, form sản phẩm, uploader nhiều ảnh, thêm mốc nhật ký                      | Module products, production-logs, chuỗi băm (domain), mẫu công đoạn                                                 | **Media pipeline**: upload, magic bytes, worker sharp AVIF/WebP, thumbhash, SSE `media.ready`                                                                                                       |
 | **S3** 16/11–22/11   | Khách quét QR xem hành trình; xem bản đồ; duyệt danh mục   | Trang danh mục (lọc + URL + cuộn vô hạn), chi tiết sản phẩm, hồ sơ hộ công khai, landing truy xuất        | Module catalog (Specification, cursor, tìm không dấu), gợi ý ⌘K                                                     | Traceability (mã, QR, `/q` redirect, lượt quét), **bản đồ** (style, ghim bbox, popup, đang mở, cluster), seed 200 sản phẩm                                                                          |
 | **S4** 23/11–29/11   | Luồng báo giá đầy đủ tới chốt, 2 tab chốt cùng lúc an toàn | Màn tạo RFQ, lời mời + form chào giá (Studio), bảng so sánh realtime, stepper                             | **RFQ/Bids**: state machine, ghép hộ, chào giá kín, khóa lạc quan/bi quan, idempotency, outbox, job hết hạn         | SSE hub + Redis pub/sub, thông báo in-app + email, test concurrency (2 CSDL)                                                                                                                        |
 | **S5** 30/11–06/12   | **Đủ 100% chức năng đề bài**                               | Màn điều phối (kéo-thả, 3 phương án), Gantt tiến độ, admin dashboard, editor tin tức                      | Orders/Allocations, 3 chiến lược chia (property test), chia lại, cập nhật tiến độ                                   | News (lịch cúp điện, giá vật liệu), audit log, biểu đồ dashboard                                                                                                                                    |
-| **S6** 07/12–13/12   | Trang web "cực kỳ nổi bật"                                 | **Hero bình gốm 3D**, scroll story, View Transitions, đóng ấn, ghim thở, chế độ Lò đêm                    | Gợi ý giá, đánh giá hộ, trang Bảo mật tài khoản (lịch sử đăng nhập, đăng xuất mọi thiết bị), MFA bắt buộc cho Admin | i18n vi/en + URL bản địa hóa, OG image động, sitemap, slug 301, tự điền địa chỉ/EXIF, đọc số thành chữ                                                                                              |
-| **S7** 14/12–20/12   | Sẵn sàng chấm                                              | Responsive pass 360/768/1440 từng màn, a11y (axe), reduced-motion, Lighthouse ≥ 90                        | Rà soát bảo mật (OWASP checklist), CSP nonce, test phân quyền 403 toàn bộ route                                     | Deploy VPS + HTTPS, backup, PMTiles offline, Lighthouse CI, E2E 3 vai trò                                                                                                                           |
+| **S6** 07/12–13/12   | Trang web "cực kỳ nổi bật"                                 | **Hero bình gốm 3D**, scroll story, View Transitions, đóng ấn, ghim thở, chế độ Lò đêm, **widget trợ lý Cáo** (E15) | Gợi ý giá, đánh giá hộ, trang Bảo mật tài khoản (lịch sử đăng nhập, đăng xuất mọi thiết bị), MFA bắt buộc cho Admin, **module assistant + guardrail** (E15) | i18n vi/en + URL bản địa hóa, OG image động, sitemap, slug 301, tự điền địa chỉ/EXIF, đọc số thành chữ, **ingest tri thức → pgvector** (E15)                                                        |
+| **S7** 14/12–20/12   | Sẵn sàng chấm                                              | Responsive pass 360/768/1440 từng màn, a11y (axe), reduced-motion, Lighthouse ≥ 90                        | Rà soát bảo mật (OWASP checklist + OWASP LLM Top 10 cho trợ lý), CSP nonce, test phân quyền 403 toàn bộ route, **bộ red-team trợ lý** | Deploy VPS + HTTPS, backup, PMTiles offline, Lighthouse CI, E2E 3 vai trò                                                                                                                           |
 | **S8** 21/12–27/12   | **Đóng băng tính năng 20/12**                              | Kiểm thử khả dụng 5 người, sửa UX                                                                         | Bug bash, tối ưu truy vấn                                                                                           | Dữ liệu demo cuối cùng, kịch bản reset dữ liệu 1 lệnh                                                                                                                                               |
 | Dự phòng 28/12 → thi | Tập demo ≥ 3 lần có bấm giờ, luyện Q&A chéo                |                                                                                                           |                                                                                                                     |                                                                                                                                                                                                     |
 
@@ -213,7 +215,6 @@ Ký hiệu: **[A] [B] [C]** = người phụ trách; mã FR tham chiếu [SRS.md
 - [ ] [B] `packages/domain/rfq`: bảng chuyển trạng thái + `transition()` + `availableEvents()` + test mọi cặp trạng thái×sự kiện
 - [ ] [B] `packages/contracts`: quy ước schema, mã lỗi, Problem Details
 - [ ] [A] Moodboard, logo ấn bình (SVG), token màu/chữ/khoảng cách/bóng, Figma: Trang chủ, Hồ sơ hộ, Sản phẩm, Truy xuất, RFQ, Điều phối
-- [ ] [ALL] Thực địa Bát Tràng: phỏng vấn 1–2 hộ (xin phép), chụp ảnh quy trình đủ 7 công đoạn, chân dung, xưởng; quay 10–20s video bàn xoay
 
 ### E1 — Xác thực & phiên (FR-AUTH) — Supabase Auth
 
@@ -311,9 +312,80 @@ Ký hiệu: **[A] [B] [C]** = người phụ trách; mã FR tham chiếu [SRS.md
 - [ ] [A] Lighthouse ≥ 90 / a11y ≥ 95 trên 3 trang chính; responsive pass
 - [ ] [C] Deploy + HTTPS + domain; backup; script `pnpm demo:reset` nạp lại dữ liệu demo
 
+### E15 — Trợ lý "Cáo" (FR-AST, mức S) — chatbot mascot góc dưới bên phải
+
+Mục tiêu: khách (kể cả Guest) hỏi về vCraft, cách đặt hàng/RFQ, truy xuất QR, làng Bát Tràng, hộ và sản phẩm **công khai**. Cáo cũng phải trả lời tự nhiên các câu **đời thường**: chào hỏi, cảm ơn, hỏi ngày giờ, thời tiết, đường đi tới làng, "đang có xưởng nào mở cửa". Trợ lý **chỉ đọc**: không tạo RFQ, không xem dữ liệu riêng của ai, không có tool gây tác dụng phụ. Nguyên tắc: **chỉ chặn tấn công thật, không chặn người dùng thật**; câu lạc đề nhưng vô hại thì trả lời ngắn rồi khéo léo gợi ý quay về chủ đề. Mã FR-AST-01…08 bổ sung vào [SRS.md](SRS.md) khi bắt đầu epic.
+
+**Định tuyến ý định** (chọn đường nhanh nhất cho mỗi loại câu)
+
+| Ý định | Ví dụ | Xử lý | Độ trễ mục tiêu |
+|---|---|---|---|
+| `greeting` / `thanks` / `bye` | "chào cáo", "hi", "cảm ơn nha" | **Đường nhanh không gọi LLM**: khớp mẫu (có dấu, không dấu, teencode "hellu", "thanks", emoji 👋) ⇒ trả câu chào i18n ngẫu nhiên theo giờ ("Chào buổi tối!") + 3 chip gợi ý theo trang đang xem; cáo vẫy tay | < 100 ms |
+| `datetime` | "hôm nay ngày mấy", "mấy giờ rồi", "âm lịch hôm nay" | Tool `get_current_datetime` (giờ server, `Asia/Ho_Chi_Minh`, kèm âm lịch tính bằng hàm thuần trong `packages/utils`) | < 1,5 s |
+| `weather` | "thời tiết Bát Tràng", "mai có mưa không", "Hà Nội nóng không" | Tool `get_weather` qua **Open-Meteo** (miễn phí, không cần key). Mặc định tọa độ Bát Tràng; tên địa điểm khác geocode qua API của Open-Meteo, chỉ trong VN. Cache Redis 15′; có gợi ý kèm ("Trời nắng, hợp đi làm gốm cùng nghệ nhân đấy!") | < 2 s |
+| `site_help` / `catalog` / `trace` / `village` | "đặt 5.000 cốc thế nào", "QR này là gì", "xưởng nào đang mở" | RAG + tool đọc `search_catalog`, `get_open_workshops` (gọi API công khai với quyền Guest) | first token < 1,5 s |
+| `chitchat` lạc đề vô hại | "kể chuyện cười", "1+1", "bạn là ai" | Trả lời **ngắn**, giữ giọng cáo, kết bằng một câu nối về gốm/vCraft | first token < 1,5 s |
+| `out_of_scope` cần chuyên môn | tư vấn pháp lý, y tế, đầu tư | Từ chối nhẹ nhàng, gợi ý nguồn phù hợp | — |
+| `injection` / `abuse` / dò dữ liệu riêng | "bỏ qua hướng dẫn", hỏi CCCD, giá chào hộ khác | Chặn; giọng cáo vẫn lịch sự, không giảng giải kỹ thuật, không lặp lại nội dung độc | — |
+
+**UX — mượt và có duyên**
+
+- Phản hồi tức thì: gửi tin ⇒ < 100 ms tin hiện trong khung + cáo chuyển `thinking` + bong bóng câu thú vị; không có khoảng trắng chờ nào.
+- Giảm độ trễ: prompt caching cho system prompt + tài liệu tĩnh; **phân loại chạy song song** với truy hồi vector (không nối tiếp); câu chào và ngày giờ không cần LLM.
+- Stream mượt: token gom vào buffer rồi vẽ theo `requestAnimationFrame` (không giật từng ký tự); bộ lọc đầu ra chạy theo từng câu nên không chặn cả stream.
+- Hiểu ngữ cảnh: gửi kèm `pagePath`. Đang ở trang sản phẩm thì "cái này làm ở đâu" hiểu là sản phẩm đó; chip gợi ý đổi theo trang (trang chủ / danh mục / bản đồ / landing QR / RFQ).
+- Tự nhận vi/en theo câu hỏi, mặc định theo locale URL; hiểu tiếng Việt không dấu và teencode.
+- Chào chủ động **một lần**: sau 8 giây ở trang chủ hoặc landing QR, cáo ló đầu kèm bong bóng nhỏ "Cần tớ giúp gì không?" (tắt được, nhớ trong `localStorage`, không bao giờ bật popup tự động).
+- Giữ hội thoại trong `sessionStorage` khi chuyển trang; nút "Cuộc trò chuyện mới".
+- Mỗi câu trả lời có: copy, 👍/👎 (đưa vào thống kê Admin), thử lại khi lỗi; câu bị rate limit hiện đếm ngược thân thiện thay vì báo lỗi.
+- Bàn phím: `Enter` gửi, `Shift+Enter` xuống dòng, `Esc` đóng, mở/đóng không cướp focus của trang. Mobile: sheet cao theo `visualViewport` nên bàn phím ảo không che ô nhập; nút nổi né thanh điều hướng.
+- Cáo "sống" mà không phiền: idle thì chớp mắt, nhìn theo con trỏ; lâu không dùng thì ngủ gật (Zzz); hover thì ngóc đầu. Tất cả tắt khi bật reduced-motion.
+
+**Kiến trúc**
+
+```
+web: features/assistant (widget) ──fetch POST + SSE stream──▶ api: modules/assistant
+                                                                ├─ GuardrailPipeline (Chain of Responsibility)
+                                                                ├─ Retriever ──▶ VectorStore port ──▶ SupabaseVectorStore (pgvector)
+                                                                └─ LlmClient port ──▶ ClaudeAdapter (Haiku 5.5)
+worker: job assistant.ingest (outbox product/workshop/news.published|updated|deleted) ──▶ chunk → embed → upsert
+```
+
+- pgvector đặt ở **Supabase**, tách khỏi CSDL nghiệp vụ: chỉ số tri thức là dữ liệu **dẫn xuất, dựng lại được** từ CSDL chính, nên CSDL nghiệp vụ vẫn chạy trên cả PostgreSQL lẫn MySQL. Đổi `DB_DRIVER=mysql` thì trợ lý vẫn chạy. Ghi lý do vào **ADR-13**. Ngoại lệ "không SQL tay" chỉ áp dụng cho migration Supabase (`supabase/migrations`: bảng `knowledge_chunks`, index HNSW, hàm RPC `match_knowledge`), cần nhóm duyệt.
+- `VectorStore` có thêm adapter `InMemoryVectorStore` dùng cho test/CI và chạy offline lúc demo (Adapter pattern).
+
+**Việc cần làm**
+
+- [ ] [A] Sinh mascot **cáo** theo brand bằng `page-mascot` (S1–S2, việc nhỏ): cáo chibi lông cam đất nung, khăn/áo **men lam**, ôm bình gốm nhỏ; 2 sprite sheet (9 hướng đầu, 9 biểu cảm: idle, chào, nghe, nghĩ, vui, bối rối, từ chối, lỗi, ngủ), WebP; bổ sung mục Mascot vào [BRAND.md](BRAND.md)
+- [ ] [A] `packages/ui/mascot`: `<Mascot>` thuần UI (không nghiệp vụ). Đầu nhìn theo con trỏ/ô nhập; **chớp mắt** ngẫu nhiên 3–6 giây/lần (đổi frame, ~120 ms, thỉnh thoảng chớp đôi); biểu cảm theo prop `mood`; **bong bóng suy nghĩ** (3 chấm mây nổi lên trên đầu) kèm prop `thought`. `prefers-reduced-motion` ⇒ tắt chớp mắt, xoay đầu và nhấp nhô; bong bóng hiện tĩnh
+- [ ] [A] `apps/web/src/features/assistant`: nút nổi góc dưới phải (an toàn với safe-area, không che CTA hay bottom sheet bản đồ trên mobile; ẩn ở Studio/Admin nếu vướng); panel chat (desktop: popover 380px; mobile: vaul bottom sheet); stream token; thẻ nguồn trích dẫn có link nội bộ; gợi ý câu hỏi nhanh; nút dừng/xóa hội thoại; trạng thái loading/empty/error/bị giới hạn; điều hướng bàn phím, `aria-live="polite"`, focus trap
+- [ ] [A] Trong lúc chờ token đầu tiên ⇒ cáo `mood="thinking"` + bong bóng xoay vòng **câu thú vị** (i18n vi/en, ~30 câu: chuyện làng Bát Tràng, men lam, nhiệt độ lò, mẹo dùng vCraft). Ví dụ: "Đợi tớ lục lại kho gốm một chút…", "Bạn có biết gốm Bát Tràng nung tới ~1.300°C không?". Khi stream bắt đầu ⇒ `mood="talking"`; bị guardrail chặn ⇒ `mood="refuse"` + câu từ chối thân thiện
+- [ ] [B] `packages/contracts/assistant`: `AssistantMessageRequest` (message ≤ 1.000 ký tự, history ≤ 10 lượt, locale, `pagePath`, conversationId), schema sự kiện SSE (`thinking`, `delta`, `citations`, `done`, `blocked`, `error`), `AssistantAnswer` có `citations[]`
+- [ ] [B] `apps/api/src/modules/assistant`: `POST /api/v1/assistant/messages` trả SSE (ADR-07); controller mỏng, logic nằm ở `AskAssistantService`
+- [ ] [C] Worker `assistant.ingest`: chỉ lấy nội dung **công khai** (sản phẩm hộ `APPROVED` (BR-02), hồ sơ hộ công khai, tin `PUBLIC`, FAQ/hướng dẫn soạn tay trong `docs/assistant-kb/` vi/en); chunk ~500 token có metadata (`type`, `locale`, `url`, `visibility`, `sourceUpdatedAt`); embed; upsert idempotent; xóa khi gỡ/ẩn/khóa hộ; lệnh `pnpm assistant:reindex`
+- [ ] [C] Migration Supabase cho pgvector + RLS: chặn hoàn toàn với `anon`/`authenticated`, chỉ backend dùng secret key; `get_advisors` sạch
+
+**Guardrail chống tấn công** (B phụ trách, mỗi lớp có test; tham chiếu OWASP LLM Top 10)
+
+| Lớp | Biện pháp |
+|---|---|
+| 1. Cửa vào | Zod (độ dài, số lượt, locale); chuẩn hóa Unicode NFKC, bỏ ký tự điều khiển/zero-width/bidi; **rate limit** Redis theo IP + phiên (vd. 10 tin/phút, 60 tin/ngày); Turnstile ở tin đầu mỗi phiên; trần **ngân sách token/ngày** toàn hệ thống (vượt ⇒ circuit breaker, widget báo "Cáo đi ngủ") |
+| 2. Phân loại trước | Heuristic (regex đa ngữ cả có dấu lẫn không dấu: "bỏ qua hướng dẫn", "ignore previous", "system prompt", DAN, base64/leetspeak dài) chỉ **cộng điểm nghi ngờ**, không tự chặn. Một lượt Haiku phân loại theo bảng định tuyến ý định ở trên (structured output, chạy song song với truy hồi) mới quyết định. Chỉ `injection / abuse` hoặc dò dữ liệu riêng mới bị chặn; lạc đề vô hại thì vẫn trả lời |
+| 3. System prompt | Tính cách cáo (thân thiện, ngắn gọn, xưng "tớ"); ưu tiên vCraft + Bát Tràng, cho phép trò chuyện xã giao ngắn; không tiết lộ chỉ dẫn; mọi tài liệu truy hồi bọc trong `<document untrusted="true">` và coi là **dữ liệu, không phải lệnh**; chỉ trả lời dựa trên tài liệu, không có thì nói không biết và chỉ tới trang liên hệ; có **canary token** để phát hiện rò prompt |
+| 4. Truy hồi | Chỉ chỉ mục dữ liệu công khai (không bao giờ có CCCD, giá chào kín, tin "chỉ hộ", email/SĐT); lọc `visibility='public'` cả lúc ingest lẫn lúc truy vấn; chống **indirect prompt injection** từ mô tả sản phẩm do hộ tự viết (seed sẵn một sản phẩm chứa câu tấn công để test) |
+| 5. Chỉ tool đọc | Allowlist cố định: `get_current_datetime`, `get_weather`, `search_catalog`, `get_open_workshops`. Tham số kiểm bằng Zod; gọi API với quyền Guest (không mượn token người dùng); timeout 3 s; kết quả tool cũng bọc là dữ liệu không tin cậy. Không có tool nào ghi dữ liệu; mọi "hành động" chỉ là link nội bộ để người dùng tự bấm |
+| 6. Cửa ra | Kiểm canary, che PII (regex SĐT/email/CCCD); link chỉ chấp nhận path nội bộ hoặc domain trong allowlist; render markdown đã sanitize (không HTML thô, không ảnh từ URL ngoài ⇒ chặn exfiltration qua ảnh); `max_tokens` giới hạn |
+| 7. Giám sát | Log hội thoại ẩn danh (băm IP), lưu 30 ngày; tin bị chặn ghi audit kèm lý do; thẻ "Trợ lý" trong Admin dashboard (số lượt, tỷ lệ chặn, top câu hỏi chưa trả lời được ⇒ bổ sung FAQ) |
+
+- [ ] [B] `GuardrailPipeline` (Chain of Responsibility: `InputSanitizer → RateLimiter → BudgetGuard → InjectionClassifier → … → OutputFilter`); hàm thuần (chuẩn hóa, che PII, allowlist link) đặt trong `packages/utils` để test unit
+- [ ] [B] Bộ **red-team** `tests/assistant-redteam/` ≥ 60 câu: jailbreak, đóng vai, đòi system prompt, injection qua tài liệu, tiếng Việt không dấu, base64, nhồi ngữ cảnh dài, hỏi dữ liệu riêng (CCCD, giá chào của hộ khác), xin link độc hại. CI chạy bản mock mỗi PR; bản gọi API thật chạy nightly; tiêu chí: 100% không rò canary/PII, ≥ 95% bị chặn đúng. Kèm **bộ câu hợp lệ** ≥ 80 câu (chào hỏi kiểu teencode/không dấu/emoji, ngày giờ, âm lịch, thời tiết nhiều địa điểm, xã giao, câu hỏi nghiệp vụ, câu "nghe giống tấn công" nhưng vô hại như "hệ thống chấm điểm hộ thế nào"): **0 câu chào/ngày giờ/thời tiết bị chặn**, tổng chặn nhầm ≤ 3%
+- [ ] [B] Tools đọc: `get_current_datetime` (+ âm lịch trong `packages/utils`), `get_weather` (adapter Open-Meteo + cache Redis 15′, fallback "chưa lấy được thời tiết" khi lỗi), `search_catalog`, `get_open_workshops`; đường nhanh câu chào không gọi LLM
+- [ ] [A] Đo UX: thời gian tới phản hồi đầu tiên (p50/p95) hiện trong Admin; kiểm thử khả dụng S8 có ≥ 3 nhiệm vụ dùng Cáo (chào, hỏi thời tiết, hỏi cách đặt hàng)
+- [ ] [C] E2E Playwright: mở widget, hỏi "Làm sao đặt 5.000 cốc?" ⇒ có trích dẫn tới trang RFQ; "chao cao" ⇒ chào lại ngay; "thời tiết Bát Tràng hôm nay" ⇒ có nhiệt độ; thử injection ⇒ cáo từ chối; kiểm reduced-motion và tràn layout ở 360px
+
 ### Seed data (C phụ trách, A duyệt nội dung)
 
-1 làng Bát Tràng (polygon, giới thiệu) · 20+ hộ (ảnh thật nhóm chụp cho 5–6 hộ chính, còn lại ảnh có giấy phép) · 200+ sản phẩm × 4–7 mốc · 12 RFQ phủ **mọi trạng thái** · 1 đơn đã chia 4 hộ đang sản xuất · 15+ tin (có lịch cúp điện hôm nay, bảng giá vật liệu 6 tháng) · 3 tài khoản demo cố định cho 3 vai trò + 1 tài khoản hộ "đang chờ duyệt".
+1 làng Bát Tràng (polygon, giới thiệu) · 20+ hộ (ảnh từ nguồn có giấy phép rõ ràng, ghi công) · 200+ sản phẩm × 4–7 mốc · 12 RFQ phủ **mọi trạng thái** · 1 đơn đã chia 4 hộ đang sản xuất · 15+ tin (có lịch cúp điện hôm nay, bảng giá vật liệu 6 tháng) · 3 tài khoản demo cố định cho 3 vai trò + 1 tài khoản hộ "đang chờ duyệt".
 
 ---
 
@@ -358,6 +430,8 @@ Diễn tập: ≥ 3 lần có bấm giờ; mỗi người tập được **toàn
 | "Ảnh tối ưu thế nào?"                                    | Nén client → kiểm magic bytes → worker sharp → AVIF/WebP 4 cỡ, xóa GPS, thumbhash → srcset + lazy                                                                                                                                      | Sơ đồ §7.1                                |
 | "QR có giả được không?"                                  | QR chỉ là URL; giá trị nằm ở hồ sơ hộ đã duyệt + nhật ký chuỗi băm; hộ bị khóa ⇒ trang cảnh báo                                                                                                                                        | Landing truy xuất                         |
 | "URL rewrite ở đâu?"                                     | `proxy.ts` (locale, `/q`, slug cũ 301), pathnames bản địa hóa, Caddy `/api` `/media`                                                                                                                                                   | `infra/caddy/Caddyfile`                   |
+| "Chatbot chống prompt injection thế nào?"                | Phòng thủ nhiều lớp: chuẩn hóa + giới hạn đầu vào, bộ phân loại trước, tài liệu truy hồi đánh dấu không tin cậy, không có tool ghi, lọc đầu ra (canary, PII, allowlist link), rate limit + ngân sách token; chứng minh bằng bộ red-team | `modules/assistant/guardrails`, ADR-13 |
+| "Dùng pgvector có phá độc lập CSDL không?"               | Không: vector store là kho dẫn xuất riêng trên Supabase, sau port `VectorStore`; CSDL nghiệp vụ vẫn chạy được với MySQL, đổi adapter thì trợ lý vẫn chạy                                                                         | ADR-13, `infrastructure/vector`           |
 | "Sao chọn MikroORM thay Prisma?"                         | Prisma không có entity class, khóa bi quan phải viết SQL tay ⇒ vi phạm OOP & độc lập CSDL                                                                                                                                              | ADR-04                                    |
 
 ---
@@ -396,7 +470,10 @@ Diễn tập: ≥ 3 lần có bấm giờ; mỗi người tập được **toàn
 | Thành viên ốm / bận thi môn khác                                                       | TB       | Cao       | Ai cũng nắm toàn hệ thống (buổi dạy lại thứ Sáu); tài liệu ARCHITECTURE; dự phòng 1 tuần                     |
 | Project Supabase Free tự tạm dừng sau 7 ngày không dùng / SMTP mặc định giới hạn email | TB       | Cao       | Truy cập định kỳ + kiểm tra 1 ngày trước thi; SMTP riêng (Resend/Brevo); tài khoản demo tạo sẵn, đã xác minh |
 | Lệch giữa FE và BE                                                                     | TB       | TB        | Một nguồn schema (`contracts`), client có kiểu sinh từ OpenAPI                                               |
-| Bản quyền ảnh                                                                          | TB       | TB        | Ảnh tự chụp ở thực địa; ảnh ngoài chỉ từ nguồn giấy phép rõ ràng, ghi công                                   |
+| Bản quyền ảnh                                                                          | TB       | TB        | Chỉ dùng ảnh từ nguồn giấy phép rõ ràng (CC BY/CC0, Unsplash, Wikimedia Commons…), ghi công đầy đủ                                   |
+| Trợ lý Cáo bị lạm dụng (tốn tiền API, nói sai/nói bậy khi giám khảo thử)               | TB       | Cao       | Guardrail E15 + trần ngân sách token/ngày; red-team trước S8; câu trả lời chỉ dựa trên tài liệu có trích dẫn; tắt được bằng feature flag   |
+| Mạng/API AI lỗi lúc thi                                                                | TB       | TB        | Widget hiện "Cáo đi ngủ" kèm link FAQ; không chặn luồng chính; mascot vẫn chạy hiệu ứng                     |
+| Trợ lý lấn thời gian chức năng cốt lõi                                                 | TB       | Cao       | Mức S, chỉ bắt đầu S6 sau mốc 06/12; asset mascot làm sớm vì rẻ; cắt được bong bóng/câu thú vị nếu trễ        |
 | Dữ liệu demo bị "bẩn" do tập dượt                                                      | Cao      | TB        | `pnpm demo:reset` một lệnh                                                                                   |
 
 ---
@@ -409,4 +486,4 @@ Diễn tập: ≥ 3 lần có bấm giờ; mỗi người tập được **toàn
 4. A: moodboard + logo ấn bình bản nháp trước thứ Sáu 30/10.
 5. B: PR đầu tiên `feat(domain): rfq state machine` kèm test.
 6. C: cấu hình Supabase Auth theo E1, xác thực MCP `supabase` (`claude /mcp` trong terminal).
-7. Chốt lịch thực địa Bát Tràng (thứ Bảy 31/10 hoặc Chủ nhật 01/11).
+7. A: lập kho ảnh Bát Tràng có giấy phép (nguồn, tác giả, giấy phép cho từng ảnh) đủ 7 công đoạn, chân dung, xưởng.

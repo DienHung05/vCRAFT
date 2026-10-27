@@ -138,7 +138,7 @@ Vi tương tác bổ sung: nút từ tính (desktop), con trỏ chấm mực đ�
 - Ánh sáng tự nhiên, ấm; cận cảnh **bàn tay đang làm**, vân đất, giọt men; toàn cảnh lò, sân phơi.
 - Mỗi hộ tối thiểu: 1 chân dung nghệ nhân, 3 ảnh xưởng, 1 ảnh bàn tay làm việc.
 - Chỉnh màu thống nhất (preset nhẹ: ấm +5, bão hòa −8, giữ tông da).
-- Nhóm dành **một buổi thực địa tại Bát Tràng** (Sprint 0–1) để chụp ảnh/quay video gốc ⇒ nội dung thật, có bản quyền, là lợi thế lớn khi chấm "bản sắc".
+- Ảnh/video lấy từ nguồn có giấy phép rõ ràng (CC BY/CC0, Unsplash, Wikimedia Commons…), ưu tiên ảnh chụp tại Bát Tràng; ghi công theo đúng điều khoản giấy phép.
 
 ---
 
