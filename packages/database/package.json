@@ -14,7 +14,10 @@
     "build": "tsdown",
     "dev": "tsdown --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "db:migrate": "node --env-file-if-exists=../../.env ./node_modules/@mikro-orm/cli/cli.js migration:up",
+    "db:migrate:create": "node --env-file-if-exists=../../.env ./node_modules/@mikro-orm/cli/cli.js migration:create",
+    "db:seed": "node --env-file-if-exists=../../.env ./node_modules/@mikro-orm/cli/cli.js seeder:run"
   },
   "dependencies": {
     "@mikro-orm/core": "^7.2.5",
@@ -30,6 +33,9 @@
   },
   "devDependencies": {
     "@mikro-orm/cli": "^7.2.5",
+    "@swc-node/register": "^1.12.1",
+    "@swc/core": "^1.16.20",
+    "@types/node": "^26.6.5",
     "@vcraft/tsconfig": "workspace:*",
     "tsdown": "^0.23.2",
     "vitest": "^5.0.5"
@@ -37,5 +43,12 @@
   "files": [
     "dist",
     "src"
-  ]
+  ],
+  "mikro-orm": {
+    "configPaths": [
+      "./src/mikro-orm.config.ts"
+    ],
+    "preferTs": true,
+    "tsLoader": "swc"
+  }
 }
