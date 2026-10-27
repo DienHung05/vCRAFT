@@ -215,7 +215,7 @@ Ký hiệu: **[A] [B] [C]** = người phụ trách; mã FR tham chiếu [SRS.md
 - [X] [C] CI chạy đủ job; `pnpm deps:check` xanh
 - [X] [B] `packages/domain/rfq`: bảng chuyển trạng thái + `transition()` + `availableEvents()` + test mọi cặp trạng thái×sự kiện
 - [X] [B] `packages/contracts`: quy ước schema, mã lỗi, Problem Details
-- [X] [A] Moodboard, logo ấn bình (SVG), token màu/chữ/khoảng cách/bóng, Figma: Trang chủ, Hồ sơ hộ, Sản phẩm, Truy xuất, RFQ, Điều phối
+- [x] [A] Moodboard, logo ấn bình (SVG), token màu/chữ/khoảng cách/bóng, Figma: Trang chủ, Hồ sơ hộ, Sản phẩm, Truy xuất, RFQ, Điều phối — 6 màn dựng thẳng bằng route Next.js thật (dữ liệu mẫu `apps/web/src/lib/demo`), moodboard ở `docs/design/moodboard.html`
 
 ### E1 — Xác thực & phiên (FR-AUTH) — Supabase Auth
 
