@@ -348,7 +348,11 @@ Diễn tập: ≥ 3 lần có bấm giờ; mỗi người tập được **toàn
 7. JSDoc cho hàm công khai và quy tắc nghiệp vụ (ghi mã BR/FR).
 8. PR được duyệt, CI xanh, có ảnh chụp/GIF nếu đổi giao diện.
 
-**Quy trình git:** `main` luôn demo được · nhánh ngắn `feat/<epic>-<mô-tả>` · Conventional Commits (`feat(rfq): …`) · squash merge · tag `v0.<sprint>` cuối mỗi sprint.
+**Quy trình git** (chi tiết ở [AGENTS.md §4](../AGENTS.md#4-quy-tắc-git)):
+- `main` chỉ để deploy: chỉ nhận merge từ `develop` khi phát hành, gắn tag `v0.<sprint>` cuối mỗi sprint.
+- `develop` là nhánh tích hợp, luôn chạy được.
+- Feature: tạo nhánh từ `develop` (`feat/<epic>-<mô-tả>`, `fix/…`, `docs/…`, `chore/…`), mở PR **vào `develop`**, squash merge, Conventional Commits (`feat(rfq): …`).
+- Merge xong thì xóa nhánh feature ở cả remote lẫn local (bật "Automatically delete head branches" trên GitHub), rồi `git fetch --prune`.
 
 **Nhịp làm việc:** họp 15′ thứ Hai/Tư/Sáu · demo nội bộ Chủ nhật cuối sprint · board GitHub Projects (cột: Backlog / Sprint / Đang làm / Review / Xong), mỗi issue gắn mã FR + tiêu chí chấm.
 

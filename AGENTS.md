@@ -52,6 +52,11 @@ Hướng dẫn cho mọi AI agent (Claude Code, Codex, Copilot, Cursor…) làm 
 
 - **Không tự ý `git commit` hoặc `git push`** (kể cả amend, rebase, force push, tạo tag, tạo PR) **trừ khi user cho phép rõ ràng trong lần yêu cầu đó.** Được phép một lần không có nghĩa là được phép cho các lần sau.
 - Khi được phép commit: theo Conventional Commits (`feat(rfq): ...`), **không thêm dòng `Co-Authored-By`** hay bất kỳ dòng ghi công AI nào. Commit chỉ đứng tên user.
+- **Luồng nhánh:**
+  - `main` chỉ dùng để deploy. Chỉ merge `develop` vào `main` khi phát hành, không commit hay mở PR feature thẳng vào `main`.
+  - `develop` là nhánh tích hợp. Mọi feature đều merge vào đây qua PR.
+  - Làm feature: tạo nhánh từ `develop` mới nhất, đặt tên `feat/<epic>-<mô-tả-ngắn>` (sửa lỗi: `fix/...`, tài liệu: `docs/...`, hạ tầng: `chore/...`). Mở PR **vào `develop`**.
+  - Sau khi PR merge: **xóa nhánh feature** cả trên remote (`git push origin --delete <nhánh>` hoặc bật auto-delete trên GitHub) lẫn ở local (`git branch -d <nhánh>`), rồi `git fetch --prune` để repo không bị loãng nhánh.
 - Không commit `.env`, bí mật, dữ liệu trong `infra/compose/.data/`.
 - Repo git là chính thư mục này (`vCRAFT/`), không phải thư mục cha.
 

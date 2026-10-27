@@ -60,4 +60,6 @@ Kiểm chứng độc lập CSDL: `docker compose -f infra/compose/compose.dev.y
 
 ## Quy ước
 
-Conventional Commits · nhánh `feat/<epic>-<mô-tả>` · PR cần 1 review + CI xanh · Definition of Done ở [PLAN §8](docs/PLAN.md#8-definition-of-done--quy-trình-làm-việc).
+- `main` chỉ để deploy; `develop` là nhánh tích hợp.
+- Feature: nhánh `feat/<epic>-<mô-tả>` tách từ `develop` → PR vào `develop` (1 review + CI xanh) → merge xong xóa nhánh.
+- Conventional Commits · Definition of Done ở [PLAN §8](docs/PLAN.md#8-definition-of-done--quy-trình-làm-việc) · quy tắc cho AI agent ở [AGENTS.md](AGENTS.md).
