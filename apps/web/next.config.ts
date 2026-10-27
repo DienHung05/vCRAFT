@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
     '@vcraft/utils',
   ],
   reactCompiler: true,
+  // Dùng một AGENTS.md duy nhất ở gốc repo, không để `next dev` sinh thêm bản riêng
+  agentRules: false,
 };
 
 export default nextConfig;

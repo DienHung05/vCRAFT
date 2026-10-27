@@ -57,6 +57,7 @@ Hướng dẫn cho mọi AI agent (Claude Code, Codex, Copilot, Cursor…) làm 
   - `develop` là nhánh tích hợp. Mọi feature đều merge vào đây qua PR.
   - Làm feature: tạo nhánh từ `develop` mới nhất, đặt tên `feat/<epic>-<mô-tả-ngắn>` (sửa lỗi: `fix/...`, tài liệu: `docs/...`, hạ tầng: `chore/...`). Mở PR **vào `develop`**.
   - Sau khi PR merge: **xóa nhánh feature** cả trên remote (`git push origin --delete <nhánh>` hoặc bật auto-delete trên GitHub) lẫn ở local (`git branch -d <nhánh>`), rồi `git fetch --prune` để repo không bị loãng nhánh.
+- **Nhắc commit:** làm xong một feature, một task trong backlog hoặc một phần việc trọn vẹn tương đương (kiểm tra đã xanh), agent phải nhắc user commit để tiến độ trên git luôn khớp thực tế. Chỉ nhắc, không tự commit; vẫn áp dụng quy tắc xin phép ở trên.
 - Không commit `.env`, bí mật, dữ liệu trong `infra/compose/.data/`.
 - Repo git là chính thư mục này (`vCRAFT/`), không phải thư mục cha.
 
