@@ -55,7 +55,7 @@ flowchart LR
     vcraft[[vCraft]]
     tiles[(Vector tiles<br/>OpenFreeMap / PMTiles)]
     mail[(SMTP)]
-    s3[(Object storage<br/>S3 / R2)]
+    s3[(Supabase Storage<br/>giao thức S3)]
     llm[(Claude API · Voyage AI<br/>trợ lý Cáo, gợi ý câu chuyện)]
     idp[(Supabase Auth<br/>danh tính, phiên, MFA)]
     vec[(Supabase pgvector<br/>chỉ mục tri thức)]
@@ -80,14 +80,14 @@ flowchart LR
 flowchart TB
     browser["Trình duyệt<br/>(Next.js client: React 19, TanStack Query,<br/>GSAP, Motion, R3F, MapLibre)"]
     subgraph edge [Reverse proxy — Caddy]
-      caddy{{"/api/* → api<br/>/media/* → storage<br/>/* → web"}}
+      caddy{{"/api/* → api<br/>/media/* → ổ đĩa (chế độ local)<br/>/* → web"}}
     end
     web["apps/web<br/>Next.js 16 (SSR shell, SEO, OG image,<br/>i18n routing, proxy.ts)"]
     api["apps/api<br/>NestJS 12 — REST JSON /api/v1 + SSE"]
     worker["apps/worker<br/>NestJS standalone + BullMQ<br/>(sharp, QR/PDF, mail, outbox, cron)"]
     db[("PostgreSQL 17<br/>(hoặc MySQL 8.4)")]
     redis[("Redis<br/>cache · queue · pub/sub")]
-    s3[("MinIO / R2<br/>public + private bucket")]
+    s3[("Supabase Storage (S3)<br/>vcraft-media + vcraft-private")]
     supa[["Supabase Auth<br/>đăng nhập · refresh · MFA · OAuth"]]
     vec[("Supabase Postgres + pgvector<br/>knowledge_chunks (dẫn xuất)")]
     ai[["Claude API · Voyage AI"]]
@@ -134,7 +134,7 @@ flowchart LR
     subgraph infra [Tầng hạ tầng]
       repo[Repositories / EntityManager]
       outbox[Outbox writer]
-      storage[StoragePort → S3Adapter]
+      storage[StoragePort → S3Adapter / LocalDiskAdapter]
       queue[QueuePort → BullMQ]
       sse[SSE hub ← Redis pub/sub]
     end
@@ -200,11 +200,11 @@ vCRAFT/
 │   ├── e2e/           # Playwright: specs/{public,buyer,artisan,admin}, fixtures/
 │   └── load/          # k6: tranh chấp chốt giá, tải danh mục
 ├── infra/
-│   ├── compose/       # compose.dev.yml (postgres, mysql*, redis, minio, mailpit, caddy)
+│   ├── compose/       # compose.dev.yml (postgres, mysql*, redis, mailpit, caddy)
 │   ├── docker/        # Dockerfile đa tầng cho web, api, worker
 │   ├── caddy/         # Caddyfile: rewrite, header bảo mật, HTTPS tự động
 │   └── scripts/       # gen-keys.sh, backup.sh, pmtiles-extract.sh
-├── supabase/          # migrations/ cho vector store của trợ lý (pgvector, HNSW, RPC, RLS) — ADR-13
+├── supabase/          # migrations/: vector store của trợ lý (pgvector, HNSW, RPC, RLS — ADR-13), bucket Storage (ADR-14)
 ├── docs/              # SRS, ARCHITECTURE, PLAN, BRAND, adr/, requirements/, assistant-kb/ (FAQ vi/en)
 ├── scripts/           # script tiện ích phát triển
 ├── .github/           # workflows/ci.yml, pull_request_template.md
@@ -703,9 +703,9 @@ Quy tắc:
 
 | Môi trường    | Cách chạy                                                                                                                                                          |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Dev           | `pnpm infra:up` (Postgres, Redis, MinIO, Mailpit, Caddy) + `pnpm dev` (turbo chạy web/api/worker song song)                                                        |
-| Demo/Prod     | 1 VPS (2 vCPU / 4 GB) + Docker Compose: caddy, web, api, worker, postgres, redis, minio; tên miền thật ⇒ Caddy tự cấp HTTPS (QR quét được từ điện thoại giám khảo) |
-| Dự phòng demo | Toàn bộ chạy local + Cloudflare Tunnel để có URL HTTPS công khai; bản đồ dùng PMTiles tự host (không phụ thuộc mạng ngoài)                                         |
+| Dev           | `pnpm infra:up` (Postgres, Redis, Mailpit, Caddy) + `pnpm dev`; file trên Supabase Storage (ADR-14)                                                                 |
+| Demo/Prod     | 1 VPS (2 vCPU / 4 GB) + Docker Compose: caddy, web, api, worker, postgres, redis (file trên Supabase Storage); tên miền thật ⇒ Caddy tự cấp HTTPS (QR quét được từ điện thoại giám khảo) |
+| Dự phòng demo | Toàn bộ chạy local + Cloudflare Tunnel để có URL HTTPS công khai; bản đồ dùng PMTiles tự host; `STORAGE_DRIVER=local` cho ảnh                                     |
 
 ### 13.2 CI/CD
 
@@ -734,5 +734,6 @@ Log JSON (pino) có `requestId` xuyên suốt web → api → worker; `/api/v1/h
 | ADR-11 | **Supabase Auth** làm IdP; vCraft giữ vai trò/trạng thái trong DB riêng | Tự cài JWT + refresh rotation + Argon2id; session cookie (Redis) | Có sẵn xác minh email, OAuth, MFA, rotation, CAPTCHA ⇒ tiết kiệm ~1 sprint; tách danh tính khỏi phân quyền giữ CSDL nghiệp vụ độc lập                   |
 | ADR-12 | Zod là nguồn sự thật cho DTO + OpenAPI                                  | class-validator                                                  | Một schema cho cả FE và BE ⇒ kiểm tra nhất quán (tiêu chí 6)                                                                                            |
 | ADR-13 | [Vector store trợ lý trên **Supabase pgvector**, tách CSDL nghiệp vụ](adr/0013-assistant-vector-store-supabase.md) | pgvector trong CSDL chính; Pinecone/Qdrant; tìm kiếm từ khóa thuần | Đã có project Supabase (Auth); chỉ mục là dữ liệu dẫn xuất nên CSDL nghiệp vụ vẫn chạy MySQL; port `VectorStore` cho phép thay adapter |
+| ADR-14 | [Object storage trên **Supabase Storage** qua giao thức S3](adr/0014-object-storage-supabase.md) | MinIO + Cloudflare R2; SDK `supabase-js`; BLOB trong CSDL | Gom dịch vụ ngoài về một project Supabase; giữ `StoragePort → S3Adapter` trung lập nên đổi nhà cung cấp chỉ cần đổi env; `LocalDiskAdapter` cho test/offline |
 
 Rủi ro kỹ thuật cần kiểm chứng ở Sprint 0: (0) project Supabase gói Free tự tạm dừng sau 7 ngày không hoạt động ⇒ giữ hoạt động trước buổi thi và cấu hình SMTP riêng cho email xác thực; (1) adapter NestJS của `@supabase/server` chỉ hỗ trợ Nest 10/11 ⇒ tự viết guard bọc `verifyAuth()`. (Đã xử lý 27/10: package dùng ở backend được build bằng tsdown — xem §3.2.)
