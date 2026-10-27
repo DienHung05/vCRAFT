@@ -41,7 +41,11 @@ Hướng dẫn cho mọi AI agent (Claude Code, Codex, Copilot, Cursor…) làm 
   - `packages/*` không import `apps/*`.
 - Frontend chỉ lấy dữ liệu qua `@vcraft/api-client` (fetch → REST JSON). Không dùng Server Actions cho nghiệp vụ.
 - Mọi kiểm tra dữ liệu dùng schema Zod trong `packages/contracts`, áp dụng cả FE lẫn BE.
-- Không viết SQL tay. Không dùng tính năng riêng của một hệ CSDL; phải chạy được trên cả PostgreSQL và MySQL.
+- Ưu tiên API của MikroORM (entity, QueryBuilder). **Được phép viết SQL tay** khi ORM không diễn đạt được hoặc quá chậm (báo cáo, thống kê, truy vấn tối ưu), với điều kiện:
+  - Chỉ đặt trong repository của `packages/database` hoặc trong migration; không viết SQL ở controller, service hay domain.
+  - Luôn truyền tham số qua binding (`em.execute(sql, params)` / Knex), tuyệt đối không nối chuỗi từ input.
+  - CSDL nghiệp vụ vẫn phải chạy được trên cả PostgreSQL và MySQL: dùng SQL chuẩn chạy được cả hai, hoặc viết riêng cho từng driver phía sau cùng một interface repository. Có integration test trên cả 2 CSDL.
+  - Vector store của trợ lý Cáo trên Supabase (pgvector, ADR-13) được dùng tính năng riêng của PostgreSQL (bảng, index HNSW, hàm RPC, RLS trong `supabase/migrations`). Backend chỉ truy cập qua port `VectorStore`.
 - Chuyển trạng thái RFQ/Bid/Allocation chỉ đi qua `packages/domain`, không tự sửa cột `status`.
 - Controller chỉ làm việc của HTTP; logic nằm ở application service và domain.
 - Giao diện dùng token trong `packages/ui`, không hard-code màu. Chuỗi hiển thị đi qua `packages/i18n`. Hiệu ứng phải tôn trọng `prefers-reduced-motion`.
@@ -58,6 +62,7 @@ Hướng dẫn cho mọi AI agent (Claude Code, Codex, Copilot, Cursor…) làm 
   - Làm feature: tạo nhánh từ `develop` mới nhất, đặt tên `feat/<epic>-<mô-tả-ngắn>` (sửa lỗi: `fix/...`, tài liệu: `docs/...`, hạ tầng: `chore/...`). Mở PR **vào `develop`**.
   - Sau khi PR merge: **xóa nhánh feature** cả trên remote (`git push origin --delete <nhánh>` hoặc bật auto-delete trên GitHub) lẫn ở local (`git branch -d <nhánh>`), rồi `git fetch --prune` để repo không bị loãng nhánh.
 - **Nhắc commit:** làm xong một feature, một task trong backlog hoặc một phần việc trọn vẹn tương đương (kiểm tra đã xanh), agent phải nhắc user commit để tiến độ trên git luôn khớp thực tế. Chỉ nhắc, không tự commit; vẫn áp dụng quy tắc xin phép ở trên.
+- **Tick backlog:** làm xong mục nào trong backlog [docs/PLAN.md §5](docs/PLAN.md#5-backlog-chi-tiết-theo-epic) thì đổi `- [ ]` thành `- [x]` ngay ở mục đó, và đưa vào cùng commit với phần code. Chỉ tick khi mục đã xong trọn vẹn và kiểm tra đã xanh. Xong một phần thì để nguyên ô trống, ghi phần còn lại vào cuối dòng (vd. `— còn: Figma`).
 - Không commit `.env`, bí mật, dữ liệu trong `infra/compose/.data/`.
 - Repo git là chính thư mục này (`vCRAFT/`), không phải thư mục cha.
 

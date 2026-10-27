@@ -208,13 +208,13 @@ Ký hiệu: **[A] [B] [C]** = người phụ trách; mã FR tham chiếu [SRS.md
 
 ### E0 — Nền móng (S0)
 
-- [ ] [C] Khởi tạo `apps/web` bằng `create-next-app` (TS, Tailwind 4, App Router, src/) vào khung thư mục sẵn có
-- [ ] [C] Khởi tạo `apps/api`, `apps/worker` bằng Nest CLI; adapter Fastify; SWC
-- [ ] [C] `packages/database`: `mikro-orm.config.ts` đọc `DB_DRIVER`; migration riêng 2 driver; `pnpm db:migrate`, `pnpm db:seed`
-- [ ] [C] CI chạy đủ job; `pnpm deps:check` xanh
-- [ ] [B] `packages/domain/rfq`: bảng chuyển trạng thái + `transition()` + `availableEvents()` + test mọi cặp trạng thái×sự kiện
-- [ ] [B] `packages/contracts`: quy ước schema, mã lỗi, Problem Details
-- [ ] [A] Moodboard, logo ấn bình (SVG), token màu/chữ/khoảng cách/bóng, Figma: Trang chủ, Hồ sơ hộ, Sản phẩm, Truy xuất, RFQ, Điều phối
+- [x] [C] Khởi tạo `apps/web` bằng `create-next-app` (TS, Tailwind 4, App Router, src/) vào khung thư mục sẵn có
+- [x] [C] Khởi tạo `apps/api`, `apps/worker` bằng Nest CLI; adapter Fastify; SWC
+- [x] [C] `packages/database`: `mikro-orm.config.ts` đọc `DB_DRIVER`; migration riêng 2 driver; `pnpm db:migrate`, `pnpm db:seed`
+- [x] [C] CI chạy đủ job; `pnpm deps:check` xanh
+- [x] [B] `packages/domain/rfq`: bảng chuyển trạng thái + `transition()` + `availableEvents()` + test mọi cặp trạng thái×sự kiện
+- [x] [B] `packages/contracts`: quy ước schema, mã lỗi, Problem Details
+- [ ] [A] Moodboard, logo ấn bình (SVG), token màu/chữ/khoảng cách/bóng, Figma: Trang chủ, Hồ sơ hộ, Sản phẩm, Truy xuất, RFQ, Điều phối — còn: moodboard, Figma (đã xong logo + token)
 
 ### E1 — Xác thực & phiên (FR-AUTH) — Supabase Auth
 
@@ -351,7 +351,7 @@ web: features/assistant (widget) ──fetch POST + SSE stream──▶ api: mod
 worker: job assistant.ingest (outbox product/workshop/news.published|updated|deleted) ──▶ chunk → embed → upsert
 ```
 
-- pgvector đặt ở **Supabase**, tách khỏi CSDL nghiệp vụ: chỉ số tri thức là dữ liệu **dẫn xuất, dựng lại được** từ CSDL chính, nên CSDL nghiệp vụ vẫn chạy trên cả PostgreSQL lẫn MySQL. Đổi `DB_DRIVER=mysql` thì trợ lý vẫn chạy. Ghi lý do vào **ADR-13**. Ngoại lệ "không SQL tay" chỉ áp dụng cho migration Supabase (`supabase/migrations`: bảng `knowledge_chunks`, index HNSW, hàm RPC `match_knowledge`), cần nhóm duyệt.
+- pgvector đặt ở **Supabase**, tách khỏi CSDL nghiệp vụ: chỉ số tri thức là dữ liệu **dẫn xuất, dựng lại được** từ CSDL chính, nên CSDL nghiệp vụ vẫn chạy trên cả PostgreSQL lẫn MySQL. Đổi `DB_DRIVER=mysql` thì trợ lý vẫn chạy. Ghi lý do vào **ADR-13**. SQL riêng của PostgreSQL (đã duyệt, ghi trong [AGENTS.md §3](../AGENTS.md#3-luật-bắt-buộc-khi-viết-code)) nằm trong migration Supabase (`supabase/migrations`: bảng `knowledge_chunks`, index HNSW, hàm RPC `match_knowledge`).
 - `VectorStore` có thêm adapter `InMemoryVectorStore` dùng cho test/CI và chạy offline lúc demo (Adapter pattern).
 
 **Việc cần làm**
@@ -419,7 +419,7 @@ Diễn tập: ≥ 3 lần có bấm giờ; mỗi người tập được **toàn
 | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
 | "Tải bộ phận bằng AJAX ở đâu?"                           | Mọi dữ liệu tương tác qua `api-client` → fetch → JSON → TanStack Query → React cập nhật DOM; SSE đẩy thay đổi                                                                                                                          | Tab Network; `packages/api-client`        |
 | "Khóa bản ghi thế nào? Sao cần cả lạc quan lẫn bi quan?" | Lạc quan (version) cho cập nhật thường — rẻ, phát hiện ghi đè; bi quan cho đoạn tranh chấp cao (chốt giá) để tuần tự hóa kiểm guard; UNIQUE chặn bid trùng; idempotency chặn double-click                                              | `accept-bid.service.ts`, test concurrency |
-| "Độc lập CSDL thể hiện ở đâu?"                           | Entity class + ORM, không SQL tay, không kiểu riêng; UUID/tiền/tìm kiếm không dấu xử lý ở app; CI chạy 2 CSDL                                                                                                                          | `mikro-orm.config.ts`, CI matrix          |
+| "Độc lập CSDL thể hiện ở đâu?"                           | Entity class + ORM là chính; SQL tay chỉ nằm trong repository, có tham số hóa, chuẩn hoặc tách theo driver; không kiểu riêng; UUID/tiền/tìm kiếm không dấu xử lý ở app; CI chạy 2 CSDL                                                                                                                          | `mikro-orm.config.ts`, CI matrix          |
 | "Hướng đối tượng ở CSDL?"                                | Data Mapper: entity là class có hành vi; Unit of Work theo dõi thay đổi, flush 1 giao dịch; Identity Map                                                                                                                               | `packages/database/src/entities`          |
 | "Design pattern nào?"                                    | State, Strategy, Repository/UoW, Specification, Observer+Outbox, Adapter, Factory, Value Object, Policy, Decorator, Facade, Chain of Responsibility                                                                                    | ARCHITECTURE §5                           |
 | "Tách giao diện và nghiệp vụ?"                           | Domain thuần (không React/Nest); feature slices: hooks (view-model) ↔ components (presentational)                                                                                                                                      | `features/rfq`                            |
