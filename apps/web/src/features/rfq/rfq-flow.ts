@@ -1,4 +1,4 @@
-import { availableEvents, type RfqEvent, type RfqStatus, transition } from '@vcraft/domain';
+import { type RfqEvent, type RfqStatus, rfqStructuralEvents, transition } from '@vcraft/domain';
 
 /** Các chặng "công đoạn lò" của đường đi chính (FR-RFQ-12, SRS §4.1). */
 export const RFQ_MAIN_STEPS = [
@@ -32,12 +32,12 @@ export function rfqStepperModel(status: RfqStatus, hasBids: boolean): RfqStepper
 }
 
 /**
- * Sự kiện Buyer chủ RFQ được thực hiện ở `status` (FR-RFQ-12): lấy từ cùng máy trạng thái với backend,
- * bỏ sự kiện của tác nhân khác (`ACTOR_NOT_ALLOWED`). Thiếu dữ kiện nhập (`MISSING_CONTEXT`…) vẫn giữ,
- * vì nút phải hiện trước khi người dùng nhập xong.
+ * Sự kiện Buyer chủ RFQ được thực hiện ở `status` (FR-RFQ-12): lấy từ cùng máy trạng thái với backend
+ * (cấu trúc bảng, rồi `transition` để xét tác nhân), bỏ sự kiện của tác nhân khác (`ACTOR_NOT_ALLOWED`).
+ * Thiếu dữ kiện nhập (`MISSING_CONTEXT`…) vẫn giữ, vì nút phải hiện trước khi người dùng nhập xong.
  */
 export function buyerEvents(status: RfqStatus): RfqEvent[] {
-  return availableEvents(status).filter((event) => {
+  return rfqStructuralEvents(status).filter((event) => {
     const result = transition(status, event, { actor: 'BUYER_OWNER' });
     return result.ok || result.error.code !== 'ACTOR_NOT_ALLOWED';
   });

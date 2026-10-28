@@ -164,15 +164,6 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
                 </li>
               ))}
             </ul>
-            <Link
-              href="/ban-do"
-              className={cn(
-                buttonVariants({ variant: 'secondary' }),
-                'mt-8 border-paper/30 text-paper hover:bg-paper/10',
-              )}
-            >
-              {t('map.cta')}
-            </Link>
           </div>
           <div className="md:col-span-7">
             <VillageMiniMap
@@ -211,9 +202,6 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
       <section className="mx-auto max-w-editorial px-gutter" aria-labelledby="news-title">
         <div className="flex items-end justify-between gap-4">
           <h2 id="news-title">{t('news.title')}</h2>
-          <Link href="/tin-tuc" className={buttonVariants({ variant: 'ghost' })}>
-            {t('news.all')} →
-          </Link>
         </div>
         <ul className="mt-8 grid gap-6 md:grid-cols-3">
           {news.map((n) => (

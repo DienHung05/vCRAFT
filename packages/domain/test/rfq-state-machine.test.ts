@@ -14,6 +14,8 @@ import {
   type RfqContext,
   type RfqEvent,
   type RfqStatus,
+  rfqStructuralEvents,
+  rfqStructuralNext,
   transition,
 } from '../src';
 
@@ -45,7 +47,9 @@ function validCtx(state: RfqStatus, event: RfqEvent): RfqContext {
     ADMIN_CANCEL: 'ADMIN',
     EXPIRE: 'SYSTEM',
   };
-  const biddingClosesAt = state === 'DRAFT' ? at(48 * HOUR) : at(-8 * 24 * HOUR);
+  // ACCEPT_BID còn trong hạn chốt; EXPIRE (BIDDING) đã quá 7 ngày; SUBMIT còn ≥ 24h.
+  const biddingClosesAt =
+    state === 'DRAFT' ? at(48 * HOUR) : event === 'ACCEPT_BID' ? at(-HOUR) : at(-8 * 24 * HOUR);
   return {
     actor: actor[event],
     now: event === 'RECEIVE_BID' ? at(-HOUR) : NOW,
@@ -56,6 +60,8 @@ function validCtx(state: RfqStatus, event: RfqEvent): RfqContext {
     hasBidFromArtisan: false,
     bid: { status: 'SUBMITTED', quantityOffered: 5000 },
     allocationStatuses: [event === 'CONFIRM_DELIVERY' ? 'DONE' : 'CONFIRMED'],
+    householdCount: 1,
+    actorOwnsSoleAllocation: true,
     reason: 'lý do hợp lệ',
   };
 }
@@ -67,9 +73,9 @@ describe('RFQ state machine: bảng chuyển trạng thái (SRS §4.1)', () => {
   });
 
   describe.each(RFQ_STATUSES)('từ %s', (state) => {
-    it.each(RFQ_EVENTS)('sự kiện %s (không ctx): đúng bảng', (event) => {
+    it.each(RFQ_EVENTS)('sự kiện %s (tra cấu trúc, không guard): đúng bảng', (event) => {
       const expected = EXPECTED[state][event];
-      const result = transition(state, event);
+      const result = rfqStructuralNext(state, event);
       if (expected === undefined) {
         expect(result.ok).toBe(false);
         if (!result.ok) {
@@ -93,9 +99,9 @@ describe('RFQ state machine: bảng chuyển trạng thái (SRS §4.1)', () => {
       }
     });
 
-    it('availableEvents khớp bảng (không ctx và ctx hợp lệ)', () => {
+    it('availableEvents khớp bảng (cấu trúc và ctx hợp lệ)', () => {
       const expected = RFQ_EVENTS.filter((e) => EXPECTED[state][e] !== undefined);
-      expect(availableEvents(state)).toEqual(expected);
+      expect(rfqStructuralEvents(state)).toEqual(expected);
       for (const event of expected) {
         expect(availableEvents(state, validCtx(state, event))).toContain(event);
       }
@@ -108,7 +114,8 @@ describe('RFQ state machine: bảng chuyển trạng thái (SRS §4.1)', () => {
 
   it('DELIVERED, CANCELLED, EXPIRED là trạng thái kết thúc', () => {
     for (const s of ['DELIVERED', 'CANCELLED', 'EXPIRED'] as const) {
-      expect(availableEvents(s)).toEqual([]);
+      expect(rfqStructuralEvents(s)).toEqual([]);
+      expect(availableEvents(s, {})).toEqual([]);
     }
   });
 });
@@ -194,6 +201,44 @@ describe('RFQ guards (SRS §4.1 cột "Điều kiện")', () => {
     it('chỉ Buyer chủ RFQ chốt được', () => {
       expect(codeOf(run('BIDDING', 'ACCEPT_BID', { actor: 'ADMIN' }))).toBe('ACTOR_NOT_ALLOWED');
     });
+    it('hạn chốt cứng: chỉ khi now < biddingClosesAt + 7 ngày (biên chính xác, FR-RFQ-10)', () => {
+      const closesExact = at(-RFQ_ACCEPT_GRACE_MS); // now đúng bằng closes + 7 ngày
+      expect(codeOf(run('BIDDING', 'ACCEPT_BID', { biddingClosesAt: closesExact }))).toBe(
+        'ACCEPT_WINDOW_CLOSED',
+      );
+      const closesOneMsEarly = at(-RFQ_ACCEPT_GRACE_MS + 1); // còn 1ms
+      expect(codeOf(run('BIDDING', 'ACCEPT_BID', { biddingClosesAt: closesOneMsEarly }))).toBe(
+        'OK',
+      );
+    });
+    it('chốt được ngay cả khi chưa tới hạn chào giá', () => {
+      expect(codeOf(run('BIDDING', 'ACCEPT_BID', { biddingClosesAt: at(HOUR) }))).toBe('OK');
+    });
+    it('worker trễ: now = biddingClosesAt + 8 ngày mà RFQ vẫn BIDDING ⇒ không chốt được', () => {
+      const closes = at(-8 * 24 * HOUR);
+      expect(codeOf(run('BIDDING', 'ACCEPT_BID', { biddingClosesAt: closes }))).toBe(
+        'ACCEPT_WINDOW_CLOSED',
+      );
+      // cùng thời điểm đó EXPIRE hợp lệ: hai guard dùng chung một biên
+      expect(codeOf(run('BIDDING', 'EXPIRE', { biddingClosesAt: closes }))).toBe('OK');
+    });
+    it('thiếu now hoặc biddingClosesAt ⇒ MISSING_CONTEXT (không ngầm cho chốt)', () => {
+      expect(codeOf(run('BIDDING', 'ACCEPT_BID', { now: undefined }))).toBe('MISSING_CONTEXT');
+      expect(codeOf(run('BIDDING', 'ACCEPT_BID', { biddingClosesAt: undefined }))).toBe(
+        'MISSING_CONTEXT',
+      );
+    });
+    it('property: tại mọi thời điểm, đúng một trong ACCEPT_BID / EXPIRE (BIDDING) qua được guard thời gian', () => {
+      fc.assert(
+        fc.property(fc.integer({ min: -10 * 24 * HOUR, max: 10 * 24 * HOUR }), (offset) => {
+          const patch = { biddingClosesAt: at(offset) };
+          const accept = codeOf(run('BIDDING', 'ACCEPT_BID', patch));
+          const expire = codeOf(run('BIDDING', 'EXPIRE', patch));
+          expect(accept === 'OK').toBe(expire === 'NOT_YET_EXPIRED');
+          expect(expire === 'OK').toBe(accept === 'ACCEPT_WINDOW_CLOSED');
+        }),
+      );
+    });
   });
 
   describe('T4 START_PRODUCTION / T5 CONFIRM_DELIVERY', () => {
@@ -220,11 +265,80 @@ describe('RFQ guards (SRS §4.1 cột "Điều kiện")', () => {
         'ALLOCATIONS_NOT_DONE',
       );
     });
-    it('hộ được START_PRODUCTION, nhưng không được CONFIRM_DELIVERY', () => {
-      expect(codeOf(run('ACCEPTED', 'START_PRODUCTION', { actor: 'ARTISAN' }))).toBe('OK');
+    it('hộ không được CONFIRM_DELIVERY', () => {
       expect(codeOf(run('IN_PRODUCTION', 'CONFIRM_DELIVERY', { actor: 'ARTISAN' }))).toBe(
         'ACTOR_NOT_ALLOWED',
       );
+    });
+
+    describe('T4: ai được bắt đầu sản xuất', () => {
+      const start = (patch: Partial<RfqContext>) =>
+        codeOf(run('ACCEPTED', 'START_PRODUCTION', patch));
+      it('Admin điều phối luôn được, kể cả đơn nhiều hộ', () => {
+        expect(start({ actor: 'ADMIN', householdCount: 3, actorOwnsSoleAllocation: false })).toBe(
+          'OK',
+        );
+        expect(start({ actor: 'ADMIN', householdCount: undefined })).toBe('OK');
+      });
+      it('hộ trong đơn 1 hộ và là chủ Allocation duy nhất ⇒ được', () => {
+        expect(start({ actor: 'ARTISAN', householdCount: 1, actorOwnsSoleAllocation: true })).toBe(
+          'OK',
+        );
+      });
+      it('hộ trong đơn nhiều hộ ⇒ bị từ chối, dù có Allocation của mình', () => {
+        expect(
+          start({
+            actor: 'ARTISAN',
+            householdCount: 2,
+            actorOwnsSoleAllocation: true,
+            allocationStatuses: ['CONFIRMED', 'CONFIRMED'],
+          }),
+        ).toBe('PRODUCTION_START_NOT_PERMITTED');
+      });
+      it('hộ trong đơn 1 hộ nhưng không sở hữu Allocation đó ⇒ bị từ chối', () => {
+        expect(start({ actor: 'ARTISAN', householdCount: 1, actorOwnsSoleAllocation: false })).toBe(
+          'PRODUCTION_START_NOT_PERMITTED',
+        );
+      });
+      it('thiếu dữ kiện về số hộ/quyền sở hữu ⇒ MISSING_CONTEXT, không ngầm cho qua', () => {
+        expect(start({ actor: 'ARTISAN', householdCount: undefined })).toBe('MISSING_CONTEXT');
+        expect(start({ actor: 'ARTISAN', actorOwnsSoleAllocation: undefined })).toBe(
+          'MISSING_CONTEXT',
+        );
+      });
+      it('Buyer và System không được bắt đầu sản xuất', () => {
+        expect(start({ actor: 'BUYER_OWNER' })).toBe('ACTOR_NOT_ALLOWED');
+        expect(start({ actor: 'SYSTEM' })).toBe('ACTOR_NOT_ALLOWED');
+      });
+      it('availableEvents không lộ START_PRODUCTION cho hộ trong đơn nhiều hộ hoặc không sở hữu', () => {
+        const base = { actor: 'ARTISAN', allocationStatuses: ['CONFIRMED', 'CONFIRMED'] } as const;
+        expect(
+          availableEvents('ACCEPTED', {
+            ...base,
+            householdCount: 2,
+            actorOwnsSoleAllocation: true,
+          }),
+        ).not.toContain('START_PRODUCTION');
+        expect(
+          availableEvents('ACCEPTED', {
+            ...base,
+            householdCount: 1,
+            actorOwnsSoleAllocation: false,
+          }),
+        ).not.toContain('START_PRODUCTION');
+        expect(availableEvents('ACCEPTED', { ...base })).not.toContain('START_PRODUCTION');
+        expect(
+          availableEvents('ACCEPTED', {
+            ...base,
+            allocationStatuses: ['CONFIRMED'],
+            householdCount: 1,
+            actorOwnsSoleAllocation: true,
+          }),
+        ).toContain('START_PRODUCTION');
+        expect(
+          availableEvents('ACCEPTED', { ...base, actor: 'ADMIN', householdCount: 2 }),
+        ).toContain('START_PRODUCTION');
+      });
     });
   });
 
@@ -273,10 +387,22 @@ describe('RFQ guards (SRS §4.1 cột "Điều kiện")', () => {
 
   describe('availableEvents theo tác nhân (FR-RFQ-12)', () => {
     it('Buyer chủ RFQ ở BIDDING thấy ACCEPT_BID và CANCEL, không thấy EXPIRE', () => {
-      expect(availableEvents('BIDDING', { actor: 'BUYER_OWNER' })).toEqual([
-        'ACCEPT_BID',
-        'CANCEL',
-      ]);
+      expect(
+        availableEvents('BIDDING', {
+          actor: 'BUYER_OWNER',
+          now: NOW,
+          biddingClosesAt: at(-HOUR),
+        }),
+      ).toEqual(['ACCEPT_BID', 'CANCEL']);
+    });
+    it('quá hạn chốt 7 ngày thì ACCEPT_BID không còn khả dụng, CANCEL vẫn còn', () => {
+      expect(
+        availableEvents('BIDDING', {
+          actor: 'BUYER_OWNER',
+          now: NOW,
+          biddingClosesAt: at(-RFQ_ACCEPT_GRACE_MS),
+        }),
+      ).toEqual(['CANCEL']);
     });
     it('hộ ở SENT (còn hạn) chỉ thấy RECEIVE_BID', () => {
       expect(
@@ -304,6 +430,8 @@ describe('RFQ state machine: property tests', () => {
     requiredBy: dateArb,
     quantity: fc.integer({ min: 1, max: 10 }),
     hasBidFromArtisan: fc.boolean(),
+    householdCount: fc.integer({ min: 0, max: 3 }),
+    actorOwnsSoleAllocation: fc.boolean(),
     bid: fc.record({
       status: fc.constantFrom('SUBMITTED', 'ACCEPTED', 'REJECTED', 'WITHDRAWN', 'LAPSED'),
       quantityOffered: fc.integer({ min: 1, max: 10 }),
@@ -324,10 +452,18 @@ describe('RFQ state machine: property tests', () => {
   const stateArb = fc.constantFrom(...RFQ_STATUSES);
   const eventArb = fc.constantFrom(...RFQ_EVENTS);
 
-  it('không ctx: availableEvents(s) chứa e ⇔ transition(s, e) thành công', () => {
+  it('tra cấu trúc: rfqStructuralEvents(s) chứa e ⇔ rfqStructuralNext(s, e) thành công', () => {
     fc.assert(
       fc.property(stateArb, eventArb, (s, e) => {
-        expect(availableEvents(s).includes(e)).toBe(transition(s, e).ok);
+        expect(rfqStructuralEvents(s).includes(e)).toBe(rfqStructuralNext(s, e).ok);
+      }),
+    );
+  });
+
+  it('ctx rỗng không bao giờ cho qua guard: mọi sự kiện có trong bảng đều thất bại', () => {
+    fc.assert(
+      fc.property(stateArb, eventArb, (s, e) => {
+        if (rfqStructuralNext(s, e).ok) expect(transition(s, e, {}).ok).toBe(false);
       }),
     );
   });
@@ -362,7 +498,7 @@ describe('RFQ state machine: property tests', () => {
   it('availableEvents(s, ctx) ⊆ availableEvents(s) và đúng thứ tự khai báo', () => {
     fc.assert(
       fc.property(stateArb, ctxArb, (s, ctx) => {
-        const structural = availableEvents(s);
+        const structural = rfqStructuralEvents(s);
         const withCtx = availableEvents(s, ctx);
         expect(withCtx.every((e) => structural.includes(e))).toBe(true);
         expect(withCtx).toEqual(structural.filter((e) => withCtx.includes(e)));
@@ -372,7 +508,7 @@ describe('RFQ state machine: property tests', () => {
 
   it('transition thành công luôn trả về trạng thái đúng bảng; thất bại luôn là DomainError có mã', () => {
     fc.assert(
-      fc.property(stateArb, eventArb, fc.option(ctxArb, { nil: undefined }), (s, e, ctx) => {
+      fc.property(stateArb, eventArb, ctxArb, (s, e, ctx) => {
         const r = transition(s, e, ctx);
         if (r.ok) {
           expect(r.value).toBe(EXPECTED[s][e]);
@@ -404,10 +540,10 @@ describe('RFQ state machine: property tests', () => {
       fc.property(fc.array(fc.nat(), { minLength: 5, maxLength: 5 }), (picks) => {
         let state: RfqStatus = 'DRAFT';
         for (const pick of picks) {
-          const events = availableEvents(state);
+          const events = rfqStructuralEvents(state);
           if (events.length === 0) break;
           const event = events[pick % events.length] as RfqEvent;
-          const r = transition(state, event);
+          const r = rfqStructuralNext(state, event);
           expect(r.ok).toBe(true);
           if (r.ok) state = r.value;
         }

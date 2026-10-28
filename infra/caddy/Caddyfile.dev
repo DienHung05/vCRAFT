@@ -1,0 +1,17 @@
+# Caddy cho PHÁT TRIỂN cục bộ (compose.dev.yml): http://localhost:8080, không HTTPS.
+# `auto_https off` chỉ đúng cho môi trường này. KHÔNG dùng file này cho production: dùng Caddyfile.prod.
+{
+	auto_https off
+}
+
+:8080 {
+	# Ảnh khi STORAGE_DRIVER=local (test, demo offline). Bình thường ảnh phục vụ thẳng từ Supabase Storage (ADR-14)
+	handle_path /media/* {
+		header Cache-Control "public, max-age=31536000, immutable"
+		root * /srv/media
+		file_server
+	}
+
+	# Mặc định trỏ tới web/api chạy trên máy host (pnpm dev); ghi đè bằng biến môi trường nếu cần
+	import ./routes.caddy
+}

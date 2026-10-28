@@ -3,9 +3,11 @@
  * bằng route thật). Hình dạng gần với DTO sẽ có trong `@vcraft/contracts`; khi endpoint sẵn sàng,
  * thay các hàm `get*` dưới đây bằng query của `@vcraft/api-client` và xóa file này.
  *
- * Tên hộ, nghệ nhân là hư cấu.
+ * Tên hộ, nghệ nhân là hư cấu. Mọi mốc nhật ký và dấu băm trong file này cũng là dữ liệu minh họa;
+ * dấu băm được tính thật bằng thuật toán BR-01 (xem `lib/hash-chain.ts`) lúc dựng dữ liệu.
  */
 import type { BidStatus, BidType, RfqStatus } from '@vcraft/domain';
+import { type ChainEntry, sealChain, sha256Hex } from '@/lib/hash-chain';
 
 export interface Certification {
   name: string;
@@ -54,13 +56,14 @@ export interface Artisan {
 
 export type LogStage = 'clay' | 'throw' | 'dry' | 'paint' | 'glaze' | 'fire' | 'finish';
 
-export interface LogEntry {
+/** Mốc nhật ký đã niêm phong (BR-01): `seq`, `mediaChecksums`, `prevHash`, `hash` đầy đủ 64 hex. */
+export interface LogEntry extends ChainEntry {
   stage: LogStage;
-  at: string;
-  note: string;
   tint: string;
-  hash: string;
 }
+
+/** Mốc nhật ký trước khi niêm phong. */
+type RawLogEntry = Pick<LogEntry, 'stage' | 'at' | 'note' | 'tint'>;
 
 export interface Product {
   slug: string;
@@ -278,7 +281,7 @@ const artisans: Artisan[] = [
   },
 ];
 
-const products: Product[] = [
+const rawProducts: (Omit<Product, 'log'> & { log: RawLogEntry[] })[] = [
   {
     slug: 'binh-hut-loc-men-lam-bt7k2qxm',
     code: 'BT7K2QXM',
@@ -302,49 +305,42 @@ const products: Product[] = [
         at: '2026-09-02T07:40:00+07:00',
         note: 'Nhào đất Trúc Thôn, ủ 7 ngày.',
         tint: '#a88d6c',
-        hash: '9f3c1a…e21b',
       },
       {
         stage: 'throw',
         at: '2026-09-09T08:15:00+07:00',
         note: 'Vuốt dáng tỏi trên bàn xoay, cao 34 cm khi ướt.',
         tint: '#8a5a3c',
-        hash: '41d7b0…07ac',
       },
       {
         stage: 'dry',
         at: '2026-09-16T15:00:00+07:00',
         note: 'Phơi bóng râm 6 ngày, sửa chân đế.',
         tint: '#c9b28f',
-        hash: 'c08e55…9a3f',
       },
       {
         stage: 'paint',
         at: '2026-09-23T09:30:00+07:00',
         note: 'Vẽ lam dải sóng nước và mây bằng bút lông.',
         tint: '#3b5079',
-        hash: '7ab912…44d0',
       },
       {
         stage: 'glaze',
         at: '2026-09-28T10:00:00+07:00',
         note: 'Tráng men lam xám tro, dày 0,6 mm.',
         tint: '#6b7f9c',
-        hash: 'e2f603…b81c',
       },
       {
         stage: 'fire',
         at: '2026-10-03T05:00:00+07:00',
         note: 'Nung lò ga 14 giờ, đỉnh 1.280°C.',
         tint: '#c2522a',
-        hash: '5d4a8e…3f76',
       },
       {
         stage: 'finish',
         at: '2026-10-05T14:20:00+07:00',
         note: 'Ra lò, kiểm tra, đóng ấn đáy.',
         tint: '#3f5a8a',
-        hash: 'b19f2c…d605',
       },
     ],
   },
@@ -404,7 +400,20 @@ const products: Product[] = [
   },
 ];
 
-const rfqs: Rfq[] = [
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Mốc thời gian mẫu tính từ thời điểm hiện tại (`days` ngày, giờ `hour` theo múi giờ +07:00) để
+ * bản trình diễn không tự hỏng khi hạn chào giá cố định đã qua (domain chỉ cho chốt tới 7 ngày sau hạn,
+ * BR-L2). Trang RFQ đặt `revalidate` nên mốc này được tính lại định kỳ.
+ */
+function rel(days: number, hour = 17): string {
+  const d = new Date(Date.now() + days * DAY_MS);
+  d.setUTCHours(hour - 7, 0, 0, 0);
+  return d.toISOString();
+}
+
+const buildRfqs = (): Rfq[] => [
   {
     code: 'RFQ-2026-000123',
     title: '5.000 cốc in logo Trường ĐH Công nghệ',
@@ -415,10 +424,10 @@ const rfqs: Rfq[] = [
     budgetMax: 200_000_000,
     customization: 'In logo một màu men lam lên thân cốc, đóng hộp giấy kraft từng chiếc.',
     deliverTo: '144 Xuân Thủy, Cầu Giấy, Hà Nội',
-    createdAt: '2026-10-18T09:00:00+07:00',
-    sentAt: '2026-10-20T08:30:00+07:00',
-    biddingClosesAt: '2026-11-03T17:00:00+07:00',
-    requiredBy: '2026-12-05T17:00:00+07:00',
+    createdAt: rel(-10, 9),
+    sentAt: rel(-8, 8),
+    biddingClosesAt: rel(6),
+    requiredBy: rel(38),
     status: 'BIDDING',
     invitedCount: 6,
     bids: [
@@ -430,10 +439,10 @@ const rfqs: Rfq[] = [
         status: 'SUBMITTED',
         unitPrice: 36_500,
         quantityOffered: 5000,
-        deliveryDate: '2026-11-30T17:00:00+07:00',
+        deliveryDate: rel(33),
         reputation: 4.6,
         revision: 2,
-        submittedAt: '2026-10-24T10:12:00+07:00',
+        submittedAt: rel(-4, 10),
         note: 'Lò ga 2 buồng, chạy song song.',
       },
       {
@@ -444,10 +453,10 @@ const rfqs: Rfq[] = [
         status: 'SUBMITTED',
         unitPrice: 34_200,
         quantityOffered: 5000,
-        deliveryDate: '2026-11-26T17:00:00+07:00',
+        deliveryDate: rel(29),
         reputation: 4.8,
         revision: 1,
-        submittedAt: '2026-10-26T15:40:00+07:00',
+        submittedAt: rel(-2, 15),
         note: 'Minh Hải 2.000 · Lam Ngọc 1.500 · Hạnh Thủy 1.500.',
       },
       {
@@ -458,10 +467,10 @@ const rfqs: Rfq[] = [
         status: 'SUBMITTED',
         unitPrice: 39_000,
         quantityOffered: 2000,
-        deliveryDate: '2026-11-22T17:00:00+07:00',
+        deliveryDate: rel(25),
         reputation: 4.9,
         revision: 1,
-        submittedAt: '2026-10-21T08:05:00+07:00',
+        submittedAt: rel(-7, 8),
         note: 'Nhận một phần, ưu tiên chất lượng in.',
       },
       {
@@ -472,24 +481,24 @@ const rfqs: Rfq[] = [
         status: 'SUBMITTED',
         unitPrice: 37_800,
         quantityOffered: 1500,
-        deliveryDate: '2026-11-28T17:00:00+07:00',
+        deliveryDate: rel(31),
         reputation: 4.8,
         revision: 1,
-        submittedAt: '2026-10-22T14:30:00+07:00',
+        submittedAt: rel(-6, 14),
         note: '',
       },
     ],
   },
 ];
 
-const coordinations: Coordination[] = [
+const buildCoordinations = (): Coordination[] => [
   {
     rfqCode: 'RFQ-2026-000131',
     title: '3.000 bát cơm men rạn cho chuỗi nhà hàng',
     buyer: 'Công ty TNHH Bếp Việt',
     quantity: 3000,
     unit: 'bát',
-    requiredBy: '2026-12-20T17:00:00+07:00',
+    requiredBy: rel(53),
     reason: 'no-full-bid',
     candidates: [
       { artisanSlug: 'gom-minh-hai', capacity: 1200, unitPrice: 58_000, leadDays: 18 },
@@ -534,17 +543,37 @@ const news: NewsItem[] = [
 
 const delay = <T>(value: T) => Promise.resolve(value);
 
+/** Niêm phong nhật ký (BR-01) một lần, dùng lại cho mọi lần gọi. */
+async function sealProduct(p: (typeof rawProducts)[number]): Promise<Product> {
+  const contents = await Promise.all(
+    p.log.map(async (entry, i) => ({
+      ...entry,
+      // Ảnh minh chứng là ảnh giữ chỗ; checksum cũng là dữ liệu mẫu, cố định theo mã + vị trí.
+      mediaChecksums: [await sha256Hex(`demo-photo:${p.code}:${i}`)],
+    })),
+  );
+  return { ...p, log: await sealChain(p.code, contents) };
+}
+
+let sealed: Promise<Product[]> | undefined;
+const loadProducts = () => {
+  sealed ??= Promise.all(rawProducts.map(sealProduct));
+  return sealed;
+};
+
 export const getArtisans = () => delay(artisans);
 export const getArtisan = (slug: string) => delay(artisans.find((a) => a.slug === slug) ?? null);
-export const getProducts = () => delay(products);
-export const getProduct = (slug: string) => delay(products.find((p) => p.slug === slug) ?? null);
-export const getProductByCode = (code: string) =>
-  delay(products.find((p) => p.code === code.toUpperCase()) ?? null);
-export const getProductsByArtisan = (slug: string) =>
-  delay(products.filter((p) => p.artisanSlug === slug));
-export const getRfq = (code: string) => delay(rfqs.find((r) => r.code === code) ?? null);
+export const getProducts = () => loadProducts();
+export const getProduct = async (slug: string) =>
+  (await loadProducts()).find((p) => p.slug === slug) ?? null;
+export const getProductByCode = async (code: string) =>
+  (await loadProducts()).find((p) => p.code === code.toUpperCase()) ?? null;
+export const getProductsByArtisan = async (slug: string) =>
+  (await loadProducts()).filter((p) => p.artisanSlug === slug);
+export const getRfqs = () => delay(buildRfqs());
+export const getRfq = (code: string) => delay(buildRfqs().find((r) => r.code === code) ?? null);
 export const getCoordination = (code: string) =>
-  delay(coordinations.find((c) => c.rfqCode === code) ?? null);
+  delay(buildCoordinations().find((c) => c.rfqCode === code) ?? null);
 export const getNews = () => delay(news);
 export const getVillageStats = (): Promise<VillageStats> =>
   delay({ households: 142, products: 1860, scans: 23_400, years: 700 });
@@ -552,8 +581,8 @@ export const getVillageStats = (): Promise<VillageStats> =>
 /** Tham số tĩnh để dựng sẵn các trang mẫu. */
 export const demoParams = {
   artisans: artisans.map((a) => a.slug),
-  products: products.map((p) => p.slug),
-  traceCodes: products.map((p) => p.code),
-  rfqs: rfqs.map((r) => r.code),
-  coordinations: coordinations.map((c) => c.rfqCode),
+  products: rawProducts.map((p) => p.slug),
+  traceCodes: rawProducts.map((p) => p.code),
+  rfqs: buildRfqs().map((r) => r.code),
+  coordinations: buildCoordinations().map((c) => c.rfqCode),
 };

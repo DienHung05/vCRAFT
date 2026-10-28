@@ -1,7 +1,15 @@
+import { readFileSync } from 'node:fs';
+import type { AddressInfo } from 'node:net';
+import tls from 'node:tls';
+import { fileURLToPath } from 'node:url';
 import { MySqlDriver } from '@mikro-orm/mysql';
 import { PostgreSqlDriver } from '@mikro-orm/postgresql';
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createMikroOrmOptions, resolveDbDriver } from '../src/mikro-orm.config.js';
+
+// Cặp khóa/chứng chỉ tự ký CHỈ để test (CN=localhost, hết hạn rất xa); không dùng ở bất kỳ môi trường nào.
+const CA_FILE = fileURLToPath(new URL('./fixtures/test-server-ca.pem', import.meta.url));
+const KEY_FILE = fileURLToPath(new URL('./fixtures/test-server-key.pem', import.meta.url));
 
 describe('resolveDbDriver', () => {
   it('mặc định là postgresql khi không đặt DB_DRIVER', () => {
@@ -59,8 +67,82 @@ describe('createMikroOrmOptions', () => {
   it('chỉ bật TLS khi DB_SSL=true', () => {
     expect(createMikroOrmOptions({}).driverOptions).toBeUndefined();
     expect(createMikroOrmOptions({ DB_SSL: 'false' }).driverOptions).toBeUndefined();
-    expect(createMikroOrmOptions({ DB_SSL: 'TRUE' }).driverOptions).toEqual({
-      ssl: { rejectUnauthorized: false },
+  });
+
+  it('DB_SSL=true luôn xác thực chứng chỉ máy chủ (không có đường tắt)', () => {
+    for (const driver of ['postgresql', 'mysql']) {
+      expect(createMikroOrmOptions({ DB_DRIVER: driver, DB_SSL: 'TRUE' }).driverOptions).toEqual({
+        ssl: { rejectUnauthorized: true },
+      });
+    }
+    // Không biến môi trường nào (kể cả tên "thân thiện") được tắt việc xác thực
+    const options = createMikroOrmOptions({
+      DB_SSL: 'true',
+      DB_SSL_REJECT_UNAUTHORIZED: 'false',
+      NODE_TLS_REJECT_UNAUTHORIZED: '0',
+    });
+    expect(options.driverOptions).toEqual({ ssl: { rejectUnauthorized: true } });
+  });
+
+  it('DB_SSL_CA: tin CA riêng nhưng vẫn xác thực; chấp nhận chuỗi \\n trên một dòng', () => {
+    const pem = readFileSync(CA_FILE, 'utf8');
+    const oneLine = pem.trim().replaceAll('\n', '\\n');
+    expect(createMikroOrmOptions({ DB_SSL: 'true', DB_SSL_CA: pem }).driverOptions).toEqual({
+      ssl: { ca: pem.trim(), rejectUnauthorized: true },
+    });
+    expect(createMikroOrmOptions({ DB_SSL: 'true', DB_SSL_CA: oneLine }).driverOptions).toEqual({
+      ssl: { ca: pem.trim(), rejectUnauthorized: true },
+    });
+  });
+
+  it('DB_SSL_CA_FILE: đọc CA từ file; file hỏng hoặc đặt cả hai biến thì báo lỗi', () => {
+    expect(
+      createMikroOrmOptions({ DB_SSL: 'true', DB_SSL_CA_FILE: CA_FILE }).driverOptions,
+    ).toEqual({ ssl: { ca: readFileSync(CA_FILE, 'utf8'), rejectUnauthorized: true } });
+    expect(() =>
+      createMikroOrmOptions({ DB_SSL: 'true', DB_SSL_CA_FILE: '/khong/ton/tai.pem' }),
+    ).toThrow(/DB_SSL_CA_FILE/);
+    expect(() =>
+      createMikroOrmOptions({ DB_SSL: 'true', DB_SSL_CA: 'x', DB_SSL_CA_FILE: CA_FILE }),
+    ).toThrow(/một trong/);
+  });
+
+  describe('xác thực TLS thật (máy chủ tự ký trên localhost)', () => {
+    let server: tls.Server;
+    let port: number;
+
+    beforeAll(async () => {
+      server = tls.createServer(
+        { key: readFileSync(KEY_FILE), cert: readFileSync(CA_FILE) },
+        (socket) => socket.end(),
+      );
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+      port = (server.address() as AddressInfo).port;
+    });
+
+    afterAll(async () => {
+      await new Promise((resolve) => server.close(resolve));
+    });
+
+    const connect = (env: Record<string, string>): Promise<void> => {
+      const { ssl } = createMikroOrmOptions({ DB_SSL: 'true', ...env }).driverOptions as {
+        ssl: tls.ConnectionOptions;
+      };
+      return new Promise((resolve, reject) => {
+        const socket = tls.connect({ host: 'localhost', port, ...ssl }, () => {
+          socket.end();
+          resolve();
+        });
+        socket.on('error', reject);
+      });
+    };
+
+    it('từ chối chứng chỉ không do CA tin cậy ký', async () => {
+      await expect(connect({})).rejects.toMatchObject({ code: 'DEPTH_ZERO_SELF_SIGNED_CERT' });
+    });
+
+    it('chấp nhận khi CA của máy chủ được khai báo', async () => {
+      await expect(connect({ DB_SSL_CA_FILE: CA_FILE })).resolves.toBeUndefined();
     });
   });
 

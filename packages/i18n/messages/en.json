@@ -25,6 +25,33 @@
     "news": "News",
     "quotes": "Quote requests"
   },
+  "indexPages": {
+    "demoNote": "Demo: this list comes from sample data, not real households and products.",
+    "products": {
+      "title": "Products",
+      "lead": "Every piece carries a trace seal on its base. Pick one to see its journey.",
+      "count": "{count, plural, one {# product} other {# products}}",
+      "empty": "No products yet."
+    },
+    "artisans": {
+      "title": "Artisans",
+      "lead": "The craft households keeping the fire alive in Bat Trang. Each has its own glaze and its own way of throwing clay.",
+      "count": "{count, plural, one {# household} other {# households}}",
+      "empty": "No households yet.",
+      "meta": "{artisan} · {craft}",
+      "since": "Generation {n} · since {year}"
+    },
+    "rfq": {
+      "title": "Quote requests",
+      "lead": "Send a bulk need, receive bids from suitable households and choose who makes it.",
+      "count": "{count, plural, one {# request} other {# requests}}",
+      "empty": "No quote requests yet.",
+      "quantity": "{quantity} {unit}",
+      "bids": "{count, plural, one {# bid} other {# bids}}",
+      "closes": "Bidding closes {date}",
+      "open": "View details"
+    }
+  },
   "footer": {
     "tagline": "The finest of the craft villages, shared far and wide.",
     "explore": "Explore",
@@ -156,15 +183,36 @@
     "notFoundText": "We couldn't find code {code}. This piece may not come from a craft village on vCraft, or the label may be counterfeit. Please check the code under the product again.",
     "scanned": "You just scanned the seal of",
     "verifiedSeal": "vCraft verification seal",
-    "verifiedTitle": "Verification seal stamped",
-    "verifiedText": "This code matches a product from {household}. The production log is chained with hashes, so nobody can rewrite it afterwards.",
-    "chainOk": "Log chain intact · {count, plural, one {# entry} other {# entries}}",
+    "integrity": {
+      "demoBadge": "Demo data",
+      "demoNote": "The product, household and log on this page are sample data for the demo, not real goods.",
+      "match": "This code matches a demo product from {household}.",
+      "checkingTitle": "Checking the log…",
+      "checkingText": "Your browser is recomputing the SHA-256 hash of every entry itself.",
+      "okTitle": "Log intact",
+      "okText": "Your browser recomputed {count, plural, one {# SHA-256 hash} other {# SHA-256 hashes}} and all of them match, chained from the first entry to the last.",
+      "okBadge": "Log chain intact · {count, plural, one {# entry} other {# entries}}",
+      "brokenTitle": "This log shows signs of tampering",
+      "brokenAt": "Entry {n} ({stage}) failed the check.",
+      "brokenLink": "Go to entry {n}",
+      "reason": {
+        "hash": "This entry's content does not match its recorded hash, so it was changed after it was written.",
+        "prev": "This entry does not link to the hash of the entry right before it.",
+        "seq": "The entry numbers are broken or out of order."
+      },
+      "unavailableTitle": "Can't check on this browser",
+      "unavailableText": "Verification needs Web Crypto, which is only available when the page is opened over HTTPS. The log below is not confirmed intact.",
+      "emptyTitle": "No log to check",
+      "emptyText": "This demo product has no production entries yet.",
+      "scope": "An intact chain only shows the log was not changed after it was written. It does not prove that what the log says is true in the real world."
+    },
     "scans": "{count, plural, one {# scan} other {# scans}}",
     "timelineTitle": "A journey through fire",
     "timelineLead": "Each step was recorded by the maker themselves, with a photo and a hash.",
     "whereTitle": "Where it was made",
     "certsTitle": "The household's certifications",
     "qrLabel": "Trace seal for code {code}",
+    "shortLink": "Short link encoded in the QR",
     "ctaVisit": "Visit the workshop",
     "ctaRfq": "Order in bulk",
     "proofAlt": "Photo of the {stage} step",
@@ -205,6 +253,8 @@
       "DUPLICATE_BID": "This household already has a bid on this request.",
       "BID_NOT_SUBMITTED": "Only a bid that is still active can be accepted.",
       "BID_QUANTITY_MISMATCH": "Only a bid that covers the full quantity can be accepted.",
+      "ACCEPT_WINDOW_CLOSED": "The window to accept a bid (7 days after the bidding deadline) has closed.",
+      "PRODUCTION_START_NOT_PERMITTED": "Only the coordinating Admin, or the sole household of a single-household order, can start production.",
       "ALLOCATIONS_NOT_CONFIRMED": "Not every household has confirmed its share yet.",
       "ALLOCATIONS_NOT_DONE": "Not every household has finished its share yet.",
       "REASON_REQUIRED": "Please give a reason for cancelling.",
@@ -326,7 +376,7 @@
       "strategyCost": "Total cost {cost}",
       "barTitle": "Splitting {quantity} {unit} across households",
       "barLabel": "{sum} of {quantity} {unit} allocated",
-      "statusOk": "All {quantity} {unit} allocated. You can send the co-op bid.",
+      "statusOk": "All {quantity} {unit} allocated. You can simulate sending the co-op bid.",
       "problem": {
         "short": "{count} {unit} still missing.",
         "excess": "{count} {unit} too many allocated.",
@@ -347,12 +397,14 @@
         "onTime": "Meets the delivery date of {date}.",
         "late": "Misses the delivery date of {date}."
       },
-      "send": "Send co-op bid",
+      "send": "Simulate sending co-op bid",
+      "sentLabel": "Simulated",
+      "demoNote": "Demo: this only runs in your browser. Nothing is saved or sent to a server, and no notification goes out.",
       "reset": "Back to suggested plan",
-      "sendBlocked": "You can send once the full quantity is allocated and no household is over capacity.",
+      "sendBlocked": "You can simulate sending once the full quantity is allocated and no household is over capacity.",
       "sent": {
-        "title": "Sealed.",
-        "text": "The co-op bid for request {code} has gone to the buyer. The households involved will be notified."
+        "title": "Simulated (not saved, no notifications sent)",
+        "text": "The allocation plan for request {code} was only trialled in this browser. No bid has reached the buyer and no household has been notified."
       }
     }
   }

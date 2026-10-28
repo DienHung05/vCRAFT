@@ -9,7 +9,7 @@ CSDL nghiệp vụ trước đây chạy trong container Postgres trên máy t�
 
 ## Quyết định
 
-1. CSDL nghiệp vụ dùng **Postgres 17 của Supabase**, schema `public`. MikroORM kết nối qua **Session pooler** (`aws-0-eu-west-1.pooler.supabase.com:5432`, user `postgres.<ref>`). Pooler này có IPv4 và giữ được prepared statement. Kết nối thẳng `db.<ref>.supabase.co` chỉ có IPv6 trên gói Free. Bật TLS bằng `DB_SSL=true`.
+1. CSDL nghiệp vụ dùng **Postgres 17 của Supabase**, schema `public`. MikroORM kết nối qua **Session pooler** (`aws-0-eu-west-1.pooler.supabase.com:5432`, user `postgres.<ref>`). Pooler này có IPv4 và giữ được prepared statement. Kết nối thẳng `db.<ref>.supabase.co` chỉ có IPv6 trên gói Free. Bật TLS bằng `DB_SSL=true`; kết nối luôn xác thực chứng chỉ máy chủ (không có tùy chọn tắt). Pooler dùng CA riêng của Supabase nên khai báo CA tải từ Dashboard qua `DB_SSL_CA_FILE` (hoặc `DB_SSL_CA`).
 2. Cả nhóm dùng chung một CSDL dev và theo dõi qua Table Editor, Logs, Advisors trên Dashboard. Compose không còn container Postgres.
 3. Không để Data API (PostgREST) chạm vào bảng nghiệp vụ. Migration `supabase/migrations/*_business_db_guard.sql` làm hai việc:
    - thu quyền mặc định của `anon`/`authenticated` trên bảng, sequence, hàm mới trong `public`;

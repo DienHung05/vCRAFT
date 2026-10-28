@@ -202,7 +202,7 @@ vCRAFT/
 ├── infra/
 │   ├── compose/       # compose.dev.yml (mysql*, redis, mailpit, caddy); CSDL + file trên Supabase
 │   ├── docker/        # Dockerfile đa tầng cho web, api, worker
-│   ├── caddy/         # Caddyfile: rewrite, header bảo mật, HTTPS tự động
+│   ├── caddy/         # Caddyfile.dev (HTTP :8080), Caddyfile.prod (HTTPS tự động + HSTS), routes.caddy dùng chung
 │   └── scripts/       # gen-keys.sh, backup.sh, pmtiles-extract.sh
 ├── supabase/          # migrations/: vector store (ADR-13), bucket Storage (ADR-14), chặn Data API cho bảng nghiệp vụ (ADR-15)
 ├── docs/              # SRS, ARCHITECTURE, PLAN, BRAND, adr/, requirements/, assistant-kb/ (FAQ vi/en)
@@ -477,11 +477,11 @@ sequenceDiagram
     B2->>A: POST /rfqs/42/bids/9/accept (If-Match: v5, Idempotency-Key)
     A->>D: BEGIN; SELECT rfq 42 FOR UPDATE   (B1 giữ khóa)
     Note over A,D: B2 chờ khóa
-    A->>A: domain.transition(BIDDING, ACCEPT_BID) ✓
+    A->>A: domain.transition(BIDDING, ACCEPT_BID, ctx{actor, now, bid, …}) ✓
     A->>D: UPDATE rfq v6, bids, INSERT order, allocations, outbox; COMMIT
     A-->>B1: 200 ACCEPTED
     A->>D: (B2) lấy khóa, đọc rfq v6 status=ACCEPTED
-    A->>A: domain.transition(ACCEPTED, ACCEPT_BID) ✗ INVALID_TRANSITION
+    A->>A: domain.transition(ACCEPTED, ACCEPT_BID, ctx) ✗ INVALID_TRANSITION
     A-->>B2: 409 Problem Details
     Note over B1,B2: SSE rfq:42 → cả hai tab cập nhật stepper + bảng bid
 ```

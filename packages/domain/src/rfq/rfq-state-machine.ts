@@ -1,6 +1,7 @@
 import { createStateMachine, type TransitionTable } from '../shared/state-machine';
 import {
   acceptGracePeriodPassed,
+  acceptWindowOpen,
   actorIn,
   allAllocationsConfirmed,
   allAllocationsDone,
@@ -11,6 +12,7 @@ import {
   deliveryAfterBiddingDeadline,
   emailVerified,
   noExistingBidFromArtisan,
+  productionStarterPermitted,
   reasonProvided,
 } from './rfq-guards';
 import {
@@ -61,7 +63,7 @@ export const RFQ_TRANSITIONS = {
     ACCEPT_BID: {
       to: 'ACCEPTED',
       ref: 'T3',
-      guards: [actorIn('BUYER_OWNER')],
+      guards: [actorIn('BUYER_OWNER'), acceptWindowOpen], // T3: hạn chốt cứng (FR-RFQ-10)
       inputGuards: [bidIsAcceptable],
     },
     CANCEL: {
@@ -80,7 +82,7 @@ export const RFQ_TRANSITIONS = {
     START_PRODUCTION: {
       to: 'IN_PRODUCTION',
       ref: 'T4',
-      guards: [actorIn('ADMIN', 'ARTISAN'), allAllocationsConfirmed],
+      guards: [actorIn('ADMIN', 'ARTISAN'), productionStarterPermitted, allAllocationsConfirmed],
     },
     ADMIN_CANCEL: {
       to: 'CANCELLED',
@@ -110,14 +112,18 @@ export const rfqStateMachine = createStateMachine<RfqStatus, RfqEvent, RfqContex
 
 /**
  * Trạng thái kế tiếp hoặc lỗi `DomainError` có kiểu (`INVALID_TRANSITION` | mã guard).
- * Không có `ctx` ⇒ chỉ kiểm cấu trúc bảng; có `ctx` ⇒ kiểm tác nhân + guard (thiếu dữ kiện ⇒ `MISSING_CONTEXT`).
+ * `ctx` BẮT BUỘC: luôn kiểm tác nhân + guard (thiếu dữ kiện ⇒ `MISSING_CONTEXT`). Không có đường tắt bỏ guard.
  */
 export const transition = rfqStateMachine.transition;
 
 /**
- * Sự kiện hợp lệ ở `state`. Có `ctx` thì lọc theo tác nhân và guard khả dụng, KHÔNG xét dữ liệu nhập
+ * Sự kiện hợp lệ ở `state`, lọc theo tác nhân và guard khả dụng của `ctx`, KHÔNG xét dữ liệu nhập
  * kèm lệnh (lý do hủy, bid được chọn, hạn chào giá của form) — nút vẫn hiện, `transition` mới báo lỗi nhập.
  */
 export const availableEvents = rfqStateMachine.availableEvents;
+
+/** Tra cứu thuần cấu trúc bảng (SRS §4.1), KHÔNG kiểm tác nhân/guard: không dùng để cho phép hành động. */
+export const rfqStructuralNext = rfqStateMachine.structuralNext;
+export const rfqStructuralEvents = rfqStateMachine.structuralEvents;
 
 export const isRfqTerminal = rfqStateMachine.isTerminal;

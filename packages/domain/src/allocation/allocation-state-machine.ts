@@ -74,6 +74,10 @@ const allocationMachine = createStateMachine<
   table: ALLOCATION_TRANSITIONS,
 });
 
+/** Luôn chạy guard; `ctx` bắt buộc (truyền `{}` nếu sự kiện không cần dữ kiện). */
 export const allocationTransition = allocationMachine.transition;
 export const availableAllocationEvents = allocationMachine.availableEvents;
+/** Tra cứu thuần cấu trúc bảng (SRS §4.3), KHÔNG chạy guard. */
+export const allocationStructuralNext = allocationMachine.structuralNext;
+export const allocationStructuralEvents = allocationMachine.structuralEvents;
 export const isAllocationTerminal = allocationMachine.isTerminal;

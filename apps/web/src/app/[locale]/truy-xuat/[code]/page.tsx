@@ -1,22 +1,17 @@
-import {
-  Badge,
-  buttonVariants,
-  Crackle,
-  Logo,
-  SealMark,
-  TraceSealFrame,
-  VaseFigure,
-} from '@vcraft/ui';
+import { Badge, buttonVariants, Crackle, Logo, TraceSealFrame, VaseFigure } from '@vcraft/ui';
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ImageSlot } from '@/components/image-slot';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
+import { ChainVerifier } from '@/features/traceability/chain-verifier';
 import { FireTimeline } from '@/features/traceability/fire-timeline';
 import { TraceQr } from '@/features/traceability/trace-qr';
 import { VillageMiniMap } from '@/features/village-map/village-mini-map';
 import { Link } from '@/i18n/navigation';
 import { demoParams, getArtisan, getProductByCode } from '@/lib/demo/data';
 import { resolveLocale } from '@/lib/locale';
+import { isTraceCode, traceShortUrl } from '@/lib/site';
 
 export function generateStaticParams() {
   return demoParams.traceCodes.map((code) => ({ code }));
@@ -37,6 +32,9 @@ export async function generateMetadata({
 export default async function TracePage({ params }: PageProps<'/[locale]/truy-xuat/[code]'>) {
   await resolveLocale(params);
   const { code } = await params;
+  // Mã sai định dạng (BR-04) là đường dẫn sai ⇒ 404; mã đúng định dạng mà không có trong hệ thống
+  // thì hiện cảnh báo hàng không xác thực bên dưới (FR-TRC-08).
+  if (!isTraceCode(code)) notFound();
   const t = await getTranslations('trace');
   const product = await getProductByCode(code);
   const artisan = product ? await getArtisan(product.artisanSlug) : null;
@@ -86,28 +84,13 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
               </p>
             </section>
 
-            {/* Ấn xác thực (BRAND §6.3 #2): ấn son giáng xuống trên nền men rạn. */}
-            <section
-              aria-labelledby="verify-title"
-              className="relative mx-5 mt-8 overflow-hidden rounded-card bg-surface p-6 shadow-warm"
-            >
-              <Crackle className="text-glaze" />
-              <div className="relative flex items-center gap-5">
-                <SealMark size={64} className="animate-stamp" title={t('verifiedSeal')} />
-                <div>
-                  <h2 id="verify-title" className="text-h3 text-seal">
-                    {t('verifiedTitle')}
-                  </h2>
-                  <p className="mt-1 text-small text-ink/85">
-                    {t('verifiedText', { household: artisan.household })}
-                  </p>
-                </div>
-              </div>
-              <div className="relative mt-5 flex flex-wrap gap-2">
-                <Badge tone="celadon">✓ {t('chainOk', { count: product.log.length })}</Badge>
-                <Badge tone="outline">{t('scans', { count: product.scans })}</Badge>
-              </div>
-            </section>
+            {/* Ấn xác thực (BRAND §6.3 #2): chỉ đóng ấn khi trình duyệt tự kiểm chuỗi băm khớp (FR-TRC-05). */}
+            <ChainVerifier
+              productId={product.code}
+              entries={product.log}
+              household={artisan.household}
+            />
+            <p className="mx-5 mt-3 text-small text-ash">{t('scans', { count: product.scans })}</p>
 
             {product.artisanNote ? (
               <figure className="px-5 pt-10">
@@ -173,8 +156,17 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                 size={200}
                 title={t('qrLabel', { code: product.code })}
               >
-                <TraceQr url={`https://vcraft.vn/q/${product.code}`} size={136} />
+                <TraceQr url={traceShortUrl(product.code)} size={136} />
               </TraceSealFrame>
+              <p className="mt-4 text-center text-small text-ash">
+                {t('shortLink')}:{' '}
+                <a
+                  href={traceShortUrl(product.code)}
+                  className="font-mono text-clay underline underline-offset-4"
+                >
+                  {traceShortUrl(product.code).replace(/^https?:\/\//, '')}
+                </a>
+              </p>
             </section>
 
             <nav className="sticky bottom-0 mt-12 flex gap-3 border-ink/10 border-t bg-paper/90 px-5 py-4 backdrop-blur-md">

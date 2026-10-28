@@ -11,7 +11,9 @@ import { err, ok, type Result } from './result';
  *     cũng đánh giá nhóm này để UI chỉ hiện nút hợp lệ (FR-RFQ-12).
  *   - `inputGuards`: kiểm tra dữ liệu người dùng nhập kèm lệnh (vd. lý do hủy). Chỉ `transition`
  *     đánh giá, để nút vẫn hiện trước khi người dùng nhập xong.
- * - Không truyền `ctx` ⇒ chỉ kiểm tra cấu trúc bảng (bỏ qua mọi guard).
+ * - `transition` và `availableEvents` BẮT BUỘC `ctx` và luôn chạy guard (không có đường tắt bỏ qua
+ *   kiểm quyền). Cần tra cứu thuần cấu trúc bảng (vẽ sơ đồ, test bảng) thì dùng `structuralNext` /
+ *   `structuralEvents`: các hàm này KHÔNG kiểm tác nhân hay guard, không được dùng để cho phép hành động.
  */
 export type Guard<C, G extends string> = (ctx: C) => DomainError<G> | undefined;
 
@@ -40,10 +42,17 @@ export interface StateMachine<S extends string, E extends string, C, G extends s
   readonly name: string;
   readonly states: readonly S[];
   readonly events: readonly E[];
-  /** Trạng thái kế tiếp hoặc lỗi `INVALID_TRANSITION` / mã guard. */
-  transition(state: S, event: E, ctx?: C): Result<S, TransitionError<G>>;
-  /** Sự kiện hợp lệ ở `state`, theo thứ tự khai báo; có `ctx` thì lọc thêm theo guard khả dụng. */
-  availableEvents(state: S, ctx?: C): E[];
+  /** Trạng thái kế tiếp hoặc lỗi `INVALID_TRANSITION` / mã guard. Luôn chạy guard; `ctx` bắt buộc. */
+  transition(state: S, event: E, ctx: C): Result<S, TransitionError<G>>;
+  /** Sự kiện hợp lệ ở `state`, theo thứ tự khai báo, đã lọc theo guard khả dụng của `ctx`. */
+  availableEvents(state: S, ctx: C): E[];
+  /**
+   * Tra cứu CẤU TRÚC bảng: trạng thái đích nếu bảng có dòng (state, event), nếu không `INVALID_TRANSITION`.
+   * KHÔNG kiểm tác nhân, thời điểm hay bất kỳ guard nào; không dùng để quyết định cho phép hành động.
+   */
+  structuralNext(state: S, event: E): Result<S, DomainError<'INVALID_TRANSITION'>>;
+  /** Sự kiện có dòng trong bảng ở `state`, theo thứ tự khai báo. KHÔNG kiểm quyền/guard (xem `structuralNext`). */
+  structuralEvents(state: S): E[];
   /** Trạng thái kết thúc: không có sự kiện nào đi ra. */
   isTerminal(state: S): boolean;
 }
@@ -65,34 +74,44 @@ export function createStateMachine<S extends string, E extends string, C, G exte
     return undefined;
   };
 
+  // Không dùng `this`: các máy được xuất dưới dạng hàm rời (`export const transition = machine.transition`).
+  const structuralNext = (state: S, event: E): Result<S, DomainError<'INVALID_TRANSITION'>> => {
+    const rule = ruleOf(state, event);
+    if (!rule) {
+      return err(
+        new DomainError(
+          'INVALID_TRANSITION',
+          `${def.name}: event ${event} is not allowed in state ${state}`,
+          { machine: def.name, from: state, event },
+        ),
+      );
+    }
+    return ok(rule.to);
+  };
+
   return {
     name: def.name,
     states: def.states,
     events: def.events,
 
+    structuralNext,
+
+    structuralEvents(state) {
+      return def.events.filter((event) => ruleOf(state, event) !== undefined);
+    },
+
     transition(state, event, ctx) {
       const rule = ruleOf(state, event);
-      if (!rule) {
-        return err(
-          new DomainError(
-            'INVALID_TRANSITION',
-            `${def.name}: event ${event} is not allowed in state ${state}`,
-            { machine: def.name, from: state, event },
-          ),
-        );
-      }
-      if (ctx !== undefined) {
-        const failure = firstFailure(rule.guards, ctx) ?? firstFailure(rule.inputGuards, ctx);
-        if (failure) return err(failure);
-      }
+      if (!rule) return structuralNext(state, event);
+      const failure = firstFailure(rule.guards, ctx) ?? firstFailure(rule.inputGuards, ctx);
+      if (failure) return err(failure);
       return ok(rule.to);
     },
 
     availableEvents(state, ctx) {
       return def.events.filter((event) => {
         const rule = ruleOf(state, event);
-        if (!rule) return false;
-        return ctx === undefined || firstFailure(rule.guards, ctx) === undefined;
+        return rule !== undefined && firstFailure(rule.guards, ctx) === undefined;
       });
     },
 

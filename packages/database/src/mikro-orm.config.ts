@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type Options } from '@mikro-orm/core';
@@ -48,13 +49,32 @@ function resolvePort(env: DbEnv, driver: DbDriver): number {
 }
 
 /**
- * `DB_SSL=true` bật TLS (bắt buộc với Postgres của Supabase, ADR-15). Pooler của Supabase dùng chứng chỉ
- * do CA riêng ký nên không kiểm chuỗi CA; kết nối vẫn được mã hóa.
+ * `DB_SSL=true` bật TLS và LUÔN xác thực chứng chỉ máy chủ (`rejectUnauthorized: true`); không có biến
+ * nào tắt việc xác thực. Chứng chỉ do CA công khai ký thì không cần cấu hình thêm. Với CA riêng
+ * (vd. Postgres của Supabase, ADR-15) khai báo CA tin cậy một trong hai cách:
+ * - `DB_SSL_CA`: nội dung PEM (xuống dòng có thể viết thành chuỗi `\n` khi để trên một dòng trong `.env`);
+ * - `DB_SSL_CA_FILE`: đường dẫn tới file PEM.
+ * `pg` và `mysql2` cùng nhận khóa `ssl` trong tùy chọn pool.
  */
 function resolveDriverOptions(env: DbEnv): Record<string, unknown> | undefined {
   if (env.DB_SSL?.trim().toLowerCase() !== 'true') return undefined;
-  // `pg` và `mysql2` cùng nhận khóa `ssl` trong tùy chọn pool
-  return { ssl: { rejectUnauthorized: false } };
+  const ca = resolveSslCa(env);
+  return { ssl: { ...(ca !== undefined && { ca }), rejectUnauthorized: true } };
+}
+
+function resolveSslCa(env: DbEnv): string | undefined {
+  const inline = env.DB_SSL_CA?.trim();
+  const file = env.DB_SSL_CA_FILE?.trim();
+  if (inline && file) {
+    throw new Error('Chỉ đặt một trong DB_SSL_CA hoặc DB_SSL_CA_FILE, không đặt cả hai');
+  }
+  if (inline) return inline.replaceAll('\\n', '\n');
+  if (!file) return undefined;
+  try {
+    return readFileSync(file, 'utf8');
+  } catch (cause) {
+    throw new Error(`Không đọc được DB_SSL_CA_FILE="${file}"`, { cause });
+  }
 }
 
 /**

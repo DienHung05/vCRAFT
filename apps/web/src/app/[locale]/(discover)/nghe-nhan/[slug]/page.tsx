@@ -63,15 +63,16 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
             <Link href="/yeu-cau-bao-gia" className={buttonVariants({ size: 'lg' })}>
               {t('ctaRfq')}
             </Link>
-            <Link
-              href="/ban-do"
+            {/* Trang bản đồ (FR-MAP) chưa có: dẫn tới khối thông tin xưởng ngay trên trang này. */}
+            <a
+              href="#workshop"
               className={cn(
                 buttonVariants({ variant: 'secondary', size: 'lg' }),
                 'border-paper/40 text-paper hover:bg-paper/10',
               )}
             >
               {t('ctaVisit')}
-            </Link>
+            </a>
           </div>
         </div>
       </header>
@@ -139,7 +140,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
             className="rounded-none shadow-none"
           />
         </Card>
-        <Card className="flex flex-col gap-5 p-8 md:col-span-3">
+        <Card id="workshop" className="flex scroll-mt-24 flex-col gap-5 p-8 md:col-span-3">
           <div>
             <h2 className="text-h3">{t('workshop')}</h2>
             <p className="mt-2 text-ash">{artisan.address}</p>
