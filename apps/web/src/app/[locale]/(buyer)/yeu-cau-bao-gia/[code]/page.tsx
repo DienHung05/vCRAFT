@@ -7,6 +7,9 @@ import { Link } from '@/i18n/navigation';
 import { demoParams, getRfq } from '@/lib/demo/data';
 import { resolveLocale } from '@/lib/locale';
 
+// Hạn chào giá của dữ liệu mẫu tính theo thời điểm hiện tại, nên dựng lại định kỳ để demo không tự hỏng.
+export const revalidate = 3600;
+
 export function generateStaticParams() {
   return demoParams.rfqs.map((code) => ({ code }));
 }

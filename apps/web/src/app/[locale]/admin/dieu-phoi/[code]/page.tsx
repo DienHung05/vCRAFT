@@ -6,6 +6,9 @@ import { AllocationBoard, type AllocationPart } from '@/features/admin/allocatio
 import { demoParams, getArtisan, getCoordination } from '@/lib/demo/data';
 import { resolveLocale } from '@/lib/locale';
 
+// Hạn giao của dữ liệu mẫu tính theo thời điểm hiện tại, nên dựng lại định kỳ để demo không tự hỏng.
+export const revalidate = 3600;
+
 export function generateStaticParams() {
   return demoParams.coordinations.map((code) => ({ code }));
 }

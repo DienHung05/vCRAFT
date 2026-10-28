@@ -1,7 +1,7 @@
 'use client';
 
 import { checkAllocationPlan } from '@vcraft/domain';
-import { Button, Card, Crackle, cn, SealMark } from '@vcraft/ui';
+import { Button, Card, Crackle, cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useEffect, useId, useMemo, useState } from 'react';
 import type { AllocationStrategy } from '@/lib/demo/data';
@@ -73,6 +73,12 @@ export function AllocationBoard({
   const onTime = etaTime === null ? null : etaTime <= new Date(requiredBy).getTime();
   const over = new Set(check.overCapacity);
   const invalid = new Set(check.invalid);
+
+  // Mô phỏng cục bộ: chưa gọi API, chưa lưu, chưa thông báo (xem `board.demoNote`). Chặn bấm lặp.
+  const simulateSend = () => {
+    if (sent || !check.ok) return;
+    setSent(true);
+  };
 
   const choose = (next: AllocationStrategy) => {
     if (sent) return;
@@ -327,8 +333,8 @@ export function AllocationBoard({
             </p>
           ) : null}
           <div className="flex flex-col gap-2">
-            <Button disabled={!check.ok || sent} onClick={() => setSent(true)}>
-              {t('send')}
+            <Button disabled={!check.ok || sent} onClick={simulateSend}>
+              {sent ? t('sentLabel') : t('send')}
             </Button>
             <Button
               variant="secondary"
@@ -342,6 +348,7 @@ export function AllocationBoard({
             {!check.ok && !sent ? (
               <p className="text-[0.75rem] text-ash">{t('sendBlocked')}</p>
             ) : null}
+            <p className="text-[0.75rem] text-ash">{t('demoNote')}</p>
           </div>
         </Card>
       </div>
@@ -352,9 +359,8 @@ export function AllocationBoard({
           className="relative flex items-center gap-5 overflow-hidden rounded-card bg-surface p-6 shadow-warm"
         >
           <Crackle className="text-glaze" />
-          <SealMark size={64} className="relative animate-stamp" />
           <div className="relative">
-            <h2 className="text-h3 text-seal">{t('sent.title')}</h2>
+            <h2 className="text-h3 text-ink">{t('sent.title')}</h2>
             <p className="mt-1 text-ink/85">{t('sent.text', { code: rfqCode })}</p>
           </div>
         </section>

@@ -25,9 +25,15 @@ export default async function AdminLayout({ children, params }: LayoutProps<'/[l
           <Link href="/" aria-label={t('home')}>
             <Logo size={26} />
           </Link>
-          <span className="rounded-chip bg-glaze/10 px-2 py-0.5 text-[0.7rem] font-medium tracking-wide text-glaze uppercase">
-            {t('badge')}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="rounded-chip bg-glaze/10 px-2 py-0.5 text-[0.7rem] font-medium tracking-wide text-glaze uppercase">
+              {t('badge')}
+            </span>
+            {/* Dưới lg thanh bên thu thành hàng ngang nên đổi ngôn ngữ nằm ở đây (bản lg ở cuối thanh bên). */}
+            <div className="lg:hidden">
+              <LocaleSwitcher />
+            </div>
+          </div>
         </div>
         <div className="px-2 pb-2 lg:px-3">
           {first ? <AdminNav coordinationCode={first} /> : null}

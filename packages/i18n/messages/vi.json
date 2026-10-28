@@ -25,6 +25,33 @@
     "news": "Tin tức",
     "quotes": "Yêu cầu báo giá"
   },
+  "indexPages": {
+    "demoNote": "Bản trình diễn: danh sách này lấy từ dữ liệu mẫu, không phải hộ và sản phẩm thật.",
+    "products": {
+      "title": "Sản phẩm",
+      "lead": "Mỗi món gốm mang một ấn truy xuất dưới đáy. Chọn một món để xem hành trình của nó.",
+      "count": "{count, plural, other {# sản phẩm}}",
+      "empty": "Chưa có sản phẩm nào."
+    },
+    "artisans": {
+      "title": "Nghệ nhân",
+      "lead": "Những hộ làng nghề đang giữ lửa ở Bát Tràng. Mỗi hộ có một thứ men và một cách vuốt đất riêng.",
+      "count": "{count, plural, other {# hộ}}",
+      "empty": "Chưa có hộ nào.",
+      "meta": "{artisan} · {craft}",
+      "since": "Đời thứ {n} · từ năm {year}"
+    },
+    "rfq": {
+      "title": "Yêu cầu báo giá",
+      "lead": "Gửi nhu cầu số lượng lớn, nhận chào giá từ các hộ phù hợp và chốt người làm.",
+      "count": "{count, plural, other {# yêu cầu}}",
+      "empty": "Chưa có yêu cầu báo giá nào.",
+      "quantity": "{quantity} {unit}",
+      "bids": "{count, plural, other {# chào giá}}",
+      "closes": "Hạn chào giá {date}",
+      "open": "Xem chi tiết"
+    }
+  },
   "footer": {
     "tagline": "Tinh hoa làng nghề, muôn phương lan tỏa.",
     "explore": "Khám phá",
@@ -141,15 +168,36 @@
     "notFoundText": "Không tìm thấy mã {code}. Món đồ này có thể không do làng nghề trên vCraft làm ra, hoặc tem đã bị làm giả. Hãy kiểm lại mã dưới đáy sản phẩm.",
     "scanned": "Bạn vừa quét ấn của",
     "verifiedSeal": "Ấn xác thực của vCraft",
-    "verifiedTitle": "Đã đóng ấn xác thực",
-    "verifiedText": "Mã này khớp với một sản phẩm của {household}. Nhật ký sản xuất được nối bằng chuỗi băm nên không ai sửa lại được.",
-    "chainOk": "Chuỗi nhật ký toàn vẹn · {count, plural, other {# mốc}}",
+    "integrity": {
+      "demoBadge": "Dữ liệu minh họa",
+      "demoNote": "Sản phẩm, hộ làm và nhật ký trên trang này là dữ liệu mẫu của bản trình diễn, không phải hàng thật.",
+      "match": "Mã này khớp với một sản phẩm minh họa của {household}.",
+      "checkingTitle": "Đang kiểm tra nhật ký…",
+      "checkingText": "Trình duyệt của bạn đang tự tính lại dấu băm SHA-256 của từng mốc.",
+      "okTitle": "Nhật ký toàn vẹn",
+      "okText": "Trình duyệt đã tính lại {count, plural, other {# dấu băm}} SHA-256 và tất cả đều khớp, nối liền từ mốc đầu tới mốc cuối.",
+      "okBadge": "Chuỗi nhật ký toàn vẹn · {count, plural, other {# mốc}}",
+      "brokenTitle": "Có dấu hiệu chỉnh sửa nhật ký",
+      "brokenAt": "Mốc {n} ({stage}) không đạt kiểm tra.",
+      "brokenLink": "Xem mốc {n}",
+      "reason": {
+        "hash": "Nội dung mốc này không khớp dấu băm đã ghi, tức là đã bị sửa sau khi ghi.",
+        "prev": "Mốc này không nối đúng với dấu băm của mốc ngay trước nó.",
+        "seq": "Số thứ tự các mốc bị đứt hoặc đảo chỗ."
+      },
+      "unavailableTitle": "Chưa kiểm được trên trình duyệt này",
+      "unavailableText": "Việc kiểm chứng cần Web Crypto, chỉ có khi mở trang qua HTTPS. Nhật ký bên dưới chưa được xác nhận là toàn vẹn.",
+      "emptyTitle": "Chưa có nhật ký để kiểm",
+      "emptyText": "Sản phẩm minh họa này chưa có mốc sản xuất nào.",
+      "scope": "Chuỗi toàn vẹn chỉ cho biết nhật ký không bị sửa sau khi ghi. Nó không chứng minh những điều ghi trong nhật ký là đúng ngoài đời."
+    },
     "scans": "{count, plural, other {# lượt quét}}",
     "timelineTitle": "Hành trình qua lửa",
     "timelineLead": "Từng công đoạn do chính người thợ ghi lại, kèm ảnh và dấu băm.",
     "whereTitle": "Nơi món gốm ra đời",
     "certsTitle": "Chứng nhận của hộ",
     "qrLabel": "Ấn truy xuất mã {code}",
+    "shortLink": "Đường dẫn ngắn trong mã QR",
     "ctaVisit": "Ghé xưởng",
     "ctaRfq": "Đặt số lượng",
     "proofAlt": "Ảnh minh chứng công đoạn {stage}",
@@ -190,6 +238,8 @@
       "DUPLICATE_BID": "Hộ này đã có chào giá cho yêu cầu này.",
       "BID_NOT_SUBMITTED": "Chỉ chốt được chào giá đang còn hiệu lực.",
       "BID_QUANTITY_MISMATCH": "Chỉ chốt được chào giá đáp ứng đủ số lượng.",
+      "ACCEPT_WINDOW_CLOSED": "Đã quá thời hạn chốt chào giá (7 ngày sau hạn chào giá).",
+      "PRODUCTION_START_NOT_PERMITTED": "Chỉ Admin điều phối, hoặc hộ duy nhất của đơn một hộ, mới được bắt đầu sản xuất.",
       "ALLOCATIONS_NOT_CONFIRMED": "Chưa phải hộ nào cũng xác nhận phần việc của mình.",
       "ALLOCATIONS_NOT_DONE": "Chưa phải hộ nào cũng hoàn thành phần việc của mình.",
       "REASON_REQUIRED": "Bạn cần ghi lý do hủy.",
@@ -311,7 +361,7 @@
       "strategyCost": "Tổng chi phí {cost}",
       "barTitle": "Chia {quantity} {unit} cho các hộ",
       "barLabel": "Đã chia {sum} trên {quantity} {unit}",
-      "statusOk": "Đã chia đủ {quantity} {unit}. Bạn có thể gửi chào giá liên kết.",
+      "statusOk": "Đã chia đủ {quantity} {unit}. Bạn có thể mô phỏng gửi chào giá liên kết.",
       "problem": {
         "short": "Còn thiếu {count} {unit}.",
         "excess": "Đang chia thừa {count} {unit}.",
@@ -332,12 +382,14 @@
         "onTime": "Kịp hạn giao {date}.",
         "late": "Trễ hạn giao {date}."
       },
-      "send": "Gửi chào giá liên kết",
+      "send": "Mô phỏng gửi chào giá liên kết",
+      "sentLabel": "Đã mô phỏng",
+      "demoNote": "Bản trình diễn: thao tác chỉ chạy trên trình duyệt của bạn, chưa lưu, chưa gửi lên máy chủ và không có thông báo nào được gửi.",
       "reset": "Về phương án đề xuất",
-      "sendBlocked": "Chia đủ số lượng và không hộ nào vượt năng lực thì mới gửi được.",
+      "sendBlocked": "Chia đủ số lượng và không hộ nào vượt năng lực thì mới mô phỏng gửi được.",
       "sent": {
-        "title": "Đã đóng ấn.",
-        "text": "Chào giá liên kết cho yêu cầu {code} đã gửi tới bên mua. Các hộ tham gia sẽ nhận thông báo."
+        "title": "Đã mô phỏng (chưa lưu, không gửi thông báo)",
+        "text": "Phương án chia đơn cho yêu cầu {code} chỉ chạy thử trên trình duyệt này. Chưa có chào giá nào tới bên mua và chưa hộ nào nhận thông báo."
       }
     }
   }

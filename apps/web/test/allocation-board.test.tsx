@@ -31,7 +31,9 @@ async function board() {
 describe('AllocationBoard (FR-ORD-03, BR-L6)', () => {
   it('phương án đề xuất hợp lệ thì gửi được; sửa tay sai thì khóa nút và báo thiếu', async () => {
     renderVi(await board());
-    const send = screen.getByRole('button', { name: 'Gửi chào giá liên kết' }) as HTMLButtonElement;
+    const send = screen.getByRole('button', {
+      name: 'Mô phỏng gửi chào giá liên kết',
+    }) as HTMLButtonElement;
     expect(send.disabled).toBe(false);
     expect(screen.getByText(/Đã chia đủ 3\.000 bát/)).toBeTruthy();
 
@@ -54,7 +56,9 @@ describe('AllocationBoard (FR-ORD-03, BR-L6)', () => {
     fireEvent.change(screen.getByLabelText('Nhập số lượng cho Lò Đức Phát'), {
       target: { value: '800' },
     });
-    const send = screen.getByRole('button', { name: 'Gửi chào giá liên kết' }) as HTMLButtonElement;
+    const send = screen.getByRole('button', {
+      name: 'Mô phỏng gửi chào giá liên kết',
+    }) as HTMLButtonElement;
     expect(send.disabled).toBe(true);
     expect(screen.getAllByText(/Gốm Hạnh Thủy vượt năng lực còn trống/).length).toBeGreaterThan(0);
   });
@@ -67,5 +71,23 @@ describe('AllocationBoard (FR-ORD-03, BR-L6)', () => {
     expect((screen.getByLabelText('Nhập số lượng cho Lò Đức Phát') as HTMLInputElement).value).toBe(
       '300',
     );
+  });
+
+  it('gửi chỉ là mô phỏng cục bộ: hiện nhãn demo, báo đã mô phỏng và chặn bấm lặp', async () => {
+    renderVi(await board());
+    expect(screen.getByText(/chưa lưu, chưa gửi lên máy chủ/)).toBeTruthy();
+    expect(screen.queryByText(/đã gửi tới bên mua/)).toBeNull();
+
+    const send = screen.getByRole('button', {
+      name: 'Mô phỏng gửi chào giá liên kết',
+    }) as HTMLButtonElement;
+    fireEvent.click(send);
+    expect(screen.getByText('Đã mô phỏng (chưa lưu, không gửi thông báo)')).toBeTruthy();
+    expect(screen.getByText(/Chưa có chào giá nào tới bên mua/)).toBeTruthy();
+
+    const done = screen.getByRole('button', { name: 'Đã mô phỏng' }) as HTMLButtonElement;
+    expect(done.disabled).toBe(true);
+    fireEvent.click(done);
+    expect(screen.getAllByText('Đã mô phỏng (chưa lưu, không gửi thông báo)')).toHaveLength(1);
   });
 });

@@ -28,11 +28,6 @@ export async function SiteFooter() {
                 {nav('artisans')}
               </Link>
             </li>
-            <li>
-              <Link href="/ban-do" className="hover:text-clay">
-                {nav('map')}
-              </Link>
-            </li>
           </ul>
         </div>
         <div>
@@ -43,11 +38,6 @@ export async function SiteFooter() {
             <li>
               <Link href="/yeu-cau-bao-gia" className="hover:text-clay">
                 {nav('quotes')}
-              </Link>
-            </li>
-            <li>
-              <Link href="/tin-tuc" className="hover:text-clay">
-                {nav('news')}
               </Link>
             </li>
           </ul>
