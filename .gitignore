@@ -41,3 +41,5 @@ next-env.d.ts
 .beads-credential-key
 .beads/proxieddb/
 *.gate.lock*
+
+# AI

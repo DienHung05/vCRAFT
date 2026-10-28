@@ -8,6 +8,10 @@
         "--mcp"
       ],
       "alwaysLoad": true
-    }
+    },
+    "bladebro": {
+			"command": "bladebro",
+			"args": ["mcp"]
+		}
   }
 }

@@ -1,10 +1,10 @@
-{
+{  
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
-            "command": "bd prime --hook-json",
+            "command": "bd prime --stealth --hook-json",
             "type": "command"
           }
         ],
