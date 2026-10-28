@@ -4,7 +4,7 @@
   "private": true,
   "description": "Playwright E2E theo hành trình 3 vai trò + kiểm tra a11y (axe) và tranh chấp chốt giá.",
   "scripts": {
-    "test:e2e": "playwright test --pass-with-no-tests"
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

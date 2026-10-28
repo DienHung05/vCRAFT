@@ -1,0 +1,23 @@
+# Phần dùng chung cho Caddyfile.dev và Caddyfile.prod, được `import` bên trong khối site.
+# Upstream đọc từ biến môi trường; giá trị mặc định là cho dev (ứng dụng chạy trên máy host).
+
+encode zstd gzip
+
+header {
+	X-Content-Type-Options "nosniff"
+	Referrer-Policy "strict-origin-when-cross-origin"
+	Permissions-Policy "camera=(self), geolocation=(self), microphone=()"
+	-Server
+}
+
+# REST JSON API + SSE (flush ngay để stream sự kiện không bị đệm)
+handle /api/* {
+	reverse_proxy {$API_UPSTREAM:host.docker.internal:4000} {
+		flush_interval -1
+	}
+}
+
+# Mọi thứ còn lại (gồm /q/{code} -> 308 sang trang truy xuất, xử lý trong Next proxy.ts)
+handle {
+	reverse_proxy {$WEB_UPSTREAM:host.docker.internal:3000}
+}

@@ -1,0 +1,17 @@
+# Caddy cho PRODUCTION. Bắt buộc đặt biến môi trường:
+#   DOMAIN         tên miền công khai, vd. vcraft.example.com (DNS A/AAAA phải trỏ về máy chạy Caddy, mở cổng 80 và 443)
+#   API_UPSTREAM   vd. api:4000
+#   WEB_UPSTREAM   vd. web:3000
+# Tùy chọn: thêm khối toàn cục `{ email you@example.com }` để nhận cảnh báo từ Let's Encrypt.
+#
+# Auto HTTPS BẬT (mặc định của Caddy): tự xin và gia hạn chứng chỉ Let's Encrypt cho {$DOMAIN},
+# tự chuyển hướng HTTP -> HTTPS (cổng 80). Không dùng `auto_https off` ở file này.
+#
+# Kiểm tra cú pháp:
+#   DOMAIN=example.com API_UPSTREAM=api:4000 WEB_UPSTREAM=web:3000 caddy validate --config Caddyfile.prod --adapter caddyfile
+# Khi thử trên máy staging, dùng CA staging của Let's Encrypt để tránh bị giới hạn tần suất (xem docs Caddy: acme_ca).
+{$DOMAIN} {
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+	import ./routes.caddy
+}

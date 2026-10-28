@@ -1,7 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
 import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
 
-/** NFR-REL-01 — sẽ bổ sung kiểm tra DB, Redis, storage khi các module đó được nối vào. */
+/**
+ * NFR-REL-01. Hiện đây chỉ là **liveness**: `check([])` cho biết tiến trình còn phản hồi, KHÔNG chứng minh
+ * DB, Redis, storage hay worker sẵn sàng. Khi nối các thành phần đó, tách thêm endpoint readiness
+ * (vd. `GET /health/ready`, kiểm tra phụ thuộc) và để `GET /health` (liveness) không phụ thuộc chúng,
+ * tránh orchestrator khởi động lại tiến trình chỉ vì một dịch vụ ngoài chập chờn.
+ */
 @Controller('health')
 export class HealthController {
   constructor(private readonly health: HealthCheckService) {}

@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Tắt cho tới khi Sprint 0 có pnpm-lock.yaml + field packageManager; bật bằng repo variable CI_ENABLED=true
+  # Bật/tắt toàn bộ pipeline bằng repo variable CI_ENABLED (hiện đang bật)
   quality:
     if: vars.CI_ENABLED == 'true'
     runs-on: ubuntu-latest
@@ -25,7 +25,9 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
-  # Chứng minh "độc lập CSDL": cùng bộ integration test chạy trên 2 hệ quản trị
+  # Chứng minh "độc lập CSDL": cùng bộ integration test chạy trên 2 hệ quản trị.
+  # Test dựng CSDL thật bằng Testcontainers nên cần Docker daemon (ubuntu-latest có sẵn).
+  # Suite rỗng KHÔNG còn được coi là xanh: không có file test thì bước này thất bại.
   integration:
     needs: quality
     if: vars.CI_ENABLED == 'true'
@@ -54,4 +56,6 @@ jobs:
         with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @vcraft/e2e exec playwright install --with-deps chromium
+      # E2E chạy trên bản build production (`next start`); turbo build các gói workspace mà web phụ thuộc trước
+      - run: pnpm exec turbo run build --filter=@vcraft/web
       - run: pnpm test:e2e

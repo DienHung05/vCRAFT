@@ -1,6 +1,8 @@
 # Hạ tầng phát triển cục bộ: `pnpm infra:up`
 # CSDL nghiệp vụ (ADR-15) và object storage (ADR-14) nằm trên Supabase, không chạy container riêng.
 # MySQL nằm trong profile "mysql" để kiểm chứng độc lập CSDL: `docker compose --profile mysql ... up -d`
+# Mọi cổng chỉ bind vào 127.0.0.1: các dịch vụ dev (Redis, Mailpit, MySQL) không có xác thực.
+# Muốn truy cập từ máy khác trong LAN thì đổi có chủ đích, đừng bỏ tiền tố 127.0.0.1.
 name: vcraft
 services:
   mysql:
@@ -11,22 +13,23 @@ services:
       MYSQL_USER: vcraft
       MYSQL_PASSWORD: vcraft
       MYSQL_ROOT_PASSWORD: root
-    ports: ["3306:3306"]
+    ports: ["127.0.0.1:3306:3306"]
     volumes: ["./.data/mysql:/var/lib/mysql"]
 
   redis:
     image: redis:7-alpine
-    ports: ["6379:6379"]
+    ports: ["127.0.0.1:6379:6379"]
 
   mailpit:
     image: axllent/mailpit:latest
-    ports: ["1025:1025", "8025:8025"]
+    ports: ["127.0.0.1:1025:1025", "127.0.0.1:8025:8025"]
 
-  # Reverse proxy cùng origin: /api/* -> api, /q/* rewrite, còn lại -> web (xem infra/caddy/Caddyfile)
+  # Reverse proxy cùng origin: /api/* -> api, /q/* rewrite, còn lại -> web (xem infra/caddy/Caddyfile.dev; production dùng Caddyfile.prod)
   caddy:
     image: caddy:2-alpine
-    ports: ["8080:8080"]
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile.dev", "--adapter", "caddyfile"]
+    ports: ["127.0.0.1:8080:8080"]
     volumes:
-      - "../caddy/Caddyfile:/etc/caddy/Caddyfile:ro"
+      - "../caddy:/etc/caddy:ro"
       - "./.data/media:/srv/media:ro" # chỉ dùng khi STORAGE_DRIVER=local
     extra_hosts: ["host.docker.internal:host-gateway"]
