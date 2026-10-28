@@ -51,13 +51,16 @@ export type RfqGuardCode =
   | 'DUPLICATE_BID'
   | 'BID_NOT_SUBMITTED'
   | 'BID_QUANTITY_MISMATCH'
+  | 'ACCEPT_WINDOW_CLOSED'
+  | 'PRODUCTION_START_NOT_PERMITTED'
   | 'ALLOCATIONS_NOT_CONFIRMED'
   | 'ALLOCATIONS_NOT_DONE'
   | 'REASON_REQUIRED'
   | 'NOT_YET_EXPIRED';
 
 /**
- * Ngữ cảnh đánh giá guard. Mọi trường tùy chọn; guard cần trường nào mà thiếu ⇒ `MISSING_CONTEXT`.
+ * Ngữ cảnh đánh giá guard. `transition`/`availableEvents` luôn nhận một `RfqContext` (có thể rỗng);
+ * các trường bên trong tùy chọn; guard cần trường nào mà thiếu ⇒ `MISSING_CONTEXT`.
  * Dữ liệu RFQ "hợp lệ" (T1) do Zod trong `packages/contracts` kiểm, không lặp ở domain.
  */
 export interface RfqContext {
@@ -74,6 +77,13 @@ export interface RfqContext {
   readonly bid?: { readonly status: BidStatus; readonly quantityOffered: number } | undefined;
   /** START_PRODUCTION / CONFIRM_DELIVERY: trạng thái các Phân bổ đang hiệu lực. */
   readonly allocationStatuses?: readonly AllocationStatus[] | undefined;
+  /** START_PRODUCTION (T4): số hộ có Phân bổ đang hiệu lực trong đơn. Do tầng ứng dụng đếm từ dữ liệu. */
+  readonly householdCount?: number | undefined;
+  /**
+   * START_PRODUCTION (T4): tác nhân là chủ của Phân bổ duy nhất của đơn (tầng ứng dụng suy ra từ danh tính
+   * hộ/nghệ nhân đang đăng nhập). Chỉ có nghĩa khi `householdCount = 1`.
+   */
+  readonly actorOwnsSoleAllocation?: boolean | undefined;
   /** CANCEL / ADMIN_CANCEL: lý do bắt buộc. */
   readonly reason?: string | undefined;
 }

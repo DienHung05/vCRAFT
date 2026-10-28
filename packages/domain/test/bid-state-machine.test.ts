@@ -6,6 +6,8 @@ import {
   BID_STATUSES,
   type BidEvent,
   type BidStatus,
+  bidStructuralEvents,
+  bidStructuralNext,
   bidTransition,
   canReviseBid,
   RFQ_STATUSES,
@@ -35,9 +37,9 @@ const open = {
 
 describe('Bid state machine (SRS §4.2)', () => {
   describe.each(BID_STATUSES)('từ %s', (state) => {
-    it.each(BID_EVENTS)('sự kiện %s: đúng bảng', (event) => {
+    it.each(BID_EVENTS)('sự kiện %s: đúng bảng (tra cấu trúc)', (event) => {
       const expected = EXPECTED[state][event];
-      const result = bidTransition(state, event);
+      const result = bidStructuralNext(state, event);
       if (expected === undefined) {
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.error.code).toBe('INVALID_TRANSITION');
@@ -64,10 +66,24 @@ describe('Bid state machine (SRS §4.2)', () => {
     if (!r.ok) expect(r.error.code).toBe('MISSING_CONTEXT');
   });
 
-  it('property: availableBidEvents(s) chứa e ⇔ bidTransition(s, e) thành công', () => {
+  it('REVISE không có đường tắt bỏ guard: ctx rỗng ⇒ MISSING_CONTEXT dù cấu trúc cho phép', () => {
+    expect(bidStructuralNext('SUBMITTED', 'REVISE').ok).toBe(true);
+    expect(bidTransition('SUBMITTED', 'REVISE', {}).ok).toBe(false);
+    expect(availableBidEvents('SUBMITTED', {})).not.toContain('REVISE');
+  });
+
+  it('property: bidStructuralEvents(s) chứa e ⇔ bidStructuralNext(s, e) thành công', () => {
     fc.assert(
       fc.property(fc.constantFrom(...BID_STATUSES), fc.constantFrom(...BID_EVENTS), (s, e) => {
-        expect(availableBidEvents(s).includes(e)).toBe(bidTransition(s, e).ok);
+        expect(bidStructuralEvents(s).includes(e)).toBe(bidStructuralNext(s, e).ok);
+      }),
+    );
+  });
+
+  it('property: availableBidEvents(s, ctx) chứa e ⇔ bidTransition(s, e, ctx) thành công', () => {
+    fc.assert(
+      fc.property(fc.constantFrom(...BID_STATUSES), fc.constantFrom(...BID_EVENTS), (s, e) => {
+        expect(availableBidEvents(s, open).includes(e)).toBe(bidTransition(s, e, open).ok);
       }),
     );
   });

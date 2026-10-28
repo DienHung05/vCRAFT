@@ -86,6 +86,53 @@ export const noExistingBidFromArtisan: RfqGuard = (ctx) => {
     : undefined;
 };
 
+/**
+ * Hạn chốt cứng (SRS T3/T8, FR-RFQ-10): đã qua `biddingClosesAt + 7 ngày` hay chưa.
+ * DÙNG CHUNG cho EXPIRE (T8) và ACCEPT_BID (T3) để hai guard không bao giờ lệch biên:
+ * đúng mốc này, ACCEPT bị từ chối còn EXPIRE được phép.
+ */
+export function hasAcceptWindowElapsed(now: Date, biddingClosesAt: Date): boolean {
+  return now.getTime() >= biddingClosesAt.getTime() + RFQ_ACCEPT_GRACE_MS;
+}
+
+/**
+ * T3 / FR-RFQ-10: chỉ chốt khi `now < biddingClosesAt + 7 ngày`. Hạn là cứng, không phụ thuộc việc
+ * job EXPIRE chạy trễ (RFQ có thể vẫn ở BIDDING khi worker chậm).
+ */
+export const acceptWindowOpen: RfqGuard = (ctx) => {
+  if (ctx.now === undefined || ctx.biddingClosesAt === undefined) {
+    return missing('now', 'biddingClosesAt');
+  }
+  return hasAcceptWindowElapsed(ctx.now, ctx.biddingClosesAt)
+    ? new DomainError('ACCEPT_WINDOW_CLOSED', 'Buyer accept window (7 days) has elapsed', {
+        rule: 'T3',
+      })
+    : undefined;
+};
+
+/**
+ * T4: Admin điều phối luôn được bắt đầu sản xuất; Hộ/nghệ nhân chỉ khi đơn có đúng 1 hộ VÀ họ sở hữu
+ * Phân bổ duy nhất đó. Tác nhân khác đã bị `actorIn` chặn trước.
+ */
+export const productionStarterPermitted: RfqGuard = (ctx) => {
+  if (ctx.actor === 'ADMIN') return undefined;
+  if (ctx.householdCount === undefined || ctx.actorOwnsSoleAllocation === undefined) {
+    return missing('householdCount', 'actorOwnsSoleAllocation');
+  }
+  if (ctx.householdCount !== 1 || !ctx.actorOwnsSoleAllocation) {
+    return new DomainError(
+      'PRODUCTION_START_NOT_PERMITTED',
+      'Only Admin, or the sole household of a single-household order, can start production',
+      {
+        rule: 'T4',
+        householdCount: ctx.householdCount,
+        actorOwnsSoleAllocation: ctx.actorOwnsSoleAllocation,
+      },
+    );
+  }
+  return undefined;
+};
+
 /** T3: bid được chọn phải `SUBMITTED` và `quantityOffered = quantity` (FR-RFQ-08). */
 export const bidIsAcceptable: RfqGuard = (ctx) => {
   if (ctx.bid === undefined || ctx.quantity === undefined) return missing('bid', 'quantity');
@@ -148,7 +195,7 @@ export const acceptGracePeriodPassed: RfqGuard = (ctx) => {
   if (ctx.now === undefined || ctx.biddingClosesAt === undefined) {
     return missing('now', 'biddingClosesAt');
   }
-  return ctx.now.getTime() >= ctx.biddingClosesAt.getTime() + RFQ_ACCEPT_GRACE_MS
+  return hasAcceptWindowElapsed(ctx.now, ctx.biddingClosesAt)
     ? undefined
     : new DomainError('NOT_YET_EXPIRED', 'Buyer accept window (7 days) has not elapsed', {
         rule: 'T8',

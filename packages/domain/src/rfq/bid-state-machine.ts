@@ -69,6 +69,10 @@ const bidMachine = createStateMachine<BidStatus, BidEvent, BidContext, BidGuardC
   table: BID_TRANSITIONS,
 });
 
+/** Luôn chạy guard; `ctx` bắt buộc (truyền `{}` nếu sự kiện không cần dữ kiện). */
 export const bidTransition = bidMachine.transition;
 export const availableBidEvents = bidMachine.availableEvents;
+/** Tra cứu thuần cấu trúc bảng (SRS §4.2), KHÔNG chạy guard. */
+export const bidStructuralNext = bidMachine.structuralNext;
+export const bidStructuralEvents = bidMachine.structuralEvents;
 export const isBidTerminal = bidMachine.isTerminal;
