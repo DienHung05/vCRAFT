@@ -1,6 +1,7 @@
 import { HOUSEHOLD_STATUSES, PRODUCT_STATUSES } from '@vcraft/domain';
 import { z } from 'zod';
 import { IdSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
+import { JournalResponseSchema } from '../journal';
 
 /** Hộ sản xuất, xưởng, nghệ nhân, sản phẩm và các quyết định duyệt / xuất bản (vCRAFT-9hg.2, 9hg.3). */
 
@@ -134,6 +135,7 @@ export const TraceAvailabilityResponseSchema = z.discriminatedUnion('availabilit
     availability: z.literal('VISIBLE'),
     product: ProductResponseSchema,
     household: z.object({ name: z.string(), slug: z.string() }),
+    journal: JournalResponseSchema,
   }),
   z.object({ availability: z.literal('UNAVAILABLE'), traceCode: z.string() }),
 ]);

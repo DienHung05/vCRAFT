@@ -1,6 +1,5 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest';
-import { getProducts } from '@/lib/demo/data';
+
 import {
   type ChainContent,
   type ChainEntry,
@@ -10,7 +9,9 @@ import {
   sealChain,
   sha256Hex,
   verifyChain,
-} from '@/lib/hash-chain';
+} from '@vcraft/domain';
+import { describe, expect, it } from 'vitest';
+import { getProducts } from '@/lib/demo/data';
 
 const contents: ChainContent[] = [
   { stage: 'clay', at: '2026-09-02T07:40:00+07:00', note: 'Nhào đất.', mediaChecksums: ['aa'] },
