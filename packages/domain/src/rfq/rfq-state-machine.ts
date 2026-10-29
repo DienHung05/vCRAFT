@@ -7,7 +7,7 @@ import {
   allAllocationsDone,
   biddingDeadlinePassed,
   biddingStillOpen,
-  biddingWindowAtLeast24h,
+  biddingDeadlineInFuture,
   bidIsAcceptable,
   deliveryAfterBiddingDeadline,
   emailVerified,
@@ -36,7 +36,7 @@ export const RFQ_TRANSITIONS = {
       to: 'SENT',
       ref: 'T1',
       guards: [actorIn('BUYER_OWNER'), emailVerified],
-      inputGuards: [biddingWindowAtLeast24h, deliveryAfterBiddingDeadline],
+      inputGuards: [biddingDeadlineInFuture, deliveryAfterBiddingDeadline],
     },
     CANCEL: { to: 'CANCELLED', ref: 'T6', guards: [actorIn('BUYER_OWNER')] }, // nháp: không cần lý do
   },
@@ -79,6 +79,12 @@ export const RFQ_TRANSITIONS = {
     },
   },
   ACCEPTED: {
+    CANCEL: {
+      to: 'CANCELLED',
+      ref: 'T6',
+      guards: [actorIn('BUYER_OWNER')],
+      inputGuards: [reasonProvided],
+    },
     START_PRODUCTION: {
       to: 'IN_PRODUCTION',
       ref: 'T4',
@@ -92,6 +98,12 @@ export const RFQ_TRANSITIONS = {
     },
   },
   IN_PRODUCTION: {
+    ADMIN_CANCEL: {
+      to: 'CANCELLED',
+      ref: 'T7',
+      guards: [actorIn('ADMIN')],
+      inputGuards: [reasonProvided],
+    },
     CONFIRM_DELIVERY: {
       to: 'DELIVERED',
       ref: 'T5',

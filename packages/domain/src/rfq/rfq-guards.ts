@@ -2,7 +2,6 @@ import { DomainError } from '../shared/domain-error';
 import type { Guard } from '../shared/state-machine';
 import {
   RFQ_ACCEPT_GRACE_MS,
-  RFQ_MIN_BIDDING_WINDOW_MS,
   type RfqActorRole,
   type RfqContext,
   type RfqGuardCode,
@@ -38,16 +37,16 @@ export const emailVerified: RfqGuard = (ctx) => {
     : new DomainError('EMAIL_NOT_VERIFIED', 'Email must be verified before submitting an RFQ');
 };
 
-/** T1: `biddingClosesAt ≥ now + 24h`. */
-export const biddingWindowAtLeast24h: RfqGuard = (ctx) => {
+/** T1 (83g): `biddingClosesAt > now` — any future time, no 24h minimum. */
+export const biddingDeadlineInFuture: RfqGuard = (ctx) => {
   if (ctx.now === undefined || ctx.biddingClosesAt === undefined) {
     return missing('now', 'biddingClosesAt');
   }
-  return ctx.biddingClosesAt.getTime() >= ctx.now.getTime() + RFQ_MIN_BIDDING_WINDOW_MS
+  return ctx.biddingClosesAt.getTime() > ctx.now.getTime()
     ? undefined
     : new DomainError(
         'BIDDING_DEADLINE_TOO_SOON',
-        'biddingClosesAt must be at least 24h from now',
+        'biddingClosesAt must be in the future',
         {
           rule: 'T1',
         },

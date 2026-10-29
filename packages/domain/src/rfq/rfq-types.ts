@@ -35,8 +35,6 @@ export type RfqEvent = (typeof RFQ_EVENTS)[number];
 export const RFQ_ACTOR_ROLES = ['BUYER_OWNER', 'ARTISAN', 'ADMIN', 'SYSTEM'] as const;
 export type RfqActorRole = (typeof RFQ_ACTOR_ROLES)[number];
 
-/** T1: hạn chào giá tối thiểu sau thời điểm gửi. */
-export const RFQ_MIN_BIDDING_WINDOW_MS = 24 * 60 * 60 * 1000;
 /** T8 / FR-RFQ-10: thời gian Buyer được chốt sau hạn chào giá trước khi RFQ có bid hết hạn. */
 export const RFQ_ACCEPT_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
 
