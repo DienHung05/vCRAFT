@@ -28,7 +28,7 @@ export class CooperativeQuotation extends BaseEntity {
   @Property({ type: new BigIntType('number') })
   productionTotalVnd!: number;
 
-  @Property({ type: new BigIntType('number') })
+  @Property({ type: new BigIntType('number'), ignoreSchemaChanges: ['default'] })
   additionalChargeVnd: Opt<number> = 0;
 
   @Property({ type: new BigIntType('number') })
