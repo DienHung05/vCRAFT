@@ -204,7 +204,7 @@
       "unavailableText": "Verification needs Web Crypto, which is only available when the page is opened over HTTPS. The log below is not confirmed intact.",
       "emptyTitle": "No log to check",
       "emptyText": "This demo product has no production entries yet.",
-      "scope": "An intact chain only shows the log was not changed after it was written. It does not prove that what the log says is true in the real world."
+      "sentence": "Journal integrity: this journal has not been silently changed, deleted or reordered since it was recorded. It does not prove the stages happened as written, nor who physically made the object."
     },
     "scans": "{count, plural, one {# scan} other {# scans}}",
     "timelineTitle": "A journey through fire",
@@ -216,6 +216,10 @@
     "ctaVisit": "Visit the workshop",
     "ctaRfq": "Order in bulk",
     "proofAlt": "Photo of the {stage} step",
+    "corrects": "Corrects entry {n}",
+    "correctedBy": "Corrected by entry {n}",
+    "skipped": "Skipped earlier stages: {reason}",
+    "inProgress": "In progress · not yet recorded: {stages}",
     "hashHint": "SHA-256 hash of this entry, chained to the one before it."
   },
   "rfq": {
@@ -407,5 +411,31 @@
         "text": "The allocation plan for request {code} was only trialled in this browser. No bid has reached the buyer and no household has been notified."
       }
     }
+  },
+  "exhibition": {
+    "makersTitle": "The makers",
+    "makersLead": "Credit for making the object goes to each person for the part they did.",
+    "madeBy": "Made by",
+    "postedBy": "This page is posted by the administration of {household}; the poster is not credited as a maker.",
+    "illustrative": "People and households in this demonstration are illustrative.",
+    "evidenceTitle": "Evidence of making",
+    "evidenceText": "Every object carries a trace seal that leads to its production journal, with hashes you can check yourself.",
+    "evidenceCta": "Read the journal of {product}",
+    "visitTitle": "Visit",
+    "visitLead": "Places that welcome visitors are listed apart from workshops used only for production.",
+    "showroomsTitle": "Showrooms open to visitors",
+    "showroomsEmpty": "This household has no place open to visitors yet.",
+    "productionTitle": "Production workshops",
+    "productionNote": "Used for making only, not open to visitors.",
+    "mapTitle": "Village map",
+    "listTitle": "List of places",
+    "listVisitable": "visitors welcome",
+    "listProduction": "production",
+    "wholesaleTitle": "Wholesale orders",
+    "wholesaleText": "Send a private quotation request to the household, or ask the village administration to coordinate several households.",
+    "wholesaleCta": "Request a quotation",
+    "homeLink": "Back to the exhibition home",
+    "householdTitle": "The household behind this object",
+    "householdCta": "Read the story of {household}"
   }
 }

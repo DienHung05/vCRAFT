@@ -11,7 +11,18 @@ import {
   type PostgreSqlDriver,
 } from '@mikro-orm/postgresql';
 import { SeedManager } from '@mikro-orm/seeder';
-import { BaseEntity, OutboxEvent } from './entities/index.js';
+import {
+  AppUser,
+  Artisan,
+  AuditLog,
+  BaseEntity,
+  Household,
+  JournalEntry,
+  OutboxEvent,
+  Product,
+  ProductMaker,
+  Workshop,
+} from './entities/index.js';
 
 /** CSDL được hỗ trợ (ADR-05: PostgreSQL chính, MySQL kiểm chứng độc lập CSDL). */
 export const DB_DRIVERS = ['postgresql', 'mysql'] as const;
@@ -98,7 +109,18 @@ export function createMikroOrmOptions(
     user: env.DB_USER ?? 'vcraft',
     password: env.DB_PASSWORD ?? 'vcraft',
     driverOptions: resolveDriverOptions(env),
-    entities: [BaseEntity, OutboxEvent],
+    entities: [
+      BaseEntity,
+      OutboxEvent,
+      AppUser,
+      AuditLog,
+      Household,
+      Artisan,
+      Workshop,
+      Product,
+      JournalEntry,
+      ProductMaker,
+    ],
     metadataProvider: ReflectMetadataProvider,
     extensions: [Migrator, SeedManager],
     // Chỉ dùng để chạy lệnh CLI từ nguồn TS; migration chạy khi deploy dùng chính các file này.

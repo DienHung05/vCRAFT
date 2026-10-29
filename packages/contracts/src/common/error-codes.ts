@@ -36,6 +36,35 @@ export const ERROR_CATALOG = {
   INVALID_TRANSITION: { status: 409, title: 'Invalid state transition' },
   /** Vi phạm ràng buộc UNIQUE không thuộc mã nghiệp vụ riêng (email, slug...). */
   CONFLICT_DUPLICATE: { status: 409, title: 'Duplicate resource' },
+  /** Luật nghiệp vụ của domain bị vi phạm mà không có mã riêng; `detail` mang mã domain. */
+  BUSINESS_RULE_VIOLATED: { status: 409, title: 'Business rule violated' },
+
+  // --- HOUSEHOLD: duyệt hộ & xuất bản (vCRAFT-9hg.3) ---
+  /** Hộ chưa được Ban quản lý chấp nhận hoặc đang tạm ngừng nên không xuất bản / nhận báo giá được. */
+  HOUSEHOLD_NOT_APPROVED: { status: 409, title: 'Household is not approved' },
+  /** Tài khoản đại diện bị khóa: nhật ký bị đóng băng, trang đã xuất bản vẫn còn. */
+  HOUSEHOLD_ACCOUNT_LOCKED: { status: 403, title: 'Representative account is locked' },
+  /** Ghi công người làm: phải có ít nhất một người, thuộc hộ, mỗi người một lần. */
+  MAKER_REQUIRED: { status: 422, title: 'At least one maker is required' },
+  MAKER_NOT_IN_HOUSEHOLD: { status: 422, title: 'Maker does not belong to the household' },
+  MAKER_DUPLICATED: { status: 422, title: 'Maker credited more than once' },
+
+  // --- JOURNAL: nhật ký sản xuất (vCRAFT-9hg.4) ---
+  /** Bỏ qua công đoạn chưa ghi mà thiếu một dòng lý do. */
+  JOURNAL_SKIP_REASON_REQUIRED: { status: 422, title: 'Skipping a stage requires a reason' },
+  /** Mốc bị đính chính không thuộc nhật ký này. */
+  JOURNAL_CORRECTION_TARGET_NOT_FOUND: { status: 422, title: 'Superseded entry not found' },
+  /** Mốc đã có bản đính chính; hãy đính chính bản mới nhất. */
+  JOURNAL_CORRECTION_TARGET_SUPERSEDED: { status: 409, title: 'Entry already corrected' },
+  /** Chưa xuất bản thì sửa thẳng mốc, không cần mốc đính chính. */
+  JOURNAL_CORRECTION_BEFORE_PUBLICATION: {
+    status: 409,
+    title: 'Correct by editing before publication',
+  },
+  /** Đã xuất bản: không sửa/xóa mốc, chỉ ghi thêm mốc đính chính. */
+  JOURNAL_PUBLISHED_IMMUTABLE: { status: 409, title: 'Published journal entries are immutable' },
+  /** Chuỗi băm đang lưu không còn khớp: từ chối ghi thêm để không che dấu thay đổi. */
+  JOURNAL_INTEGRITY_BROKEN: { status: 409, title: 'Journal hash chain is broken' },
 
   // --- RFQ: yêu cầu báo giá, chào giá, phân bổ (SRS §4) ---
   /** BR-L3: mỗi hộ tối đa một bid cho mỗi RFQ (sửa = tăng revision). */

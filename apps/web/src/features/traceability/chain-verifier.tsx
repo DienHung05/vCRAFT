@@ -1,10 +1,10 @@
 'use client';
 
+import { type ChainEntry, type ChainFailureReason, verifyChain } from '@vcraft/domain';
 import { Badge, Crackle, cn, SealMark } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import type { LogStage } from '@/lib/demo/data';
-import { type ChainEntry, type ChainFailureReason, verifyChain } from '@/lib/hash-chain';
 
 type State =
   | { status: 'checking' }
@@ -100,32 +100,36 @@ export function ChainVerifier({ productId, entries, household, subtle }: ChainVe
             {broken ? '!' : '?'}
           </span>
         )}
-        <div role="status" aria-live="polite">
-          <h2 id="verify-title" className={cn('text-h3', broken ? 'text-seal' : 'text-ink')}>
-            {title}
-          </h2>
-          <p className="mt-1 text-small text-ink/85">
-            {state.status === 'ok'
-              ? t('okText', { count: state.count })
-              : state.status === 'checking'
-                ? t('checkingText')
-                : state.status === 'unavailable'
-                  ? t('unavailableText')
-                  : state.status === 'empty'
-                    ? t('emptyText')
-                    : t(`reason.${state.reason}`)}
-          </p>
-          {state.status === 'broken' ? (
-            <p className="mt-1 text-small font-medium text-seal">
-              {t('brokenAt', {
-                n: state.index + 1,
-                stage: stages(`${entries[state.index]?.stage ?? 'clay'}.name` as const),
-              })}{' '}
-              <a href={`#log-${state.index + 1}`} className="underline underline-offset-2">
-                {t('brokenLink', { n: state.index + 1 })}
-              </a>
+        <div>
+          <div role="status" aria-live="polite">
+            <h2 id="verify-title" className={cn('text-h3', broken ? 'text-seal' : 'text-ink')}>
+              {title}
+            </h2>
+            <p className="mt-1 text-small text-ink/85">
+              {state.status === 'ok'
+                ? t('okText', { count: state.count })
+                : state.status === 'checking'
+                  ? t('checkingText')
+                  : state.status === 'unavailable'
+                    ? t('unavailableText')
+                    : state.status === 'empty'
+                      ? t('emptyText')
+                      : t(`reason.${state.reason}`)}
             </p>
-          ) : null}
+            {state.status === 'broken' ? (
+              <p className="mt-1 text-small font-medium text-seal">
+                {t('brokenAt', {
+                  n: state.index + 1,
+                  stage: stages(`${entries[state.index]?.stage ?? 'clay'}.name` as const),
+                })}{' '}
+                <a href={`#log-${state.index + 1}`} className="underline underline-offset-2">
+                  {t('brokenLink', { n: state.index + 1 })}
+                </a>
+              </p>
+            ) : null}
+          </div>
+          {/* Câu cố định cạnh ấn (vCRAFT-9hg.4): nói rõ "Toàn vẹn nhật ký" bảo đảm gì và không bảo đảm gì. */}
+          <p className="mt-3 text-small text-ink/85">{t('sentence')}</p>
         </div>
       </div>
 
@@ -137,7 +141,6 @@ export function ChainVerifier({ productId, entries, household, subtle }: ChainVe
       </div>
       <p className="relative mt-4 text-small text-ink/85">{t('match', { household })}</p>
       <p className="relative mt-2 text-small text-ash">{t('demoNote')}</p>
-      <p className="relative mt-2 text-small text-ash">{t('scope')}</p>
     </section>
   );
 }
