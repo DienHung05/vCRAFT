@@ -97,14 +97,16 @@ describe('chuỗi băm có đính chính và lý do bỏ qua', () => {
   ];
 
   it('mốc không có trường tùy chọn băm y như định dạng cũ', async () => {
+    const [first] = contents;
+    if (!first) throw new Error('thiếu dữ liệu');
     const withUndefined = await computeEntryHash('p', {
-      ...contents[0]!,
+      ...first,
       seq: 0,
       prevHash: 'GENESIS',
       supersedesSeq: undefined,
       skipReason: '',
     });
-    const plain = await computeEntryHash('p', { ...contents[0]!, seq: 0, prevHash: 'GENESIS' });
+    const plain = await computeEntryHash('p', { ...first, seq: 0, prevHash: 'GENESIS' });
     expect(withUndefined).toBe(plain);
   });
 

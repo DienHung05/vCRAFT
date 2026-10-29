@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-/** Mã truy xuất của sản phẩm mẫu có đủ 7 mốc nhật ký (dữ liệu minh họa của apps/web). */
+/** Mã truy xuất của sản phẩm mẫu có đủ 7 công đoạn và một mốc đính chính (dữ liệu minh họa của apps/web). */
 const CODE = 'BT7K2QXM';
 
 const LOCALES = [

@@ -66,6 +66,20 @@ export type CreateProductRequest = z.infer<typeof CreateProductRequestSchema>;
 
 export const WithdrawProductRequestSchema = z.object({ reason: ReasonSchema });
 
+/** Ghi công người làm cho sản phẩm (thay toàn bộ danh sách, theo thứ tự hiển thị). */
+export const SetProductMakersRequestSchema = z.object({
+  makers: z
+    .array(
+      z.object({
+        artisanId: IdSchema,
+        contribution: z.string().trim().min(2, 'Ghi rõ phần việc, vd. "Vuốt dáng"').max(160),
+      }),
+    )
+    .min(1, 'Ghi công ít nhất một người làm')
+    .max(20),
+});
+export type SetProductMakersRequest = z.infer<typeof SetProductMakersRequestSchema>;
+
 // --- Response ---
 
 export const WorkshopResponseSchema = z.object({
@@ -90,6 +104,15 @@ export const ArtisanResponseSchema = z.object({
 });
 export type ArtisanDto = z.infer<typeof ArtisanResponseSchema>;
 
+/** Một người làm được ghi công: tên riêng và phần việc (vCRAFT-9hg.6). */
+export const MakerCreditSchema = z.object({
+  artisanId: IdSchema,
+  name: z.string(),
+  craftRole: z.string().nullable(),
+  contribution: z.string(),
+});
+export type MakerCreditDto = z.infer<typeof MakerCreditSchema>;
+
 export const ProductResponseSchema = z.object({
   id: IdSchema,
   version: VersionSchema,
@@ -101,6 +124,9 @@ export const ProductResponseSchema = z.object({
   batchSize: z.int().nullable(),
   status: ProductStatusSchema,
   publishedAt: IsoDateTimeSchema.nullable(),
+  makers: z.array(MakerCreditSchema),
+  /** Người đăng luôn là ban điều hành hộ, không phải người làm. */
+  postedBy: z.literal('HOUSEHOLD_ADMINISTRATION'),
 });
 export type ProductDto = z.infer<typeof ProductResponseSchema>;
 
@@ -113,6 +139,11 @@ export const PublicHouseholdResponseSchema = z.object({
   village: z.string().nullable(),
   artisans: z.array(ArtisanResponseSchema),
   workshops: z.array(WorkshopResponseSchema),
+  /** Phòng trưng bày đón khách, tách khỏi các xưởng chỉ để sản xuất. */
+  visit: z.object({
+    showrooms: z.array(WorkshopResponseSchema),
+    productionWorkshops: z.array(WorkshopResponseSchema),
+  }),
   products: z.array(ProductResponseSchema),
 });
 export type PublicHouseholdDto = z.infer<typeof PublicHouseholdResponseSchema>;
@@ -140,3 +171,23 @@ export const TraceAvailabilityResponseSchema = z.discriminatedUnion('availabilit
   z.object({ availability: z.literal('UNAVAILABLE'), traceCode: z.string() }),
 ]);
 export type TraceAvailabilityDto = z.infer<typeof TraceAvailabilityResponseSchema>;
+
+/**
+ * Ghim bản đồ làng (chỉ hộ đã duyệt, chỉ xưởng có tọa độ). Trang luôn hiện kèm danh sách chữ làm
+ * phương án dễ tiếp cận; bản đồ chỉ là minh họa thêm (vCRAFT-9hg.6).
+ */
+export const MapPinSchema = z.object({
+  workshopId: IdSchema,
+  workshopName: z.string(),
+  address: z.string(),
+  purpose: WorkshopPurposeSchema,
+  visitable: z.boolean(),
+  visitingInfo: z.string().nullable(),
+  lat: z.number(),
+  lng: z.number(),
+  household: z.object({ name: z.string(), slug: z.string() }),
+});
+export type MapPinDto = z.infer<typeof MapPinSchema>;
+
+export const MapPinsResponseSchema = z.object({ data: z.array(MapPinSchema) });
+export type MapPinsDto = z.infer<typeof MapPinsResponseSchema>;

@@ -11,7 +11,14 @@ import type { LogEntry } from '@/lib/demo/data';
  * Mốc đính chính và mốc gốc cùng hiện, nối với nhau bằng liên kết (vCRAFT-9hg.4); nhật ký chưa có
  * công đoạn `finish` được ghi nhãn "đang làm" kèm tên các công đoạn chưa ghi.
  */
-export async function FireTimeline({ entries }: { entries: readonly LogEntry[] }) {
+export async function FireTimeline({
+  entries,
+  newestFirst = false,
+}: {
+  entries: readonly LogEntry[];
+  /** Trang QR (biến thể C) đọc từ mốc mới nhất ngược về; số thứ tự và neo `#log-N` vẫn theo `seq`. */
+  newestFirst?: boolean;
+}) {
   const [stages, t, format] = await Promise.all([
     getTranslations('stages'),
     getTranslations('trace'),
@@ -40,10 +47,10 @@ export async function FireTimeline({ entries }: { entries: readonly LogEntry[] }
           aria-hidden="true"
           className="absolute top-2 bottom-2 left-[0.9rem] w-0.5 rounded-full bg-linear-to-b from-ash/60 via-clay to-seal"
         />
-        {entries.map((e, i) => (
+        {(newestFirst ? [...entries].reverse() : entries).map((e) => (
           <li
             key={e.hash}
-            id={`log-${i + 1}`}
+            id={`log-${e.seq + 1}`}
             className="relative grid scroll-mt-6 grid-cols-[2rem_1fr] gap-4 rounded-card pb-10 last:pb-0 target:bg-seal/8 target:ring-2 target:ring-seal/50"
           >
             <span
@@ -53,7 +60,7 @@ export async function FireTimeline({ entries }: { entries: readonly LogEntry[] }
             />
             <div>
               <p className="font-mono text-[0.75rem] tracking-wider text-ash">
-                {String(i + 1).padStart(2, '0')} ·{' '}
+                {String(e.seq + 1).padStart(2, '0')} ·{' '}
                 <time dateTime={e.at}>{format.dateTime(new Date(e.at), 'stamp')}</time>
               </p>
               <h3 className="mt-1 text-h3">{stages(`${e.stage}.name`)}</h3>

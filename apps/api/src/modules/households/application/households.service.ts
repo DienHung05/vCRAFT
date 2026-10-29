@@ -6,12 +6,23 @@ import type {
   CreateProductRequest,
   CreateWorkshopRequest,
   HouseholdDto,
+  MapPinsDto,
   ProductDto,
   PublicHouseholdDto,
+  SetProductMakersRequest,
   TraceAvailabilityDto,
 } from '@vcraft/contracts';
-import { AppUser, Artisan, AuditLog, Household, Product, Workshop } from '@vcraft/database';
 import {
+  AppUser,
+  Artisan,
+  AuditLog,
+  Household,
+  Product,
+  ProductMaker,
+  Workshop,
+} from '@vcraft/database';
+import {
+  checkMakerCredits,
   type HouseholdEvent,
   type HouseholdStatus,
   householdTransition,
@@ -29,6 +40,7 @@ import {
   type HouseholdParts,
   toArtisanDto,
   toHouseholdDto,
+  toMapPinDto,
   toProductDto,
   toPublicHouseholdDto,
   toWorkshopDto,
@@ -64,7 +76,12 @@ export class HouseholdsService {
         representative: user,
       });
       await em.flush();
-      return toHouseholdDto(household, { artisans: [], workshops: [], products: [] });
+      return toHouseholdDto(household, {
+        artisans: [],
+        workshops: [],
+        products: [],
+        makers: new Map(),
+      });
     });
   }
 
@@ -171,7 +188,34 @@ export class HouseholdsService {
         });
       }
       await em.flush();
-      return toProductDto(product);
+      return toProductDto(product, (await this.makersOf(em, [product])).get(product.id));
+    });
+  }
+
+  /** Ghi công người làm (thay cả danh sách). Người đăng không bao giờ được ghi là người làm. */
+  async setMakers(
+    actor: Actor,
+    productId: string,
+    input: SetProductMakersRequest,
+  ): Promise<ProductDto> {
+    return this.orm.em.fork().transactional(async (em) => {
+      const household = await this.ownWritableHousehold(em, actor);
+      const product = await em.findOne(Product, { id: productId, household });
+      if (!product) throw notFound();
+      const artisans = await em.find(Artisan, { household });
+      unwrap(checkMakerCredits(input.makers, new Set(artisans.map((a) => a.id))));
+      for (const maker of await em.find(ProductMaker, { product })) em.remove(maker);
+      await em.flush();
+      input.makers.forEach((credit, position) => {
+        em.create(ProductMaker, {
+          product,
+          artisan: em.getReference(Artisan, credit.artisanId),
+          contribution: credit.contribution,
+          position,
+        });
+      });
+      await em.flush();
+      return toProductDto(product, (await this.makersOf(em, [product])).get(product.id));
     });
   }
 
@@ -243,10 +287,21 @@ export class HouseholdsService {
     }
     return {
       availability,
-      product: toProductDto(product),
+      product: toProductDto(product, (await this.makersOf(em, [product])).get(product.id)),
       household: { name: product.household.name, slug: product.household.slug },
       journal: await loadJournal(em, product),
     };
+  }
+
+  /** Ghim bản đồ làng: xưởng có tọa độ của mọi hộ đang được duyệt. */
+  async mapPins(): Promise<MapPinsDto> {
+    const em = this.orm.em.fork();
+    const workshops = await em.find(
+      Workshop,
+      { household: { status: 'APPROVED' }, lat: { $ne: null }, lng: { $ne: null } },
+      { populate: ['household'], orderBy: { household: { name: 'asc' }, name: 'asc' } },
+    );
+    return { data: workshops.map(toMapPinDto) };
   }
 
   // --- Nội bộ ---
@@ -277,7 +332,26 @@ export class HouseholdsService {
         orderBy: { createdAt: 'asc' },
       }),
     ]);
-    return { artisans, workshops, products };
+    return { artisans, workshops, products, makers: await this.makersOf(em, products) };
+  }
+
+  private async makersOf(
+    em: EntityManager,
+    products: readonly Product[],
+  ): Promise<Map<string, ProductMaker[]>> {
+    const byProduct = new Map<string, ProductMaker[]>();
+    if (products.length === 0) return byProduct;
+    const makers = await em.find(
+      ProductMaker,
+      { product: { $in: products.map((p) => p.id) } },
+      { populate: ['artisan'], orderBy: { position: 'asc' } },
+    );
+    for (const maker of makers) {
+      const list = byProduct.get(maker.product.id) ?? [];
+      list.push(maker);
+      byProduct.set(maker.product.id, list);
+    }
+    return byProduct;
   }
 
   private async uniqueTraceCode(em: EntityManager): Promise<string> {

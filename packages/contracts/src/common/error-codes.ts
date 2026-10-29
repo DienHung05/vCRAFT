@@ -44,6 +44,10 @@ export const ERROR_CATALOG = {
   HOUSEHOLD_NOT_APPROVED: { status: 409, title: 'Household is not approved' },
   /** Tài khoản đại diện bị khóa: nhật ký bị đóng băng, trang đã xuất bản vẫn còn. */
   HOUSEHOLD_ACCOUNT_LOCKED: { status: 403, title: 'Representative account is locked' },
+  /** Ghi công người làm: phải có ít nhất một người, thuộc hộ, mỗi người một lần. */
+  MAKER_REQUIRED: { status: 422, title: 'At least one maker is required' },
+  MAKER_NOT_IN_HOUSEHOLD: { status: 422, title: 'Maker does not belong to the household' },
+  MAKER_DUPLICATED: { status: 422, title: 'Maker credited more than once' },
 
   // --- JOURNAL: nhật ký sản xuất (vCRAFT-9hg.4) ---
   /** Bỏ qua công đoạn chưa ghi mà thiếu một dòng lý do. */
