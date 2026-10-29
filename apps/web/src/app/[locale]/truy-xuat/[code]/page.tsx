@@ -4,12 +4,19 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ImageSlot } from '@/components/image-slot';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
+import { MakerCredits } from '@/features/exhibition/maker-credits';
+import { VisitSection } from '@/features/exhibition/visit-section';
 import { ChainVerifier } from '@/features/traceability/chain-verifier';
 import { FireTimeline } from '@/features/traceability/fire-timeline';
 import { TraceQr } from '@/features/traceability/trace-qr';
-import { VillageMiniMap } from '@/features/village-map/village-mini-map';
 import { Link } from '@/i18n/navigation';
-import { demoParams, getArtisan, getProductByCode } from '@/lib/demo/data';
+import {
+  demoParams,
+  getArtisan,
+  getProductByCode,
+  householdWorkshops,
+  productMakers,
+} from '@/lib/demo/data';
 import { resolveLocale } from '@/lib/locale';
 import { isTraceCode, traceShortUrl } from '@/lib/site';
 
@@ -26,8 +33,9 @@ export async function generateMetadata({
 }
 
 /**
- * Landing truy xuất (FR-TRC-04, BRAND §9): mobile-first như một cuốn sổ nghề — ảnh → ấn xác thực →
- * lời nghệ nhân → dòng thời gian lửa → bản đồ mini → chứng nhận → "Ghé xưởng".
+ * Landing truy xuất — biến thể C "quét mã mở sổ" (vCRAFT-9hg.6), mobile-first: ấn xác thực và nhật ký
+ * (mốc mới nhất trước) → người làm → món đồ và hộ → ghé thăm (phòng trưng bày tách khỏi xưởng, bản đồ
+ * kèm danh sách) → chứng nhận → tem QR, kèm liên kết về trang chủ.
  */
 export default async function TracePage({ params }: PageProps<'/[locale]/truy-xuat/[code]'>) {
   await resolveLocale(params);
@@ -35,7 +43,7 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
   // Mã sai định dạng (BR-04) là đường dẫn sai ⇒ 404; mã đúng định dạng mà không có trong hệ thống
   // thì hiện cảnh báo hàng không xác thực bên dưới (FR-TRC-08).
   if (!isTraceCode(code)) notFound();
-  const t = await getTranslations('trace');
+  const [t, ex] = await Promise.all([getTranslations('trace'), getTranslations('exhibition')]);
   const product = await getProductByCode(code);
   const artisan = product ? await getArtisan(product.artisanSlug) : null;
 
@@ -67,24 +75,13 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
           </section>
         ) : (
           <>
-            <ImageSlot
-              alt={product.name}
-              tint={product.tint}
-              ratio="4/5"
-              className="mx-5 grid place-items-center"
-            >
-              <VaseFigure className="h-3/5" body="var(--color-paper)" band={product.tint} />
-            </ImageSlot>
-
-            <section className="px-5 pt-8">
+            <section className="px-5 pt-6">
               <p className="text-small text-ash">{t('scanned')}</p>
               <h1 className="mt-1 text-h1">{product.name}</h1>
-              <p className="mt-2 text-ash">
-                {artisan.household} · {artisan.artisanName}
-              </p>
+              <p className="mt-2 text-ash">{artisan.household}</p>
             </section>
 
-            {/* Ấn xác thực (BRAND §6.3 #2): chỉ đóng ấn khi trình duyệt tự kiểm chuỗi băm khớp (FR-TRC-05). */}
+            {/* Biến thể C: mở ngay bằng ấn và nhật ký. Ấn chỉ đóng khi trình duyệt tự kiểm chuỗi băm khớp. */}
             <ChainVerifier
               productId={product.code}
               entries={product.log}
@@ -92,45 +89,51 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
             />
             <p className="mx-5 mt-3 text-small text-ash">{t('scans', { count: product.scans })}</p>
 
-            {product.artisanNote ? (
-              <figure className="px-5 pt-10">
-                <blockquote className="font-display text-h3 leading-snug text-ink type-soft">
-                  “{product.artisanNote}”
-                </blockquote>
-                <figcaption className="mt-4 flex items-center gap-3 text-small text-ash">
-                  <ImageSlot
-                    alt={artisan.artisanName}
-                    tint={artisan.tint}
-                    className="size-10 rounded-full"
-                  />
-                  {artisan.artisanName} · {artisan.title}
-                </figcaption>
-              </figure>
-            ) : null}
-
             <section aria-labelledby="journey-title" className="px-5 pt-12">
               <h2 id="journey-title">{t('timelineTitle')}</h2>
               <p className="mt-2 mb-8 text-small text-ash">{t('timelineLead')}</p>
-              <FireTimeline entries={product.log} />
+              <FireTimeline entries={product.log} newestFirst />
             </section>
 
-            <section aria-labelledby="where-title" className="px-5 pt-12">
-              <h2 id="where-title">{t('whereTitle')}</h2>
-              <p className="mt-2 mb-5 text-small text-ash">{artisan.address}</p>
-              <VillageMiniMap
-                label={t('whereTitle')}
-                pins={[
-                  {
-                    id: artisan.slug,
-                    x: 50,
-                    y: 58,
-                    open: artisan.openNow,
-                    label: artisan.household,
-                  },
-                ]}
-                highlight={artisan.slug}
-              />
+            <MakerCredits
+              compact
+              className="px-5 pt-12"
+              household={artisan.household}
+              makers={productMakers(product, artisan).map((m) => ({
+                name: m.name,
+                detail: m.contribution,
+              }))}
+            />
+
+            {/* Đi ngược về món đồ và hộ làm ra nó. */}
+            <section aria-labelledby="household-title" className="px-5 pt-12">
+              <h2 id="household-title">{ex('householdTitle')}</h2>
+              <ImageSlot
+                alt={product.name}
+                tint={product.tint}
+                ratio="4/5"
+                className="mt-6 grid place-items-center"
+              >
+                <VaseFigure className="h-3/5" body="var(--color-paper)" band={product.tint} />
+              </ImageSlot>
+              {product.artisanNote ? (
+                <blockquote className="mt-6 font-display text-h3 leading-snug text-ink type-soft">
+                  “{product.artisanNote}”
+                </blockquote>
+              ) : null}
+              <Link
+                href={{ pathname: '/nghe-nhan/[slug]', params: { slug: artisan.slug } }}
+                className={`${buttonVariants({ variant: 'secondary' })} mt-6`}
+              >
+                {ex('householdCta', { household: artisan.household })}
+              </Link>
             </section>
+
+            <VisitSection
+              className="px-5 pt-12"
+              household={artisan.household}
+              workshops={householdWorkshops(artisan)}
+            />
 
             {artisan.certifications.length > 0 ? (
               <section aria-labelledby="certs-title" className="px-5 pt-12">
@@ -167,15 +170,15 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                   {traceShortUrl(product.code).replace(/^https?:\/\//, '')}
                 </a>
               </p>
+              <Link href="/" className="mt-6 text-small text-clay underline underline-offset-4">
+                {ex('homeLink')}
+              </Link>
             </section>
 
             <nav className="sticky bottom-0 mt-12 flex gap-3 border-ink/10 border-t bg-paper/90 px-5 py-4 backdrop-blur-md">
-              <Link
-                href={{ pathname: '/nghe-nhan/[slug]', params: { slug: artisan.slug } }}
-                className={`${buttonVariants({ size: 'lg' })} flex-1`}
-              >
+              <a href="#workshop" className={`${buttonVariants({ size: 'lg' })} flex-1`}>
                 {t('ctaVisit')}
-              </Link>
+              </a>
               <Link
                 href="/yeu-cau-bao-gia"
                 className={`${buttonVariants({ variant: 'secondary', size: 'lg' })} flex-1`}

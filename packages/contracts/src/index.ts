@@ -3,3 +3,5 @@
  */
 export * from './common';
 export * from './rfq';
+export * from './households';
+export * from './journal';

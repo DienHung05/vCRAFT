@@ -1,8 +1,12 @@
 /**
  * Chuỗi băm nhật ký sản xuất (SRS BR-01, FR-PRD-05, FR-TRC-05).
  *
- *   hash_i = SHA-256(canonicalJSON{ productId, seq, stageCode, occurredAt, note, mediaChecksums[], prevHash })
+ *   hash_i = SHA-256(canonicalJSON{ productId, seq, stageCode, occurredAt, note, mediaChecksums[], prevHash,
+ *                                   supersedesSeq?, skipReason? })
  *   hash_0.prevHash = "GENESIS"
+ *
+ * `occurredAt` là ngày hộ khai (không phải giờ lưu). `supersedesSeq` (mốc đính chính) và `skipReason`
+ * (bỏ qua công đoạn) chỉ có mặt khi khác rỗng, nên chuỗi cũ không có hai trường này vẫn băm như trước.
  *
  * `canonicalJSON`: khóa đối tượng sắp tăng dần theo thứ tự code unit, không khoảng trắng, chuỗi thoát
  * theo `JSON.stringify`, mã hóa UTF-8. Mảng giữ nguyên thứ tự. `occurredAt` được băm đúng chuỗi đã lưu.
@@ -21,6 +25,10 @@ export interface ChainContent {
   note: string;
   /** SHA-256 (hex) của từng ảnh minh chứng. */
   mediaChecksums: readonly string[];
+  /** `seq` của mốc bị mốc này đính chính (GLOSSARY: Correction entry). */
+  supersedesSeq?: number | undefined;
+  /** Lý do bỏ qua công đoạn trước đó chưa từng ghi. */
+  skipReason?: string | undefined;
 }
 
 /** Một mốc đã niêm phong: nội dung + vị trí + dấu băm. */
@@ -51,12 +59,27 @@ function toHex(buffer: ArrayBuffer): string {
   return Array.from(new Uint8Array(buffer), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+/**
+ * Phần Web Crypto (`crypto.subtle`) cần dùng. Khai báo cấu trúc tối giản để domain không phụ thuộc
+ * lib DOM hay Node; `SubtleCrypto` của trình duyệt và của Node (≥ 19) đều thỏa.
+ */
+export interface SubtleCrypto {
+  digest(algorithm: 'SHA-256', data: Uint8Array<ArrayBuffer>): Promise<ArrayBuffer>;
+}
+
+interface WebCryptoGlobals {
+  crypto: { subtle: SubtleCrypto };
+  TextEncoder: new () => { encode(text: string): Uint8Array<ArrayBuffer> };
+}
+
+const runtime = globalThis as unknown as WebCryptoGlobals;
+
 /** SHA-256 của chuỗi UTF-8, trả về hex thường 64 ký tự. */
 export async function sha256Hex(
   text: string,
-  subtle: SubtleCrypto = globalThis.crypto.subtle,
+  subtle: SubtleCrypto = runtime.crypto.subtle,
 ): Promise<string> {
-  return toHex(await subtle.digest('SHA-256', new TextEncoder().encode(text)));
+  return toHex(await subtle.digest('SHA-256', new runtime.TextEncoder().encode(text)));
 }
 
 /** Dấu băm của mốc `seq` thuộc sản phẩm `productId`, nối với `prevHash`. */
@@ -74,6 +97,8 @@ export function computeEntryHash(
       note: entry.note,
       mediaChecksums: entry.mediaChecksums,
       prevHash: entry.prevHash,
+      supersedesSeq: entry.supersedesSeq ?? undefined,
+      skipReason: entry.skipReason || undefined,
     }),
     subtle,
   );

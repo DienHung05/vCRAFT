@@ -4,9 +4,16 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ImageSlot } from '@/components/image-slot';
 import { ProductCard } from '@/features/catalog/product-card';
-import { VillageMiniMap } from '@/features/village-map/village-mini-map';
+import { MakerCredits } from '@/features/exhibition/maker-credits';
+import { VisitSection } from '@/features/exhibition/visit-section';
 import { Link } from '@/i18n/navigation';
-import { demoParams, getArtisan, getProductsByArtisan } from '@/lib/demo/data';
+import {
+  demoParams,
+  getArtisan,
+  getProductsByArtisan,
+  householdMakers,
+  householdWorkshops,
+} from '@/lib/demo/data';
 import { resolveLocale } from '@/lib/locale';
 
 export function generateStaticParams() {
@@ -21,17 +28,23 @@ export async function generateMetadata({
   return a ? { title: a.household, description: a.story[0] } : {};
 }
 
-/** Trang triển lãm số của hộ (FR-ART, BRAND §9): hero chân dung → bento → timeline → gallery → sản phẩm. */
+/**
+ * Trang triển lãm số của hộ — biến thể A "đọc liền một mạch" (vCRAFT-9hg.6): lịch sử hộ → người làm →
+ * món đồ → bằng chứng (nhật ký) → ghé thăm (phòng trưng bày tách khỏi xưởng, bản đồ kèm danh sách)
+ * → đặt hàng số lượng.
+ */
 export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-nhan/[slug]'>) {
   await resolveLocale(params);
   const { slug } = await params;
   const artisan = await getArtisan(slug);
   if (!artisan) notFound();
-  const [t, common, products] = await Promise.all([
+  const [t, common, ex, products] = await Promise.all([
     getTranslations('artisan'),
     getTranslations('common'),
+    getTranslations('exhibition'),
     getProductsByArtisan(slug),
   ]);
+  const featured = products.find((p) => p.log.length > 0);
 
   return (
     <article>
@@ -130,49 +143,6 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
             ))}
           </ul>
         </Card>
-        <Card className="overflow-hidden p-0 md:col-span-3">
-          <VillageMiniMap
-            label={t('mapLabel')}
-            pins={[
-              { id: artisan.slug, x: 50, y: 58, open: artisan.openNow, label: artisan.household },
-            ]}
-            highlight={artisan.slug}
-            className="rounded-none shadow-none"
-          />
-        </Card>
-        <Card id="workshop" className="flex scroll-mt-24 flex-col gap-5 p-8 md:col-span-3">
-          <div>
-            <h2 className="text-h3">{t('workshop')}</h2>
-            <p className="mt-2 text-ash">{artisan.address}</p>
-          </div>
-          <dl className="grid grid-cols-2 gap-5 text-small">
-            <div>
-              <dt className="text-ash">{t('hours')}</dt>
-              <dd className="mt-1 flex items-center gap-2 font-medium">
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    'size-2 rounded-full',
-                    artisan.openNow ? 'bg-celadon' : 'bg-ash/40',
-                  )}
-                />
-                {artisan.hours} · {artisan.openNow ? common('openNow') : common('closed')}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-ash">{t('capacity')}</dt>
-              <dd className="mt-1 font-medium">
-                {t('capacityValue', { count: artisan.capacityPerMonth })}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-ash">{t('rating')}</dt>
-              <dd className="mt-1 font-medium">
-                {t('ratingValue', { rating: artisan.rating, orders: artisan.completedOrders })}
-              </dd>
-            </div>
-          </dl>
-        </Card>
       </section>
 
       {/* Timeline gia đình nằm ngang, kéo được (FR-ART-02). */}
@@ -227,6 +197,12 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
         </section>
       ) : null}
 
+      <MakerCredits
+        className="mx-auto max-w-editorial px-gutter pb-section"
+        household={artisan.household}
+        makers={householdMakers(artisan).map((m) => ({ name: m.name, detail: m.role }))}
+      />
+
       <WaveDivider />
       <section
         className="mx-auto max-w-editorial px-gutter pt-section"
@@ -244,6 +220,62 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
         ) : (
           <p className="mt-6 text-ash">{t('productsEmpty')}</p>
         )}
+      </section>
+
+      {/* Bằng chứng: nhật ký sản xuất của món đồ tiêu biểu, đọc ở trang truy xuất. */}
+      {featured ? (
+        <section
+          className="mx-auto max-w-editorial px-gutter pt-section"
+          aria-labelledby="evidence-title"
+        >
+          <Card className="flex flex-col items-start gap-4 p-8 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-5">
+              <SealMark size={56} bleed={false} />
+              <div>
+                <h2 id="evidence-title" className="text-h3">
+                  {ex('evidenceTitle')}
+                </h2>
+                <p className="mt-1 max-w-prose-vn text-small text-ash">{ex('evidenceText')}</p>
+              </div>
+            </div>
+            <Link
+              href={{ pathname: '/truy-xuat/[code]', params: { code: featured.code } }}
+              className={buttonVariants({ variant: 'secondary' })}
+            >
+              {ex('evidenceCta', { product: featured.name })}
+            </Link>
+          </Card>
+        </section>
+      ) : null}
+
+      <VisitSection
+        className="mx-auto max-w-editorial px-gutter pt-section"
+        household={artisan.household}
+        workshops={householdWorkshops(artisan)}
+      />
+
+      <section
+        className="mx-auto max-w-editorial px-gutter py-section"
+        aria-labelledby="wholesale-title"
+      >
+        <div className="rounded-card bg-clay p-8 text-paper md:p-12">
+          <h2 id="wholesale-title" className="text-paper">
+            {ex('wholesaleTitle')}
+          </h2>
+          <p className="mt-3 max-w-prose-vn text-paper/85">{ex('wholesaleText')}</p>
+          <p className="mt-2 text-small text-paper/75">
+            {t('capacity')}: {t('capacityValue', { count: artisan.capacityPerMonth })}
+          </p>
+          <Link
+            href="/yeu-cau-bao-gia"
+            className={cn(
+              buttonVariants({ variant: 'secondary', size: 'lg' }),
+              'mt-6 border-paper/40 text-paper hover:bg-paper/10',
+            )}
+          >
+            {ex('wholesaleCta')}
+          </Link>
+        </div>
       </section>
     </article>
   );
