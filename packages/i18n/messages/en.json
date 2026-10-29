@@ -204,7 +204,7 @@
       "unavailableText": "Verification needs Web Crypto, which is only available when the page is opened over HTTPS. The log below is not confirmed intact.",
       "emptyTitle": "No log to check",
       "emptyText": "This demo product has no production entries yet.",
-      "scope": "An intact chain only shows the log was not changed after it was written. It does not prove that what the log says is true in the real world."
+      "sentence": "Journal integrity: this journal has not been silently changed, deleted or reordered since it was recorded. It does not prove the stages happened as written, nor who physically made the object."
     },
     "scans": "{count, plural, one {# scan} other {# scans}}",
     "timelineTitle": "A journey through fire",
@@ -216,6 +216,10 @@
     "ctaVisit": "Visit the workshop",
     "ctaRfq": "Order in bulk",
     "proofAlt": "Photo of the {stage} step",
+    "corrects": "Corrects entry {n}",
+    "correctedBy": "Corrected by entry {n}",
+    "skipped": "Skipped earlier stages: {reason}",
+    "inProgress": "In progress · not yet recorded: {stages}",
     "hashHint": "SHA-256 hash of this entry, chained to the one before it."
   },
   "rfq": {

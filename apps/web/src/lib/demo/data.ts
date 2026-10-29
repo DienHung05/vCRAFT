@@ -4,10 +4,16 @@
  * thay các hàm `get*` dưới đây bằng query của `@vcraft/api-client` và xóa file này.
  *
  * Tên hộ, nghệ nhân là hư cấu. Mọi mốc nhật ký và dấu băm trong file này cũng là dữ liệu minh họa;
- * dấu băm được tính thật bằng thuật toán BR-01 (xem `lib/hash-chain.ts`) lúc dựng dữ liệu.
+ * dấu băm được tính thật bằng thuật toán BR-01 (xem `journal/hash-chain.ts` của `@vcraft/domain`) lúc dựng dữ liệu.
  */
-import type { BidStatus, BidType, RfqStatus } from '@vcraft/domain';
-import { type ChainEntry, sealChain, sha256Hex } from '@/lib/hash-chain';
+import {
+  type BidStatus,
+  type BidType,
+  type ChainEntry,
+  type RfqStatus,
+  sealChain,
+  sha256Hex,
+} from '@vcraft/domain';
 
 export interface Certification {
   name: string;
@@ -63,7 +69,10 @@ export interface LogEntry extends ChainEntry {
 }
 
 /** Mốc nhật ký trước khi niêm phong. */
-type RawLogEntry = Pick<LogEntry, 'stage' | 'at' | 'note' | 'tint'>;
+type RawLogEntry = Pick<
+  LogEntry,
+  'stage' | 'at' | 'note' | 'tint' | 'supersedesSeq' | 'skipReason'
+>;
 
 export interface Product {
   slug: string;
@@ -341,6 +350,14 @@ const rawProducts: (Omit<Product, 'log'> & { log: RawLogEntry[] })[] = [
         at: '2026-10-05T14:20:00+07:00',
         note: 'Ra lò, kiểm tra, đóng ấn đáy.',
         tint: '#3f5a8a',
+      },
+      {
+        // Mốc đính chính (vCRAFT-9hg.4): mốc 6 ghi nhầm lò ga; mốc gốc vẫn hiện cạnh bản đính chính.
+        stage: 'fire',
+        at: '2026-10-03T05:00:00+07:00',
+        note: 'Đính chính: nung lò củi 16 giờ chứ không phải lò ga, đỉnh 1.280°C.',
+        tint: '#c2522a',
+        supersedesSeq: 5,
       },
     ],
   },
