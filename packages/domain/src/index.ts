@@ -3,7 +3,7 @@
  * - rfq/          Máy trạng thái Yêu cầu báo giá + Chào giá (State pattern) + guard nghiệp vụ
  * - exhibition/   Ghi công người làm, tách phòng trưng bày đón khách khỏi xưởng sản xuất
  * - household/    Duyệt hộ (chấp nhận, từ chối, tạm ngừng) và xuất bản / rút sản phẩm
- * - allocation/   Máy trạng thái Phân bổ; (sau này) chiến lược chia nhỏ đơn hàng (Strategy pattern)
+ * - allocation/   Máy trạng thái Phân bổ và kiểm tra bảng chia số lượng thủ công
  * - matching/     Chấm điểm & chọn hộ phù hợp để gửi yêu cầu báo giá
  * - journal/      Nhật ký sản xuất: công đoạn, mốc đính chính, chuỗi băm SHA-256 (append-only)
  * - shared/       DomainError, Result, helper máy trạng thái; (sau này) Money, GeoPoint, OpeningHours

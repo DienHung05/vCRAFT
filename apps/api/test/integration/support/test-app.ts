@@ -21,7 +21,11 @@ class FakeIdentityVerifier extends IdentityVerifier {
     if (typeof auth !== 'string') return null;
     const match = /^Bearer test:([0-9a-f-]{36})$/.exec(auth);
     if (!match?.[1]) throw new InvalidTokenError('bad test token');
-    return { sub: match[1], email: `${match[1]}@test.local` } satisfies VerifiedIdentity;
+    return {
+      sub: match[1],
+      email: `${match[1]}@test.local`,
+      emailVerified: true,
+    } satisfies VerifiedIdentity;
   }
 }
 

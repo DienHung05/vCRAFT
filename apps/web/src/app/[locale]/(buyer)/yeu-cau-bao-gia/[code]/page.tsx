@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
+import { LiveBuyerQuotations } from '@/features/rfq/live-buyer-quotations';
 import { RfqSummary } from '@/features/rfq/rfq-summary';
 import { RfqWorkspace } from '@/features/rfq/rfq-workspace';
 import { Link } from '@/i18n/navigation';
+import { isRfqUuid } from '@/lib/api/rfq-id';
 import { demoParams, getRfq } from '@/lib/demo/data';
 import { resolveLocale } from '@/lib/locale';
 
@@ -18,6 +20,7 @@ export async function generateMetadata({
   params,
 }: PageProps<'/[locale]/yeu-cau-bao-gia/[code]'>): Promise<Metadata> {
   const { code } = await params;
+  if (isRfqUuid(code)) return { robots: { index: false } };
   const rfq = await getRfq(code);
   return rfq ? { title: rfq.title, robots: { index: false } } : {};
 }
@@ -29,6 +32,12 @@ export async function generateMetadata({
 export default async function RfqPage({ params }: PageProps<'/[locale]/yeu-cau-bao-gia/[code]'>) {
   await resolveLocale(params);
   const { code } = await params;
+  if (isRfqUuid(code))
+    return (
+      <article className="mx-auto max-w-editorial px-gutter pt-8">
+        <LiveBuyerQuotations rfqId={code} />
+      </article>
+    );
   const rfq = await getRfq(code);
   if (!rfq) notFound();
   const t = await getTranslations('rfq');
