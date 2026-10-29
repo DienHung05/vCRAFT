@@ -38,7 +38,6 @@ const metricOf = (row: Row, key: SortKey): number =>
         : key === 'delivery'
           ? row.deliveryTime
           : row.bid.reputation;
-
 /**
  * Các bid tốt nhất theo một tiêu chí (FR-RFQ-07). Không tô khi chỉ có một ứng viên hoặc mọi giá trị
  * bằng nhau (khi đó "tốt nhất" không mang thông tin).
@@ -140,6 +139,22 @@ export function BidComparison({ bids, quantity, unit, canAccept, onAccept }: Bid
         ) : null}
       </div>
       {row.bid.note ? <p className="text-small text-ash">{row.bid.note}</p> : null}
+      {/* Chào giá liên kết: bên mua thấy đủ các hộ, phần chia và ngày hoàn thành của từng hộ.
+          Giá riêng của từng hộ là thông tin nội bộ giữa hộ và BQL, không bao giờ hiện ở đây. */}
+      {row.bid.shares && row.bid.shares.length > 0 ? (
+        <ul className="mt-1 flex flex-col gap-1 border-ink/10 border-l-2 pl-3">
+          {row.bid.shares.map((share) => (
+            <li key={share.household} className="text-small text-ash">
+              <span className="font-medium text-ink/85">{share.household}</span>
+              {' · '}
+              <span className="tabular-nums">{format.number(share.quantity)}</span> ·{' '}
+              <time dateTime={share.completionDate}>
+                {format.dateTime(new Date(share.completionDate), 'short')}
+              </time>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
 

@@ -306,6 +306,17 @@
       "daysLeft": "{days, plural, one {# day left} other {# days left}}",
       "closed": "Bidding has closed"
     },
+    "live": {
+      "loading": "Loading quotations…",
+      "signIn": "Sign in with the buyer account to view these quotations.",
+      "loadFailed": "The quotations could not be loaded, or you cannot access this request.",
+      "notice": "A cooperative quotation has been withdrawn. Check the latest status before deciding.",
+      "productionTotal": "Production total",
+      "additionalCharge": "Additional charge",
+      "total": "Buyer total",
+      "deliveryIncluded": "Delivery is included.",
+      "deliverySeparate": "Delivery is arranged and paid separately."
+    },
     "bids": {
       "title": "Bids received",
       "count": "{count, plural, =0 {No bids yet} one {# bid} other {# bids}}",
@@ -362,54 +373,70 @@
       }
     },
     "board": {
-      "strategyTitle": "Suggested plan",
-      "strategy": {
-        "capacity": {
-          "name": "By capacity",
-          "text": "Split in proportion to each household's capacity; leftovers go to the largest remainders."
-        },
-        "cheapest": {
-          "name": "Cheapest first",
-          "text": "The cheapest household fills its capacity first, then the next, until the order is covered."
-        },
-        "balanced": {
-          "name": "Balanced",
-          "text": "Split evenly; if a household hits its capacity, the rest is shared among the others."
-        }
-      },
-      "strategyCost": "Total cost {cost}",
       "barTitle": "Splitting {quantity} {unit} across households",
       "barLabel": "{sum} of {quantity} {unit} allocated",
       "statusOk": "All {quantity} {unit} allocated. You can simulate sending the co-op bid.",
       "problem": {
         "short": "{count} {unit} still missing.",
         "excess": "{count} {unit} too many allocated.",
-        "over": "{name} is over its free capacity ({capacity}).",
-        "invalid": "Each household's quantity must be a whole number, 0 or more."
+        "over": "{name} is over the maximum it declared ({capacity}).",
+        "invalid": "Each household's quantity must be a whole number, 0 or more.",
+        "date": "The completion date must fall after the bidding deadline and no later than the required delivery date.",
+        "charge": "The delivery surcharge must be a whole number, 0 or more."
       },
-      "partMeta": "Capacity {capacity} · unit price {price} · ready in {days} days",
+      "partMeta": "Up to {max} · unit price {price} · completed by {date}",
       "slider": "Quantity for {name}",
       "quantityOf": "Enter the quantity for {name}",
       "stat": {
         "sum": "Allocated",
         "missing": "Still missing",
         "excess": "Over-allocated",
-        "cost": "Total cost",
-        "average": "Average unit price",
-        "eta": "Expected completion",
-        "etaDays": "{days, plural, one {# day} other {# days}}",
-        "onTime": "Meets the delivery date of {date}.",
-        "late": "Misses the delivery date of {date}."
+        "charge": "Delivery surcharge",
+        "terms": "Shipping",
+        "total": "Buyer total"
       },
-      "send": "Simulate sending co-op bid",
+      "send": "Send cooperative quotation",
       "sentLabel": "Simulated",
       "demoNote": "Demo: this only runs in your browser. Nothing is saved or sent to a server, and no notification goes out.",
-      "reset": "Back to suggested plan",
-      "sendBlocked": "You can simulate sending once the full quantity is allocated and no household is over capacity.",
+      "sendBlocked": "You can send once the full quantity is allocated, no household is over its maximum, and completion dates are valid.",
       "sent": {
         "title": "Simulated (not saved, no notifications sent)",
         "text": "The allocation plan for request {code} was only trialled in this browser. No bid has reached the buyer and no household has been notified."
+      },
+      "manualTitle": "Manual allocation",
+      "manualLead": "Split the quantity yourself for each household, exactly as they offered. There is no automatic plan and no predicted completion date: each household keeps the date and unit price it declared.",
+      "chargeOf": "Delivery surcharge",
+      "terms": {
+        "included": "Shipping included",
+        "separate": "Buyer pays shipping separately"
+      },
+      "sendingLabel": "Sending…",
+      "sentRealLabel": "Sent",
+      "sendFailed": "Sending failed. Please try again later.",
+      "liveNote": "Request {code}: the quotation will be sent to the server through the API with your signed-in session.",
+      "sentReal": {
+        "title": "Cooperative quotation sent",
+        "text": "The quotation for request {code} is saved on the server. The buyer will see the households, shares, completion dates and one complete total — never each household's private price."
       }
+    },
+    "live": {
+      "loading": "Loading the request…",
+      "signIn": "Sign in with a management board account to view this coordination workspace.",
+      "signInRequired": "A signed-in management board session is required to claim coordination.",
+      "notFound": "This request was not found, or you are not allowed to view it.",
+      "retry": "Retry",
+      "loadFailed": "Loading failed.",
+      "claimFailed": "Claiming coordination failed.",
+      "claimable": "This request asked the board to coordinate it but nobody has claimed it yet. You can claim it to assemble contribution offers into one quotation.",
+      "claim": "Claim coordination",
+      "claiming": "Claiming…",
+      "status": "Status",
+      "quantity": "Quantity",
+      "biddingCloses": "Bidding deadline",
+      "requiredBy": "Delivery date",
+      "requestedQuantity": "Needs {quantity} {unit}",
+      "notice": "{count, plural, other {# notices for this request — a cooperative quotation was withdrawn. Review before submitting.}}",
+      "closed": "This request is past its bidding deadline; the cooperative quotation can no longer be submitted."
     }
   },
   "exhibition": {
@@ -437,5 +464,39 @@
     "homeLink": "Back to the exhibition home",
     "householdTitle": "The household behind this object",
     "householdCta": "Read the story of {household}"
+  },
+  "contribution": {
+    "title": "Contribution offer for {code}",
+    "lead": "The request needs {quantity} {unit}. Declare the maximum quantity, unit price and completion date your household can commit to.",
+    "maxQuantity": "Maximum ({unit})",
+    "unitPrice": "Unit price (VND)",
+    "completionDate": "Completion date",
+    "dateWindow": "The completion date must fall after the bidding deadline {closing} and no later than the required delivery date {required}.",
+    "problem": {
+      "max": "The maximum must be a whole number, 1 or more.",
+      "price": "The unit price must be a whole number, 1 or more.",
+      "dateMissing": "Choose a completion date.",
+      "dateBeforeClosing": "The completion date must fall after the bidding deadline {date}.",
+      "dateAfterRequired": "The completion date cannot be later than the required delivery date {date}."
+    },
+    "send": "Send offer",
+    "update": "Update offer",
+    "sending": "Sending…",
+    "sentRealLabel": "Sent",
+    "updatedLabel": "Updated",
+    "simulatedLabel": "Simulated",
+    "simulatedNote": "Simulated (not saved, no notifications sent). The demo only runs in this browser.",
+    "sentNote": "The offer is saved on the server. The management board will use this maximum, unit price and completion date to assemble the quotation.",
+    "withdraw": "Withdraw offer",
+    "withdrawn": "The offer was withdrawn. Send again to rejoin.",
+    "sendFailed": "Sending failed. Please try again later.",
+    "demoNote": "Demo: this only runs in your browser. Nothing is saved or sent to a server.",
+    "liveNote": "The offer will be sent to the server through the API with your signed-in session. This information is private between the household and the management board; the buyer never sees it.",
+    "privacyNote": "Maximum, unit price and completion date are private between the household and the management board; the buyer only sees the household, its share and the completion date.",
+    "loading": "Loading the request…",
+    "signIn": "Sign in with a household representative account to submit a contribution offer.",
+    "notFound": "This request was not found, or your household is not invited.",
+    "loadFailed": "Loading failed.",
+    "closed": "The bidding deadline has passed; contribution offers can no longer be sent or changed."
   }
 }

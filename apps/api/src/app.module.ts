@@ -6,9 +6,17 @@ import { DatabaseModule } from './infrastructure/database/database.module';
 import { HealthModule } from './modules/health/health.module';
 import { HouseholdsModule } from './modules/households/households.module';
 import { ProductionLogsModule } from './modules/production-logs/production-logs.module';
+import { RfqModule } from './modules/rfq/rfq.module';
 
 @Module({
-  imports: [DatabaseModule, AuthModule, HealthModule, HouseholdsModule, ProductionLogsModule],
+  imports: [
+    DatabaseModule,
+    AuthModule,
+    HealthModule,
+    HouseholdsModule,
+    ProductionLogsModule,
+    RfqModule,
+  ],
   providers: [{ provide: APP_FILTER, useClass: ProblemDetailsFilter }],
 })
 export class AppModule {}
