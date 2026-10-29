@@ -1,8 +1,17 @@
 {
   "mcpServers": {
-    "supabase": {
-      "type": "http",
-      "url": "https://mcp.supabase.com/mcp?project_ref=aaltayglwiusqybuiycd&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching"
-    }
+    "codegraph": {
+      "type": "stdio",
+      "command": "codegraph",
+      "args": [
+        "serve",
+        "--mcp"
+      ],
+      "alwaysLoad": true
+    },
+    "bladebro": {
+			"command": "bladebro",
+			"args": ["mcp"]
+		}
   }
 }

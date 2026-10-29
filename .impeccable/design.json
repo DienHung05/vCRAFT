@@ -1,0 +1,358 @@
+{
+  "breakpoints": [
+    {
+      "name": "sm",
+      "value": "640px"
+    },
+    {
+      "name": "md",
+      "value": "768px"
+    },
+    {
+      "name": "lg",
+      "value": "1024px"
+    }
+  ],
+  "components": [
+    {
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 20px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: #f5efe4; background: #a8482a; border: none; border-radius: 4px; cursor: pointer; transition: background-color 160ms cubic-bezier(0.34, 1.56, 0.64, 1), transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1); } .ds-btn-primary:hover { background: #8f3c22; } .ds-btn-primary:focus-visible { outline: 2px solid #1e3a6e; outline-offset: 2px; } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:disabled { opacity: 0.45; pointer-events: none; }",
+      "description": "Main action on every screen, from quote acceptance to publishing a journal entry.",
+      "html": "<button class=\"ds-btn-primary\">Accept offer</button>",
+      "kind": "button",
+      "name": "Primary Button",
+      "refersTo": "button-primary"
+    },
+    {
+      "css": ".ds-btn-seal { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 20px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: #f5efe4; background: #c2261c; border: none; border-radius: 4px; cursor: pointer; transition: background-color 160ms cubic-bezier(0.34, 1.56, 0.64, 1), transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1); } .ds-btn-seal:hover { background: #a81e16; } .ds-btn-seal:focus-visible { outline: 2px solid #1e3a6e; outline-offset: 2px; } .ds-btn-seal:active { transform: scale(0.97); }",
+      "description": "Reserved for verification and final commitment, such as stamping approval.",
+      "html": "<button class=\"ds-btn-seal\">Stamp approval</button>",
+      "kind": "button",
+      "name": "Seal Button",
+      "refersTo": "button-seal"
+    },
+    {
+      "css": ".ds-input { height: 40px; width: 240px; padding: 0 12px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 0.875rem; color: #1c1814; background: #fbf8f2; border: 1px solid rgba(28,24,20,0.2); border-radius: 4px; } .ds-input:focus { outline: 2px solid #1e3a6e; outline-offset: 1px; border-color: #1e3a6e; } .ds-input[aria-invalid='true'] { border-color: #c2261c; color: #c2261c; }",
+      "description": "Default text field for studio and admin forms on paper surfaces.",
+      "html": "<input class=\"ds-input\" type=\"text\" value=\"Bat Trang\" aria-label=\"Workshop name\" />",
+      "kind": "input",
+      "name": "Text Input",
+      "refersTo": "input"
+    },
+    {
+      "css": ".ds-badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.5; border-radius: 999px; background: rgba(94,138,125,0.15); color: #1c1814; } .ds-badge-seal { background: rgba(194,38,28,0.1); color: #c2261c; }",
+      "description": "Small status chip for workshop state, offers, and certificates.",
+      "html": "<span class=\"ds-badge\">Open now</span> <span class=\"ds-badge ds-badge-seal\">Verified</span>",
+      "kind": "chip",
+      "name": "Badge",
+      "refersTo": "badge"
+    },
+    {
+      "css": ".ds-card { background: #fbf8f2; border-radius: 12px; padding: 20px; box-shadow: 0 1px 0 rgba(28,24,20,0.04), 0 12px 32px -12px rgba(120,60,30,0.18); outline: 1px solid rgba(28,24,20,0.05); } .ds-card h3 { margin: 0 0 8px; font-family: Fraunces, Georgia, serif; font-size: 1.5rem; color: #1e3a6e; } .ds-card p { margin: 0; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 0.875rem; color: #6b635a; }",
+      "description": "Raised container for offers, journal entries, and admin summaries.",
+      "html": "<div class=\"ds-card\"><h3>Kiln household</h3><p>Allocation summary and firing dates.</p></div>",
+      "kind": "card",
+      "name": "Card",
+      "refersTo": "card"
+    },
+    {
+      "css": ".ds-nav { display: inline-block; padding: 8px 12px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 0.875rem; color: rgba(28,24,20,0.8); text-decoration: none; border-radius: 4px; } .ds-nav:hover { background: rgba(28,24,20,0.06); color: #1c1814; } .ds-nav[aria-current='page'] { background: rgba(168,72,42,0.12); color: #a8482a; font-weight: 500; }",
+      "description": "Quiet nav item that warms to clay only for the active page.",
+      "html": "<a class=\"ds-nav\" href=\"#\" aria-current=\"page\">Coordination</a>",
+      "kind": "nav",
+      "name": "Nav Item",
+      "refersTo": "nav-item"
+    },
+    {
+      "css": ".ds-step { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; background: #f5efe4; color: #a8482a; outline: 2px solid #a8482a; outline-offset: 2px; } .ds-step-done { background: #a8482a; color: #f5efe4; outline: none; } .ds-step-todo { background: #f5efe4; color: #6b635a; outline: 1px solid rgba(28,24,20,0.15); }",
+      "description": "Kiln stage marker for quotation, order, and journal progress.",
+      "html": "<span class=\"ds-step ds-step-done\">&#10003;</span> <span class=\"ds-step\">3</span> <span class=\"ds-step ds-step-todo\">4</span>",
+      "kind": "custom",
+      "name": "Stepper Node",
+      "refersTo": "stepper-node"
+    },
+    {
+      "css": ".ds-trace { display: inline-flex; flex-direction: column; align-items: center; gap: 10px; width: 200px; } .ds-trace-frame { position: relative; width: 200px; height: 200px; padding: 26px; border: 2.6px solid #c2261c; border-radius: 6px; background: #fbf8f2; } .ds-trace-frame::after { content: ''; position: absolute; inset: 8px; border: 0.9px solid #c2261c; border-radius: 3px; pointer-events: none; } .ds-trace-qr { display: grid; place-items: center; width: 100%; height: 100%; background: #1c1814; color: #f5efe4; font-family: 'JetBrains Mono', monospace; font-size: 12px; } .ds-trace-code { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 500; letter-spacing: 0.22em; color: #1c1814; }",
+      "description": "QR code in a double seal frame with an 8 character trace code below.",
+      "html": "<figure class=\"ds-trace\"><div class=\"ds-trace-frame\"><div class=\"ds-trace-qr\">QR</div></div><figcaption class=\"ds-trace-code\">A8F3K2Q9</figcaption></figure>",
+      "kind": "custom",
+      "name": "Trace Seal Frame",
+      "refersTo": "trace-seal"
+    }
+  ],
+  "extensions": {
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ],
+    "colorMeta": {
+      "ash": {
+        "canonical": "#6b635a",
+        "displayName": "Kiln Ash",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(22% 0.02 70)",
+          "oklch(32% 0.025 70)",
+          "oklch(42% 0.03 70)",
+          "oklch(55% 0.03 75)",
+          "oklch(68% 0.028 78)",
+          "oklch(80% 0.02 80)",
+          "oklch(90% 0.012 82)",
+          "oklch(96% 0.006 85)"
+        ]
+      },
+      "celadon": {
+        "canonical": "#5e8a7d",
+        "displayName": "Celadon",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(20% 0.04 170)",
+          "oklch(32% 0.055 170)",
+          "oklch(43% 0.065 168)",
+          "oklch(55% 0.06 168)",
+          "oklch(67% 0.05 168)",
+          "oklch(78% 0.035 170)",
+          "oklch(88% 0.02 172)",
+          "oklch(95% 0.01 175)"
+        ]
+      },
+      "clay": {
+        "canonical": "#a8482a",
+        "displayName": "Fired Clay",
+        "role": "primary",
+        "tonalRamp": [
+          "oklch(20% 0.07 40)",
+          "oklch(32% 0.11 40)",
+          "oklch(43% 0.14 42)",
+          "oklch(54% 0.14 44)",
+          "oklch(64% 0.12 46)",
+          "oklch(74% 0.09 50)",
+          "oklch(85% 0.05 60)",
+          "oklch(94% 0.02 65)"
+        ]
+      },
+      "glaze": {
+        "canonical": "#1e3a6e",
+        "displayName": "Glaze Blue",
+        "role": "primary",
+        "tonalRamp": [
+          "oklch(18% 0.06 265)",
+          "oklch(28% 0.09 262)",
+          "oklch(38% 0.11 260)",
+          "oklch(50% 0.11 258)",
+          "oklch(62% 0.09 258)",
+          "oklch(74% 0.06 258)",
+          "oklch(86% 0.03 260)",
+          "oklch(94% 0.015 262)"
+        ]
+      },
+      "ink": {
+        "canonical": "#1c1814",
+        "displayName": "Ink",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(12% 0.015 60)",
+          "oklch(22% 0.02 60)",
+          "oklch(34% 0.025 60)",
+          "oklch(48% 0.03 62)",
+          "oklch(62% 0.03 65)",
+          "oklch(75% 0.025 68)",
+          "oklch(87% 0.015 72)",
+          "oklch(95% 0.008 75)"
+        ]
+      },
+      "lacquer": {
+        "canonical": "#8c6a24",
+        "displayName": "Lacquer Gold",
+        "role": "secondary",
+        "tonalRamp": [
+          "oklch(20% 0.06 85)",
+          "oklch(32% 0.09 85)",
+          "oklch(44% 0.11 84)",
+          "oklch(56% 0.11 83)",
+          "oklch(67% 0.09 83)",
+          "oklch(77% 0.07 84)",
+          "oklch(87% 0.045 86)",
+          "oklch(94% 0.02 88)"
+        ]
+      },
+      "paper": {
+        "canonical": "#f5efe4",
+        "displayName": "Dó Paper",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(25% 0.02 75)",
+          "oklch(40% 0.025 75)",
+          "oklch(55% 0.03 77)",
+          "oklch(68% 0.03 78)",
+          "oklch(79% 0.028 80)",
+          "oklch(87% 0.024 82)",
+          "oklch(93% 0.018 84)",
+          "oklch(97% 0.01 86)"
+        ]
+      },
+      "seal": {
+        "canonical": "#c2261c",
+        "displayName": "Seal Red",
+        "role": "primary",
+        "tonalRamp": [
+          "oklch(20% 0.09 28)",
+          "oklch(32% 0.15 28)",
+          "oklch(43% 0.19 28)",
+          "oklch(53% 0.2 27)",
+          "oklch(62% 0.17 27)",
+          "oklch(72% 0.12 27)",
+          "oklch(83% 0.07 28)",
+          "oklch(93% 0.03 30)"
+        ]
+      },
+      "surface": {
+        "canonical": "#fbf8f2",
+        "displayName": "Surface",
+        "role": "neutral",
+        "tonalRamp": [
+          "oklch(28% 0.02 75)",
+          "oklch(43% 0.025 76)",
+          "oklch(58% 0.028 78)",
+          "oklch(71% 0.028 80)",
+          "oklch(81% 0.026 81)",
+          "oklch(89% 0.022 83)",
+          "oklch(94% 0.016 85)",
+          "oklch(98% 0.008 87)"
+        ]
+      }
+    },
+    "motion": [
+      {
+        "name": "ease-clay",
+        "purpose": "Default easing for entrances and expansion.",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)"
+      },
+      {
+        "name": "ease-kiln",
+        "purpose": "Scene and state changes.",
+        "value": "cubic-bezier(0.65, 0, 0.35, 1)"
+      },
+      {
+        "name": "ease-press",
+        "purpose": "Stamp and button press with a light bounce.",
+        "value": "cubic-bezier(0.34, 1.56, 0.64, 1)"
+      },
+      {
+        "name": "dur-instant",
+        "purpose": "Immediate state feedback.",
+        "value": "90ms"
+      },
+      {
+        "name": "dur-quick",
+        "purpose": "Hover and press feedback.",
+        "value": "160ms"
+      },
+      {
+        "name": "dur-base",
+        "purpose": "Standard state transition cap for tools.",
+        "value": "280ms"
+      },
+      {
+        "name": "dur-slow",
+        "purpose": "Stamp and signature moments.",
+        "value": "520ms"
+      },
+      {
+        "name": "dur-story",
+        "purpose": "Scroll stories and hero sequences.",
+        "value": "900ms"
+      }
+    ],
+    "shadows": [
+      {
+        "name": "warm-lift",
+        "purpose": "Resting lift for cards, menus, and dialogs.",
+        "value": "0 1px 0 rgb(28 24 20 / 0.04), 0 12px 32px -12px rgb(120 60 30 / 0.18)"
+      }
+    ],
+    "typographyMeta": {
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default reading text with a 42rem long-form cap."
+      },
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headlines and large museum numbers only."
+      },
+      "h1": {
+        "displayName": "Headline 1",
+        "purpose": "Page titles in glaze blue."
+      },
+      "h2": {
+        "displayName": "Headline 2",
+        "purpose": "Section titles in glaze blue."
+      },
+      "h3": {
+        "displayName": "Title",
+        "purpose": "Card and dialog titles in glaze blue."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Trace codes, RFQ codes, and hashes."
+      },
+      "small": {
+        "displayName": "Label",
+        "purpose": "Buttons, nav, badges, and table cells."
+      }
+    }
+  },
+  "generatedAt": "2026-10-29T08:45:00+07:00",
+  "narrative": {
+    "dos": [
+      "Do keep paper as the page ground and reserve pure white for no permanent surface.",
+      "Do set headlines in Fraunces with SOFT 100 and glaze blue.",
+      "Do save seal red for stamps, verification, halted states, and final confirmation.",
+      "Do pair photos with grain, crackle, or wave ornaments at section breaks.",
+      "Do collapse motion to a 150ms fade when reduced motion is requested."
+    ],
+    "donts": [
+      "Don't use seal red for ordinary buttons, links, or decoration.",
+      "Don't set body copy or tables in Fraunces.",
+      "Don't add shadows beyond the single warm lift token.",
+      "Don't invent households, makers, prices, reviews, or certifications in visual examples.",
+      "Don't use loud marketplace patterns such as discount banners or flashing badges."
+    ],
+    "keyCharacteristics": [
+      "Paper first, never pure white",
+      "Soft serif headlines paired with a Vietnamese-first sans body",
+      "The seal mark and trace frame as the recurring signature",
+      "Warm, restrained motion shaped by clay, kiln, and spread"
+    ],
+    "northStar": "The Warm Little Museum",
+    "overview": "vCraft looks like a small museum, not a store. Paper backgrounds carry grain, ink text stays quiet, and large soft serif headlines leave room for hands and clay. The interface steps back so workshop photos, artisan portraits, and kiln stories lead.\n\nDensity shifts by role. Public pages use an editorial rhythm with wide gutters and deep section spacing. Workshop and admin tools tighten up, keep paper surfaces, and keep motion to short state feedback. Vietnamese is the default voice throughout.",
+    "rules": [
+      {
+        "body": "Seal red covers no more than 5 percent of a screen. Its scarcity gives weight to stamps, verification, and final acceptance.",
+        "name": "The Rare Seal Rule",
+        "section": "colors"
+      },
+      {
+        "body": "Large headlines use Fraunces with SOFT 100 and negative tracking. Body copy never uses the display face.",
+        "name": "The Soft Headline Rule",
+        "section": "typography"
+      },
+      {
+        "body": "Surfaces stay flat at rest. Shadow appears only on cards, menus, and dialogs, never as decoration on plain content.",
+        "name": "The Flat-By-Default Rule",
+        "section": "elevation"
+      }
+    ]
+  },
+  "schemaVersion": 2,
+  "title": "Design System: vCraft"
+}

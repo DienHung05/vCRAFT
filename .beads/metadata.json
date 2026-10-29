@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "vCRAFT",
+  "project_id": "de70d367-e99d-4d6c-8ca1-b959d71b543a"
+}

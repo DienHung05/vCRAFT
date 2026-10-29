@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[Prototype v5] Gốm Minh Hải — Chợ gốm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#F5EFE4; --surface:#FBF8F2; --ink:#1C1814; --ash:#6B635A;
+  --clay:#A8482A; --glaze:#1E3A6E; --seal:#C2261C; --celadon:#5E8A7D; --lacquer:#8C6A24;
+  --line:rgb(28 24 20 / .16);
+  --shadow:0 1px 0 rgb(28 24 20 / .05), 0 18px 40px -16px rgb(90 40 20 / .28);
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .11 0 0 0 0 .094 0 0 0 0 .078 0 0 0 3 -1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+*{box-sizing:border-box}
+html{scrollbar-color:var(--clay) var(--paper)}
+::selection{background:var(--glaze);color:var(--paper)}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 clamp(1rem,.96rem + .15vw,1.0625rem)/1.55 "Be Vietnam Pro",system-ui,sans-serif}
+body::before{content:"";position:fixed;inset:0;z-index:80;pointer-events:none;background-image:var(--grain);background-size:160px;opacity:.05}
+:focus-visible{outline:2px solid var(--seal);outline-offset:3px}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;font-variation-settings:"SOFT" 100,"WONK" 1;letter-spacing:-.03em;line-height:.95;font-weight:620;text-wrap:balance;margin:0}
+p{margin:0}
+a{color:inherit}
+.banner{background:var(--seal);color:var(--paper);text-align:center;padding:.45rem 1rem;font-size:.82rem;font-weight:600}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.7rem clamp(.7rem,2vw,1.4rem);background:var(--ink);color:var(--paper);position:sticky;top:0;z-index:40}
+.bar strong{font-family:Fraunces,serif;font-weight:620;font-size:1.35rem;letter-spacing:-.03em}
+.bar nav{display:flex;gap:.4rem}
+.bar button{font:600 .82rem/1 "Be Vietnam Pro",sans-serif;border:0;border-radius:999px;padding:.45rem .85rem;background:rgb(245 239 228 / .12);color:var(--paper);cursor:pointer}
+.bar button[aria-pressed="true"]{background:var(--clay);color:#fff}
+.wall{display:grid;grid-template-columns:repeat(12,1fr);gap:.7rem;padding:.7rem clamp(.7rem,2vw,1.4rem) 6rem;align-items:stretch}
+.plate{border-radius:18px;padding:clamp(1.1rem,2vw,1.8rem);position:relative;min-width:0}
+.glaze{background:var(--glaze);color:var(--paper)}
+.clay{background:var(--clay);color:#fff}
+.celadon{background:var(--celadon);color:var(--ink)}
+.ink{background:var(--ink);color:var(--paper)}
+.paper{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.lacquer{background:var(--lacquer);color:#fff}
+.span-12{grid-column:span 12}
+.span-8{grid-column:span 8}
+.span-7{grid-column:span 7}
+.span-6{grid-column:span 6}
+.span-5{grid-column:span 5}
+.span-4{grid-column:span 4}
+.title{font-size:clamp(3.4rem,9vw,6rem);color:var(--glaze);line-height:.86;padding:.2rem .15rem 0;letter-spacing:-.04em}
+.lede{font:italic 500 clamp(1.35rem,2vw,1.85rem)/1.25 Fraunces,serif;max-width:22ch}
+.meta{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1rem}
+.meta span{border:1px solid currentColor;border-radius:999px;padding:.15rem .7rem;font-size:.82rem;font-weight:600}
+.stamp{width:min(46%,150px);display:block;margin:0 auto .6rem;animation:stamp .55s cubic-bezier(.34,1.56,.64,1) .2s both}
+@keyframes stamp{from{opacity:0;transform:scale(1.45) rotate(-8deg)}to{opacity:1;transform:none}}
+.code{font-family:"JetBrains Mono",monospace;letter-spacing:.28em;font-weight:500;font-size:1.05rem;text-align:center;margin-top:.4rem}
+.small{font-size:.84rem;line-height:1.45}
+.dim{opacity:.82}
+h2{font-size:clamp(1.8rem,3vw,2.7rem);margin-bottom:.55rem}
+h3{font-size:1.45rem;line-height:1.05;margin:.15rem 0 .35rem}
+.role{font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.2rem}
+.shift{margin-top:-1.6rem;z-index:2}
+.ledger{display:grid;grid-template-columns:1fr 1fr;gap:0 1.4rem;margin-top:.4rem}
+.ledger li{list-style:none;display:grid;grid-template-columns:5.5rem 1fr;gap:.35rem .7rem;padding:.55rem 0;border-bottom:1px solid var(--line);align-items:baseline}
+.ledger{padding:0;margin-left:0}
+.ledger .when{font-family:"JetBrains Mono",monospace;font-size:.72rem;color:var(--ash)}
+.ledger .stage{font-weight:700}
+.note{margin-top:.8rem;padding:.75rem .9rem;border-radius:12px;background:rgb(168 72 42 / .08);font-size:.9rem}
+.note.ok{background:rgb(30 58 110 / .08)}
+.vasebox{display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;position:static;align-self:start}
+.vasebox svg{position:relative;width:min(56%,240px);height:auto;margin:0 auto;flex:none}
+.vasebox figcaption{position:relative}
+.visit h3{font-size:1.7rem}
+.cta{display:flex;align-items:center;justify-content:space-between;gap:1rem;text-decoration:none;font-weight:700;font-size:clamp(1.3rem,2vw,1.8rem);font-family:Fraunces,serif;letter-spacing:-.02em;padding:1.3rem 1.6rem}
+.cta:hover{filter:brightness(1.08)}
+.rooms{display:flex;gap:.45rem;overflow:auto;grid-column:span 12;position:sticky;top:3.3rem;z-index:30;background:var(--paper);padding:.35rem 0}
+.rooms a{text-decoration:none;font-weight:700;font-size:.9rem;background:var(--ink);color:var(--paper);border-radius:999px;padding:.4rem .8rem;white-space:nowrap}
+.room{min-height:42vh;display:flex;flex-direction:column;justify-content:flex-end}
+.feedback{grid-column:span 12;background:#fff;border-radius:18px;padding:1.2rem 1.4rem;box-shadow:var(--shadow)}
+.feedback h2{color:var(--seal);font-size:1.7rem}
+.feedback ol{margin:.6rem 0 0;padding-left:1.2rem}
+.feedback li{margin:.25rem 0}
+@media(max-width:860px){
+  .span-8,.span-7,.span-6,.span-5,.span-4{grid-column:span 12}
+  .shift{margin-top:0}
+  .ledger{grid-template-columns:1fr}
+  .vasebox{position:static}
+  .title{font-size:clamp(2.8rem,14vw,4.2rem)}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="banner">Bản thảo bỏ đi v5 · Mở trực tiếp trong trình duyệt · Hộ mẫu hư cấu, chỉ để thảo luận trực tiếp</div>
+<header class="bar"><strong>vCraft / Gốm Minh Hải</strong><nav aria-label="Chuyển biến thể"><button data-v="a" aria-pressed="true">A · Chợ gốm</button><button data-v="b" aria-pressed="false">B · Năm gian</button><button data-v="c" aria-pressed="false">C · Quét mã</button></nav></header>
+<div id="variant-a" class="variant">
+<main class="wall">
+<h1 class="title span-12">Gốm Minh Hải</h1>
+<section class="plate ink span-7"><p class="lede">Lò nhà Minh Hải đỏ lửa từ đời ông cố, khi gốm còn chở bằng thuyền xuôi sông Hồng.</p><p class="meta"><span>Men lam Bát Tràng</span><span>Đời thứ 5</span><span>8 thợ</span><span>Hộ mẫu minh họa</span></p></section>
+<section class="plate paper span-5 shift"><svg class="stamp" viewBox="0 0 40 40" role="img" aria-label="Ấn bình"><path d="M5 4.5 Q20 2.5 35.5 5 Q37.5 20 35 35.5 Q20 37.8 4.6 35.2 Q2.4 20 5 4.5 Z" fill="#C2261C"/><path d="M15 7 H25 Q24.6 8.2 23.4 8.8 C23 10.8 23.2 12.8 24.5 14.3 C29.5 16.8 31.5 20.2 31.2 23.6 C30.8 27.4 28 30 26 31 L25 32.6 H15 L14 31 C12 30 9.2 27.4 8.8 23.6 C8.5 20.2 10.5 16.8 15.5 14.3 C16.8 12.8 17 10.8 16.6 8.8 Q15.4 8.2 15 7 Z" fill="#F5EFE4"/><path d="M11.2 22.4 q2.2 -2 4.4 0 t4.4 0 t4.4 0 t4.4 0" fill="none" stroke="#C2261C" stroke-width="1.3" stroke-linecap="round"/></svg><p class="code">BT7K2QXM</p><p class="small dim" style="text-align:center">Ấn truy xuất · một vật, một mã · quét dưới đáy bình</p></section>
+<section class="plate clay span-5"><p class="role">Lò đỏ lửa năm đời</p><h2>1962 — 2026</h2><p class="small">Dựng lò bầu, pha men lam riêng, chuyển lò ga, nghệ nhân ưu tú, lên vCraft. Mỗi đời giữ một bí quyết pha men, chỉ truyền cho người con theo nghề.</p></section>
+<section class="plate glaze span-7"><p class="role">Lời của chủ lò</p><p class="lede">“Đất Bát Tràng không vội. Mình vội thì bình nứt ngay trong lò.”</p><p class="small dim">— Nguyễn Minh Hải</p></section>
+<section class="plate paper span-6"><p class="role" style="color:var(--clay)">Vuốt dáng</p><h3>Nguyễn Văn Bình</h3><p class="small">Dáng tỏi trên bàn xoay. Ba mươi năm giữ cữ miệng loe.</p></section>
+<section class="plate paper span-6"><p class="role" style="color:var(--clay)">Vẽ lam</p><h3>Trần Thị Lan</h3><p class="small">Dải sóng nước bằng bút lông. Tài khoản đăng bài do người nhà quản trị, không ghi người đăng làm nghệ nhân.</p></section>
+<section class="plate glaze span-7 vasebox"><svg viewBox="0 0 200 260" aria-hidden="true"><path d="M80 14 H120 Q118 22 112 26 C110 44 112 58 122 70 C148 88 158 116 155 146 C152 182 134 202 122 212 L118 224 H82 L78 212 C66 202 48 182 45 146 C42 116 52 88 78 70 C88 58 90 44 88 26 Q82 22 80 14 Z" fill="#F5EFE4" opacity=".94"/><path d="M45 150 q14 -12 27 0 t27 0 t27 0 t27 0" fill="none" stroke="#F5EFE4" stroke-width="5" stroke-linecap="round"/><path d="M45 168 q14 -12 27 0 t27 0 t27 0 t27 0" fill="none" stroke="#F5EFE4" stroke-width="3" stroke-linecap="round" opacity=".65"/></svg><figcaption><p class="role">Độc bản · không giá bán lẻ</p><h2 style="font-size:clamp(2rem,4vw,3.2rem)">Bình hút lộc men lam</h2><p class="small dim">Cao 32 cm · đất Trúc Thôn · men lam xám tro. Ảnh thật cần giấy phép rõ ràng, ghi công tác giả.</p></figcaption></section>
+<section class="plate paper span-5"><p class="role" style="color:var(--clay)">Nhật ký · 7 công đoạn</p><ol class="ledger"><li><span class="when">02/09/2026</span><span><span class="stage">Đất.</span> Nhào đất Trúc Thôn, ủ 7 ngày. <span class="small">— Minh Hải</span></span></li><li><span class="when">09/09/2026</span><span><span class="stage">Vuốt.</span> Dáng tỏi trên bàn xoay. <span class="small">— Văn Bình</span></span></li><li><span class="when">16/09/2026</span><span><span class="stage">Phơi.</span> Bóng râm 6 ngày, sửa chân đế.</span></li><li><span class="when">23/09/2026</span><span><span class="stage">Vẽ.</span> Dải sóng nước, bút lông. <span class="small">— Thị Lan</span></span></li><li><span class="when">28/09/2026</span><span><span class="stage">Tráng men.</span> Men lam xám tro.</span></li><li><span class="when">03/10/2026</span><span><span class="stage">Nung.</span> Lò ga 14 giờ, đỉnh 1.280 độ.</span></li><li><span class="when">05/10/2026</span><span><span class="stage">Hoàn thiện.</span> Ra lò, kiểm tra, đóng ấn đáy.</span></li></ol><p class="note"><strong>Sửa đổi công khai:</strong> mốc Phơi từng ghi 5 ngày, sửa thành 6 ngày kèm lý do. Bản cũ vẫn còn để đối chiếu.</p><p class="note ok"><strong>Tính vẹn nhật ký:</strong> bản ghi đã niêm phong, không sửa âm thầm được. Câu này chỉ nói việc giữ nguyên bản ghi.</p></section>
+<section class="plate celadon span-6 visit"><p class="role">Đón khách · 7:30–17:30</p><h3>Showroom Xóm 3, Bát Tràng</h3><p class="small">Xem bình, gặp nghệ nhân theo lịch hẹn.</p></section>
+<section class="plate ink span-6 visit"><p class="role">Không đón khách</p><h3>Xưởng sản xuất</h3><p class="small dim">Khu lò nung và phơi. Chỉ danh sách chữ, không bản đồ chi tiết.</p></section>
+<a class="plate clay span-12 cta" href="#">Gửi yêu cầu báo giá sỉ <span aria-hidden="true">→</span></a>
+</main>
+</div>
+<div id="variant-b" class="variant" hidden>
+<main class="wall">
+<nav class="rooms" aria-label="Năm gian phòng"><a href="#r1">Gian nhà</a><a href="#r2">Gian người</a><a href="#r3">Gian vật</a><a href="#r4">Gian chứng</a><a href="#r5">Gian thăm</a></nav>
+<h1 class="title span-12">Gốm Minh Hải</h1>
+<section class="plate ink span-7 room" id="r1"><p class="role">Gian nhà</p><h2>Lịch sử hộ</h2><p class="small dim">1962 dựng lò bầu · 1985 pha men lam riêng · 2003 chuyển lò ga · 2019 nghệ nhân ưu tú · 2026 lên vCraft.</p></section>
+<section class="plate paper span-5 room" id="r2"><p class="role" style="color:var(--clay)">Gian người</p><h2>Ai làm</h2><p class="small">Bình vuốt, Lan vẽ. Chứng nhận hiện ở mục đã duyệt.</p></section>
+<section class="plate glaze span-12 room" id="r3"><p class="role">Gian vật</p><h2>Bình hút lộc men lam</h2><p class="small dim">Độc bản · Không bảng giá, chỉ một nút sang báo giá sỉ.</p></section>
+<section class="plate paper span-7 room" id="r4"><p class="role" style="color:var(--clay)">Gian chứng</p><h2>Nhật ký và ấn</h2><p><span class="mono" style="font-family:'JetBrains Mono',monospace">Ấn BT7K2QXM</span></p><p class="note ok"><strong>Tính vẹn nhật ký:</strong> bản ghi đã niêm phong, không sửa âm thầm được.</p></section>
+<section class="plate celadon span-5 room" id="r5"><p class="role">Gian thăm</p><h2>Đến và liên hệ</h2><p class="small">Showroom đón khách 7:30–17:30. Xưởng sản xuất không đón khách.</p></section>
+<a class="plate clay span-12 cta" href="#">Gửi yêu cầu báo giá sỉ <span aria-hidden="true">→</span></a>
+</main>
+</div>
+<div id="variant-c" class="variant" hidden>
+<main class="wall">
+<section class="plate glaze span-12" style="display:grid;gap:1.2rem;grid-template-columns:.8fr 1.2fr;align-items:center"><div class="plate paper" style="text-align:center"><svg class="stamp" viewBox="0 0 40 40" role="img" aria-label="Ấn truy xuất"><path d="M5 4.5 Q20 2.5 35.5 5 Q37.5 20 35 35.5 Q20 37.8 4.6 35.2 Q2.4 20 5 4.5 Z" fill="#C2261C"/><path d="M15 7 H25 Q24.6 8.2 23.4 8.8 C23 10.8 23.2 12.8 24.5 14.3 C29.5 16.8 31.5 20.2 31.2 23.6 C30.8 27.4 28 30 26 31 L25 32.6 H15 L14 31 C12 30 9.2 27.4 8.8 23.6 C8.5 20.2 10.5 16.8 15.5 14.3 C16.8 12.8 17 10.8 16.6 8.8 Q15.4 8.2 15 7 Z" fill="#F5EFE4"/><path d="M11.2 22.4 q2.2 -2 4.4 0 t4.4 0 t4.4 0 t4.4 0" fill="none" stroke="#C2261C" stroke-width="1.3" stroke-linecap="round"/></svg><p class="code">BT7K2QXM</p></div><div><p class="role">Bạn vừa quét mã dưới đáy bình</p><h2 style="font-size:clamp(2.2rem,4vw,3.4rem)">Bình này ra lò ngày 05/10/2026.</h2><p class="small dim">Bản ghi đã niêm phong, không sửa âm thầm được.</p></div></section>
+<section class="plate paper span-7"><p class="role" style="color:var(--clay)">Nhật ký · mới nhất trước</p><ol class="ledger"><li><span class="when">05/10</span><span><span class="stage">Hoàn thiện.</span> Ra lò, kiểm tra, đóng ấn đáy.</span></li><li><span class="when">03/10</span><span><span class="stage">Nung.</span> Lò ga 14 giờ, đỉnh 1.280 độ.</span></li><li><span class="when">28/09</span><span><span class="stage">Tráng men.</span> Men lam xám tro.</span></li><li><span class="when">23/09</span><span><span class="stage">Vẽ.</span> Dải sóng nước bằng bút lông.</span></li><li><span class="when">16/09</span><span><span class="stage">Phơi.</span> 6 ngày, có sửa đổi công khai kèm lý do.</span></li><li><span class="when">09/09</span><span><span class="stage">Vuốt.</span> Dáng tỏi trên bàn xoay.</span></li><li><span class="when">02/09</span><span><span class="stage">Đất.</span> Nhào đất Trúc Thôn, ủ 7 ngày.</span></li></ol></section>
+<section class="plate ink span-5"><p class="role">Vật này của nhà ai</p><h2>Gốm Minh Hải, đời thứ 5</h2><p class="small dim">Bình vuốt, Lan vẽ. Showroom Xóm 3 đón khách 7:30–17:30. Xưởng sản xuất không đón khách.</p></section>
+<a class="plate clay span-12 cta" href="#">Gửi yêu cầu báo giá sỉ <span aria-hidden="true">→</span></a>
+</main>
+</div>
+<div id="qa" class="wall" style="padding-top:0"><div class="feedback"><h2>Câu hỏi cho buổi phản biện trực tiếp</h2><ol><li>Chọn A, B, hay C, hoặc ghép phần nào với phần nào?</li><li>Thứ tự này có đúng không: nhà, người, vật, chứng cứ, ghé thăm, báo giá?</li><li>Lối vào QR riêng như biến thể C có cần thiết không?</li><li>Danh sách chữ thay bản đồ có chấp nhận được không?</li><li>Mức tương phản này đã đủ đậm chưa, hay cần giữ nền giấy cho phần đọc dài?</li><li>Minh họa bình bằng SVG thế này đã đủ xem chưa, hay vẫn cần ảnh thật trước khi chốt?</li></ol></div></div>
+<script>
+(function(){var o=["a","b","c"];
+function cur(){var m=(location.search.match(/variant=([abc])/)||[])[1];return m||"a"}
+function show(k){o.forEach(function(v){var x=document.getElementById("variant-"+v);if(x)x.hidden=(v!==k)});document.querySelectorAll(".bar nav button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.v===k?"true":"false")});history.replaceState(null,"",location.pathname+"?variant="+k);window.scrollTo(0,0)}
+document.querySelectorAll(".bar nav button").forEach(function(b){b.onclick=function(){show(b.dataset.v)}});
+document.addEventListener("keydown",function(e){if(/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;var i=o.indexOf(cur());if(e.key==="ArrowRight")show(o[(i+1)%3]);if(e.key==="ArrowLeft")show(o[(i+2)%3])});
+show(cur());})();
+</script>
+</body>
+</html>
