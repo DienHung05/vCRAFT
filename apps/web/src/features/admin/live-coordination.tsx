@@ -1,0 +1,202 @@
+'use client';
+
+import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
+import type { CoordinationDto, RfqResponse } from '@vcraft/contracts';
+import { Badge, Button, Card } from '@vcraft/ui';
+import { useFormatter, useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
+import { useQuotationClient } from '@/lib/api/use-quotation-client';
+import { AllocationBoard, type BoardSubmitPayload } from './allocation-board';
+
+type LiveState =
+  | { kind: 'loading' }
+  | { kind: 'unauthenticated' }
+  | { kind: 'notFound' }
+  | { kind: 'claimable'; request: RfqResponse }
+  | { kind: 'ready'; coordination: CoordinationDto; noticeCount: number }
+  | { kind: 'error' };
+
+const requestClosed = (request: RfqResponse) =>
+  !['SENT', 'BIDDING'].includes(request.status) ||
+  new Date(request.biddingClosesAt).getTime() <= Date.now();
+
+export function LiveCoordination({
+  rfqId,
+  client: provided,
+}: {
+  rfqId: string;
+  client?: QuotationClient;
+}) {
+  const t = useTranslations('admin.live');
+  const { client, loading } = useQuotationClient(provided);
+  if (loading) return <p>{t('loading')}</p>;
+  if (!client) return <p>{t('signIn')}</p>;
+  return <CoordinationWorkspace key={rfqId} rfqId={rfqId} client={client} />;
+}
+
+function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
+  const t = useTranslations('admin.live');
+  const format = useFormatter();
+  const [state, setState] = useState<LiveState>({ kind: 'loading' });
+  const [refresh, setRefresh] = useState(0);
+  const [claiming, setClaiming] = useState(false);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refresh explicitly reloads after claims, stale writes and retries.
+  useEffect(() => {
+    let active = true;
+    let sequence = 0;
+    async function load() {
+      const current = ++sequence;
+      try {
+        let coordination: CoordinationDto;
+        try {
+          coordination = await client.getCoordination(rfqId);
+        } catch (error) {
+          if (!(error instanceof QuotationApiError) || error.status !== 404) throw error;
+          const request = await client.getRequest(rfqId);
+          if (active && current === sequence) setState({ kind: 'claimable', request });
+          return;
+        }
+        const notices = await client.listNotices();
+        if (active && current === sequence)
+          setState({
+            kind: 'ready',
+            coordination,
+            noticeCount: notices.filter((notice) => notice.requestId === rfqId).length,
+          });
+      } catch (error) {
+        if (!active || current !== sequence) return;
+        setState({
+          kind:
+            error instanceof QuotationApiError && error.status === 401
+              ? 'unauthenticated'
+              : error instanceof QuotationApiError && error.status === 404
+                ? 'notFound'
+                : 'error',
+        });
+      }
+    }
+    void load();
+    const timer = window.setInterval(() => {
+      if (!document.hidden) void load();
+    }, 10_000);
+    const visible = () => {
+      if (!document.hidden) void load();
+    };
+    document.addEventListener('visibilitychange', visible);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', visible);
+    };
+  }, [client, rfqId, refresh]);
+
+  if (state.kind === 'loading') return <p>{t('loading')}</p>;
+  if (state.kind === 'unauthenticated' || state.kind === 'notFound')
+    return (
+      <Card className="p-6">
+        <p>{t(state.kind === 'unauthenticated' ? 'signIn' : 'notFound')}</p>
+      </Card>
+    );
+  if (state.kind === 'error')
+    return (
+      <Card className="p-6">
+        <p role="alert">{t('loadFailed')}</p>
+        <Button onClick={() => setRefresh((value) => value + 1)}>{t('retry')}</Button>
+      </Card>
+    );
+
+  if (state.kind === 'claimable') {
+    const claim = async () => {
+      if (claiming || requestClosed(state.request)) return;
+      setClaiming(true);
+      try {
+        await client.coordinate(rfqId, state.request.version);
+        setRefresh((value) => value + 1);
+      } catch {
+        setState({ kind: 'error' });
+      } finally {
+        setClaiming(false);
+      }
+    };
+    return (
+      <Card className="flex flex-col gap-4 p-6">
+        <p>{t('claimable')}</p>
+        <Button disabled={claiming || requestClosed(state.request)} onClick={() => void claim()}>
+          {t(claiming ? 'claiming' : 'claim')}
+        </Button>
+        {requestClosed(state.request) ? <p>{t('closed')}</p> : null}
+      </Card>
+    );
+  }
+
+  const { request, contributions } = state.coordination;
+  const closed = requestClosed(request);
+  const submit = async (payload: BoardSubmitPayload) => {
+    try {
+      await client.submitQuotation(rfqId, payload.requestVersion, {
+        parts: [...payload.parts],
+        additionalChargeVnd: payload.additionalChargeVnd,
+        deliveryTerms: payload.deliveryTerms,
+      });
+    } catch (error) {
+      if (error instanceof QuotationApiError && error.code === 'STALE_VERSION')
+        setRefresh((value) => value + 1);
+      throw new Error(t('loadFailed'));
+    }
+  };
+  return (
+    <div className="flex flex-col gap-6">
+      <h1 className="text-h2">{request.design}</h1>
+      <dl className="flex flex-wrap gap-6 text-small">
+        <div>
+          <dt>{t('status')}</dt>
+          <dd>
+            <Badge>{request.status}</Badge>
+          </dd>
+        </div>
+        <div>
+          <dt>{t('quantity')}</dt>
+          <dd>
+            {format.number(request.quantity)} {request.unit}
+          </dd>
+        </div>
+        <div>
+          <dt>{t('biddingCloses')}</dt>
+          <dd>{format.dateTime(new Date(request.biddingClosesAt), 'long')}</dd>
+        </div>
+        <div>
+          <dt>{t('requiredBy')}</dt>
+          <dd>{format.dateTime(new Date(request.requiredBy), 'long')}</dd>
+        </div>
+      </dl>
+      {state.noticeCount > 0 ? (
+        <p role="status">{t('notice', { count: state.noticeCount })}</p>
+      ) : null}
+      {closed ? <p>{t('closed')}</p> : null}
+      <AllocationBoard
+        key={request.version}
+        rfqId={rfqId}
+        rfqCode={rfqId}
+        requestVersion={request.version}
+        quantity={request.quantity}
+        unit={request.unit}
+        biddingClosesAt={request.biddingClosesAt}
+        requiredBy={request.requiredBy}
+        contributions={contributions
+          .filter((offer) => offer.status === 'ACTIVE')
+          .map((offer) => ({
+            householdId: offer.householdId,
+            name: offer.householdName,
+            tint: 'var(--color-clay)',
+            maxQuantity: offer.maxQuantity,
+            unitPriceVnd: offer.unitPriceVnd,
+            completionDate: offer.completionDate,
+            contributionVersion: offer.version,
+          }))}
+        disabled={closed}
+        onSubmit={submit}
+      />
+    </div>
+  );
+}

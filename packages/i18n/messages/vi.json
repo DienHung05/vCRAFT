@@ -105,11 +105,26 @@
     }
   },
   "stages": {
-    "clay": { "name": "Nhào đất", "text": "Đất sét được lọc, ủ rồi nhào kỹ cho hết bọt khí." },
-    "throw": { "name": "Vuốt dáng", "text": "Đất lên bàn xoay, tay thợ kéo dần thành dáng bình." },
-    "dry": { "name": "Phơi mộc", "text": "Phơi bóng râm cho khô đều để không nứt khi vào lò." },
-    "paint": { "name": "Vẽ lam", "text": "Họa tiết được vẽ bằng bút lông với men lam." },
-    "glaze": { "name": "Tráng men", "text": "Men phủ mỏng hay dày quyết định độ bóng và sắc lam." },
+    "clay": {
+      "name": "Nhào đất",
+      "text": "Đất sét được lọc, ủ rồi nhào kỹ cho hết bọt khí."
+    },
+    "throw": {
+      "name": "Vuốt dáng",
+      "text": "Đất lên bàn xoay, tay thợ kéo dần thành dáng bình."
+    },
+    "dry": {
+      "name": "Phơi mộc",
+      "text": "Phơi bóng râm cho khô đều để không nứt khi vào lò."
+    },
+    "paint": {
+      "name": "Vẽ lam",
+      "text": "Họa tiết được vẽ bằng bút lông với men lam."
+    },
+    "glaze": {
+      "name": "Tráng men",
+      "text": "Men phủ mỏng hay dày quyết định độ bóng và sắc lam."
+    },
     "fire": {
       "name": "Nung lò",
       "text": "Lò lên hơn 1.200°C. Ra lò mới biết men lên màu thế nào."
@@ -291,6 +306,17 @@
       "daysLeft": "{days, plural, other {Còn # ngày}}",
       "closed": "Đã hết hạn chào giá"
     },
+    "live": {
+      "loading": "Đang tải chào giá…",
+      "signIn": "Bạn cần đăng nhập bằng tài khoản bên mua để xem chào giá này.",
+      "loadFailed": "Không tải được chào giá, hoặc bạn không có quyền xem yêu cầu này.",
+      "notice": "Có một chào giá liên kết đã bị rút. Hãy xem trạng thái mới nhất trước khi quyết định.",
+      "productionTotal": "Tổng tiền sản xuất",
+      "additionalCharge": "Phụ phí",
+      "total": "Tổng cho bên mua",
+      "deliveryIncluded": "Đã gồm vận chuyển.",
+      "deliverySeparate": "Vận chuyển được thỏa thuận và thanh toán riêng."
+    },
     "bids": {
       "title": "Chào giá nhận được",
       "count": "{count, plural, =0 {Chưa có chào giá nào} other {# chào giá}}",
@@ -347,54 +373,70 @@
       }
     },
     "board": {
-      "strategyTitle": "Phương án đề xuất",
-      "strategy": {
-        "capacity": {
-          "name": "Theo năng lực",
-          "text": "Chia theo tỉ lệ năng lực của từng hộ; phần lẻ dồn cho hộ có số dư lớn nhất."
-        },
-        "cheapest": {
-          "name": "Giá thấp trước",
-          "text": "Hộ giá thấp nhất nhận đủ năng lực trước, rồi tới hộ kế tiếp cho đến khi đủ."
-        },
-        "balanced": {
-          "name": "Cân bằng",
-          "text": "Chia đều cho các hộ, hộ nào chạm trần năng lực thì phần thừa chia cho hộ còn lại."
-        }
-      },
-      "strategyCost": "Tổng chi phí {cost}",
       "barTitle": "Chia {quantity} {unit} cho các hộ",
       "barLabel": "Đã chia {sum} trên {quantity} {unit}",
       "statusOk": "Đã chia đủ {quantity} {unit}. Bạn có thể mô phỏng gửi chào giá liên kết.",
       "problem": {
         "short": "Còn thiếu {count} {unit}.",
         "excess": "Đang chia thừa {count} {unit}.",
-        "over": "{name} vượt năng lực còn trống ({capacity}).",
-        "invalid": "Số lượng của mỗi hộ phải là số nguyên từ 0 trở lên."
+        "over": "{name} vượt mức tối đa hộ đã khai ({capacity}).",
+        "invalid": "Số lượng của mỗi hộ phải là số nguyên từ 0 trở lên.",
+        "date": "Ngày hoàn thành phải sau hạn chào giá và không muộn hơn hạn giao.",
+        "charge": "Phụ phí giao hàng phải là số nguyên từ 0 trở lên."
       },
-      "partMeta": "Năng lực {capacity} · đơn giá {price} · giao sau {days} ngày",
+      "partMeta": "Tối đa {max} · đơn giá {price} · hoàn thành {date}",
       "slider": "Số lượng giao cho {name}",
       "quantityOf": "Nhập số lượng cho {name}",
       "stat": {
         "sum": "Đã chia",
         "missing": "Còn thiếu",
         "excess": "Đang thừa",
-        "cost": "Tổng chi phí",
-        "average": "Đơn giá bình quân",
-        "eta": "Dự kiến hoàn thành",
-        "etaDays": "{days, plural, other {# ngày}}",
-        "onTime": "Kịp hạn giao {date}.",
-        "late": "Trễ hạn giao {date}."
+        "charge": "Phụ phí giao hàng",
+        "terms": "Vận chuyển",
+        "total": "Tổng cho bên mua"
       },
-      "send": "Mô phỏng gửi chào giá liên kết",
+      "send": "Gửi chào giá liên kết",
       "sentLabel": "Đã mô phỏng",
       "demoNote": "Bản trình diễn: thao tác chỉ chạy trên trình duyệt của bạn, chưa lưu, chưa gửi lên máy chủ và không có thông báo nào được gửi.",
-      "reset": "Về phương án đề xuất",
-      "sendBlocked": "Chia đủ số lượng và không hộ nào vượt năng lực thì mới mô phỏng gửi được.",
+      "sendBlocked": "Chia đủ số lượng, không hộ nào vượt mức tối đa và ngày hoàn thành hợp lệ thì mới gửi được.",
       "sent": {
         "title": "Đã mô phỏng (chưa lưu, không gửi thông báo)",
         "text": "Phương án chia đơn cho yêu cầu {code} chỉ chạy thử trên trình duyệt này. Chưa có chào giá nào tới bên mua và chưa hộ nào nhận thông báo."
+      },
+      "manualTitle": "Chia đơn thủ công",
+      "manualLead": "Bạn tự chia số lượng cho từng hộ theo đúng đề xuất tham gia của họ. Không có phương án tự động và không có ngày hoàn thành suy đoán: từng hộ giữ đúng ngày và đơn giá hộ đã khai.",
+      "chargeOf": "Phụ phí giao hàng",
+      "terms": {
+        "included": "Đã gồm vận chuyển",
+        "separate": "Bên mua chịu phí vận chuyển"
+      },
+      "sendingLabel": "Đang gửi…",
+      "sentRealLabel": "Đã gửi",
+      "sendFailed": "Gửi không thành công. Bạn thử lại sau.",
+      "liveNote": "Yêu cầu {code}: bản chào giá sẽ gửi lên máy chủ qua API, kèm phiên đăng nhập của bạn.",
+      "sentReal": {
+        "title": "Đã gửi chào giá liên kết",
+        "text": "Chào giá cho yêu cầu {code} đã lưu trên máy chủ. Bên mua sẽ thấy các hộ, phần chia, ngày hoàn thành và tổng trọn gói — không thấy giá riêng của từng hộ."
       }
+    },
+    "live": {
+      "loading": "Đang tải yêu cầu…",
+      "signIn": "Bạn cần đăng nhập bằng tài khoản Ban quản lý để xem màn điều phối này.",
+      "signInRequired": "Cần phiên đăng nhập của Ban quản lý thì mới nhận điều phối được.",
+      "notFound": "Không tìm thấy yêu cầu này, hoặc bạn không được xem nó.",
+      "retry": "Thử lại",
+      "loadFailed": "Tải không thành công.",
+      "claimFailed": "Nhận điều phối không thành công.",
+      "claimable": "Yêu cầu này nhờ Ban quản lý điều phối nhưng chưa ai nhận. Bạn có thể nhận để ghép các đề xuất tham gia thành một chào giá.",
+      "claim": "Nhận điều phối",
+      "claiming": "Đang nhận…",
+      "status": "Trạng thái",
+      "quantity": "Số lượng",
+      "biddingCloses": "Hạn chào giá",
+      "requiredBy": "Hạn giao",
+      "requestedQuantity": "Cần {quantity} {unit}",
+      "notice": "{count, plural, other {Có # thông báo cho yêu cầu này — một chào giá liên kết đã bị rút. Hãy soát lại trước khi gửi.}}",
+      "closed": "Yêu cầu này đã hết hạn chào giá, không còn gửi chào giá liên kết được."
     }
   },
   "exhibition": {
@@ -422,5 +464,39 @@
     "homeLink": "Về trang chủ triển lãm",
     "householdTitle": "Hộ làm ra món đồ",
     "householdCta": "Đọc câu chuyện của {household}"
+  },
+  "contribution": {
+    "title": "Đề xuất tham gia cho {code}",
+    "lead": "Yêu cầu cần {quantity} {unit}. Bạn khai mức tối đa, đơn giá và ngày hoàn thành mà hộ mình nhận được.",
+    "maxQuantity": "Mức tối đa ({unit})",
+    "unitPrice": "Đơn giá (VND)",
+    "completionDate": "Ngày hoàn thành",
+    "dateWindow": "Ngày hoàn thành phải sau hạn chào giá {closing} và không muộn hơn hạn giao {required}.",
+    "problem": {
+      "max": "Mức tối đa phải là số nguyên từ 1 trở lên.",
+      "price": "Đơn giá phải là số nguyên từ 1 trở lên.",
+      "dateMissing": "Chọn ngày hoàn thành.",
+      "dateBeforeClosing": "Ngày hoàn thành phải sau hạn chào giá {date}.",
+      "dateAfterRequired": "Ngày hoàn thành không được muộn hơn hạn giao {date}."
+    },
+    "send": "Gửi đề xuất",
+    "update": "Cập nhật đề xuất",
+    "sending": "Đang gửi…",
+    "sentRealLabel": "Đã gửi",
+    "updatedLabel": "Đã cập nhật",
+    "simulatedLabel": "Đã mô phỏng",
+    "simulatedNote": "Đã mô phỏng (chưa lưu, không gửi thông báo). Bản trình diễn chỉ chạy trên trình duyệt này.",
+    "sentNote": "Đề xuất đã lưu trên máy chủ. BQL điều phối sẽ dùng mức tối đa, đơn giá và ngày hoàn thành này để ghép chào giá.",
+    "withdraw": "Rút đề xuất",
+    "withdrawn": "Đề xuất đã rút. Gửi lại để tham gia lại.",
+    "sendFailed": "Gửi không thành công. Bạn thử lại sau.",
+    "demoNote": "Bản trình diễn: thao tác chỉ chạy trên trình duyệt của bạn, chưa lưu, chưa gửi lên máy chủ.",
+    "liveNote": "Đề xuất sẽ gửi lên máy chủ qua API, kèm phiên đăng nhập của bạn. Thông tin này riêng giữa hộ và Ban quản lý, bên mua không thấy.",
+    "privacyNote": "Mức tối đa, đơn giá và ngày hoàn thành là thông tin riêng giữa hộ và Ban quản lý; bên mua chỉ thấy hộ, phần chia và ngày hoàn thành.",
+    "loading": "Đang tải yêu cầu…",
+    "signIn": "Bạn cần đăng nhập bằng tài khoản đại diện hộ để đề xuất tham gia.",
+    "notFound": "Không tìm thấy yêu cầu này, hoặc hộ của bạn không được mời.",
+    "loadFailed": "Tải không thành công.",
+    "closed": "Đã hết hạn chào giá, không còn sửa hoặc gửi đề xuất được."
   }
 }

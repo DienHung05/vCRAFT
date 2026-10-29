@@ -6,7 +6,7 @@ describe('rfq-flow (FR-RFQ-12)', () => {
     expect(buyerEvents('DRAFT')).toEqual(['SUBMIT', 'CANCEL']);
     expect(buyerEvents('SENT')).toEqual(['CANCEL']); // RECEIVE_BID/EXPIRE là của hộ và hệ thống
     expect(buyerEvents('BIDDING')).toEqual(['ACCEPT_BID', 'CANCEL']);
-    expect(buyerEvents('ACCEPTED')).toEqual([]); // START_PRODUCTION/ADMIN_CANCEL là của Admin
+    expect(buyerEvents('ACCEPTED')).toEqual(['CANCEL']); // Buyer được hủy trước khi vào sản xuất; START_PRODUCTION/ADMIN_CANCEL là của Admin
     expect(buyerEvents('IN_PRODUCTION')).toEqual(['CONFIRM_DELIVERY']);
     expect(buyerEvents('DELIVERED')).toEqual([]);
     expect(buyerEvents('CANCELLED')).toEqual([]);
