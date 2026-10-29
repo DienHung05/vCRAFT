@@ -24,6 +24,7 @@ import { slugify } from '@vcraft/utils';
 import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
+import { loadJournal } from '../../production-logs/application/journal.queries';
 import {
   type HouseholdParts,
   toArtisanDto,
@@ -244,6 +245,7 @@ export class HouseholdsService {
       availability,
       product: toProductDto(product),
       household: { name: product.household.name, slug: product.household.slug },
+      journal: await loadJournal(em, product),
     };
   }
 
