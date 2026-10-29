@@ -138,6 +138,21 @@ export interface Bid {
   revision: number;
   submittedAt: string;
   note: string;
+  /**
+   * Phần chia của chào giá liên kết, dành cho bên mua (FR-RFQ-07): hộ, số lượng, ngày hoàn thành.
+   * KHÔNG có đơn giá riêng của hộ — giá riêng giữa hộ và BQL là thông tin nội bộ, không hiện cho
+   * bên mua. Có ở đây để dữ liệu mẫu minh họa đúng những gì backend `projectBuyerQuotation`
+   * sẽ trả (allowlist: householdId, quantity, completionDate).
+   */
+  shares?: readonly BidShare[];
+}
+
+/** Phần chia của một hộ trong chào giá liên kết, như bên mua thấy (không có giá nội bộ). */
+export interface BidShare {
+  /** Tên hộ hiển thị cho bên mua. */
+  household: string;
+  quantity: number;
+  completionDate: string;
 }
 
 export interface Rfq {
@@ -159,13 +174,17 @@ export interface Rfq {
   bids: Bid[];
 }
 
-export type AllocationStrategy = 'capacity' | 'cheapest' | 'balanced';
-
-export interface CoordinationCandidate {
-  artisanSlug: string;
-  capacity: number;
-  unitPrice: number;
-  leadDays: number;
+export interface DemoContribution {
+  /** ID hộ (slug mẫu; thật thì là UUID từ API). */
+  householdId: string;
+  /** Mức tối đa hộ khai. */
+  maxQuantity: number;
+  /** Đơn giá hộ khai (VND) — nội bộ giữa hộ và BQL, không hiện cho bên mua. */
+  unitPriceVnd: number;
+  /** Ngày hoàn thành hộ hứa, tuyệt đối (ISO). */
+  completionDate: string;
+  /** Phiên bản đóng góp (If-Match). */
+  contributionVersion: number;
 }
 
 export interface Coordination {
@@ -174,11 +193,12 @@ export interface Coordination {
   buyer: string;
   quantity: number;
   unit: string;
+  /** Hạn chào giá: ngày hoàn thành của mọi phần phải sau mốc này. */
+  biddingClosesAt: string;
   requiredBy: string;
   reason: 'requested' | 'no-full-bid';
-  candidates: CoordinationCandidate[];
-  /** Phương án đề xuất theo BR-06, cùng thứ tự `candidates`. Sau này do domain tính. */
-  plans: Record<AllocationStrategy, number[]>;
+  /** Đề xuất tham gia của các hộ. Admin tự chia tay trên bảng, không có phương án tự động. */
+  contributions: readonly DemoContribution[];
 }
 
 export interface NewsItem {
@@ -509,20 +529,6 @@ const buildRfqs = (): Rfq[] => [
     invitedCount: 6,
     bids: [
       {
-        id: 'b1',
-        artisanSlug: 'lo-duc-phat',
-        bidder: 'Lò Đức Phát',
-        type: 'INDIVIDUAL',
-        status: 'SUBMITTED',
-        unitPrice: 36_500,
-        quantityOffered: 5000,
-        deliveryDate: rel(33),
-        reputation: 4.6,
-        revision: 2,
-        submittedAt: rel(-4, 10),
-        note: 'Lò ga 2 buồng, chạy song song.',
-      },
-      {
         id: 'b2',
         artisanSlug: null,
         bidder: 'BQL điều phối · 3 hộ',
@@ -535,34 +541,26 @@ const buildRfqs = (): Rfq[] => [
         revision: 1,
         submittedAt: rel(-2, 15),
         note: 'Minh Hải 2.000 · Lam Ngọc 1.500 · Hạnh Thủy 1.500.',
+        // Những gì bên mua thấy: hộ, phần chia, ngày hoàn thành — không giá nội bộ của hộ.
+        shares: [
+          { household: 'Gốm Minh Hải', quantity: 2000, completionDate: rel(31) },
+          { household: 'Gốm Lam Ngọc', quantity: 1500, completionDate: rel(33) },
+          { household: 'Gốm Hạnh Thủy', quantity: 1500, completionDate: rel(35) },
+        ],
       },
       {
         id: 'b3',
-        artisanSlug: 'gom-minh-hai',
-        bidder: 'Gốm Minh Hải',
+        artisanSlug: 'lo-duc-phat',
+        bidder: 'Lò Đức Phát',
         type: 'INDIVIDUAL',
         status: 'SUBMITTED',
-        unitPrice: 39_000,
-        quantityOffered: 2000,
-        deliveryDate: rel(25),
-        reputation: 4.9,
-        revision: 1,
-        submittedAt: rel(-7, 8),
-        note: 'Nhận một phần, ưu tiên chất lượng in.',
-      },
-      {
-        id: 'b4',
-        artisanSlug: 'gom-lam-ngoc',
-        bidder: 'Gốm Lam Ngọc',
-        type: 'INDIVIDUAL',
-        status: 'SUBMITTED',
-        unitPrice: 37_800,
-        quantityOffered: 1500,
-        deliveryDate: rel(31),
-        reputation: 4.8,
-        revision: 1,
-        submittedAt: rel(-6, 14),
-        note: '',
+        unitPrice: 36_500,
+        quantityOffered: 5000,
+        deliveryDate: rel(33),
+        reputation: 4.6,
+        revision: 2,
+        submittedAt: rel(-4, 10),
+        note: 'Lò ga 2 buồng, chạy song song.',
       },
     ],
   },
@@ -575,22 +573,40 @@ const buildCoordinations = (): Coordination[] => [
     buyer: 'Công ty TNHH Bếp Việt',
     quantity: 3000,
     unit: 'bát',
+    biddingClosesAt: rel(6),
     requiredBy: rel(53),
     reason: 'no-full-bid',
-    candidates: [
-      { artisanSlug: 'gom-minh-hai', capacity: 1200, unitPrice: 58_000, leadDays: 18 },
-      { artisanSlug: 'gom-lam-ngoc', capacity: 900, unitPrice: 54_000, leadDays: 21 },
-      { artisanSlug: 'lo-duc-phat', capacity: 1500, unitPrice: 61_000, leadDays: 15 },
-      { artisanSlug: 'gom-hanh-thuy', capacity: 600, unitPrice: 52_000, leadDays: 24 },
+    // Đề xuất tham gia riêng của từng hộ: tối đa, đơn giá, ngày hoàn thành tuyệt đối (GH#10).
+    contributions: [
+      {
+        householdId: 'gom-minh-hai',
+        maxQuantity: 1200,
+        unitPriceVnd: 58_000,
+        completionDate: rel(31),
+        contributionVersion: 1,
+      },
+      {
+        householdId: 'gom-lam-ngoc',
+        maxQuantity: 900,
+        unitPriceVnd: 54_000,
+        completionDate: rel(33),
+        contributionVersion: 1,
+      },
+      {
+        householdId: 'lo-duc-phat',
+        maxQuantity: 1500,
+        unitPriceVnd: 61_000,
+        completionDate: rel(35),
+        contributionVersion: 1,
+      },
+      {
+        householdId: 'gom-hanh-thuy',
+        maxQuantity: 600,
+        unitPriceVnd: 52_000,
+        completionDate: rel(37),
+        contributionVersion: 1,
+      },
     ],
-    plans: {
-      // BR-06 Theo năng lực: tỉ lệ năng lực, phần dư theo Hamilton.
-      capacity: [857, 643, 1071, 429],
-      // BR-06 Giá thấp trước: tham lam theo đơn giá tăng dần.
-      cheapest: [1200, 900, 300, 600],
-      // BR-06 Cân bằng: chia đều có trần năng lực.
-      balanced: [800, 800, 800, 600],
-    },
   },
 ];
 

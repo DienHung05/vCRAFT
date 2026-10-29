@@ -19,6 +19,7 @@ export interface Actor {
   readonly email: string;
   readonly role: AccountRole;
   readonly locked: boolean;
+  readonly emailVerified?: boolean;
 }
 
 type RequestWithActor = HttpRequest & { actor?: Actor | null };
@@ -79,6 +80,12 @@ export class AuthGuard implements CanActivate {
       user = em.create(AppUser, { id: identity.sub, email: identity.email, role: 'BUYER' });
       await em.flush();
     }
-    return { id: user.id, email: user.email, role: user.role, locked: user.status === 'LOCKED' };
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      locked: user.status === 'LOCKED',
+      emailVerified: identity.emailVerified === true,
+    };
   }
 }

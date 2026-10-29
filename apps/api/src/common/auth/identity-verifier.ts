@@ -1,9 +1,10 @@
-import { verifyAuth } from '@supabase/server/core';
+import { createContextClient, verifyAuth } from '@supabase/server/core';
 
 /** Danh tính đã kiểm chứng từ access token (Supabase = ai, vCraft = được làm gì; ARCHITECTURE §7.5). */
 export interface VerifiedIdentity {
   readonly sub: string;
   readonly email: string;
+  readonly emailVerified?: boolean;
 }
 
 /**
@@ -29,6 +30,15 @@ export class SupabaseIdentityVerifier extends IdentityVerifier {
     const request = new Request('http://api.internal/', { headers: { authorization } });
     const { data, error } = await verifyAuth(request, { auth: 'user' });
     if (error || !data.userClaims) throw new InvalidTokenError(error?.message ?? 'invalid token');
-    return { sub: data.userClaims.id, email: data.userClaims.email ?? '' };
+    // email_confirmed_at is maintained by Auth. User-editable metadata is not proof of verification.
+    const supabase = createContextClient({ auth: { token: data.token } });
+    const userResult = await supabase.auth.getUser(data.token ?? undefined);
+    if (userResult.error || !userResult.data.user)
+      throw new InvalidTokenError('could not verify user');
+    return {
+      sub: data.userClaims.id,
+      email: userResult.data.user.email ?? '',
+      emailVerified: Boolean(userResult.data.user.email_confirmed_at),
+    };
   }
 }

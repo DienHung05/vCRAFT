@@ -2,7 +2,9 @@ import { Badge } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations } from 'next-intl/server';
-import { AllocationBoard, type AllocationPart } from '@/features/admin/allocation-board';
+import { AllocationBoard, type BoardContribution } from '@/features/admin/allocation-board';
+import { LiveCoordination } from '@/features/admin/live-coordination';
+import { isRfqUuid } from '@/lib/api/rfq-id';
 import { demoParams, getArtisan, getCoordination } from '@/lib/demo/data';
 import { resolveLocale } from '@/lib/locale';
 
@@ -21,26 +23,49 @@ export async function generateMetadata({
   return c ? { title: c.title, robots: { index: false } } : {};
 }
 
-/** Chia đơn cho RFQ cần điều phối (FR-ORD-03): đề xuất theo BR-06, Admin chỉnh tay, Σ phải đúng. */
+/**
+ * Màn điều phối cho hai chế độ, phân nhau bằng hình dạng mã trên đường dẫn:
+ * - UUID yêu cầu thật: `LiveCoordination` — dữ liệu và gửi chào giá đi qua API với phiên đăng nhập
+ *   sẵn có (GH#10). Không có phiên hoặc không có quyền thì màn nói rõ, không giả vờ.
+ * - Mã mẫu `RFQ-*`: bảng chia đơn demo với dữ liệu minh họa, thao tác chỉ chạy trên trình duyệt.
+ */
 export default async function CoordinationPage({
   params,
 }: PageProps<'/[locale]/admin/dieu-phoi/[code]'>) {
   await resolveLocale(params);
   const { code } = await params;
+  if (isRfqUuid(code)) {
+    return (
+      <article className="mx-auto flex max-w-6xl flex-col gap-8">
+        <header className="flex flex-col gap-3">
+          <nav aria-label="Breadcrumb" className="text-small text-ash">
+            <span aria-current="page" className="font-mono text-ink">
+              {code}
+            </span>
+          </nav>
+        </header>
+        <LiveCoordination rfqId={code} />
+      </article>
+    );
+  }
+
   const coordination = await getCoordination(code);
   if (!coordination) notFound();
   const [t, format] = await Promise.all([getTranslations('admin.coordination'), getFormatter()]);
 
-  const artisans = await Promise.all(coordination.candidates.map((c) => getArtisan(c.artisanSlug)));
-  // Thứ tự `parts` phải khớp `plans`, nên thiếu một hộ là dữ liệu hỏng chứ không bỏ qua.
+  // Mỗi đề xuất phải khớp một hộ đã duyệt; thiếu là dữ liệu mẫu hỏng chứ không bỏ qua.
+  const artisans = await Promise.all(
+    coordination.contributions.map((c) => getArtisan(c.householdId)),
+  );
   if (artisans.some((a) => a === null)) notFound();
-  const parts: AllocationPart[] = coordination.candidates.map((c, i) => ({
-    slug: c.artisanSlug,
-    name: artisans[i]?.household ?? c.artisanSlug,
+  const contributions: BoardContribution[] = coordination.contributions.map((c, i) => ({
+    householdId: c.householdId,
+    name: artisans[i]?.household ?? c.householdId,
     tint: artisans[i]?.tint ?? 'currentColor',
-    capacity: c.capacity,
-    unitPrice: c.unitPrice,
-    leadDays: c.leadDays,
+    maxQuantity: c.maxQuantity,
+    unitPriceVnd: c.unitPriceVnd,
+    completionDate: c.completionDate,
+    contributionVersion: c.contributionVersion,
   }));
 
   return (
@@ -81,12 +106,14 @@ export default async function CoordinationPage({
       </header>
 
       <AllocationBoard
+        rfqId={coordination.rfqCode}
         rfqCode={coordination.rfqCode}
+        requestVersion={0}
         quantity={coordination.quantity}
         unit={coordination.unit}
+        biddingClosesAt={coordination.biddingClosesAt}
         requiredBy={coordination.requiredBy}
-        parts={parts}
-        plans={coordination.plans}
+        contributions={contributions}
       />
     </article>
   );
