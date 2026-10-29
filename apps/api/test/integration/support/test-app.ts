@@ -30,7 +30,7 @@ export interface TestApp {
   /** Tạo tài khoản với vai trò cho trước; trả header Authorization dùng cho request. */
   createUser: (role: AccountRole) => Promise<{ id: string; auth: string }>;
   request: (opts: {
-    method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     url: string;
     auth?: string;
     body?: unknown;

@@ -6,4 +6,5 @@ export * from './household.entity.js';
 export * from './journal-entry.entity.js';
 export * from './outbox-event.entity.js';
 export * from './product.entity.js';
+export * from './product-maker.entity.js';
 export * from './workshop.entity.js';
