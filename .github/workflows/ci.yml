@@ -9,9 +9,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Bật/tắt toàn bộ pipeline bằng repo variable CI_ENABLED (hiện đang bật)
+  # Pipeline mặc định bật; đặt repo variable CI_ENABLED=false để tắt.
   quality:
-    if: vars.CI_ENABLED == 'true'
+    if: vars.CI_ENABLED != 'false'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -30,7 +30,7 @@ jobs:
   # Suite rỗng KHÔNG còn được coi là xanh: không có file test thì bước này thất bại.
   integration:
     needs: quality
-    if: vars.CI_ENABLED == 'true'
+    if: vars.CI_ENABLED != 'false'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -47,7 +47,7 @@ jobs:
 
   e2e:
     needs: quality
-    if: vars.CI_ENABLED == 'true'
+    if: vars.CI_ENABLED != 'false'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

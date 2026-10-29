@@ -8,7 +8,6 @@ import {
   RFQ_ACCEPT_GRACE_MS,
   RFQ_ACTOR_ROLES,
   RFQ_EVENTS,
-  RFQ_MIN_BIDDING_WINDOW_MS,
   RFQ_STATUSES,
   type RfqActorRole,
   type RfqContext,
@@ -24,8 +23,12 @@ const EXPECTED: Record<RfqStatus, Partial<Record<RfqEvent, RfqStatus>>> = {
   DRAFT: { SUBMIT: 'SENT', CANCEL: 'CANCELLED' },
   SENT: { RECEIVE_BID: 'BIDDING', CANCEL: 'CANCELLED', EXPIRE: 'EXPIRED' },
   BIDDING: { ACCEPT_BID: 'ACCEPTED', CANCEL: 'CANCELLED', EXPIRE: 'EXPIRED' },
-  ACCEPTED: { START_PRODUCTION: 'IN_PRODUCTION', ADMIN_CANCEL: 'CANCELLED' },
-  IN_PRODUCTION: { CONFIRM_DELIVERY: 'DELIVERED' },
+  ACCEPTED: {
+    START_PRODUCTION: 'IN_PRODUCTION',
+    ADMIN_CANCEL: 'CANCELLED',
+    CANCEL: 'CANCELLED',
+  },
+  IN_PRODUCTION: { CONFIRM_DELIVERY: 'DELIVERED', ADMIN_CANCEL: 'CANCELLED' },
   DELIVERED: {},
   CANCELLED: {},
   EXPIRED: {},
@@ -150,12 +153,15 @@ describe('RFQ guards (SRS §4.1 cột "Điều kiện")', () => {
     it('email chưa xác minh', () => {
       expect(codeOf(run('DRAFT', 'SUBMIT', { emailVerified: false }))).toBe('EMAIL_NOT_VERIFIED');
     });
-    it('biddingClosesAt phải ≥ now + 24h (biên chính xác)', () => {
-      const edge = at(RFQ_MIN_BIDDING_WINDOW_MS);
-      expect(codeOf(run('DRAFT', 'SUBMIT', { biddingClosesAt: edge }))).toBe('OK');
-      expect(
-        codeOf(run('DRAFT', 'SUBMIT', { biddingClosesAt: at(RFQ_MIN_BIDDING_WINDOW_MS - 1) })),
-      ).toBe('BIDDING_DEADLINE_TOO_SOON');
+    it('biddingClosesAt chỉ cần trong tương lai (83g: bỏ tối thiểu 24h, biên chính xác)', () => {
+      expect(codeOf(run('DRAFT', 'SUBMIT', { biddingClosesAt: at(1) }))).toBe('OK');
+      expect(codeOf(run('DRAFT', 'SUBMIT', { biddingClosesAt: at(HOUR) }))).toBe('OK');
+      expect(codeOf(run('DRAFT', 'SUBMIT', { biddingClosesAt: NOW }))).toBe(
+        'BIDDING_DEADLINE_TOO_SOON',
+      );
+      expect(codeOf(run('DRAFT', 'SUBMIT', { biddingClosesAt: at(-1) }))).toBe(
+        'BIDDING_DEADLINE_TOO_SOON',
+      );
     });
     it('requiredBy phải > biddingClosesAt (biên chính xác)', () => {
       const closes = at(48 * HOUR);
@@ -346,7 +352,7 @@ describe('RFQ guards (SRS §4.1 cột "Điều kiện")', () => {
     it('DRAFT hủy không cần lý do', () => {
       expect(codeOf(transition('DRAFT', 'CANCEL', { actor: 'BUYER_OWNER' }))).toBe('OK');
     });
-    it.each(['SENT', 'BIDDING'] as const)('%s hủy bắt buộc lý do', (state) => {
+    it.each(['SENT', 'BIDDING', 'ACCEPTED'] as const)('%s hủy bắt buộc lý do', (state) => {
       expect(codeOf(run(state, 'CANCEL', { reason: '' }))).toBe('REASON_REQUIRED');
       expect(codeOf(run(state, 'CANCEL', { reason: '   ' }))).toBe('REASON_REQUIRED');
       expect(codeOf(run(state, 'CANCEL', { reason: 'đổi kế hoạch' }))).toBe('OK');
@@ -357,10 +363,26 @@ describe('RFQ guards (SRS §4.1 cột "Điều kiện")', () => {
         'ACTOR_NOT_ALLOWED',
       );
     });
-    it('Buyer không CANCEL được khi đã ACCEPTED (phải qua Admin)', () => {
+    it('GH#9: Buyer CANCEL được khi ACCEPTED (trước sản xuất), bắt buộc lý do', () => {
       expect(codeOf(transition('ACCEPTED', 'CANCEL', { actor: 'BUYER_OWNER' }))).toBe(
+        'MISSING_CONTEXT',
+      );
+      expect(codeOf(run('ACCEPTED', 'CANCEL', { reason: '' }))).toBe('REASON_REQUIRED');
+      expect(codeOf(run('ACCEPTED', 'CANCEL', { reason: 'đổi kế hoạch' }))).toBe('OK');
+    });
+    it('GH#9: Buyer không CANCEL được khi đã IN_PRODUCTION (chỉ Admin)', () => {
+      expect(codeOf(transition('IN_PRODUCTION', 'CANCEL', { actor: 'BUYER_OWNER' }))).toBe(
         'INVALID_TRANSITION',
       );
+    });
+    it('GH#9: T7 Admin ADMIN_CANCEL được khi IN_PRODUCTION (sau khi bắt đầu), bắt buộc lý do', () => {
+      expect(codeOf(run('IN_PRODUCTION', 'ADMIN_CANCEL', { reason: '' }))).toBe('REASON_REQUIRED');
+      expect(codeOf(run('IN_PRODUCTION', 'ADMIN_CANCEL', { reason: 'đơn không khả thi' }))).toBe(
+        'OK',
+      );
+      expect(
+        codeOf(run('IN_PRODUCTION', 'ADMIN_CANCEL', { actor: 'BUYER_OWNER' })),
+      ).toBe('ACTOR_NOT_ALLOWED');
     });
   });
 
