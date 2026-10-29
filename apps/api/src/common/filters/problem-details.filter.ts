@@ -25,6 +25,7 @@ const DOMAIN_CODE_MAP: Readonly<Record<string, ErrorCode>> = {
   FORBIDDEN_ACTOR: 'AUTH_FORBIDDEN',
   REASON_REQUIRED: 'VALIDATION_FAILED',
   MISSING_CONTEXT: 'VALIDATION_FAILED',
+  JOURNAL_FROZEN: 'HOUSEHOLD_ACCOUNT_LOCKED',
 };
 
 function fromHttpException(exception: HttpException): ProblemDetails {

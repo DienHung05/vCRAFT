@@ -3,6 +3,7 @@ export * from './artisan.entity.js';
 export * from './audit-log.entity.js';
 export * from './base.entity.js';
 export * from './household.entity.js';
+export * from './journal-entry.entity.js';
 export * from './outbox-event.entity.js';
 export * from './product.entity.js';
 export * from './workshop.entity.js';

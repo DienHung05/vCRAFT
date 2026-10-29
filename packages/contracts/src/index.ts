@@ -3,3 +3,4 @@
  */
 export * from './common';
 export * from './households';
+export * from './journal';
