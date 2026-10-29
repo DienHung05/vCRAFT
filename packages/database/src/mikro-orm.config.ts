@@ -20,6 +20,7 @@ import {
   JournalEntry,
   OutboxEvent,
   Product,
+  ProductMaker,
   Workshop,
 } from './entities/index.js';
 
@@ -118,6 +119,7 @@ export function createMikroOrmOptions(
       Workshop,
       Product,
       JournalEntry,
+      ProductMaker,
     ],
     metadataProvider: ReflectMetadataProvider,
     extensions: [Migrator, SeedManager],

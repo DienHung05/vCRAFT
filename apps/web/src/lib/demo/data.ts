@@ -13,6 +13,7 @@ import {
   type RfqStatus,
   sealChain,
   sha256Hex,
+  type WorkshopPurpose,
 } from '@vcraft/domain';
 
 export interface Certification {
@@ -34,6 +35,30 @@ export interface GalleryShot {
   ratio: '3/2' | '3/4' | '1/1' | '4/5';
   /** Màu chủ đạo của ảnh (backend sinh `dominantColor`). */
   tint: string;
+}
+
+/** Người làm của hộ: được ghi công bằng tên riêng, không cần tài khoản (vCRAFT-9hg.2). */
+export interface Maker {
+  name: string;
+  role: string;
+}
+
+/** Xưởng của hộ; phòng trưng bày đón khách được tách khỏi nơi sản xuất (vCRAFT-9hg.6). */
+export interface DemoWorkshop {
+  id: string;
+  name: string;
+  address: string;
+  purpose: WorkshopPurpose;
+  acceptsVisitors: boolean;
+  visitingInfo?: string;
+  /** Vị trí trên bản đồ thu nhỏ, % theo khung. */
+  pin: { x: number; y: number };
+}
+
+/** Ghi công một người làm cho một sản phẩm, theo phần việc. */
+export interface MakerCredit {
+  name: string;
+  contribution: string;
 }
 
 export interface Artisan {
@@ -58,6 +83,10 @@ export interface Artisan {
   certifications: Certification[];
   timeline: FamilyEvent[];
   gallery: GalleryShot[];
+  /** Không khai thì mặc định là nghệ nhân đại diện (xem `householdMakers`). */
+  makers?: Maker[];
+  /** Không khai thì mặc định một xưởng vừa làm vừa đón khách tại `address` (xem `householdWorkshops`). */
+  workshops?: DemoWorkshop[];
 }
 
 export type LogStage = 'clay' | 'throw' | 'dry' | 'paint' | 'glaze' | 'fire' | 'finish';
@@ -89,6 +118,8 @@ export interface Product {
   tint: string;
   description: string;
   artisanNote: string;
+  /** Ghi công người làm; không khai thì ghi cho nghệ nhân đại diện của hộ. */
+  makers?: MakerCredit[];
   log: LogEntry[];
   scans: number;
 }
@@ -187,6 +218,30 @@ const artisans: Artisan[] = [
     rating: 4.9,
     completedOrders: 38,
     pin: { x: 38, y: 42 },
+    makers: [
+      { name: 'Nguyễn Minh Hải', role: 'Nghệ nhân ưu tú, pha men' },
+      { name: 'Đỗ Văn Bình', role: 'Thợ vuốt' },
+      { name: 'Phạm Thị Lan', role: 'Thợ vẽ lam' },
+    ],
+    workshops: [
+      {
+        id: 'minh-hai-showroom',
+        name: 'Phòng trưng bày Minh Hải',
+        address: 'Số 12 đường Gốm, Bát Tràng',
+        purpose: 'SHOWROOM',
+        acceptsVisitors: true,
+        visitingInfo: 'Mở cửa 7:30 – 17:30 hằng ngày. Đoàn trên 10 người xin hẹn trước.',
+        pin: { x: 38, y: 42 },
+      },
+      {
+        id: 'minh-hai-kiln',
+        name: 'Lò nung Giang Cao',
+        address: 'Xóm 3, thôn Giang Cao, Bát Tràng',
+        purpose: 'PRODUCTION',
+        acceptsVisitors: false,
+        pin: { x: 56, y: 63 },
+      },
+    ],
     certifications: [
       { name: 'Nghệ nhân ưu tú', issuer: 'Chủ tịch nước', year: 2019, verified: true },
       { name: 'OCOP 4 sao', issuer: 'UBND TP. Hà Nội', year: 2023, verified: true },
@@ -307,6 +362,11 @@ const rawProducts: (Omit<Product, 'log'> & { log: RawLogEntry[] })[] = [
     description:
       'Bình dáng tỏi vuốt tay, vẽ dải sóng nước và mây quanh bụng. Men lam xám tro pha theo công thức gia đình, nung củi lần cuối ở 1.280°C nên mỗi chiếc có sắc lam riêng.',
     artisanNote: 'Chiếc này tôi vẽ mất ba buổi sáng. Sóng nước là quê mình, mây là mong ước đi xa.',
+    makers: [
+      { name: 'Đỗ Văn Bình', contribution: 'Vuốt dáng' },
+      { name: 'Phạm Thị Lan', contribution: 'Vẽ lam' },
+      { name: 'Nguyễn Minh Hải', contribution: 'Pha men, nung' },
+    ],
     scans: 128,
     log: [
       {
@@ -570,6 +630,33 @@ async function sealProduct(p: (typeof rawProducts)[number]): Promise<Product> {
     })),
   );
   return { ...p, log: await sealChain(p.code, contents) };
+}
+
+/** Người làm của hộ; mặc định là nghệ nhân đại diện. */
+export function householdMakers(a: Artisan): Maker[] {
+  return a.makers ?? [{ name: a.artisanName, role: a.title }];
+}
+
+/** Xưởng của hộ; mặc định một nơi vừa làm vừa đón khách theo giờ mở cửa đã khai. */
+export function householdWorkshops(a: Artisan): DemoWorkshop[] {
+  return (
+    a.workshops ?? [
+      {
+        id: `${a.slug}-workshop`,
+        name: a.household,
+        address: a.address,
+        purpose: 'BOTH',
+        acceptsVisitors: a.openNow,
+        visitingInfo: a.hours,
+        pin: a.pin,
+      },
+    ]
+  );
+}
+
+/** Ghi công người làm của sản phẩm; mặc định ghi cho nghệ nhân đại diện. */
+export function productMakers(p: Product, a: Artisan): MakerCredit[] {
+  return p.makers ?? [{ name: a.artisanName, contribution: a.craft }];
 }
 
 let sealed: Promise<Product[]> | undefined;
