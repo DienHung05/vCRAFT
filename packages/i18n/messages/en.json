@@ -411,5 +411,31 @@
         "text": "The allocation plan for request {code} was only trialled in this browser. No bid has reached the buyer and no household has been notified."
       }
     }
+  },
+  "exhibition": {
+    "makersTitle": "The makers",
+    "makersLead": "Credit for making the object goes to each person for the part they did.",
+    "madeBy": "Made by",
+    "postedBy": "This page is posted by the administration of {household}; the poster is not credited as a maker.",
+    "illustrative": "People and households in this demonstration are illustrative.",
+    "evidenceTitle": "Evidence of making",
+    "evidenceText": "Every object carries a trace seal that leads to its production journal, with hashes you can check yourself.",
+    "evidenceCta": "Read the journal of {product}",
+    "visitTitle": "Visit",
+    "visitLead": "Places that welcome visitors are listed apart from workshops used only for production.",
+    "showroomsTitle": "Showrooms open to visitors",
+    "showroomsEmpty": "This household has no place open to visitors yet.",
+    "productionTitle": "Production workshops",
+    "productionNote": "Used for making only, not open to visitors.",
+    "mapTitle": "Village map",
+    "listTitle": "List of places",
+    "listVisitable": "visitors welcome",
+    "listProduction": "production",
+    "wholesaleTitle": "Wholesale orders",
+    "wholesaleText": "Send a private quotation request to the household, or ask the village administration to coordinate several households.",
+    "wholesaleCta": "Request a quotation",
+    "homeLink": "Back to the exhibition home",
+    "householdTitle": "The household behind this object",
+    "householdCta": "Read the story of {household}"
   }
 }

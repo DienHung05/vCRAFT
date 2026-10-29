@@ -1,11 +1,14 @@
 import type {
   ArtisanDto,
   HouseholdDto,
+  MakerCreditDto,
+  MapPinDto,
   ProductDto,
   PublicHouseholdDto,
   WorkshopDto,
 } from '@vcraft/contracts';
-import type { Artisan, Household, Product, Workshop } from '@vcraft/database';
+import type { Artisan, Household, Product, ProductMaker, Workshop } from '@vcraft/database';
+import { isVisitable, POSTED_BY_ADMINISTRATION, splitWorkshops } from '@vcraft/domain';
 
 const toNumber = (value: string | null | undefined): number | null =>
   value === null || value === undefined ? null : Number(value);
@@ -34,7 +37,17 @@ export function toArtisanDto(a: Artisan): ArtisanDto {
   };
 }
 
-export function toProductDto(p: Product): ProductDto {
+export function toMakerCreditDto(m: ProductMaker): MakerCreditDto {
+  return {
+    artisanId: m.artisan.id,
+    name: m.artisan.name,
+    craftRole: m.artisan.craftRole ?? null,
+    contribution: m.contribution,
+  };
+}
+
+/** `makers` phải đã sắp theo `position` và nạp sẵn `artisan`. */
+export function toProductDto(p: Product, makers: readonly ProductMaker[] = []): ProductDto {
   return {
     id: p.id,
     version: p.version,
@@ -46,6 +59,23 @@ export function toProductDto(p: Product): ProductDto {
     batchSize: p.batchSize ?? null,
     status: p.status,
     publishedAt: p.publishedAt?.toISOString() ?? null,
+    makers: makers.map(toMakerCreditDto),
+    postedBy: POSTED_BY_ADMINISTRATION,
+  };
+}
+
+/** Ghim bản đồ; chỉ gọi với xưởng có tọa độ của hộ đã duyệt (đã nạp `household`). */
+export function toMapPinDto(w: Workshop): MapPinDto {
+  return {
+    workshopId: w.id,
+    workshopName: w.name,
+    address: w.address,
+    purpose: w.purpose,
+    visitable: isVisitable(w),
+    visitingInfo: isVisitable(w) ? (w.visitingInfo ?? null) : null,
+    lat: Number(w.lat),
+    lng: Number(w.lng),
+    household: { name: w.household.name, slug: w.household.slug },
   };
 }
 
@@ -53,6 +83,8 @@ export interface HouseholdParts {
   artisans: Artisan[];
   workshops: Workshop[];
   products: Product[];
+  /** Ghi công theo `product.id`. */
+  makers: ReadonlyMap<string, ProductMaker[]>;
 }
 
 export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): PublicHouseholdDto {
@@ -64,7 +96,11 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
     village: h.village ?? null,
     artisans: parts.artisans.map(toArtisanDto),
     workshops: parts.workshops.map(toWorkshopDto),
-    products: parts.products.map(toProductDto),
+    visit: {
+      showrooms: splitWorkshops(parts.workshops).showrooms.map(toWorkshopDto),
+      productionWorkshops: splitWorkshops(parts.workshops).production.map(toWorkshopDto),
+    },
+    products: parts.products.map((p) => toProductDto(p, parts.makers.get(p.id))),
   };
 }
 

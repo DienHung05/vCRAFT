@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import {
   type ApplyHouseholdRequest,
   ApplyHouseholdRequestSchema,
@@ -10,6 +10,8 @@ import {
   CreateWorkshopRequestSchema,
   HouseholdDecisionRequestSchema,
   ListHouseholdsQuerySchema,
+  type SetProductMakersRequest,
+  SetProductMakersRequestSchema,
   WithdrawProductRequestSchema,
 } from '@vcraft/contracts';
 import type { HouseholdEvent } from '@vcraft/domain';
@@ -58,6 +60,16 @@ export class MyHouseholdController {
     body: CreateArtisanRequest,
   ) {
     return this.households.addArtisan(actor, body);
+  }
+
+  @Put('products/:id/makers')
+  @Roles('HOUSEHOLD')
+  setMakers(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @Body(new ZodValidationPipe(SetProductMakersRequestSchema)) body: SetProductMakersRequest,
+  ) {
+    return this.households.setMakers(actor, id, body);
   }
 
   @Post('products')
@@ -155,6 +167,12 @@ export class PublicHouseholdsController {
   @Get('households/:slug')
   get(@Param('slug') slug: string) {
     return this.households.getPublic(slug);
+  }
+
+  /** Ghim bản đồ làng; trang luôn hiện kèm danh sách chữ. */
+  @Get('map/workshops')
+  mapPins() {
+    return this.households.mapPins();
   }
 
   @Get('trace/:code')

@@ -396,5 +396,31 @@
         "text": "Phương án chia đơn cho yêu cầu {code} chỉ chạy thử trên trình duyệt này. Chưa có chào giá nào tới bên mua và chưa hộ nào nhận thông báo."
       }
     }
+  },
+  "exhibition": {
+    "makersTitle": "Những người làm",
+    "makersLead": "Công làm ra món đồ được ghi cho từng người theo phần việc của họ.",
+    "madeBy": "Người làm",
+    "postedBy": "Trang này do ban điều hành hộ {household} đăng; người đăng không được ghi là người làm.",
+    "illustrative": "Người và hộ trong bản trình diễn là minh họa.",
+    "evidenceTitle": "Bằng chứng quá trình làm",
+    "evidenceText": "Mỗi món mang một ấn truy xuất dẫn tới nhật ký sản xuất, có dấu băm để bạn tự kiểm.",
+    "evidenceCta": "Xem nhật ký của {product}",
+    "visitTitle": "Ghé thăm",
+    "visitLead": "Nơi đón khách được tách riêng khỏi những xưởng chỉ dùng để sản xuất.",
+    "showroomsTitle": "Phòng trưng bày đón khách",
+    "showroomsEmpty": "Hộ chưa mở nơi đón khách.",
+    "productionTitle": "Nơi sản xuất",
+    "productionNote": "Chỉ dùng để làm, không đón khách tham quan.",
+    "mapTitle": "Bản đồ làng",
+    "listTitle": "Danh sách địa điểm",
+    "listVisitable": "đón khách",
+    "listProduction": "sản xuất",
+    "wholesaleTitle": "Đặt hàng số lượng",
+    "wholesaleText": "Gửi yêu cầu báo giá riêng cho hộ, hoặc nhờ Ban quản lý làng điều phối nhiều hộ cùng làm.",
+    "wholesaleCta": "Gửi yêu cầu báo giá",
+    "homeLink": "Về trang chủ triển lãm",
+    "householdTitle": "Hộ làm ra món đồ",
+    "householdCta": "Đọc câu chuyện của {household}"
   }
 }
