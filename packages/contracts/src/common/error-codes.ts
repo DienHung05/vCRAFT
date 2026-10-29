@@ -36,6 +36,14 @@ export const ERROR_CATALOG = {
   INVALID_TRANSITION: { status: 409, title: 'Invalid state transition' },
   /** Vi phạm ràng buộc UNIQUE không thuộc mã nghiệp vụ riêng (email, slug...). */
   CONFLICT_DUPLICATE: { status: 409, title: 'Duplicate resource' },
+  /** Luật nghiệp vụ của domain bị vi phạm mà không có mã riêng; `detail` mang mã domain. */
+  BUSINESS_RULE_VIOLATED: { status: 409, title: 'Business rule violated' },
+
+  // --- HOUSEHOLD: duyệt hộ & xuất bản (vCRAFT-9hg.3) ---
+  /** Hộ chưa được Ban quản lý chấp nhận hoặc đang tạm ngừng nên không xuất bản / nhận báo giá được. */
+  HOUSEHOLD_NOT_APPROVED: { status: 409, title: 'Household is not approved' },
+  /** Tài khoản đại diện bị khóa: nhật ký bị đóng băng, trang đã xuất bản vẫn còn. */
+  HOUSEHOLD_ACCOUNT_LOCKED: { status: 403, title: 'Representative account is locked' },
 
   // --- RFQ: yêu cầu báo giá, chào giá, phân bổ (SRS §4) ---
   /** BR-L3: mỗi hộ tối đa một bid cho mỗi RFQ (sửa = tăng revision). */

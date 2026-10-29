@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
+import { Public } from '../../common/auth/auth.guard';
 
 /**
  * NFR-REL-01. Hiện đây chỉ là **liveness**: `check([])` cho biết tiến trình còn phản hồi, KHÔNG chứng minh
@@ -8,6 +9,7 @@ import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
  * tránh orchestrator khởi động lại tiến trình chỉ vì một dịch vụ ngoài chập chờn.
  */
 @Controller('health')
+@Public()
 export class HealthController {
   constructor(private readonly health: HealthCheckService) {}
 

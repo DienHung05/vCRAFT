@@ -6,8 +6,8 @@ import { defineConfig } from 'vitest/config';
  * Integration test chạy CSDL thật trong container (Testcontainers) theo `DB_DRIVER=postgresql|mysql`.
  * Cần Docker daemon; không có Docker thì test thất bại (không bỏ qua im lặng).
  *
- * `@vcraft/database` được trỏ thẳng vào mã nguồn để không phải build trước; entity dùng decorator
- * kiểu cũ nên cần SWC biên dịch.
+ * Các package workspace được trỏ thẳng vào mã nguồn để không phải build trước; entity dùng decorator
+ * kiểu cũ nên cần SWC biên dịch (bật `decoratorMetadata` cho DI của NestJS khi test dựng cả ứng dụng).
  */
 export default defineConfig({
   plugins: [
@@ -22,11 +22,12 @@ export default defineConfig({
     }),
   ],
   resolve: {
-    alias: {
-      '@vcraft/database': fileURLToPath(
-        new URL('../../packages/database/src/index.ts', import.meta.url),
-      ),
-    },
+    alias: Object.fromEntries(
+      ['contracts', 'database', 'domain', 'utils'].map((name) => [
+        `@vcraft/${name}`,
+        fileURLToPath(new URL(`../../packages/${name}/src/index.ts`, import.meta.url)),
+      ]),
+    ),
   },
   test: {
     include: ['test/integration/**/*.test.ts'],
