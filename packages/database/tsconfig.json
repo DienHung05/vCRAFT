@@ -1,7 +1,11 @@
 {
   "extends": "@vcraft/tsconfig/nestjs.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    // Kiểu của @vcraft/domain trỏ thẳng mã nguồn (import không đuôi) nên phân giải theo kiểu bundler;
+    // mã chạy thật do tsdown đóng gói.
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
   },
   "include": ["src", "test"]
 }

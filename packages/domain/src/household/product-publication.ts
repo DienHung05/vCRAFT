@@ -1,0 +1,101 @@
+import { DomainError } from '../shared/domain-error';
+import { createStateMachine, type TransitionTable } from '../shared/state-machine';
+import type { AccountRole, HouseholdStatus } from './household-state-machine';
+
+/**
+ * Xuất bản Sản phẩm (vCRAFT-9hg.3, 9hg.4): nhật ký chỉ hiện cùng sản phẩm đã xuất bản và bị rút cùng nó.
+ *
+ * - `DRAFT`: chưa công khai; mã QR (nếu đã in) dẫn tới trang "không tìm thấy".
+ * - `PUBLISHED`: công khai khi hộ đang `APPROVED`.
+ * - `WITHDRAWN`: rút một sản phẩm và nhật ký của nó; QR hiện thông báo "không còn trưng bày".
+ */
+export const PRODUCT_STATUSES = ['DRAFT', 'PUBLISHED', 'WITHDRAWN'] as const;
+export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
+
+export const PRODUCT_EVENTS = ['PUBLISH', 'WITHDRAW', 'REPUBLISH'] as const;
+export type ProductEvent = (typeof PRODUCT_EVENTS)[number];
+
+export type ProductGuardCode = 'FORBIDDEN_ACTOR' | 'HOUSEHOLD_NOT_APPROVED' | 'REASON_REQUIRED';
+
+export interface ProductContext {
+  readonly actorRole: AccountRole;
+  /** Người tác động có phải người đại diện của hộ sở hữu sản phẩm không. */
+  readonly isOwner: boolean;
+  readonly householdStatus: HouseholdStatus;
+  readonly reason?: string | undefined;
+}
+
+/** Người đại diện hộ xuất bản sản phẩm của mình; Ban quản lý chỉ được rút (ẩn), không xuất bản thay hộ. */
+function ownerOnly(ctx: ProductContext): DomainError<ProductGuardCode> | undefined {
+  return ctx.actorRole === 'HOUSEHOLD' && ctx.isOwner
+    ? undefined
+    : new DomainError('FORBIDDEN_ACTOR', 'only the household representative may publish');
+}
+
+function ownerOrAdmin(ctx: ProductContext): DomainError<ProductGuardCode> | undefined {
+  return ctx.actorRole === 'ADMIN' || (ctx.actorRole === 'HOUSEHOLD' && ctx.isOwner)
+    ? undefined
+    : new DomainError('FORBIDDEN_ACTOR', 'only the owner or an administrator may withdraw');
+}
+
+function householdApproved(ctx: ProductContext): DomainError<ProductGuardCode> | undefined {
+  return ctx.householdStatus === 'APPROVED'
+    ? undefined
+    : new DomainError('HOUSEHOLD_NOT_APPROVED', 'household must be approved to publish', {
+        householdStatus: ctx.householdStatus,
+      });
+}
+
+function reasonRequired(ctx: ProductContext): DomainError<ProductGuardCode> | undefined {
+  return ctx.reason !== undefined && ctx.reason.trim().length > 0
+    ? undefined
+    : new DomainError('REASON_REQUIRED', 'a reason is required');
+}
+
+export const PRODUCT_TRANSITIONS = {
+  DRAFT: {
+    PUBLISH: { to: 'PUBLISHED', guards: [ownerOnly, householdApproved] },
+  },
+  PUBLISHED: {
+    WITHDRAW: { to: 'WITHDRAWN', guards: [ownerOrAdmin], inputGuards: [reasonRequired] },
+  },
+  WITHDRAWN: {
+    REPUBLISH: { to: 'PUBLISHED', guards: [ownerOnly, householdApproved] },
+  },
+} as const satisfies TransitionTable<ProductStatus, ProductEvent, ProductContext, ProductGuardCode>;
+
+const productMachine = createStateMachine<
+  ProductStatus,
+  ProductEvent,
+  ProductContext,
+  ProductGuardCode
+>({
+  name: 'Product',
+  states: PRODUCT_STATUSES,
+  events: PRODUCT_EVENTS,
+  table: PRODUCT_TRANSITIONS,
+});
+
+export const productTransition = productMachine.transition;
+export const availableProductEvents = productMachine.availableEvents;
+export const productStructuralNext = productMachine.structuralNext;
+
+/**
+ * Kết quả tra một sản phẩm từ trang công khai / mã QR:
+ * - `VISIBLE`: hiện đầy đủ.
+ * - `UNAVAILABLE`: sản phẩm từng công khai nhưng đã rút, hoặc hộ bị tạm ngừng ⇒ chỉ hiện thông báo,
+ *   không lộ nội dung riêng.
+ * - `MISSING`: chưa từng công khai (bản nháp) hoặc hộ chưa/không được duyệt ⇒ trang "không tìm thấy".
+ */
+export type PublicAvailability = 'VISIBLE' | 'UNAVAILABLE' | 'MISSING';
+
+export function publicProductAvailability(
+  householdStatus: HouseholdStatus,
+  productStatus: ProductStatus,
+): PublicAvailability {
+  if (productStatus === 'DRAFT') return 'MISSING';
+  // Hộ chưa duyệt / bị từ chối thì chưa từng có gì công khai, kể cả sản phẩm đã rút
+  if (householdStatus === 'PENDING_REVIEW' || householdStatus === 'REJECTED') return 'MISSING';
+  if (householdStatus === 'SUSPENDED' || productStatus === 'WITHDRAWN') return 'UNAVAILABLE';
+  return 'VISIBLE';
+}
