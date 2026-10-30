@@ -39,7 +39,7 @@ const TIMELINE: Record<LogStage, DemoPhotoRef> = {
 
 const TIMELINE_CORRECTED_FIRE: DemoPhotoRef = {
   id: 'tl-fire-2',
-  alt: 'Ảnh minh hoạ công đoạn nung: bên trong buồng lò trắng, gốm mộc xếp thành hàng trên sàn chờ nung',
+  alt: 'Ảnh minh hoạ công đoạn nung: cửa lò gạch vòm, ngọn lửa đỏ cháy bên dưới và chiếc xe đẩy dựng bên cạnh',
 };
 
 /** Ảnh vuông (1:1) cho dải thumbnail trên trang chi tiết sản phẩm. */
