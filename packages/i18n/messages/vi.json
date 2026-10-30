@@ -436,7 +436,11 @@
       "requiredBy": "Hạn giao",
       "requestedQuantity": "Cần {quantity} {unit}",
       "notice": "{count, plural, other {Có # thông báo cho yêu cầu này — một chào giá liên kết đã bị rút. Hãy soát lại trước khi gửi.}}",
-      "closed": "Yêu cầu này đã hết hạn chào giá, không còn gửi chào giá liên kết được."
+      "closed": "Yêu cầu này đã hết hạn chào giá, không còn gửi chào giá liên kết được.",
+      "startProduction": "Bắt đầu sản xuất",
+      "receive": "Xác nhận đã nhận hàng",
+      "cancelOrder": "Hủy đơn",
+      "cancelReason": "Ghi lý do hủy đơn:"
     }
   },
   "exhibition": {
@@ -498,5 +502,51 @@
     "notFound": "Không tìm thấy yêu cầu này, hoặc hộ của bạn không được mời.",
     "loadFailed": "Tải không thành công.",
     "closed": "Đã hết hạn chào giá, không còn sửa hoặc gửi đề xuất được."
+  },
+  "order": {
+    "title": "Đơn hàng",
+    "loading": "Đang tải đơn hàng…",
+    "signIn": "Bạn cần đăng nhập để xem đơn hàng này.",
+    "loadFailed": "Không tải được đơn hàng, hoặc bạn không có quyền xem.",
+    "noAllocations": "Chưa có phân bổ nào cho đơn này.",
+    "receive": "Xác nhận đã nhận hàng",
+    "stale": "Đơn đã có người khác cập nhật. Tải lại rồi thử lại.",
+    "status": {
+      "DRAFT": "Nháp",
+      "SENT": "Đã gửi",
+      "BIDDING": "Đang chào giá",
+      "ACCEPTED": "Đã chốt",
+      "IN_PRODUCTION": "Đang sản xuất",
+      "DELIVERED": "Đã giao",
+      "CANCELLED": "Đã hủy",
+      "EXPIRED": "Đã hết hạn"
+    },
+    "allocation": {
+      "PROPOSED": "Chờ xác nhận",
+      "CONFIRMED": "Đã xác nhận",
+      "DECLINED": "Đã từ chối",
+      "IN_PROGRESS": "Đang làm",
+      "DONE": "Đã xong",
+      "CANCELLED": "Đã hủy"
+    }
+  },
+  "allocation": {
+    "title": "Phân bổ của hộ",
+    "loading": "Đang tải phân bổ…",
+    "signIn": "Bạn cần đăng nhập bằng tài khoản đại diện hộ để xem phân bổ.",
+    "loadFailed": "Không tải được phân bổ.",
+    "stale": "Phân bổ đã có người khác cập nhật. Tải lại rồi thử lại.",
+    "confirm": "Xác nhận",
+    "decline": "Từ chối",
+    "report": "Báo cáo",
+    "completedQty": "Số lượng đã xong",
+    "status": {
+      "PROPOSED": "Chờ xác nhận",
+      "CONFIRMED": "Đã xác nhận",
+      "DECLINED": "Đã từ chối",
+      "IN_PROGRESS": "Đang làm",
+      "DONE": "Đã xong",
+      "CANCELLED": "Đã hủy"
+    }
   }
 }

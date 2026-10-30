@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
+import { LiveAllocationWorkspace } from '@/features/orders/live-allocation-workspace';
 import { LiveContributionWorkspace } from '@/features/rfq/live-contribution-workspace';
 import { isRfqUuid } from '@/lib/api/rfq-id';
 import { resolveLocale } from '@/lib/locale';
@@ -37,6 +38,7 @@ export default async function ContributionPage({
         </nav>
       </header>
       <LiveContributionWorkspace rfqId={id} />
+      <LiveAllocationWorkspace rfqId={id} />
     </article>
   );
 }

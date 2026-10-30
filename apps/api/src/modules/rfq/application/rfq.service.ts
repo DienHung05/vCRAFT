@@ -1,6 +1,8 @@
 import { type EntityManager, LockMode, MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type {
+  AcceptQuotationRequest,
+  AllocationDto,
   BuyerQuotationDto,
   ContributionDto,
   CreateContributionRequest,
@@ -13,12 +15,15 @@ import {
   ContributionOffer as ContributionOfferEntity,
   CooperativeQuotation as CooperativeQuotationEntity,
   Household,
+  OrderAllocation as OrderAllocationEntity,
   OutboxEvent,
   QuotationNotice,
   QuotationRequest,
 } from '@vcraft/database';
 import {
+  allocationTransition,
   assembleCooperativeQuotation,
+  checkProgressReport,
   isCompletionDateValid,
   projectBuyerQuotation,
   transition,
@@ -365,6 +370,301 @@ export class RfqService {
     return quotations.map((quotation) => toBuyerQuotationDto(quotation, offers));
   }
 
+  /**
+   * GH#11: buyer chốt chào giá. Một giao dịch: khóa request, kiểm version, RFQ
+   * BIDDING→ACCEPTED, quotation chọn →ACCEPTED, còn lại →REJECTED, sinh
+   * allocations PROPOSED từ parts. Version cũ ⇒ STALE_VERSION.
+   */
+  async acceptQuotation(
+    actor: Actor,
+    requestId: string,
+    version: number,
+    input: AcceptQuotationRequest,
+  ) {
+    return this.orm.em.fork().transactional(async (em) => {
+      const request = await this.request(em, requestId, true);
+      if (actor.role !== 'BUYER' || request.buyer.id !== actor.id) throw notFound();
+      if (actor.locked) throw forbidden();
+      assertVersion(request, version);
+      const quotations = await em.find(
+        CooperativeQuotationEntity,
+        { request, status: 'SUBMITTED' },
+        { populate: ['request'] },
+      );
+      const chosen = quotations.find((quotation) => quotation.id === input.quotationId);
+      if (!chosen) throw notFound();
+      request.status = unwrap(
+        transition(request.status, 'ACCEPT_BID', {
+          actor: 'BUYER_OWNER',
+          now: new Date(),
+          emailVerified: actor.emailVerified === true,
+          biddingClosesAt: request.biddingClosesAt,
+          requiredBy: request.requiredBy,
+          quantity: request.quantity,
+          bid: { status: 'SUBMITTED', quantityOffered: chosen.quantity },
+        }),
+      );
+      for (const quotation of quotations) {
+        if (quotation.id === chosen.id) quotation.status = 'ACCEPTED';
+        else quotation.status = 'REJECTED';
+      }
+      const offers = await em.find(
+        ContributionOfferEntity,
+        { request },
+        { populate: ['household'] },
+      );
+      const names = new Map(offers.map((offer) => [offer.household.id, offer.household]));
+      if (chosen.parts.length === 0)
+        throw new AppError('BUSINESS_RULE_VIOLATED', 'ACCEPT_EMPTY_PLAN');
+      for (const part of chosen.parts) {
+        const household = names.get(part.householdId);
+        if (!household) throw new AppError('BUSINESS_RULE_VIOLATED', 'ACCEPT_UNKNOWN_HOUSEHOLD');
+        em.create(OrderAllocationEntity, {
+          quotation: chosen,
+          household,
+          quantity: part.quantity,
+          completedQty: 0,
+        });
+      }
+      request.revision++;
+      await em.flush();
+      return toRfqResponse(request);
+    });
+  }
+
+  /** GH#11: đọc allocations của đơn đã chốt. Buyer chủ, admin điều phối, hoặc hộ có phần. */
+  async listAllocations(actor: Actor, requestId: string): Promise<AllocationDto[]> {
+    const em = this.orm.em.fork();
+    const request = await this.request(em, requestId);
+    const accepted = await em.findOne(
+      CooperativeQuotationEntity,
+      { request, status: 'ACCEPTED' },
+      { populate: ['request'] },
+    );
+    if (!accepted) throw notFound();
+    if (actor.role === 'ADMIN') this.coordinator(actor, request);
+    else if (actor.role === 'BUYER' && request.buyer.id === actor.id) {
+      // Buyer chủ đọc toàn bộ allocations.
+    } else if (actor.role === 'HOUSEHOLD') {
+      const household = await this.ownHousehold(em, actor, false);
+      if (!request.invitedHouseholdIds.includes(household.id)) throw notFound();
+    } else throw notFound();
+    const allocations = await em.find(
+      OrderAllocationEntity,
+      { quotation: accepted },
+      { populate: ['household'], orderBy: { createdAt: 'asc' } },
+    );
+    if (actor.role === 'HOUSEHOLD') {
+      const household = await this.ownHousehold(em, actor, false);
+      return allocations
+        .filter((allocation) => allocation.household.id === household.id)
+        .map(toAllocationDto);
+    }
+    return allocations.map(toAllocationDto);
+  }
+
+  /**
+   * GH#11: hộ CONFIRM phân bổ PROPOSED của mình. Khóa request trước (BR-L2),
+   * kiểm version allocation; giao dịch duy nhất.
+   */
+  async confirmAllocation(actor: Actor, allocationId: string, version: number) {
+    return this.orm.em.fork().transactional(async (em) => {
+      const allocation = await this.allocation(em, allocationId);
+      const request = await this.request(em, allocation.quotation.request.id, true);
+      const household = await this.ownHousehold(em, actor);
+      if (allocation.household.id !== household.id) throw notFound();
+      assertVersion(allocation, version);
+      this.acceptedOnly(request);
+      allocation.status = unwrap(allocationTransition(allocation.status, 'CONFIRM', {}));
+      request.revision++;
+      await em.flush();
+      return toAllocationDto(allocation);
+    });
+  }
+
+  /**
+   * GH#11: hộ DECLINE phân bổ PROPOSED của mình ⇒ hủy cả đơn chưa sản xuất
+   * (request ACCEPTED→CANCELLED, mọi allocation còn hiệu lực →CANCELLED).
+   * Lịch sử giữ nguyên (không xóa hàng).
+   */
+  async declineAllocation(actor: Actor, allocationId: string, version: number) {
+    return this.orm.em.fork().transactional(async (em) => {
+      const allocation = await this.allocation(em, allocationId);
+      const request = await this.request(em, allocation.quotation.request.id, true);
+      const household = await this.ownHousehold(em, actor);
+      if (allocation.household.id !== household.id) throw notFound();
+      assertVersion(allocation, version);
+      this.acceptedOnly(request);
+      allocation.status = unwrap(allocationTransition(allocation.status, 'DECLINE', {}));
+      request.status = unwrap(
+        transition(request.status, 'CANCEL', {
+          actor: 'BUYER_OWNER',
+          reason: 'household declined',
+        }),
+      );
+      const siblings = await em.find(
+        OrderAllocationEntity,
+        { quotation: allocation.quotation, status: ['PROPOSED', 'CONFIRMED'] },
+        { populate: ['household'] },
+      );
+      for (const sibling of siblings) {
+        sibling.status = unwrap(allocationTransition(sibling.status, 'CANCEL', {}));
+      }
+      request.revision++;
+      await em.flush();
+      return toAllocationDto(allocation);
+    });
+  }
+
+  /**
+   * GH#11: hộ báo cáo tiến độ theo phân bổ IN_PROGRESS của mình.
+   * completedQty phải nằm trong 0..quantity; đủ số ⇒ DONE.
+   */
+  async reportProgress(actor: Actor, allocationId: string, version: number, completedQty: number) {
+    return this.orm.em.fork().transactional(async (em) => {
+      const allocation = await this.allocation(em, allocationId);
+      const request = await this.request(em, allocation.quotation.request.id, true);
+      const household = await this.ownHousehold(em, actor);
+      if (allocation.household.id !== household.id) throw notFound();
+      assertVersion(allocation, version);
+      if (request.status !== 'IN_PRODUCTION') throw new AppError('INVALID_TRANSITION');
+      if (allocation.status !== 'IN_PROGRESS') throw new AppError('INVALID_TRANSITION');
+      const check = checkProgressReport(allocation.quantity, completedQty);
+      if (!check.ok) throw new AppError('VALIDATION_FAILED', 'completedQty out of range');
+      allocation.completedQty = completedQty;
+      if (completedQty === allocation.quantity) {
+        allocation.status = unwrap(
+          allocationTransition(allocation.status, 'COMPLETE', {
+            quantity: allocation.quantity,
+            completedQty,
+          }),
+        );
+      }
+      request.revision++;
+      await em.flush();
+      return toAllocationDto(allocation);
+    });
+  }
+
+  /** GH#11: admin dieu phoi huy don sau san xuat (T7). Allocations con hieu luc CANCELLED. */
+  async cancelOrder(actor: Actor, requestId: string, version: number, reason: string) {
+    return this.orm.em.fork().transactional(async (em) => {
+      const request = await this.request(em, requestId, true);
+      if (actor.locked) throw forbidden();
+      assertVersion(request, version);
+      this.coordinator(actor, request);
+      request.status = unwrap(
+        transition(request.status, 'ADMIN_CANCEL', { actor: 'ADMIN', reason }),
+      );
+      const accepted = await em.findOne(CooperativeQuotationEntity, {
+        request,
+        status: 'ACCEPTED',
+      });
+      if (accepted) {
+        const allocations = await em.find(OrderAllocationEntity, { quotation: accepted });
+        for (const allocation of allocations) {
+          if (allocation.status !== 'DECLINED' && allocation.status !== 'CANCELLED') {
+            allocation.status = unwrap(allocationTransition(allocation.status, 'CANCEL', {}));
+          }
+        }
+      }
+      request.revision++;
+      await em.flush();
+      return toRfqResponse(request);
+    });
+  }
+
+  /**
+   * GH#11: buyer chủ hoặc admin xác nhận đã nhận hàng. Chỉ khi mọi
+   * allocation DONE (guard T5 allAllocationsDone).
+   */
+  async confirmReceipt(actor: Actor, requestId: string, version: number) {
+    return this.orm.em.fork().transactional(async (em) => {
+      const request = await this.request(em, requestId, true);
+      const owner = actor.role === 'BUYER' && request.buyer.id === actor.id;
+      const admin = actor.role === 'ADMIN' && request.coordinationOptIn;
+      if (!owner && !admin) throw notFound();
+      if (actor.locked) throw forbidden();
+      assertVersion(request, version);
+      if (admin && request.coordinatorId !== actor.id) throw notFound();
+      const accepted = await em.findOneOrFail(
+        CooperativeQuotationEntity,
+        { request, status: 'ACCEPTED' },
+        { populate: ['request'] },
+      );
+      const allocations = await em.find(
+        OrderAllocationEntity,
+        { quotation: accepted },
+        { populate: ['household'] },
+      );
+      request.status = unwrap(
+        transition(request.status, 'CONFIRM_DELIVERY', {
+          actor: owner ? 'BUYER_OWNER' : 'ADMIN',
+          allocationStatuses: allocations.map((allocation) => allocation.status),
+        }),
+      );
+      request.revision++;
+      await em.flush();
+      return toRfqResponse(request);
+    });
+  }
+
+  /** GH#11: admin hoặc hộ đơn-1-hộ bắt đầu sản xuất. Mọi allocation phải CONFIRMED (T4). */
+  async startProduction(actor: Actor, requestId: string, version: number) {
+    return this.orm.em.fork().transactional(async (em) => {
+      const request = await this.request(em, requestId, true);
+      if (actor.locked) throw forbidden();
+      assertVersion(request, version);
+      if (actor.role === 'ADMIN') this.coordinator(actor, request);
+      const accepted = await em.findOneOrFail(
+        CooperativeQuotationEntity,
+        { request, status: 'ACCEPTED' },
+        { populate: ['request'] },
+      );
+      const allocations = await em.find(
+        OrderAllocationEntity,
+        { quotation: accepted },
+        { populate: ['household'] },
+      );
+      const households = new Set(allocations.map((allocation) => allocation.household.id));
+      let householdId: string | undefined;
+      if (actor.role === 'HOUSEHOLD') {
+        householdId = (await this.ownHousehold(em, actor, false)).id;
+      } else if (actor.role !== 'ADMIN') throw notFound();
+      request.status = unwrap(
+        transition(request.status, 'START_PRODUCTION', {
+          actor: actor.role === 'ADMIN' ? 'ADMIN' : 'ARTISAN',
+          allocationStatuses: allocations.map((allocation) => allocation.status),
+          householdCount: households.size,
+          actorOwnsSoleAllocation:
+            actor.role === 'ADMIN'
+              ? undefined
+              : households.size === 1 && households.has(householdId as string),
+        }),
+      );
+      for (const allocation of allocations) {
+        if (allocation.status === 'CONFIRMED') {
+          allocation.status = unwrap(allocationTransition(allocation.status, 'START', {}));
+        }
+      }
+      request.revision++;
+      await em.flush();
+      return toRfqResponse(request);
+    });
+  }
+
+  private async allocation(em: EntityManager, id: string) {
+    const allocation = await em.findOne(OrderAllocationEntity, id, {
+      populate: ['quotation.request', 'household'],
+    });
+    if (!allocation) throw notFound();
+    return allocation;
+  }
+
+  private acceptedOnly(request: QuotationRequest) {
+    if (request.status !== 'ACCEPTED') throw new AppError('INVALID_TRANSITION');
+  }
+
   async listNotices(actor: Actor) {
     const notices = await this.orm.em.fork().find(
       QuotationNotice,
@@ -546,5 +846,16 @@ function toBuyerQuotationDto(
       householdName: names.get(part.householdId) ?? part.householdId,
       completionDate: part.completionDate.toISOString(),
     })),
+  };
+}
+
+function toAllocationDto(allocation: OrderAllocationEntity): AllocationDto {
+  return {
+    id: allocation.id,
+    version: allocation.version,
+    householdId: allocation.household.id,
+    quantity: allocation.quantity,
+    completedQty: allocation.completedQty,
+    status: allocation.status,
   };
 }

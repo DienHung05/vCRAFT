@@ -1,5 +1,10 @@
 import { Body, Controller, Get, Header, HttpCode, Param, Post, Put, Res } from '@nestjs/common';
 import {
+  type AcceptQuotationRequest,
+  AcceptQuotationRequestSchema,
+  type AllocationDto,
+  type CancelOrderRequest,
+  CancelOrderRequestSchema,
   type CreateContributionRequest,
   CreateContributionRequestSchema,
   type CreateCooperativeQuotationRequest,
@@ -8,6 +13,8 @@ import {
   CreateRfqRequestSchema,
   formatVersionTag,
   InviteHouseholdsRequestSchema,
+  type ReportProgressRequest,
+  ReportProgressRequestSchema,
 } from '@vcraft/contracts';
 import { type Actor, CurrentActor, Roles } from '../../common/auth/auth.guard';
 import type { HttpReply } from '../../common/http/http-types';
@@ -117,6 +124,64 @@ export class RfqController {
   listQuotations(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
     return this.rfqs.listQuotations(actor, id);
   }
+
+  /** GH#11: buyer chốt chào giá, sinh allocations PROPOSED. Version ở header `If-Match`. */
+  @Post(':id/accept')
+  @HttpCode(200)
+  @Roles('BUYER')
+  accept(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+    @Body(new ZodValidationPipe(AcceptQuotationRequestSchema)) body: AcceptQuotationRequest,
+  ) {
+    return this.rfqs.acceptQuotation(actor, id, version, body);
+  }
+
+  /** GH#11: đọc allocations của đơn đã chốt. */
+  @Get(':id/allocations')
+  @Header('Cache-Control', 'private, no-store')
+  @Roles('BUYER', 'ADMIN', 'HOUSEHOLD')
+  listAllocations(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
+    return this.rfqs.listAllocations(actor, id);
+  }
+
+  /** GH#11: admin hoặc hộ đơn-1-hộ bắt đầu sản xuất. */
+  @Post(':id/start-production')
+  @HttpCode(200)
+  @Roles('ADMIN', 'HOUSEHOLD')
+  startProduction(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+  ) {
+    return this.rfqs.startProduction(actor, id, version);
+  }
+
+  /** GH#11: buyer hoặc admin xác nhận đã nhận hàng. */
+  @Post(':id/receive')
+  @HttpCode(200)
+  @Roles('BUYER', 'ADMIN')
+  receive(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+  ) {
+    return this.rfqs.confirmReceipt(actor, id, version);
+  }
+
+  /** GH#11: admin dieu phoi huy don sau san xuat. Ly do bat buoc. */
+  @Post(':id/cancel')
+  @HttpCode(200)
+  @Roles('ADMIN')
+  cancel(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+    @Body(new ZodValidationPipe(CancelOrderRequestSchema)) body: CancelOrderRequest,
+  ) {
+    return this.rfqs.cancelOrder(actor, id, version, body.reason);
+  }
 }
 
 @Controller('contributions')
@@ -144,11 +209,52 @@ export class ContributionsController {
   ) {
     return this.rfqs.withdrawContribution(actor, id, version);
   }
-
   @Get(':id/history')
   @Header('Cache-Control', 'private, no-store')
   @Roles('HOUSEHOLD', 'ADMIN')
   history(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
     return this.rfqs.contributionHistory(actor, id);
+  }
+}
+
+@Controller('allocations')
+export class AllocationsController {
+  constructor(private readonly rfqs: RfqService) {}
+
+  /** GH#11: hộ xác nhận phân bổ PROPOSED của mình. */
+  @Post(':id/confirm')
+  @HttpCode(200)
+  @Roles('HOUSEHOLD')
+  confirm(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+  ): Promise<AllocationDto> {
+    return this.rfqs.confirmAllocation(actor, id, version);
+  }
+
+  /** GH#11: hộ từ chối phân bổ ⇒ hủy cả đơn chưa sản xuất. */
+  @Post(':id/decline')
+  @HttpCode(200)
+  @Roles('HOUSEHOLD')
+  decline(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+  ): Promise<AllocationDto> {
+    return this.rfqs.declineAllocation(actor, id, version);
+  }
+
+  /** GH#11: hộ báo cáo số lượng đã xong trong 0..quantity. */
+  @Post(':id/progress')
+  @HttpCode(200)
+  @Roles('HOUSEHOLD')
+  progress(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+    @Body(new ZodValidationPipe(ReportProgressRequestSchema)) body: ReportProgressRequest,
+  ): Promise<AllocationDto> {
+    return this.rfqs.reportProgress(actor, id, version, body.completedQty);
   }
 }

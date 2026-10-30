@@ -436,7 +436,11 @@
       "requiredBy": "Delivery date",
       "requestedQuantity": "Needs {quantity} {unit}",
       "notice": "{count, plural, other {# notices for this request — a cooperative quotation was withdrawn. Review before submitting.}}",
-      "closed": "This request is past its bidding deadline; the cooperative quotation can no longer be submitted."
+      "closed": "This request is past its bidding deadline; the cooperative quotation can no longer be submitted.",
+      "startProduction": "Start production",
+      "receive": "Confirm receipt",
+      "cancelOrder": "Cancel order",
+      "cancelReason": "Give a reason for cancelling the order:"
     }
   },
   "exhibition": {
@@ -498,5 +502,51 @@
     "notFound": "This request was not found, or your household is not invited.",
     "loadFailed": "Loading failed.",
     "closed": "The bidding deadline has passed; contribution offers can no longer be sent or changed."
+  },
+  "order": {
+    "title": "Order",
+    "loading": "Loading the order…",
+    "signIn": "Sign in to view this order.",
+    "loadFailed": "The order could not be loaded, or you cannot view it.",
+    "noAllocations": "No allocations for this order yet.",
+    "receive": "Confirm receipt",
+    "stale": "Someone else updated the order. Reload and try again.",
+    "status": {
+      "DRAFT": "Draft",
+      "SENT": "Sent",
+      "BIDDING": "Bidding",
+      "ACCEPTED": "Accepted",
+      "IN_PRODUCTION": "In production",
+      "DELIVERED": "Delivered",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired"
+    },
+    "allocation": {
+      "PROPOSED": "Awaiting confirmation",
+      "CONFIRMED": "Confirmed",
+      "DECLINED": "Declined",
+      "IN_PROGRESS": "In progress",
+      "DONE": "Done",
+      "CANCELLED": "Cancelled"
+    }
+  },
+  "allocation": {
+    "title": "Household allocations",
+    "loading": "Loading allocations…",
+    "signIn": "Sign in with a household representative account to view allocations.",
+    "loadFailed": "Allocations could not be loaded.",
+    "stale": "Someone else updated the allocation. Reload and try again.",
+    "confirm": "Confirm",
+    "decline": "Decline",
+    "report": "Report",
+    "completedQty": "Completed quantity",
+    "status": {
+      "PROPOSED": "Awaiting confirmation",
+      "CONFIRMED": "Confirmed",
+      "DECLINED": "Declined",
+      "IN_PROGRESS": "In progress",
+      "DONE": "Done",
+      "CANCELLED": "Cancelled"
+    }
   }
 }
