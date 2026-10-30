@@ -6,11 +6,15 @@
  * - allocation/   Máy trạng thái Phân bổ và kiểm tra bảng chia số lượng thủ công
  * - matching/     Chấm điểm & chọn hộ phù hợp để gửi yêu cầu báo giá
  * - journal/      Nhật ký sản xuất: công đoạn, mốc đính chính, chuỗi băm SHA-256 (append-only)
+ * - media/        Luật upload (loại thật theo magic bytes, kích thước, bucket) và mốc biến thể ảnh
+ * - news/         Phân loại và trạng thái tin tức làng nghề
  * - shared/       DomainError, Result, helper máy trạng thái; (sau này) Money, GeoPoint, OpeningHours
  */
 export * from './allocation';
 export * from './exhibition';
 export * from './household';
 export * from './journal';
+export * from './media';
+export * from './news';
 export * from './rfq';
 export * from './shared';

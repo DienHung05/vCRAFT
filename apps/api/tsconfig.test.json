@@ -1,7 +1,8 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "rootDir": ".",
+    // Integration test gọi thẳng processor của worker (outbox relay, chuyển đổi ảnh)
+    "rootDir": "..",
     "noEmit": true,
     "types": ["node"],
     "module": "ESNext",

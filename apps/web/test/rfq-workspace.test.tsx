@@ -113,11 +113,43 @@ describe('RfqWorkspace (FR-RFQ-07/08/12)', () => {
           requestId: rfqId,
           quotationId: 'q-9',
           createdAt: '2026-10-29T00:00:00.000Z',
+          readAt: null,
+        },
+        {
+          id: 'n-2',
+          version: 1,
+          kind: 'QUOTATION_RECEIVED',
+          requestId: rfqId,
+          quotationId: 'q-10',
+          createdAt: '2026-10-29T00:00:00.000Z',
+          readAt: null,
         },
       ]),
     } as unknown as QuotationClient;
     renderVi(<LiveBuyerQuotations rfqId={rfqId} client={client} />);
     await waitFor(() => expect(screen.getByText(/một chào giá liên kết đã bị rút/)).toBeTruthy());
+  });
+
+  it('không coi thông báo loại khác là chào giá bị rút', async () => {
+    const rfqId = '0b8f7a5e-1c2d-4e3f-a5b6-c7d8e9f0a1b2';
+    const client = {
+      listBuyerQuotations: vi.fn().mockResolvedValue([]),
+      listNotices: vi.fn().mockResolvedValue([
+        {
+          id: 'n-2',
+          version: 1,
+          kind: 'QUOTATION_RECEIVED',
+          requestId: rfqId,
+          quotationId: 'q-10',
+          createdAt: '2026-10-29T00:00:00.000Z',
+          readAt: null,
+        },
+      ]),
+    } as unknown as QuotationClient;
+    renderVi(<LiveBuyerQuotations rfqId={rfqId} client={client} />);
+    await waitFor(() => expect(client.listNotices).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByText(/đang tải chào giá/i)).toBeNull());
+    expect(screen.queryByText(/một chào giá liên kết đã bị rút/)).toBeNull();
   });
 
   it('không bao giờ hiện giá riêng của từng hộ trong chào giá liên kết', async () => {

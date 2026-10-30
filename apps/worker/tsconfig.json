@@ -1,5 +1,13 @@
 {
   "extends": "@vcraft/tsconfig/nestjs.json",
-  "compilerOptions": { "rootDir": "src", "outDir": "dist", "types": ["node"] },
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": ["node"],
+    // Chỉ dùng cho typecheck (`nest build` biên dịch bằng SWC): các package workspace xuất mã nguồn TS
+    // với import không đuôi, nên phân giải theo kiểu bundler thay vì NodeNext.
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  },
   "include": ["src"]
 }

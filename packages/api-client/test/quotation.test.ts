@@ -83,6 +83,34 @@ describe('quotation HTTP client', () => {
       code: 'AUTH_UNAUTHENTICATED',
     });
   });
+
+  it('marks one notice and all notices read with POST requests', async () => {
+    const seen: Array<{ method: string; url: string }> = [];
+    const client = createQuotationClient({
+      getAccessToken: async () => 'session-token',
+      fetch: async (url, options) => {
+        seen.push({ method: options.method ?? 'GET', url });
+        return url.endsWith('/read-all')
+          ? Response.json({ updated: 3 })
+          : Response.json({
+              id: requestId,
+              version: 2,
+              kind: 'ORDER_CANCELLED',
+              requestId,
+              quotationId: null,
+              createdAt: '2027-02-01T00:00:00.000Z',
+              readAt: '2027-02-01T01:00:00.000Z',
+            });
+      },
+    });
+    const notice = await client.markNoticeRead(requestId);
+    expect(notice.readAt).toBe('2027-02-01T01:00:00.000Z');
+    expect(await client.markAllNoticesRead()).toEqual({ updated: 3 });
+    expect(seen).toEqual([
+      { method: 'POST', url: `/api/v1/me/quotation-notices/${requestId}/read` },
+      { method: 'POST', url: '/api/v1/me/quotation-notices/read-all' },
+    ]);
+  });
 });
 it('normalizes gateway errors even when the response is HTML', async () => {
   const client = createQuotationClient({

@@ -1,8 +1,12 @@
 import { type Opt } from '@mikro-orm/core';
 import { Entity, Index, Property } from '@mikro-orm/decorators/legacy';
+import type { QuotationNoticeKind } from '@vcraft/domain';
 import { BaseEntity } from './base.entity.js';
 
-/** Private inbox record written in the same transaction as quotation invalidation. */
+/**
+ * Hộp thư in-app của một người (GH#13). Ghi cùng giao dịch với thay đổi nghiệp vụ gây ra nó; kèm một
+ * sự kiện outbox `quotation.notice` để worker gửi thư SMTP.
+ */
 @Entity({ tableName: 'quotation_notice' })
 @Index({ properties: ['recipientId', 'createdAt'] })
 export class QuotationNotice extends BaseEntity {
@@ -12,9 +16,13 @@ export class QuotationNotice extends BaseEntity {
   @Property({ type: 'uuid' })
   requestId!: string;
 
-  @Property({ type: 'uuid' })
-  quotationId!: string;
+  /** Chào giá liên quan, nếu có (vd. chào giá bị rút, chào giá mới tới). */
+  @Property({ type: 'uuid', nullable: true })
+  quotationId?: string | null;
 
   @Property({ type: 'string', length: 40 })
-  kind: Opt<'QUOTATION_WITHDRAWN'> = 'QUOTATION_WITHDRAWN';
+  kind: Opt<QuotationNoticeKind> = 'QUOTATION_WITHDRAWN';
+
+  @Property({ type: 'datetime', length: 3, nullable: true })
+  readAt?: Date | null;
 }
