@@ -3,9 +3,12 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { ImageSlot } from '@/components/image-slot';
+import { PhotoCredit } from '@/components/photo-credit';
+import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { ProductCard } from '@/features/catalog/product-card';
 import { Link } from '@/i18n/navigation';
 import { demoParams, getArtisan, getProduct, getProductsByArtisan } from '@/lib/demo/data';
+import { squarePhoto } from '@/lib/demo/stage-photos';
 import { resolveLocale } from '@/lib/locale';
 
 export function generateStaticParams() {
@@ -57,17 +60,30 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
               alt={product.name}
               tint={product.tint}
               ratio="4/5"
+              photo={product.photo}
+              priority
+              sizes="(min-width: 768px) 58vw, 100vw"
               className="grid place-items-center"
             >
-              <VaseFigure className="h-3/5" body="var(--color-paper)" band={product.tint} />
+              {product.photo ? null : (
+                <VaseFigure className="h-3/5" body="var(--color-paper)" band={product.tint} />
+              )}
             </ImageSlot>
+            {product.photo ? <PhotoCredit id={product.photo.id} /> : null}
             <ul className="mt-4 grid grid-cols-4 gap-3" aria-label={t('gallery')}>
               {product.log.slice(1, 5).map((e) => (
                 <li key={e.stage}>
-                  <ImageSlot alt={stages(`${e.stage}.name`)} tint={e.tint} ratio="1/1" />
+                  <ImageSlot
+                    alt={stages(`${e.stage}.name`)}
+                    tint={e.tint}
+                    ratio="1/1"
+                    photo={squarePhoto(e.stage)}
+                    sizes="(min-width: 768px) 14vw, 22vw"
+                  />
                 </li>
               ))}
             </ul>
+            {product.log.length > 0 ? <PhotoCreditsNote /> : null}
           </div>
         </div>
 
@@ -131,7 +147,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
               </div>
               <ol className="flex items-center" aria-label={t('journey')}>
                 {product.log.map((e, i) => (
-                  <li key={e.stage} className="flex flex-1 items-center last:flex-none">
+                  <li key={e.hash} className="flex flex-1 items-center last:flex-none">
                     <span
                       title={stages(`${e.stage}.name`)}
                       className="size-3 shrink-0 rounded-full ring-2 ring-surface"

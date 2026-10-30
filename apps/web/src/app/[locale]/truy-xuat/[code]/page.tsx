@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ImageSlot } from '@/components/image-slot';
+import { PhotoCredit } from '@/components/photo-credit';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
 import { MakerCredits } from '@/features/exhibition/maker-credits';
 import { VisitSection } from '@/features/exhibition/visit-section';
@@ -112,10 +113,15 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                 alt={product.name}
                 tint={product.tint}
                 ratio="4/5"
+                photo={product.photo}
+                sizes="(min-width: 640px) 32rem, 100vw"
                 className="mt-6 grid place-items-center"
               >
-                <VaseFigure className="h-3/5" body="var(--color-paper)" band={product.tint} />
+                {product.photo ? null : (
+                  <VaseFigure className="h-3/5" body="var(--color-paper)" band={product.tint} />
+                )}
               </ImageSlot>
+              {product.photo ? <PhotoCredit id={product.photo.id} /> : null}
               {product.artisanNote ? (
                 <blockquote className="mt-6 font-display text-h3 leading-snug text-ink type-soft">
                   “{product.artisanNote}”

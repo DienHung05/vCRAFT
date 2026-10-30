@@ -1,10 +1,26 @@
 import { Badge, buttonVariants, cn, TraceSealFrame, VaseFigure, WaveDivider } from '@vcraft/ui';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { ImageSlot } from '@/components/image-slot';
+import { PhotoCredit } from '@/components/photo-credit';
+import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { VillageMiniMap } from '@/features/village-map/village-mini-map';
 import { Link } from '@/i18n/navigation';
-import { getArtisans, getNews, getProducts, getVillageStats, type LogStage } from '@/lib/demo/data';
+import {
+  type DemoPhotoRef,
+  getArtisans,
+  getNews,
+  getProducts,
+  getVillageStats,
+  type LogStage,
+} from '@/lib/demo/data';
+import { dayPhoto } from '@/lib/demo/stage-photos';
 import { resolveLocale } from '@/lib/locale';
+
+/** Ảnh hero thật (có giấy phép); bỏ đi thì quay về hình bình vẽ tay. */
+const HERO_PHOTO: DemoPhotoRef | undefined = {
+  id: 'hero-binh-chu-dau',
+  alt: 'Chiếc bình gốm men ngà vẽ lam hoa mẫu đơn, cổ cao thon, bụng tròn, đặt trong một cửa hàng gốm',
+};
 
 const DAY_STAGES: readonly { stage: LogStage; tint: string }[] = [
   { stage: 'clay', tint: '#a88d6c' },
@@ -58,10 +74,18 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             alt={t('hero.vaseAlt')}
             tint="#d9c6a6"
             ratio="4/5"
+            photo={HERO_PHOTO}
+            priority
+            sizes="(min-width: 768px) 40vw, 100vw"
             className="grid place-items-center"
           >
-            <VaseFigure className="h-[72%] drop-shadow-[0_24px_40px_rgb(30_58_110/0.35)]" />
+            {HERO_PHOTO ? null : (
+              <VaseFigure className="h-[72%] drop-shadow-[0_24px_40px_rgb(30_58_110/0.35)]" />
+            )}
           </ImageSlot>
+          {HERO_PHOTO ? (
+            <PhotoCredit id={HERO_PHOTO.id} className="mt-1.5 text-right text-[0.75rem] text-ash" />
+          ) : null}
           {showcase ? (
             <div className="absolute -bottom-6 -left-4 hidden rotate-[-4deg] rounded-card bg-paper p-3 shadow-warm sm:block">
               <TraceSealFrame code={showcase.code} size={112} title={t('hero.sealAlt')}>
@@ -89,8 +113,14 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
           <ol className="flex w-max gap-5 px-gutter pb-4">
             {DAY_STAGES.map(({ stage, tint }, i) => (
               <li key={stage} className="w-[78vw] max-w-sm shrink-0 snap-start sm:w-80">
-                <ImageSlot alt={stages(`${stage}.name`)} tint={tint} ratio="3/4">
-                  <span className="absolute top-4 left-4 font-mono text-small text-paper/90">
+                <ImageSlot
+                  alt={stages(`${stage}.name`)}
+                  tint={tint}
+                  ratio="3/4"
+                  photo={dayPhoto(stage)}
+                  sizes="(min-width: 640px) 20rem, 78vw"
+                >
+                  <span className="absolute top-4 left-4 rounded-chip bg-ink/70 px-2 font-mono text-small text-paper">
                     {String(i + 1).padStart(2, '0')}
                   </span>
                 </ImageSlot>
@@ -100,6 +130,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             ))}
           </ol>
         </section>
+        <PhotoCreditsNote className="mx-auto mt-4 max-w-editorial px-gutter text-[0.75rem] leading-snug text-ash" />
       </section>
 
       {/* Nghệ nhân nổi bật: chân dung lớn, bố cục lệch kiểu tạp chí. */}
@@ -127,6 +158,8 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
                   alt={t('artisans.portraitAlt', { name: a.artisanName })}
                   tint={a.tint}
                   ratio="3/4"
+                  photo={a.portrait}
+                  sizes="(min-width: 768px) 30vw, 100vw"
                   className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
                 />
                 <div className="mt-4 flex items-baseline justify-between gap-3">
@@ -141,6 +174,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             </li>
           ))}
         </ul>
+        <PhotoCreditsNote />
       </section>
 
       {/* Bản đồ thu nhỏ "đang mở cửa" + số liệu làng. */}
@@ -213,7 +247,16 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
         <ul className="mt-8 grid gap-6 md:grid-cols-3">
           {news.map((n) => (
             <li key={n.slug} className="flex flex-col gap-3">
-              <ImageSlot alt={n.title} tint={n.tint} ratio="3/2" />
+              <ImageSlot
+                alt={n.title}
+                tint={n.tint}
+                ratio="3/2"
+                photo={n.photo}
+                sizes="(min-width: 768px) 30vw, 100vw"
+              />
+              {n.photo ? (
+                <PhotoCredit id={n.photo.id} className="-mt-1.5 text-[0.75rem] text-ash" />
+              ) : null}
               <div className="flex items-center gap-3">
                 <Badge tone="outline">{n.tag}</Badge>
                 <time dateTime={n.date} className="text-small text-ash">
