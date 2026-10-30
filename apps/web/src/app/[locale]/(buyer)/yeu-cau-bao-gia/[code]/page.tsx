@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
+import { LiveBuyerOrder } from '@/features/orders/live-buyer-order';
 import { LiveBuyerQuotations } from '@/features/rfq/live-buyer-quotations';
 import { RfqSummary } from '@/features/rfq/rfq-summary';
 import { RfqWorkspace } from '@/features/rfq/rfq-workspace';
@@ -36,6 +37,7 @@ export default async function RfqPage({ params }: PageProps<'/[locale]/yeu-cau-b
     return (
       <article className="mx-auto max-w-editorial px-gutter pt-8">
         <LiveBuyerQuotations rfqId={code} />
+        <LiveBuyerOrder rfqId={code} />
       </article>
     );
   const rfq = await getRfq(code);

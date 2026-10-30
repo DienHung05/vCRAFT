@@ -1,5 +1,10 @@
 import {
+  type AcceptQuotationRequest,
+  AcceptQuotationRequestSchema,
+  AllocationResponseSchema,
   BuyerQuotationResponseSchema,
+  type CancelOrderRequest,
+  CancelOrderRequestSchema,
   ContributionResponseSchema,
   CoordinationResponseSchema,
   type CreateContributionRequest,
@@ -13,6 +18,8 @@ import {
   InviteHouseholdsRequestSchema,
   ProblemDetailsSchema,
   QuotationNoticeResponseSchema,
+  type ReportProgressRequest,
+  ReportProgressRequestSchema,
   RfqResponseSchema,
 } from '@vcraft/contracts';
 
@@ -141,6 +148,80 @@ export function createQuotationClient(options: QuotationClientOptions) {
         InternalQuotationResponseSchema,
         'POST',
         CreateCooperativeQuotationRequestSchema.parse(input),
+        version,
+      );
+    },
+    /** GH#11: buyer chốt chào giá đã chọn; version ở If-Match. */
+    acceptQuotation(id: string, version: number, input: AcceptQuotationRequest) {
+      return request(
+        `/rfqs/${IdSchema.parse(id)}/accept`,
+        RfqResponseSchema,
+        'POST',
+        AcceptQuotationRequestSchema.parse(input),
+        version,
+      );
+    },
+    /** GH#11: đọc allocations của đơn đã chốt. */
+    listAllocations(id: string) {
+      return request(`/rfqs/${IdSchema.parse(id)}/allocations`, AllocationResponseSchema.array());
+    },
+    /** GH#11: admin hoặc hộ đơn-1-hộ bắt đầu sản xuất. */
+    startProduction(id: string, version: number) {
+      return request(
+        `/rfqs/${IdSchema.parse(id)}/start-production`,
+        RfqResponseSchema,
+        'POST',
+        undefined,
+        version,
+      );
+    },
+    /** GH#11: buyer hoặc admin xác nhận đã nhận hàng. */
+    confirmReceipt(id: string, version: number) {
+      return request(
+        `/rfqs/${IdSchema.parse(id)}/receive`,
+        RfqResponseSchema,
+        'POST',
+        undefined,
+        version,
+      );
+    },
+    /** GH#11: hộ xác nhận phân bổ của mình. */
+    confirmAllocation(id: string, version: number) {
+      return request(
+        `/allocations/${IdSchema.parse(id)}/confirm`,
+        AllocationResponseSchema,
+        'POST',
+        undefined,
+        version,
+      );
+    },
+    /** GH#11: hộ từ chối phân bổ ⇒ hủy cả đơn chưa sản xuất. */
+    declineAllocation(id: string, version: number) {
+      return request(
+        `/allocations/${IdSchema.parse(id)}/decline`,
+        AllocationResponseSchema,
+        'POST',
+        undefined,
+        version,
+      );
+    },
+    /** GH#11: hộ báo cáo số lượng đã xong trong 0..quantity. */
+    reportProgress(id: string, version: number, input: ReportProgressRequest) {
+      return request(
+        `/allocations/${IdSchema.parse(id)}/progress`,
+        AllocationResponseSchema,
+        'POST',
+        ReportProgressRequestSchema.parse(input),
+        version,
+      );
+    },
+    /** GH#11: admin dieu phoi huy don sau san xuat; ly do bat buoc. */
+    cancelOrder(id: string, version: number, input: CancelOrderRequest) {
+      return request(
+        `/rfqs/${IdSchema.parse(id)}/cancel`,
+        RfqResponseSchema,
+        'POST',
+        CancelOrderRequestSchema.parse(input),
         version,
       );
     },
