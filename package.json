@@ -17,7 +17,14 @@
     "db:seed": "turbo run db:seed --filter=@vcraft/database",
     "infra:up": "docker compose -f infra/compose/compose.dev.yml up -d",
     "infra:down": "docker compose -f infra/compose/compose.dev.yml down",
-    "deps:check": "depcruise apps packages --config .dependency-cruiser.cjs"
+    "deps:check": "depcruise apps packages --config .dependency-cruiser.cjs",
+    "demo:reset": "pnpm --filter @vcraft/domain --filter @vcraft/utils run build && pnpm --filter @vcraft/database exec node --disable-warning=DEP0205 --env-file-if-exists=../../.env --import @swc-node/register/esm-register ./src/seeders/demo/reset-cli.ts",
+    "demo:verify": "pnpm --filter @vcraft/domain --filter @vcraft/utils run build && pnpm --filter @vcraft/database exec node --disable-warning=DEP0205 --env-file-if-exists=../../.env --import @swc-node/register/esm-register ./src/seeders/demo/verify-cli.ts",
+    "demo:auth": "node --env-file-if-exists=.env scripts/demo-auth.mjs",
+    "demo:check:media": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file-if-exists=.env scripts/demo-check-media.mjs",
+    "demo:check:concurrency": "node --env-file-if-exists=.env scripts/demo-check-concurrency.mjs",
+    "demo:e2e": "pnpm --filter @vcraft/e2e exec node --env-file-if-exists=../../.env ./node_modules/@playwright/test/cli.js test specs/demo/qr-to-receipt.spec.ts",
+    "demo:e2e:preexam": "DEMO_PREEXAM=1 pnpm --filter @vcraft/e2e exec node --env-file-if-exists=../../.env ./node_modules/@playwright/test/cli.js test specs/demo/pre-exam.spec.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.3",

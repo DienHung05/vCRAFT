@@ -16,8 +16,6 @@ import {
   CooperativeQuotation as CooperativeQuotationEntity,
   Household,
   OrderAllocation as OrderAllocationEntity,
-  OutboxEvent,
-  QuotationNotice,
   QuotationRequest,
 } from '@vcraft/database';
 import {
@@ -31,11 +29,15 @@ import {
 import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
+import { QuotationNotifier } from './quotation-notifier';
 
 /** All plan/input writes lock the request first, so changes cannot race with composition. */
 @Injectable()
 export class RfqService {
-  constructor(private readonly orm: MikroORM) {}
+  constructor(
+    private readonly orm: MikroORM,
+    private readonly notifier: QuotationNotifier,
+  ) {}
 
   async createRequest(actor: Actor, input: CreateRfqRequest): Promise<RfqResponse> {
     if (actor.locked) throw forbidden();
@@ -85,6 +87,12 @@ export class RfqService {
           requiredBy: request.requiredBy,
         }),
       );
+      await this.notifier.notify(em, {
+        kind: 'RFQ_INVITED',
+        requestId: request.id,
+        actorId: actor.id,
+        recipientIds: await this.notifier.representativeIds(em, request.invitedHouseholdIds),
+      });
       await em.flush();
       return toRfqResponse(request);
     });
@@ -115,7 +123,16 @@ export class RfqService {
       assertVersion(request, version);
       this.open(request);
       await this.checkHouseholds(em, householdIds);
-      request.invitedHouseholdIds = [...new Set([...request.invitedHouseholdIds, ...householdIds])];
+      const added = [...new Set(householdIds)].filter(
+        (householdId) => !request.invitedHouseholdIds.includes(householdId),
+      );
+      request.invitedHouseholdIds = [...request.invitedHouseholdIds, ...added];
+      await this.notifier.notify(em, {
+        kind: 'RFQ_INVITED',
+        requestId: request.id,
+        actorId: actor.id,
+        recipientIds: await this.notifier.representativeIds(em, added),
+      });
       request.revision++;
       await em.flush();
       return toRfqResponse(request);
@@ -158,6 +175,12 @@ export class RfqService {
         maxQuantity: input.maxQuantity,
         unitPriceVnd: input.unitPriceVnd,
         completionDate: new Date(input.completionDate),
+      });
+      await this.notifier.notify(em, {
+        kind: 'CONTRIBUTION_RECEIVED',
+        requestId: request.id,
+        actorId: actor.id,
+        recipientIds: [request.coordinatorId],
       });
       request.revision++;
       await em.flush();
@@ -242,24 +265,21 @@ export class RfqService {
       for (const quotation of quotations) {
         if (!quotation.parts.some((part) => part.householdId === household.id)) continue;
         quotation.status = 'WITHDRAWN';
-        for (const recipientId of new Set(
-          [request.buyer.id, request.coordinatorId].filter((id): id is string => Boolean(id)),
-        )) {
-          em.create(QuotationNotice, {
-            recipientId,
-            requestId: request.id,
-            quotationId: quotation.id,
-          });
-        }
-        em.create(OutboxEvent, {
-          type: 'quotation.withdrawn',
-          payload: {
-            requestId: request.id,
-            quotationId: quotation.id,
-            recipientIds: [request.buyer.id, request.coordinatorId].filter(Boolean),
-          },
+        await this.notifier.notify(em, {
+          kind: 'QUOTATION_WITHDRAWN',
+          requestId: request.id,
+          quotationId: quotation.id,
+          actorId: actor.id,
+          recipientIds: [request.buyer.id, request.coordinatorId],
         });
       }
+      if (input)
+        await this.notifier.notify(em, {
+          kind: 'CONTRIBUTION_RECEIVED',
+          requestId: request.id,
+          actorId: actor.id,
+          recipientIds: [request.coordinatorId],
+        });
       request.revision++;
       await em.flush();
       return toContributionDto(offer);
@@ -345,6 +365,13 @@ export class RfqService {
         deliveryTerms: quotation.deliveryTerms,
       });
       request.status = 'BIDDING';
+      await this.notifier.notify(em, {
+        kind: 'QUOTATION_RECEIVED',
+        requestId: request.id,
+        quotationId: entity.id,
+        actorId: actor.id,
+        recipientIds: [request.buyer.id],
+      });
       request.revision++;
       await em.flush();
       return toInternalQuotationDto(entity, offers);
@@ -426,6 +453,23 @@ export class RfqService {
           completedQty: 0,
         });
       }
+      await this.notifier.notify(em, {
+        kind: 'ALLOCATION_PROPOSED',
+        requestId: request.id,
+        quotationId: chosen.id,
+        actorId: actor.id,
+        recipientIds: await this.notifier.representativeIds(
+          em,
+          chosen.parts.map((part) => part.householdId),
+        ),
+      });
+      await this.notifier.notify(em, {
+        kind: 'QUOTATION_ACCEPTED',
+        requestId: request.id,
+        quotationId: chosen.id,
+        actorId: actor.id,
+        recipientIds: [request.coordinatorId],
+      });
       request.revision++;
       await em.flush();
       return toRfqResponse(request);
@@ -476,6 +520,13 @@ export class RfqService {
       assertVersion(allocation, version);
       this.acceptedOnly(request);
       allocation.status = unwrap(allocationTransition(allocation.status, 'CONFIRM', {}));
+      await this.notifier.notify(em, {
+        kind: 'ALLOCATION_CONFIRMED',
+        requestId: request.id,
+        quotationId: allocation.quotation.id,
+        actorId: actor.id,
+        recipientIds: [request.buyer.id, request.coordinatorId],
+      });
       request.revision++;
       await em.flush();
       return toAllocationDto(allocation);
@@ -508,8 +559,23 @@ export class RfqService {
         { populate: ['household'] },
       );
       for (const sibling of siblings) {
+        // Hàng của chính allocation vừa DECLINED còn PROPOSED trong CSDL nhưng đã DECLINED trong bộ nhớ.
+        if (sibling.id === allocation.id) continue;
         sibling.status = unwrap(allocationTransition(sibling.status, 'CANCEL', {}));
       }
+      await this.notifier.notify(em, {
+        kind: 'ORDER_CANCELLED',
+        requestId: request.id,
+        quotationId: allocation.quotation.id,
+        actorId: actor.id,
+        recipientIds: [
+          request.buyer.id,
+          request.coordinatorId,
+          ...(await this.notifier.representativeIds(em, [
+            ...siblings.map((sibling) => sibling.household.id),
+          ])),
+        ],
+      });
       request.revision++;
       await em.flush();
       return toAllocationDto(allocation);
@@ -540,6 +606,13 @@ export class RfqService {
           }),
         );
       }
+      await this.notifier.notify(em, {
+        kind: 'PROGRESS_REPORTED',
+        requestId: request.id,
+        quotationId: allocation.quotation.id,
+        actorId: actor.id,
+        recipientIds: [request.buyer.id, request.coordinatorId],
+      });
       request.revision++;
       await em.flush();
       return toAllocationDto(allocation);
@@ -560,14 +633,27 @@ export class RfqService {
         request,
         status: 'ACCEPTED',
       });
+      const householdIds: string[] = [];
       if (accepted) {
         const allocations = await em.find(OrderAllocationEntity, { quotation: accepted });
         for (const allocation of allocations) {
+          householdIds.push(allocation.household.id);
           if (allocation.status !== 'DECLINED' && allocation.status !== 'CANCELLED') {
             allocation.status = unwrap(allocationTransition(allocation.status, 'CANCEL', {}));
           }
         }
       }
+      await this.notifier.notify(em, {
+        kind: 'ORDER_CANCELLED',
+        requestId: request.id,
+        quotationId: accepted?.id,
+        actorId: actor.id,
+        recipientIds: [
+          request.buyer.id,
+          request.coordinatorId,
+          ...(await this.notifier.representativeIds(em, householdIds)),
+        ],
+      });
       request.revision++;
       await em.flush();
       return toRfqResponse(request);
@@ -603,6 +689,19 @@ export class RfqService {
           allocationStatuses: allocations.map((allocation) => allocation.status),
         }),
       );
+      await this.notifier.notify(em, {
+        kind: 'ORDER_RECEIVED',
+        requestId: request.id,
+        quotationId: accepted.id,
+        actorId: actor.id,
+        recipientIds: [
+          request.coordinatorId,
+          ...(await this.notifier.representativeIds(
+            em,
+            allocations.map((allocation) => allocation.household.id),
+          )),
+        ],
+      });
       request.revision++;
       await em.flush();
       return toRfqResponse(request);
@@ -647,6 +746,16 @@ export class RfqService {
           allocation.status = unwrap(allocationTransition(allocation.status, 'START', {}));
         }
       }
+      await this.notifier.notify(em, {
+        kind: 'PRODUCTION_STARTED',
+        requestId: request.id,
+        quotationId: accepted.id,
+        actorId: actor.id,
+        recipientIds: [
+          request.buyer.id,
+          ...(await this.notifier.representativeIds(em, [...households])),
+        ],
+      });
       request.revision++;
       await em.flush();
       return toRfqResponse(request);
@@ -663,25 +772,6 @@ export class RfqService {
 
   private acceptedOnly(request: QuotationRequest) {
     if (request.status !== 'ACCEPTED') throw new AppError('INVALID_TRANSITION');
-  }
-
-  async listNotices(actor: Actor) {
-    const notices = await this.orm.em.fork().find(
-      QuotationNotice,
-      { recipientId: actor.id },
-      {
-        orderBy: { createdAt: 'desc' },
-        limit: 100,
-      },
-    );
-    return notices.map((notice) => ({
-      id: notice.id,
-      version: notice.version,
-      kind: notice.kind,
-      requestId: notice.requestId,
-      quotationId: notice.quotationId,
-      createdAt: notice.createdAt.toISOString(),
-    }));
   }
 
   private async request(em: EntityManager, id: string, lock = false) {

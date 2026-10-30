@@ -200,7 +200,8 @@ describe('order confirmation, progress and receipt', () => {
       headers: { 'if-match': String(read.body.version) },
       body: { quotationId: quotations.body[0].id },
     });
-    expect(forbiddenAccept.status).toBe(404);
+    // Vai trò ADMIN bị AuthGuard chặn ở @Roles('BUYER') trước khi tới service.
+    expect(forbiddenAccept.status).toBe(403);
     const strangerRead = await t.request({
       method: 'GET',
       url: `/rfqs/${requestId}/allocations`,
