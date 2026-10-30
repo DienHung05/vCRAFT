@@ -285,7 +285,7 @@ export const NEWS: readonly NewsSeed[] = [
     h: 2,
     title: '{hộ} nhận thêm đơn cốc quai in logo cho doanh nghiệp',
     summary: 'Hộ mở thêm ca vuốt buổi chiều để kịp các đơn quà tặng số lượng lớn.',
-    body: 'Hộ {hộ} vừa tăng thêm một ca làm buổi chiều. Cốc quai men rạn in logo được kiểm từng chiếc trước khi đóng gói. Doanh nghiệp muốn đặt riêng có thể gửi yêu cầu báo giá trên hệ thống để hộ đề xuất số lượng và giá.',
+    body: 'Hộ {hộ} vừa tăng thêm một ca làm buổi chiều. Cốc men trắng quai tròn in logo được kiểm từng chiếc trước khi đóng gói. Doanh nghiệp muốn đặt riêng có thể gửi yêu cầu báo giá trên hệ thống để hộ đề xuất số lượng và giá.',
     daysAgo: 4,
   },
   {

@@ -165,7 +165,7 @@ const DEMO_H = 2; // chỉ số hộ do tài khoản household đại diện (L�
 const REQUESTS: readonly RequestSpec[] = [
   {
     key: 'draft',
-    design: 'Cốc quai men rạn in logo, quà tặng hội nghị',
+    design: 'Cốc men trắng quai tròn in logo, quà tặng hội nghị',
     quantity: 800,
     unit: 'cái',
     destination: 'Trung tâm hội nghị, Hà Nội',
@@ -179,7 +179,7 @@ const REQUESTS: readonly RequestSpec[] = [
   },
   {
     key: 'expired',
-    design: 'Bát chiết yêu vẽ sen cho nhà hàng',
+    design: 'Bát vẽ sen men trong cho nhà hàng',
     quantity: 400,
     unit: 'cái',
     destination: 'Nhà hàng Sen Việt, Hà Nội',
@@ -193,7 +193,7 @@ const REQUESTS: readonly RequestSpec[] = [
   },
   {
     key: 'sentPlain',
-    design: 'Bộ ấm chén men ngọc, quà tặng đối tác',
+    design: 'Ấm trà men ngọc, quà tặng đối tác',
     quantity: 300,
     unit: 'bộ',
     destination: 'Công ty Thảo Nguyên, Hải Phòng',
@@ -241,7 +241,7 @@ const REQUESTS: readonly RequestSpec[] = [
   },
   {
     key: 'biddingToAccept',
-    design: 'Cốc quai men rạn in logo, đợt 1 Công ty Thảo Nguyên',
+    design: 'Cốc men trắng quai tròn in logo, đợt 1 Công ty Thảo Nguyên',
     quantity: 2400,
     unit: 'cái',
     destination: 'Kho Công ty Thảo Nguyên, Hải Phòng',
@@ -382,7 +382,7 @@ const REQUESTS: readonly RequestSpec[] = [
   },
   {
     key: 'inProduction',
-    design: 'Cốc quai men rạn in logo, đơn chia 4 hộ đang sản xuất',
+    design: 'Cốc men trắng quai tròn in logo, đơn chia 4 hộ đang sản xuất',
     quantity: 2000,
     unit: 'cái',
     destination: 'Kho Công ty Thảo Nguyên, Hải Phòng',
@@ -534,8 +534,8 @@ export async function seedDemoData(
   /** Sản phẩm cố định khớp dữ liệu minh họa của apps/web: {chỉ số hộ, chỉ số món} → tên, mã. */
   const fixedProducts = new Map<string, { name: string; code: string; batch?: number }>([
     ['0:0', { name: 'Bình hút lộc men lam', code: 'BT7K2QXM' }],
-    ['3:0', { name: 'Bát chiết yêu vẽ sen', code: 'HX2M9KQD' }],
-    [`${DEMO_H}:0`, { name: 'Cốc quai men rạn', code: DEMO_QR_TRACE_CODE, batch: 300 }],
+    ['3:0', { name: 'Bát vẽ sen men trong', code: 'HX2M9KQD' }],
+    [`${DEMO_H}:0`, { name: 'Cốc men trắng quai tròn', code: DEMO_QR_TRACE_CODE, batch: 300 }],
   ]);
 
   // --- Hộ, nghệ nhân, xưởng, sản phẩm, nhật ký ---

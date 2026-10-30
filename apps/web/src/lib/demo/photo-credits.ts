@@ -21,6 +21,41 @@ export interface PhotoCredit {
 
 export const PHOTO_CREDITS: readonly PhotoCredit[] = [
   {
+    id: 'am-men-ngoc-ly',
+    title:
+      'File:Teapot, celadon glaze ceramic - Lý dynasty, 11th-12th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05386.JPG',
+    author: 'Daderot',
+    license: 'CC0',
+    licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+    sourceUrl:
+      'https://commons.wikimedia.org/wiki/File:Teapot,_celadon_glaze_ceramic_-_L%C3%BD_dynasty,_11th-12th_century_AD_-_Vietnam_National_Museum_of_Fine_Arts_-_Hanoi,_Vietnam_-_DSC05386.JPG',
+    ratio: '4/5',
+    tint: '#9d978b',
+    widths: [640, 1280],
+  },
+  {
+    id: 'bat-ve-sen-men-trong',
+    title: 'File:Bol, M.C. 2019-90 (3 of 4).jpg',
+    author: 'Musée Cernuschi, Paris (Paris Musées)',
+    license: 'CC0',
+    licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+    sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bol,_M.C._2019-90_(3_of_4).jpg',
+    ratio: '4/5',
+    tint: '#aca395',
+    widths: [640, 1280],
+  },
+  {
+    id: 'coc-men-trang-quai-tron',
+    title: 'File:Mug (AM 2014.19.55-2).jpg',
+    author: 'Crown Lynn Potteries Ltd (ảnh: Auckland Museum)',
+    license: 'CC BY 4.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+    sourceUrl: 'https://commons.wikimedia.org/wiki/File:Mug_(AM_2014.19.55-2).jpg',
+    ratio: '4/5',
+    tint: '#f1f0f1',
+    widths: [640, 1280],
+  },
+  {
     id: 'binh-men-lam-xam',
     title:
       'File:Vase, Bat Trang ceramic with blue glaze - Nguyen dynasty, 19th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05325.JPG',
@@ -31,43 +66,6 @@ export const PHOTO_CREDITS: readonly PhotoCredit[] = [
       'https://commons.wikimedia.org/wiki/File:Vase,_Bat_Trang_ceramic_with_blue_glaze_-_Nguyen_dynasty,_19th_century_AD_-_Vietnam_National_Museum_of_Fine_Arts_-_Hanoi,_Vietnam_-_DSC05325.JPG',
     ratio: '4/5',
     tint: '#ada59f',
-    widths: [640, 1280],
-  },
-  {
-    id: 'am-tra-moc-xep-chong',
-    title: 'File:Bat-Trang-Ceramic-Village5.jpg',
-    author: 'Steven C. Price',
-    license: 'CC BY-SA 4.0',
-    licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
-    sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bat-Trang-Ceramic-Village5.jpg',
-    ratio: '4/5',
-    tint: '#807977',
-    widths: [640, 1280],
-  },
-  {
-    id: 'bat-men-khac-canh-sen',
-    title:
-      'File:Bowl from Vietnam, 13th-14th century AD, stoneware - Museum of Vietnamese History - Ho Chi Minh City - DSC05893.JPG',
-    author: 'Daderot',
-    license: 'CC0',
-    licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
-    sourceUrl:
-      'https://commons.wikimedia.org/wiki/File:Bowl_from_Vietnam,_13th-14th_century_AD,_stoneware_-_Museum_of_Vietnamese_History_-_Ho_Chi_Minh_City_-_DSC05893.JPG',
-    ratio: '4/5',
-    tint: '#a48e6d',
-    widths: [640, 1280],
-  },
-  {
-    id: 'chen-hoa-lam',
-    title:
-      'File:Cups - Royal ceramic, Nguyen dynasty, 19th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05317.JPG',
-    author: 'Daderot',
-    license: 'CC0',
-    licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
-    sourceUrl:
-      'https://commons.wikimedia.org/wiki/File:Cups_-_Royal_ceramic,_Nguyen_dynasty,_19th_century_AD_-_Vietnam_National_Museum_of_Fine_Arts_-_Hanoi,_Vietnam_-_DSC05317.JPG',
-    ratio: '4/5',
-    tint: '#cccacd',
     widths: [640, 1280],
   },
   {
@@ -191,19 +189,18 @@ export const PHOTO_CREDITS: readonly PhotoCredit[] = [
     licenseUrl: 'https://creativecommons.org/licenses/by-sa/2.0/',
     sourceUrl: 'https://commons.wikimedia.org/wiki/File:DSC0252_(22946631901).jpg',
     ratio: '16/9',
-    tint: '#6e6b67',
+    tint: '#696767',
     widths: [640, 1280],
   },
   {
     id: 'bia-lam-ngoc',
-    title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2718.JPG',
-    author: '松岡明芳 (Akiyoshi Matsuoka)',
+    title: 'File:Bình vôi (lime container) 3.JPG',
+    author: 'Hungda',
     license: 'CC BY-SA 3.0',
     licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
-    sourceUrl:
-      'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2718.JPG',
+    sourceUrl: 'https://commons.wikimedia.org/wiki/File:B%C3%ACnh_v%C3%B4i_(lime_container)_3.JPG',
     ratio: '16/9',
-    tint: '#74675b',
+    tint: '#6f675b',
     widths: [640, 1280],
   },
   {
@@ -442,14 +439,14 @@ export const PHOTO_CREDITS: readonly PhotoCredit[] = [
   },
   {
     id: 'tl-fire-2',
-    title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2727.JPG',
-    author: '松岡明芳 (Akiyoshi Matsuoka)',
-    license: 'CC BY-SA 3.0',
-    licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+    title: 'File:Kiln in Vietnam in Chau Thanh District, 04.jpg',
+    author: 'Karel Bilek',
+    license: 'CC BY-SA 4.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
     sourceUrl:
-      'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2727.JPG',
+      'https://commons.wikimedia.org/wiki/File:Kiln_in_Vietnam_in_Chau_Thanh_District,_04.jpg',
     ratio: '3/2',
-    tint: '#6e6a65',
+    tint: '#806b52',
     widths: [640, 1280],
   },
   {
