@@ -1,8 +1,10 @@
 import { cn } from '@vcraft/ui';
 import type { ReactNode } from 'react';
+import type { DemoPhotoRef } from '@/lib/demo/data';
+import { PHOTO_BY_ID } from '@/lib/demo/photo-credits';
 
 export interface ImageSlotProps {
-  /** Mô tả ảnh (alt), bắt buộc như ảnh thật (FR-ART-04). */
+  /** Mô tả ảnh (alt), bắt buộc như ảnh thật (FR-ART-04). Khi có `photo`, dùng alt của ảnh. */
   alt: string;
   /** Màu chủ đạo của ảnh (`dominantColor`, BRAND §3.2). */
   tint: string;
@@ -10,25 +12,68 @@ export interface ImageSlotProps {
   ratio?: string;
   /** Hiện chú thích ở góc dưới. */
   caption?: string;
+  /** Ảnh thật có giấy phép (demo); không có thì hiện khung nhuốm màu như cũ. */
+  photo?: DemoPhotoRef | undefined;
+  /** `sizes` cho `<picture>`: chiều rộng ảnh theo viewport. */
+  sizes?: string;
+  /** Ảnh trên màn đầu (LCP): nạp ngay thay vì lười. */
+  priority?: boolean;
   className?: string;
   children?: ReactNode;
 }
 
+const DEFAULT_SIZES = '(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw';
+
 /**
- * Khung ảnh tạm khi chưa có ảnh có giấy phép (BRAND §7): nền nhuốm màu chủ đạo + hạt giấy.
+ * Khung ảnh: nền nhuốm màu chủ đạo + hạt giấy (BRAND §7). Có `photo` thì vẽ `<picture>` AVIF/WebP
+ * 640w + 1280w trong đúng khung (không dịch bố cục), màu chủ đạo làm nền khi ảnh chưa về.
  * Cùng kích thước, tỉ lệ và alt với `<CraftImage>` sau này (E4) nên thay thế không vỡ bố cục.
  */
-export function ImageSlot({ alt, tint, ratio, caption, className, children }: ImageSlotProps) {
+export function ImageSlot({
+  alt,
+  tint,
+  ratio,
+  caption,
+  photo,
+  sizes = DEFAULT_SIZES,
+  priority = false,
+  className,
+  children,
+}: ImageSlotProps) {
+  const credit = photo ? PHOTO_BY_ID.get(photo.id) : undefined;
+  const base = credit ? `/images/demo/${credit.id}` : undefined;
+  const srcSet = (ext: 'avif' | 'webp') =>
+    credit?.widths.map((w) => `${base}-${w}.${ext} ${w}w`).join(', ');
+  const smallest = credit ? Math.min(...credit.widths) : 0;
+  const [rw = 1, rh = 1] = (ratio ?? credit?.ratio ?? '1/1').split('/').map(Number);
+
   return (
     <div
-      role="img"
-      aria-label={alt}
+      {...(credit ? {} : { role: 'img', 'aria-label': alt })}
       className={cn('grain relative isolate overflow-hidden rounded-card', className)}
       style={{
         aspectRatio: ratio,
-        background: `radial-gradient(120% 90% at 30% 20%, color-mix(in oklch, ${tint} 55%, var(--color-paper)), ${tint} 70%, color-mix(in oklch, ${tint} 80%, var(--color-ink)))`,
+        background: credit
+          ? credit.tint
+          : `radial-gradient(120% 90% at 30% 20%, color-mix(in oklch, ${tint} 55%, var(--color-paper)), ${tint} 70%, color-mix(in oklch, ${tint} 80%, var(--color-ink)))`,
       }}
     >
+      {credit && photo ? (
+        <picture>
+          <source type="image/avif" srcSet={srcSet('avif')} sizes={sizes} />
+          <source type="image/webp" srcSet={srcSet('webp')} sizes={sizes} />
+          <img
+            src={`${base}-${smallest}.webp`}
+            alt={photo.alt}
+            width={smallest}
+            height={Math.round((smallest * rh) / rw)}
+            loading={priority ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : undefined}
+            decoding="async"
+            className="absolute inset-0 size-full object-cover"
+          />
+        </picture>
+      ) : null}
       {children}
       {caption ? (
         <span className="absolute bottom-3 left-3 rounded-chip bg-paper/85 px-2.5 py-0.5 text-[0.75rem] text-ink backdrop-blur-sm">

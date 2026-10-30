@@ -1,6 +1,7 @@
 import { Badge } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { ProductCard } from '@/features/catalog/product-card';
 import { getProducts } from '@/lib/demo/data';
 import { resolveLocale } from '@/lib/locale';
@@ -43,6 +44,7 @@ export default async function ProductsIndexPage({ params }: PageProps<'/[locale]
       ) : (
         <p className="mt-10 text-ash">{t('empty')}</p>
       )}
+      <PhotoCreditsNote />
     </div>
   );
 }

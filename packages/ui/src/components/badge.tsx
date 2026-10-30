@@ -16,7 +16,8 @@ export const badgeVariants = cva(
         glaze: 'bg-glaze/10 text-glaze',
         celadon: 'bg-celadon/15 text-ink',
         lacquer: 'bg-lacquer/14 text-ink',
-        seal: 'bg-seal/10 text-seal',
+        // Chữ pha thêm mực để đạt ≥ 4.5:1 trên nền seal/10 (seal thuần chỉ đạt 4.38:1).
+        seal: 'bg-seal/10 text-[color-mix(in_oklch,var(--color-seal),var(--color-ink)_22%)]',
         outline: 'border border-ink/20 text-ash',
       },
     },
