@@ -62,7 +62,9 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
           setState({
             kind: 'ready',
             coordination,
-            noticeCount: notices.filter((notice) => notice.requestId === rfqId).length,
+            noticeCount: notices.filter(
+              (notice) => notice.requestId === rfqId && notice.kind === 'QUOTATION_WITHDRAWN',
+            ).length,
           });
       } catch (error) {
         if (!active || current !== sequence) return;

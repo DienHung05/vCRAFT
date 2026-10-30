@@ -7,4 +7,5 @@ export {
   resolveDbDriver,
   type VcraftMikroOrmOptions,
 } from './mikro-orm.config.js';
+export * from './repositories/index.js';
 export * from './seeders/index.js';

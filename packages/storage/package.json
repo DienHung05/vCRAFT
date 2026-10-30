@@ -1,0 +1,33 @@
+{
+  "name": "@vcraft/storage",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cổng object storage (ADR-14): Supabase Storage qua S3 hoặc đĩa cục bộ; presigned URL cho tệp riêng tư.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1156.0",
+    "@aws-sdk/s3-request-presigner": "^3.1156.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@vcraft/tsconfig": "workspace:*",
+    "tsdown": "^0.23.2",
+    "vitest": "^5.0.5"
+  },
+  "files": [
+    "dist",
+    "src"
+  ]
+}

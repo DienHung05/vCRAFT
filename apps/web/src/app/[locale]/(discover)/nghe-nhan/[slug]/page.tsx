@@ -262,8 +262,8 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
           <h2 id="wholesale-title" className="text-paper">
             {ex('wholesaleTitle')}
           </h2>
-          <p className="mt-3 max-w-prose-vn text-paper/85">{ex('wholesaleText')}</p>
-          <p className="mt-2 text-small text-paper/75">
+          <p className="mt-3 max-w-prose-vn text-paper">{ex('wholesaleText')}</p>
+          <p className="mt-2 text-small text-paper">
             {t('capacity')}: {t('capacityValue', { count: artisan.capacityPerMonth })}
           </p>
           <Link

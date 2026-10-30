@@ -16,6 +16,7 @@ import {
   IdSchema,
   InternalQuotationResponseSchema,
   InviteHouseholdsRequestSchema,
+  MarkAllNoticesReadResponseSchema,
   ProblemDetailsSchema,
   QuotationNoticeResponseSchema,
   type ReportProgressRequest,
@@ -97,6 +98,16 @@ export function createQuotationClient(options: QuotationClientOptions) {
     },
     listNotices() {
       return request('/me/quotation-notices', QuotationNoticeResponseSchema.array());
+    },
+    markNoticeRead(id: string) {
+      return request(
+        `/me/quotation-notices/${IdSchema.parse(id)}/read`,
+        QuotationNoticeResponseSchema,
+        'POST',
+      );
+    },
+    markAllNoticesRead() {
+      return request('/me/quotation-notices/read-all', MarkAllNoticesReadResponseSchema, 'POST');
     },
     getRequest(id: string) {
       return request(`/rfqs/${IdSchema.parse(id)}`, RfqResponseSchema);

@@ -41,6 +41,26 @@
       "meta": "{artisan} · {craft}",
       "since": "Generation {n} · since {year}"
     },
+    "news": {
+      "title": "Village news",
+      "lead": "Village-wide news and updates from individual households: events, craft stories, news from the workshops.",
+      "demoNote": "Demo: these items are sample data, not real news.",
+      "count": "{count, plural, one {# item} other {# items}}",
+      "empty": "No news yet.",
+      "unavailable": "News could not be loaded right now. Please try again in a few minutes.",
+      "listLabel": "News list",
+      "pinned": "Pinned",
+      "village": "Village-wide",
+      "byHousehold": "From {name}",
+      "filteredBy": "Showing news from {name}.",
+      "clearFilter": "Show all news",
+      "more": "Load more news",
+      "categories": {
+        "HOUSEHOLD_UPDATE": "From a household",
+        "VILLAGE_EVENT": "Village event",
+        "CRAFT_STORY": "Craft story"
+      }
+    },
     "rfq": {
       "title": "Quote requests",
       "lead": "Send a bulk need, receive bids from suitable households and choose who makes it.",
@@ -547,6 +567,27 @@
       "IN_PROGRESS": "In progress",
       "DONE": "Done",
       "CANCELLED": "Cancelled"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "unread": "{count, plural, =0 {No new notifications} other {# unread}}",
+    "empty": "No notifications yet.",
+    "markRead": "Mark read",
+    "markAllRead": "Mark all as read",
+    "failed": "Could not update notifications. Try again later.",
+    "kind": {
+      "RFQ_INVITED": "You were invited to a quotation request.",
+      "CONTRIBUTION_RECEIVED": "A household sent a new participation offer.",
+      "QUOTATION_RECEIVED": "You received a new quotation.",
+      "QUOTATION_WITHDRAWN": "A quotation is no longer valid.",
+      "QUOTATION_ACCEPTED": "The buyer accepted the quotation.",
+      "ALLOCATION_PROPOSED": "You have a production share to confirm.",
+      "ALLOCATION_CONFIRMED": "A household confirmed its allocation.",
+      "ORDER_CANCELLED": "The order was cancelled.",
+      "PRODUCTION_STARTED": "The order has entered production.",
+      "PROGRESS_REPORTED": "Production progress was updated.",
+      "ORDER_RECEIVED": "The order receipt was confirmed."
     }
   }
 }
