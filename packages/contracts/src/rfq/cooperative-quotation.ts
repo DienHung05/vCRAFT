@@ -1,4 +1,4 @@
-import { DELIVERY_TERMS } from '@vcraft/domain';
+import { DELIVERY_TERMS, QUOTATION_NOTICE_KINDS } from '@vcraft/domain';
 import { z } from 'zod';
 import { IdSchema, IsoDateTimeSchema, VersionSchema, VndSchema } from '../common';
 import { RfqResponseSchema } from './create-rfq';
@@ -12,12 +12,18 @@ const PositiveVndSchema = VndSchema.min(1, 'Đơn giá phải lớn hơn 0');
 export const QuotationNoticeResponseSchema = z.strictObject({
   id: IdSchema,
   version: VersionSchema,
-  kind: z.literal('QUOTATION_WITHDRAWN'),
+  kind: z.enum(QUOTATION_NOTICE_KINDS),
   requestId: IdSchema,
-  quotationId: IdSchema,
+  quotationId: IdSchema.nullable(),
   createdAt: IsoDateTimeSchema,
+  readAt: IsoDateTimeSchema.nullable(),
 });
 export type QuotationNoticeDto = z.infer<typeof QuotationNoticeResponseSchema>;
+
+export const MarkAllNoticesReadResponseSchema = z.strictObject({
+  updated: z.int().min(0),
+});
+export type MarkAllNoticesReadResponse = z.infer<typeof MarkAllNoticesReadResponseSchema>;
 
 export const ContributionStatusSchema = z.enum(['ACTIVE', 'WITHDRAWN']);
 

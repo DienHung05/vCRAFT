@@ -1,14 +1,20 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { MikroORM } from '@mikro-orm/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
 import { AppUser } from '@vcraft/database';
 import type { AccountRole } from '@vcraft/domain';
+import { LocalObjectStorage } from '@vcraft/storage';
 import { AppModule } from '../../../src/app.module.js';
 import {
   IdentityVerifier,
   InvalidTokenError,
   type VerifiedIdentity,
 } from '../../../src/common/auth/identity-verifier.js';
+import { configureHttp } from '../../../src/configure-http.js';
+import { OBJECT_STORAGE } from '../../../src/infrastructure/storage/storage.module.js';
 import type { TestDatabase } from './test-database.js';
 
 /**
@@ -31,6 +37,8 @@ class FakeIdentityVerifier extends IdentityVerifier {
 
 export interface TestApp {
   app: NestFastifyApplication;
+  /** Object storage trên thư mục tạm (ADR-14 `STORAGE_DRIVER=local`), xóa khi `close()`. */
+  storage: LocalObjectStorage;
   /** Tạo tài khoản với vai trò cho trước; trả header Authorization dùng cho request. */
   createUser: (role: AccountRole) => Promise<{ id: string; auth: string }>;
   request: (opts: {
@@ -45,19 +53,30 @@ export interface TestApp {
 }
 
 export async function startTestApp(db: TestDatabase): Promise<TestApp> {
+  const storageDir = await mkdtemp(join(tmpdir(), 'vcraft-api-storage-'));
+  const storage = new LocalObjectStorage({
+    publicDir: join(storageDir, 'public'),
+    privateDir: join(storageDir, 'private'),
+    publicBaseUrl: 'http://localhost:8080/media',
+    signedBaseUrl: 'http://localhost:8080/api/v1/media/files',
+    signingKey: 'integration-test-signing-key',
+  });
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+    .overrideProvider(OBJECT_STORAGE)
+    .useValue(storage)
     .overrideProvider(MikroORM)
     .useValue(db.orm)
     .overrideProvider(IdentityVerifier)
     .useClass(FakeIdentityVerifier)
     .compile();
   const app = moduleRef.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
-  app.setGlobalPrefix('api/v1');
+  await configureHttp(app);
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
 
   return {
     app,
+    storage,
     async createUser(role) {
       const em = db.orm.em.fork();
       const user = em.create(AppUser, {
@@ -77,6 +96,9 @@ export async function startTestApp(db: TestDatabase): Promise<TestApp> {
       });
       return { status: res.statusCode, body: res.body ? JSON.parse(res.body) : undefined };
     },
-    close: () => app.close(),
+    close: async () => {
+      await app.close();
+      await rm(storageDir, { recursive: true, force: true });
+    },
   };
 }
