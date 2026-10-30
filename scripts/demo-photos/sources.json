@@ -3,33 +3,34 @@
   "widths": [640, 1280],
   "photos": [
     {
+      "id": "am-men-ngoc-ly",
+      "file": "Teapot, celadon glaze ceramic - Lý dynasty, 11th-12th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05386.JPG",
+      "ratio": "4/5",
+      "author": "Daderot",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "bat-ve-sen-men-trong",
+      "file": "Bol, M.C. 2019-90 (3 of 4).jpg",
+      "ratio": "4/5",
+      "author": "Musée Cernuschi, Paris (Paris Musées)",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "coc-men-trang-quai-tron",
+      "file": "Mug (AM 2014.19.55-2).jpg",
+      "ratio": "4/5",
+      "author": "Crown Lynn Potteries Ltd (ảnh: Auckland Museum)",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "region": [0, 0.1, 1, 0.83]
+    },
+    {
       "id": "binh-men-lam-xam",
       "position": "centre",
       "file": "Vase, Bat Trang ceramic with blue glaze - Nguyen dynasty, 19th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05325.JPG",
-      "ratio": "4/5",
-      "author": "Daderot",
-      "license": "CC0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
-    },
-    {
-      "id": "am-tra-moc-xep-chong",
-      "file": "Bat-Trang-Ceramic-Village5.jpg",
-      "ratio": "4/5",
-      "author": "Steven C. Price",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
-    },
-    {
-      "id": "bat-men-khac-canh-sen",
-      "file": "Bowl from Vietnam, 13th-14th century AD, stoneware - Museum of Vietnamese History - Ho Chi Minh City - DSC05893.JPG",
-      "ratio": "4/5",
-      "author": "Daderot",
-      "license": "CC0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
-    },
-    {
-      "id": "chen-hoa-lam",
-      "file": "Cups - Royal ceramic, Nguyen dynasty, 19th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05317.JPG",
       "ratio": "4/5",
       "author": "Daderot",
       "license": "CC0",
@@ -122,13 +123,14 @@
       "ratio": "16/9",
       "author": "Tran Anh Khoa (zorrotran)",
       "license": "CC BY-SA 2.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
+      "region": [0, 0, 0.88, 0.88]
     },
     {
       "id": "bia-lam-ngoc",
-      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2718.JPG",
+      "file": "Bình vôi (lime container) 3.JPG",
       "ratio": "16/9",
-      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "author": "Hungda",
       "license": "CC BY-SA 3.0",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
     },
@@ -294,11 +296,12 @@
     },
     {
       "id": "tl-fire-2",
-      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2727.JPG",
+      "file": "Kiln in Vietnam in Chau Thanh District, 04.jpg",
       "ratio": "3/2",
-      "author": "松岡明芳 (Akiyoshi Matsuoka)",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+      "author": "Karel Bilek",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "region": [0, 0.4, 1, 0.5]
     },
     {
       "id": "tl-finish",
