@@ -47,7 +47,9 @@ function BuyerQuotations({ rfqId, client }: { rfqId: string; client: QuotationCl
           setState({
             kind: 'ready',
             quotations,
-            noticeCount: notices.filter((notice) => notice.requestId === rfqId).length,
+            noticeCount: notices.filter(
+              (notice) => notice.requestId === rfqId && notice.kind === 'QUOTATION_WITHDRAWN',
+            ).length,
           });
       } catch (error) {
         if (active && current === sequence)

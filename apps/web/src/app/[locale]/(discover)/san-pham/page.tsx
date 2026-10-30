@@ -36,7 +36,7 @@ export default async function ProductsIndexPage({ params }: PageProps<'/[locale]
         <ul className="mt-10 grid grid-cols-2 gap-6 md:grid-cols-4">
           {products.map((p) => (
             <li key={p.slug}>
-              <ProductCard product={p} />
+              <ProductCard product={p} heading="h2" />
             </li>
           ))}
         </ul>

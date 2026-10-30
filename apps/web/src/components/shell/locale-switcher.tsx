@@ -22,7 +22,8 @@ export function LocaleSwitcher() {
         router.replace({ pathname, params }, { locale: next })
       }
       className="rounded-chip px-3 py-1 text-small text-ash transition-colors hover:bg-ink/6 hover:text-ink"
-      aria-label={t('language')}
+      // Tên truy cập phải chứa chữ đang hiển thị (WCAG 2.5.3), nên bắt đầu bằng `switchTo`.
+      aria-label={`${t('switchTo')} – ${t('language')}`}
     >
       {t('switchTo')}
     </button>

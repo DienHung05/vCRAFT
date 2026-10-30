@@ -7,7 +7,8 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1156.0",
@@ -20,6 +21,7 @@
     "@supabase/supabase-js": "^2.118.0",
     "@vcraft/database": "workspace:*",
     "@vcraft/domain": "workspace:*",
+    "@vcraft/storage": "workspace:*",
     "@vcraft/utils": "workspace:*",
     "bullmq": "^6.4.2",
     "ioredis": "^6.0.0",

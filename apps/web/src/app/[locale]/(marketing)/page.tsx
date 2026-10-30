@@ -80,19 +80,26 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
           <h2 id="day-title">{t('day.title')}</h2>
           <p className="mt-3 max-w-prose-vn text-ash">{t('day.lead')}</p>
         </div>
-        <ol className="mt-10 flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-gutter pb-4 motion-reduce:scroll-auto">
-          {DAY_STAGES.map(({ stage, tint }, i) => (
-            <li key={stage} className="w-[78vw] max-w-sm shrink-0 snap-start sm:w-80">
-              <ImageSlot alt={stages(`${stage}.name`)} tint={tint} ratio="3/4">
-                <span className="absolute top-4 left-4 font-mono text-small text-paper/90">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-              </ImageSlot>
-              <h3 className="mt-4">{stages(`${stage}.name`)}</h3>
-              <p className="mt-1 text-small text-ash">{stages(`${stage}.text`)}</p>
-            </li>
-          ))}
-        </ol>
+        <section
+          aria-labelledby="day-title"
+          // biome-ignore lint/a11y/noNoninteractiveTabindex: vùng cuộn ngang phải nhận focus để cuộn bằng phím mũi tên (WCAG 2.1.1, axe scrollable-region-focusable).
+          tabIndex={0}
+          className="mt-10 snap-x snap-mandatory overflow-x-auto scroll-smooth focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glaze motion-reduce:scroll-auto"
+        >
+          <ol className="flex w-max gap-5 px-gutter pb-4">
+            {DAY_STAGES.map(({ stage, tint }, i) => (
+              <li key={stage} className="w-[78vw] max-w-sm shrink-0 snap-start sm:w-80">
+                <ImageSlot alt={stages(`${stage}.name`)} tint={tint} ratio="3/4">
+                  <span className="absolute top-4 left-4 font-mono text-small text-paper/90">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                </ImageSlot>
+                <h3 className="mt-4">{stages(`${stage}.name`)}</h3>
+                <p className="mt-1 text-small text-ash">{stages(`${stage}.text`)}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
       </section>
 
       {/* Nghệ nhân nổi bật: chân dung lớn, bố cục lệch kiểu tạp chí. */}

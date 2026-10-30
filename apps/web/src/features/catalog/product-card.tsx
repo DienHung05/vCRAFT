@@ -4,8 +4,17 @@ import { ImageSlot } from '@/components/image-slot';
 import { Link } from '@/i18n/navigation';
 import type { Product } from '@/lib/demo/data';
 
-/** Thẻ sản phẩm: ảnh 4:5 (BRAND §5), tên, giá; nhãn "Độc bản" dạng ấn. */
-export async function ProductCard({ product }: { product: Product }) {
+/**
+ * Thẻ sản phẩm: ảnh 4:5 (BRAND §5), tên, giá; nhãn "Độc bản" dạng ấn. `heading` là cấp tiêu đề của
+ * tên: h3 khi thẻ nằm dưới một h2 của trang, h2 khi ngay dưới h1 (không nhảy cấp).
+ */
+export async function ProductCard({
+  product,
+  heading: Heading = 'h3',
+}: {
+  product: Product;
+  heading?: 'h2' | 'h3';
+}) {
   const [t, format] = await Promise.all([getTranslations('common'), getFormatter()]);
   return (
     <Link
@@ -26,9 +35,9 @@ export async function ProductCard({ product }: { product: Product }) {
         ) : null}
       </ImageSlot>
       <div className="mt-3 flex items-baseline justify-between gap-3">
-        <h3 className="font-sans text-body font-medium text-ink transition-colors group-hover:text-clay">
+        <Heading className="font-sans text-body font-medium text-ink transition-colors group-hover:text-clay">
           {product.name}
-        </h3>
+        </Heading>
         <span className="shrink-0 text-small text-ash">{format.number(product.price, 'vnd')}</span>
       </div>
     </Link>
