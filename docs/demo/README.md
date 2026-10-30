@@ -54,7 +54,7 @@ Vì sao hai đơn riêng cho "xác nhận" và "tiến độ → nhận hàng": 
 
 ### Chiếc cốc có QR
 
-Sản phẩm cố định **`DF6P3WZE`** ("Cốc quai men rạn", lô 300 cái, hộ Lò Đức Phát, 7 mốc, đã xuất bản). **QR dán lên cốc thật phải mã hóa đường dẫn ổn định `https://<DOMAIN>/q/DF6P3WZE`** (mã không đổi khi đổi tên/slug; `/q/<mã>` chuyển 308 sang trang truy xuất theo ngôn ngữ). In 3 cỡ, thử quét trên iOS và Android (PLAN §9). Mã `BT7K2QXM` (bình hút lộc, 7 mốc) và `HX2M9KQD` (bát chiết yêu) cũng có sẵn làm vật thay thế.
+Sản phẩm cố định **`DF6P3WZE`** ("Cốc men trắng quai tròn", lô 300 cái, hộ Lò Đức Phát, 7 mốc, đã xuất bản). **QR dán lên cốc thật phải mã hóa đường dẫn ổn định `https://<DOMAIN>/q/DF6P3WZE`** (mã không đổi khi đổi tên/slug; `/q/<mã>` chuyển 308 sang trang truy xuất theo ngôn ngữ). In 3 cỡ, thử quét trên iOS và Android (PLAN §9). Mã `BT7K2QXM` (bình hút lộc, 7 mốc) và `HX2M9KQD` (bát vẽ sen men trong) cũng có sẵn làm vật thay thế.
 
 ## 2. Tài khoản cố định và cách khôi phục
 

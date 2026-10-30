@@ -71,10 +71,21 @@ for (const p of photos) {
   const { data } = await sharp(buf, { limitInputPixels: 80_000_000, failOn: 'error' })
     .rotate()
     .toBuffer({ resolveWithObject: true });
-  const oriented = sharp(data);
+  let oriented = sharp(data);
   const meta = await oriented.metadata();
-  const ow = meta.width;
-  const oh = meta.height;
+  let ow = meta.width;
+  let oh = meta.height;
+  if (p.region) {
+    // Vùng giữ lại (tỉ lệ 0..1: [trái, trên, rộng, cao]); dùng để cắt bỏ watermark ở mép ảnh gốc.
+    const [rx, ry, rW, rH] = p.region;
+    const left = Math.round(ow * rx);
+    const top = Math.round(oh * ry);
+    const width = Math.round(ow * rW);
+    const height = Math.round(oh * rH);
+    oriented = sharp(await oriented.extract({ left, top, width, height }).toBuffer());
+    ow = width;
+    oh = height;
+  }
   // Cắt lớn nhất có thể theo tỉ lệ khung, rồi thu nhỏ.
   const cropW = Math.min(ow, Math.floor((oh * rw) / rh));
   const cropH = Math.round((cropW * rh) / rw);
