@@ -41,6 +41,26 @@
       "meta": "{artisan} · {craft}",
       "since": "Đời thứ {n} · từ năm {year}"
     },
+    "news": {
+      "title": "Tin tức làng nghề",
+      "lead": "Tin chung của làng và tin từ từng hộ: sự kiện, chuyện nghề, cập nhật từ xưởng.",
+      "demoNote": "Bản trình diễn: các tin này là dữ liệu mẫu, không phải tin thật.",
+      "count": "{count, plural, other {# tin}}",
+      "empty": "Chưa có tin nào.",
+      "unavailable": "Chưa tải được tin tức lúc này. Bạn thử lại sau ít phút nhé.",
+      "listLabel": "Danh sách tin tức",
+      "pinned": "Tin ghim",
+      "village": "Tin chung của làng",
+      "byHousehold": "Từ {name}",
+      "filteredBy": "Đang xem tin của {name}.",
+      "clearFilter": "Xem mọi tin",
+      "more": "Xem thêm tin",
+      "categories": {
+        "HOUSEHOLD_UPDATE": "Từ hộ làng nghề",
+        "VILLAGE_EVENT": "Sự kiện làng",
+        "CRAFT_STORY": "Chuyện nghề"
+      }
+    },
     "rfq": {
       "title": "Yêu cầu báo giá",
       "lead": "Gửi nhu cầu số lượng lớn, nhận chào giá từ các hộ phù hợp và chốt người làm.",
@@ -547,6 +567,27 @@
       "IN_PROGRESS": "Đang làm",
       "DONE": "Đã xong",
       "CANCELLED": "Đã hủy"
+    }
+  },
+  "notifications": {
+    "title": "Thông báo",
+    "unread": "{count, plural, =0 {Không có thông báo mới} other {# chưa đọc}}",
+    "empty": "Chưa có thông báo nào.",
+    "markRead": "Đã đọc",
+    "markAllRead": "Đánh dấu tất cả đã đọc",
+    "failed": "Không cập nhật được thông báo. Thử lại sau.",
+    "kind": {
+      "RFQ_INVITED": "Bạn được mời tham gia một yêu cầu báo giá.",
+      "CONTRIBUTION_RECEIVED": "Có đề xuất tham gia mới của một hộ.",
+      "QUOTATION_RECEIVED": "Bạn nhận được một chào giá mới.",
+      "QUOTATION_WITHDRAWN": "Một chào giá đã mất hiệu lực.",
+      "QUOTATION_ACCEPTED": "Chào giá đã được người mua chấp nhận.",
+      "ALLOCATION_PROPOSED": "Bạn có phần sản xuất cần xác nhận.",
+      "ALLOCATION_CONFIRMED": "Một hộ đã xác nhận phân bổ.",
+      "ORDER_CANCELLED": "Đơn hàng đã bị hủy.",
+      "PRODUCTION_STARTED": "Đơn hàng đã bắt đầu sản xuất.",
+      "PROGRESS_REPORTED": "Có cập nhật tiến độ sản xuất.",
+      "ORDER_RECEIVED": "Đơn hàng đã được xác nhận nhận hàng."
     }
   }
 }

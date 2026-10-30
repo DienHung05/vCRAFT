@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { transition, type RfqContext } from '../src';
+import { noticeRecipients, transition } from '../src';
 
 const NOW = new Date('2026-01-10T00:00:00.000Z');
 const HOUR = 60 * 60 * 1000;
@@ -78,7 +78,20 @@ describe('GH#9: unaccepted request expires at deadline', () => {
   });
 
   it('EXPIRE refused before deadline', () => {
-    const r = transition('SENT', 'EXPIRE', { actor: 'SYSTEM', now: NOW, biddingClosesAt: at(HOUR) });
+    const r = transition('SENT', 'EXPIRE', {
+      actor: 'SYSTEM',
+      now: NOW,
+      biddingClosesAt: at(HOUR),
+    });
     expect(r.ok).toBe(false);
+  });
+});
+
+describe('người nhận thông báo báo giá', () => {
+  it('bỏ trống, bỏ trùng và bỏ chính người gây ra sự kiện', () => {
+    expect(noticeRecipients(['buyer', null, 'admin', 'buyer', undefined, 'rep'], 'rep')).toEqual([
+      'buyer',
+      'admin',
+    ]);
   });
 });
