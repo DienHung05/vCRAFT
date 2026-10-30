@@ -56,3 +56,23 @@ export function checkAllocationPlan(
     ok: requiredValid && remaining === 0 && overCapacity.length === 0 && invalid.length === 0,
   };
 }
+
+export interface ProgressReportCheck {
+  readonly quantity: number;
+  readonly completedQty: number;
+  readonly ok: boolean;
+}
+
+/**
+ * GH#11: báo cáo tiến độ theo phân bổ. Số lượng đã xong phải là số nguyên
+ * trong khoảng 0..số lượng được giao; ngoài khoảng ⇒ service từ chối.
+ */
+export function checkProgressReport(quantity: number, completedQty: number): ProgressReportCheck {
+  const ok =
+    Number.isInteger(quantity) &&
+    quantity >= 1 &&
+    Number.isInteger(completedQty) &&
+    completedQty >= 0 &&
+    completedQty <= quantity;
+  return { quantity, completedQty, ok };
+}

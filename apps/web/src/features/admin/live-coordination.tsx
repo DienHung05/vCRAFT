@@ -145,6 +145,32 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
       throw new Error(t('loadFailed'));
     }
   };
+  const startProduction = async () => {
+    try {
+      await client.startProduction(rfqId, request.version);
+      setRefresh((value) => value + 1);
+    } catch {
+      setState({ kind: 'error' });
+    }
+  };
+  const receive = async () => {
+    try {
+      await client.confirmReceipt(rfqId, request.version);
+      setRefresh((value) => value + 1);
+    } catch {
+      setState({ kind: 'error' });
+    }
+  };
+  const cancel = async () => {
+    const reason = window.prompt(t('cancelReason'));
+    if (reason === null || reason.trim() === '') return;
+    try {
+      await client.cancelOrder(rfqId, request.version, { reason: reason.trim() });
+      setRefresh((value) => value + 1);
+    } catch {
+      setState({ kind: 'error' });
+    }
+  };
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-h2">{request.design}</h1>
@@ -197,6 +223,15 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
         disabled={closed}
         onSubmit={submit}
       />
+      {request.status === 'ACCEPTED' ? (
+        <Button onClick={() => void startProduction()}>{t('startProduction')}</Button>
+      ) : null}
+      {request.status === 'IN_PRODUCTION' ? (
+        <div className="flex gap-2">
+          <Button onClick={() => void receive()}>{t('receive')}</Button>
+          <Button onClick={() => void cancel()}>{t('cancelOrder')}</Button>
+        </div>
+      ) : null}
     </div>
   );
 }
