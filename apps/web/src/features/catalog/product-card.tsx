@@ -25,9 +25,13 @@ export async function ProductCard({
         alt={product.name}
         tint={product.tint}
         ratio="4/5"
+        photo={product.photo}
+        sizes="(min-width: 768px) 25vw, 50vw"
         className="grid place-items-center transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
       >
-        <VaseFigure className="h-1/2 opacity-90" body="var(--color-paper)" band={product.tint} />
+        {product.photo ? null : (
+          <VaseFigure className="h-1/2 opacity-90" body="var(--color-paper)" band={product.tint} />
+        )}
         {product.oneOfAKind ? (
           <Badge tone="seal" className="absolute top-3 left-3 bg-paper">
             {t('oneOfAKind')}

@@ -47,6 +47,9 @@ export async function SiteFooter() {
         <div className="mx-auto flex max-w-editorial flex-wrap justify-between gap-2 px-gutter py-5 text-small text-ash">
           <span>{t('rights', { year: 2026 })}</span>
           <span>{t('demo')}</span>
+          <Link href="/ghi-nhan-anh" className="underline underline-offset-2 hover:text-ink">
+            {t('credits')}
+          </Link>
         </div>
       </div>
     </footer>

@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ImageSlot } from '@/components/image-slot';
+import { PhotoCredit } from '@/components/photo-credit';
 import { ProductCard } from '@/features/catalog/product-card';
 import { MakerCredits } from '@/features/exhibition/maker-credits';
 import { VisitSection } from '@/features/exhibition/visit-section';
@@ -53,9 +54,12 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
         <ImageSlot
           alt={t('portraitAlt', { name: artisan.artisanName })}
           tint={artisan.tint}
+          photo={artisan.banner}
+          priority
+          sizes="100vw"
           className="h-[78svh] min-h-[28rem] rounded-none"
         />
-        <div className="absolute inset-0 bg-linear-to-t from-ink/80 via-ink/20 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-ink/85 via-ink/40 to-ink/10" />
         <div className="absolute inset-x-0 bottom-0 mx-auto max-w-editorial px-gutter pb-12">
           <nav aria-label={t('breadcrumb')} className="mb-6 text-small text-paper/75">
             <Link href="/nghe-nhan" className="hover:text-paper">
@@ -89,6 +93,11 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
           </div>
         </div>
       </header>
+      {artisan.banner ? (
+        <div className="mx-auto max-w-editorial px-gutter">
+          <PhotoCredit id={artisan.banner.id} className="mt-2 text-right text-[0.75rem] text-ash" />
+        </div>
+      ) : null}
 
       {/* Bento: câu chuyện, chứng nhận, xưởng, đời thứ N, năng lực. */}
       <section
@@ -152,7 +161,12 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
             <h2 id="timeline-title">{t('timeline')}</h2>
             <p className="mt-2 text-small text-ash">{t('timelineHint')}</p>
           </div>
-          <ol className="relative mt-10 flex snap-x gap-0 overflow-x-auto px-gutter pb-6">
+          <ol
+            aria-labelledby="timeline-title"
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: vùng cuộn ngang phải nhận focus để cuộn bằng phím mũi tên (WCAG 2.1.1, axe scrollable-region-focusable).
+            tabIndex={0}
+            className="relative mt-10 flex snap-x gap-0 overflow-x-auto px-gutter pb-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glaze"
+          >
             {artisan.timeline.map((e, i) => (
               <li key={e.year} className="relative w-72 shrink-0 snap-start pr-8">
                 <span
@@ -184,14 +198,17 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
           <h2 id="gallery-title">{t('gallery')}</h2>
           <div className="mt-8 columns-1 gap-5 sm:columns-2 lg:columns-3">
             {artisan.gallery.map((g) => (
-              <ImageSlot
-                key={g.caption}
-                alt={g.caption}
-                caption={g.caption}
-                tint={g.tint}
-                ratio={g.ratio}
-                className="mb-5 break-inside-avoid"
-              />
+              <figure key={g.caption} className="mb-5 break-inside-avoid">
+                <ImageSlot
+                  alt={g.caption}
+                  caption={g.caption}
+                  tint={g.tint}
+                  ratio={g.ratio}
+                  photo={g.photo}
+                  sizes="(min-width: 1024px) 28vw, (min-width: 640px) 45vw, 100vw"
+                />
+                {g.photo ? <PhotoCredit id={g.photo.id} /> : null}
+              </figure>
             ))}
           </div>
         </section>
