@@ -29,12 +29,20 @@ export interface FamilyEvent {
   text: string;
 }
 
+/** Ảnh thật có giấy phép (xem `photo-credits.ts`): `id` khớp file trong /images/demo, `alt` mô tả đúng điều nhìn thấy. */
+export interface DemoPhotoRef {
+  id: string;
+  alt: string;
+}
+
 export interface GalleryShot {
   caption: string;
   /** Tỉ lệ khung (BRAND §5): xưởng 3:2, chân dung 3:4, chi tiết 1:1. */
   ratio: '3/2' | '3/4' | '1/1' | '4/5';
   /** Màu chủ đạo của ảnh (backend sinh `dominantColor`). */
   tint: string;
+  /** Ảnh thật; không có thì dùng khung nhuốm màu `tint`. */
+  photo?: DemoPhotoRef;
 }
 
 /** Người làm của hộ: được ghi công bằng tên riêng, không cần tài khoản (vCRAFT-9hg.2). */
@@ -73,6 +81,10 @@ export interface Artisan {
   quote: string;
   story: string[];
   tint: string;
+  /** Ảnh thẻ nghệ nhân (3:4). Không chụp mặt người thật: nghệ nhân là nhân vật mẫu, nên dùng ảnh bàn tay, góc xưởng. */
+  portrait?: DemoPhotoRef;
+  /** Ảnh bìa rộng (16:9) đầu trang hồ sơ hộ. */
+  banner?: DemoPhotoRef;
   openNow: boolean;
   hours: string;
   capacityPerMonth: number;
@@ -116,6 +128,8 @@ export interface Product {
   oneOfAKind: boolean;
   stock: number;
   tint: string;
+  /** Ảnh thật; không có thì hiện hình bình vẽ tay trên nền `tint`. */
+  photo?: DemoPhotoRef;
   description: string;
   artisanNote: string;
   /** Ghi công người làm; không khai thì ghi cho nghệ nhân đại diện của hộ. */
@@ -207,6 +221,7 @@ export interface NewsItem {
   date: string;
   tag: string;
   tint: string;
+  photo?: DemoPhotoRef;
 }
 
 export interface VillageStats {
@@ -232,6 +247,14 @@ const artisans: Artisan[] = [
       'Ngày nay xưởng có tám thợ, vẫn vuốt tay trên bàn xoay và vẽ lam bằng bút lông. Anh Hải làm bình hút lộc, bát chiết yêu, và nhận đơn số lượng lớn cho trường học, khách sạn.',
     ],
     tint: '#8a5a3c',
+    portrait: {
+      id: 'chan-dung-minh-hai',
+      alt: 'Bàn tay đang chuốt thành một chiếc bát gốm trắng trên bàn xoay, ngón tay bọc da mỏng',
+    },
+    banner: {
+      id: 'bia-minh-hai',
+      alt: 'Hai lò nung gạch cao hình chóp, vách gạch cũ nhiều lỗ thông hơi, cỏ mọc quanh chân lò dưới trời trong',
+    },
     openNow: true,
     hours: '7:30 – 17:30',
     capacityPerMonth: 1200,
@@ -287,12 +310,60 @@ const artisans: Artisan[] = [
       { year: 2026, title: 'Lên vCraft', text: 'Mỗi món ra lò mang một ấn truy xuất.' },
     ],
     gallery: [
-      { caption: 'Bàn xoay buổi sáng', ratio: '3/2', tint: '#9a6b4a' },
-      { caption: 'Bàn tay vuốt cổ bình', ratio: '3/4', tint: '#7d5038' },
-      { caption: 'Bút lông và men lam', ratio: '1/1', tint: '#3b5079' },
-      { caption: 'Sân phơi sau mưa', ratio: '3/2', tint: '#a88d6c' },
-      { caption: 'Cửa lò lúc 1.280°C', ratio: '3/4', tint: '#c2522a' },
-      { caption: 'Mẻ bình vừa ra lò', ratio: '3/2', tint: '#4a6390' },
+      {
+        caption: 'Dãy bàn xoay trong xưởng',
+        ratio: '3/2',
+        tint: '#9e8f86',
+        photo: {
+          id: 'ban-xoay-xuong',
+          alt: 'Những bàn xoay gỗ thấp đặt rải rác trên nền gạch đỏ trong một xưởng gốm',
+        },
+      },
+      {
+        caption: 'Bàn tay chuốt gốm',
+        ratio: '3/4',
+        tint: '#9f938a',
+        photo: {
+          id: 'ban-tay-vuot-gom',
+          alt: 'Hai bàn tay đeo ngón bọc da, đang chuốt thành một chiếc bát gốm trắng trên bàn xoay',
+        },
+      },
+      {
+        caption: 'Bình hoa lam',
+        ratio: '1/1',
+        tint: '#636684',
+        photo: {
+          id: 'binh-hoa-lam',
+          alt: 'Hai chiếc bình sứ trắng vẽ hoa văn lam: một bình có cảnh nhà bên sông, một bình dáng lục giác',
+        },
+      },
+      {
+        caption: 'Khuôn thạch cao phơi sân',
+        ratio: '3/2',
+        tint: '#7b6b57',
+        photo: {
+          id: 'khuon-phoi-san',
+          alt: 'Các khuôn thạch cao trắng xếp thành hàng trên giá phơi ngoài sân, cạnh những khuôn đất nung đỏ',
+        },
+      },
+      {
+        caption: 'Than phơi bên tường lò',
+        ratio: '3/4',
+        tint: '#6e6d6d',
+        photo: {
+          id: 'than-phoi-tuong',
+          alt: 'Những viên than đen ép tròn được dán kín trên một bức tường gạch cũ ở làng gốm',
+        },
+      },
+      {
+        caption: 'Khuôn đúc bình lớn',
+        ratio: '3/2',
+        tint: '#857d75',
+        photo: {
+          id: 'khuon-binh-lon',
+          alt: 'Các khuôn thạch cao cao gần hai mét, buộc dây, dựng trong xưởng đúc bình lớn',
+        },
+      },
     ],
   },
   {
@@ -307,6 +378,14 @@ const artisans: Artisan[] = [
     quote: 'Men ngọc phải nhìn dưới nắng mới biết đạt hay chưa.',
     story: ['Xưởng nhỏ chuyên men ngọc và men rạn, làm bộ ấm chén theo đơn đặt.'],
     tint: '#5e8a7d',
+    portrait: {
+      id: 'chan-dung-lam-ngoc',
+      alt: 'Một người thợ ngồi trên ghế nhựa vàng, nhìn nghiêng, giữa những hàng bình gốm mộc màu be trong xưởng',
+    },
+    banner: {
+      id: 'bia-lam-ngoc',
+      alt: 'Góc xưởng gốm với những giỏ tre xếp cao, xe đạp dựng sát tường và một người đi xa dần vào trong',
+    },
     openNow: true,
     hours: '8:00 – 17:00',
     capacityPerMonth: 900,
@@ -315,7 +394,44 @@ const artisans: Artisan[] = [
     pin: { x: 61, y: 30 },
     certifications: [{ name: 'OCOP 3 sao', issuer: 'UBND TP. Hà Nội', year: 2022, verified: true }],
     timeline: [],
-    gallery: [],
+    gallery: [
+      {
+        caption: 'Chiếc hũ men ngọc',
+        ratio: '1/1',
+        tint: '#757a6c',
+        photo: {
+          id: 'ln-hu-men-ngoc',
+          alt: 'Chiếc hũ gốm men xanh ngọc nhạt, thân tròn, có hai quai vòng và miệng nhỏ',
+        },
+      },
+      {
+        caption: 'Ấm men xanh rêu',
+        ratio: '3/4',
+        tint: '#4a5042',
+        photo: {
+          id: 'ln-am-men-xanh',
+          alt: 'Ấm gốm men xanh lục đậm với quai uốn đắp nổi hình dây leo, miệng ấm mở rộng',
+        },
+      },
+      {
+        caption: 'Bộ ấm quai men nâu',
+        ratio: '3/2',
+        tint: '#737067',
+        photo: {
+          id: 'ln-bo-am-quai-ran',
+          alt: 'Nhiều ấm và hũ gốm men xám nâu có quai đắp nổi, xếp trong tủ kính',
+        },
+      },
+      {
+        caption: 'Cửa lò xây vòm',
+        ratio: '3/4',
+        tint: '#80776d',
+        photo: {
+          id: 'ln-cua-lo-vom',
+          alt: 'Cửa lò nung xây bằng gạch đỏ, vòm nhọn, bên trong tối',
+        },
+      },
+    ],
   },
   {
     slug: 'lo-duc-phat',
@@ -329,6 +445,14 @@ const artisans: Artisan[] = [
     quote: 'Đơn lớn thì cần nhịp đều, mẻ nào cũng như mẻ nào.',
     story: ['Lò công suất lớn, mạnh về cốc, bát in logo cho doanh nghiệp.'],
     tint: '#a8482a',
+    portrait: {
+      id: 'chan-dung-duc-phat',
+      alt: 'Người thợ ngồi quay lưng giữa nền xưởng, quanh là chậu và bình gốm mộc màu hồng, kem, bên cạnh xô nước men trắng',
+    },
+    banner: {
+      id: 'bia-duc-phat',
+      alt: 'Xưởng lớn với giàn khay gốm xếp cao, những giỏ tre và một người thợ ngồi làm việc ở xa',
+    },
     openNow: false,
     hours: '7:00 – 18:00',
     capacityPerMonth: 1500,
@@ -337,7 +461,44 @@ const artisans: Artisan[] = [
     pin: { x: 72, y: 64 },
     certifications: [],
     timeline: [],
-    gallery: [],
+    gallery: [
+      {
+        caption: 'Bát chậu xếp rơm',
+        ratio: '3/2',
+        tint: '#7d7865',
+        photo: {
+          id: 'dp-bat-xep-rom',
+          alt: 'Chồng bát và chậu men trắng vẽ lam xếp cùng rơm lót trong một gian kho nhỏ',
+        },
+      },
+      {
+        caption: 'Chậu men nâu',
+        ratio: '3/2',
+        tint: '#74654f',
+        photo: {
+          id: 'dp-chau-nau',
+          alt: 'Chậu và nồi gốm men nâu, men xám đặt cạnh rơm và rổ tre',
+        },
+      },
+      {
+        caption: 'Chậu cây gốm nâu',
+        ratio: '1/1',
+        tint: '#685b51',
+        photo: {
+          id: 'dp-chau-dat-nung',
+          alt: 'Những chiếc chậu gốm nâu cao, chạm nổi hoa văn, xếp trước một cửa hàng',
+        },
+      },
+      {
+        caption: 'Gốm đất nung cam',
+        ratio: '3/4',
+        tint: '#654736',
+        photo: {
+          id: 'dp-chum-cam',
+          alt: 'Hàng chục bình và lọ gốm đất nung màu cam, khắc hoa văn, xếp chồng lên nhau',
+        },
+      },
+    ],
   },
   {
     slug: 'gom-hanh-thuy',
@@ -351,6 +512,14 @@ const artisans: Artisan[] = [
     quote: 'Mỗi nét bút là một lần thở ra thật chậm.',
     story: ['Nhận vẽ tay theo yêu cầu, đặc biệt là hoa sen và chim lạc.'],
     tint: '#8c6a24',
+    portrait: {
+      id: 'chan-dung-hanh-thuy',
+      alt: 'Bàn tay cầm một chiếc chén trắng, quanh là những chén gốm xếp trên bàn cạnh xô nước men đỏ; người thợ cúi đầu, không thấy mặt',
+    },
+    banner: {
+      id: 'bia-hanh-thuy',
+      alt: 'Gian hàng gốm với những kệ đầy bát, đĩa và bình men lam trắng xếp thành dãy',
+    },
     openNow: true,
     hours: '9:00 – 18:00',
     capacityPerMonth: 600,
@@ -361,7 +530,44 @@ const artisans: Artisan[] = [
       { name: 'Giải trẻ sáng tạo', issuer: 'Sở VH-TT Hà Nội', year: 2025, verified: true },
     ],
     timeline: [],
-    gallery: [],
+    gallery: [
+      {
+        caption: 'Bình vẽ tre trúc',
+        ratio: '3/4',
+        tint: '#8a8174',
+        photo: {
+          id: 'ht-binh-hoa-lam-vo',
+          alt: 'Chiếc bình men ngà vẽ lam cây trúc, miệng loe hình cánh sen, đặt cạnh những bình khác',
+        },
+      },
+      {
+        caption: 'Đèn dầu sứ',
+        ratio: '1/1',
+        tint: '#7d8793',
+        photo: {
+          id: 'ht-den-dau-su',
+          alt: 'Chiếc đèn dầu bằng sứ trắng vẽ rồng lam, bên cạnh những bình sứ vẽ mây',
+        },
+      },
+      {
+        caption: 'Đế lư vẽ lam',
+        ratio: '3/2',
+        tint: '#8b8f90',
+        photo: {
+          id: 'ht-de-lu-chu-dau',
+          alt: 'Đế lư tròn có chân cuộn, vẽ lam hình đầu thú và rồng',
+        },
+      },
+      {
+        caption: 'Bình lê men trắng xanh',
+        ratio: '3/4',
+        tint: '#8a8d77',
+        photo: {
+          id: 'ht-binh-ngoc-ho-xuan',
+          alt: 'Bình dáng quả lê thon, thân vẽ chim bằng lam trên nền men trắng xanh nhạt',
+        },
+      },
+    ],
   },
 ];
 
@@ -379,6 +585,10 @@ const rawProducts: (Omit<Product, 'log'> & { log: RawLogEntry[] })[] = [
     oneOfAKind: true,
     stock: 1,
     tint: '#3f5a8a',
+    photo: {
+      id: 'binh-men-lam-xam',
+      alt: 'Bình gốm Bát Tràng cổ cao, bụng tròn, men xám lam, nổi cành cây và chim nhuốm vàng',
+    },
     description:
       'Bình dáng tỏi vuốt tay, vẽ dải sóng nước và mây quanh bụng. Men lam xám tro pha theo công thức gia đình, nung củi lần cuối ở 1.280°C nên mỗi chiếc có sắc lam riêng.',
     artisanNote: 'Chiếc này tôi vẽ mất ba buổi sáng. Sóng nước là quê mình, mây là mong ước đi xa.',
@@ -454,6 +664,10 @@ const rawProducts: (Omit<Product, 'log'> & { log: RawLogEntry[] })[] = [
     oneOfAKind: false,
     stock: 12,
     tint: '#6f9a8b',
+    photo: {
+      id: 'am-tra-moc-xep-chong',
+      alt: 'Nhiều ấm trà gốm trắng mộc, chưa tráng men, xếp chồng lên nhau',
+    },
     description: 'Bộ ấm chén men ngọc trơn, rạn nhẹ quanh miệng chén.',
     artisanNote: '',
     scans: 54,
@@ -472,6 +686,10 @@ const rawProducts: (Omit<Product, 'log'> & { log: RawLogEntry[] })[] = [
     oneOfAKind: false,
     stock: 40,
     tint: '#b4895a',
+    photo: {
+      id: 'bat-men-khac-canh-sen',
+      alt: 'Lòng chiếc bát gốm men ngà khắc nổi hoa văn cánh hoa',
+    },
     description: 'Bát chiết yêu vẽ tay hoa sen, men trong.',
     artisanNote: '',
     scans: 31,
@@ -490,6 +708,10 @@ const rawProducts: (Omit<Product, 'log'> & { log: RawLogEntry[] })[] = [
     oneOfAKind: false,
     stock: 300,
     tint: '#9a8064',
+    photo: {
+      id: 'chen-hoa-lam',
+      alt: 'Chiếc chén sứ trắng vẽ hoa văn lam, úp nghiêng để thấy chân đế',
+    },
     description: 'Cốc quai men rạn, có thể in logo theo đơn.',
     artisanNote: '',
     scans: 12,
@@ -617,6 +839,10 @@ const news: NewsItem[] = [
     date: '2026-10-25',
     tag: 'Sự kiện',
     tint: '#a8482a',
+    photo: {
+      id: 'news-cho-gom',
+      alt: 'Dãy gian hàng gốm men lam trắng dưới mái xanh ở chợ gốm, bàn ghế che bạt phía trước',
+    },
   },
   {
     slug: 'lop-vuot-gom-cuoi-tuan',
@@ -624,6 +850,10 @@ const news: NewsItem[] = [
     date: '2026-10-21',
     tag: 'Trải nghiệm',
     tint: '#5e8a7d',
+    photo: {
+      id: 'ban-xoay-xuong',
+      alt: 'Những bàn xoay gỗ thấp đặt rải rác trên nền gạch đỏ trong một xưởng gốm',
+    },
   },
   {
     slug: 'gia-dat-set-quy-4',
@@ -631,6 +861,10 @@ const news: NewsItem[] = [
     date: '2026-10-16',
     tag: 'Vật liệu',
     tint: '#8c6a24',
+    photo: {
+      id: 'news-dat-set',
+      alt: 'Đống đất sét nâu đỏ chất cao trong nhà kho rộng, phía sau là hàng ngói đất nung',
+    },
   },
 ];
 

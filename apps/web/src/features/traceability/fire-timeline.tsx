@@ -2,7 +2,9 @@ import { isJournalInProgress, missingStages } from '@vcraft/domain';
 import { Badge } from '@vcraft/ui';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { ImageSlot } from '@/components/image-slot';
+import { PhotoCredit } from '@/components/photo-credit';
 import type { LogEntry } from '@/lib/demo/data';
+import { timelinePhoto } from '@/lib/demo/stage-photos';
 
 /**
  * Dòng thời gian lửa (BRAND §6.3 #3): đường nối nóng dần từ màu đất sang màu lửa, mỗi mốc như
@@ -89,8 +91,11 @@ export async function FireTimeline({
                 alt={t('proofAlt', { stage: stages(`${e.stage}.name`) })}
                 tint={e.tint}
                 ratio="3/2"
+                photo={timelinePhoto(e.stage, e.supersedesSeq !== undefined)}
+                sizes="(min-width: 640px) 24rem, 100vw"
                 className="mt-3 max-w-sm"
               />
+              <PhotoCredit id={timelinePhoto(e.stage, e.supersedesSeq !== undefined).id} />
               {/* Hiển thị rút gọn cho gọn mắt; dấu băm đầy đủ 64 hex nằm ở `title`. */}
               <p
                 className="mt-2 font-mono text-[0.7rem] text-ash"
