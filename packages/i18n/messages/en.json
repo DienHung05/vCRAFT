@@ -77,7 +77,23 @@
     "explore": "Explore",
     "business": "Bulk orders",
     "rights": "© {year} vCraft. All rights reserved.",
-    "demo": "Demo build: household names, artisans and figures are sample data."
+    "demo": "Demo build: household names, artisans and figures are sample data.",
+    "credits": "Image credits"
+  },
+  "credits": {
+    "photoBy": "Photo: {author}",
+    "source": "Source",
+    "title": "Image credits",
+    "lead": "The illustrative photos in this demo come from Wikimedia Commons under licences that allow reuse. We thank the authors below. Photos were cropped and compressed for the web; no other changes were made.",
+    "demoNote": "Photos are illustrative only: the pottery shown is not made by the sample households.",
+    "table": "List of photos and licences",
+    "colPhoto": "Photo",
+    "colAuthor": "Author",
+    "colLicense": "Licence",
+    "colSource": "Source",
+    "viewSource": "View on Wikimedia Commons",
+    "note": "Illustrative photos from Wikimedia Commons under CC licences, cropped and compressed for the web.",
+    "noteLink": "Image credits"
   },
   "notFound": {
     "title": "This page hasn't come out of the kiln",

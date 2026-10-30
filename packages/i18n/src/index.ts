@@ -19,6 +19,7 @@ export const pathnames = {
   '/ban-do': { vi: '/ban-do', en: '/map' },
   '/tin-tuc': { vi: '/tin-tuc', en: '/news' },
   '/truy-xuat/[code]': { vi: '/truy-xuat/[code]', en: '/trace/[code]' },
+  '/ghi-nhan-anh': { vi: '/ghi-nhan-anh', en: '/image-credits' },
   '/yeu-cau-bao-gia': { vi: '/yeu-cau-bao-gia', en: '/quotes' },
   '/yeu-cau-bao-gia/[code]': { vi: '/yeu-cau-bao-gia/[code]', en: '/quotes/[code]' },
   '/admin/dieu-phoi': { vi: '/admin/dieu-phoi', en: '/admin/coordination' },

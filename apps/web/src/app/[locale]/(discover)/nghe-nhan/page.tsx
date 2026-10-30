@@ -2,6 +2,7 @@ import { Badge } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { ImageSlot } from '@/components/image-slot';
+import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { Link } from '@/i18n/navigation';
 import { getArtisans } from '@/lib/demo/data';
 import { resolveLocale } from '@/lib/locale';
@@ -46,6 +47,8 @@ export default async function ArtisansIndexPage({ params }: PageProps<'/[locale]
                   alt={portrait('portraitAlt', { name: a.artisanName })}
                   tint={a.tint}
                   ratio="3/4"
+                  photo={a.portrait}
+                  sizes="(min-width: 1024px) 22vw, (min-width: 640px) 45vw, 100vw"
                   className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0"
                 />
                 <h2 className="mt-4 text-h3 transition-colors group-hover:text-clay">
@@ -64,6 +67,7 @@ export default async function ArtisansIndexPage({ params }: PageProps<'/[locale]
       ) : (
         <p className="mt-10 text-ash">{t('empty')}</p>
       )}
+      <PhotoCreditsNote />
     </div>
   );
 }
