@@ -29,18 +29,21 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-ink/8 border-b bg-paper/85 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-editorial items-center justify-between gap-6 px-gutter">
+      <div className="mx-auto flex h-16 max-w-editorial items-center justify-between gap-3 px-gutter sm:gap-6">
         <Link href="/" aria-label={t('home')} className="shrink-0">
           <Logo size={30} />
         </Link>
         <nav aria-label={t('label')} className="hidden lg:block">
           <ul className="flex items-center gap-1">{links}</ul>
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <div className="hidden md:block">
             <SearchBox />
           </div>
-          <LocaleSwitcher />
+          {/* Dưới sm, đổi ngôn ngữ chuyển vào menu để hàng đầu trang vừa màn hình 360px. */}
+          <div className="hidden sm:block">
+            <LocaleSwitcher />
+          </div>
           <AccountMenu />
           <details className="group relative lg:hidden">
             <summary className="cursor-pointer list-none rounded-input px-3 py-2 text-small text-ink hover:bg-ink/6 [&::-webkit-details-marker]:hidden">
@@ -52,6 +55,9 @@ export async function SiteHeader() {
             >
               <div className="p-1 md:hidden">
                 <SearchBox />
+              </div>
+              <div className="p-1 sm:hidden">
+                <LocaleSwitcher />
               </div>
               <ul>{links}</ul>
             </nav>
