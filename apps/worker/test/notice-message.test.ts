@@ -1,4 +1,4 @@
-import { QUOTATION_NOTICE_KINDS } from '@vcraft/domain';
+import { NOTIFICATION_TYPES } from '@vcraft/domain';
 import { describe, expect, it } from 'vitest';
 import { buildNoticeMail, noticeLink } from '../src/processors/mail/notice-message';
 
@@ -7,10 +7,10 @@ const appUrl = 'http://localhost:8080';
 
 describe('buildNoticeMail', () => {
   it('has a distinct Vietnamese subject for every notice kind', () => {
-    const subjects = QUOTATION_NOTICE_KINDS.map(
-      (kind) => buildNoticeMail({ kind, role: 'BUYER', requestId, appUrl }).subject,
+    const subjects = NOTIFICATION_TYPES.map(
+      (kind) => buildNoticeMail({ kind, role: 'BUYER', subjectId: requestId, appUrl }).subject,
     );
-    expect(new Set(subjects).size).toBe(QUOTATION_NOTICE_KINDS.length);
+    expect(new Set(subjects).size).toBe(NOTIFICATION_TYPES.length);
     for (const subject of subjects) expect(subject).toMatch(/^\[vCraft\] /);
   });
 
@@ -19,20 +19,45 @@ describe('buildNoticeMail', () => {
     ['ADMIN', 'admin/dieu-phoi'],
     ['HOUSEHOLD', 'studio/de-xuat-tham-gia'],
   ] as const)('links a %s recipient to %s', (role, path) => {
-    const { text } = buildNoticeMail({ kind: 'QUOTATION_RECEIVED', role, requestId, appUrl });
+    const { text } = buildNoticeMail({
+      kind: 'QUOTATION_RECEIVED',
+      role,
+      subjectId: requestId,
+      appUrl,
+    });
     expect(text).toContain(`Xem chi tiết: ${appUrl}/vi/${path}/${requestId}`);
   });
 
   it('is plain text without HTML', () => {
-    for (const kind of QUOTATION_NOTICE_KINDS) {
-      const { text } = buildNoticeMail({ kind, role: 'ADMIN', requestId, appUrl });
+    for (const kind of NOTIFICATION_TYPES) {
+      const { text } = buildNoticeMail({ kind, role: 'ADMIN', subjectId: requestId, appUrl });
       expect(text).not.toMatch(/<[a-z/][^>]*>/i);
     }
   });
 
   it('tolerates a trailing slash on APP_URL', () => {
-    expect(noticeLink('https://vcraft.vn/', 'BUYER', requestId)).toBe(
+    expect(noticeLink('https://vcraft.vn/', { page: 'BUYER_RFQ', id: requestId })).toBe(
       `https://vcraft.vn/vi/yeu-cau-bao-gia/${requestId}`,
     );
+  });
+
+  it('links a household decision to the application status page', () => {
+    const { text } = buildNoticeMail({
+      kind: 'HOUSEHOLD_APPROVED',
+      role: 'HOUSEHOLD',
+      subjectId: 'household-1',
+      appUrl,
+    });
+    expect(text).toContain(`Xem chi tiết: ${appUrl}/vi/studio/ho-so`);
+  });
+
+  it('omits the link when there is no target', () => {
+    const { text } = buildNoticeMail({
+      kind: 'ORDER_CANCELLED',
+      role: 'BUYER',
+      subjectId: null,
+      appUrl,
+    });
+    expect(text).not.toContain('Xem chi tiết');
   });
 });

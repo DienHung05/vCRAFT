@@ -34,6 +34,7 @@ import {
   checkMakerCredits,
   type HouseholdEvent,
   type HouseholdStatus,
+  householdNoticeKind,
   householdTransition,
   isHouseholdPublic,
   type ProductEvent,
@@ -45,6 +46,7 @@ import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
 import { MediaService } from '../../media/application/media.service';
+import { NotificationPublisher } from '../../notifications/application/notification-publisher';
 import { loadJournal } from '../../production-logs/application/journal.queries';
 import {
   type HouseholdParts,
@@ -69,6 +71,7 @@ export class HouseholdsService {
   constructor(
     private readonly orm: MikroORM,
     private readonly media: MediaService,
+    private readonly notifications: NotificationPublisher,
   ) {}
 
   // --- Người đại diện hộ ---
@@ -472,6 +475,15 @@ export class HouseholdsService {
       em.create(OutboxEvent, {
         type: 'household.decision',
         payload: { householdId: household.id, decision: event, reason: reason ?? null },
+      });
+      // Người đại diện cũng nhận kết quả trong chuông (GH#37). Thư đã có ở sự kiện trên (kèm lý do)
+      // nên không xếp thêm thư thứ hai; worker tôn trọng tùy chọn email theo loại khi gửi thư đó.
+      this.notifications.publish(em, {
+        type: householdNoticeKind(event),
+        subjectId: household.id,
+        actorId: actor.id,
+        recipientIds: [household.representative.id],
+        email: false,
       });
       await em.flush();
       return toHouseholdDto(household, await this.parts(em, household, false));

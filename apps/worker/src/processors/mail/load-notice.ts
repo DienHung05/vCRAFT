@@ -1,20 +1,43 @@
 import type { MikroORM } from '@mikro-orm/core';
-import { AppUser, QuotationNotice } from '@vcraft/database';
+import { AppUser, Notification, NotificationPreference, QuotationNotice } from '@vcraft/database';
+import type { NotificationType } from '@vcraft/domain';
 import type { NoticeRecipient } from './send-notice-mail';
 
-/** Đọc thông báo và tài khoản nhận từ CSDL; thiếu một trong hai thì trả `null`. */
+/**
+ * Đọc thông báo (luồng báo giá hoặc `notification`, id là uuid nên không trùng giữa hai bảng), tài
+ * khoản nhận và tùy chọn email của họ từ CSDL; thiếu thông báo hoặc người nhận thì trả `null`.
+ * Không có dòng tùy chọn nghĩa là mặc định: gửi thư.
+ */
 export function createNoticeLoader(orm: MikroORM) {
   return async (noticeId: string): Promise<NoticeRecipient | null> => {
     const em = orm.em.fork();
-    const notice = await em.findOne(QuotationNotice, noticeId);
-    if (!notice) return null;
-    const user = await em.findOne(AppUser, notice.recipientId);
+    let recipientId: string;
+    let kind: NotificationType;
+    let subjectId: string | null;
+    const quotation = await em.findOne(QuotationNotice, noticeId);
+    if (quotation) {
+      recipientId = quotation.recipientId;
+      kind = quotation.kind;
+      subjectId = quotation.requestId;
+    } else {
+      const notification = await em.findOne(Notification, noticeId);
+      if (!notification) return null;
+      recipientId = notification.recipientId;
+      kind = notification.type;
+      subjectId = notification.subjectId ?? null;
+    }
+    const user = await em.findOne(AppUser, recipientId);
     if (!user) return null;
+    const preference = await em.findOne(NotificationPreference, {
+      userId: recipientId,
+      type: kind,
+    });
     return {
-      kind: notice.kind,
-      requestId: notice.requestId,
+      kind,
+      subjectId,
       email: user.email,
       role: user.role,
+      emailEnabled: preference?.emailEnabled ?? true,
     };
   };
 }

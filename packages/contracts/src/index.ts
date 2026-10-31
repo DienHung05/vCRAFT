@@ -8,5 +8,6 @@ export * from './households';
 export * from './journal';
 export * from './media';
 export * from './news';
+export * from './notification';
 export * from './orders';
 export * from './rfq';
