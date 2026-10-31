@@ -4,6 +4,7 @@ import { AuthModule } from './common/auth/auth.module';
 import { ProblemDetailsFilter } from './common/filters/problem-details.filter';
 import { DatabaseModule } from './infrastructure/database/database.module';
 import { StorageModule } from './infrastructure/storage/storage.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
 import { HealthModule } from './modules/health/health.module';
 import { HouseholdsModule } from './modules/households/households.module';
 import { MediaModule } from './modules/media/media.module';
@@ -18,6 +19,7 @@ import { RfqModule } from './modules/rfq/rfq.module';
     AuthModule,
     HealthModule,
     HouseholdsModule,
+    CatalogModule,
     MediaModule,
     NewsModule,
     ProductionLogsModule,
