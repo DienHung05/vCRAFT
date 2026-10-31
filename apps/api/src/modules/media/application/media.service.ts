@@ -81,6 +81,31 @@ export class MediaService {
     });
   }
 
+  /** URL công khai bản WebP phù hợp (gần 1280 px) của các tệp đã xử lý xong, theo id. */
+  async publicUrls(ids: readonly string[]): Promise<Map<string, string>> {
+    const urls = new Map<string, string>();
+    if (ids.length === 0) return urls;
+    const assets = await this.orm.em
+      .fork()
+      .find(MediaAsset, { id: { $in: [...ids] }, status: 'READY', visibility: 'PUBLIC' });
+    for (const asset of assets) {
+      const webp = asset.variants
+        .filter((variant) => variant.format === 'webp')
+        .sort((a, b) => Math.abs(a.width - 1280) - Math.abs(b.width - 1280))[0];
+      if (webp) urls.set(asset.id, this.storage.publicUrl(webp.key));
+    }
+    return urls;
+  }
+
+  /** Những id mà người này tải lên; dùng để chặn gắn ảnh của người khác vào hồ sơ. */
+  async ownedBy(ownerId: string, ids: readonly string[]): Promise<Set<string>> {
+    if (ids.length === 0) return new Set();
+    const assets = await this.orm.em
+      .fork()
+      .find(MediaAsset, { id: { $in: [...ids] }, ownerId }, { fields: ['id'] });
+    return new Set(assets.map((asset) => asset.id));
+  }
+
   async get(actor: Actor, id: string): Promise<MediaAssetResponse> {
     return this.toResponse(await this.readable(actor, id));
   }
