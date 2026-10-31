@@ -11,7 +11,11 @@
     "openNow": "Open now",
     "closed": "Closed",
     "generation": "Generation {n}",
-    "since": "Since {year}"
+    "since": "Since {year}",
+    "retry": "Try again",
+    "priceOnRequest": "Price on request",
+    "dataUnavailable": "We could not load this data. Please try again in a few minutes.",
+    "householdCoverAlt": "Workshop of the {household} household"
   },
   "nav": {
     "home": "Back to the vCraft home page",
@@ -39,7 +43,8 @@
       "count": "{count, plural, one {# household} other {# households}}",
       "empty": "No households yet.",
       "meta": "{artisan} · {craft}",
-      "since": "Generation {n} · since {year}"
+      "since": "Generation {n} · since {year}",
+      "productCount": "{count, plural, one {# product} other {# products}}"
     },
     "news": {
       "title": "Village news",
@@ -125,7 +130,7 @@
       "lead": "Visit a workshop to see the wheel and the kiln for yourself. A jade dot means the workshop is welcoming visitors.",
       "open": "Open · {hours}",
       "closed": "Closed today",
-      "cta": "Open the map",
+      "cta": "Open the village map",
       "mapLabel": "Mini map of the pottery workshops in Bat Trang"
     },
     "stats": {
@@ -133,7 +138,8 @@
       "households": "Craft households",
       "products": "Products with a trace seal",
       "scans": "Seal scans",
-      "years": "Years the village has kept the fire"
+      "years": "Years the village has kept the fire",
+      "artisans": "Credited artisans"
     },
     "news": {
       "title": "News from the village",
@@ -192,7 +198,8 @@
     "timelineHint": "Drag sideways to move through the generations.",
     "gallery": "Inside the workshop",
     "products": "Products from this household",
-    "productsEmpty": "Nothing has come out of this workshop's kiln yet. Check back soon."
+    "productsEmpty": "Nothing has come out of this workshop's kiln yet. Check back soon.",
+    "coverAlt": "Workshop of the {household} household"
   },
   "product": {
     "breadcrumb": "Breadcrumb",
@@ -256,7 +263,9 @@
     "correctedBy": "Corrected by entry {n}",
     "skipped": "Skipped earlier stages: {reason}",
     "inProgress": "In progress · not yet recorded: {stages}",
-    "hashHint": "SHA-256 hash of this entry, chained to the one before it."
+    "hashHint": "SHA-256 hash of this entry, chained to the one before it.",
+    "withdrawnTitle": "This piece is no longer on display",
+    "withdrawnText": "The household withdrew it from the exhibition, so its journal is no longer public."
   },
   "rfq": {
     "breadcrumb": "Breadcrumb",
@@ -604,6 +613,76 @@
       "PRODUCTION_STARTED": "The order has entered production.",
       "PROGRESS_REPORTED": "Production progress was updated.",
       "ORDER_RECEIVED": "The order receipt was confirmed."
+    }
+  },
+  "villageMap": {
+    "title": "Village map",
+    "lead": "Find workshops and showrooms in Bát Tràng and see which ones are open to visitors now.",
+    "unavailable": "We could not load the workshop list. Please try again in a few minutes.",
+    "filtersLabel": "Filter workshops",
+    "filterOpenNow": "Open now",
+    "filterVisitors": "Welcomes visitors",
+    "filterCraft": "Craft",
+    "allCrafts": "All crafts",
+    "myLocation": "My location",
+    "locating": "Finding your location…",
+    "locationDenied": "We could not get your location. Check your browser's location permission.",
+    "noWebgl": "This browser cannot show the map (WebGL is missing). The list below has every workshop.",
+    "listTitle": "{count, plural, one {# workshop} other {# workshops}}",
+    "showAll": "Show all",
+    "showOnMap": "Show on map",
+    "empty": "No workshops match these filters.",
+    "openNow": "Open now",
+    "closedReopens": "Closed – reopens at {time}, {day}",
+    "noHours": "Opening hours not listed",
+    "productionOnly": "Production workshop, no visitors",
+    "viewHousehold": "View household",
+    "distance": "{km} km away",
+    "days": {
+      "0": "Sunday",
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday"
+    }
+  },
+  "catalog": {
+    "filtersLabel": "Filter products",
+    "search": "Search",
+    "searchPlaceholder": "Search products, households, news",
+    "category": "Category",
+    "allCategories": "All categories",
+    "household": "Household",
+    "allHouseholds": "All households",
+    "minPrice": "Min price (VND)",
+    "maxPrice": "Max price (VND)",
+    "sort": "Sort by",
+    "oneOfAKind": "One of a kind",
+    "inStock": "In stock",
+    "clear": "Clear filters",
+    "loading": "Loading products",
+    "empty": "No products match these filters.",
+    "unavailable": "We could not load products. Please try again in a few minutes.",
+    "retry": "Try again",
+    "loadMore": "Load more",
+    "suggestEmpty": "No suggestions.",
+    "suggestFailed": "We could not load suggestions.",
+    "groupProducts": "Products",
+    "groupHouseholds": "Households",
+    "groupNews": "News",
+    "categories": {
+      "VASE": "Vases and jars",
+      "TABLEWARE": "Tableware",
+      "TEA": "Tea sets",
+      "DECOR": "Decor",
+      "WORSHIP": "Altar pieces"
+    },
+    "sorts": {
+      "newest": "Newest",
+      "price_asc": "Price: low to high",
+      "price_desc": "Price: high to low"
     }
   },
   "auth": {

@@ -1,4 +1,9 @@
-import { HOUSEHOLD_STATUSES, PRODUCT_STATUSES } from '@vcraft/domain';
+import {
+  HOUSEHOLD_STATUSES,
+  isValidOpeningInterval,
+  PRODUCT_CATEGORIES,
+  PRODUCT_STATUSES,
+} from '@vcraft/domain';
 import { z } from 'zod';
 import { IdSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
 import { JournalResponseSchema } from '../journal';
@@ -9,8 +14,17 @@ export const HouseholdStatusSchema = z.enum(HOUSEHOLD_STATUSES);
 export const ProductStatusSchema = z.enum(PRODUCT_STATUSES);
 export const WorkshopPurposeSchema = z.enum(['PRODUCTION', 'SHOWROOM', 'BOTH']);
 export const ProductKindSchema = z.enum(['OBJECT', 'BATCH']);
+const CategorySchema = z.enum(PRODUCT_CATEGORIES);
 
 const NameSchema = z.string().trim().min(2, 'Tên cần ít nhất 2 ký tự').max(160);
+const TimeOfDaySchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Giờ có dạng HH:mm');
+
+/** Một khoảng mở cửa trong tuần (FR-ART-05), giờ Việt Nam. */
+export const OpeningIntervalSchema = z
+  .object({ day: z.int().min(0).max(6), open: TimeOfDaySchema, close: TimeOfDaySchema })
+  .refine(isValidOpeningInterval, { message: 'Giờ mở phải trước giờ đóng', path: ['close'] });
+export type OpeningIntervalDto = z.infer<typeof OpeningIntervalSchema>;
+
 const ReasonSchema = z.string().trim().min(3, 'Hãy ghi lý do (ít nhất 3 ký tự)').max(500);
 
 // --- Request ---
@@ -39,6 +53,7 @@ export const CreateWorkshopRequestSchema = z.object({
   purpose: WorkshopPurposeSchema.default('PRODUCTION'),
   acceptsVisitors: z.boolean().default(false),
   visitingInfo: z.string().trim().max(2_000).optional(),
+  openingHours: z.array(OpeningIntervalSchema).max(21).optional(),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
 });
@@ -57,6 +72,13 @@ export const CreateProductRequestSchema = z
     description: z.string().trim().max(10_000).default(''),
     kind: ProductKindSchema.default('OBJECT'),
     batchSize: z.int().min(2).max(100_000).optional(),
+    category: CategorySchema.default('DECOR'),
+    priceVnd: z.int().min(0).max(2_000_000_000).default(0),
+    stock: z.int().min(0).max(1_000_000).default(0),
+    material: z.string().trim().max(200).optional(),
+    dimensions: z.string().trim().max(200).optional(),
+    weightGrams: z.int().positive().max(1_000_000).optional(),
+    artisanNote: z.string().trim().max(2_000).optional(),
   })
   .refine((p) => (p.kind === 'BATCH') === (p.batchSize !== undefined), {
     message: 'Lô sản xuất cần số lượng vật trong lô; vật đơn chiếc thì không',
@@ -90,6 +112,7 @@ export const WorkshopResponseSchema = z.object({
   purpose: WorkshopPurposeSchema,
   acceptsVisitors: z.boolean(),
   visitingInfo: z.string().nullable(),
+  openingHours: z.array(OpeningIntervalSchema).nullable(),
   lat: z.number().nullable(),
   lng: z.number().nullable(),
 });
@@ -122,6 +145,15 @@ export const ProductResponseSchema = z.object({
   description: z.string(),
   kind: ProductKindSchema,
   batchSize: z.int().nullable(),
+  category: CategorySchema,
+  priceVnd: z.int().nonnegative(),
+  stock: z.int().nonnegative(),
+  material: z.string().nullable(),
+  dimensions: z.string().nullable(),
+  weightGrams: z.int().nullable(),
+  artisanNote: z.string().nullable(),
+  coverUrl: z.string().nullable(),
+  coverAlt: z.string().nullable(),
   status: ProductStatusSchema,
   publishedAt: IsoDateTimeSchema.nullable(),
   makers: z.array(MakerCreditSchema),
@@ -137,6 +169,8 @@ export const PublicHouseholdResponseSchema = z.object({
   slug: z.string(),
   history: z.string(),
   village: z.string().nullable(),
+  craft: z.string().nullable(),
+  coverUrl: z.string().nullable(),
   artisans: z.array(ArtisanResponseSchema),
   workshops: z.array(WorkshopResponseSchema),
   /** Phòng trưng bày đón khách, tách khỏi các xưởng chỉ để sản xuất. */
@@ -168,9 +202,22 @@ export const TraceAvailabilityResponseSchema = z.discriminatedUnion('availabilit
     household: z.object({ name: z.string(), slug: z.string() }),
     journal: JournalResponseSchema,
   }),
-  z.object({ availability: z.literal('UNAVAILABLE'), traceCode: z.string() }),
+  z.object({
+    availability: z.literal('UNAVAILABLE'),
+    traceCode: z.string(),
+    /** Hộ bị khóa thì trang QR cảnh báo hàng không xác thực; sản phẩm rút chỉ là thông báo. */
+    reason: z.enum(['HOUSEHOLD_SUSPENDED', 'PRODUCT_WITHDRAWN']),
+  }),
 ]);
 export type TraceAvailabilityDto = z.infer<typeof TraceAvailabilityResponseSchema>;
+
+/** Chi tiết công khai của một sản phẩm: nội dung, hộ làm ra và nhật ký để tóm tắt. */
+export const ProductDetailResponseSchema = z.object({
+  product: ProductResponseSchema,
+  household: z.object({ name: z.string(), slug: z.string() }),
+  journal: JournalResponseSchema,
+});
+export type ProductDetailDto = z.infer<typeof ProductDetailResponseSchema>;
 
 /**
  * Ghim bản đồ làng (chỉ hộ đã duyệt, chỉ xưởng có tọa độ). Trang luôn hiện kèm danh sách chữ làm
@@ -183,9 +230,16 @@ export const MapPinSchema = z.object({
   purpose: WorkshopPurposeSchema,
   visitable: z.boolean(),
   visitingInfo: z.string().nullable(),
+  /** Trình duyệt tự tính "đang mở" từ đây bằng `openState` (giờ Việt Nam). */
+  openingHours: z.array(OpeningIntervalSchema).nullable(),
   lat: z.number(),
   lng: z.number(),
-  household: z.object({ name: z.string(), slug: z.string() }),
+  household: z.object({
+    name: z.string(),
+    slug: z.string(),
+    craft: z.string().nullable(),
+    coverUrl: z.string().nullable(),
+  }),
 });
 export type MapPinDto = z.infer<typeof MapPinSchema>;
 

@@ -1,13 +1,14 @@
 import { Logo } from '@vcraft/ui';
 import { getTranslations } from 'next-intl/server';
 import { AccountMenu } from '@/features/auth/account-menu';
+import { SearchBox } from '@/features/catalog/search-box';
 import { Link } from '@/i18n/navigation';
 import { LocaleSwitcher } from './locale-switcher';
 
-// `/ban-do` chưa có trang (PLAN: E5); thêm lại vào đây khi trang sẵn sàng.
 const NAV = [
   { href: '/san-pham', key: 'products' },
   { href: '/nghe-nhan', key: 'artisans' },
+  { href: '/ban-do', key: 'map' },
   { href: '/tin-tuc', key: 'news' },
   { href: '/yeu-cau-bao-gia', key: 'quotes' },
 ] as const;
@@ -36,6 +37,9 @@ export async function SiteHeader() {
           <ul className="flex items-center gap-1">{links}</ul>
         </nav>
         <div className="flex items-center gap-2">
+          <div className="hidden md:block">
+            <SearchBox />
+          </div>
           <LocaleSwitcher />
           <AccountMenu />
           <details className="group relative lg:hidden">
@@ -46,6 +50,9 @@ export async function SiteHeader() {
               aria-label={t('label')}
               className="absolute right-0 mt-2 w-56 rounded-card bg-surface p-2 shadow-warm ring-1 ring-ink/8"
             >
+              <div className="p-1 md:hidden">
+                <SearchBox />
+              </div>
               <ul>{links}</ul>
             </nav>
           </details>

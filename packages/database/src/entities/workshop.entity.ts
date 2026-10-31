@@ -1,6 +1,6 @@
 import { type Opt } from '@mikro-orm/core';
 import { Entity, Index, ManyToOne, Property } from '@mikro-orm/decorators/legacy';
-import type { WorkshopPurpose } from '@vcraft/domain';
+import type { OpeningInterval, WorkshopPurpose } from '@vcraft/domain';
 import { BaseEntity } from './base.entity.js';
 import { Household } from './household.entity.js';
 
@@ -36,6 +36,10 @@ export class Workshop extends BaseEntity {
   /** Thông tin thăm (giờ mở cửa, cần hẹn trước...), văn bản thuần. */
   @Property({ type: 'text', nullable: true })
   visitingInfo?: string | null;
+
+  /** Giờ mở cửa theo tuần (FR-ART-05); `null` là chưa khai, trang công khai không báo "đang mở". */
+  @Property({ type: 'json', nullable: true })
+  openingHours?: OpeningInterval[] | null;
 
   @Property({ type: 'decimal', precision: 9, scale: 6, nullable: true })
   lat?: string | null;

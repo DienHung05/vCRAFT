@@ -102,6 +102,7 @@ export class HouseholdsService {
         purpose: input.purpose,
         acceptsVisitors: input.acceptsVisitors,
         visitingInfo: input.visitingInfo ?? null,
+        openingHours: input.openingHours ?? null,
         lat: input.lat === undefined ? null : input.lat.toFixed(6),
         lng: input.lng === undefined ? null : input.lng.toFixed(6),
       });
@@ -137,6 +138,13 @@ export class HouseholdsService {
         description: input.description,
         kind: input.kind,
         batchSize: input.batchSize ?? null,
+        category: input.category,
+        priceVnd: input.priceVnd,
+        stock: input.stock,
+        material: input.material ?? null,
+        dimensions: input.dimensions ?? null,
+        weightGrams: input.weightGrams ?? null,
+        artisanNote: input.artisanNote ?? null,
       });
       await em.flush();
       return toProductDto(product);
@@ -283,7 +291,12 @@ export class HouseholdsService {
     const availability = publicProductAvailability(product.household.status, product.status);
     if (availability === 'MISSING') throw notFound();
     if (availability === 'UNAVAILABLE') {
-      return { availability, traceCode: product.traceCode };
+      return {
+        availability,
+        traceCode: product.traceCode,
+        reason:
+          product.household.status === 'SUSPENDED' ? 'HOUSEHOLD_SUSPENDED' : 'PRODUCT_WITHDRAWN',
+      };
     }
     return {
       availability,
