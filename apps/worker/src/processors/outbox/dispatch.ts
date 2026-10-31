@@ -26,6 +26,12 @@ export function createOutboxDispatcher(queues: {
           await queues.mail.add('send', { noticeId }, { jobId: `mail-${noticeId}` });
         return;
       }
+      case 'household.decision': {
+        await queues.mail.add('household-decision', event.payload, {
+          jobId: `mail-household-${event.id}`,
+        });
+        return;
+      }
       default:
         return;
     }

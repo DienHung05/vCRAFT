@@ -28,6 +28,7 @@ import {
   ProductMaker,
   QuotationNotice,
   QuotationRequest,
+  TraceScan,
   Workshop,
 } from './entities/index.js';
 
@@ -134,6 +135,7 @@ export function createMikroOrmOptions(
       OrderAllocation,
       MediaAsset,
       News,
+      TraceScan,
     ],
     metadataProvider: ReflectMetadataProvider,
     extensions: [Migrator, SeedManager],

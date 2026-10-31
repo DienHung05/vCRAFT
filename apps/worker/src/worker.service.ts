@@ -10,6 +10,7 @@ import type { ObjectStorage } from '@vcraft/storage';
 import { type ConnectionOptions, Queue, Worker } from 'bullmq';
 import { createTransport } from 'nodemailer';
 import { createNoticeLoader } from './processors/mail/load-notice';
+import { type HouseholdMailJob, sendHouseholdMail } from './processors/mail/send-household-mail';
 import { sendNoticeMail } from './processors/mail/send-notice-mail';
 import { processMediaAsset } from './processors/media/process-media';
 import { createOutboxDispatcher } from './processors/outbox/dispatch';
@@ -79,10 +80,25 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
         (job) => processMediaAsset({ orm: this.orm, storage: this.storage }, job.data.assetId),
         { connection, concurrency: 2 },
       ),
-      new Worker<MailJob>(MAIL_QUEUE, (job) => sendNoticeMail(mailDeps, job.data.noticeId), {
-        connection,
-        concurrency: 2,
-      }),
+      new Worker<MailJob | HouseholdMailJob>(
+        MAIL_QUEUE,
+        (job) =>
+          job.name === 'household-decision'
+            ? sendHouseholdMail(
+                {
+                  orm: this.orm,
+                  transport: mailDeps.transport,
+                  from: mailDeps.from,
+                  appUrl: mailDeps.appUrl,
+                },
+                job.data as HouseholdMailJob,
+              )
+            : sendNoticeMail(mailDeps, (job.data as MailJob).noticeId),
+        {
+          connection,
+          concurrency: 2,
+        },
+      ),
       new Worker(OUTBOX_QUEUE, () => relayOutbox(this.orm, dispatch), { connection }),
     ];
     for (const worker of workers)
