@@ -199,7 +199,8 @@
     "gallery": "Trong xưởng",
     "products": "Sản phẩm của hộ",
     "productsEmpty": "Xưởng chưa có sản phẩm nào ra lò. Bạn quay lại sau nhé.",
-    "coverAlt": "Ảnh xưởng của hộ {household}"
+    "coverAlt": "Ảnh xưởng của hộ {household}",
+    "capacityBy": "Năng lực theo danh mục"
   },
   "product": {
     "breadcrumb": "Đường dẫn trang",
@@ -954,5 +955,116 @@
       "lead": "Máy chủ vCraft đang không phản hồi. Bạn thử lại sau ít phút nhé.",
       "retry": "Thử lại"
     }
+  },
+  "studio": {
+    "nav": {
+      "label": "Điều hướng Studio",
+      "home": "Trang chủ",
+      "products": "Sản phẩm",
+      "quotations": "Báo giá",
+      "orders": "Đơn hàng",
+      "profile": "Hồ sơ",
+      "soon": "Sắp có"
+    },
+    "signIn": "Hãy đăng nhập bằng tài khoản đại diện hộ để vào Studio.",
+    "notHousehold": "Tài khoản này chưa đại diện cho hộ nào. Hãy đăng ký làm nghệ nhân để mở Studio.",
+    "loadFailed": "Chưa tải được dữ liệu của hộ. Bạn thử lại sau ít phút.",
+    "retry": "Thử lại",
+    "loading": "Đang tải…",
+    "saved": "Đã lưu.",
+    "save": "Lưu",
+    "stale": "Hồ sơ vừa được sửa ở nơi khác. Đã tải lại bản mới, bạn kiểm tra rồi lưu lại.",
+    "saveFailed": "Chưa lưu được. Bạn kiểm tra nội dung rồi thử lại.",
+    "home": {
+      "title": "Chào {household}",
+      "status": "Trạng thái hồ sơ",
+      "statuses": {
+        "PENDING_REVIEW": "Đang chờ Ban quản lý duyệt",
+        "APPROVED": "Đã được duyệt, đang trưng bày công khai",
+        "REJECTED": "Chưa được chấp nhận",
+        "SUSPENDED": "Đang tạm ngừng, không hiện công khai"
+      },
+      "reason": "Lý do: {reason}",
+      "completeness": "Độ hoàn thiện hồ sơ",
+      "complete": "Hồ sơ đã đủ các mục.",
+      "missingLead": "Nên bổ sung:",
+      "counts": "Số liệu",
+      "drafts": "Sản phẩm nháp",
+      "published": "Đang trưng bày",
+      "artisans": "Người làm",
+      "workshops": "Xưởng",
+      "actions": "Làm nhanh",
+      "editProfile": "Sửa hồ sơ",
+      "viewPublic": "Xem trang công khai",
+      "sections": {
+        "story": "Câu chuyện của hộ (ít nhất vài câu)",
+        "lineage": "Năm thành lập và số đời làm nghề",
+        "timeline": "Dòng thời gian gia đình",
+        "certifications": "Chứng nhận",
+        "gallery": "Ảnh xưởng",
+        "workshopLocation": "Vị trí xưởng trên bản đồ",
+        "openingHours": "Giờ mở cửa",
+        "capacity": "Năng lực sản xuất"
+      }
+    },
+    "profile": {
+      "title": "Hồ sơ của hộ",
+      "lead": "Những gì bạn lưu ở đây hiện ngay trên trang công khai của hộ.",
+      "story": "Câu chuyện",
+      "storyLabel": "Câu chuyện của hộ",
+      "craft": "Nghề",
+      "foundedYear": "Năm thành lập",
+      "generations": "Số đời làm nghề",
+      "timeline": "Dòng thời gian gia đình",
+      "addEvent": "Thêm sự kiện",
+      "year": "Năm",
+      "eventTitle": "Tiêu đề",
+      "eventText": "Nội dung",
+      "remove": "Xóa",
+      "certifications": "Chứng nhận",
+      "addCertification": "Thêm chứng nhận",
+      "certName": "Tên chứng nhận",
+      "certIssuer": "Đơn vị cấp",
+      "verified": "Đã xác minh",
+      "unverified": "Chưa xác minh",
+      "gallery": "Ảnh xưởng",
+      "galleryHint": "Mỗi ảnh cần mô tả đúng điều nhìn thấy, để người không xem được ảnh vẫn hiểu.",
+      "addPhotos": "Thêm ảnh",
+      "alt": "Mô tả ảnh (bắt buộc)",
+      "caption": "Chú thích",
+      "processing": "Ảnh đang được xử lý",
+      "altRequired": "Mỗi ảnh cần có mô tả ít nhất 3 ký tự.",
+      "workshop": "Xưởng",
+      "addWorkshop": "Thêm xưởng",
+      "workshopName": "Tên xưởng",
+      "address": "Địa chỉ",
+      "purpose": "Mục đích",
+      "purposes": {
+        "PRODUCTION": "Sản xuất",
+        "SHOWROOM": "Phòng trưng bày",
+        "BOTH": "Vừa làm vừa đón khách"
+      },
+      "acceptsVisitors": "Đón khách tham quan",
+      "visitingInfo": "Thông tin cho khách",
+      "lat": "Vĩ độ",
+      "lng": "Kinh độ",
+      "useMyLocation": "Dùng vị trí của tôi",
+      "mapHint": "Bấm trên bản đồ để chọn vị trí xưởng.",
+      "locationDenied": "Không lấy được vị trí. Bạn bấm chọn trên bản đồ hoặc nhập tọa độ.",
+      "hours": "Giờ mở cửa",
+      "closed": "Nghỉ",
+      "open": "Mở",
+      "close": "Đóng",
+      "capacity": "Năng lực sản xuất (đơn vị/tháng)"
+    }
+  },
+  "media": {
+    "uploads": "Ảnh đang tải lên",
+    "retry": "Thử lại",
+    "cancel": "Hủy",
+    "failed": "Tải lên không thành công.",
+    "uploading": "Đang tải {name}",
+    "preparing": "Đang chuẩn bị {name}",
+    "tooMany": "Đã bỏ {count} ảnh vượt giới hạn."
   }
 }

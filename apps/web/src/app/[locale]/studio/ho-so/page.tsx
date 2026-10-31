@@ -3,6 +3,7 @@ import { Badge, type BadgeProps, Card, Stepper } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { FormAlert } from '@/features/auth/fields';
+import { ProfileEditor } from '@/features/studio/profile-editor';
 import { Link, redirect } from '@/i18n/navigation';
 import { firstParam } from '@/lib/auth/return-to';
 import { getViewer } from '@/lib/auth/viewer';
@@ -43,6 +44,8 @@ const COPY = {
 } as const;
 
 /**
+ * Hộ đã được duyệt sửa hồ sơ ở đây (FR-ART); hộ khác chỉ thấy trạng thái.
+ *
  * Trang trạng thái hồ sơ hộ (FR-AUTH-02): nơi duy nhất của Studio mà hộ đang chờ duyệt (hoặc bị từ
  * chối) được vào. Cũng là đích sau đăng nhập của người đại diện hộ.
  */
@@ -56,6 +59,10 @@ export default async function HouseholdProfilePage({
   const household = viewer?.household;
   // Vai trò hộ mà chưa có hồ sơ không xảy ra bình thường; đưa về wizard để nộp.
   if (!household) return redirect({ href: '/dang-ky-nghe-nhan', locale });
+
+  if (household.status === 'APPROVED' && firstParam(query.submitted) !== '1') {
+    return <ProfileEditor />;
+  }
 
   const t = await getTranslations('auth.profile');
   const copy = COPY[household.status];
