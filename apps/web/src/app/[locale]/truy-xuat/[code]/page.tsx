@@ -1,4 +1,4 @@
-import { buttonVariants, Crackle, Logo, TraceSealFrame, VaseFigure } from '@vcraft/ui';
+import { Badge, buttonVariants, Crackle, Logo, TraceSealFrame, VaseFigure } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
@@ -165,6 +165,23 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
               household={visible.household.name}
               workshops={profile?.status === 'ok' ? toVisitWorkshops(profile.data.workshops) : []}
             />
+
+            {profile?.status === 'ok' && profile.data.certifications.some((c) => c.verified) ? (
+              <section aria-labelledby="certs-title" className="px-5 pt-12">
+                <h2 id="certs-title">{t('certsTitle')}</h2>
+                <ul className="mt-5 flex flex-wrap gap-2">
+                  {profile.data.certifications
+                    .filter((c) => c.verified)
+                    .map((c) => (
+                      <li key={c.name}>
+                        <Badge tone="lacquer">
+                          {c.name} · {c.year}
+                        </Badge>
+                      </li>
+                    ))}
+                </ul>
+              </section>
+            ) : null}
 
             {/* Ấn truy xuất: chính cái tem ở đáy sản phẩm. */}
             <section className="flex flex-col items-center px-5 pt-14">

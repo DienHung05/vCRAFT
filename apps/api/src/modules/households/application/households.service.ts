@@ -11,6 +11,7 @@ import type {
   PublicHouseholdDto,
   SetProductMakersRequest,
   TraceAvailabilityDto,
+  UpdateHouseholdProfileRequest,
 } from '@vcraft/contracts';
 import {
   AppUser,
@@ -35,6 +36,7 @@ import { slugify } from '@vcraft/utils';
 import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
+import { MediaService } from '../../media/application/media.service';
 import { loadJournal } from '../../production-logs/application/journal.queries';
 import {
   type HouseholdParts,
@@ -55,7 +57,10 @@ import { generateTraceCode } from './trace-code';
  */
 @Injectable()
 export class HouseholdsService {
-  constructor(private readonly orm: MikroORM) {}
+  constructor(
+    private readonly orm: MikroORM,
+    private readonly media: MediaService,
+  ) {}
 
   // --- Người đại diện hộ ---
 
@@ -90,6 +95,75 @@ export class HouseholdsService {
     const em = this.orm.em.fork();
     const household = await this.ownHousehold(em, actor);
     return toHouseholdDto(household, await this.parts(em, household, false));
+  }
+
+  /** Chủ hộ sửa hồ sơ của chính mình; chứng nhận đã xác minh giữ nguyên dấu khi không đổi nội dung. */
+  async updateProfile(
+    actor: Actor,
+    expectedVersion: number,
+    input: UpdateHouseholdProfileRequest,
+  ): Promise<HouseholdDto> {
+    const updated = await this.orm.em.fork().transactional(async (em) => {
+      const household = await this.ownWritableHousehold(em, actor);
+      assertVersion(household, expectedVersion);
+      if (input.gallery) {
+        const ids = input.gallery.flatMap((item) => ('mediaId' in item ? [item.mediaId] : []));
+        const owned = await this.media.ownedBy(actor.id, ids);
+        if (ids.some((id) => !owned.has(id))) throw forbidden('gallery media is not yours');
+        household.gallery = input.gallery.map((item) => ({ ...item }));
+      }
+      if (input.certifications) {
+        const verified = new Set(
+          (household.certifications ?? [])
+            .filter((c) => c.verified)
+            .map((c) => `${c.name}|${c.issuer}|${c.year}`),
+        );
+        household.certifications = input.certifications.map((c) => ({
+          ...c,
+          verified: verified.has(`${c.name}|${c.issuer}|${c.year}`),
+        }));
+      }
+      if (input.history !== undefined) household.history = input.history;
+      if (input.craft !== undefined) household.craft = input.craft || null;
+      if (input.village !== undefined) household.village = input.village || null;
+      if (input.foundedYear !== undefined) household.foundedYear = input.foundedYear;
+      if (input.generations !== undefined) household.generations = input.generations;
+      if (input.timeline !== undefined) {
+        household.timeline = [...input.timeline].sort((a, b) => a.year - b.year);
+      }
+      if (input.capacityByCategory !== undefined) {
+        household.capacityByCategory = input.capacityByCategory;
+      }
+      await em.flush();
+      return household.id;
+    });
+    const em = this.orm.em.fork();
+    const household = await em.findOneOrFail(Household, updated);
+    return toHouseholdDto(household, await this.parts(em, household, false));
+  }
+
+  async updateWorkshop(
+    actor: Actor,
+    workshopId: string,
+    expectedVersion: number,
+    input: CreateWorkshopRequest,
+  ) {
+    return this.orm.em.fork().transactional(async (em) => {
+      const household = await this.ownWritableHousehold(em, actor);
+      const workshop = await em.findOne(Workshop, { id: workshopId, household });
+      if (!workshop) throw notFound();
+      assertVersion(workshop, expectedVersion);
+      workshop.name = input.name;
+      workshop.address = input.address;
+      workshop.purpose = input.purpose;
+      workshop.acceptsVisitors = input.acceptsVisitors;
+      workshop.visitingInfo = input.visitingInfo ?? null;
+      workshop.openingHours = input.openingHours ?? null;
+      workshop.lat = input.lat === undefined ? null : input.lat.toFixed(6);
+      workshop.lng = input.lng === undefined ? null : input.lng.toFixed(6);
+      await em.flush();
+      return toWorkshopDto(workshop);
+    });
   }
 
   async addWorkshop(actor: Actor, input: CreateWorkshopRequest) {
@@ -345,7 +419,16 @@ export class HouseholdsService {
         orderBy: { createdAt: 'asc' },
       }),
     ]);
-    return { artisans, workshops, products, makers: await this.makersOf(em, products) };
+    const mediaIds = (household.gallery ?? []).flatMap((item) =>
+      item.mediaId ? [item.mediaId] : [],
+    );
+    return {
+      artisans,
+      workshops,
+      products,
+      makers: await this.makersOf(em, products),
+      mediaUrls: await this.media.publicUrls(mediaIds),
+    };
   }
 
   private async makersOf(

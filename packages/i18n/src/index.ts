@@ -31,6 +31,7 @@ export const pathnames = {
   '/chap-nhan-loi-moi': { vi: '/chap-nhan-loi-moi', en: '/accept-invitation' },
   '/studio/ho-so': { vi: '/studio/ho-so', en: '/studio/profile' },
   '/admin': '/admin',
+  '/studio': '/studio',
   '/admin/dieu-phoi': { vi: '/admin/dieu-phoi', en: '/admin/coordination' },
   '/admin/dieu-phoi/[code]': { vi: '/admin/dieu-phoi/[code]', en: '/admin/coordination/[code]' },
 } as const;

@@ -199,7 +199,8 @@
     "gallery": "Inside the workshop",
     "products": "Products from this household",
     "productsEmpty": "Nothing has come out of this workshop's kiln yet. Check back soon.",
-    "coverAlt": "Workshop of the {household} household"
+    "coverAlt": "Workshop of the {household} household",
+    "capacityBy": "Capacity by category"
   },
   "product": {
     "breadcrumb": "Breadcrumb",
@@ -954,5 +955,116 @@
       "lead": "The vCraft server is not responding. Please try again in a few minutes.",
       "retry": "Try again"
     }
+  },
+  "studio": {
+    "nav": {
+      "label": "Studio navigation",
+      "home": "Home",
+      "products": "Products",
+      "quotations": "Quotations",
+      "orders": "Orders",
+      "profile": "Profile",
+      "soon": "Coming soon"
+    },
+    "signIn": "Sign in with the household representative account to open the Studio.",
+    "notHousehold": "This account does not represent a household yet. Register as an artisan to open the Studio.",
+    "loadFailed": "We could not load your household. Please try again in a few minutes.",
+    "retry": "Try again",
+    "loading": "Loading…",
+    "saved": "Saved.",
+    "save": "Save",
+    "stale": "This profile was just changed elsewhere. We loaded the latest version; check it and save again.",
+    "saveFailed": "We could not save. Check the details and try again.",
+    "home": {
+      "title": "Welcome, {household}",
+      "status": "Application status",
+      "statuses": {
+        "PENDING_REVIEW": "Waiting for the village board to review",
+        "APPROVED": "Approved and on public display",
+        "REJECTED": "Not accepted",
+        "SUSPENDED": "Suspended, not shown publicly"
+      },
+      "reason": "Reason: {reason}",
+      "completeness": "Profile completeness",
+      "complete": "Your profile has every section.",
+      "missingLead": "Worth adding:",
+      "counts": "At a glance",
+      "drafts": "Draft products",
+      "published": "On display",
+      "artisans": "Makers",
+      "workshops": "Workshops",
+      "actions": "Quick actions",
+      "editProfile": "Edit profile",
+      "viewPublic": "View public page",
+      "sections": {
+        "story": "Your household story (at least a few sentences)",
+        "lineage": "Founding year and generations",
+        "timeline": "Family timeline",
+        "certifications": "Certifications",
+        "gallery": "Workshop photos",
+        "workshopLocation": "Workshop location on the map",
+        "openingHours": "Opening hours",
+        "capacity": "Production capacity"
+      }
+    },
+    "profile": {
+      "title": "Household profile",
+      "lead": "What you save here appears on your public household page right away.",
+      "story": "Story",
+      "storyLabel": "Your household story",
+      "craft": "Craft",
+      "foundedYear": "Founding year",
+      "generations": "Generations in the craft",
+      "timeline": "Family timeline",
+      "addEvent": "Add event",
+      "year": "Year",
+      "eventTitle": "Title",
+      "eventText": "Details",
+      "remove": "Remove",
+      "certifications": "Certifications",
+      "addCertification": "Add certification",
+      "certName": "Certification name",
+      "certIssuer": "Issued by",
+      "verified": "Verified",
+      "unverified": "Not verified",
+      "gallery": "Workshop photos",
+      "galleryHint": "Describe what each photo shows so people who cannot see it still understand.",
+      "addPhotos": "Add photos",
+      "alt": "Photo description (required)",
+      "caption": "Caption",
+      "processing": "Photo is being processed",
+      "altRequired": "Each photo needs a description of at least 3 characters.",
+      "workshop": "Workshops",
+      "addWorkshop": "Add workshop",
+      "workshopName": "Workshop name",
+      "address": "Address",
+      "purpose": "Purpose",
+      "purposes": {
+        "PRODUCTION": "Production",
+        "SHOWROOM": "Showroom",
+        "BOTH": "Production and visitors"
+      },
+      "acceptsVisitors": "Welcomes visitors",
+      "visitingInfo": "Information for visitors",
+      "lat": "Latitude",
+      "lng": "Longitude",
+      "useMyLocation": "Use my location",
+      "mapHint": "Click the map to choose the workshop location.",
+      "locationDenied": "We could not get your location. Click the map or enter coordinates.",
+      "hours": "Opening hours",
+      "closed": "Closed",
+      "open": "Opens",
+      "close": "Closes",
+      "capacity": "Production capacity (units per month)"
+    }
+  },
+  "media": {
+    "uploads": "Photos uploading",
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "failed": "Upload failed.",
+    "uploading": "Uploading {name}",
+    "preparing": "Preparing {name}",
+    "tooMany": "Skipped {count} photos over the limit."
   }
 }
