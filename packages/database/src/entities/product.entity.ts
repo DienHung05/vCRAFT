@@ -9,6 +9,12 @@ import { Household } from './household.entity.js';
 export const PRODUCT_KINDS = ['OBJECT', 'BATCH'] as const;
 export type ProductKind = (typeof PRODUCT_KINDS)[number];
 
+/** Ảnh sản phẩm theo thứ tự hiển thị; ảnh đầu là ảnh bìa (FR-PRD-02). */
+export interface ProductImage {
+  mediaId: string;
+  alt: string;
+}
+
 const productSearchText = (p: Product) =>
   normalizeSearchText(`${p.name} ${p.traceCode} ${p.description}`, 700);
 
@@ -76,6 +82,9 @@ export class Product extends BaseEntity {
 
   @Property({ type: 'string', length: 500, nullable: true })
   coverAlt?: string | null;
+
+  @Property({ type: 'json', nullable: true })
+  images?: ProductImage[] | null;
 
   /** Tên, mô tả, mã đã bỏ dấu cho tìm kiếm (FR-CAT-04); tự tính lại mỗi lần ghi. */
   @Property({

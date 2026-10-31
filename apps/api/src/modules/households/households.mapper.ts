@@ -52,8 +52,26 @@ export function toMakerCreditDto(m: ProductMaker): MakerCreditDto {
   };
 }
 
+/** Id ảnh tải lên của các sản phẩm, để tra URL một lần. */
+export const productMediaIds = (products: readonly Product[]): string[] =>
+  products.flatMap((p) => (p.images ?? []).map((image) => image.mediaId));
+
+/** Bìa là bìa riêng (dữ liệu mẫu) hoặc ảnh đầu tiên đã xử lý xong. */
+export function productCover(p: Product, mediaUrls?: ReadonlyMap<string, string>) {
+  if (p.coverUrl) return { url: p.coverUrl, alt: p.coverAlt ?? null };
+  const ready = (p.images ?? []).find((image) => mediaUrls?.has(image.mediaId));
+  return ready
+    ? { url: mediaUrls?.get(ready.mediaId) ?? null, alt: ready.alt }
+    : { url: null, alt: null };
+}
+
 /** `makers` phải đã sắp theo `position` và nạp sẵn `artisan`. */
-export function toProductDto(p: Product, makers: readonly ProductMaker[] = []): ProductDto {
+export function toProductDto(
+  p: Product,
+  makers: readonly ProductMaker[] = [],
+  mediaUrls?: ReadonlyMap<string, string>,
+): ProductDto {
+  const cover = productCover(p, mediaUrls);
   return {
     id: p.id,
     version: p.version,
@@ -70,8 +88,13 @@ export function toProductDto(p: Product, makers: readonly ProductMaker[] = []): 
     dimensions: p.dimensions ?? null,
     weightGrams: p.weightGrams ?? null,
     artisanNote: p.artisanNote ?? null,
-    coverUrl: p.coverUrl ?? null,
-    coverAlt: p.coverAlt ?? null,
+    coverUrl: cover.url,
+    coverAlt: cover.alt,
+    images: (p.images ?? []).map((image) => ({
+      mediaId: image.mediaId,
+      url: mediaUrls?.get(image.mediaId) ?? null,
+      alt: image.alt,
+    })),
     status: p.status,
     publishedAt: p.publishedAt?.toISOString() ?? null,
     makers: makers.map(toMakerCreditDto),
@@ -142,7 +165,7 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
       showrooms: splitWorkshops(parts.workshops).showrooms.map(toWorkshopDto),
       productionWorkshops: splitWorkshops(parts.workshops).production.map(toWorkshopDto),
     },
-    products: parts.products.map((p) => toProductDto(p, parts.makers.get(p.id))),
+    products: parts.products.map((p) => toProductDto(p, parts.makers.get(p.id), parts.mediaUrls)),
   };
 }
 
