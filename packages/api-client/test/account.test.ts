@@ -82,6 +82,8 @@ describe('account HTTP client', () => {
           slug: 'gom-bao-chau',
           history: '',
           village: null,
+          craft: 'Gốm',
+          coverUrl: '/images/demo/cover.jpg',
           artisans: [],
           workshops: [],
           visit: { showrooms: [], productionWorkshops: [] },
