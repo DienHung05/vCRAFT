@@ -44,13 +44,9 @@ export const biddingDeadlineInFuture: RfqGuard = (ctx) => {
   }
   return ctx.biddingClosesAt.getTime() > ctx.now.getTime()
     ? undefined
-    : new DomainError(
-        'BIDDING_DEADLINE_TOO_SOON',
-        'biddingClosesAt must be in the future',
-        {
-          rule: 'T1',
-        },
-      );
+    : new DomainError('BIDDING_DEADLINE_TOO_SOON', 'biddingClosesAt must be in the future', {
+        rule: 'T1',
+      });
 };
 
 /** T1: `requiredBy > biddingClosesAt`. */

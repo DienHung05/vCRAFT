@@ -11,7 +11,8 @@
     "openNow": "Đang mở cửa",
     "closed": "Đang nghỉ",
     "generation": "Đời thứ {n}",
-    "since": "Từ năm {year}"
+    "since": "Từ năm {year}",
+    "retry": "Thử lại"
   },
   "nav": {
     "home": "Về trang chủ vCraft",
@@ -604,6 +605,39 @@
       "PRODUCTION_STARTED": "Đơn hàng đã bắt đầu sản xuất.",
       "PROGRESS_REPORTED": "Có cập nhật tiến độ sản xuất.",
       "ORDER_RECEIVED": "Đơn hàng đã được xác nhận nhận hàng."
+    }
+  },
+  "villageMap": {
+    "title": "Bản đồ làng nghề",
+    "lead": "Tìm xưởng và phòng trưng bày ở Bát Tràng, xem nơi nào đang mở cửa đón khách.",
+    "unavailable": "Chưa tải được danh sách xưởng. Bạn thử lại sau ít phút.",
+    "filtersLabel": "Lọc xưởng",
+    "filterOpenNow": "Đang mở cửa",
+    "filterVisitors": "Đón khách tham quan",
+    "filterCraft": "Nghề",
+    "allCrafts": "Mọi nghề",
+    "myLocation": "Vị trí của tôi",
+    "locating": "Đang tìm vị trí…",
+    "locationDenied": "Không lấy được vị trí của bạn. Hãy kiểm tra quyền truy cập vị trí của trình duyệt.",
+    "noWebgl": "Trình duyệt này không hiển thị được bản đồ (thiếu WebGL). Danh sách bên dưới có đầy đủ các xưởng.",
+    "listTitle": "{count, plural, other {# xưởng}}",
+    "showAll": "Hiện tất cả",
+    "showOnMap": "Xem trên bản đồ",
+    "empty": "Không có xưởng nào khớp bộ lọc.",
+    "openNow": "Đang mở cửa",
+    "closedReopens": "Đóng cửa – mở lại lúc {time}, {day}",
+    "noHours": "Chưa có giờ mở cửa",
+    "productionOnly": "Xưởng sản xuất, không đón khách",
+    "viewHousehold": "Xem trang hộ",
+    "distance": "Cách {km} km",
+    "days": {
+      "0": "Chủ nhật",
+      "1": "Thứ hai",
+      "2": "Thứ ba",
+      "3": "Thứ tư",
+      "4": "Thứ năm",
+      "5": "Thứ sáu",
+      "6": "Thứ bảy"
     }
   }
 }
