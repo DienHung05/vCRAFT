@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { transition } from '@vcraft/domain';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { demoParams, getCoordination, getRfq } from '@/lib/demo/data';
+import { demoParams, getRfq } from '@/lib/demo/data';
 
 afterEach(() => vi.useRealTimers());
 
@@ -36,11 +36,4 @@ describe('dữ liệu mẫu tính theo thời điểm hiện tại', () => {
       expect(result.ok).toBe(true);
     },
   );
-
-  it('hạn giao của đơn điều phối cũng nằm sau thời điểm hiện tại', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2028-05-05T00:00:00Z'));
-    const c = await getCoordination(demoParams.coordinations[0] ?? '');
-    expect(new Date(c?.requiredBy ?? 0).getTime()).toBeGreaterThan(Date.now());
-  });
 });

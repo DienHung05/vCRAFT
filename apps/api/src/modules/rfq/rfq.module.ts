@@ -3,11 +3,17 @@ import { QuotationNoticesService } from './application/quotation-notices.service
 import { QuotationNotifier } from './application/quotation-notifier';
 import { RfqService } from './application/rfq.service';
 import { QuotationNoticesController } from './quotation-notices.controller';
-import { AllocationsController, ContributionsController, RfqController } from './rfq.controller';
+import {
+  AdminCoordinationController,
+  AllocationsController,
+  ContributionsController,
+  RfqController,
+} from './rfq.controller';
 
 @Module({
   controllers: [
     RfqController,
+    AdminCoordinationController,
     ContributionsController,
     AllocationsController,
     QuotationNoticesController,

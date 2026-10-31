@@ -1,10 +1,15 @@
 import {
   AdminDashboardSchema,
   AdminHouseholdListSchema,
+  AuditActorListSchema,
+  AuditLogPageSchema,
+  type AuditLogQuery,
+  CoordinationQueueSchema,
   HouseholdDocumentListSchema,
   type HouseholdDto,
   HouseholdResponseSchema,
   MediaReadUrlResponseSchema,
+  RfqResponseSchema,
 } from '@vcraft/contracts';
 import { type AuthedClientOptions, createAuthedRequest } from './http/authed-request';
 
@@ -29,6 +34,17 @@ export function createAdminClient(options: AuthedClientOptions) {
       return request(`/admin/households${suffix}`, AdminHouseholdListSchema);
     },
     getHousehold: (id: string) => request(`/admin/households/${id}`, HouseholdResponseSchema),
+    coordinationQueue: () => request('/admin/coordination', CoordinationQueueSchema),
+    claimCoordination: (id: string, version: number) =>
+      request(`/rfqs/${id}/coordinate`, RfqResponseSchema, { method: 'POST', version }),
+    auditLog: (filters: Partial<AuditLogQuery> = {}) => {
+      const query = new URLSearchParams();
+      for (const [key, value] of Object.entries(filters))
+        if (value !== undefined && value !== '') query.set(key, String(value));
+      const suffix = query.size > 0 ? `?${query}` : '';
+      return request(`/admin/audit-log${suffix}`, AuditLogPageSchema);
+    },
+    auditActors: () => request('/admin/audit-log/actors', AuditActorListSchema),
     documents: (id: string) =>
       request(`/admin/households/${id}/documents`, HouseholdDocumentListSchema),
     documentUrl: (mediaId: string) =>

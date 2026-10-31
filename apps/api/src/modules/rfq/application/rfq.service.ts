@@ -3,8 +3,10 @@ import { Injectable } from '@nestjs/common';
 import type {
   AcceptQuotationRequest,
   AllocationDto,
+  AuditAction,
   BuyerQuotationDto,
   ContributionDto,
+  CoordinationQueueItemDto,
   CreateContributionRequest,
   CreateCooperativeQuotationRequest,
   CreateRfqRequest,
@@ -12,6 +14,7 @@ import type {
 } from '@vcraft/contracts';
 import {
   AppUser,
+  AuditLog,
   ContributionOffer as ContributionOfferEntity,
   CooperativeQuotation as CooperativeQuotationEntity,
   Household,
@@ -109,7 +112,20 @@ export class RfqService {
         throw notFound();
       assertVersion(request, version);
       this.open(request);
+      const previous = request.coordinatorId ?? null;
       request.coordinatorId = actor.id;
+      if (previous !== actor.id)
+        this.audit(
+          em,
+          actor,
+          'rfq.claim',
+          'rfq',
+          request.id,
+          { coordinatorId: previous },
+          {
+            coordinatorId: actor.id,
+          },
+        );
       request.revision++;
       await em.flush();
       return toRfqResponse(request);
@@ -126,7 +142,19 @@ export class RfqService {
       const added = [...new Set(householdIds)].filter(
         (householdId) => !request.invitedHouseholdIds.includes(householdId),
       );
-      request.invitedHouseholdIds = [...request.invitedHouseholdIds, ...added];
+      const invitedBefore = request.invitedHouseholdIds;
+      request.invitedHouseholdIds = [...invitedBefore, ...added];
+      this.audit(
+        em,
+        actor,
+        'rfq.invite',
+        'rfq',
+        request.id,
+        { invitedHouseholdIds: invitedBefore },
+        {
+          invitedHouseholdIds: request.invitedHouseholdIds,
+        },
+      );
       await this.notifier.notify(em, {
         kind: 'RFQ_INVITED',
         requestId: request.id,
@@ -365,6 +393,12 @@ export class RfqService {
         deliveryTerms: quotation.deliveryTerms,
       });
       request.status = 'BIDDING';
+      this.audit(em, actor, 'rfq.quotation_submit', 'quotation', entity.id, null, {
+        requestId: request.id,
+        quantity: entity.quantity,
+        totalVnd: entity.totalVnd,
+        deliveryTerms: entity.deliveryTerms,
+      });
       await this.notifier.notify(em, {
         kind: 'QUOTATION_RECEIVED',
         requestId: request.id,
@@ -626,8 +660,21 @@ export class RfqService {
       if (actor.locked) throw forbidden();
       assertVersion(request, version);
       this.coordinator(actor, request);
+      const statusBefore = request.status;
       request.status = unwrap(
         transition(request.status, 'ADMIN_CANCEL', { actor: 'ADMIN', reason }),
+      );
+      this.audit(
+        em,
+        actor,
+        'rfq.cancel',
+        'rfq',
+        request.id,
+        { status: statusBefore },
+        {
+          status: request.status,
+          reason,
+        },
       );
       const accepted = await em.findOne(CooperativeQuotationEntity, {
         request,
@@ -683,12 +730,25 @@ export class RfqService {
         { quotation: accepted },
         { populate: ['household'] },
       );
+      const statusBefore = request.status;
       request.status = unwrap(
         transition(request.status, 'CONFIRM_DELIVERY', {
           actor: owner ? 'BUYER_OWNER' : 'ADMIN',
           allocationStatuses: allocations.map((allocation) => allocation.status),
         }),
       );
+      if (admin)
+        this.audit(
+          em,
+          actor,
+          'rfq.confirm_receipt',
+          'rfq',
+          request.id,
+          { status: statusBefore },
+          {
+            status: request.status,
+          },
+        );
       await this.notifier.notify(em, {
         kind: 'ORDER_RECEIVED',
         requestId: request.id,
@@ -730,6 +790,7 @@ export class RfqService {
       if (actor.role === 'HOUSEHOLD') {
         householdId = (await this.ownHousehold(em, actor, false)).id;
       } else if (actor.role !== 'ADMIN') throw notFound();
+      const statusBefore = request.status;
       request.status = unwrap(
         transition(request.status, 'START_PRODUCTION', {
           actor: actor.role === 'ADMIN' ? 'ADMIN' : 'ARTISAN',
@@ -741,6 +802,18 @@ export class RfqService {
               : households.size === 1 && households.has(householdId as string),
         }),
       );
+      if (actor.role === 'ADMIN')
+        this.audit(
+          em,
+          actor,
+          'rfq.start_production',
+          'rfq',
+          request.id,
+          { status: statusBefore },
+          {
+            status: request.status,
+          },
+        );
       for (const allocation of allocations) {
         if (allocation.status === 'CONFIRMED') {
           allocation.status = unwrap(allocationTransition(allocation.status, 'START', {}));
@@ -760,6 +833,59 @@ export class RfqService {
       await em.flush();
       return toRfqResponse(request);
     });
+  }
+
+  /** Coordination queue (FR-ORD-01, 02): open opted-in requests, then the orders being coordinated. */
+  async coordinationQueue(actor: Actor): Promise<CoordinationQueueItemDto[]> {
+    const em = this.orm.em.fork();
+    const requests = await em.find(
+      QuotationRequest,
+      {
+        coordinationOptIn: true,
+        $or: [
+          { status: { $in: ['SENT', 'BIDDING'] }, biddingClosesAt: { $gt: new Date() } },
+          { status: { $in: ['ACCEPTED', 'IN_PRODUCTION'] } },
+        ],
+      },
+      { populate: ['buyer'], orderBy: { biddingClosesAt: 'asc' }, limit: 200 },
+    );
+    const offers = await em.find(ContributionOfferEntity, {
+      request: { $in: requests.map((request) => request.id) },
+      status: 'ACTIVE',
+    });
+    const counts = new Map<string, number>();
+    for (const offer of offers)
+      counts.set(offer.request.id, (counts.get(offer.request.id) ?? 0) + 1);
+    const coordinatorIds = requests.flatMap((request) => request.coordinatorId ?? []);
+    const coordinators = await em.find(AppUser, { id: { $in: [...new Set(coordinatorIds)] } });
+    const names = new Map(coordinators.map((user) => [user.id, user.fullName ?? user.email]));
+    return requests.map((request) => ({
+      id: request.id,
+      version: request.version,
+      status: request.status,
+      design: request.design,
+      quantity: request.quantity,
+      unit: request.unit,
+      requiredBy: request.requiredBy.toISOString(),
+      biddingClosesAt: request.biddingClosesAt.toISOString(),
+      buyerName: request.buyer.fullName ?? request.buyer.email,
+      contributionCount: counts.get(request.id) ?? 0,
+      coordinatorName: request.coordinatorId ? (names.get(request.coordinatorId) ?? null) : null,
+      claimed: Boolean(request.coordinatorId),
+      claimedByMe: request.coordinatorId === actor.id,
+    }));
+  }
+
+  private audit(
+    em: EntityManager,
+    actor: Actor,
+    action: AuditAction,
+    entity: string,
+    entityId: string,
+    before: Record<string, unknown> | null,
+    after: Record<string, unknown> | null,
+  ) {
+    em.create(AuditLog, { actorId: actor.id, action, entity, entityId, before, after });
   }
 
   private async allocation(em: EntityManager, id: string) {

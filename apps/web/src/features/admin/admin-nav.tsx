@@ -6,21 +6,16 @@ import { useEffect, useState } from 'react';
 import { Link, usePathname } from '@/i18n/navigation';
 import { useAdminClient } from './admin-dashboard';
 
-export interface AdminNavProps {
-  /** Mã điều phối mẫu mà mục "Điều phối" dẫn tới tới khi có trang danh sách. */
-  coordinationCode: string;
-}
-
 /** Số hồ sơ chờ trên menu tự làm mới; lỗi mạng thì giữ số cũ. */
 const BADGE_REFRESH_MS = 60_000;
 
-const LATER = ['news', 'audit'] as const;
+const LATER = ['news'] as const;
 
 /**
  * Điều hướng Admin: dọc ở màn rộng, hàng cuộn ngang ở màn hẹp. Các mục chưa có màn hiển thị nhưng
  * chưa bấm được (`aria-disabled`).
  */
-export function AdminNav({ coordinationCode }: AdminNavProps) {
+export function AdminNav() {
   const t = useTranslations('admin.nav');
   const pathname = usePathname();
   const { client } = useAdminClient();
@@ -47,6 +42,7 @@ export function AdminNav({ coordinationCode }: AdminNavProps) {
     );
   const onQueue = pathname.startsWith('/admin/duyet-ho');
   const onCoordination = pathname.startsWith('/admin/dieu-phoi');
+  const onAudit = pathname.startsWith('/admin/nhat-ky');
 
   return (
     <nav aria-label={t('label')} className="overflow-x-auto lg:overflow-visible">
@@ -80,11 +76,20 @@ export function AdminNav({ coordinationCode }: AdminNavProps) {
         </li>
         <li>
           <Link
-            href={{ pathname: '/admin/dieu-phoi/[code]', params: { code: coordinationCode } }}
+            href="/admin/dieu-phoi"
             aria-current={onCoordination ? 'page' : undefined}
             className={linkClass(onCoordination)}
           >
             {t('coordination')}
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/admin/nhat-ky"
+            aria-current={onAudit ? 'page' : undefined}
+            className={linkClass(onAudit)}
+          >
+            {t('audit')}
           </Link>
         </li>
         {LATER.map((key) => (

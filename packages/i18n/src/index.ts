@@ -46,6 +46,7 @@ export const pathnames = {
     vi: '/studio/san-pham/[id]/nhat-ky',
     en: '/studio/products/[id]/journal',
   },
+  '/admin/nhat-ky': { vi: '/admin/nhat-ky', en: '/admin/audit-log' },
   '/admin/dieu-phoi': { vi: '/admin/dieu-phoi', en: '/admin/coordination' },
   '/admin/dieu-phoi/[code]': { vi: '/admin/dieu-phoi/[code]', en: '/admin/coordination/[code]' },
 } as const;

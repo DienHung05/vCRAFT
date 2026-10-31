@@ -201,20 +201,6 @@ export interface DemoContribution {
   contributionVersion: number;
 }
 
-export interface Coordination {
-  rfqCode: string;
-  title: string;
-  buyer: string;
-  quantity: number;
-  unit: string;
-  /** Hạn chào giá: ngày hoàn thành của mọi phần phải sau mốc này. */
-  biddingClosesAt: string;
-  requiredBy: string;
-  reason: 'requested' | 'no-full-bid';
-  /** Đề xuất tham gia của các hộ. Admin tự chia tay trên bảng, không có phương án tự động. */
-  contributions: readonly DemoContribution[];
-}
-
 export interface NewsItem {
   slug: string;
   title: string;
@@ -790,50 +776,6 @@ const buildRfqs = (): Rfq[] => [
   },
 ];
 
-const buildCoordinations = (): Coordination[] => [
-  {
-    rfqCode: 'RFQ-2026-000131',
-    title: '3.000 bát cơm men rạn cho chuỗi nhà hàng',
-    buyer: 'Công ty TNHH Bếp Việt',
-    quantity: 3000,
-    unit: 'bát',
-    biddingClosesAt: rel(6),
-    requiredBy: rel(53),
-    reason: 'no-full-bid',
-    // Đề xuất tham gia riêng của từng hộ: tối đa, đơn giá, ngày hoàn thành tuyệt đối (GH#10).
-    contributions: [
-      {
-        householdId: 'gom-minh-hai',
-        maxQuantity: 1200,
-        unitPriceVnd: 58_000,
-        completionDate: rel(31),
-        contributionVersion: 1,
-      },
-      {
-        householdId: 'gom-lam-ngoc',
-        maxQuantity: 900,
-        unitPriceVnd: 54_000,
-        completionDate: rel(33),
-        contributionVersion: 1,
-      },
-      {
-        householdId: 'lo-duc-phat',
-        maxQuantity: 1500,
-        unitPriceVnd: 61_000,
-        completionDate: rel(35),
-        contributionVersion: 1,
-      },
-      {
-        householdId: 'gom-hanh-thuy',
-        maxQuantity: 600,
-        unitPriceVnd: 52_000,
-        completionDate: rel(37),
-        contributionVersion: 1,
-      },
-    ],
-  },
-];
-
 const news: NewsItem[] = [
   {
     slug: 'hoi-cho-gom-mua-dong',
@@ -928,8 +870,6 @@ export const getProductsByArtisan = async (slug: string) =>
   (await loadProducts()).filter((p) => p.artisanSlug === slug);
 export const getRfqs = () => delay(buildRfqs());
 export const getRfq = (code: string) => delay(buildRfqs().find((r) => r.code === code) ?? null);
-export const getCoordination = (code: string) =>
-  delay(buildCoordinations().find((c) => c.rfqCode === code) ?? null);
 export const getNews = () => delay(news);
 export const getVillageStats = (): Promise<VillageStats> =>
   delay({ households: 142, products: 1860, scans: 23_400, years: 700 });
@@ -940,5 +880,4 @@ export const demoParams = {
   products: rawProducts.map((p) => p.slug),
   traceCodes: rawProducts.map((p) => p.code),
   rfqs: buildRfqs().map((r) => r.code),
-  coordinations: buildCoordinations().map((c) => c.rfqCode),
 };
