@@ -1,0 +1,179 @@
+# Render Blueprint cho vCraft (ADR-16): API (web service) + worker (background worker) + Key Value (Redis).
+# Web chạy trên Vercel (apps/web/vercel.json); CSDL, Auth, Storage ở Supabase. Hướng dẫn từng bước: docs/deploy.md.
+#
+# Cách dùng: Render Dashboard -> New -> Blueprint -> chọn repo này, nhánh `main`. Render hỏi giá trị cho mọi biến
+# `sync: false` ngay lúc tạo (chỉ hỏi một lần; sửa sau ở tab Environment của từng service).
+# Blueprint KHÔNG chứa bí mật nào; không commit giá trị thật vào file này.
+#
+# Lưu ý của Render: nhóm biến (envVarGroups) không cho `sync: false`, nên nhóm chỉ chứa giá trị không bí mật, dùng
+# chung. Biến riêng của từng project/bí mật khai báo ngay trong từng service, nhập hai lần (API và worker) và PHẢI
+# giống nhau (đặc biệt FIELD_ENCRYPTION_KEYS).
+
+services:
+  # ---------- API (NestJS + Fastify) ----------
+  - type: web
+    name: vcraft-api
+    runtime: node
+    # Singapore gần người dùng Việt Nam; chọn cùng khu vực với project Supabase để giảm độ trễ CSDL. Không đổi được sau khi tạo.
+    region: singapore
+    # starter = luôn chạy, không ngủ. Gói free ngủ sau 15 phút không có request (cold start vài chục giây): KHÔNG dùng cho ngày thi.
+    plan: starter
+    branch: main
+    # Chỉ triển khai khi CI xanh. Đổi thành `commit` nếu muốn triển khai ngay khi push.
+    autoDeployTrigger: checksPass
+    buildFilter:
+      ignoredPaths:
+        - apps/web/**
+        - docs/**
+        - "**/*.md"
+    # Cài cả devDependencies (nest CLI, swc, tsdown, mikro-orm CLI cần cho build và migration) dù NODE_ENV=production.
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm exec turbo run build --filter=@vcraft/api...
+    # Chạy trước mỗi lần deploy; lỗi thì deploy bị hủy và bản cũ vẫn chạy. Cần gói trả phí.
+    preDeployCommand: corepack enable && pnpm --filter @vcraft/database db:migrate
+    # Gọi `node` trực tiếp (không qua pnpm) để lúc chạy không phụ thuộc corepack. Render đặt PORT; API nghe 0.0.0.0:$PORT.
+    startCommand: node apps/api/dist/main.js
+    healthCheckPath: /api/v1/health
+    envVars:
+      - fromGroup: vcraft-shared
+      - key: NODE_VERSION
+        value: "24"
+      - key: TRUST_PROXY
+        value: "true"
+      # Origin công khai của web (https://<tên miền>), không có dấu / cuối
+      - key: APP_URL
+        sync: false
+      # Không đặt CORS_ORIGINS: web gọi API cùng origin qua rewrite của Next (ADR-16). Chỉ thêm khi có client gọi chéo origin.
+      # Database (Supabase Session pooler)
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # Supabase Storage (S3)
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+      - key: MEDIA_PUBLIC_BASE_URL
+        sync: false
+      # Supabase Auth
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: SUPABASE_JWKS_URL
+        sync: false
+      # Bảo mật
+      - key: FIELD_ENCRYPTION_KEYS
+        sync: false
+      # Redis nội bộ (Key Value bên dưới). API chưa dùng nhưng khai sẵn cho cache/hàng đợi.
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: vcraft-redis
+          property: connectionString
+
+  # ---------- Worker (BullMQ: ảnh, tem QR, mail, outbox, job hẹn giờ) ----------
+  - type: worker
+    name: vcraft-worker
+    runtime: node
+    region: singapore
+    # Background worker không có gói free; starter là gói rẻ nhất.
+    plan: starter
+    branch: main
+    autoDeployTrigger: checksPass
+    buildFilter:
+      ignoredPaths:
+        - apps/web/**
+        - docs/**
+        - "**/*.md"
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm exec turbo run build --filter=@vcraft/worker...
+    startCommand: node apps/worker/dist/main.js
+    # Cho BullMQ thời gian đóng gọn job đang chạy khi deploy/restart (mặc định 30 giây)
+    maxShutdownDelaySeconds: 60
+    envVars:
+      - fromGroup: vcraft-shared
+      - key: NODE_VERSION
+        value: "24"
+      # Origin công khai của web: dùng để sinh liên kết trong email thông báo
+      - key: APP_URL
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_ACCESS_KEY
+        sync: false
+      - key: S3_SECRET_KEY
+        sync: false
+      - key: MEDIA_PUBLIC_BASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: FIELD_ENCRYPTION_KEYS
+        sync: false
+      # Mail: URL SMTP của nhà cung cấp, vd. smtps://user:pass@smtp.example.com:465
+      - key: SMTP_URL
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: vcraft-redis
+          property: connectionString
+
+  # ---------- Redis (Render Key Value) ----------
+  - type: keyvalue
+    name: vcraft-redis
+    region: singapore
+    # free: 25 MB, không lưu bền (restart là mất job đang chờ; outbox trong CSDL vẫn là nguồn sự thật). Nâng lên starter để có lưu bền.
+    plan: free
+    # BullMQ yêu cầu noeviction: không để Redis tự xóa khóa khi đầy bộ nhớ
+    maxmemoryPolicy: noeviction
+    # Rỗng = chỉ service nội bộ cùng khu vực/tài khoản kết nối được, không mở ra Internet
+    ipAllowList: []
+
+envVarGroups:
+  # Giá trị không bí mật, dùng chung cho API và worker (khớp .env.example)
+  - name: vcraft-shared
+    envVars:
+      - key: TZ
+        value: Asia/Ho_Chi_Minh
+      - key: APP_ENV
+        value: production
+      - key: DB_DRIVER
+        value: postgresql
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        value: postgres
+      - key: DB_SSL
+        value: "true"
+      # CA gốc của pooler Supabase (file nằm trong repo). Render clone repo vào /opt/render/project/src. Nếu muốn dán
+      # nội dung PEM thay cho file: xóa biến này và đặt DB_SSL_CA ở từng service (chỉ đặt MỘT trong hai).
+      - key: DB_SSL_CA_FILE
+        value: /opt/render/project/src/infra/certs/supabase-root-2021.crt
+      - key: STORAGE_DRIVER
+        value: s3
+      - key: S3_FORCE_PATH_STYLE
+        value: "true"
+      - key: S3_BUCKET_PUBLIC
+        value: vcraft-media
+      - key: S3_BUCKET_PRIVATE
+        value: vcraft-private
