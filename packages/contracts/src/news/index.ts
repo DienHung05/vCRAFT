@@ -1,6 +1,7 @@
 import { NEWS_CATEGORIES } from '@vcraft/domain';
 import { z } from 'zod';
 import { CursorPageQuerySchema, cursorPageSchema, IsoDateTimeSchema, SlugSchema } from '../common';
+import { PublicImageSchema } from '../media';
 
 /**
  * Tin tức làng nghề (vCRAFT-83g): `GET /news` (danh sách công khai) và `GET /news/{slug}`.
@@ -27,6 +28,8 @@ export const NewsSummaryResponseSchema = z.object({
   /** Trống khi là tin chung của làng. */
   householdName: z.string().nullable(),
   householdSlug: z.string().nullable(),
+  /** Trống khi tin chưa có ảnh bìa. */
+  cover: PublicImageSchema.nullable(),
 });
 export type NewsSummaryDto = z.infer<typeof NewsSummaryResponseSchema>;
 

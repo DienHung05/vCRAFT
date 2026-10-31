@@ -13,6 +13,7 @@ const ok = {
       publishedAt: '2026-08-30T03:00:00.000Z',
       householdName: null,
       householdSlug: null,
+      cover: null,
     },
   ],
   nextCursor: null,

@@ -1,29 +1,38 @@
-import { getTranslations } from 'next-intl/server';
+import type { MediaCreditDto } from '@vcraft/contracts';
+import { useTranslations } from 'next-intl';
 import { PHOTO_BY_ID } from '@/lib/demo/photo-credits';
+
+export interface PhotoCreditProps {
+  /** Ảnh trong bộ ảnh tĩnh của web: tra ghi nguồn theo id. */
+  id?: string | undefined;
+  /** Ghi nguồn API trả về cho ảnh trong kho media; được ưu tiên hơn `id`. */
+  credit?: MediaCreditDto | null | undefined;
+  className?: string;
+}
 
 /**
  * Dòng ghi nguồn dưới ảnh có giấy phép CC (CC BY / BY-SA bắt buộc ghi tác giả và giấy phép).
- * Không vẽ gì khi ảnh không có trong bảng ghi nhận (ảnh giữ chỗ).
+ * Không vẽ gì khi ảnh không có ghi nguồn (ảnh giữ chỗ, ảnh do hộ tự chụp).
  */
-export async function PhotoCredit({ id, className }: { id: string; className?: string }) {
-  const credit = PHOTO_BY_ID.get(id);
-  if (!credit) return null;
-  const t = await getTranslations('credits');
+export function PhotoCredit({ id, credit, className }: PhotoCreditProps) {
+  const t = useTranslations('credits');
+  const source = credit ?? (id ? PHOTO_BY_ID.get(id) : undefined);
+  if (!source) return null;
   return (
     <p className={className ?? 'mt-1.5 text-[0.75rem] leading-snug text-ash'}>
-      {t('photoBy', { author: credit.author })}
+      {t('photoBy', { author: source.author })}
       {' · '}
       <a
-        href={credit.licenseUrl}
+        href={source.licenseUrl}
         target="_blank"
         rel="noreferrer"
         className="underline underline-offset-2 hover:text-ink"
       >
-        {credit.license}
+        {source.license}
       </a>
       {' · '}
       <a
-        href={credit.sourceUrl}
+        href={source.sourceUrl}
         target="_blank"
         rel="noreferrer"
         className="underline underline-offset-2 hover:text-ink"

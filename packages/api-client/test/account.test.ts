@@ -84,6 +84,8 @@ describe('account HTTP client', () => {
           village: null,
           craft: 'Gốm',
           coverUrl: '/images/demo/cover.jpg',
+          portrait: null,
+          banner: null,
           foundedYear: null,
           generations: null,
           timeline: [],

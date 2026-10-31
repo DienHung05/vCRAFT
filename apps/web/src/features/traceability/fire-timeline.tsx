@@ -3,7 +3,7 @@ import { Badge } from '@vcraft/ui';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
-import type { LogEntry } from '@/lib/demo/data';
+import { type LogEntryView, photoFromUrl, slotPhoto } from '@/features/catalog/view-models';
 import { timelinePhoto } from '@/lib/demo/stage-photos';
 
 /**
@@ -17,7 +17,7 @@ export async function FireTimeline({
   entries,
   newestFirst = false,
 }: {
-  entries: readonly LogEntry[];
+  entries: readonly LogEntryView[];
   /** Trang QR (biến thể C) đọc từ mốc mới nhất ngược về; số thứ tự và neo `#log-N` vẫn theo `seq`. */
   newestFirst?: boolean;
 }) {
@@ -87,15 +87,37 @@ export async function FireTimeline({
               {e.skipReason ? (
                 <p className="mt-1 text-small text-ash">{t('skipped', { reason: e.skipReason })}</p>
               ) : null}
-              <ImageSlot
-                alt={t('proofAlt', { stage: stages(`${e.stage}.name`) })}
-                tint={e.tint}
-                ratio="3/2"
-                photo={timelinePhoto(e.stage, e.supersedesSeq !== undefined)}
-                sizes="(min-width: 640px) 24rem, 100vw"
-                className="mt-3 max-w-sm"
-              />
-              <PhotoCredit id={timelinePhoto(e.stage, e.supersedesSeq !== undefined).id} />
+              {e.images.length > 0 ? (
+                e.images.map((image) => {
+                  const alt = t('proofAlt', { stage: stages(`${e.stage}.name`) });
+                  const photo = photoFromUrl(image.url, alt);
+                  return (
+                    <div key={image.sha256}>
+                      <ImageSlot
+                        alt={alt}
+                        tint={e.tint}
+                        ratio="3/2"
+                        {...slotPhoto(photo)}
+                        sizes="(min-width: 640px) 24rem, 100vw"
+                        className="mt-3 max-w-sm"
+                      />
+                      <PhotoCredit id={photo?.photo?.id} credit={image.credit} />
+                    </div>
+                  );
+                })
+              ) : (
+                <>
+                  <ImageSlot
+                    alt={t('proofAlt', { stage: stages(`${e.stage}.name`) })}
+                    tint={e.tint}
+                    ratio="3/2"
+                    photo={timelinePhoto(e.stage, e.supersedesSeq !== undefined)}
+                    sizes="(min-width: 640px) 24rem, 100vw"
+                    className="mt-3 max-w-sm"
+                  />
+                  <PhotoCredit id={timelinePhoto(e.stage, e.supersedesSeq !== undefined).id} />
+                </>
+              )}
               {/* Hiển thị rút gọn cho gọn mắt; dấu băm đầy đủ 64 hex nằm ở `title`. */}
               <p
                 className="mt-2 font-mono text-[0.7rem] text-ash"

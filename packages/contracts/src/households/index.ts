@@ -8,6 +8,7 @@ import {
 import { z } from 'zod';
 import { IdSchema, IsoDateSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
 import { JournalResponseSchema } from '../journal';
+import { MediaCreditSchema, PublicImageSchema } from '../media';
 
 /** Hộ sản xuất, xưởng, nghệ nhân, sản phẩm và các quyết định duyệt / xuất bản (vCRAFT-9hg.2, 9hg.3). */
 
@@ -270,17 +271,24 @@ export const PublicHouseholdResponseSchema = z.object({
   village: z.string().nullable(),
   craft: z.string().nullable(),
   coverUrl: z.string().nullable(),
+  /** Ảnh thẻ và ảnh bìa gắn qua `media_link`. */
+  portrait: PublicImageSchema.nullable(),
+  banner: PublicImageSchema.nullable(),
   foundedYear: z.int().nullable(),
   generations: z.int().nullable(),
   timeline: z.array(TimelineEventSchema),
   certifications: z.array(CertificationInputSchema.extend({ verified: z.boolean() })),
-  /** `url` trống khi ảnh còn chờ xử lý; trang công khai bỏ qua các ảnh đó. */
+  /**
+   * Công khai: ảnh `media_link` (theo `position`) rồi tới ảnh hộ tự gắn. Hồ sơ riêng chỉ có ảnh hộ tự
+   * gắn, vì hộ chỉ được gửi lại ảnh của mình. `url` trống khi ảnh còn chờ xử lý; trang công khai bỏ qua.
+   */
   gallery: z.array(
     z.object({
       mediaId: IdSchema.nullable(),
       url: z.string().nullable(),
       alt: z.string(),
       caption: z.string().nullable(),
+      credit: MediaCreditSchema.nullable(),
     }),
   ),
   capacityByCategory: CapacitySchema,
@@ -316,6 +324,8 @@ export const TraceAvailabilityResponseSchema = z.discriminatedUnion('availabilit
   z.object({
     availability: z.literal('VISIBLE'),
     product: ProductResponseSchema,
+    /** Ghi nguồn của `product.coverUrl`; trống khi bìa là ảnh hộ tự tải lên. */
+    coverCredit: MediaCreditSchema.nullable(),
     household: z.object({ name: z.string(), slug: z.string() }),
     journal: JournalResponseSchema,
     /** Số lượt quét mã QR của sản phẩm này. */
@@ -333,6 +343,8 @@ export type TraceAvailabilityDto = z.infer<typeof TraceAvailabilityResponseSchem
 /** Chi tiết công khai của một sản phẩm: nội dung, hộ làm ra và nhật ký để tóm tắt. */
 export const ProductDetailResponseSchema = z.object({
   product: ProductResponseSchema,
+  /** Ghi nguồn của `product.coverUrl`; trống khi bìa là ảnh hộ tự tải lên. */
+  coverCredit: MediaCreditSchema.nullable(),
   household: z.object({ name: z.string(), slug: z.string() }),
   journal: JournalResponseSchema,
 });

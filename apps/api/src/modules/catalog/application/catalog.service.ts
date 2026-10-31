@@ -159,6 +159,7 @@ export class CatalogService {
         makers,
         await this.media.publicUrls(productMediaIds([product])),
       ),
+      coverCredit: await this.media.productCoverCredit(product),
       household: { name: product.household.name, slug: product.household.slug },
       journal: await loadJournal(em, product),
     };

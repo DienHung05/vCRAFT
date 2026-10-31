@@ -199,10 +199,29 @@ describe('Demo seed and guarded reset', () => {
     // Trang truy xuất công khai nhận được ảnh của từng mốc, kèm sha256 nằm trong chuỗi băm.
     const trace = await t.request({ method: 'GET', url: `/trace/${DEMO_QR_TRACE_CODE}` });
     expect(trace.status).toBe(200);
+    expect(trace.body.coverCredit.author).toBeTruthy();
     for (const entry of trace.body.journal.entries) {
       expect(entry.images).toHaveLength(1);
       expect(entry.images[0].url).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
+      expect(entry.images[0].credit.license).toBeTruthy();
     }
+
+    // Hồ sơ hộ và tin công khai đọc được ảnh thật cùng ghi công từ `media_link` (GH#54).
+    const profile = await t.request({ method: 'GET', url: '/households/gom-minh-hai' });
+    expect(profile.body.portrait.credit.author).toBeTruthy();
+    expect(profile.body.banner.url).toBe(minhHai.coverUrl);
+    expect(profile.body.gallery.length).toBeGreaterThan(0);
+    for (const item of profile.body.gallery) {
+      expect(item.url).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
+      expect(item.alt).toBeTruthy();
+      expect(item.credit.licenseUrl).toMatch(/^https:\/\//);
+    }
+    const allNews = await t.request({ method: 'GET', url: '/news?limit=100' });
+    const covers = allNews.body.data.flatMap((n: { cover: { credit: unknown } | null }) =>
+      n.cover ? [n.cover] : [],
+    );
+    expect(covers).toHaveLength(3);
+    expect(covers.every((c: { credit: unknown }) => c.credit)).toBe(true);
 
     // Reset xóa media_asset nhưng không động tới bucket; chạy lại bước ảnh dựng lại đúng như cũ.
     await reset();

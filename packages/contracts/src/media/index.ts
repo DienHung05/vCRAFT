@@ -48,3 +48,23 @@ export const MediaReadUrlResponseSchema = z.strictObject({
   expiresAt: IsoDateTimeSchema,
 });
 export type MediaReadUrlResponse = z.infer<typeof MediaReadUrlResponseSchema>;
+
+/** Ghi nguồn ảnh có giấy phép (CC BY / BY-SA bắt buộc ghi tác giả và giấy phép). */
+export const MediaCreditSchema = z.object({
+  title: z.string(),
+  author: z.string(),
+  license: z.string(),
+  licenseUrl: z.url(),
+  sourceUrl: z.url(),
+});
+export type MediaCreditDto = z.infer<typeof MediaCreditSchema>;
+
+/** Ảnh công khai gắn qua `media_link`; `credit` trống với ảnh do chính hộ chụp. */
+export const PublicImageSchema = z.object({
+  mediaId: IdSchema,
+  url: z.url(),
+  alt: z.string(),
+  caption: z.string().nullable(),
+  credit: MediaCreditSchema.nullable(),
+});
+export type PublicImageDto = z.infer<typeof PublicImageSchema>;

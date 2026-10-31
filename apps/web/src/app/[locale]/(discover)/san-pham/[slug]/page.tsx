@@ -39,7 +39,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
   const result = await fetchProduct(slug);
   if (result.status === 'not-found') notFound();
   if (result.status === 'unavailable') return <DataUnavailable />;
-  const { product, household, journal } = result.data;
+  const { product, coverCredit, household, journal } = result.data;
   const [t, common, stages, categories, format, siblings] = await Promise.all([
     getTranslations('product'),
     getTranslations('common'),
@@ -86,19 +86,25 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
                 <VaseFigure className="h-3/5" body="var(--color-paper)" band={tint} />
               )}
             </ImageSlot>
-            {image?.photo ? <PhotoCredit id={image.photo.id} /> : null}
+            <PhotoCredit id={image?.photo?.id} credit={coverCredit} />
             <ul className="mt-4 grid grid-cols-4 gap-3" aria-label={t('gallery')}>
-              {log.slice(1, 5).map((e) => (
-                <li key={e.hash}>
-                  <ImageSlot
-                    alt={stages(`${e.stage}.name`)}
-                    tint={e.tint}
-                    ratio="1/1"
-                    photo={squarePhoto(e.stage)}
-                    sizes="(min-width: 768px) 14vw, 22vw"
-                  />
-                </li>
-              ))}
+              {log.slice(1, 5).map((e) => {
+                const alt = stages(`${e.stage}.name`);
+                const [own] = e.images;
+                return (
+                  <li key={e.hash}>
+                    <ImageSlot
+                      alt={alt}
+                      tint={e.tint}
+                      ratio="1/1"
+                      {...(own
+                        ? slotPhoto(photoFromUrl(own.url, alt))
+                        : { photo: squarePhoto(e.stage) })}
+                      sizes="(min-width: 768px) 14vw, 22vw"
+                    />
+                  </li>
+                );
+              })}
             </ul>
             {log.length > 0 ? <PhotoCreditsNote /> : null}
           </div>

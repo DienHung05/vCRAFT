@@ -1,4 +1,4 @@
-import type { JournalDto, ProductCardDto, WorkshopDto } from '@vcraft/contracts';
+import type { JournalDto, JournalEntryDto, ProductCardDto, WorkshopDto } from '@vcraft/contracts';
 import type { ChainEntry, JournalStage } from '@vcraft/domain';
 import { PHOTO_BY_ID } from '@/lib/demo/photo-credits';
 
@@ -72,6 +72,8 @@ const STAGE_TINTS: Record<JournalStage, string> = {
 export interface LogEntryView extends ChainEntry {
   stage: JournalStage;
   tint: string;
+  /** Ảnh thật của mốc, kèm ghi nguồn. */
+  images: JournalEntryDto['images'];
 }
 
 /** Đổi nhật ký của API sang dạng chuỗi băm mà trình duyệt tự kiểm (FR-TRC-05). */
@@ -87,6 +89,7 @@ export function toLogEntries(journal: JournalDto): LogEntryView[] {
     prevHash: e.prevHash,
     hash: e.hash,
     tint: STAGE_TINTS[e.stage],
+    images: e.images,
   }));
 }
 
