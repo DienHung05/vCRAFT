@@ -5,7 +5,7 @@ import type { BrowserContext } from '@playwright/test';
 /**
  * Hỗ trợ cho kịch bản demo chạy trên bản đã triển khai (`E2E_BASE_URL`) với ba hồ sơ đăng nhập sẵn.
  *
- * Web chưa có trang đăng nhập: trình duyệt đọc phiên Supabase từ cookie do `@supabase/ssr` ghi
+ * Kịch bản demo chèn cookie phiên cho nhanh (đăng nhập qua form có ở specs/buyer/sign-in.spec.ts): trình duyệt đọc phiên Supabase từ cookie do `@supabase/ssr` ghi
  * (`sb-<project-ref>-auth-token`, giá trị `base64-` + base64url(JSON phiên), cắt từng đoạn 3180 ký tự).
  * Nên ta đăng nhập bằng REST của Supabase Auth rồi chèn đúng định dạng cookie đó vào context. Không thêm dependency.
  * Mật khẩu chỉ đọc từ biến môi trường (`DEMO_*_PASSWORD`), không có trong mã.
