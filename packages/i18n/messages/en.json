@@ -11,7 +11,8 @@
     "openNow": "Open now",
     "closed": "Closed",
     "generation": "Generation {n}",
-    "since": "Since {year}"
+    "since": "Since {year}",
+    "retry": "Try again"
   },
   "nav": {
     "home": "Back to the vCraft home page",
@@ -604,6 +605,39 @@
       "PRODUCTION_STARTED": "The order has entered production.",
       "PROGRESS_REPORTED": "Production progress was updated.",
       "ORDER_RECEIVED": "The order receipt was confirmed."
+    }
+  },
+  "villageMap": {
+    "title": "Village map",
+    "lead": "Find workshops and showrooms in Bát Tràng and see which ones are open to visitors now.",
+    "unavailable": "We could not load the workshop list. Please try again in a few minutes.",
+    "filtersLabel": "Filter workshops",
+    "filterOpenNow": "Open now",
+    "filterVisitors": "Welcomes visitors",
+    "filterCraft": "Craft",
+    "allCrafts": "All crafts",
+    "myLocation": "My location",
+    "locating": "Finding your location…",
+    "locationDenied": "We could not get your location. Check your browser's location permission.",
+    "noWebgl": "This browser cannot show the map (WebGL is missing). The list below has every workshop.",
+    "listTitle": "{count, plural, one {# workshop} other {# workshops}}",
+    "showAll": "Show all",
+    "showOnMap": "Show on map",
+    "empty": "No workshops match these filters.",
+    "openNow": "Open now",
+    "closedReopens": "Closed – reopens at {time}, {day}",
+    "noHours": "Opening hours not listed",
+    "productionOnly": "Production workshop, no visitors",
+    "viewHousehold": "View household",
+    "distance": "{km} km away",
+    "days": {
+      "0": "Sunday",
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday"
     }
   }
 }

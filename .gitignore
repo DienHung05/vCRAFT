@@ -43,3 +43,5 @@ next-env.d.ts
 *.gate.lock*
 
 # AI
+# Worker MapLibre, chép từ node_modules khi dev/build
+apps/web/public/map/
