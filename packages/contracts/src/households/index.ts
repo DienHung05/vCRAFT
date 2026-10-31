@@ -6,7 +6,7 @@ import {
   PROFILE_SECTIONS,
 } from '@vcraft/domain';
 import { z } from 'zod';
-import { IdSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
+import { IdSchema, IsoDateSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
 import { JournalResponseSchema } from '../journal';
 
 /** Hộ sản xuất, xưởng, nghệ nhân, sản phẩm và các quyết định duyệt / xuất bản (vCRAFT-9hg.2, 9hg.3). */
@@ -46,7 +46,41 @@ export type HouseholdDecisionRequest = z.infer<typeof HouseholdDecisionRequestSc
 
 export const ListHouseholdsQuerySchema = z.object({
   status: HouseholdStatusSchema.optional(),
+  /** Ngày nộp hồ sơ, tính cả hai đầu. */
+  from: IsoDateSchema.optional(),
+  to: IsoDateSchema.optional(),
 });
+
+/** Một dòng trong hàng đợi duyệt hộ. */
+export const AdminHouseholdSchema = z.object({
+  id: IdSchema,
+  version: VersionSchema,
+  name: z.string(),
+  status: HouseholdStatusSchema,
+  submittedAt: IsoDateTimeSchema,
+});
+export type AdminHouseholdDto = z.infer<typeof AdminHouseholdSchema>;
+export const AdminHouseholdListSchema = z.array(AdminHouseholdSchema);
+
+/** Giấy tờ xác minh riêng tư; nội dung chỉ đọc qua URL ký 5 phút (FR-MEDIA-04). */
+export const HouseholdDocumentSchema = z.object({
+  id: IdSchema,
+  mimeType: z.string(),
+  sizeBytes: z.int().nonnegative(),
+  createdAt: IsoDateTimeSchema,
+});
+export type HouseholdDocumentDto = z.infer<typeof HouseholdDocumentSchema>;
+export const HouseholdDocumentListSchema = z.object({ data: z.array(HouseholdDocumentSchema) });
+
+/** Số liệu tổng quan của Ban quản lý (FR-ADM-06). */
+export const AdminDashboardSchema = z.object({
+  activeHouseholds: z.int().nonnegative(),
+  pendingApplications: z.int().nonnegative(),
+  openRfqs: z.int().nonnegative(),
+  ordersInProduction: z.int().nonnegative(),
+  qrScans30Days: z.int().nonnegative(),
+});
+export type AdminDashboardDto = z.infer<typeof AdminDashboardSchema>;
 
 const CURRENT_YEAR_LIMIT = 2100;
 const YearSchema = z.int().min(1000, 'Năm không hợp lệ').max(CURRENT_YEAR_LIMIT);
@@ -284,6 +318,8 @@ export const TraceAvailabilityResponseSchema = z.discriminatedUnion('availabilit
     product: ProductResponseSchema,
     household: z.object({ name: z.string(), slug: z.string() }),
     journal: JournalResponseSchema,
+    /** Số lượt quét mã QR của sản phẩm này. */
+    scanCount: z.int().nonnegative(),
   }),
   z.object({
     availability: z.literal('UNAVAILABLE'),

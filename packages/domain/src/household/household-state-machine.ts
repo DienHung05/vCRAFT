@@ -15,7 +15,13 @@ import { createStateMachine, type TransitionTable } from '../shared/state-machin
 export const HOUSEHOLD_STATUSES = ['PENDING_REVIEW', 'APPROVED', 'REJECTED', 'SUSPENDED'] as const;
 export type HouseholdStatus = (typeof HOUSEHOLD_STATUSES)[number];
 
-export const HOUSEHOLD_EVENTS = ['APPROVE', 'REJECT', 'SUSPEND', 'REINSTATE'] as const;
+export const HOUSEHOLD_EVENTS = [
+  'APPROVE',
+  'REJECT',
+  'REQUEST_INFO',
+  'SUSPEND',
+  'REINSTATE',
+] as const;
 export type HouseholdEvent = (typeof HOUSEHOLD_EVENTS)[number];
 
 export type HouseholdGuardCode = 'FORBIDDEN_ACTOR' | 'REASON_REQUIRED';
@@ -47,6 +53,8 @@ export const HOUSEHOLD_TRANSITIONS = {
   PENDING_REVIEW: {
     APPROVE: { to: 'APPROVED', guards: [adminOnly] },
     REJECT: { to: 'REJECTED', guards: [adminOnly], inputGuards: [reasonRequired] },
+    // Yêu cầu bổ sung (FR-ADM-03): hồ sơ vẫn chờ duyệt, hộ đọc lý do rồi bổ sung.
+    REQUEST_INFO: { to: 'PENDING_REVIEW', guards: [adminOnly], inputGuards: [reasonRequired] },
   },
   APPROVED: {
     SUSPEND: { to: 'SUSPENDED', guards: [adminOnly], inputGuards: [reasonRequired] },

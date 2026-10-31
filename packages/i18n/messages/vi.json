@@ -266,7 +266,9 @@
     "inProgress": "Đang làm · chưa ghi: {stages}",
     "hashHint": "Dấu băm SHA-256 của mốc này, nối với mốc trước đó.",
     "withdrawnTitle": "Món đồ này không còn được trưng bày",
-    "withdrawnText": "Hộ làm ra món đồ đã rút nó khỏi triển lãm, nên nhật ký không còn hiện công khai."
+    "withdrawnText": "Hộ làm ra món đồ đã rút nó khỏi triển lãm, nên nhật ký không còn hiện công khai.",
+    "lockedTitle": "Chưa xác thực được món đồ này",
+    "lockedText": "Hộ làm ra mã {code} đang bị Ban quản lý làng tạm khóa. Hãy thận trọng: món đồ này hiện không được vCraft xác nhận."
   },
   "rfq": {
     "breadcrumb": "Đường dẫn trang",
@@ -404,7 +406,9 @@
       "coordination": "Điều phối",
       "news": "Tin tức",
       "audit": "Nhật ký",
-      "soon": "Sắp có"
+      "soon": "Sắp có",
+      "overview": "Tổng quan",
+      "pending": "{count} hồ sơ đang chờ duyệt"
     },
     "coordination": {
       "breadcrumb": "Đường dẫn trang",
@@ -487,6 +491,68 @@
       "receive": "Xác nhận đã nhận hàng",
       "cancelOrder": "Hủy đơn",
       "cancelReason": "Ghi lý do hủy đơn:"
+    },
+    "dashboard": {
+      "title": "Tổng quan",
+      "loading": "Đang tải…",
+      "signIn": "Hãy đăng nhập bằng tài khoản Ban quản lý.",
+      "failed": "Chưa tải được số liệu.",
+      "retry": "Thử lại",
+      "activeHouseholds": "Hộ đang hoạt động",
+      "pendingApplications": "Hồ sơ chờ duyệt",
+      "openRfqs": "Yêu cầu báo giá đang mở",
+      "ordersInProduction": "Đơn đang sản xuất",
+      "qrScans30Days": "Lượt quét QR 30 ngày",
+      "reviewCta": "Duyệt {count} hồ sơ đang chờ"
+    },
+    "queue": {
+      "title": "Duyệt hộ",
+      "filters": "Lọc hồ sơ",
+      "status": "Trạng thái",
+      "allStatuses": "Mọi trạng thái",
+      "from": "Từ ngày",
+      "to": "Đến ngày",
+      "loading": "Đang tải…",
+      "signIn": "Hãy đăng nhập bằng tài khoản Ban quản lý.",
+      "failed": "Chưa tải được hàng đợi.",
+      "retry": "Thử lại",
+      "empty": "Không có hồ sơ nào khớp bộ lọc."
+    },
+    "review": {
+      "back": "Về hàng đợi",
+      "loading": "Đang tải…",
+      "signIn": "Hãy đăng nhập bằng tài khoản Ban quản lý.",
+      "missing": "Không tìm thấy hộ này.",
+      "failed": "Chưa tải được hồ sơ.",
+      "retry": "Thử lại",
+      "declared": "Thông tin khai báo",
+      "craft": "Nghề",
+      "village": "Làng",
+      "foundedYear": "Năm thành lập",
+      "artisans": "Người làm",
+      "approvedAt": "Ngày duyệt",
+      "currentReason": "Ghi chú hiện tại: {reason}",
+      "documents": "Giấy tờ",
+      "documentsHint": "Mỗi lần mở tạo một đường dẫn riêng, hết hạn sau 5 phút.",
+      "noDocuments": "Hộ chưa nộp giấy tờ.",
+      "openDocument": "Mở",
+      "documentFailed": "Chưa mở được giấy tờ này.",
+      "workshops": "Xưởng trên bản đồ",
+      "noWorkshops": "Hộ chưa khai xưởng.",
+      "noLocation": "Xưởng chưa khai vị trí.",
+      "decision": "Quyết định",
+      "reason": "Lý do",
+      "sealed": "Đã duyệt và đóng ấn.",
+      "saved": "Đã lưu quyết định.",
+      "stale": "Hồ sơ vừa thay đổi. Đã tải lại bản mới, bạn kiểm tra rồi quyết định lại.",
+      "failed_action": "Chưa lưu được quyết định.",
+      "actions": {
+        "approve": "Duyệt",
+        "reject": "Từ chối",
+        "request-info": "Yêu cầu bổ sung",
+        "suspend": "Tạm khóa hộ",
+        "reinstate": "Mở khóa hộ"
+      }
     }
   },
   "exhibition": {
