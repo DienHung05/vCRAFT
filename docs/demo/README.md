@@ -79,6 +79,31 @@ pnpm demo:auth -- --check      # chỉ kiểm tra, không ghi
 
 Sau khi tạo: đăng nhập từng tài khoản **một lần** trên đúng thiết bị thi (Buyer: Chrome, Hộ: điện thoại, Admin: Edge) và giữ phiên. Hạn token của Supabase là 15 phút nhưng trình duyệt tự làm mới bằng refresh token; kiểm tra phiên còn sống sáng hôm thi.
 
+### Đăng nhập trên web và email xác thực tiếng Việt (GH#27)
+
+Web đã có trang đăng nhập thật, nên **không cần chèn cookie** nữa: `/vi/dang-nhap` (EN `/en/login`), đăng ký khách `/vi/dang-ky`, quên mật khẩu `/vi/quen-mat-khau` → `/vi/dat-lai-mat-khau`, wizard hộ `/vi/dang-ky-nghe-nhan`, lời mời của Ban quản lý `/vi/chap-nhan-loi-moi`. Sau đăng nhập: Khách về trang chủ, người đại diện hộ vào `/vi/studio/ho-so`, Admin vào điều phối. Hộ chờ duyệt (`demo.pending`) chỉ xem được trang trạng thái hồ sơ; vào khu sai vai trò nhận trang 403. Kịch bản e2e `specs/buyer/sign-in.spec.ts` đăng nhập `demo.buyer` qua form thật (cần `E2E_BASE_URL` qua Caddy và `DEMO_BUYER_PASSWORD`).
+
+Mẫu email Supabase Auth bằng tiếng Việt, mang thương hiệu vCraft, nằm ở `supabase/templates/*.html` (cấu hình tham chiếu ở `supabase/config.toml`). Repo **không** gọi API quản trị Supabase; áp lên project thật bằng tay một lần:
+
+1. Dashboard → **Authentication → URL Configuration**: đặt **Site URL** là origin công khai của web (vd. `https://<DOMAIN>`; dev: `http://localhost:8080`) và thêm `https://<DOMAIN>/**` vào **Redirect URLs**. Mẫu thư dựng liên kết từ `{{ .SiteURL }}`, nên sai Site URL là liên kết trong thư sai.
+2. **Authentication → Emails → Templates**, với từng mẫu dán nội dung tệp tương ứng và đặt tiêu đề:
+
+   | Mẫu trong Dashboard | Tệp | Tiêu đề |
+   | --- | --- | --- |
+   | Confirm sign up | `confirmation.html` | Xác minh email để vào vCraft |
+   | Invite user | `invite.html` | Ban quản lý mời hộ của bạn vào vCraft |
+   | Reset password | `recovery.html` | Đặt lại mật khẩu vCraft |
+   | Change email address | `email_change.html` | Xác nhận đổi email vCraft |
+   | Reauthentication | `reauthentication.html` | Mã xác nhận vCraft |
+
+3. **Authentication → Sign In / Providers → Email**: bật **Confirm email** (chưa xác minh thì chưa đăng nhập được, FR-AUTH-01); **Authentication → Policies** (hoặc Attack Protection): độ dài mật khẩu tối thiểu 8, yêu cầu chữ và số, bật chặn mật khẩu bị lộ nếu gói cho phép (khớp luật ở form web); **Sessions**: access token 900 giây, bật xoay vòng refresh token.
+4. Gói Free của Supabase giới hạn số thư/giờ khi dùng SMTP mặc định: cấu hình SMTP riêng (đã nêu ở rủi ro Sprint 0) trước ngày thi.
+5. Thử: đăng ký một email thật ở `/vi/dang-ky`, kiểm tra thư (tiếng Việt, nút "Xác minh email" về `/auth/confirm`), rồi đăng nhập. Thử quên mật khẩu và thư mời (Dashboard → Authentication → Users → Invite user: liên kết mở `/vi/chap-nhan-loi-moi`, dùng được đúng một lần).
+
+Thay cho dán tay, có thể `pnpm exec supabase link --project-ref <ref>` rồi `pnpm exec supabase config push`, **sau khi** đọc kỹ phần chênh lệch (`supabase config push` ghi đè các mục auth trong `config.toml` lên project, gồm Site URL, độ dài mật khẩu và thời hạn token); đổi `site_url` trong `supabase/config.toml` sang domain thật trước. Đây là cách chưa diễn tập.
+
+Liên kết trong thư dùng `token_hash` (không dùng PKCE), nên bấm ở thiết bị khác vẫn được. Với quên mật khẩu và lời mời, mã chỉ bị tiêu thụ khi người dùng bấm lưu mật khẩu mới (không phải lúc mở trang), nên trình quét liên kết của hộp thư không làm hỏng liên kết.
+
 ## 3. Reset dữ liệu và cổng chặn
 
 ```bash
