@@ -9,6 +9,7 @@
 - **Tin tức đã có:** entity `News`, API công khai `GET /api/v1/news` (+ `/news/:slug`) và trang `/vi/tin-tuc` (EN: `/en/news`). Trang này đọc API thật phía server qua `API_INTERNAL_URL` (xem `.env.example`; API không gọi được thì trang hiện thông báo, không lỗi). Seed nạp 18 tin.
 - **Trang công khai của `apps/web` đọc API thật** (trang chủ, sản phẩm, nghệ nhân, truy xuất, bản đồ, tin tức). `apps/web/src/lib/demo/data.ts` chỉ còn phục vụ các màn yêu cầu báo giá và điều phối đang dùng dữ liệu minh họa.
 - Một số bước chưa có màn hình (duyệt hộ của Admin, xuất bản của hộ, nút "Chốt" của Buyer): kịch bản e2e gọi thẳng API bằng đúng phiên đã đăng nhập và ghi chú ở từng bước.
+- **Triển khai production (GH#39):** web trên Vercel, API + worker + Redis trên Render, CSDL/Auth/Storage ở Supabase ([ADR-16](../adr/0016-deploy-vercel-render.md)); cấu hình nằm trong repo (`render.yaml`, `apps/web/vercel.json`, `next.config.ts`), các bước tạo project và dán biến môi trường ở [docs/deploy.md](../deploy.md). Đã chạy thử local: build production và khởi động API/worker bằng đúng lệnh start, rewrite `/api/*`. **Chưa** chạy trên Vercel/Render thật vì cần tài khoản của nhóm.
 - **Chưa kiểm chứng được ở máy phát triển:** chạy trên URL đã triển khai, Lighthouse, tạo người dùng trên Supabase Auth thật, dựng Supabase cục bộ. Các mục này nằm trong checklist §7 để làm một lần trước ngày thi.
 
 ## 1. Dữ liệu mẫu
@@ -156,7 +157,7 @@ Thiếu `E2E_BASE_URL` hoặc thông tin đăng nhập thì cả kịch bản t�
 ## 5. Chiếc cốc và URL ổn định
 
 - QR dán lên cốc: `https://<DOMAIN>/q/DF6P3WZE`. Domain phải là domain thật dùng cả khi thi (cũng là domain của Cloudflare Tunnel dự phòng, xem §8), vì mã QR in ra không đổi được.
-- `NEXT_PUBLIC_SITE_URL` được nhúng vào mã QR hiển thị trên web lúc **build**: build bản triển khai với đúng domain.
+- `NEXT_PUBLIC_SITE_URL` được nhúng vào mã QR hiển thị trên web lúc **build**: build bản triển khai với đúng domain. Trên Vercel đặt biến này ở Environment Variables rồi Redeploy ([deploy.md §4](../deploy.md#4-vercel-tạo-project)).
 - Ngày thi: thử quét bằng ít nhất một iPhone và một Android khác máy của nhóm, ở mạng 4G (không dùng Wi-Fi nhà).
 
 ## 6. Sao lưu và khôi phục
@@ -207,7 +208,7 @@ Làm theo thứ tự, trên bản đã triển khai, **sau** `pnpm demo:reset`. 
 | 11 | Độc lập CSDL | CI ma trận Postgres + MySQL xanh trên nhánh thi. Tay: `cd apps/api && npx vitest run --config vitest.integration.config.mts` rồi lặp lại với `DB_DRIVER=mysql`; trình diễn `DB_DRIVER=mysql pnpm db:migrate && pnpm demo:reset` | Hai lần chạy đều xanh | 10 phút (cần Docker) |
 | 12 | Sao lưu và khôi phục | §6, bao gồm `demo:verify` trên bản khôi phục | `demo:verify` xanh trên bản khôi phục; ghi thời gian | 15 phút |
 | 13 | QR vật lý | Quét cốc thật bằng 1 iPhone + 1 Android, mạng 4G | Mở đúng trang, dưới 3 giây | 5 phút |
-| 14 | Dự phòng | Diễn tập §8 một lần trọn vẹn (tắt Wi-Fi VPS giả lập mất mạng) | Dựng được bản local + tunnel trong ≤ 10 phút | 30 phút |
+| 14 | Dự phòng | Diễn tập §8 một lần trọn vẹn (chuyển DNS sang tunnel, giả lập Vercel/Render mất) | Dựng được bản local + tunnel trong ≤ 10 phút | 30 phút |
 | 15 | Đóng gói | Sáng thi: `pnpm demo:reset`, `pnpm demo:verify`, đăng nhập ba thiết bị, kiểm project Supabase Free chưa bị tạm dừng (trang Usage), sạc đầy pin | Mọi thứ sẵn sàng | 10 phút |
 
 Lệnh Lighthouse (cần Chrome; không thêm dependency, dùng `npx`):
@@ -225,20 +226,20 @@ for path in vi vi/nghe-nhan vi/nghe-nhan/lo-duc-phat vi/san-pham vi/truy-xuat/DF
 done
 ```
 
-Hoặc Chrome DevTools → Lighthouse (chế độ Navigation, tắt extension, cửa sổ ẩn danh). Chạy trên bản **build production** đứng sau Caddy, không dùng `next dev`. Lighthouse dao động vài điểm giữa các lần; chạy 3 lần lấy trung vị cho trang sát ngưỡng.
+Hoặc Chrome DevTools → Lighthouse (chế độ Navigation, tắt extension, cửa sổ ẩn danh). Chạy trên bản **build production** (domain Vercel, hoặc `next start` sau Caddy ở local), không dùng `next dev`. Lighthouse dao động vài điểm giữa các lần; chạy 3 lần lấy trung vị cho trang sát ngưỡng.
 
 Kiểm tra máy không làm thay được, cần người: đọc thử mô tả ảnh bằng trình đọc màn hình (NVDA/VoiceOver) ở trang truy xuất; kiểm reduced-motion; xác nhận nội dung tiếng Việt/Anh không lẫn.
 
 ## 8. Phương án dự phòng khi mất dịch vụ tại địa điểm thi
 
-Nguyên tắc: **nếu dịch vụ ngoài lỗi thì mở bản local + tunnel trước**, không sửa sự cố ngay trước mặt giám khảo. Hạ tầng chính: 1 VPS + Caddy + Supabase (Auth, Postgres, Storage) + SMTP; dự phòng: Cloudflare Tunnel.
+Nguyên tắc: **nếu dịch vụ ngoài lỗi thì mở bản local + tunnel trước**, không sửa sự cố ngay trước mặt giám khảo. Hạ tầng chính: Vercel (web) + Render (API, worker, Redis) + Supabase (Auth, Postgres, Storage) + SMTP ([ADR-16](../adr/0016-deploy-vercel-render.md), [deploy.md](../deploy.md)); dự phòng: Cloudflare Tunnel. ~~1 VPS + Caddy~~ là kế hoạch cũ, đã bị ADR-16 thay thế.
 
 Cây quyết định:
 
 | Triệu chứng | Làm gì |
 | --- | --- |
-| Trang chậm hoặc lỗi nhưng Supabase ổn | Khởi động lại dịch vụ trên VPS (`docker compose restart`), không quá 2 phút; quá thì sang bậc A |
-| VPS hoặc Caddy hỏng, Supabase ổn | **Bậc A**: chạy web/api/worker trên laptop, dùng Supabase thật, qua tunnel |
+| Trang chậm hoặc lỗi nhưng Supabase ổn | Render → service `vcraft-api` hoặc `vcraft-worker` → *Manual Deploy → Restart service* (Vercel: *Redeploy*), không quá 2 phút; quá thì sang bậc A |
+| Vercel hoặc Render hỏng, Supabase ổn | **Bậc A**: chạy web/api/worker trên laptop, dùng Supabase thật, qua tunnel |
 | Supabase (Auth/DB/Storage) lỗi | **Bậc B**: chạy cả CSDL và lưu trữ cục bộ; Auth xem ghi chú bên dưới |
 | Mất cả Internet | **Bậc C**: chạy local hoàn toàn trên laptop, giám khảo xem trên màn hình laptop hoặc điện thoại cùng hotspot |
 | Mọi thứ hỏng | Video quay sẵn kịch bản + ảnh chụp trang truy xuất in giấy (PLAN §9) |
@@ -302,7 +303,7 @@ cloudflared tunnel --url http://localhost:8080
 
 URL ngẫu nhiên **không khớp** QR đã in trên cốc (QR mã hóa domain chính). Hai cách:
 
-1. **Tunnel có tên trên chính domain thi** (khuyến nghị, làm sẵn từ trước): `cloudflared tunnel login`, `cloudflared tunnel create vcraft-demo`, `cloudflared tunnel route dns vcraft-demo <DOMAIN>` rồi chạy `cloudflared tunnel run vcraft-demo` với ingress `http://localhost:8080`. Cần domain quản lý DNS ở Cloudflare và TTL bản ghi đặt thấp (60 giây) để chuyển nhanh khỏi VPS. **Chưa diễn tập**, hạng mục 14 của checklist.
+1. **Tunnel có tên trên chính domain thi** (khuyến nghị, làm sẵn từ trước): `cloudflared tunnel login`, `cloudflared tunnel create vcraft-demo`, `cloudflared tunnel route dns vcraft-demo <DOMAIN>` rồi chạy `cloudflared tunnel run vcraft-demo` với ingress `http://localhost:8080`. Cần domain quản lý DNS ở Cloudflare và TTL bản ghi đặt thấp (60 giây). Khi chuyển, **thay bản ghi trỏ về Vercel bằng CNAME của tunnel** (ADR-16), rồi trả lại bản ghi Vercel sau buổi thi. **Chưa diễn tập**, hạng mục 14 của checklist.
 2. **Quick tunnel**: dùng trang truy xuất mở trên màn hình (build lại web với `NEXT_PUBLIC_SITE_URL=<URL tunnel>` để mã QR trên trang trỏ đúng) và để giám khảo quét mã đó thay vì quét cốc; nói rõ với giám khảo lý do.
 
 Tunnel chỉ phơi cổng 8080 (Caddy), không phơi Redis/Mailpit/CSDL (compose chỉ bind `127.0.0.1`). Dừng tunnel ngay sau buổi thi.
