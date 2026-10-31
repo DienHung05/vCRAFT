@@ -30,6 +30,7 @@
       "passThroughEnv": ["DB_*"]
     },
     "db:seed": {
+      "dependsOn": ["^build"],
       "cache": false,
       "passThroughEnv": ["DB_*"]
     }
