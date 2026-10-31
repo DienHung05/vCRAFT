@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Header, HttpCode, Param, Post, Put, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Query,
+  Res,
+} from '@nestjs/common';
 import {
   type AcceptQuotationRequest,
   AcceptQuotationRequestSchema,
@@ -13,6 +24,8 @@ import {
   CreateRfqRequestSchema,
   formatVersionTag,
   InviteHouseholdsRequestSchema,
+  type ListRfqsQuery,
+  ListRfqsQuerySchema,
   type ReportProgressRequest,
   ReportProgressRequestSchema,
 } from '@vcraft/contracts';
@@ -34,6 +47,27 @@ export class RfqController {
     @Body(new ZodValidationPipe(CreateRfqRequestSchema)) body: CreateRfqRequest,
   ) {
     return this.rfqs.createRequest(actor, body);
+  }
+
+  @Get()
+  @Header('Cache-Control', 'private, no-store')
+  @Roles('BUYER')
+  list(
+    @CurrentActor() actor: Actor,
+    @Query(new ZodValidationPipe(ListRfqsQuerySchema)) query: ListRfqsQuery,
+  ) {
+    return this.rfqs.listRequests(actor, query);
+  }
+
+  @Put(':id')
+  @Roles('BUYER')
+  update(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+    @Body(new ZodValidationPipe(CreateRfqRequestSchema)) body: CreateRfqRequest,
+  ) {
+    return this.rfqs.updateRequest(actor, id, version, body);
   }
 
   @Get(':id')
@@ -170,10 +204,10 @@ export class RfqController {
     return this.rfqs.confirmReceipt(actor, id, version);
   }
 
-  /** GH#11: admin dieu phoi huy don sau san xuat. Ly do bat buoc. */
+  /** The owning buyer or the coordinator cancels. A reason is required. */
   @Post(':id/cancel')
   @HttpCode(200)
-  @Roles('ADMIN')
+  @Roles('BUYER', 'ADMIN')
   cancel(
     @CurrentActor() actor: Actor,
     @Param('id', new UuidPipe()) id: string,

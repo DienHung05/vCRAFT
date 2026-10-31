@@ -11,16 +11,21 @@ import {
   CreateContributionRequestSchema,
   type CreateCooperativeQuotationRequest,
   CreateCooperativeQuotationRequestSchema,
+  type CreateRfqRequest,
+  CreateRfqRequestSchema,
   type ErrorCode,
   formatVersionTag,
+  HouseholdListResponseSchema,
   IdSchema,
   InternalQuotationResponseSchema,
   InviteHouseholdsRequestSchema,
+  type ListRfqsQuery,
   MarkAllNoticesReadResponseSchema,
   ProblemDetailsSchema,
   QuotationNoticeResponseSchema,
   type ReportProgressRequest,
   ReportProgressRequestSchema,
+  RfqListResponseSchema,
   RfqResponseSchema,
 } from '@vcraft/contracts';
 
@@ -108,6 +113,37 @@ export function createQuotationClient(options: QuotationClientOptions) {
     },
     markAllNoticesRead() {
       return request('/me/quotation-notices/read-all', MarkAllNoticesReadResponseSchema, 'POST');
+    },
+    listRequests(filters: Partial<ListRfqsQuery> = {}) {
+      const query = new URLSearchParams();
+      for (const [key, value] of Object.entries(filters))
+        if (value !== undefined) query.set(key, String(value));
+      const suffix = query.size > 0 ? `?${query}` : '';
+      return request(`/rfqs${suffix}`, RfqListResponseSchema);
+    },
+    createRequest(input: CreateRfqRequest) {
+      return request('/rfqs', RfqResponseSchema, 'POST', CreateRfqRequestSchema.parse(input));
+    },
+    updateRequest(id: string, version: number, input: CreateRfqRequest) {
+      return request(
+        `/rfqs/${IdSchema.parse(id)}`,
+        RfqResponseSchema,
+        'PUT',
+        CreateRfqRequestSchema.parse(input),
+        version,
+      );
+    },
+    submitRequest(id: string, version: number) {
+      return request(
+        `/rfqs/${IdSchema.parse(id)}/submit`,
+        RfqResponseSchema,
+        'POST',
+        undefined,
+        version,
+      );
+    },
+    listHouseholds() {
+      return request('/households', HouseholdListResponseSchema);
     },
     getRequest(id: string) {
       return request(`/rfqs/${IdSchema.parse(id)}`, RfqResponseSchema);

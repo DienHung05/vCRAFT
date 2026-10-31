@@ -138,54 +138,12 @@ export interface Product {
   scans: number;
 }
 
-export interface Bid {
-  id: string;
-  artisanSlug: string | null;
-  /** Bid hợp tác của BQL không gắn một hộ. */
-  bidder: string;
-  type: BidType;
-  status: BidStatus;
-  unitPrice: number;
-  quantityOffered: number;
-  deliveryDate: string;
-  reputation: number;
-  revision: number;
-  submittedAt: string;
-  note: string;
-  /**
-   * Phần chia của chào giá liên kết, dành cho bên mua (FR-RFQ-07): hộ, số lượng, ngày hoàn thành.
-   * KHÔNG có đơn giá riêng của hộ — giá riêng giữa hộ và BQL là thông tin nội bộ, không hiện cho
-   * bên mua. Có ở đây để dữ liệu mẫu minh họa đúng những gì backend `projectBuyerQuotation`
-   * sẽ trả (allowlist: householdId, quantity, completionDate).
-   */
-  shares?: readonly BidShare[];
-}
-
 /** Phần chia của một hộ trong chào giá liên kết, như bên mua thấy (không có giá nội bộ). */
 export interface BidShare {
   /** Tên hộ hiển thị cho bên mua. */
   household: string;
   quantity: number;
   completionDate: string;
-}
-
-export interface Rfq {
-  code: string;
-  title: string;
-  category: string;
-  quantity: number;
-  unit: string;
-  budgetMin: number;
-  budgetMax: number;
-  customization: string;
-  deliverTo: string;
-  createdAt: string;
-  sentAt: string;
-  biddingClosesAt: string;
-  requiredBy: string;
-  status: RfqStatus;
-  invitedCount: number;
-  bids: Bid[];
 }
 
 export interface DemoContribution {
@@ -720,62 +678,6 @@ function rel(days: number, hour = 17): string {
   return d.toISOString();
 }
 
-const buildRfqs = (): Rfq[] => [
-  {
-    code: 'RFQ-2026-000123',
-    title: '5.000 cốc in logo Trường ĐH Công nghệ',
-    category: 'Cốc',
-    quantity: 5000,
-    unit: 'cốc',
-    budgetMin: 150_000_000,
-    budgetMax: 200_000_000,
-    customization: 'In logo một màu men lam lên thân cốc, đóng hộp giấy kraft từng chiếc.',
-    deliverTo: '144 Xuân Thủy, Cầu Giấy, Hà Nội',
-    createdAt: rel(-10, 9),
-    sentAt: rel(-8, 8),
-    biddingClosesAt: rel(6),
-    requiredBy: rel(38),
-    status: 'BIDDING',
-    invitedCount: 6,
-    bids: [
-      {
-        id: 'b2',
-        artisanSlug: null,
-        bidder: 'BQL điều phối · 3 hộ',
-        type: 'COOPERATIVE',
-        status: 'SUBMITTED',
-        unitPrice: 34_200,
-        quantityOffered: 5000,
-        deliveryDate: rel(29),
-        reputation: 4.8,
-        revision: 1,
-        submittedAt: rel(-2, 15),
-        note: 'Minh Hải 2.000 · Lam Ngọc 1.500 · Hạnh Thủy 1.500.',
-        // Những gì bên mua thấy: hộ, phần chia, ngày hoàn thành — không giá nội bộ của hộ.
-        shares: [
-          { household: 'Gốm Minh Hải', quantity: 2000, completionDate: rel(31) },
-          { household: 'Gốm Lam Ngọc', quantity: 1500, completionDate: rel(33) },
-          { household: 'Gốm Hạnh Thủy', quantity: 1500, completionDate: rel(35) },
-        ],
-      },
-      {
-        id: 'b3',
-        artisanSlug: 'lo-duc-phat',
-        bidder: 'Lò Đức Phát',
-        type: 'INDIVIDUAL',
-        status: 'SUBMITTED',
-        unitPrice: 36_500,
-        quantityOffered: 5000,
-        deliveryDate: rel(33),
-        reputation: 4.6,
-        revision: 2,
-        submittedAt: rel(-4, 10),
-        note: 'Lò ga 2 buồng, chạy song song.',
-      },
-    ],
-  },
-];
-
 const news: NewsItem[] = [
   {
     slug: 'hoi-cho-gom-mua-dong',
@@ -868,8 +770,6 @@ export const getProductByCode = async (code: string) =>
   (await loadProducts()).find((p) => p.code === code.toUpperCase()) ?? null;
 export const getProductsByArtisan = async (slug: string) =>
   (await loadProducts()).filter((p) => p.artisanSlug === slug);
-export const getRfqs = () => delay(buildRfqs());
-export const getRfq = (code: string) => delay(buildRfqs().find((r) => r.code === code) ?? null);
 export const getNews = () => delay(news);
 export const getVillageStats = (): Promise<VillageStats> =>
   delay({ households: 142, products: 1860, scans: 23_400, years: 700 });
@@ -879,5 +779,4 @@ export const demoParams = {
   artisans: artisans.map((a) => a.slug),
   products: rawProducts.map((p) => p.slug),
   traceCodes: rawProducts.map((p) => p.code),
-  rfqs: buildRfqs().map((r) => r.code),
 };

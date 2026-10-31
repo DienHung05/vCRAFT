@@ -1,6 +1,6 @@
-import { type Opt } from '@mikro-orm/core';
+import { BigIntType, type Opt } from '@mikro-orm/core';
 import { Entity, Index, ManyToOne, Property } from '@mikro-orm/decorators/legacy';
-import type { RfqStatus } from '@vcraft/domain';
+import type { ProductCategory, RfqStatus } from '@vcraft/domain';
 import { AppUser } from './app-user.entity.js';
 import { BaseEntity } from './base.entity.js';
 
@@ -16,6 +16,13 @@ export class QuotationRequest extends BaseEntity {
   @Property({ type: 'integer' })
   revision: Opt<number> = 0;
 
+  /** Empty on requests created before the buyer form had a title. */
+  @Property({ type: 'string', length: 200, nullable: true })
+  title?: string | null;
+
+  @Property({ type: 'string', length: 20, nullable: true })
+  category?: ProductCategory | null;
+
   @Property({ type: 'string', length: 500 })
   design!: string;
 
@@ -27,6 +34,15 @@ export class QuotationRequest extends BaseEntity {
 
   @Property({ type: 'string', length: 300 })
   destination!: string;
+
+  @Property({ type: new BigIntType('number'), nullable: true })
+  budgetMinVnd?: number | null;
+
+  @Property({ type: new BigIntType('number'), nullable: true })
+  budgetMaxVnd?: number | null;
+
+  @Property({ type: 'string', length: 500, nullable: true })
+  cancelReason?: string | null;
 
   @Property({ type: 'datetime', length: 3 })
   requiredBy!: Date;
