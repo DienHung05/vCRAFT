@@ -79,8 +79,8 @@ flowchart LR
 ```mermaid
 flowchart TB
     browser["Trình duyệt<br/>(Next.js client: React 19, TanStack Query,<br/>GSAP, Motion, R3F, MapLibre)"]
-    subgraph edge [Reverse proxy — Caddy]
-      caddy{{"/api/* → api<br/>/media/* → ổ đĩa (chế độ local)<br/>/* → web"}}
+    subgraph edge [Vercel — ADR-16; dev/dự phòng: Caddy]
+      caddy{{"rewrite /api/* → api (Render)<br/>header bảo mật (next.config.ts)<br/>/* → web"}}
     end
     web["apps/web<br/>Next.js 16 (SSR shell, SEO, OG image,<br/>i18n routing, proxy.ts)"]
     api["apps/api<br/>NestJS 12 — REST JSON /api/v1 + SSE"]
@@ -112,7 +112,7 @@ flowchart TB
     worker -->|embedding| ai
 ```
 
-Điểm then chốt: **web và api cùng origin** sau Caddy ⇒ không cần CORS, QR luôn trỏ về một domain. Trình duyệt nói chuyện trực tiếp với Supabase **chỉ** cho việc xác thực; mọi dữ liệu nghiệp vụ đi qua `apps/api`.
+Điểm then chốt: **trình duyệt chỉ thấy một origin** (domain của web trên Vercel); `/api/*` được Next rewrite sang API trên Render ⇒ không cần CORS, không cookie xuyên origin, QR luôn trỏ về một domain ([ADR-16](adr/0016-deploy-vercel-render.md)). Trong dev và bản dự phòng tự host, Caddy làm đúng vai trò đó. Trình duyệt nói chuyện trực tiếp với Supabase **chỉ** cho việc xác thực; mọi dữ liệu nghiệp vụ đi qua `apps/api`.
 
 ### 2.3 Mức 3 — Thành phần trong `apps/api`
 
@@ -202,8 +202,9 @@ vCRAFT/
 ├── infra/
 │   ├── compose/       # compose.dev.yml (mysql*, redis, mailpit, caddy); CSDL + file trên Supabase
 │   ├── docker/        # Dockerfile đa tầng cho web, api, worker
-│   ├── caddy/         # Caddyfile.dev (HTTP :8080), Caddyfile.prod (HTTPS tự động + HSTS), routes.caddy dùng chung
+│   ├── caddy/         # Caddyfile.dev (HTTP :8080), Caddyfile.prod (HTTPS tự động + HSTS), routes.caddy dùng chung; production chính là Vercel + Render (ADR-16), Caddy còn dùng cho dev và dự phòng
 │   └── scripts/       # gen-keys.sh, backup.sh, pmtiles-extract.sh
+├── render.yaml        # Render Blueprint: api, worker, Key Value (ADR-16); web: apps/web/vercel.json; runbook: docs/deploy.md
 ├── supabase/          # migrations/: vector store (ADR-13), bucket Storage (ADR-14), chặn Data API cho bảng nghiệp vụ (ADR-15)
 ├── docs/              # SRS, ARCHITECTURE, PLAN, BRAND, adr/, requirements/, assistant-kb/ (FAQ vi/en)
 ├── scripts/           # script tiện ích phát triển
@@ -452,7 +453,7 @@ Frontend hiển thị bằng `<picture>` (AVIF → WebP) với `srcset` + `sizes
 ```mermaid
 sequenceDiagram
     participant Ph as Camera điện thoại
-    participant Px as Caddy / Next proxy.ts
+    participant Px as Vercel / Next (route /q)
     participant W as Next (SSR)
     participant A as API
     Ph->>Px: GET /q/BT7K2QXM
@@ -569,7 +570,7 @@ Nguyên tắc:
 
 | Lớp            | Biện pháp                                                                                                                                                                                 |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Truyền tải     | HTTPS bắt buộc (Caddy, Let's Encrypt), HSTS, HTTP/2–3                                                                                                                                     |
+| Truyền tải     | HTTPS bắt buộc (Vercel tự cấp chứng chỉ; Caddy + Let's Encrypt khi tự host), HSTS đặt ở `next.config.ts` (ADR-16), HTTP/2–3 |
 | Trình duyệt    | CSP có nonce (`script-src 'self' 'nonce-…'`, `connect-src 'self' https://<ref>.supabase.co`), `frame-ancestors 'none'`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` |
 | Xác thực       | Supabase Auth (bcrypt, chặn mật khẩu đã lộ); JWT ký bất đối xứng, API kiểm qua JWKS; refresh xoay vòng + phát hiện dùng lại; MFA TOTP bắt buộc với Admin (`aal2`); CAPTCHA Turnstile      |
 | Phiên          | Access token 15′; đăng xuất thiết bị khác / toàn bộ; lịch sử đăng nhập (`LoginEvent`); khóa tài khoản ⇒ chặn ngay ở API (trạng thái trong DB) + ban trên Supabase                         |
@@ -647,7 +648,7 @@ features/rfq/
 - `proxy.ts` (Next 16): phát hiện locale, redirect `/q/:code` (308), làm mới cookie phiên Supabase (`@supabase/ssr`) và chặn route `studio/*` & `admin/*` khi chưa đăng nhập (phân quyền thật vẫn ở API), 301 slug cũ (tra `SlugRedirect`).
 - Slug sản phẩm = `slugify(tên)` + `-` + `traceCode` viết thường ⇒ đổi tên không gãy link.
 - `sitemap.ts`, `robots.ts`, `generateMetadata` + `opengraph-image.tsx` động.
-- Caddy rewrite `/api/*`, `/media/*` cùng origin.
+- `/api/*` cùng origin: rewrite trong `next.config.ts` (production, ADR-16) hoặc Caddy `/api/*`, `/media/*` (dev, dự phòng tự host).
 
 ---
 
@@ -704,12 +705,12 @@ Quy tắc:
 | Môi trường    | Cách chạy                                                                                                                                                          |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Dev           | `pnpm infra:up` (Redis, Mailpit, Caddy) + `pnpm dev`; CSDL + file trên Supabase (ADR-14, ADR-15)                                                                   |
-| Demo/Prod     | 1 VPS (2 vCPU / 4 GB) + Docker Compose: caddy, web, api, worker, redis (CSDL + file trên Supabase); tên miền thật ⇒ Caddy tự cấp HTTPS (QR quét được từ điện thoại giám khảo) |
-| Dự phòng demo | Toàn bộ chạy local + Cloudflare Tunnel để có URL HTTPS công khai; bản đồ dùng PMTiles tự host; `STORAGE_DRIVER=local` cho ảnh                                     |
+| Demo/Prod     | **Web trên Vercel; API, worker và Redis (Render Key Value) trên Render; CSDL, Auth, file trên Supabase** (ADR-16, [deploy.md](deploy.md)). Tên miền thật ⇒ Vercel tự cấp HTTPS (QR quét được từ điện thoại giám khảo). ~~1 VPS + Docker Compose + Caddy~~: bị thay thế bởi ADR-16 |
+| Dự phòng demo | Toàn bộ chạy local + Cloudflare Tunnel để có URL HTTPS công khai (chuyển DNS của domain thi từ Vercel sang tunnel, ADR-16); bản đồ dùng PMTiles tự host; `STORAGE_DRIVER=local` cho ảnh |
 
 ### 13.2 CI/CD
 
-GitHub Actions ([.github/workflows/ci.yml](../.github/workflows/ci.yml)): lint → kiểm ranh giới gói → typecheck → unit test → build → integration test **ma trận PostgreSQL × MySQL** → E2E. Merge `main` ⇒ build image ⇒ deploy qua SSH + `docker compose pull && up -d` ⇒ chạy migration ⇒ smoke test `/api/v1/health`.
+GitHub Actions ([.github/workflows/ci.yml](../.github/workflows/ci.yml)): lint → kiểm ranh giới gói → typecheck → unit test → build → integration test **ma trận PostgreSQL × MySQL** → E2E. Triển khai dùng tích hợp repo của nền tảng, không cần token trong CI (ADR-16): merge `main` ⇒ Vercel build web; Render đợi CI xanh (`checksPass`) ⇒ build ⇒ `preDeployCommand` chạy migration ⇒ khởi động API và worker, health check `/api/v1/health`. Pull request có preview web trên Vercel. ~~Build image ⇒ deploy qua SSH + `docker compose`~~ (kế hoạch VPS cũ) đã bị thay thế.
 
 ### 13.3 Quan sát
 
@@ -736,5 +737,6 @@ Log JSON (pino) có `requestId` xuyên suốt web → api → worker; `/api/v1/h
 | ADR-13 | [Vector store trợ lý trên **Supabase pgvector**, tách CSDL nghiệp vụ](adr/0013-assistant-vector-store-supabase.md) | pgvector trong CSDL chính; Pinecone/Qdrant; tìm kiếm từ khóa thuần | Đã có project Supabase (Auth); chỉ mục là dữ liệu dẫn xuất nên CSDL nghiệp vụ vẫn chạy MySQL; port `VectorStore` cho phép thay adapter |
 | ADR-14 | [Object storage trên **Supabase Storage** qua giao thức S3](adr/0014-object-storage-supabase.md) | MinIO + Cloudflare R2; SDK `supabase-js`; BLOB trong CSDL | Gom dịch vụ ngoài về một project Supabase; giữ `StoragePort → S3Adapter` trung lập nên đổi nhà cung cấp chỉ cần đổi env; `LocalDiskAdapter` cho test/offline |
 | ADR-15 | [CSDL nghiệp vụ trên **Supabase Postgres**](adr/0015-business-db-on-supabase.md) | Postgres trong container mỗi máy; schema riêng ngoài Data API | Cả nhóm dùng chung và theo dõi trên Dashboard; event trigger tự bật RLS chặn Data API; MySQL vẫn kiểm chứng trong CI |
+| ADR-16 | [Web trên **Vercel**, API + worker trên **Render**, giữ Supabase](adr/0016-deploy-vercel-render.md) | 1 VPS + Docker Compose + Caddy; web và API cùng Render; gọi chéo origin có CORS | Không phải tự vận hành máy chủ; HTTPS, preview theo PR, rollback có sẵn; rewrite `/api/*` giữ một origin nên không cần CORS. Thay thế kế hoạch VPS ở §13 và ý "Redis cục bộ" của ADR-15 |
 
 Rủi ro kỹ thuật cần kiểm chứng ở Sprint 0: (0) project Supabase gói Free tự tạm dừng sau 7 ngày không hoạt động ⇒ giữ hoạt động trước buổi thi và cấu hình SMTP riêng cho email xác thực; (1) adapter NestJS của `@supabase/server` chỉ hỗ trợ Nest 10/11 ⇒ tự viết guard bọc `verifyAuth()`. (Đã xử lý 27/10: package dùng ở backend được build bằng tsdown — xem §3.2.)
