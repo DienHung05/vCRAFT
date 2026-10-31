@@ -14,8 +14,8 @@ services:
   - type: web
     name: vcraft-api
     runtime: node
-    # Singapore gần người dùng Việt Nam; chọn cùng khu vực với project Supabase để giảm độ trễ CSDL. Không đổi được sau khi tạo.
-    region: singapore
+    # Vùng của Supabase quyết định vùng Render: project ở eu-west-1 (Ireland) nên chọn frankfurt (gần nhất), để mỗi truy vấn CSDL không phải vượt lục địa. Không đổi được sau khi tạo; cả ba tài nguyên phải cùng vùng (Key Value nội bộ).
+    region: frankfurt
     # starter = luôn chạy, không ngủ. Gói free ngủ sau 15 phút không có request (cold start vài chục giây): KHÔNG dùng cho ngày thi.
     plan: starter
     branch: main
@@ -84,7 +84,7 @@ services:
   - type: worker
     name: vcraft-worker
     runtime: node
-    region: singapore
+    region: frankfurt
     # Background worker không có gói free; starter là gói rẻ nhất.
     plan: starter
     branch: main
@@ -141,7 +141,7 @@ services:
   # ---------- Redis (Render Key Value) ----------
   - type: keyvalue
     name: vcraft-redis
-    region: singapore
+    region: frankfurt
     # free: 25 MB, không lưu bền (restart là mất job đang chờ; outbox trong CSDL vẫn là nguồn sự thật). Nâng lên starter để có lưu bền.
     plan: free
     # BullMQ yêu cầu noeviction: không để Redis tự xóa khóa khi đầy bộ nhớ
