@@ -5,6 +5,8 @@ import {
   CooperativeQuotation,
   Household,
   JournalEntry,
+  MediaAsset,
+  MediaLink,
   News,
   OrderAllocation,
   Product,
@@ -16,6 +18,16 @@ import {
   DEMO_QR_TRACE_CODE,
   DEMO_REQUEST_IDS,
 } from './accounts.js';
+import {
+  DEMO_DOCUMENT_OWNER_ID,
+  DEMO_PHOTO_OWNER_ID,
+  demoDocumentAssetId,
+  demoPhotoAssetId,
+  loadTargetResolver,
+  pickDisplayVariant,
+} from './link-media.js';
+import { DEMO_PHOTO_LINKS, DEMO_PHOTOS } from './photo-manifest.js';
+import { DEMO_VERIFICATION_DOCS } from './verification-docs.js';
 
 export interface DemoCheck {
   name: string;
@@ -37,6 +49,13 @@ const MUST_STAY_OPEN = [
 ] as const;
 const MIN_OPEN_DAYS = 3;
 
+export interface VerifyDemoOptions {
+  /** Kiểm ảnh và giấy tờ (sau `pnpm demo:media`). Mặc định bật; tắt khi chỉ có dữ liệu seed chưa gắn ảnh. */
+  media?: boolean;
+  /** Gửi HEAD tới URL công khai của từng ảnh trong bucket (cần mạng). Mặc định tắt. */
+  checkPublicUrls?: boolean;
+}
+
 /**
  * Kiểm dữ liệu demo "còn nguyên" (pre-exam check trên dữ liệu đóng băng), chỉ đọc. Dùng trong
  * `pnpm demo:verify` và test tích hợp. Không kiểm Supabase Auth (xem `scripts/demo-auth.mjs --check`).
@@ -44,6 +63,7 @@ const MIN_OPEN_DAYS = 3;
 export async function verifyDemoData(
   em: EntityManager,
   now: Date = new Date(),
+  options: VerifyDemoOptions = {},
 ): Promise<DemoVerifyReport> {
   const checks: DemoCheck[] = [];
   const add = (name: string, ok: boolean, detail: string) => checks.push({ name, ok, detail });
@@ -183,5 +203,158 @@ export async function verifyDemoData(
     stale.length === 0 ? 'còn hạn' : `sắp/đã hết hạn: ${stale.join(', ')}; chạy lại demo:reset`,
   );
 
+  if (options.media ?? true) await verifyMedia(em, add, entries, options.checkPublicUrls ?? false);
+
   return { ok: checks.every((c) => c.ok), checks };
+}
+
+/** Ảnh có giấy phép đã nối vào seed, ghi công đủ, giấy tờ mẫu của hộ chờ duyệt nằm ở bucket riêng tư. */
+async function verifyMedia(
+  em: EntityManager,
+  add: (name: string, ok: boolean, detail: string) => void,
+  entries: readonly JournalEntry[],
+  checkPublicUrls: boolean,
+): Promise<void> {
+  const photoIds = new Map(DEMO_PHOTOS.map((p) => [demoPhotoAssetId(p.id), p]));
+  const photoAssets = await em.find(MediaAsset, { id: { $in: [...photoIds.keys()] } });
+  const readyPhotos = photoAssets.filter(
+    (a) =>
+      a.status === 'READY' &&
+      a.visibility === 'PUBLIC' &&
+      a.ownerId === DEMO_PHOTO_OWNER_ID &&
+      a.variants.length > 0,
+  );
+  add(
+    `Ảnh minh hoạ: đủ ${DEMO_PHOTOS.length} tệp READY, có biến thể công khai`,
+    readyPhotos.length === DEMO_PHOTOS.length,
+    `${readyPhotos.length}/${DEMO_PHOTOS.length} tệp; chạy pnpm demo:media nếu thiếu`,
+  );
+  const noCredit = photoAssets.filter(
+    (a) =>
+      !a.altText?.trim() ||
+      !a.credit?.author.trim() ||
+      !a.credit.license.trim() ||
+      !a.credit.licenseUrl.startsWith('https://') ||
+      !a.credit.sourceUrl.startsWith('https://'),
+  );
+  add(
+    'Ảnh minh hoạ: mỗi tệp có tác giả, giấy phép, nguồn và mô tả',
+    photoAssets.length === DEMO_PHOTOS.length && noCredit.length === 0,
+    noCredit.length === 0
+      ? `${photoAssets.length} tệp đủ ghi công`
+      : `thiếu ở ${noCredit.length} tệp`,
+  );
+
+  const links = await em.find(MediaLink, { targetType: { $ne: 'HOUSEHOLD' } });
+  const householdLinks = await em.find(MediaLink, { targetType: 'HOUSEHOLD' });
+  const linkKey = (
+    l: Pick<MediaLink, 'targetType' | 'targetId' | 'role' | 'position'> & { mediaId: string },
+  ) => `${l.targetType}|${l.targetId}|${l.role}|${l.position}|${l.mediaId}`;
+  const present = new Set(
+    [...links, ...householdLinks].map((l) => linkKey({ ...l, mediaId: l.media.id })),
+  );
+  const resolve = await loadTargetResolver(em).catch(() => null);
+  const missing: string[] = [];
+  if (!resolve) missing.push('hộ/sản phẩm/tin trong bảng ánh xạ không còn');
+  else {
+    for (const link of DEMO_PHOTO_LINKS) {
+      const expected = linkKey({
+        targetType: link.target,
+        targetId: resolve(link.target, link.key),
+        role: link.role,
+        position: link.position,
+        mediaId: demoPhotoAssetId(link.photo),
+      });
+      if (!present.has(expected)) missing.push(`${link.target}:${link.key}:${link.role}`);
+    }
+  }
+  const countBy = (target: string) => DEMO_PHOTO_LINKS.filter((l) => l.target === target).length;
+  add(
+    'Ảnh gắn vào sản phẩm, hộ và tin đúng bảng ánh xạ',
+    missing.length === 0,
+    missing.length === 0
+      ? `${DEMO_PHOTO_LINKS.length} liên kết (${countBy('PRODUCT')} sản phẩm, ${countBy('HOUSEHOLD')} hộ, ${countBy('NEWS')} tin)`
+      : `thiếu ${missing.length}: ${missing.slice(0, 3).join(', ')}`,
+  );
+
+  const coverLinks = DEMO_PHOTO_LINKS.filter(
+    (l) =>
+      (l.target === 'PRODUCT' && l.role === 'COVER') ||
+      (l.target === 'HOUSEHOLD' && l.role === 'BANNER'),
+  );
+  const badCovers: string[] = [];
+  for (const link of coverLinks) {
+    const row =
+      link.target === 'PRODUCT'
+        ? await em.findOne(Product, { traceCode: link.key }, { fields: ['coverUrl'] })
+        : await em.findOne(Household, { slug: link.key }, { fields: ['coverUrl'] });
+    if (!row?.coverUrl?.startsWith('http')) badCovers.push(link.key);
+  }
+  add(
+    'Ảnh bìa mà API công khai trả (coverUrl) trỏ về bucket Storage',
+    badCovers.length === 0,
+    badCovers.length === 0
+      ? `${coverLinks.length} ảnh bìa (sản phẩm và hộ)`
+      : `chưa trỏ về bucket: ${badCovers.join(', ')}`,
+  );
+
+  const noImage = entries.filter(
+    (e) => e.images.length === 0 || !e.images.every((i) => i.url.startsWith('http')),
+  );
+  add(
+    'Mốc nhật ký: mỗi mốc có ảnh minh hoạ của công đoạn (chuỗi băm đã tính cả ảnh)',
+    entries.length > 0 && noImage.length === 0,
+    noImage.length === 0 ? `${entries.length} mốc có ảnh` : `${noImage.length} mốc chưa có ảnh`,
+  );
+
+  const docIds = new Map(DEMO_VERIFICATION_DOCS.map((d) => [demoDocumentAssetId(d.id), d]));
+  const docAssets = await em.find(MediaAsset, { id: { $in: [...docIds.keys()] } });
+  const goodDocs = docAssets.filter(
+    (a) =>
+      a.purpose === 'CERTIFICATE' &&
+      a.visibility === 'PRIVATE' &&
+      a.status === 'READY' &&
+      a.ownerId === DEMO_DOCUMENT_OWNER_ID &&
+      a.originalKey.startsWith(`originals/${DEMO_DOCUMENT_OWNER_ID}/`) &&
+      a.variants.length === 0,
+  );
+  const docLinks = householdLinks.filter(
+    (l) => l.targetId === DEMO_HOUSEHOLD_IDS.pending && l.role === 'DOCUMENT',
+  );
+  add(
+    `Hộ chờ duyệt: ${DEMO_VERIFICATION_DOCS.length} giấy tờ mẫu ở bucket riêng tư, đã gắn vào hồ sơ`,
+    goodDocs.length === DEMO_VERIFICATION_DOCS.length &&
+      docLinks.length === DEMO_VERIFICATION_DOCS.length &&
+      docLinks.every((l) => docIds.has(l.media.id)),
+    `${goodDocs.length} tệp riêng tư, ${docLinks.length} liên kết`,
+  );
+
+  if (checkPublicUrls) {
+    const urls = new Map<string, string>();
+    for (const e of entries) for (const image of e.images) urls.set(image.url, e.id);
+    for (const asset of readyPhotos) {
+      const variant = pickDisplayVariant(asset.variants);
+      if (variant) urls.set(variant.key, asset.id);
+    }
+    // Đã có URL đầy đủ ở ảnh nhật ký; ảnh khác chỉ có key, nên lấy gốc URL từ một ảnh nhật ký.
+    const sample = [...urls.keys()].find((u) => u.startsWith('http'));
+    const base = sample?.replace(/\/v\/.*$/, '');
+    const targets = new Set<string>();
+    for (const url of urls.keys())
+      targets.add(url.startsWith('http') ? url : base ? `${base}/${url}` : '');
+    targets.delete('');
+    const broken: string[] = [];
+    for (const url of targets) {
+      const ok = await fetch(url, { method: 'HEAD' }).then(
+        (r) => r.ok,
+        () => false,
+      );
+      if (!ok) broken.push(url);
+    }
+    add(
+      'Ảnh công khai mở được qua URL bucket (HEAD)',
+      targets.size > 0 && broken.length === 0,
+      broken.length === 0 ? `${targets.size} URL` : `${broken.length} URL lỗi, vd. ${broken[0]}`,
+    );
+  }
 }

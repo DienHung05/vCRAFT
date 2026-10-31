@@ -1,13 +1,23 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   AppUser,
   CooperativeQuotation,
   clearBusinessData,
   DEMO_ACCOUNTS,
   DEMO_HOUSEHOLD_IDS,
+  DEMO_PHOTOS,
   DEMO_QR_TRACE_CODE,
   DEMO_REQUEST_IDS,
+  DEMO_VERIFICATION_DOCS,
+  demoDocumentAssetId,
   Household,
   JournalEntry,
+  linkDemoMedia,
+  MediaAsset,
+  MediaLink,
   News,
   OrderAllocation,
   Product,
@@ -16,7 +26,9 @@ import {
   verifyDemoData,
 } from '@vcraft/database';
 import { type ChainEntry, verifyChain } from '@vcraft/domain';
+import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { publishDemoMedia } from '../../../worker/src/demo/publish-demo-media.js';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
 
@@ -104,10 +116,101 @@ describe('Demo seed and guarded reset', () => {
   });
 
   it('bộ kiểm tra `demo:verify` báo dữ liệu còn nguyên ngay sau khi nạp', async () => {
-    const report = await verifyDemoData(db.orm.em.fork(), now);
+    const report = await verifyDemoData(db.orm.em.fork(), now, { media: false });
     expect(report.checks.filter((c) => !c.ok)).toEqual([]);
     expect(report.ok).toBe(true);
   });
+
+  it('chưa chạy `demo:media` thì nhóm kiểm ảnh và giấy tờ báo đỏ', async () => {
+    const report = await verifyDemoData(db.orm.em.fork(), now);
+    const failed = report.checks.filter((c) => !c.ok).map((c) => c.name);
+    expect(report.ok).toBe(false);
+    expect(failed.some((name) => name.startsWith('Ảnh minh hoạ'))).toBe(true);
+    expect(failed.some((name) => name.startsWith('Hộ chờ duyệt: 3 giấy tờ'))).toBe(true);
+  });
+
+  it('ảnh có giấy phép và giấy tờ mẫu: tải lên, gắn vào seed, verify xanh, chạy lại được sau reset', async () => {
+    // CI chậm: dùng bản thu nhỏ 160px của đúng 38 tệp (cùng tên, cùng đường xử lý ảnh) để bước mã hóa AVIF/WebP không
+    // chiếm thời gian; ảnh thật đầy đủ được kiểm bằng `demo:verify` trên project Supabase.
+    const realImagesDir = fileURLToPath(
+      new URL('../../../web/public/images/demo', import.meta.url),
+    );
+    const imagesDir = await mkdtemp(join(tmpdir(), 'vcraft-demo-photos-'));
+    for (const photo of DEMO_PHOTOS) {
+      const name = `${photo.id}-${Math.max(...photo.widths)}.webp`;
+      const small = await sharp(join(realImagesDir, name)).resize({ width: 160 }).webp().toBuffer();
+      await writeFile(join(imagesDir, name), small);
+    }
+    const specimenDir = fileURLToPath(
+      new URL('../../../../scripts/demo-photos/specimen-docs', import.meta.url),
+    );
+    const publish = async () => {
+      const uploaded = await publishDemoMedia({
+        orm: db.orm,
+        storage: t.storage,
+        imagesDir,
+        specimenDir,
+      });
+      const linked = await linkDemoMedia(db.orm.em.fork(), {
+        publicUrl: (key) => t.storage.publicUrl(key),
+      });
+      return { uploaded, linked };
+    };
+
+    const first = await publish();
+    expect(first.uploaded.documentsUploaded).toBe(DEMO_VERIFICATION_DOCS.length);
+    expect(first.linked.journalEntriesWithImage).toBe(1295);
+    const report = await verifyDemoData(db.orm.em.fork(), now);
+    expect(report.checks.filter((c) => !c.ok)).toEqual([]);
+
+    // Chạy lại không đổi gì (cùng id, cùng liên kết, cùng dấu băm).
+    const hashesBefore = (await db.orm.em.fork().find(JournalEntry, {})).map((e) => e.hash).sort();
+    const again = await publish();
+    expect(again.uploaded.photosUploaded).toBe(0);
+    expect(again.linked).toEqual(first.linked);
+    const hashesAfter = (await db.orm.em.fork().find(JournalEntry, {})).map((e) => e.hash).sort();
+    expect(hashesAfter).toEqual(hashesBefore);
+    expect(await db.orm.em.fork().count(MediaLink)).toBe(first.linked.links);
+
+    // Giấy tờ chỉ ở bucket riêng tư: Admin đọc qua URL ký, Buyer bị từ chối, không có biến thể công khai.
+    const docId = demoDocumentAssetId(DEMO_VERIFICATION_DOCS[0]?.id as string);
+    const doc = await db.orm.em.fork().findOneOrFail(MediaAsset, docId);
+    expect(doc).toMatchObject({ purpose: 'CERTIFICATE', visibility: 'PRIVATE', status: 'READY' });
+    expect(doc.variants).toEqual([]);
+    const adminRead = await t.request({
+      method: 'GET',
+      url: `/media/${docId}/read-url`,
+      auth: as('admin'),
+    });
+    expect(adminRead.status).toBe(200);
+    const buyerRead = await t.request({
+      method: 'GET',
+      url: `/media/${docId}/read-url`,
+      auth: as('buyer'),
+    });
+    expect([403, 404]).toContain(buyerRead.status);
+
+    // Ảnh bìa mà API công khai trả (`coverUrl`) đã trỏ về bucket, không còn đường dẫn tĩnh của web.
+    const cup = await db.orm.em.fork().findOneOrFail(Product, { traceCode: DEMO_QR_TRACE_CODE });
+    expect(cup.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\/.+\.webp$/);
+    const minhHai = await db.orm.em.fork().findOneOrFail(Household, { slug: 'gom-minh-hai' });
+    expect(minhHai.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
+
+    // Trang truy xuất công khai nhận được ảnh của từng mốc, kèm sha256 nằm trong chuỗi băm.
+    const trace = await t.request({ method: 'GET', url: `/trace/${DEMO_QR_TRACE_CODE}` });
+    expect(trace.status).toBe(200);
+    for (const entry of trace.body.journal.entries) {
+      expect(entry.images).toHaveLength(1);
+      expect(entry.images[0].url).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
+    }
+
+    // Reset xóa media_asset nhưng không động tới bucket; chạy lại bước ảnh dựng lại đúng như cũ.
+    await reset();
+    expect((await verifyDemoData(db.orm.em.fork(), now)).ok).toBe(false);
+    await publish();
+    expect((await verifyDemoData(db.orm.em.fork(), now)).ok).toBe(true);
+    await rm(imagesDir, { recursive: true, force: true });
+  }, 120_000);
 
   it('mỗi sản phẩm có 4–7 mốc nhật ký và chuỗi băm kiểm được bằng mã miền', async () => {
     const em = db.orm.em.fork();

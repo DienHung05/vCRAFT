@@ -22,7 +22,7 @@ Trình duyệt ──HTTPS──> Vercel (apps/web)  ──rewrite /api/*──>
 | Project Supabase đang chạy | Lấy được các giá trị ở bảng §2. Vùng hiện tại `eu-west-1` (Ireland) quyết định vùng Render/Vercel bên dưới |
 | Domain thi | Quản lý DNS được; QR in trên cốc mã hóa domain này nên **không được đổi sau khi in** |
 | Nhà cung cấp SMTP | Gửi email xác thực (Supabase Auth) và thông báo (worker); đã xác minh domain gửi (SPF/DKIM) |
-| File `infra/certs/supabase-root-2021.crt` đã có trên `main` | CA của pooler Supabase (PR riêng). Thiếu file thì API không khởi động được; hoặc dùng `DB_SSL_CA` (§2) |
+| File `infra/certs/supabase-root-2021.crt` đã có trên `main` | CA của pooler Supabase (thêm bởi GH#26). Thiếu file thì API không khởi động được; hoặc dùng `DB_SSL_CA` (§2) |
 
 Thứ tự làm: Supabase (§2) → Render (§3) → Vercel (§4) → domain (§5) → Supabase Auth URL (§6) → kiểm tra (§8).
 

@@ -15,6 +15,17 @@ export interface MediaVariant {
   bytes: number;
 }
 
+/** Ghi nguồn ảnh có giấy phép (CC BY / BY-SA bắt buộc ghi tác giả và giấy phép). */
+export interface MediaCredit {
+  /** Tên trang tệp ở nguồn (vd. `File:...` trên Wikimedia Commons). */
+  title: string;
+  author: string;
+  license: string;
+  licenseUrl: string;
+  /** Trang mô tả tệp (nguồn và lịch sử). */
+  sourceUrl: string;
+}
+
 /**
  * Tệp do người dùng tải lên (FR-MEDIA, ADR-14). Bản gốc luôn nằm trong bucket riêng tư (`originalKey`);
  * ảnh công khai được worker xóa EXIF và sinh `variants` ở bucket công khai. Tệp riêng tư chỉ đọc
@@ -68,4 +79,12 @@ export class MediaAsset extends BaseEntity {
 
   @Property({ type: 'string', length: 300, nullable: true })
   failureReason?: string | null;
+
+  /** Mô tả mặc định cho người dùng trình đọc màn hình; mỗi chỗ dùng có thể ghi đè ở `MediaLink.altText`. */
+  @Property({ type: 'string', length: 500, nullable: true })
+  altText?: string | null;
+
+  /** Tác giả và giấy phép của ảnh; để trống với ảnh do chính hộ chụp. */
+  @Property({ type: 'json', nullable: true })
+  credit?: MediaCredit | null;
 }
