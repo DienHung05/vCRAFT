@@ -110,9 +110,13 @@ export const CreateArtisanRequestSchema = z.object({
 });
 export type CreateArtisanRequest = z.infer<typeof CreateArtisanRequestSchema>;
 
+/** Tối đa 12 ảnh mỗi sản phẩm (FR-PRD-02); mô tả ảnh bắt buộc. */
+export const MAX_PRODUCT_IMAGES = 12;
+const ProductImageInputSchema = z.object({ mediaId: IdSchema, alt: AltSchema });
+
 export const CreateProductRequestSchema = z
   .object({
-    name: z.string().trim().min(2).max(200),
+    name: z.string().trim().min(2, 'Tên cần ít nhất 2 ký tự').max(200),
     description: z.string().trim().max(10_000).default(''),
     kind: ProductKindSchema.default('OBJECT'),
     batchSize: z.int().min(2).max(100_000).optional(),
@@ -129,6 +133,21 @@ export const CreateProductRequestSchema = z
     path: ['batchSize'],
   });
 export type CreateProductRequest = z.infer<typeof CreateProductRequestSchema>;
+
+/** Sửa sản phẩm: chỉ gửi phần đổi; loại và cỡ lô đi cùng nhau, `If-Match` bắt buộc. */
+export const UpdateProductRequestSchema = z.object({
+  name: z.string().trim().min(2, 'Tên cần ít nhất 2 ký tự').max(200).optional(),
+  description: z.string().trim().max(10_000).optional(),
+  category: CategorySchema.optional(),
+  priceVnd: z.int().min(0).max(2_000_000_000).optional(),
+  stock: z.int().min(0).max(1_000_000).optional(),
+  material: z.string().trim().max(200).optional(),
+  dimensions: z.string().trim().max(200).optional(),
+  weightGrams: z.int().positive().max(1_000_000).nullable().optional(),
+  artisanNote: z.string().trim().max(2_000).optional(),
+  images: z.array(ProductImageInputSchema).max(MAX_PRODUCT_IMAGES).optional(),
+});
+export type UpdateProductRequest = z.infer<typeof UpdateProductRequestSchema>;
 
 export const WithdrawProductRequestSchema = z.object({ reason: ReasonSchema });
 
@@ -198,6 +217,8 @@ export const ProductResponseSchema = z.object({
   artisanNote: z.string().nullable(),
   coverUrl: z.string().nullable(),
   coverAlt: z.string().nullable(),
+  /** `url` trống khi ảnh còn chờ xử lý; trang công khai bỏ qua các ảnh đó. */
+  images: z.array(z.object({ mediaId: IdSchema, url: z.string().nullable(), alt: z.string() })),
   status: ProductStatusSchema,
   publishedAt: IsoDateTimeSchema.nullable(),
   makers: z.array(MakerCreditSchema),

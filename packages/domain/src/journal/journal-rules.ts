@@ -139,3 +139,11 @@ export function checkDraftEdit(state: JournalState): Result<void, DomainError<Jo
   }
   return ok(undefined);
 }
+
+/**
+ * Mẫu công đoạn theo danh mục (FR-PRD-03). Làng hiện chỉ có gốm nên mọi danh mục dùng cùng một mẫu;
+ * nghề khác sẽ có mẫu riêng tại đây.
+ */
+export function stageTemplateForCategory(_category: string): readonly JournalStage[] {
+  return JOURNAL_STAGES;
+}
