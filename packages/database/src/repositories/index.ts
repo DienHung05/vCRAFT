@@ -1,1 +1,2 @@
+export * from './news-notifications.js';
 export * from './outbox.repository.js';

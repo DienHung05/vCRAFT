@@ -1,7 +1,9 @@
-import { type FilterQuery, MikroORM } from '@mikro-orm/core';
+import { type EntityManager, type FilterQuery, MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { ListNewsQuery, NewsDetailDto, NewsListDto, PublicImageDto } from '@vcraft/contracts';
-import { News } from '@vcraft/database';
+import { Household, News } from '@vcraft/database';
+import type { NewsVisibility } from '@vcraft/domain';
+import type { Actor } from '../../../common/auth/auth.guard';
 import { AppError, notFound } from '../../../common/errors/app-error';
 import { MediaService } from '../../media/application/media.service';
 import { toNewsDetailDto, toNewsSummaryDto } from '../news.mapper';
@@ -39,6 +41,16 @@ function decodeCursor(raw: string): NewsCursor {
   throw new AppError('VALIDATION_MALFORMED_REQUEST', 'cursor is not valid');
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const slugOrId = (value: string): FilterQuery<News> =>
+  UUID.test(value) ? { id: value } : { slug: value };
+
+/** Published, past its scheduled time, and in the given scope. */
+const liveNews = (visibility: NewsVisibility): FilterQuery<News>[] => [
+  { status: 'PUBLISHED', visibility, publishedAt: { $lte: new Date() } },
+];
+
 /**
  * Tin tức công khai (vCRAFT-83g): chỉ tin `PUBLISHED`; tin của hộ chỉ hiện khi hộ còn `APPROVED`
  * (hộ tạm ngừng ẩn mọi nội dung công khai, giống hồ sơ và sản phẩm).
@@ -53,7 +65,7 @@ export class NewsService {
   async list(query: ListNewsQuery): Promise<NewsListDto> {
     const em = this.orm.em.fork();
     const and: FilterQuery<News>[] = [
-      { status: 'PUBLISHED' },
+      ...liveNews('PUBLIC'),
       { $or: [{ household: null }, { household: { status: 'APPROVED' } }] },
     ];
     if (query.category) and.push({ category: query.category });
@@ -87,19 +99,83 @@ export class NewsService {
     };
   }
 
+  /** A public item by slug, or by id for links from notifications. Village-only news is a 404. */
   async getBySlug(slug: string): Promise<NewsDetailDto> {
     const em = this.orm.em.fork();
     const news = await em.findOne(
       News,
       {
-        slug,
-        status: 'PUBLISHED',
-        $or: [{ household: null }, { household: { status: 'APPROVED' } }],
+        $and: [
+          ...liveNews('PUBLIC'),
+          slugOrId(slug),
+          { $or: [{ household: null }, { household: { status: 'APPROVED' } }] },
+        ],
       },
       { populate: ['household'] },
     );
     if (!news) throw notFound();
-    return toNewsDetailDto(news, (await this.covers([news.id])).get(news.id) ?? null);
+    return this.detail(em, news);
+  }
+
+  /** Village-only news, for approved households and administrators (FR-NEWS-02). */
+  async listVillage(actor: Actor, limit: number): Promise<NewsListDto> {
+    const em = this.orm.em.fork();
+    await this.assertVillageMember(em, actor);
+    const rows = await em.find(
+      News,
+      { $and: liveNews('VILLAGE') },
+      {
+        populate: ['household'],
+        orderBy: { pinned: 'desc', publishedAt: 'desc', id: 'desc' },
+        limit,
+      },
+    );
+    const covers = await this.covers(rows.map((news) => news.id));
+    return {
+      data: rows.map((news) => toNewsSummaryDto(news, covers.get(news.id) ?? null)),
+      nextCursor: null,
+    };
+  }
+
+  async getVillage(actor: Actor, slug: string): Promise<NewsDetailDto> {
+    const em = this.orm.em.fork();
+    await this.assertVillageMember(em, actor);
+    const news = await em.findOne(
+      News,
+      { $and: [...liveNews('VILLAGE'), slugOrId(slug)] },
+      { populate: ['household'] },
+    );
+    if (!news) throw notFound();
+    return this.detail(em, news);
+  }
+
+  private async assertVillageMember(em: EntityManager, actor: Actor) {
+    if (actor.role === 'ADMIN') return;
+    const household = await em.findOne(Household, {
+      representative: actor.id,
+      status: 'APPROVED',
+    });
+    if (!household) throw notFound();
+  }
+
+  private async detail(em: EntityManager, news: News): Promise<NewsDetailDto> {
+    const related = await em.find(
+      News,
+      {
+        $and: [
+          ...liveNews('PUBLIC'),
+          { category: news.category, id: { $ne: news.id } },
+          { $or: [{ household: null }, { household: { status: 'APPROVED' } }] },
+        ],
+      },
+      { populate: ['household'], orderBy: { publishedAt: 'desc', id: 'desc' }, limit: 3 },
+    );
+    const covers = await this.covers([news.id, ...related.map((item) => item.id)]);
+    return toNewsDetailDto(
+      news,
+      covers.get(news.id) ?? null,
+      related.map((item) => toNewsSummaryDto(item, covers.get(item.id) ?? null)),
+    );
   }
 
   private async covers(newsIds: readonly string[]): Promise<Map<string, PublicImageDto>> {

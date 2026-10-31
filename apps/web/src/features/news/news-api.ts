@@ -1,4 +1,9 @@
-import { type NewsListDto, NewsListResponseSchema } from '@vcraft/contracts';
+import {
+  type NewsDetailDto,
+  NewsDetailResponseSchema,
+  type NewsListDto,
+  NewsListResponseSchema,
+} from '@vcraft/contracts';
 
 import { apiBaseUrl } from '@/lib/api/internal-url';
 
@@ -31,6 +36,28 @@ export async function fetchNews(options: FetchNewsOptions = {}): Promise<NewsRes
     if (!res.ok) return { status: 'unavailable' };
     const parsed = NewsListResponseSchema.safeParse(await res.json());
     return parsed.success ? { status: 'ok', page: parsed.data } : { status: 'unavailable' };
+  } catch {
+    return { status: 'unavailable' };
+  }
+}
+
+export type NewsArticleResult =
+  | { status: 'ok'; article: NewsDetailDto }
+  | { status: 'not-found' }
+  | { status: 'unavailable' };
+
+/** One public item from `GET /news/{slug}`. A 404 may still be a village-only item. */
+export async function fetchNewsArticle(slug: string): Promise<NewsArticleResult> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/news/${encodeURIComponent(slug)}`, {
+      headers: { accept: 'application/json' },
+      next: { revalidate: 30 },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (res.status === 404) return { status: 'not-found' };
+    if (!res.ok) return { status: 'unavailable' };
+    const parsed = NewsDetailResponseSchema.safeParse(await res.json());
+    return parsed.success ? { status: 'ok', article: parsed.data } : { status: 'unavailable' };
   } catch {
     return { status: 'unavailable' };
   }

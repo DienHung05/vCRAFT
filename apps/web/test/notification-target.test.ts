@@ -19,6 +19,7 @@ describe('notificationHref', () => {
     ['BUYER_RFQ', `/vi/yeu-cau-bao-gia/${id}`, `/en/quotes/${id}`],
     ['STUDIO_CONTRIBUTION', `/vi/studio/de-xuat-tham-gia/${id}`, `/en/studio/contributions/${id}`],
     ['ADMIN_COORDINATION', `/vi/admin/dieu-phoi/${id}`, `/en/admin/coordination/${id}`],
+    ['NEWS_ARTICLE', `/vi/tin-tuc/${id}`, `/en/news/${id}`],
   ] as const)('%s keeps the request id and follows the locale slug', (page, vi, en) => {
     const href = notificationHref({ page, id });
     expect(href).not.toBeNull();

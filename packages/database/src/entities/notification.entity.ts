@@ -1,5 +1,5 @@
 import { Entity, Index, Property } from '@mikro-orm/decorators/legacy';
-import type { HouseholdNoticeKind } from '@vcraft/domain';
+import type { NotificationType } from '@vcraft/domain';
 import { BaseEntity } from './base.entity.js';
 
 /**
@@ -14,7 +14,7 @@ export class Notification extends BaseEntity {
   recipientId!: string;
 
   @Property({ type: 'string', length: 40 })
-  type!: HouseholdNoticeKind;
+  type!: NotificationType;
 
   /** Đối tượng liên quan, nếu có (vd. hộ được duyệt). */
   @Property({ type: 'uuid', nullable: true })

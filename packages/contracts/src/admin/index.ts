@@ -18,6 +18,11 @@ export const AUDIT_ACTIONS = [
   'rfq.start_production',
   'rfq.confirm_receipt',
   'rfq.cancel',
+  'news.create',
+  'news.update',
+  'news.publish',
+  'news.unpublish',
+  'news.delete',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

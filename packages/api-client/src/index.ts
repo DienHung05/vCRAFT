@@ -3,3 +3,4 @@ export * from './admin';
 export * from './http/authed-request';
 export * from './quotation';
 export * from './studio';
+export * from './village-news';

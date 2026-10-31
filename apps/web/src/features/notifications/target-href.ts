@@ -5,7 +5,8 @@ export type NotificationHref =
   | { pathname: '/yeu-cau-bao-gia/[code]'; params: { code: string } }
   | { pathname: '/studio/de-xuat-tham-gia/[id]'; params: { id: string } }
   | { pathname: '/admin/dieu-phoi/[code]'; params: { code: string } }
-  | { pathname: '/studio/ho-so' };
+  | { pathname: '/studio/ho-so' }
+  | { pathname: '/tin-tuc/[slug]'; params: { slug: string } };
 
 /**
  * Trang một thông báo dẫn tới (GH#37), tách khỏi ngôn ngữ: slug vi/en do `pathnames` của next-intl
@@ -28,5 +29,7 @@ export function notificationHref(target: NotificationTargetDto | null): Notifica
         : null;
     case 'STUDIO_APPLICATION':
       return { pathname: '/studio/ho-so' };
+    case 'NEWS_ARTICLE':
+      return target.id ? { pathname: '/tin-tuc/[slug]', params: { slug: target.id } } : null;
   }
 }

@@ -350,7 +350,7 @@ describe('notifications: bell inbox, ownership and email preferences', () => {
     it('rejects an unknown type and an empty body', async () => {
       const buyer = await t.createUser('BUYER');
       for (const body of [
-        { preferences: [{ type: 'NEWS_PUBLISHED', email: false }] },
+        { preferences: [{ type: 'NOT_A_NOTICE_TYPE', email: false }] },
         { preferences: [] },
         {},
       ]) {

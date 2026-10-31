@@ -6,6 +6,7 @@ import {
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from '@nestjs/common';
+import { notifyDueImportantNews } from '@vcraft/database';
 import type { ObjectStorage } from '@vcraft/storage';
 import { type ConnectionOptions, Queue, Worker } from 'bullmq';
 import { createTransport } from 'nodemailer';
@@ -99,7 +100,14 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
           concurrency: 2,
         },
       ),
-      new Worker(OUTBOX_QUEUE, () => relayOutbox(this.orm, dispatch), { connection }),
+      new Worker(
+        OUTBOX_QUEUE,
+        async () => {
+          await notifyDueImportantNews(this.orm);
+          return relayOutbox(this.orm, dispatch);
+        },
+        { connection },
+      ),
     ];
     for (const worker of workers)
       worker.on('failed', (job, error) =>

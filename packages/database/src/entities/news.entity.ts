@@ -1,14 +1,15 @@
 import { type Opt } from '@mikro-orm/core';
 import { Entity, Index, ManyToOne, Property, Unique } from '@mikro-orm/decorators/legacy';
-import type { NewsCategory, NewsStatus } from '@vcraft/domain';
+import type { NewsCategory, NewsStatus, NewsVisibility } from '@vcraft/domain';
 import { normalizeSearchText } from '@vcraft/utils';
 import { BaseEntity } from './base.entity.js';
 import { Household } from './household.entity.js';
 
 /**
  * Tin tức làng nghề (vCRAFT-83g): tin chung của làng hoặc tin của một hộ (`household` có giá trị).
- * `body` là văn bản thuần (không HTML/markdown); giao diện luôn hiển thị như văn bản. Tin của hộ bị
- * tạm ngừng không hiện công khai (xem `isHouseholdPublic`).
+ * `body` là văn bản thuần; `bodyHtml` là HTML đã làm sạch từ trình soạn thảo của Ban quản lý (tin mẫu
+ * không có). Tin của hộ bị tạm ngừng không hiện công khai (xem `isHouseholdPublic`). `PUBLISHED` với
+ * `publishedAt` trong tương lai là tin hẹn giờ.
  */
 const newsSearchText = (n: News) => normalizeSearchText(`${n.title} ${n.summary}`, 800);
 
@@ -38,6 +39,20 @@ export class News extends BaseEntity {
 
   @Property({ type: 'text' })
   body!: string;
+
+  /** Sanitized on every write. Never store HTML here from any other path. */
+  @Property({ type: 'text', nullable: true })
+  bodyHtml?: string | null;
+
+  @Property({ type: 'string', length: 20 })
+  visibility: Opt<NewsVisibility> = 'PUBLIC';
+
+  /** Important news notifies households once, when it actually goes live (FR-NEWS-05). */
+  @Property({ type: 'boolean' })
+  important: Opt<boolean> = false;
+
+  @Property({ type: 'datetime', length: 3, nullable: true })
+  notifiedAt?: Date | null;
 
   @Property({ type: 'string', length: 20 })
   category!: NewsCategory;
