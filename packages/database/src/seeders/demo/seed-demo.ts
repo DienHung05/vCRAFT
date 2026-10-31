@@ -7,6 +7,7 @@ import {
   type DeliveryTerms,
   JOURNAL_STAGES,
   type JournalStage,
+  type ProductCategory,
   type RfqStatus,
   sealChain,
   skippedStagesFor,
@@ -47,8 +48,8 @@ import {
   PRODUCT_TEMPLATES,
   SKIP_REASONS,
   STAGE_NOTES,
+  TEMPLATE_CATEGORY,
   VILLAGE_PARTS,
-  WORKSHOP_NAMES,
 } from './pools.js';
 
 /**
@@ -66,7 +67,36 @@ const DAY = 24 * 60 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
 const NAMESPACE = '6f5c3d8e-2b1a-4c7d-9e0f-1a2b3c4d5e6f';
 const TRACE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+/** Ảnh bìa có giấy phép đã nằm trong `apps/web/public/images/demo` (xem `photo-credits.ts` của web). */
+const HOUSEHOLD_COVERS: Record<string, string> = {
+  'Gốm Minh Hải': '/images/demo/bia-minh-hai-1280.webp',
+  'Gốm Lam Ngọc': '/images/demo/bia-lam-ngoc-1280.webp',
+  'Lò Đức Phát': '/images/demo/bia-duc-phat-1280.webp',
+  'Gốm Hạnh Thủy': '/images/demo/bia-hanh-thuy-1280.webp',
+};
+/** Sản phẩm cố định khớp ảnh có giấy phép; mô tả ảnh đúng điều nhìn thấy trong ảnh. */
+interface FixedProduct {
+  name: string;
+  code: string;
+  batch?: number;
+  category: ProductCategory;
+  priceVnd: number;
+  stock: number;
+  material: string;
+  dimensions: string;
+  weightGrams: number;
+  coverUrl: string;
+  coverAlt: string;
+}
+
+const WORKSHOP_NAME_BY_PURPOSE = {
+  SHOWROOM: 'Phòng trưng bày',
+  BOTH: 'Xưởng vẽ',
+  PRODUCTION: 'Lò nung',
+} as const;
 const PRODUCTS_PER_HOUSEHOLD = 11;
+/** Khớp `visitingInfo` của phòng trưng bày mẫu: 8:00 – 17:00 hằng ngày. */
+const SHOWROOM_HOURS = [0, 1, 2, 3, 4, 5, 6].map((day) => ({ day, open: '08:00', close: '17:00' }));
 /** Ngày (tính từ mốc đầu) của từng công đoạn khi ghi đủ bảy công đoạn. */
 const STAGE_OFFSET_DAYS = [0, 2, 7, 10, 13, 16, 18];
 
@@ -532,10 +562,54 @@ export async function seedDemoData(
     }
   };
   /** Sản phẩm cố định khớp dữ liệu minh họa của apps/web: {chỉ số hộ, chỉ số món} → tên, mã. */
-  const fixedProducts = new Map<string, { name: string; code: string; batch?: number }>([
-    ['0:0', { name: 'Bình hút lộc men lam', code: 'BT7K2QXM' }],
-    ['3:0', { name: 'Bát vẽ sen men trong', code: 'HX2M9KQD' }],
-    [`${DEMO_H}:0`, { name: 'Cốc men trắng quai tròn', code: DEMO_QR_TRACE_CODE, batch: 300 }],
+  const fixedProducts = new Map<string, FixedProduct>([
+    [
+      '0:0',
+      {
+        name: 'Bình hút lộc men lam',
+        code: 'BT7K2QXM',
+        category: 'VASE',
+        priceVnd: 4_800_000,
+        stock: 1,
+        material: 'Đất sét trắng Trúc Thôn, men lam xám tro',
+        dimensions: 'Cao 32 cm · Miệng 9 cm · Bụng 22 cm',
+        weightGrams: 2400,
+        coverUrl: '/images/demo/binh-men-lam-xam-1280.webp',
+        coverAlt:
+          'Bình gốm Bát Tràng cổ cao, bụng tròn, men xám lam, đắp nổi cành cây và một người cầm cần câu',
+      },
+    ],
+    [
+      '3:0',
+      {
+        name: 'Bát vẽ sen men trong',
+        code: 'HX2M9KQD',
+        category: 'TABLEWARE',
+        priceVnd: 380_000,
+        stock: 40,
+        material: 'Đất sét trắng, men trong',
+        dimensions: 'Đường kính 16 cm',
+        weightGrams: 420,
+        coverUrl: '/images/demo/bat-ve-sen-men-trong-1280.webp',
+        coverAlt: 'Lòng chiếc bát gốm men trong ngả ngà, giữa vẽ lam một đoá sen cách điệu có lá',
+      },
+    ],
+    [
+      `${DEMO_H}:0`,
+      {
+        name: 'Cốc men trắng quai tròn',
+        code: DEMO_QR_TRACE_CODE,
+        batch: 300,
+        category: 'TEA',
+        priceVnd: 145_000,
+        stock: 300,
+        material: 'Đất sét, men trắng',
+        dimensions: '330 ml',
+        weightGrams: 310,
+        coverUrl: '/images/demo/coc-men-trang-quai-tron-1280.webp',
+        coverAlt: 'Chiếc cốc sứ trắng thân thẳng, men bóng, quai tròn bên trái, đặt trên nền trắng',
+      },
+    ],
   ]);
 
   // --- Hộ, nghệ nhân, xưởng, sản phẩm, nhật ký ---
@@ -575,6 +649,8 @@ export async function seedDemoData(
       slug,
       history: `[Dữ liệu mẫu] Hộ ${row.seed.name} do ${row.seed.owner} đại diện, làm nghề gốm ở Bát Tràng, chuyên ${row.seed.craft}. Đây là hồ sơ hư cấu dùng để trình diễn, không phải hộ thật.`,
       village: 'Bát Tràng',
+      craft: row.seed.craft,
+      coverUrl: HOUSEHOLD_COVERS[row.seed.name] ?? null,
       status: row.status,
       statusReason: null,
       approvedAt: pending ? null : new Date(createdMs + 2 * DAY),
@@ -624,16 +700,18 @@ export async function seedDemoData(
       em.create(Workshop, {
         id: idOf('workshop', `${row.index}-${w}`),
         household,
-        name: `${WORKSHOP_NAMES[(row.index + w) % WORKSHOP_NAMES.length]} ${row.seed.name}`,
+        name: `${WORKSHOP_NAME_BY_PURPOSE[purpose]} ${row.seed.name}`,
         address: `${random.pick(VILLAGE_PARTS)}, Bát Tràng, Gia Lâm, Hà Nội`,
         purpose,
         acceptsVisitors: purpose !== 'PRODUCTION',
+        openingHours: purpose === 'PRODUCTION' ? null : SHOWROOM_HOURS,
         visitingInfo:
           purpose === 'PRODUCTION'
             ? null
             : 'Mở cửa 8:00 – 17:00 hằng ngày, nên báo trước qua điện thoại.',
         lat: (20.9758 + (random.next() - 0.5) * 0.012).toFixed(6),
-        lng: (105.9139 + (random.next() - 0.5) * 0.012).toFixed(6),
+        // Lệch về phía đông: phía tây Bát Tràng là sông Hồng.
+        lng: (105.9139 + (random.next() - 0.1) * 0.009).toFixed(6),
         createdAt: new Date(createdMs + w * HOUR),
         updatedAt: new Date(createdMs + w * HOUR),
       });
@@ -647,6 +725,8 @@ export async function seedDemoData(
       const templateName = PRODUCT_TEMPLATES[(row.index * 7 + j * 3) % PRODUCT_TEMPLATES.length];
       const glaze = GLAZES[(row.index + j * 5) % GLAZES.length];
       const name = fixed?.name ?? `${templateName} ${glaze}`;
+      // Giá và tồn kho tính từ chỉ số, không gọi `random`: thêm lượt gọi sẽ làm đổi mọi mã truy xuất đã đóng băng.
+      const variant = (row.index * 13 + j * 29) % 24;
       const code = fixed?.code ?? newTraceCode();
       const productId = idOf('product', `${row.index}-${j}`);
       const draft = pending || (row.index === DEMO_H && j >= PRODUCTS_PER_HOUSEHOLD - 2);
@@ -701,6 +781,15 @@ export async function seedDemoData(
         description: `[Dữ liệu mẫu] ${name} do hộ ${row.seed.name} làm thủ công tại Bát Tràng.`,
         kind: batch === undefined ? 'OBJECT' : 'BATCH',
         batchSize: batch ?? null,
+        category:
+          fixed?.category ?? TEMPLATE_CATEGORY[templateName as keyof typeof TEMPLATE_CATEGORY],
+        priceVnd: fixed?.priceVnd ?? (variant + 2) * 50_000,
+        stock: fixed?.stock ?? batch ?? (variant % 5 === 0 ? 0 : 1),
+        material: fixed?.material ?? `Đất sét Bát Tràng, ${glaze}`,
+        dimensions: fixed?.dimensions ?? null,
+        weightGrams: fixed?.weightGrams ?? 300 + variant * 40,
+        coverUrl: fixed?.coverUrl ?? null,
+        coverAlt: fixed?.coverAlt ?? null,
         status: draft ? 'DRAFT' : 'PUBLISHED',
         publishedAt: draft ? null : new Date(lastMs + DAY + 8 * HOUR),
         withdrawnReason: null,

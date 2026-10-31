@@ -3,15 +3,12 @@
     "codegraph": {
       "type": "stdio",
       "command": "codegraph",
-      "args": [
-        "serve",
-        "--mcp"
-      ],
+      "args": ["serve", "--mcp"],
       "alwaysLoad": true
     },
     "bladebro": {
-			"command": "bladebro",
-			"args": ["mcp"]
-		}
+      "command": "bladebro",
+      "args": ["mcp"]
+    }
   }
 }

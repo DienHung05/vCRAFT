@@ -11,7 +11,11 @@
     "openNow": "Đang mở cửa",
     "closed": "Đang nghỉ",
     "generation": "Đời thứ {n}",
-    "since": "Từ năm {year}"
+    "since": "Từ năm {year}",
+    "retry": "Thử lại",
+    "priceOnRequest": "Liên hệ báo giá",
+    "dataUnavailable": "Chưa tải được dữ liệu. Bạn thử lại sau ít phút.",
+    "householdCoverAlt": "Ảnh xưởng của hộ {household}"
   },
   "nav": {
     "home": "Về trang chủ vCraft",
@@ -39,7 +43,8 @@
       "count": "{count, plural, other {# hộ}}",
       "empty": "Chưa có hộ nào.",
       "meta": "{artisan} · {craft}",
-      "since": "Đời thứ {n} · từ năm {year}"
+      "since": "Đời thứ {n} · từ năm {year}",
+      "productCount": "{count, plural, other {# sản phẩm}}"
     },
     "news": {
       "title": "Tin tức làng nghề",
@@ -125,7 +130,7 @@
       "lead": "Ghé xưởng để tận mắt xem bàn xoay và lò nung. Chấm xanh ngọc là xưởng đang đón khách.",
       "open": "Mở cửa · {hours}",
       "closed": "Đang nghỉ",
-      "cta": "Mở bản đồ",
+      "cta": "Mở bản đồ làng",
       "mapLabel": "Bản đồ thu nhỏ các xưởng gốm ở Bát Tràng"
     },
     "stats": {
@@ -133,7 +138,8 @@
       "households": "Hộ làng nghề",
       "products": "Sản phẩm có ấn truy xuất",
       "scans": "Lượt quét ấn",
-      "years": "Năm làng gốm giữ lửa"
+      "years": "Năm làng gốm giữ lửa",
+      "artisans": "Nghệ nhân được ghi công"
     },
     "news": {
       "title": "Tin từ làng",
@@ -192,7 +198,8 @@
     "timelineHint": "Kéo ngang để xem qua các đời.",
     "gallery": "Trong xưởng",
     "products": "Sản phẩm của hộ",
-    "productsEmpty": "Xưởng chưa có sản phẩm nào ra lò. Bạn quay lại sau nhé."
+    "productsEmpty": "Xưởng chưa có sản phẩm nào ra lò. Bạn quay lại sau nhé.",
+    "coverAlt": "Ảnh xưởng của hộ {household}"
   },
   "product": {
     "breadcrumb": "Đường dẫn trang",
@@ -256,7 +263,9 @@
     "correctedBy": "Đã được đính chính ở mốc {n}",
     "skipped": "Bỏ qua công đoạn trước: {reason}",
     "inProgress": "Đang làm · chưa ghi: {stages}",
-    "hashHint": "Dấu băm SHA-256 của mốc này, nối với mốc trước đó."
+    "hashHint": "Dấu băm SHA-256 của mốc này, nối với mốc trước đó.",
+    "withdrawnTitle": "Món đồ này không còn được trưng bày",
+    "withdrawnText": "Hộ làm ra món đồ đã rút nó khỏi triển lãm, nên nhật ký không còn hiện công khai."
   },
   "rfq": {
     "breadcrumb": "Đường dẫn trang",
@@ -604,6 +613,76 @@
       "PRODUCTION_STARTED": "Đơn hàng đã bắt đầu sản xuất.",
       "PROGRESS_REPORTED": "Có cập nhật tiến độ sản xuất.",
       "ORDER_RECEIVED": "Đơn hàng đã được xác nhận nhận hàng."
+    }
+  },
+  "villageMap": {
+    "title": "Bản đồ làng nghề",
+    "lead": "Tìm xưởng và phòng trưng bày ở Bát Tràng, xem nơi nào đang mở cửa đón khách.",
+    "unavailable": "Chưa tải được danh sách xưởng. Bạn thử lại sau ít phút.",
+    "filtersLabel": "Lọc xưởng",
+    "filterOpenNow": "Đang mở cửa",
+    "filterVisitors": "Đón khách tham quan",
+    "filterCraft": "Nghề",
+    "allCrafts": "Mọi nghề",
+    "myLocation": "Vị trí của tôi",
+    "locating": "Đang tìm vị trí…",
+    "locationDenied": "Không lấy được vị trí của bạn. Hãy kiểm tra quyền truy cập vị trí của trình duyệt.",
+    "noWebgl": "Trình duyệt này không hiển thị được bản đồ (thiếu WebGL). Danh sách bên dưới có đầy đủ các xưởng.",
+    "listTitle": "{count, plural, other {# xưởng}}",
+    "showAll": "Hiện tất cả",
+    "showOnMap": "Xem trên bản đồ",
+    "empty": "Không có xưởng nào khớp bộ lọc.",
+    "openNow": "Đang mở cửa",
+    "closedReopens": "Đóng cửa – mở lại lúc {time}, {day}",
+    "noHours": "Chưa có giờ mở cửa",
+    "productionOnly": "Xưởng sản xuất, không đón khách",
+    "viewHousehold": "Xem trang hộ",
+    "distance": "Cách {km} km",
+    "days": {
+      "0": "Chủ nhật",
+      "1": "Thứ hai",
+      "2": "Thứ ba",
+      "3": "Thứ tư",
+      "4": "Thứ năm",
+      "5": "Thứ sáu",
+      "6": "Thứ bảy"
+    }
+  },
+  "catalog": {
+    "filtersLabel": "Lọc sản phẩm",
+    "search": "Tìm kiếm",
+    "searchPlaceholder": "Tìm sản phẩm, hộ, tin tức",
+    "category": "Danh mục",
+    "allCategories": "Mọi danh mục",
+    "household": "Hộ",
+    "allHouseholds": "Mọi hộ",
+    "minPrice": "Giá từ (đ)",
+    "maxPrice": "Giá đến (đ)",
+    "sort": "Sắp xếp",
+    "oneOfAKind": "Độc bản",
+    "inStock": "Còn hàng",
+    "clear": "Xóa bộ lọc",
+    "loading": "Đang tải sản phẩm",
+    "empty": "Không có sản phẩm nào khớp bộ lọc.",
+    "unavailable": "Chưa tải được sản phẩm. Bạn thử lại sau ít phút.",
+    "retry": "Thử lại",
+    "loadMore": "Tải thêm",
+    "suggestEmpty": "Không có gợi ý nào.",
+    "suggestFailed": "Chưa tải được gợi ý.",
+    "groupProducts": "Sản phẩm",
+    "groupHouseholds": "Hộ",
+    "groupNews": "Tin tức",
+    "categories": {
+      "VASE": "Bình, lọ",
+      "TABLEWARE": "Bát đĩa",
+      "TEA": "Ấm chén, đồ trà",
+      "DECOR": "Trang trí",
+      "WORSHIP": "Đồ thờ"
+    },
+    "sorts": {
+      "newest": "Mới nhất",
+      "price_asc": "Giá tăng dần",
+      "price_desc": "Giá giảm dần"
     }
   },
   "auth": {

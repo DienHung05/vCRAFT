@@ -49,6 +49,23 @@ jobs:
     needs: quality
     if: vars.CI_ENABLED != 'false'
     runs-on: ubuntu-latest
+    # Trang công khai đọc API thật nên E2E cần CSDL đã nạp dữ liệu mẫu và API đang chạy.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env: { POSTGRES_PASSWORD: pw, POSTGRES_DB: vcraft }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 20
+    env:
+      DB_DRIVER: postgresql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: pw
+      DB_NAME: vcraft
+      DB_SSL: 'false'
+      API_INTERNAL_URL: http://localhost:4000/api/v1
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -56,6 +73,25 @@ jobs:
         with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @vcraft/e2e exec playwright install --with-deps chromium
+      - run: pnpm db:migrate
+      - name: Nạp dữ liệu mẫu
+        run: pnpm demo:reset
+        env:
+          APP_ENV: demo
+          NODE_ENV: test
+          DEMO_RESET_CONFIRM: 127.0.0.1:5432/vcraft
+      - run: pnpm exec turbo run build --filter=@vcraft/api
+      - name: Chạy API nền
+        run: |
+          node apps/api/dist/main.js &
+          for i in $(seq 1 30); do curl -sf localhost:4000/api/v1/village/stats && break; sleep 1; done
+        env:
+          APP_URL: http://localhost:4000
+          STORAGE_DRIVER: local
+          STORAGE_LOCAL_DIR: /tmp/vcraft/public
+          STORAGE_LOCAL_PRIVATE_DIR: /tmp/vcraft/private
+          STORAGE_SIGNING_KEY: ci-only-signing-key-0123456789abcdef0123456789
+          MEDIA_PUBLIC_BASE_URL: http://localhost:4000/media
       # E2E chạy trên bản build production (`next start`); turbo build các gói workspace mà web phụ thuộc trước
       - run: pnpm exec turbo run build --filter=@vcraft/web
       - run: pnpm test:e2e
