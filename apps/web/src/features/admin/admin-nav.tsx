@@ -2,55 +2,99 @@
 
 import { cn } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
 import { Link, usePathname } from '@/i18n/navigation';
+import { useAdminClient } from './admin-dashboard';
 
 export interface AdminNavProps {
   /** Mã điều phối mẫu mà mục "Điều phối" dẫn tới tới khi có trang danh sách. */
   coordinationCode: string;
 }
 
-const ITEMS = ['queue', 'coordination', 'news', 'audit'] as const;
+/** Số hồ sơ chờ trên menu tự làm mới; lỗi mạng thì giữ số cũ. */
+const BADGE_REFRESH_MS = 60_000;
+
+const LATER = ['news', 'audit'] as const;
 
 /**
- * Điều hướng Admin: dọc ở màn rộng, hàng cuộn ngang ở màn hẹp. Hiện mới có màn Điều phối;
- * các mục còn lại hiển thị nhưng chưa bấm được (`aria-disabled`).
+ * Điều hướng Admin: dọc ở màn rộng, hàng cuộn ngang ở màn hẹp. Các mục chưa có màn hiển thị nhưng
+ * chưa bấm được (`aria-disabled`).
  */
 export function AdminNav({ coordinationCode }: AdminNavProps) {
   const t = useTranslations('admin.nav');
   const pathname = usePathname();
-  const onCoordination = pathname.startsWith('/admin/dieu-phoi');
+  const { client } = useAdminClient();
+  const [pending, setPending] = useState(0);
+
+  useEffect(() => {
+    if (!client) return;
+    const refresh = () =>
+      client
+        .dashboard()
+        .then((data) => setPending(data.pendingApplications))
+        .catch(() => {});
+    void refresh();
+    const timer = window.setInterval(refresh, BADGE_REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, [client]);
 
   const itemClass =
-    'flex items-center gap-2 whitespace-nowrap rounded-input px-3 py-2 text-small transition-colors duration-(--duration-quick)';
+    'flex items-center gap-2 whitespace-nowrap rounded-input px-3 py-2 text-small transition-colors';
+  const linkClass = (active: boolean) =>
+    cn(
+      itemClass,
+      active ? 'bg-clay/12 font-medium text-clay' : 'text-ink/80 hover:bg-ink/6 hover:text-ink',
+    );
+  const onQueue = pathname.startsWith('/admin/duyet-ho');
+  const onCoordination = pathname.startsWith('/admin/dieu-phoi');
 
   return (
     <nav aria-label={t('label')} className="overflow-x-auto lg:overflow-visible">
       <ul className="flex gap-1 lg:flex-col">
-        {ITEMS.map((key) =>
-          key === 'coordination' ? (
-            <li key={key}>
-              <Link
-                href={{ pathname: '/admin/dieu-phoi/[code]', params: { code: coordinationCode } }}
-                aria-current={onCoordination ? 'page' : undefined}
-                className={cn(
-                  itemClass,
-                  onCoordination
-                    ? 'bg-clay/12 font-medium text-clay'
-                    : 'text-ink/80 hover:bg-ink/6 hover:text-ink',
-                )}
+        <li>
+          <Link
+            href="/admin"
+            aria-current={pathname === '/admin' ? 'page' : undefined}
+            className={linkClass(pathname === '/admin')}
+          >
+            {t('overview')}
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/admin/duyet-ho"
+            aria-current={onQueue ? 'page' : undefined}
+            className={linkClass(onQueue)}
+          >
+            {t('queue')}
+            {pending > 0 ? (
+              <span
+                data-testid="pending-badge"
+                className="rounded-chip bg-seal px-1.5 text-[0.7rem] text-paper"
               >
-                {t(key)}
-              </Link>
-            </li>
-          ) : (
-            <li key={key}>
-              <span aria-disabled="true" className={cn(itemClass, 'text-ash/70')}>
-                {t(key)}
-                <span className="rounded-chip bg-ink/6 px-1.5 text-[0.7rem]">{t('soon')}</span>
+                <span aria-hidden="true">{pending}</span>
+                <span className="sr-only">{t('pending', { count: pending })}</span>
               </span>
-            </li>
-          ),
-        )}
+            ) : null}
+          </Link>
+        </li>
+        <li>
+          <Link
+            href={{ pathname: '/admin/dieu-phoi/[code]', params: { code: coordinationCode } }}
+            aria-current={onCoordination ? 'page' : undefined}
+            className={linkClass(onCoordination)}
+          >
+            {t('coordination')}
+          </Link>
+        </li>
+        {LATER.map((key) => (
+          <li key={key}>
+            <span aria-disabled="true" className={cn(itemClass, 'text-ash/70')}>
+              {t(key)}
+              <span className="rounded-chip bg-ink/6 px-1.5 text-[0.7rem]">{t('soon')}</span>
+            </span>
+          </li>
+        ))}
       </ul>
     </nav>
   );

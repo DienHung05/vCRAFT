@@ -162,9 +162,21 @@ export class ProductPublicationController {
 const HOUSEHOLD_ACTIONS: Record<string, HouseholdEvent> = {
   approve: 'APPROVE',
   reject: 'REJECT',
+  'request-info': 'REQUEST_INFO',
   suspend: 'SUSPEND',
   reinstate: 'REINSTATE',
 };
+
+@Controller('admin/dashboard')
+@Roles('ADMIN')
+export class AdminDashboardController {
+  constructor(private readonly households: HouseholdsService) {}
+
+  @Get()
+  get() {
+    return this.households.dashboard();
+  }
+}
 
 /** Ban quản lý duyệt hộ (`/admin/households`). */
 @Controller('admin/households')
@@ -177,7 +189,17 @@ export class AdminHouseholdsController {
     @Query(new ZodValidationPipe(ListHouseholdsQuerySchema))
     query: ReturnType<typeof ListHouseholdsQuerySchema.parse>,
   ) {
-    return this.households.listForAdmin(query.status);
+    return this.households.listForAdmin(query);
+  }
+
+  @Get(':id')
+  getOne(@Param('id', new UuidPipe()) id: string) {
+    return this.households.getForAdmin(id);
+  }
+
+  @Get(':id/documents')
+  documents(@Param('id', new UuidPipe()) id: string) {
+    return this.households.documentsForAdmin(id);
   }
 
   /** `POST /admin/households/:id/{approve|reject|suspend|reinstate}`. */
@@ -216,5 +238,12 @@ export class PublicHouseholdsController {
   @Get('trace/:code')
   trace(@Param('code') code: string) {
     return this.households.trace(code);
+  }
+
+  /** Đường dẫn ngắn `/q/<code>` báo một lượt quét; luôn 204 để không dò được mã nào tồn tại. */
+  @Post('trace/:code/scan')
+  @HttpCode(204)
+  async scan(@Param('code') code: string) {
+    await this.households.recordScan(code);
   }
 }

@@ -14,7 +14,7 @@ import {
 } from '../src';
 
 const EXPECTED: Record<HouseholdStatus, Partial<Record<HouseholdEvent, HouseholdStatus>>> = {
-  PENDING_REVIEW: { APPROVE: 'APPROVED', REJECT: 'REJECTED' },
+  PENDING_REVIEW: { APPROVE: 'APPROVED', REJECT: 'REJECTED', REQUEST_INFO: 'PENDING_REVIEW' },
   APPROVED: { SUSPEND: 'SUSPENDED' },
   SUSPENDED: { REINSTATE: 'APPROVED' },
   REJECTED: {},

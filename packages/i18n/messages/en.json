@@ -266,7 +266,9 @@
     "inProgress": "In progress · not yet recorded: {stages}",
     "hashHint": "SHA-256 hash of this entry, chained to the one before it.",
     "withdrawnTitle": "This piece is no longer on display",
-    "withdrawnText": "The household withdrew it from the exhibition, so its journal is no longer public."
+    "withdrawnText": "The household withdrew it from the exhibition, so its journal is no longer public.",
+    "lockedTitle": "We cannot verify this piece",
+    "lockedText": "The household behind code {code} is locked by the village board. Please be careful: vCraft does not currently vouch for this piece."
   },
   "rfq": {
     "breadcrumb": "Breadcrumb",
@@ -404,7 +406,9 @@
       "coordination": "Coordination",
       "news": "News",
       "audit": "Audit log",
-      "soon": "Soon"
+      "soon": "Soon",
+      "overview": "Overview",
+      "pending": "{count} applications waiting"
     },
     "coordination": {
       "breadcrumb": "Breadcrumb",
@@ -487,6 +491,68 @@
       "receive": "Confirm receipt",
       "cancelOrder": "Cancel order",
       "cancelReason": "Give a reason for cancelling the order:"
+    },
+    "dashboard": {
+      "title": "Overview",
+      "loading": "Loading…",
+      "signIn": "Sign in with a village board account.",
+      "failed": "We could not load the figures.",
+      "retry": "Try again",
+      "activeHouseholds": "Active households",
+      "pendingApplications": "Applications waiting",
+      "openRfqs": "Open quotation requests",
+      "ordersInProduction": "Orders in production",
+      "qrScans30Days": "QR scans, last 30 days",
+      "reviewCta": "Review {count} waiting applications"
+    },
+    "queue": {
+      "title": "Household approval",
+      "filters": "Filter applications",
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "from": "From",
+      "to": "To",
+      "loading": "Loading…",
+      "signIn": "Sign in with a village board account.",
+      "failed": "We could not load the queue.",
+      "retry": "Try again",
+      "empty": "No applications match these filters."
+    },
+    "review": {
+      "back": "Back to queue",
+      "loading": "Loading…",
+      "signIn": "Sign in with a village board account.",
+      "missing": "Household not found.",
+      "failed": "We could not load this application.",
+      "retry": "Try again",
+      "declared": "Declared information",
+      "craft": "Craft",
+      "village": "Village",
+      "foundedYear": "Founding year",
+      "artisans": "Makers",
+      "approvedAt": "Approved on",
+      "currentReason": "Current note: {reason}",
+      "documents": "Documents",
+      "documentsHint": "Each open creates a private link that expires in 5 minutes.",
+      "noDocuments": "No documents submitted.",
+      "openDocument": "Open",
+      "documentFailed": "We could not open this document.",
+      "workshops": "Workshops on the map",
+      "noWorkshops": "No workshops declared.",
+      "noLocation": "Workshop location not declared.",
+      "decision": "Decision",
+      "reason": "Reason",
+      "sealed": "Approved and sealed.",
+      "saved": "Decision saved.",
+      "stale": "This application just changed. We loaded the latest version; check it and decide again.",
+      "failed_action": "We could not save the decision.",
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject",
+        "request-info": "Request more information",
+        "suspend": "Lock household",
+        "reinstate": "Unlock household"
+      }
     }
   },
   "exhibition": {

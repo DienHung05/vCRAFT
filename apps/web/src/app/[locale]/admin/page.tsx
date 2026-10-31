@@ -1,12 +1,18 @@
-import { redirect } from '@/i18n/navigation';
-import { demoParams } from '@/lib/demo/data';
+import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
+import { AdminDashboard } from '@/features/admin/admin-dashboard';
 import { resolveLocale } from '@/lib/locale';
 
-/** `/admin` chưa có tổng quan riêng: vào thẳng màn điều phối đầu tiên (đích sau đăng nhập của Admin). */
+export async function generateMetadata({
+  params,
+}: PageProps<'/[locale]/admin'>): Promise<Metadata> {
+  await resolveLocale(params);
+  const t = await getTranslations('admin.dashboard');
+  return { title: t('title'), robots: { index: false } };
+}
+
+/** Tổng quan của Ban quản lý, cũng là đích sau đăng nhập của Admin. */
 export default async function AdminIndexPage({ params }: PageProps<'/[locale]/admin'>) {
-  const locale = await resolveLocale(params);
-  const first = demoParams.coordinations[0];
-  return first
-    ? redirect({ href: { pathname: '/admin/dieu-phoi/[code]', params: { code: first } }, locale })
-    : redirect({ href: '/', locale });
+  await resolveLocale(params);
+  return <AdminDashboard />;
 }

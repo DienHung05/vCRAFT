@@ -1,10 +1,13 @@
 import { type EntityManager, MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type {
+  AdminDashboardDto,
+  AdminHouseholdDto,
   ApplyHouseholdRequest,
   CreateArtisanRequest,
   CreateProductRequest,
   CreateWorkshopRequest,
+  HouseholdDocumentDto,
   HouseholdDto,
   MapPinsDto,
   ProductDto,
@@ -19,8 +22,12 @@ import {
   Artisan,
   AuditLog,
   Household,
+  MediaAsset,
+  OutboxEvent,
   Product,
   ProductMaker,
+  QuotationRequest,
+  TraceScan,
   Workshop,
 } from '@vcraft/database';
 import {
@@ -351,14 +358,89 @@ export class HouseholdsService {
 
   // --- Ban quản lý ---
 
-  async listForAdmin(status?: HouseholdStatus): Promise<HouseholdDto[]> {
+  /** Hàng đợi duyệt: hồ sơ nộp trước đứng trước; `from`/`to` là ngày theo giờ Việt Nam. */
+  async listForAdmin(filters: {
+    status?: HouseholdStatus | undefined;
+    from?: string | undefined;
+    to?: string | undefined;
+  }): Promise<AdminHouseholdDto[]> {
     const em = this.orm.em.fork();
-    const households = await em.find(Household, status ? { status } : {}, {
-      orderBy: { createdAt: 'asc' },
-    });
-    return Promise.all(
-      households.map(async (h) => toHouseholdDto(h, await this.parts(em, h, false))),
+    const households = await em.find(
+      Household,
+      {
+        ...(filters.status && { status: filters.status }),
+        ...((filters.from || filters.to) && {
+          createdAt: {
+            ...(filters.from && { $gte: new Date(`${filters.from}T00:00:00.000+07:00`) }),
+            ...(filters.to && { $lte: new Date(`${filters.to}T23:59:59.999+07:00`) }),
+          },
+        }),
+      },
+      { orderBy: { createdAt: 'asc' } },
     );
+    return households.map((h) => ({
+      id: h.id,
+      version: h.version,
+      name: h.name,
+      status: h.status,
+      submittedAt: h.createdAt.toISOString(),
+    }));
+  }
+
+  /** Hồ sơ đầy đủ cho màn duyệt, ở mọi trạng thái. */
+  async getForAdmin(householdId: string): Promise<HouseholdDto> {
+    const em = this.orm.em.fork();
+    const household = await em.findOne(Household, householdId);
+    if (!household) throw notFound();
+    return toHouseholdDto(household, await this.parts(em, household, false));
+  }
+
+  /** Giấy tờ riêng tư do người đại diện tải lên; nội dung đọc qua `GET /media/:id/read-url`. */
+  async documentsForAdmin(householdId: string): Promise<{ data: HouseholdDocumentDto[] }> {
+    const em = this.orm.em.fork();
+    const household = await em.findOne(Household, householdId);
+    if (!household) throw notFound();
+    const assets = await em.find(
+      MediaAsset,
+      { ownerId: household.representative.id, purpose: 'CERTIFICATE', visibility: 'PRIVATE' },
+      { orderBy: { createdAt: 'asc' } },
+    );
+    return {
+      data: assets.map((a) => ({
+        id: a.id,
+        mimeType: a.mimeType,
+        sizeBytes: a.sizeBytes,
+        createdAt: a.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  async dashboard(): Promise<AdminDashboardDto> {
+    const em = this.orm.em.fork();
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const [activeHouseholds, pendingApplications, openRfqs, ordersInProduction, qrScans30Days] =
+      await Promise.all([
+        em.count(Household, { status: 'APPROVED' }),
+        em.count(Household, { status: 'PENDING_REVIEW' }),
+        em.count(QuotationRequest, { status: { $in: ['SENT', 'BIDDING'] } }),
+        em.count(QuotationRequest, { status: 'IN_PRODUCTION' }),
+        em.count(TraceScan, { createdAt: { $gte: since } }),
+      ]);
+    return { activeHouseholds, pendingApplications, openRfqs, ordersInProduction, qrScans30Days };
+  }
+
+  /** Ghi một lượt quét QR; mã không tồn tại hoặc không còn công khai thì bỏ qua, không báo lỗi. */
+  async recordScan(traceCode: string): Promise<void> {
+    await this.orm.em.fork().transactional(async (em) => {
+      const product = await em.findOne(
+        Product,
+        { traceCode: traceCode.toUpperCase() },
+        { populate: ['household'] },
+      );
+      if (!product) return;
+      if (publicProductAvailability(product.household.status, product.status) !== 'VISIBLE') return;
+      em.create(TraceScan, { product });
+    });
   }
 
   async decide(
@@ -385,6 +467,11 @@ export class HouseholdsService {
         entityId: household.id,
         before: { status: before },
         after: { status: household.status, reason: reason ?? null },
+      });
+      // Thư báo quyết định đi qua outbox cùng giao dịch: quyết định lưu được thì thư mới được gửi.
+      em.create(OutboxEvent, {
+        type: 'household.decision',
+        payload: { householdId: household.id, decision: event, reason: reason ?? null },
       });
       await em.flush();
       return toHouseholdDto(household, await this.parts(em, household, false));
@@ -429,6 +516,7 @@ export class HouseholdsService {
       ),
       household: { name: product.household.name, slug: product.household.slug },
       journal: await loadJournal(em, product),
+      scanCount: await em.count(TraceScan, { product }),
     };
   }
 

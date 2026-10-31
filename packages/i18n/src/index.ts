@@ -31,6 +31,8 @@ export const pathnames = {
   '/chap-nhan-loi-moi': { vi: '/chap-nhan-loi-moi', en: '/accept-invitation' },
   '/studio/ho-so': { vi: '/studio/ho-so', en: '/studio/profile' },
   '/admin': '/admin',
+  '/admin/duyet-ho': { vi: '/admin/duyet-ho', en: '/admin/approvals' },
+  '/admin/duyet-ho/[id]': { vi: '/admin/duyet-ho/[id]', en: '/admin/approvals/[id]' },
   '/studio': '/studio',
   '/studio/san-pham': { vi: '/studio/san-pham', en: '/studio/products' },
   '/studio/san-pham/moi': { vi: '/studio/san-pham/moi', en: '/studio/products/new' },

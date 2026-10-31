@@ -1,5 +1,6 @@
 import { defaultLocale, type Locale, locales, pathnames } from '@vcraft/i18n';
 import type { NextRequest } from 'next/server';
+import { apiBaseUrl } from '@/lib/api/internal-url';
 
 /** Tên cookie ngôn ngữ mà next-intl ghi khi người dùng đã chọn ngôn ngữ. */
 const LOCALE_COOKIE = 'NEXT_LOCALE';
@@ -31,6 +32,11 @@ function negotiate(header: string | null): Locale {
  */
 export async function GET(request: NextRequest, ctx: RouteContext<'/q/[code]'>): Promise<Response> {
   const { code } = await ctx.params;
+  // Đếm lượt quét không được làm chậm hay chặn người quét: lỗi thì bỏ qua (FR-ADM-06).
+  void fetch(`${apiBaseUrl()}/trace/${encodeURIComponent(code)}/scan`, {
+    method: 'POST',
+    signal: AbortSignal.timeout(1500),
+  }).catch(() => {});
   const cookie = request.cookies.get(LOCALE_COOKIE)?.value;
   const locale = isLocale(cookie) ? cookie : negotiate(request.headers.get('accept-language'));
   // `routing` dùng localePrefix mặc định ('always'): đích là `/<locale><pathname bản địa hóa>`.
