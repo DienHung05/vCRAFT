@@ -7,6 +7,7 @@ export type EmailTopic = (typeof EMAIL_TOPICS)[number];
 const TOPIC_OF: Record<NotificationTypeDto, EmailTopic> = {
   HOUSEHOLD_APPROVED: 'application',
   HOUSEHOLD_REJECTED: 'application',
+  HOUSEHOLD_INFO_REQUESTED: 'application',
   HOUSEHOLD_SUSPENDED: 'application',
   HOUSEHOLD_REINSTATED: 'application',
   RFQ_INVITED: 'quotation',

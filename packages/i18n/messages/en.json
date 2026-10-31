@@ -690,6 +690,7 @@
       "ORDER_RECEIVED": "The order receipt was confirmed.",
       "HOUSEHOLD_APPROVED": "Your household application was approved.",
       "HOUSEHOLD_REJECTED": "Your household application was not approved.",
+      "HOUSEHOLD_INFO_REQUESTED": "Your household application needs more information.",
       "HOUSEHOLD_SUSPENDED": "Your household is suspended from the exhibition.",
       "HOUSEHOLD_REINSTATED": "Your household is back in the exhibition."
     }

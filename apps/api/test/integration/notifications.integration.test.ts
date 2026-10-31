@@ -81,12 +81,10 @@ describe('notifications: bell inbox, ownership and email preferences', () => {
     });
     expect(count.body).toEqual({ unreadCount: 1 });
 
-    // Một sự kiện outbox cho thư SMTP, khớp id thông báo
-    const events = await db.orm.em
-      .fork()
-      .find(OutboxEvent, { type: 'notification.created' }, { orderBy: { id: 'asc' } });
-    const noticeIds = events.flatMap((event) => event.payload.noticeIds as string[]);
-    expect(noticeIds).toContain(inbox.data[0]?.id);
+    // Thư cho quyết định này đi qua `household.decision` (kèm lý do); không xếp thêm thư thứ hai
+    const em = db.orm.em.fork();
+    expect(await em.count(OutboxEvent, { type: 'notification.created' })).toBe(0);
+    expect(await em.count(OutboxEvent, { type: 'household.decision' })).toBeGreaterThan(0);
 
     // Người ra quyết định không tự nhận thông báo của mình
     expect((await list(admin.auth)).data.map((n) => n.type)).not.toContain('HOUSEHOLD_APPROVED');

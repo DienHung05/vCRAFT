@@ -65,6 +65,10 @@ const COPY: Record<NotificationType, { subject: string; body: string }> = {
     subject: 'Hồ sơ hộ của bạn chưa được chấp nhận',
     body: 'Ban quản lý chưa chấp nhận hồ sơ hộ của bạn. Xem lý do trong trang trạng thái hồ sơ.',
   },
+  HOUSEHOLD_INFO_REQUESTED: {
+    subject: 'Hồ sơ hộ của bạn cần bổ sung thông tin',
+    body: 'Ban quản lý cần thêm thông tin để xét hồ sơ hộ của bạn. Xem yêu cầu trong trang trạng thái hồ sơ.',
+  },
   HOUSEHOLD_SUSPENDED: {
     subject: 'Hộ của bạn tạm ngừng trưng bày',
     body: 'Ban quản lý đã tạm ngừng trưng bày hộ của bạn. Xem lý do trong trang trạng thái hồ sơ.',

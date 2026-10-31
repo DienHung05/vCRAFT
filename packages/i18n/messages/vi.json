@@ -690,6 +690,7 @@
       "ORDER_RECEIVED": "Đơn hàng đã được xác nhận nhận hàng.",
       "HOUSEHOLD_APPROVED": "Hồ sơ hộ của bạn đã được chấp nhận.",
       "HOUSEHOLD_REJECTED": "Hồ sơ hộ của bạn chưa được chấp nhận.",
+      "HOUSEHOLD_INFO_REQUESTED": "Hồ sơ hộ của bạn cần bổ sung thông tin.",
       "HOUSEHOLD_SUSPENDED": "Hộ của bạn đang tạm ngừng trưng bày.",
       "HOUSEHOLD_REINSTATED": "Hộ của bạn được trưng bày trở lại."
     }
