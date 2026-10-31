@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { AcceptBidRequestSchema, CreateRfqRequestSchema, RfqResponseSchema, UpdateRfqRequestSchema } from '../src';
+import {
+  AcceptBidRequestSchema,
+  CreateRfqRequestSchema,
+  RfqResponseSchema,
+  UpdateRfqRequestSchema,
+} from '../src';
 
 const valid = {
   design: 'Binh gom men ran',
@@ -18,7 +23,13 @@ describe('GH#9 contracts: request creation', () => {
   });
 
   it('requires design, quantity, destination, delivery date, deadline', () => {
-    for (const field of ['design', 'quantity', 'destination', 'requiredBy', 'biddingClosesAt'] as const) {
+    for (const field of [
+      'design',
+      'quantity',
+      'destination',
+      'requiredBy',
+      'biddingClosesAt',
+    ] as const) {
       const { [field]: _drop, ...rest } = valid;
       const r = CreateRfqRequestSchema.safeParse(rest);
       expect(r.success, field).toBe(false);
@@ -49,15 +60,25 @@ describe('GH#9 contracts: request creation', () => {
 
   it('requires at least one invite or coordination opt-in', () => {
     expect(
-      CreateRfqRequestSchema.safeParse({ ...valid, invitedHouseholdIds: [], coordinationOptIn: false }).success,
+      CreateRfqRequestSchema.safeParse({
+        ...valid,
+        invitedHouseholdIds: [],
+        coordinationOptIn: false,
+      }).success,
     ).toBe(false);
     expect(
-      CreateRfqRequestSchema.safeParse({ ...valid, invitedHouseholdIds: [], coordinationOptIn: true }).success,
+      CreateRfqRequestSchema.safeParse({
+        ...valid,
+        invitedHouseholdIds: [],
+        coordinationOptIn: true,
+      }).success,
     ).toBe(true);
   });
 
   it('accept-bid body carries only the chosen bid (version travels in If-Match header, BR-L1)', () => {
-    expect(AcceptBidRequestSchema.safeParse({ bidId: valid.invitedHouseholdIds[0] }).success).toBe(true);
+    expect(AcceptBidRequestSchema.safeParse({ bidId: valid.invitedHouseholdIds[0] }).success).toBe(
+      true,
+    );
     expect(AcceptBidRequestSchema.safeParse({}).success).toBe(false);
   });
 });

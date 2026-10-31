@@ -15,7 +15,9 @@
       "!**/*.md",
       "!**/next-env.d.ts",
       "!pnpm-lock.yaml",
-      "!pnpm-workspace.yaml"
+      "!pnpm-workspace.yaml",
+      "!.claude",
+      "!docs/design"
     ]
   },
   "formatter": {
