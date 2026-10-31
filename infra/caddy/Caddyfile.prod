@@ -1,4 +1,6 @@
-# Caddy cho PRODUCTION. Bắt buộc đặt biến môi trường:
+# LƯU Ý (ADR-16): production chính thức chạy trên Vercel + Render, KHÔNG dùng file này; giữ lại cho phương án tự host/dự phòng.
+#
+# Caddy cho PRODUCTION (tự host). Bắt buộc đặt biến môi trường:
 #   DOMAIN         tên miền công khai, vd. vcraft.example.com (DNS A/AAAA phải trỏ về máy chạy Caddy, mở cổng 80 và 443)
 #   API_UPSTREAM   vd. api:4000
 #   WEB_UPSTREAM   vd. web:3000
