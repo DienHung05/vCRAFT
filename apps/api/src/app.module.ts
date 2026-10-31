@@ -11,6 +11,7 @@ import { MediaModule } from './modules/media/media.module';
 import { NewsModule } from './modules/news/news.module';
 import { ProductionLogsModule } from './modules/production-logs/production-logs.module';
 import { RfqModule } from './modules/rfq/rfq.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { RfqModule } from './modules/rfq/rfq.module';
     NewsModule,
     ProductionLogsModule,
     RfqModule,
+    UsersModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ProblemDetailsFilter }],
 })

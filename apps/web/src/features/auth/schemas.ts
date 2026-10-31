@@ -1,0 +1,96 @@
+import { SLUG_PATTERN } from '@vcraft/contracts';
+import { z } from 'zod';
+
+/**
+ * Luật kiểm tra ở trình duyệt cho các form tài khoản. Thông điệp lỗi của Zod là KHÓA trong
+ * `auth.validation` của từ điển (không phải câu chữ), nên cùng một schema phục vụ cả vi lẫn en;
+ * `useValidationMessage` dịch khi hiển thị. Luật cuối cùng vẫn do API/Supabase ép.
+ */
+export const VALIDATION_KEYS = [
+  'emailRequired',
+  'emailInvalid',
+  'passwordRequired',
+  'passwordShort',
+  'passwordWeak',
+  'confirmMismatch',
+  'nameShort',
+  'slugRequired',
+  'slugInvalid',
+  'workshopNameShort',
+  'addressShort',
+  'locationRequired',
+  'latInvalid',
+  'lngInvalid',
+] as const;
+export type ValidationKey = (typeof VALIDATION_KEYS)[number];
+
+export function isValidationKey(value: unknown): value is ValidationKey {
+  return VALIDATION_KEYS.includes(value as ValidationKey);
+}
+
+const key = (k: ValidationKey) => k;
+
+export const PASSWORD_MIN_LENGTH = 8;
+
+const emailSchema = z
+  .string()
+  .trim()
+  .min(1, key('emailRequired'))
+  .pipe(z.email(key('emailInvalid')));
+
+/** Mật khẩu mới: tối thiểu 8 ký tự, có cả chữ và số (cấu hình Supabase phải khớp, xem supabase/config.toml). */
+const newPasswordSchema = z
+  .string()
+  .min(1, key('passwordRequired'))
+  .min(PASSWORD_MIN_LENGTH, key('passwordShort'))
+  .refine((value) => /\p{L}/u.test(value) && /\d/.test(value), key('passwordWeak'));
+
+/** Đăng nhập chỉ cần có nhập: luật mật khẩu mới không được chặn người dùng mật khẩu cũ. */
+export const signInSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, key('passwordRequired')),
+});
+export type SignInValues = z.infer<typeof signInSchema>;
+
+export const registerSchema = z.object({ email: emailSchema, password: newPasswordSchema });
+export type RegisterValues = z.infer<typeof registerSchema>;
+
+export const forgotPasswordSchema = z.object({ email: emailSchema });
+export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
+
+export const setPasswordSchema = z
+  .object({ password: newPasswordSchema, confirm: z.string() })
+  .refine((v) => v.password === v.confirm, { path: ['confirm'], message: key('confirmMismatch') });
+export type SetPasswordValues = z.infer<typeof setPasswordSchema>;
+
+export const householdStepSchema = z.object({
+  name: z.string().trim().min(2, key('nameShort')).max(160, key('nameShort')),
+  slug: z
+    .string()
+    .trim()
+    .min(1, key('slugRequired'))
+    .max(160, key('slugInvalid'))
+    .regex(SLUG_PATTERN, key('slugInvalid')),
+  village: z.string().trim().max(160),
+  history: z.string().trim().max(10_000),
+});
+export type HouseholdStepValues = z.infer<typeof householdStepSchema>;
+
+export const WORKSHOP_PURPOSES = ['PRODUCTION', 'SHOWROOM', 'BOTH'] as const;
+
+export const workshopStepSchema = z.object({
+  name: z.string().trim().min(2, key('workshopNameShort')).max(160, key('workshopNameShort')),
+  address: z.string().trim().min(5, key('addressShort')).max(300, key('addressShort')),
+  purpose: z.enum(WORKSHOP_PURPOSES),
+  acceptsVisitors: z.boolean(),
+  visitingInfo: z.string().trim().max(2_000),
+  lat: z
+    .number({ error: key('locationRequired') })
+    .min(-90, key('latInvalid'))
+    .max(90, key('latInvalid')),
+  lng: z
+    .number({ error: key('locationRequired') })
+    .min(-180, key('lngInvalid'))
+    .max(180, key('lngInvalid')),
+});
+export type WorkshopStepValues = z.infer<typeof workshopStepSchema>;

@@ -2,13 +2,16 @@ import { Logo } from '@vcraft/ui';
 import { getTranslations } from 'next-intl/server';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
 import { AdminNav } from '@/features/admin/admin-nav';
+import { AccountMenu } from '@/features/auth/account-menu';
 import { Link } from '@/i18n/navigation';
+import { requireArea } from '@/lib/auth/guard';
 import { demoParams } from '@/lib/demo/data';
 import { resolveLocale } from '@/lib/locale';
 
 /** Khung Admin (BRAND §9): sạch, mật độ cao, nền giấy; sidebar bên trái, thu thành hàng ngang trên màn hẹp. */
 export default async function AdminLayout({ children, params }: LayoutProps<'/[locale]/admin'>) {
-  await resolveLocale(params);
+  const locale = await resolveLocale(params);
+  await requireArea('admin', locale);
   const t = await getTranslations('admin');
   const first = demoParams.coordinations[0];
 
@@ -34,6 +37,9 @@ export default async function AdminLayout({ children, params }: LayoutProps<'/[l
               <LocaleSwitcher />
             </div>
           </div>
+        </div>
+        <div className="px-4 pb-2 lg:pb-3">
+          <AccountMenu align="start" />
         </div>
         <div className="px-2 pb-2 lg:px-3">
           {first ? <AdminNav coordinationCode={first} /> : null}

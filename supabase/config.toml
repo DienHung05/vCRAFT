@@ -1,0 +1,53 @@
+# Cấu hình Supabase Auth do repo quản lý (GH#27): chính sách mật khẩu, phiên và email xác thực tiếng Việt.
+# Chỉ khai những mục vCraft chủ động đặt; mục khác để mặc định của CLI.
+#
+# Đây là tệp cấu hình của Supabase CLI và là NGUỒN để đối chiếu, không tự áp lên dự án thật. Cách áp
+# lên project Supabase (hosted) xem docs/demo/README.md mục "Email xác thực tiếng Việt". Trước khi
+# chạy `supabase config push` phải `supabase config diff`/đọc kỹ, vì lệnh đó ghi đè các mục trên.
+
+project_id = "vcraft"
+
+[auth]
+enabled = true
+# Origin công khai của web (Caddy). Mẫu email dựng liên kết từ giá trị này ({{ .SiteURL }}).
+# Production đổi sang https://<tên miền chính thức>.
+site_url = "http://localhost:8080"
+additional_redirect_urls = ["http://localhost:8080/**", "http://localhost:3000/**"]
+# FR-AUTH-04: access token JWT sống 15 phút, refresh token xoay vòng có phát hiện dùng lại.
+jwt_expiry = 900
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+# Khớp luật kiểm tra ở form web (apps/web/src/features/auth/schemas.ts): >= 8 ký tự, có chữ và số.
+minimum_password_length = 8
+password_requirements = "letters_digits"
+
+[auth.email]
+enable_signup = true
+# FR-AUTH-01: chưa xác minh email thì chưa đăng nhập được.
+enable_confirmations = true
+double_confirm_changes = true
+max_frequency = "60s"
+otp_expiry = 3600
+
+# FR-AUTH-01/03/06: mẫu thư tiếng Việt mang thương hiệu vCraft. Liên kết trong thư dùng `token_hash`
+# (xem `supabase/templates/*.html`) trỏ tới `/auth/confirm`, `/vi/dat-lai-mat-khau`, `/vi/chap-nhan-loi-moi`.
+[auth.email.template.confirmation]
+subject = "Xác minh email để vào vCraft"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.invite]
+subject = "Ban quản lý mời hộ của bạn vào vCraft"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.recovery]
+subject = "Đặt lại mật khẩu vCraft"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.email_change]
+subject = "Xác nhận đổi email vCraft"
+content_path = "./supabase/templates/email_change.html"
+
+[auth.email.template.reauthentication]
+subject = "Mã xác nhận vCraft"
+content_path = "./supabase/templates/reauthentication.html"
