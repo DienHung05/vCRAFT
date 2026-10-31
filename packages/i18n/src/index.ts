@@ -31,6 +31,8 @@ export const pathnames = {
   '/dat-lai-mat-khau': { vi: '/dat-lai-mat-khau', en: '/reset-password' },
   '/chap-nhan-loi-moi': { vi: '/chap-nhan-loi-moi', en: '/accept-invitation' },
   '/tai-khoan': { vi: '/tai-khoan', en: '/account' },
+  '/studio/bao-gia': { vi: '/studio/bao-gia', en: '/studio/quotes' },
+  '/studio/don-hang': { vi: '/studio/don-hang', en: '/studio/orders' },
   '/studio/ho-so': { vi: '/studio/ho-so', en: '/studio/profile' },
   '/studio/de-xuat-tham-gia/[id]': {
     vi: '/studio/de-xuat-tham-gia/[id]',

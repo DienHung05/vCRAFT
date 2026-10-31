@@ -48,6 +48,18 @@ export const ContributionResponseSchema = z.strictObject({
 });
 export type ContributionDto = z.infer<typeof ContributionResponseSchema>;
 
+/**
+ * `GET /me/invitations`: requests addressed to the household, with its own offer only.
+ * Sealed bidding: nothing here reveals another household's offer or even who else was invited.
+ */
+export const MyInvitationSchema = z.strictObject({
+  request: RfqResponseSchema,
+  contribution: ContributionResponseSchema.nullable(),
+  declined: z.boolean(),
+});
+export type MyInvitationDto = z.infer<typeof MyInvitationSchema>;
+export const MyInvitationListSchema = z.array(MyInvitationSchema);
+
 export const InviteHouseholdsRequestSchema = z.strictObject({
   householdIds: z.array(IdSchema).min(1).max(100),
 });

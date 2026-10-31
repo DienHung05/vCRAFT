@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { LiveAllocationWorkspace } from '@/features/orders/live-allocation-workspace';
 import { LiveContributionWorkspace } from '@/features/rfq/live-contribution-workspace';
+import { Link } from '@/i18n/navigation';
 import { isRfqUuid } from '@/lib/api/rfq-id';
 import { resolveLocale } from '@/lib/locale';
 
@@ -32,9 +33,9 @@ export default async function ContributionPage({
     <article className="mx-auto flex max-w-3xl flex-col gap-8 px-gutter pt-8">
       <header className="flex flex-col gap-2">
         <nav aria-label={t('title', { code: id })} className="text-small text-ash">
-          <span aria-current="page" className="font-mono text-ink">
-            {id}
-          </span>
+          <Link href="/studio/bao-gia" className="hover:text-ink">
+            {t('allInvitations')}
+          </Link>
         </nav>
       </header>
       <LiveContributionWorkspace rfqId={id} />

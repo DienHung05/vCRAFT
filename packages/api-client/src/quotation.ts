@@ -21,6 +21,9 @@ import {
   InviteHouseholdsRequestSchema,
   type ListRfqsQuery,
   MarkAllNoticesReadResponseSchema,
+  MediaAssetResponseSchema,
+  MyAllocationListSchema,
+  MyInvitationListSchema,
   ProblemDetailsSchema,
   QuotationNoticeResponseSchema,
   type ReportProgressRequest,
@@ -141,6 +144,18 @@ export function createQuotationClient(options: QuotationClientOptions) {
         undefined,
         version,
       );
+    },
+    listInvitations() {
+      return request('/me/invitations', MyInvitationListSchema);
+    },
+    declineInvitation(id: string) {
+      return request(`/rfqs/${IdSchema.parse(id)}/decline`, RfqResponseSchema, 'POST');
+    },
+    listMyAllocations() {
+      return request('/me/allocations', MyAllocationListSchema);
+    },
+    getMedia(id: string) {
+      return request(`/media/${IdSchema.parse(id)}`, MediaAssetResponseSchema);
     },
     listHouseholds() {
       return request('/households', HouseholdListResponseSchema);

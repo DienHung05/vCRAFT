@@ -5,6 +5,13 @@ import { BaseEntity } from './base.entity.js';
 import { CooperativeQuotation } from './cooperative-quotation.entity.js';
 import { Household } from './household.entity.js';
 
+export interface AllocationProgressEntry {
+  at: string;
+  completedQty: number;
+  note: string | null;
+  photoUrl: string | null;
+}
+
 /**
  * GH#11: một phân bổ trong đơn đã chốt. Sinh ra ở `PROPOSED` khi buyer chốt
  * chào giá; hộ CONFIRM/DECLINE; DECLINE hủy cả đơn chưa sản xuất.
@@ -26,4 +33,8 @@ export class OrderAllocation extends BaseEntity {
 
   @Property({ type: 'string', length: 20 })
   status: Opt<AllocationStatus> = 'PROPOSED';
+
+  /** Each progress report as it was made (FR-ORD-07): quantity done, note and photo. */
+  @Property({ type: 'json', nullable: true })
+  progressLog?: AllocationProgressEntry[] | null;
 }
