@@ -20,7 +20,8 @@ export function createOutboxDispatcher(queues: {
         await queues.media.add('process', { assetId }, { jobId: `media-${assetId}` });
         return;
       }
-      case 'quotation.notice': {
+      case 'quotation.notice':
+      case 'notification.created': {
         const noticeIds = Array.isArray(event.payload.noticeIds) ? event.payload.noticeIds : [];
         for (const noticeId of noticeIds.map(String))
           await queues.mail.add('send', { noticeId }, { jobId: `mail-${noticeId}` });

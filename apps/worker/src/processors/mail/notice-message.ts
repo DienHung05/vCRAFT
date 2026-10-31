@@ -1,4 +1,10 @@
-import type { AccountRole, QuotationNoticeKind } from '@vcraft/domain';
+import {
+  type AccountRole,
+  type NotificationTarget,
+  type NotificationTargetPage,
+  type NotificationType,
+  notificationTarget,
+} from '@vcraft/domain';
 
 export interface NoticeMail {
   subject: string;
@@ -6,7 +12,7 @@ export interface NoticeMail {
 }
 
 /** Nội dung từng loại thông báo: tiêu đề thư và một câu mô tả sự kiện. */
-const COPY: Record<QuotationNoticeKind, { subject: string; body: string }> = {
+const COPY: Record<NotificationType, { subject: string; body: string }> = {
   RFQ_INVITED: {
     subject: 'Bạn được mời tham gia một yêu cầu báo giá',
     body: 'Một yêu cầu báo giá mới đang chờ đề xuất tham gia của hộ bạn.',
@@ -51,27 +57,51 @@ const COPY: Record<QuotationNoticeKind, { subject: string; body: string }> = {
     subject: 'Đơn hàng đã được xác nhận nhận hàng',
     body: 'Đơn hàng đã được xác nhận nhận hàng. Cảm ơn bạn đã tham gia.',
   },
+  HOUSEHOLD_APPROVED: {
+    subject: 'Hồ sơ hộ của bạn đã được chấp nhận',
+    body: 'Ban quản lý đã chấp nhận hộ của bạn. Trang của hộ nay hiện công khai và Studio đã mở.',
+  },
+  HOUSEHOLD_REJECTED: {
+    subject: 'Hồ sơ hộ của bạn chưa được chấp nhận',
+    body: 'Ban quản lý chưa chấp nhận hồ sơ hộ của bạn. Xem lý do trong trang trạng thái hồ sơ.',
+  },
+  HOUSEHOLD_INFO_REQUESTED: {
+    subject: 'Hồ sơ hộ của bạn cần bổ sung thông tin',
+    body: 'Ban quản lý cần thêm thông tin để xét hồ sơ hộ của bạn. Xem yêu cầu trong trang trạng thái hồ sơ.',
+  },
+  HOUSEHOLD_SUSPENDED: {
+    subject: 'Hộ của bạn tạm ngừng trưng bày',
+    body: 'Ban quản lý đã tạm ngừng trưng bày hộ của bạn. Xem lý do trong trang trạng thái hồ sơ.',
+  },
+  HOUSEHOLD_REINSTATED: {
+    subject: 'Hộ của bạn được trưng bày trở lại',
+    body: 'Ban quản lý đã khôi phục trưng bày cho hộ của bạn.',
+  },
 };
 
-/** Trang chi tiết yêu cầu báo giá theo vai trò người nhận (không có dấu `/` đầu và cuối). */
-const ROLE_PATH: Record<AccountRole, string> = {
-  BUYER: 'yeu-cau-bao-gia',
-  ADMIN: 'admin/dieu-phoi',
-  HOUSEHOLD: 'studio/de-xuat-tham-gia',
+/** Đường dẫn tiếng Việt của từng trang đích (không có dấu `/` đầu); `{id}` là mã đối tượng. */
+const PAGE_PATH: Record<NotificationTargetPage, string> = {
+  BUYER_RFQ: 'yeu-cau-bao-gia/{id}',
+  STUDIO_CONTRIBUTION: 'studio/de-xuat-tham-gia/{id}',
+  ADMIN_COORDINATION: 'admin/dieu-phoi/{id}',
+  STUDIO_APPLICATION: 'studio/ho-so',
 };
 
-export function noticeLink(appUrl: string, role: AccountRole, requestId: string): string {
-  return `${appUrl.replace(/\/+$/, '')}/vi/${ROLE_PATH[role]}/${requestId}`;
+export function noticeLink(appUrl: string, target: NotificationTarget): string {
+  const path = PAGE_PATH[target.page].replace('{id}', target.id ?? '');
+  return `${appUrl.replace(/\/+$/, '')}/vi/${path}`;
 }
 
 /** Thư văn bản thuần (không HTML) cho một thông báo; hàm thuần nên kiểm thử không cần SMTP. */
 export function buildNoticeMail(input: {
-  kind: QuotationNoticeKind;
+  kind: NotificationType;
   role: AccountRole;
-  requestId: string;
+  /** Mã yêu cầu báo giá (luồng báo giá) hoặc đối tượng liên quan; có thể không có. */
+  subjectId: string | null;
   appUrl: string;
 }): NoticeMail {
   const copy = COPY[input.kind];
+  const target = notificationTarget(input.kind, input.role, input.subjectId);
   return {
     subject: `[vCraft] ${copy.subject}`,
     text: [
@@ -79,8 +109,7 @@ export function buildNoticeMail(input: {
       '',
       copy.body,
       '',
-      `Xem chi tiết: ${noticeLink(input.appUrl, input.role, input.requestId)}`,
-      '',
+      ...(target ? [`Xem chi tiết: ${noticeLink(input.appUrl, target)}`, ''] : []),
       'vCraft',
     ].join('\n'),
   };

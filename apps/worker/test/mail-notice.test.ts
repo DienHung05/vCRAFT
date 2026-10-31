@@ -19,6 +19,14 @@ describe('outbox dispatcher: quotation.notice', () => {
     expect(media.add).not.toHaveBeenCalled();
   });
 
+  it('routes notification.created to the same mail queue', async () => {
+    const mail = { add: vi.fn(async () => undefined) };
+    const media = { add: vi.fn(async () => undefined) };
+    const dispatch = createOutboxDispatcher({ media, mail });
+    await dispatch({ id: 'e3', type: 'notification.created', payload: { noticeIds: ['n9'] } });
+    expect(mail.add.mock.calls).toEqual([['send', { noticeId: 'n9' }, { jobId: 'mail-n9' }]]);
+  });
+
   it('ignores a payload without notice ids', async () => {
     const mail = { add: vi.fn(async () => undefined) };
     const dispatch = createOutboxDispatcher({ media: mail, mail });
@@ -30,9 +38,10 @@ describe('outbox dispatcher: quotation.notice', () => {
 describe('sendNoticeMail', () => {
   const recipient: NoticeRecipient = {
     kind: 'ALLOCATION_PROPOSED',
-    requestId: 'req-1',
+    subjectId: 'req-1',
     email: 'rep@example.com',
     role: 'HOUSEHOLD',
+    emailEnabled: true,
   };
 
   function fakeTransport() {
@@ -64,6 +73,21 @@ describe('sendNoticeMail', () => {
       subject: '[vCraft] Bạn có phần sản xuất cần xác nhận',
     });
     expect(sent[0]?.text).toContain('http://localhost:8080/vi/studio/de-xuat-tham-gia/req-1');
+  });
+
+  it('does not send when the recipient turned email off for this kind', async () => {
+    const { transport, sent } = fakeTransport();
+    const delivered = await sendNoticeMail(
+      {
+        loadNotice: async () => ({ ...recipient, emailEnabled: false }),
+        transport,
+        from: 'x',
+        appUrl: 'http://x',
+      },
+      'n1',
+    );
+    expect(delivered).toBe(false);
+    expect(sent).toHaveLength(0);
   });
 
   it('skips silently when the notice or recipient is missing', async () => {

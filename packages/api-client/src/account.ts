@@ -6,9 +6,17 @@ import {
   type ErrorCode,
   type FieldError,
   HouseholdResponseSchema,
+  IdSchema,
+  MarkAllNotificationsReadResponseSchema,
   MediaAssetResponseSchema,
   MeResponseSchema,
+  NotificationListResponseSchema,
+  NotificationPreferencesResponseSchema,
+  NotificationResponseSchema,
   ProblemDetailsSchema,
+  UnreadCountResponseSchema,
+  type UpdateNotificationPreferencesRequest,
+  UpdateNotificationPreferencesRequestSchema,
   WorkshopResponseSchema,
 } from '@vcraft/contracts';
 
@@ -32,7 +40,7 @@ export interface AccountClientOptions {
 
 /**
  * Client cho phiên và hồ sơ hộ (FR-AUTH-02, FR-AUTH-09): `/me`, `/me/household`, tải giấy tờ lên
- * bucket riêng tư. Token luôn lấy từ phiên Supabase hiện tại; không có token thì không gửi gì.
+ * bucket riêng tư, cùng thông báo và tùy chọn email của chính người dùng (GH#37). Token luôn lấy từ phiên Supabase hiện tại; không có token thì không gửi gì.
  */
 export function createAccountClient(options: AccountClientOptions) {
   const fetcher = options.fetch ?? globalThis.fetch;
@@ -98,6 +106,34 @@ export function createAccountClient(options: AccountClientOptions) {
       return request('/media?purpose=CERTIFICATE', MediaAssetResponseSchema, {
         method: 'POST',
         form,
+      });
+    },
+    /** Chuông thông báo: `limit` thông báo mới nhất kèm tổng số chưa đọc. */
+    listNotifications(limit = 30) {
+      return request(`/me/notifications?limit=${limit}`, NotificationListResponseSchema);
+    },
+    /** Nhẹ hơn danh sách: dùng cho nhịp hỏi lại khi dropdown đang đóng. */
+    unreadNotificationCount() {
+      return request('/me/notifications/unread-count', UnreadCountResponseSchema);
+    },
+    markNotificationRead(id: string) {
+      return request(`/me/notifications/${IdSchema.parse(id)}/read`, NotificationResponseSchema, {
+        method: 'POST',
+      });
+    },
+    markAllNotificationsRead() {
+      return request('/me/notifications/read-all', MarkAllNotificationsReadResponseSchema, {
+        method: 'POST',
+      });
+    },
+    /** Tùy chọn email của các loại thông báo vai trò hiện tại có thể nhận. */
+    notificationPreferences() {
+      return request('/me/notification-preferences', NotificationPreferencesResponseSchema);
+    },
+    saveNotificationPreferences(input: UpdateNotificationPreferencesRequest) {
+      return request('/me/notification-preferences', NotificationPreferencesResponseSchema, {
+        method: 'PUT',
+        json: UpdateNotificationPreferencesRequestSchema.parse(input),
       });
     },
   };

@@ -114,6 +114,15 @@ export function AccountMenu({ align = 'end' }: { align?: 'start' | 'end' }) {
             {t(`areas.${me.role}`)}
           </Link>
         ) : null}
+        <Link
+          href="/tai-khoan"
+          onClick={() => {
+            if (menu.current) menu.current.open = false;
+          }}
+          className="block rounded-input px-2 py-2 text-small text-clay hover:bg-ink/6"
+        >
+          {t('nav.settings')}
+        </Link>
         <button
           type="button"
           onClick={signOut}

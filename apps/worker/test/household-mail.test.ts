@@ -1,5 +1,7 @@
+import type { MikroORM } from '@mikro-orm/core';
+import { AppUser, Household, NotificationPreference } from '@vcraft/database';
 import { describe, expect, it, vi } from 'vitest';
-import { buildHouseholdMail } from '../src/processors/mail/send-household-mail';
+import { buildHouseholdMail, sendHouseholdMail } from '../src/processors/mail/send-household-mail';
 import { createOutboxDispatcher } from '../src/processors/outbox/dispatch';
 
 describe('thư quyết định duyệt hộ', () => {
@@ -40,5 +42,49 @@ describe('thư quyết định duyệt hộ', () => {
       { householdId: 'h1', decision: 'APPROVE', reason: null },
       { jobId: 'mail-household-e9' },
     );
+  });
+});
+
+describe('sendHouseholdMail và tùy chọn email', () => {
+  function deps(preference: Partial<NotificationPreference> | null) {
+    const asked: unknown[] = [];
+    const em = {
+      async findOne(entity: unknown, where: unknown) {
+        if (entity === Household) return { name: 'Gốm A', representative: { id: 'u1' } };
+        if (entity === AppUser) return { id: 'u1', email: 'rep@example.com' };
+        if (entity === NotificationPreference) {
+          asked.push(where);
+          return preference;
+        }
+        return null;
+      },
+    };
+    const sent: unknown[] = [];
+    return {
+      asked,
+      sent,
+      deps: {
+        orm: { em: { fork: () => em } } as unknown as MikroORM,
+        transport: { sendMail: async (message: unknown) => void sent.push(message) },
+        from: 'x',
+        appUrl: 'http://x',
+      },
+    };
+  }
+  const job = { householdId: 'h1', decision: 'SUSPEND', reason: null } as const;
+
+  it('gửi thư khi chưa có tùy chọn hoặc người nhận bật email loại này', async () => {
+    const none = deps(null);
+    expect(await sendHouseholdMail(none.deps, job)).toBe(true);
+    expect(none.asked[0]).toEqual({ userId: 'u1', type: 'HOUSEHOLD_SUSPENDED' });
+    const on = deps({ emailEnabled: true });
+    expect(await sendHouseholdMail(on.deps, job)).toBe(true);
+    expect(on.sent).toHaveLength(1);
+  });
+
+  it('bỏ qua khi người nhận đã tắt email cho loại này', async () => {
+    const off = deps({ emailEnabled: false });
+    expect(await sendHouseholdMail(off.deps, job)).toBe(false);
+    expect(off.sent).toHaveLength(0);
   });
 });

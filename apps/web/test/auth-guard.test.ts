@@ -33,7 +33,7 @@ vi.mock('@/i18n/navigation', () => ({
   },
 }));
 
-const { requireArea, redirectIfSignedIn } = await import('@/lib/auth/guard');
+const { requireArea, requireViewer, redirectIfSignedIn } = await import('@/lib/auth/guard');
 
 const me = (overrides: Partial<MeDto>): MeDto => ({
   id: '22222222-2222-4222-8222-222222222222',
@@ -115,6 +115,25 @@ describe('requireArea', () => {
     viewer = me({ role: 'HOUSEHOLD', household: pendingHousehold });
     path = '/en/studio/profile';
     expect(await outcome(() => requireArea('studio', 'en'))).toBe(viewer);
+  });
+});
+
+describe('requireViewer', () => {
+  it('khách: chuyển tới /dang-nhap kèm trang tài khoản để quay lại', async () => {
+    path = '/vi/tai-khoan';
+    expect(await outcome(() => requireViewer('vi'))).toEqual({
+      redirect: {
+        href: { pathname: '/dang-nhap', query: { next: '/vi/tai-khoan' } },
+        locale: 'vi',
+      },
+    });
+  });
+
+  it('mọi vai trò đã đăng nhập đều vào được, kể cả hộ chờ duyệt và tài khoản bị khóa', async () => {
+    viewer = me({ role: 'HOUSEHOLD', household: pendingHousehold });
+    expect(await outcome(() => requireViewer('vi'))).toBe(viewer);
+    viewer = me({ status: 'LOCKED' });
+    expect(await outcome(() => requireViewer('vi'))).toBe(viewer);
   });
 });
 

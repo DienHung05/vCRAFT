@@ -9,6 +9,8 @@ export * from './journal-entry.entity.js';
 export * from './media-asset.entity.js';
 export * from './media-link.entity.js';
 export * from './news.entity.js';
+export * from './notification.entity.js';
+export * from './notification-preference.entity.js';
 export * from './order-allocation.entity.js';
 export * from './outbox-event.entity.js';
 export * from './product.entity.js';

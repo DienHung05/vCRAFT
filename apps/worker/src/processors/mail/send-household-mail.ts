@@ -1,5 +1,6 @@
 import type { MikroORM } from '@mikro-orm/core';
-import { AppUser, Household } from '@vcraft/database';
+import { AppUser, Household, NotificationPreference } from '@vcraft/database';
+import { householdNoticeKind } from '@vcraft/domain';
 import type { MailTransport } from './send-notice-mail';
 
 export type HouseholdDecision = 'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'SUSPEND' | 'REINSTATE';
@@ -55,7 +56,10 @@ export interface HouseholdMailJob {
   reason: string | null;
 }
 
-/** Job `household-decision`: báo quyết định cho người đại diện; hộ đã mất thì bỏ qua. */
+/**
+ * Job `household-decision`: báo quyết định cho người đại diện; hộ đã mất thì bỏ qua, người đại diện
+ * đã tắt email cho loại này (FR-NOTI-02) cũng bỏ qua.
+ */
 export async function sendHouseholdMail(
   deps: { orm: MikroORM; transport: MailTransport; from: string; appUrl: string },
   job: HouseholdMailJob,
@@ -65,6 +69,11 @@ export async function sendHouseholdMail(
   if (!household) return false;
   const user = await em.findOne(AppUser, household.representative.id);
   if (!user) return false;
+  const preference = await em.findOne(NotificationPreference, {
+    userId: user.id,
+    type: householdNoticeKind(job.decision),
+  });
+  if (preference && !preference.emailEnabled) return false;
   const { subject, text } = buildHouseholdMail({
     decision: job.decision,
     householdName: household.name,

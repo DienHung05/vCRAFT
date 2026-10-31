@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
 import { AdminNav } from '@/features/admin/admin-nav';
 import { AccountMenu } from '@/features/auth/account-menu';
+import { NotificationBell } from '@/features/notifications/notification-bell';
 import { Link } from '@/i18n/navigation';
 import { requireArea } from '@/lib/auth/guard';
 import { demoParams } from '@/lib/demo/data';
@@ -38,8 +39,9 @@ export default async function AdminLayout({ children, params }: LayoutProps<'/[l
             </div>
           </div>
         </div>
-        <div className="px-4 pb-2 lg:pb-3">
+        <div className="flex items-center gap-1 px-4 pb-2 lg:pb-3">
           <AccountMenu align="start" />
+          <NotificationBell align="start" />
         </div>
         <div className="px-2 pb-2 lg:px-3">
           {first ? <AdminNav coordinationCode={first} /> : null}

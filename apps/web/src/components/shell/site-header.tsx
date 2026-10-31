@@ -2,6 +2,7 @@ import { Logo } from '@vcraft/ui';
 import { getTranslations } from 'next-intl/server';
 import { AccountMenu } from '@/features/auth/account-menu';
 import { SearchBox } from '@/features/catalog/search-box';
+import { NotificationBell } from '@/features/notifications/notification-bell';
 import { Link } from '@/i18n/navigation';
 import { LocaleSwitcher } from './locale-switcher';
 
@@ -44,6 +45,7 @@ export async function SiteHeader() {
           <div className="hidden sm:block">
             <LocaleSwitcher />
           </div>
+          <NotificationBell />
           <AccountMenu />
           <details className="group relative lg:hidden">
             <summary className="cursor-pointer list-none rounded-input px-3 py-2 text-small text-ink hover:bg-ink/6 [&::-webkit-details-marker]:hidden">
