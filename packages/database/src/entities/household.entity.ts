@@ -1,8 +1,12 @@
 import { type Opt } from '@mikro-orm/core';
 import { Entity, Index, ManyToOne, Property, Unique } from '@mikro-orm/decorators/legacy';
 import type { HouseholdStatus } from '@vcraft/domain';
+import { normalizeSearchText } from '@vcraft/utils';
 import { AppUser } from './app-user.entity.js';
 import { BaseEntity } from './base.entity.js';
+
+const householdSearchText = (h: Household) =>
+  normalizeSearchText(`${h.name} ${h.village ?? ''} ${h.craft ?? ''}`);
 
 /**
  * Hộ sản xuất (GLOSSARY). Một tài khoản đại diện cho một hộ; hộ có nhiều nghệ nhân và nhiều xưởng
@@ -31,6 +35,16 @@ export class Household extends BaseEntity {
   /** Ảnh bìa (đường dẫn tương đối hoặc URL công khai); không có thì giao diện dùng hình thay thế. */
   @Property({ type: 'string', length: 500, nullable: true })
   coverUrl?: string | null;
+
+  /** Tên, làng, nghề đã bỏ dấu cho tìm kiếm (FR-CAT-04); tự tính lại mỗi lần ghi. */
+  @Property({
+    type: 'string',
+    length: 600,
+    default: '',
+    onCreate: (h: Household) => householdSearchText(h),
+    onUpdate: (h: Household) => householdSearchText(h),
+  })
+  searchText?: Opt<string>;
 
   @Property({ type: 'string', length: 20 })
   status: Opt<HouseholdStatus> = 'PENDING_REVIEW';

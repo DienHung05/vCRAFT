@@ -14,6 +14,8 @@ export interface ImageSlotProps {
   caption?: string;
   /** Ảnh thật có giấy phép (demo); không có thì hiện khung nhuốm màu như cũ. */
   photo?: DemoPhotoRef | undefined;
+  /** Ảnh ở URL công khai khác (kho media), không thuộc bộ ảnh có giấy phép. */
+  src?: string | undefined;
   /** `sizes` cho `<picture>`: chiều rộng ảnh theo viewport. */
   sizes?: string;
   /** Ảnh trên màn đầu (LCP): nạp ngay thay vì lười. */
@@ -35,6 +37,7 @@ export function ImageSlot({
   ratio,
   caption,
   photo,
+  src,
   sizes = DEFAULT_SIZES,
   priority = false,
   className,
@@ -73,6 +76,16 @@ export function ImageSlot({
             className="absolute inset-0 size-full object-cover"
           />
         </picture>
+      ) : null}
+      {src && !credit ? (
+        // biome-ignore lint/performance/noImgElement: URL của kho media đã là bản tối ưu, không qua next/image.
+        <img
+          src={src}
+          alt=""
+          loading={priority ? 'eager' : 'lazy'}
+          decoding="async"
+          className="absolute inset-0 size-full object-cover"
+        />
       ) : null}
       {children}
       {caption ? (

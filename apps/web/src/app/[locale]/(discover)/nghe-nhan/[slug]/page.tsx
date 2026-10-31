@@ -1,32 +1,35 @@
-import { Badge, buttonVariants, Card, cn, SealMark, VaseFigure, WaveDivider } from '@vcraft/ui';
+import { buttonVariants, Card, cn, SealMark, WaveDivider } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
+import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
+import { fetchHousehold } from '@/features/catalog/exhibition-api';
 import { ProductCard } from '@/features/catalog/product-card';
+import {
+  photoFromUrl,
+  slotPhoto,
+  tintOf,
+  toProductCardView,
+  toVisitWorkshops,
+} from '@/features/catalog/view-models';
 import { MakerCredits } from '@/features/exhibition/maker-credits';
 import { VisitSection } from '@/features/exhibition/visit-section';
 import { Link } from '@/i18n/navigation';
-import {
-  demoParams,
-  getArtisan,
-  getProductsByArtisan,
-  householdMakers,
-  householdWorkshops,
-} from '@/lib/demo/data';
 import { resolveLocale } from '@/lib/locale';
 
-export function generateStaticParams() {
-  return demoParams.artisans.map((slug) => ({ slug }));
-}
+// Hồ sơ lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({
   params,
 }: PageProps<'/[locale]/nghe-nhan/[slug]'>): Promise<Metadata> {
   const { slug } = await params;
-  const a = await getArtisan(slug);
-  return a ? { title: a.household, description: a.story[0] } : {};
+  const result = await fetchHousehold(slug);
+  return result.status === 'ok'
+    ? { title: result.data.name, description: result.data.history.slice(0, 160) }
+    : {};
 }
 
 /**
@@ -37,24 +40,28 @@ export async function generateMetadata({
 export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-nhan/[slug]'>) {
   await resolveLocale(params);
   const { slug } = await params;
-  const artisan = await getArtisan(slug);
-  if (!artisan) notFound();
-  const [t, common, ex, products] = await Promise.all([
+  const [t, ex, result] = await Promise.all([
     getTranslations('artisan'),
-    getTranslations('common'),
     getTranslations('exhibition'),
-    getProductsByArtisan(slug),
+    fetchHousehold(slug),
   ]);
-  const featured = products.find((p) => p.log.length > 0);
+  if (result.status === 'not-found') notFound();
+  if (result.status === 'unavailable') return <DataUnavailable />;
+
+  const household = result.data;
+  const representative = household.artisans[0];
+  const cover = photoFromUrl(household.coverUrl, t('coverAlt', { household: household.name }));
+  const featured = household.products[0];
+  const story = household.history.split(/\n{2,}/).filter(Boolean);
 
   return (
     <article>
-      {/* Hero toàn màn: chân dung + tên hộ Fraunces cực lớn + "Đời thứ 5". */}
+      {/* Hero toàn màn: ảnh xưởng + tên hộ Fraunces cực lớn. */}
       <header className="relative">
         <ImageSlot
-          alt={t('portraitAlt', { name: artisan.artisanName })}
-          tint={artisan.tint}
-          photo={artisan.banner}
+          alt={t('coverAlt', { household: household.name })}
+          tint={tintOf(household.slug)}
+          {...slotPhoto(cover)}
           priority
           sizes="100vw"
           className="h-[78svh] min-h-[28rem] rounded-none"
@@ -66,21 +73,16 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
               {t('allArtisans')}
             </Link>
             <span aria-hidden="true"> / </span>
-            <span aria-current="page">{artisan.household}</span>
+            <span aria-current="page">{household.name}</span>
           </nav>
-          <p className="font-mono text-small tracking-[0.2em] text-paper/80 uppercase">
-            {common('generation', { n: artisan.generation })} ·{' '}
-            {common('since', { year: artisan.foundedYear })}
-          </p>
-          <h1 className="mt-3 text-display text-paper type-wonk">{artisan.household}</h1>
+          <h1 className="mt-3 text-display text-paper type-wonk">{household.name}</h1>
           <p className="mt-4 text-paper/85">
-            {artisan.artisanName} · {artisan.title} · {artisan.craft}
+            {[representative?.name, household.craft, household.village].filter(Boolean).join(' · ')}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/yeu-cau-bao-gia" className={buttonVariants({ size: 'lg' })}>
               {t('ctaRfq')}
             </Link>
-            {/* Trang bản đồ (FR-MAP) chưa có: dẫn tới khối thông tin xưởng ngay trên trang này. */}
             <a
               href="#workshop"
               className={cn(
@@ -93,131 +95,30 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
           </div>
         </div>
       </header>
-      {artisan.banner ? (
+      {cover?.photo ? (
         <div className="mx-auto max-w-editorial px-gutter">
-          <PhotoCredit id={artisan.banner.id} className="mt-2 text-right text-[0.75rem] text-ash" />
+          <PhotoCredit id={cover.photo.id} className="mt-2 text-right text-[0.75rem] text-ash" />
         </div>
       ) : null}
 
-      {/* Bento: câu chuyện, chứng nhận, xưởng, đời thứ N, năng lực. */}
       <section
-        className="mx-auto grid max-w-editorial gap-5 px-gutter py-section md:grid-cols-6"
+        className="mx-auto max-w-editorial px-gutter py-section"
         aria-label={t('bentoLabel')}
       >
-        <Card className="p-8 md:col-span-4 md:row-span-2">
+        <Card className="p-8">
           <h2 className="text-h3">{t('story')}</h2>
-          {artisan.story.map((p) => (
-            <p key={p.slice(0, 24)} className="mt-4 max-w-prose-vn">
-              {p}
+          {story.map((paragraph) => (
+            <p key={paragraph.slice(0, 24)} className="mt-4 max-w-prose-vn">
+              {paragraph}
             </p>
           ))}
-          <blockquote className="mt-8 border-clay border-l-2 pl-5 font-display text-h3 text-ink/85 italic">
-            “{artisan.quote}”
-          </blockquote>
-        </Card>
-        <Card className="relative flex flex-col justify-between overflow-hidden bg-glaze p-8 text-paper md:col-span-2">
-          <VaseFigure
-            className="absolute -right-6 -bottom-4 h-40 opacity-25"
-            body="var(--color-paper)"
-            band="var(--color-glaze)"
-          />
-          <p className="text-small text-paper/75">{t('lineage')}</p>
-          <p className="font-display text-display leading-none text-paper type-wonk">
-            {artisan.generation}
-          </p>
-          <p className="text-small text-paper/85">
-            {t('lineageText', { n: artisan.generation, year: artisan.foundedYear })}
-          </p>
-        </Card>
-        <Card className="p-8 md:col-span-2">
-          <h2 className="text-h3">{t('certs')}</h2>
-          <ul className="mt-4 space-y-4">
-            {artisan.certifications.map((c) => (
-              <li key={c.name} className="flex items-start gap-3">
-                {c.verified ? (
-                  <SealMark size={24} bleed={false} />
-                ) : (
-                  <span className="size-6 shrink-0 rounded-sm border border-ink/25 border-dashed" />
-                )}
-                <div>
-                  <p className="font-medium">{c.name}</p>
-                  <p className="text-small text-ash">
-                    {c.issuer} · {c.year}
-                  </p>
-                  <Badge tone={c.verified ? 'lacquer' : 'outline'} className="mt-1">
-                    {c.verified ? common('verified') : common('unverified')}
-                  </Badge>
-                </div>
-              </li>
-            ))}
-          </ul>
         </Card>
       </section>
 
-      {/* Timeline gia đình nằm ngang, kéo được (FR-ART-02). */}
-      {artisan.timeline.length > 0 ? (
-        <section className="pb-section" aria-labelledby="timeline-title">
-          <div className="mx-auto max-w-editorial px-gutter">
-            <h2 id="timeline-title">{t('timeline')}</h2>
-            <p className="mt-2 text-small text-ash">{t('timelineHint')}</p>
-          </div>
-          <ol
-            aria-labelledby="timeline-title"
-            // biome-ignore lint/a11y/noNoninteractiveTabindex: vùng cuộn ngang phải nhận focus để cuộn bằng phím mũi tên (WCAG 2.1.1, axe scrollable-region-focusable).
-            tabIndex={0}
-            className="relative mt-10 flex snap-x gap-0 overflow-x-auto px-gutter pb-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glaze"
-          >
-            {artisan.timeline.map((e, i) => (
-              <li key={e.year} className="relative w-72 shrink-0 snap-start pr-8">
-                <span
-                  aria-hidden="true"
-                  className="absolute top-[0.95rem] right-0 left-0 h-px bg-linear-to-r from-clay/60 to-clay/20"
-                />
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    'relative block size-8 rotate-45 rounded-[3px] border-2 border-clay bg-paper',
-                    i === artisan.timeline.length - 1 && 'bg-clay',
-                  )}
-                />
-                <p className="mt-5 font-display text-h2 text-clay type-soft">{e.year}</p>
-                <h3 className="mt-1 font-sans text-body font-semibold text-ink">{e.title}</h3>
-                <p className="mt-1 text-small text-ash">{e.text}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
-      ) : null}
-
-      {/* Gallery xưởng kiểu masonry. */}
-      {artisan.gallery.length > 0 ? (
-        <section
-          className="mx-auto max-w-editorial px-gutter pb-section"
-          aria-labelledby="gallery-title"
-        >
-          <h2 id="gallery-title">{t('gallery')}</h2>
-          <div className="mt-8 columns-1 gap-5 sm:columns-2 lg:columns-3">
-            {artisan.gallery.map((g) => (
-              <figure key={g.caption} className="mb-5 break-inside-avoid">
-                <ImageSlot
-                  alt={g.caption}
-                  caption={g.caption}
-                  tint={g.tint}
-                  ratio={g.ratio}
-                  photo={g.photo}
-                  sizes="(min-width: 1024px) 28vw, (min-width: 640px) 45vw, 100vw"
-                />
-                {g.photo ? <PhotoCredit id={g.photo.id} /> : null}
-              </figure>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       <MakerCredits
         className="mx-auto max-w-editorial px-gutter pb-section"
-        household={artisan.household}
-        makers={householdMakers(artisan).map((m) => ({ name: m.name, detail: m.role }))}
+        household={household.name}
+        makers={household.artisans.map((a) => ({ name: a.name, detail: a.craftRole ?? '' }))}
       />
 
       <WaveDivider />
@@ -226,11 +127,11 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
         aria-labelledby="products-title"
       >
         <h2 id="products-title">{t('products')}</h2>
-        {products.length > 0 ? (
+        {household.products.length > 0 ? (
           <ul className="mt-8 grid grid-cols-2 gap-6 md:grid-cols-4">
-            {products.map((p) => (
+            {household.products.map((p) => (
               <li key={p.slug}>
-                <ProductCard product={p} />
+                <ProductCard product={toProductCardView({ ...p, household })} />
               </li>
             ))}
           </ul>
@@ -256,7 +157,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
               </div>
             </div>
             <Link
-              href={{ pathname: '/truy-xuat/[code]', params: { code: featured.code } }}
+              href={{ pathname: '/truy-xuat/[code]', params: { code: featured.traceCode } }}
               className={buttonVariants({ variant: 'secondary' })}
             >
               {ex('evidenceCta', { product: featured.name })}
@@ -267,8 +168,8 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
 
       <VisitSection
         className="mx-auto max-w-editorial px-gutter pt-section"
-        household={artisan.household}
-        workshops={householdWorkshops(artisan)}
+        household={household.name}
+        workshops={toVisitWorkshops(household.workshops)}
       />
 
       <section
@@ -280,9 +181,6 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
             {ex('wholesaleTitle')}
           </h2>
           <p className="mt-3 max-w-prose-vn text-paper">{ex('wholesaleText')}</p>
-          <p className="mt-2 text-small text-paper">
-            {t('capacity')}: {t('capacityValue', { count: artisan.capacityPerMonth })}
-          </p>
           <Link
             href="/yeu-cau-bao-gia"
             className={cn(
@@ -290,7 +188,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
               'mt-6 border-paper/40 text-paper hover:bg-paper/10',
             )}
           >
-            {ex('wholesaleCta')}
+            {t('ctaRfq')}
           </Link>
         </div>
       </section>

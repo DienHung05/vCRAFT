@@ -1,5 +1,6 @@
 import { Logo } from '@vcraft/ui';
 import { getTranslations } from 'next-intl/server';
+import { SearchBox } from '@/features/catalog/search-box';
 import { Link } from '@/i18n/navigation';
 import { LocaleSwitcher } from './locale-switcher';
 
@@ -35,6 +36,9 @@ export async function SiteHeader() {
           <ul className="flex items-center gap-1">{links}</ul>
         </nav>
         <div className="flex items-center gap-2">
+          <div className="hidden md:block">
+            <SearchBox />
+          </div>
           <LocaleSwitcher />
           <details className="group relative lg:hidden">
             <summary className="cursor-pointer list-none rounded-input px-3 py-2 text-small text-ink hover:bg-ink/6 [&::-webkit-details-marker]:hidden">
@@ -44,6 +48,9 @@ export async function SiteHeader() {
               aria-label={t('label')}
               className="absolute right-0 mt-2 w-56 rounded-card bg-surface p-2 shadow-warm ring-1 ring-ink/8"
             >
+              <div className="p-1 md:hidden">
+                <SearchBox />
+              </div>
               <ul>{links}</ul>
             </nav>
           </details>

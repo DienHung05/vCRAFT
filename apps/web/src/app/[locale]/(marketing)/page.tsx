@@ -1,18 +1,20 @@
-import { Badge, buttonVariants, cn, TraceSealFrame, VaseFigure, WaveDivider } from '@vcraft/ui';
+import { buttonVariants, cn, TraceSealFrame, VaseFigure, WaveDivider } from '@vcraft/ui';
 import { getFormatter, getTranslations } from 'next-intl/server';
+import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
 import { PhotoCreditsNote } from '@/components/photo-credits-note';
+import {
+  fetchHouseholds,
+  fetchProducts,
+  fetchVillageStats,
+} from '@/features/catalog/exhibition-api';
+import { photoFromUrl, projectPins, slotPhoto, tintOf } from '@/features/catalog/view-models';
+import { fetchNews } from '@/features/news/news-api';
+import { fetchMapPins, pinOpenState } from '@/features/village-map/map-model';
 import { VillageMiniMap } from '@/features/village-map/village-mini-map';
 import { Link } from '@/i18n/navigation';
-import {
-  type DemoPhotoRef,
-  getArtisans,
-  getNews,
-  getProducts,
-  getVillageStats,
-  type LogStage,
-} from '@/lib/demo/data';
+import type { DemoPhotoRef, LogStage } from '@/lib/demo/data';
 import { dayPhoto } from '@/lib/demo/stage-photos';
 import { resolveLocale } from '@/lib/locale';
 
@@ -31,19 +33,44 @@ const DAY_STAGES: readonly { stage: LogStage; tint: string }[] = [
   { stage: 'finish', tint: '#3f5a8a' },
 ];
 
+// Số liệu và danh sách lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
+export const dynamic = 'force-dynamic';
+
+/** Làng gốm Bát Tràng có từ khoảng thế kỷ 14 (số tròn, không phải số liệu trong CSDL). */
+const VILLAGE_YEARS = 700;
+
 export default async function HomePage({ params }: PageProps<'/[locale]'>) {
   await resolveLocale(params);
-  const [t, stages, format, artisans, products, news, stats] = await Promise.all([
+  const [
+    t,
+    stages,
+    common,
+    format,
+    householdsResult,
+    productsResult,
+    newsResult,
+    statsResult,
+    pinsResult,
+  ] = await Promise.all([
     getTranslations('home'),
     getTranslations('stages'),
+    getTranslations('common'),
     getFormatter(),
-    getArtisans(),
-    getProducts(),
-    getNews(),
-    getVillageStats(),
+    fetchHouseholds(),
+    fetchProducts({ limit: 1 }),
+    fetchNews({ limit: 3 }),
+    fetchVillageStats(),
+    fetchMapPins(),
   ]);
-  const featured = artisans.slice(0, 3);
-  const showcase = products[0];
+  const households = householdsResult.status === 'ok' ? householdsResult.data.data : [];
+  const featured = households.filter((h) => h.coverUrl).slice(0, 3);
+  const showcase = productsResult.status === 'ok' ? productsResult.data.data[0] : undefined;
+  const now = new Date();
+  const pins = pinsResult.status === 'ok' ? pinsResult.pins : [];
+  const visitable = pins.filter((pin) => pin.visitable).slice(0, 6);
+  const positions = projectPins(
+    pins.map((pin) => ({ id: pin.workshopId, lat: pin.lat, lng: pin.lng })),
+  );
 
   return (
     <>
@@ -61,7 +88,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             </Link>
             {showcase ? (
               <Link
-                href={{ pathname: '/truy-xuat/[code]', params: { code: showcase.code } }}
+                href={{ pathname: '/truy-xuat/[code]', params: { code: showcase.traceCode } }}
                 className={buttonVariants({ variant: 'secondary', size: 'lg' })}
               >
                 {t('hero.ctaTrace')}
@@ -88,7 +115,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
           ) : null}
           {showcase ? (
             <div className="absolute -bottom-6 -left-4 hidden rotate-[-4deg] rounded-card bg-paper p-3 shadow-warm sm:block">
-              <TraceSealFrame code={showcase.code} size={112} title={t('hero.sealAlt')}>
+              <TraceSealFrame code={showcase.traceCode} size={112} title={t('hero.sealAlt')}>
                 <span className="font-display text-h3 text-seal type-wonk">vC</span>
               </TraceSealFrame>
             </div>
@@ -147,33 +174,35 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             {t('artisans.all')} →
           </Link>
         </div>
-        <ul className="mt-10 grid gap-8 md:grid-cols-3">
-          {featured.map((a, i) => (
-            <li key={a.slug} className={cn(i === 1 && 'md:mt-16')}>
-              <Link
-                href={{ pathname: '/nghe-nhan/[slug]', params: { slug: a.slug } }}
-                className="group block"
-              >
-                <ImageSlot
-                  alt={t('artisans.portraitAlt', { name: a.artisanName })}
-                  tint={a.tint}
-                  ratio="3/4"
-                  photo={a.portrait}
-                  sizes="(min-width: 768px) 30vw, 100vw"
-                  className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
-                />
-                <div className="mt-4 flex items-baseline justify-between gap-3">
-                  <h3 className="transition-colors group-hover:text-clay">{a.household}</h3>
-                  <span className="font-mono text-small text-ash">{a.foundedYear}</span>
-                </div>
-                <p className="text-small text-ash">
-                  {a.artisanName} · {a.craft}
-                </p>
-                <p className="mt-3 font-display text-ink/80 italic">“{a.quote}”</p>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {householdsResult.status !== 'ok' ? (
+          <DataUnavailable className="mt-10 flex flex-col items-start gap-3" />
+        ) : (
+          <ul className="mt-10 grid gap-8 md:grid-cols-3">
+            {featured.map((h, i) => (
+              <li key={h.slug} className={cn(i === 1 && 'md:mt-16')}>
+                <Link
+                  href={{ pathname: '/nghe-nhan/[slug]', params: { slug: h.slug } }}
+                  className="group block"
+                >
+                  <ImageSlot
+                    alt={common('householdCoverAlt', { household: h.name })}
+                    tint={tintOf(h.slug)}
+                    ratio="3/4"
+                    {...slotPhoto(
+                      photoFromUrl(h.coverUrl, common('householdCoverAlt', { household: h.name })),
+                    )}
+                    sizes="(min-width: 768px) 30vw, 100vw"
+                    className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
+                  />
+                  <h3 className="mt-4 transition-colors group-hover:text-clay">{h.name}</h3>
+                  <p className="text-small text-ash">
+                    {[h.representative, h.craft].filter(Boolean).join(' · ')}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
         <PhotoCreditsNote />
       </section>
 
@@ -185,36 +214,48 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
               {t('map.title')}
             </h2>
             <p className="mt-3 text-paper/75">{t('map.lead')}</p>
-            <ul className="mt-8 space-y-3">
-              {artisans.map((a) => (
-                <li
-                  key={a.slug}
-                  className="flex items-center justify-between gap-4 border-paper/15 border-b pb-3"
-                >
-                  <span>{a.household}</span>
-                  <span className="flex items-center gap-2 text-small text-paper/75">
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        'size-2 rounded-full',
-                        a.openNow ? 'bg-celadon' : 'bg-paper/30',
-                      )}
-                    />
-                    {a.openNow ? t('map.open', { hours: a.hours }) : t('map.closed')}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            {pinsResult.status === 'ok' ? (
+              <ul className="mt-8 space-y-3">
+                {visitable.map((pin) => {
+                  const state = pinOpenState(pin, now);
+                  return (
+                    <li
+                      key={pin.workshopId}
+                      className="flex items-center justify-between gap-4 border-paper/15 border-b pb-3"
+                    >
+                      <span>{pin.household.name}</span>
+                      <span className="flex items-center gap-2 text-small text-paper/75">
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            'size-2 rounded-full',
+                            state.open ? 'bg-celadon' : 'bg-paper/30',
+                          )}
+                        />
+                        {state.open ? t('map.open', { hours: state.closesAt }) : t('map.closed')}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="mt-8 text-paper/75">{common('dataUnavailable')}</p>
+            )}
+            <Link
+              href="/ban-do"
+              className="mt-6 inline-block text-paper underline underline-offset-4"
+            >
+              {t('map.cta')}
+            </Link>
           </div>
           <div className="md:col-span-7">
             <VillageMiniMap
               label={t('map.mapLabel')}
-              pins={artisans.map((a) => ({
-                id: a.slug,
-                x: a.pin.x,
-                y: a.pin.y,
-                open: a.openNow,
-                label: a.household,
+              pins={visitable.map((pin) => ({
+                id: pin.workshopId,
+                ...(positions.get(pin.workshopId) ?? { x: 50, y: 50 }),
+                open: pinOpenState(pin, now).open,
+                label: pin.household.name,
               }))}
             />
           </div>
@@ -229,14 +270,20 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
           {t('stats.title')}
         </h2>
         <dl className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-4">
-          {(['households', 'products', 'scans', 'years'] as const).map((key) => (
-            <div key={key} className="border-clay/40 border-t pt-4">
-              <dt className="text-small text-ash">{t(`stats.${key}`)}</dt>
-              <dd className="mt-1 font-display text-h1 text-glaze type-soft">
-                {key === 'years' ? `${stats[key]}+` : format.number(stats[key])}
-              </dd>
-            </div>
-          ))}
+          {(['households', 'products', 'artisans', 'years'] as const).map((key) => {
+            const value =
+              key === 'years'
+                ? `${VILLAGE_YEARS}+`
+                : statsResult.status === 'ok'
+                  ? format.number(statsResult.data[key])
+                  : '—';
+            return (
+              <div key={key} className="border-clay/40 border-t pt-4">
+                <dt className="text-small text-ash">{t(`stats.${key}`)}</dt>
+                <dd className="mt-1 font-display text-h1 text-glaze type-soft">{value}</dd>
+              </div>
+            );
+          })}
         </dl>
       </section>
 
@@ -244,29 +291,21 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
         <div className="flex items-end justify-between gap-4">
           <h2 id="news-title">{t('news.title')}</h2>
         </div>
-        <ul className="mt-8 grid gap-6 md:grid-cols-3">
-          {news.map((n) => (
-            <li key={n.slug} className="flex flex-col gap-3">
-              <ImageSlot
-                alt={n.title}
-                tint={n.tint}
-                ratio="3/2"
-                photo={n.photo}
-                sizes="(min-width: 768px) 30vw, 100vw"
-              />
-              {n.photo ? (
-                <PhotoCredit id={n.photo.id} className="-mt-1.5 text-[0.75rem] text-ash" />
-              ) : null}
-              <div className="flex items-center gap-3">
-                <Badge tone="outline">{n.tag}</Badge>
-                <time dateTime={n.date} className="text-small text-ash">
-                  {format.dateTime(new Date(n.date), 'long')}
+        {newsResult.status === 'ok' ? (
+          <ul className="mt-8 grid gap-6 md:grid-cols-3">
+            {newsResult.page.data.map((n) => (
+              <li key={n.slug} className="flex flex-col gap-3">
+                <ImageSlot alt={n.title} tint={tintOf(n.slug)} ratio="3/2" />
+                <time dateTime={n.publishedAt} className="text-small text-ash">
+                  {format.dateTime(new Date(n.publishedAt), 'long')}
                 </time>
-              </div>
-              <h3 className="text-[1.25rem] leading-snug">{n.title}</h3>
-            </li>
-          ))}
-        </ul>
+                <h3 className="text-[1.25rem] leading-snug">{n.title}</h3>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <DataUnavailable className="mt-8 flex flex-col items-start gap-3" />
+        )}
       </section>
     </>
   );
