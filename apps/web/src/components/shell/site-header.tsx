@@ -1,5 +1,6 @@
 import { Logo } from '@vcraft/ui';
 import { getTranslations } from 'next-intl/server';
+import { AccountMenu } from '@/features/auth/account-menu';
 import { Link } from '@/i18n/navigation';
 import { LocaleSwitcher } from './locale-switcher';
 
@@ -36,6 +37,7 @@ export async function SiteHeader() {
         </nav>
         <div className="flex items-center gap-2">
           <LocaleSwitcher />
+          <AccountMenu />
           <details className="group relative lg:hidden">
             <summary className="cursor-pointer list-none rounded-input px-3 py-2 text-small text-ink hover:bg-ink/6 [&::-webkit-details-marker]:hidden">
               {t('menu')}

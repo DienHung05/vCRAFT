@@ -605,5 +605,275 @@
       "PROGRESS_REPORTED": "Production progress was updated.",
       "ORDER_RECEIVED": "The order receipt was confirmed."
     }
+  },
+  "auth": {
+    "nav": {
+      "signIn": "Sign in",
+      "register": "Register",
+      "account": "Your account",
+      "signOut": "Sign out",
+      "signingOut": "Signing out…",
+      "roleLabel": "Role",
+      "checking": "Checking your session",
+      "area": "Go to your workspace"
+    },
+    "roles": {
+      "BUYER": "Buyer",
+      "HOUSEHOLD": "Household representative",
+      "ADMIN": "Village administrator"
+    },
+    "areas": {
+      "BUYER": "My quotation requests",
+      "HOUSEHOLD": "Household profile",
+      "ADMIN": "Coordination"
+    },
+    "fields": {
+      "email": "Email",
+      "emailPlaceholder": "name@example.com",
+      "password": "Password",
+      "passwordHint": "At least 8 characters, with both letters and digits.",
+      "newPassword": "New password",
+      "confirmPassword": "Repeat the new password",
+      "showPassword": "Show",
+      "hidePassword": "Hide",
+      "optional": "optional"
+    },
+    "validation": {
+      "emailRequired": "Enter your email.",
+      "emailInvalid": "That email does not look right, for example name@example.com.",
+      "passwordRequired": "Enter your password.",
+      "passwordShort": "The password needs at least 8 characters.",
+      "passwordWeak": "The password needs both letters and digits.",
+      "confirmMismatch": "The two passwords differ. Type them again so they match.",
+      "nameShort": "The household name needs at least 2 characters.",
+      "slugRequired": "The page address cannot be empty.",
+      "slugInvalid": "The address may only use lowercase letters without accents, digits and hyphens, for example minh-hai-ceramics.",
+      "workshopNameShort": "The workshop name needs at least 2 characters.",
+      "addressShort": "The address needs at least 5 characters so visitors can find the workshop.",
+      "locationRequired": "Pick the workshop location on the map or enter coordinates.",
+      "latInvalid": "Latitude must be a number between -90 and 90.",
+      "lngInvalid": "Longitude must be a number between -180 and 180."
+    },
+    "errors": {
+      "invalid_credentials": "The email or password is not right. Check them, or choose \"Forgot password\" to set a new one.",
+      "email_not_confirmed": "This email is not verified yet. Open the vCraft message and click the verification link, or resend it below.",
+      "email_exists": "Could not create an account with this email. If you registered before, sign in or choose \"Forgot password\".",
+      "rate_limited": "You are going a little fast. Wait a few minutes and try again; what you typed is still here.",
+      "weak_password": "This password is too easy to guess or has appeared in a leak. Choose a longer, less predictable one.",
+      "same_password": "The new password must differ from the current one.",
+      "user_banned": "This account is temporarily locked. Contact the village administration for help.",
+      "link_invalid": "The link has expired or was already used. Request a new one.",
+      "signup_disabled": "New sign-ups are closed for now. Please try again later.",
+      "email_invalid": "This email cannot be used. Try a different address.",
+      "network": "Cannot reach the server. Check your connection and try again; what you typed is still here.",
+      "unknown": "Something went wrong in the kiln. Please try again in a few minutes.",
+      "unconfigured": "This environment has no Supabase Auth connection configured (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY).",
+      "sessionExpired": "Your session expired. Sign in again and carry on; what you typed is still here.",
+      "slugTaken": "Another household already uses this address. Change it and try again.",
+      "locked": "This account is locked, so this action is not available. Contact the village administration.",
+      "forbidden": "This account is not allowed to do that.",
+      "mediaTooLarge": "The file is larger than 10 MB. Retake it at a lower resolution or compress it.",
+      "mediaUnsupported": "Only JPG, PNG, WebP, AVIF images or PDF files are accepted.",
+      "apiDown": "Cannot reach the vCraft server. Please try again in a few minutes."
+    },
+    "signIn": {
+      "title": "Sign in",
+      "lead": "Sign in to follow your quotation requests or manage your household profile.",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "forgot": "Forgot password?",
+      "noAccount": "No account yet?",
+      "registerLink": "Register as a buyer",
+      "householdLink": "Craft household? Apply to join the exhibition",
+      "resend": "Resend verification email",
+      "resending": "Sending…",
+      "resent": "Verification email sent again to {email}. Check your spam folder too.",
+      "needSignIn": "Sign in to open that page.",
+      "notice": {
+        "linkInvalid": "The verification link has expired or was already used. Sign in if you already verified, or register again to get a new email."
+      }
+    },
+    "register": {
+      "title": "Register as a buyer",
+      "lead": "A buyer account lets you send wholesale quotation requests to craft households and follow your orders.",
+      "submit": "Create account",
+      "submitting": "Creating account…",
+      "haveAccount": "Already have an account?",
+      "signInLink": "Sign in",
+      "householdLink": "A craft household? Apply to join the exhibition",
+      "verifyNote": "We will send a verification email. You must click the link in it before you can sign in."
+    },
+    "checkEmail": {
+      "title": "Check your inbox",
+      "lead": "We sent a verification email to {email}. Click the link in it to activate your account.",
+      "spam": "Cannot see it? Look in your spam folder, or resend in a few minutes.",
+      "resend": "Resend email",
+      "resending": "Sending…",
+      "resent": "Email sent again.",
+      "cooldown": "Resend in {seconds} s",
+      "verified": "Already clicked the link?",
+      "signInLink": "Sign in to continue"
+    },
+    "forgot": {
+      "title": "Forgot password",
+      "lead": "Enter the email you registered with. We will send a link to set a new password.",
+      "submit": "Send reset link",
+      "submitting": "Sending…",
+      "back": "Back to sign in",
+      "sentTitle": "Instructions sent",
+      "sent": "If {email} has an account, a password reset email is on its way. The link works once and expires after a few minutes."
+    },
+    "reset": {
+      "title": "Set a new password",
+      "lead": "Choose a new password for your account. Your other devices will be signed out.",
+      "submit": "Save new password",
+      "submitting": "Saving…",
+      "invalidTitle": "This link cannot be used",
+      "invalid": "The password reset link has expired or was already used. Request a new one.",
+      "requestNew": "Request a new link"
+    },
+    "invitation": {
+      "title": "Welcome to vCraft",
+      "lead": "The village administration invited your household to the digital exhibition. Set a password to activate your account.",
+      "submit": "Set password and enter vCraft",
+      "submitting": "Activating…",
+      "invalidTitle": "This invitation cannot be used",
+      "invalid": "An invitation link works only once, and this one has expired or was already used. Ask the village administration to send it again.",
+      "signInLink": "Already set a password? Sign in"
+    },
+    "wizard": {
+      "title": "Register a craft household",
+      "lead": "Four short steps to put your household file in front of the village administration. Once submitted it waits for review and is not public yet.",
+      "stepsLabel": "Household registration steps",
+      "steps": {
+        "account": "Account",
+        "household": "Household",
+        "workshop": "Workshop location",
+        "documents": "Verification documents"
+      },
+      "account": {
+        "title": "Create the representative account",
+        "lead": "This account acts for your household. The email must be verified before the next step.",
+        "submit": "Create account and send verification email",
+        "haveAccount": "Already have an account?",
+        "signInLink": "Sign in and come back here"
+      },
+      "household": {
+        "title": "Household details",
+        "lead": "This name and story appear on the household public page once the village administration accepts it.",
+        "name": "Household name",
+        "namePlaceholder": "Minh Hai Ceramics",
+        "slug": "Page address",
+        "slugHint": "Household page address: {path}",
+        "village": "Craft village",
+        "villagePlaceholder": "Bat Trang",
+        "history": "Household story",
+        "historyHint": "A few lines on history, generations of craft and what sets the household apart. You can add more later.",
+        "submit": "Save and continue",
+        "submitting": "Saving the household…"
+      },
+      "workshop": {
+        "title": "Workshop location",
+        "lead": "Visitors find the workshop through the village map. Pick the exact spot of the workshop gate.",
+        "name": "Workshop name",
+        "namePlaceholder": "Minh Hai Kiln",
+        "address": "Address",
+        "addressPlaceholder": "Hamlet 3, Bat Trang, Gia Lam, Hanoi",
+        "purpose": "The workshop is used for",
+        "purposes": {
+          "PRODUCTION": "Production",
+          "SHOWROOM": "Display and visitors",
+          "BOTH": "Both"
+        },
+        "acceptsVisitors": "The workshop welcomes visitors",
+        "visitingInfo": "Visiting information",
+        "visitingInfoHint": "Opening hours, whether booking is needed, anything to know before arriving.",
+        "submit": "Save workshop and continue",
+        "submitting": "Saving the workshop…"
+      },
+      "map": {
+        "label": "Map for picking the workshop location",
+        "hint": "Click the map to drop the pin, or drag the pin to the right spot. You can also type the coordinates.",
+        "lat": "Latitude",
+        "lng": "Longitude",
+        "useMyLocation": "Use my current location",
+        "locating": "Finding your location…",
+        "locationDenied": "Could not get your location. Allow location access or pick on the map.",
+        "unavailable": "The map could not load on this device. You can still type the coordinates below.",
+        "loading": "Loading the map…",
+        "attribution": "Map data © OpenStreetMap",
+        "marker": "Workshop location"
+      },
+      "documents": {
+        "title": "Verification documents",
+        "lead": "Upload a business licence, a craft village certificate or an equivalent document. Files go to a private store that only the village administration can open.",
+        "pick": "Choose files",
+        "drop": "JPG, PNG, WebP, AVIF images or PDF, up to 10 MB each.",
+        "empty": "No file chosen yet.",
+        "listLabel": "Chosen document files",
+        "status": {
+          "queued": "Waiting to upload",
+          "uploading": "Uploading…",
+          "done": "Uploaded",
+          "error": "Error"
+        },
+        "retry": "Try again",
+        "remove": "Remove file {name}",
+        "submit": "Submit application",
+        "submitting": "Submitting…",
+        "needOne": "Upload at least one document before submitting.",
+        "waitUploads": "Wait for the files to finish uploading, then submit."
+      },
+      "alreadyAdmin": "An administrator account does not represent a household. Sign out and use another email to register a household.",
+      "alreadyApplied": "This account has already submitted a household application."
+    },
+    "profile": {
+      "title": "Household profile",
+      "submitted": "Application submitted. The village administration will review it, and this page changes when there is a result.",
+      "statusLabel": "Application status",
+      "status": {
+        "PENDING_REVIEW": "Pending review",
+        "APPROVED": "Accepted",
+        "REJECTED": "Not accepted",
+        "SUSPENDED": "Display suspended"
+      },
+      "pending": {
+        "title": "The application of {name} is waiting for review",
+        "lead": "Until then you cannot post products or receive quotation requests. Once the application is accepted, the household workspaces open."
+      },
+      "approved": {
+        "title": "{name} is now in the digital exhibition",
+        "lead": "The application was accepted. The household public page is visible to visitors."
+      },
+      "rejected": {
+        "title": "The application of {name} was not accepted",
+        "lead": "You can contact the village administration to learn what to add."
+      },
+      "suspended": {
+        "title": "{name} is suspended from display",
+        "lead": "The household public page is hidden for now; your own records remain untouched."
+      },
+      "reason": "Reason from the village administration",
+      "publicPage": "View the household public page",
+      "stepsLabel": "Application progress",
+      "steps": {
+        "submitted": "Submitted",
+        "review": "Under review",
+        "accepted": "Accepted"
+      }
+    },
+    "forbidden": {
+      "title": "You do not have access to this page",
+      "signedInAs": "You are signed in as {email}, role {role}.",
+      "locked": "Your account is temporarily locked, so workspaces are closed. Contact the village administration for help.",
+      "lead": "This area is for another role. Sign in with a suitable account, or go back home.",
+      "home": "Back to home",
+      "switch": "Sign in with another account"
+    },
+    "serviceDown": {
+      "title": "Cannot check your session right now",
+      "lead": "The vCraft server is not responding. Please try again in a few minutes.",
+      "retry": "Try again"
+    }
   }
 }
