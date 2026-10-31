@@ -663,11 +663,19 @@
   },
   "notifications": {
     "title": "Thông báo",
-    "unread": "{count, plural, =0 {Không có thông báo mới} other {# chưa đọc}}",
     "empty": "Chưa có thông báo nào.",
     "markRead": "Đã đọc",
     "markAllRead": "Đánh dấu tất cả đã đọc",
     "failed": "Không cập nhật được thông báo. Thử lại sau.",
+    "bell": {
+      "label": "Thông báo",
+      "labelUnread": "Thông báo, {count} chưa đọc",
+      "close": "Đóng thông báo",
+      "loading": "Đang tải thông báo…",
+      "unreadMark": "Chưa đọc",
+      "markReadFor": "Đánh dấu đã đọc: {title}",
+      "settings": "Cài đặt thông báo"
+    },
     "kind": {
       "RFQ_INVITED": "Bạn được mời tham gia một yêu cầu báo giá.",
       "CONTRIBUTION_RECEIVED": "Có đề xuất tham gia mới của một hộ.",
@@ -679,7 +687,51 @@
       "ORDER_CANCELLED": "Đơn hàng đã bị hủy.",
       "PRODUCTION_STARTED": "Đơn hàng đã bắt đầu sản xuất.",
       "PROGRESS_REPORTED": "Có cập nhật tiến độ sản xuất.",
-      "ORDER_RECEIVED": "Đơn hàng đã được xác nhận nhận hàng."
+      "ORDER_RECEIVED": "Đơn hàng đã được xác nhận nhận hàng.",
+      "HOUSEHOLD_APPROVED": "Hồ sơ hộ của bạn đã được chấp nhận.",
+      "HOUSEHOLD_REJECTED": "Hồ sơ hộ của bạn chưa được chấp nhận.",
+      "HOUSEHOLD_SUSPENDED": "Hộ của bạn đang tạm ngừng trưng bày.",
+      "HOUSEHOLD_REINSTATED": "Hộ của bạn được trưng bày trở lại."
+    }
+  },
+  "account": {
+    "title": "Tài khoản",
+    "lead": "Xem thông tin của bạn, đổi mật khẩu và chọn thông báo nào cũng gửi qua email.",
+    "profile": {
+      "title": "Thông tin tài khoản",
+      "email": "Email",
+      "emailVerified": "Đã xác minh",
+      "emailUnverified": "Chưa xác minh",
+      "name": "Họ tên",
+      "notSet": "Chưa cập nhật",
+      "role": "Vai trò",
+      "household": "Hộ đại diện",
+      "householdStatus": "Trạng thái hồ sơ hộ",
+      "workspace": "Vào khu làm việc"
+    },
+    "password": {
+      "title": "Đổi mật khẩu",
+      "lead": "Sau khi đổi, các thiết bị khác đang đăng nhập sẽ bị đăng xuất; thiết bị này vẫn giữ phiên.",
+      "current": "Mật khẩu hiện tại",
+      "submit": "Đổi mật khẩu",
+      "submitting": "Đang đổi…",
+      "success": "Đã đổi mật khẩu. Các thiết bị khác đã được đăng xuất.",
+      "currentWrong": "Mật khẩu hiện tại chưa đúng. Kiểm tra lại, hoặc đăng xuất rồi chọn \"Quên mật khẩu\"."
+    },
+    "email": {
+      "title": "Thông báo qua email",
+      "lead": "Thông báo trong chuông luôn được ghi lại. Ở đây bạn chọn loại nào cũng được gửi thành thư.",
+      "loading": "Đang tải lựa chọn…",
+      "loadFailed": "Không tải được lựa chọn email. Bạn thử lại sau ít phút nhé.",
+      "save": "Lưu lựa chọn",
+      "saving": "Đang lưu…",
+      "saved": "Đã lưu lựa chọn email.",
+      "saveFailed": "Chưa lưu được lựa chọn. Bạn thử lại sau ít phút nhé.",
+      "topic": {
+        "application": "Hồ sơ hộ",
+        "quotation": "Yêu cầu và chào giá",
+        "order": "Phân bổ và đơn hàng"
+      }
     }
   },
   "villageMap": {
@@ -761,7 +813,8 @@
       "signingOut": "Đang đăng xuất…",
       "roleLabel": "Vai trò",
       "checking": "Đang kiểm tra phiên đăng nhập",
-      "area": "Vào khu làm việc"
+      "area": "Vào khu làm việc",
+      "settings": "Tài khoản và thông báo"
     },
     "roles": {
       "BUYER": "Khách",

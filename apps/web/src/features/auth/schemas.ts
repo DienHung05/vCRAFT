@@ -63,6 +63,16 @@ export const setPasswordSchema = z
   .refine((v) => v.password === v.confirm, { path: ['confirm'], message: key('confirmMismatch') });
 export type SetPasswordValues = z.infer<typeof setPasswordSchema>;
 
+/** Đổi mật khẩu khi đã đăng nhập (GH#37): xác nhận mật khẩu hiện tại rồi đặt mật khẩu mới khác nó. */
+export const changePasswordSchema = z
+  .object({
+    current: z.string().min(1, key('passwordRequired')),
+    password: newPasswordSchema,
+    confirm: z.string(),
+  })
+  .refine((v) => v.password === v.confirm, { path: ['confirm'], message: key('confirmMismatch') });
+export type ChangePasswordValues = z.infer<typeof changePasswordSchema>;
+
 export const householdStepSchema = z.object({
   name: z.string().trim().min(2, key('nameShort')).max(160, key('nameShort')),
   slug: z

@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { AllocationBoard, type BoardContribution } from '@/features/admin/allocation-board';
 import { LiveCoordination } from '@/features/admin/live-coordination';
-import { NotificationInbox } from '@/features/notifications/notification-inbox';
 import { isRfqUuid } from '@/lib/api/rfq-id';
 import { demoParams, getArtisan, getCoordination } from '@/lib/demo/data';
 import { resolveLocale } from '@/lib/locale';
@@ -45,7 +44,6 @@ export default async function CoordinationPage({
             </span>
           </nav>
         </header>
-        <NotificationInbox />
         <LiveCoordination rfqId={code} />
       </article>
     );

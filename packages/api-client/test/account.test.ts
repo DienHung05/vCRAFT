@@ -137,4 +137,65 @@ describe('account HTTP client', () => {
       (calls[0]?.init.headers as Record<string, string> | undefined)?.['Content-Type'],
     ).toBeUndefined();
   });
+
+  describe('thông báo (GH#37)', () => {
+    const notification = {
+      id: userId,
+      version: 1,
+      type: 'HOUSEHOLD_APPROVED',
+      target: { page: 'STUDIO_APPLICATION', id: null },
+      createdAt: '2026-10-31T00:00:00.000Z',
+      readAt: null,
+    };
+
+    it('đọc danh sách kèm số chưa đọc và gửi limit', async () => {
+      const { api, calls } = client(() => Response.json({ data: [notification], unreadCount: 1 }));
+      await expect(api.listNotifications(10)).resolves.toMatchObject({ unreadCount: 1 });
+      expect(calls[0]?.url).toBe('/api/v1/me/notifications?limit=10');
+    });
+
+    it('đọc số chưa đọc, đánh dấu một và tất cả', async () => {
+      const { api, calls } = client((url) =>
+        Response.json(
+          url.endsWith('/unread-count')
+            ? { unreadCount: 3 }
+            : url.endsWith('/read-all')
+              ? { updated: 2 }
+              : { ...notification, readAt: '2026-10-31T01:00:00.000Z' },
+        ),
+      );
+      await expect(api.unreadNotificationCount()).resolves.toEqual({ unreadCount: 3 });
+      await expect(api.markNotificationRead(userId)).resolves.toMatchObject({
+        readAt: '2026-10-31T01:00:00.000Z',
+      });
+      await expect(api.markAllNotificationsRead()).resolves.toEqual({ updated: 2 });
+      expect(calls.map((c) => [c.init.method, c.url])).toEqual([
+        ['GET', '/api/v1/me/notifications/unread-count'],
+        ['POST', `/api/v1/me/notifications/${userId}/read`],
+        ['POST', '/api/v1/me/notifications/read-all'],
+      ]);
+    });
+
+    it('không gửi id không phải uuid', () => {
+      const { api, calls } = client(() => Response.json(notification));
+      expect(() => api.markNotificationRead('../x')).toThrow();
+      expect(calls).toHaveLength(0);
+    });
+
+    it('đọc và lưu tùy chọn email', async () => {
+      const { api, calls } = client(() =>
+        Response.json({ data: [{ type: 'RFQ_INVITED', email: false }] }),
+      );
+      await expect(api.notificationPreferences()).resolves.toEqual({
+        data: [{ type: 'RFQ_INVITED', email: false }],
+      });
+      await api.saveNotificationPreferences({
+        preferences: [{ type: 'RFQ_INVITED', email: false }],
+      });
+      expect(calls[1]?.init.method).toBe('PUT');
+      expect(calls[1]?.init.body).toBe(
+        JSON.stringify({ preferences: [{ type: 'RFQ_INVITED', email: false }] }),
+      );
+    });
+  });
 });

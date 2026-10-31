@@ -48,6 +48,20 @@ export async function requireArea(area: Area, locale: Locale): Promise<Viewer> {
 }
 
 /**
+ * Cổng cho trang dùng chung mọi vai trò (trang tài khoản, GH#37): khách → đăng nhập kèm đường dẫn
+ * để quay lại; ai đã đăng nhập cũng vào được, kể cả hộ chưa duyệt hay tài khoản bị khóa (để vẫn đổi
+ * được mật khẩu). API sập thì ném {@link ViewerUnavailableError} cho `error.tsx` của `[locale]`.
+ */
+export async function requireViewer(locale: Locale): Promise<Viewer> {
+  const [viewer, path] = await Promise.all([getViewer(), currentPath()]);
+  if (viewer) return viewer;
+  return redirect({
+    href: { pathname: '/dang-nhap', ...(path ? { query: { next: path } } : {}) },
+    locale,
+  });
+}
+
+/**
  * Trang dành cho khách (đăng nhập, đăng ký): người đã đăng nhập không cần thấy lại form, nên được
  * chuyển tới đích quay lại (`next`, đã lọc an toàn) hoặc khu làm việc theo vai trò. API sập thì
  * cứ hiện form, vì vẫn có thể là khách.

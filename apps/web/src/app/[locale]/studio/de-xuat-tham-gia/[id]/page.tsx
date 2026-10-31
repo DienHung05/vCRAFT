@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
-import { NotificationInbox } from '@/features/notifications/notification-inbox';
 import { LiveAllocationWorkspace } from '@/features/orders/live-allocation-workspace';
 import { LiveContributionWorkspace } from '@/features/rfq/live-contribution-workspace';
 import { isRfqUuid } from '@/lib/api/rfq-id';
@@ -38,7 +37,6 @@ export default async function ContributionPage({
           </span>
         </nav>
       </header>
-      <NotificationInbox />
       <LiveContributionWorkspace rfqId={id} />
       <LiveAllocationWorkspace rfqId={id} />
     </article>
