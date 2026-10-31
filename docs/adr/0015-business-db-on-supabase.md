@@ -17,7 +17,7 @@ CSDL nghiệp vụ trước đây chạy trong container Postgres trên máy t�
 
    Backend dùng vai trò `postgres` (chủ bảng), nên không bị RLS chặn.
 4. **NFR-PORT-01 giữ nguyên.** Entity và migration vẫn viết cho hai driver. Không khóa ngoại sang `auth.users`, không dùng tính năng riêng của Postgres trong `packages/database`. MySQL được kiểm chứng bằng integration test (Testcontainers) trong CI và profile compose `mysql` khi demo đổi `DB_DRIVER=mysql`.
-5. Redis vẫn chạy cục bộ: chỉ là cache, hàng đợi và pub/sub tạm, không giữ dữ liệu thật. Supabase không có Redis.
+5. Redis vẫn chạy cục bộ: chỉ là cache, hàng đợi và pub/sub tạm, không giữ dữ liệu thật. Supabase không có Redis. **Cập nhật 31/10/2026 ([ADR-16](0016-deploy-vercel-render.md)):** trên production Redis chạy ở Render Key Value; ở máy dev vẫn chạy cục bộ.
 
 ## Phương án đã cân nhắc
 
