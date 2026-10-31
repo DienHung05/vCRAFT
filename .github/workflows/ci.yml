@@ -73,8 +73,6 @@ jobs:
         with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @vcraft/e2e exec playwright install --with-deps chromium
-      # Entity của @vcraft/database import @vcraft/utils và @vcraft/domain (xuất dist), nên build trước khi migrate
-      - run: pnpm --filter @vcraft/domain --filter @vcraft/utils run build
       - run: pnpm db:migrate
       - name: Nạp dữ liệu mẫu
         run: pnpm demo:reset
