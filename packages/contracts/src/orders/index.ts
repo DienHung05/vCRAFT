@@ -1,6 +1,7 @@
 import { ALLOCATION_STATUSES } from '@vcraft/domain';
 import { z } from 'zod';
-import { IdSchema, VersionSchema } from '../common';
+import { IdSchema, IsoDateTimeSchema, VersionSchema } from '../common';
+import { RfqStatusSchema } from '../rfq/create-rfq';
 
 /** GH#11: buyer chốt chào giá. Phiên bản kỳ vọng ở header `If-Match`, body chỉ mang quotation được chọn. */
 export const AcceptQuotationRequestSchema = z.strictObject({
@@ -26,6 +27,9 @@ const CompletedQuantitySchema = z
 /** Hộ báo cáo tiến độ theo phân bổ: số lượng đã xong từ 0 tới số lượng được giao. */
 export const ReportProgressRequestSchema = z.strictObject({
   completedQty: CompletedQuantitySchema,
+  note: z.string().trim().min(1).max(500).optional(),
+  /** A processed public image the representative uploaded with purpose `JOURNAL`. */
+  photoMediaId: IdSchema.optional(),
 });
 export type ReportProgressRequest = z.infer<typeof ReportProgressRequestSchema>;
 
@@ -39,5 +43,26 @@ export const AllocationResponseSchema = z.strictObject({
   quantity: AllocationQuantitySchema,
   completedQty: CompletedQuantitySchema,
   status: AllocationStatusSchema,
+  progressLog: z.array(
+    z.strictObject({
+      at: IsoDateTimeSchema,
+      completedQty: CompletedQuantitySchema,
+      note: z.string().nullable(),
+      photoUrl: z.string().nullable(),
+    }),
+  ),
 });
 export type AllocationDto = z.infer<typeof AllocationResponseSchema>;
+
+/** `GET /me/allocations`: the household's own shares across orders. */
+export const MyAllocationSchema = AllocationResponseSchema.extend({
+  requestId: IdSchema,
+  requestTitle: z.string(),
+  requestStatus: RfqStatusSchema,
+  unit: z.string(),
+  requiredBy: IsoDateTimeSchema,
+  /** The date this household promised for its share. */
+  completionDate: IsoDateTimeSchema.nullable(),
+});
+export type MyAllocationDto = z.infer<typeof MyAllocationSchema>;
+export const MyAllocationListSchema = z.array(MyAllocationSchema);

@@ -3175,6 +3175,23 @@
           "enumItems": [],
           "mappedType": "string"
         },
+        "progress_log": {
+          "name": "progress_log",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "json"
+        },
         "quantity": {
           "name": "quantity",
           "type": "int",
@@ -4600,6 +4617,23 @@
           "collation": null,
           "enumItems": [],
           "mappedType": "datetime"
+        },
+        "declined_household_ids": {
+          "name": "declined_household_ids",
+          "type": "json",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "json"
         },
         "design": {
           "name": "design",

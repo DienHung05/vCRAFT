@@ -27,6 +27,14 @@ describe('order confirmation, progress and receipt contracts (GH#11)', () => {
       quantity: 2000,
       completedQty: 500,
       status: 'IN_PROGRESS',
+      progressLog: [
+        {
+          at: '2026-10-31T00:00:00.000Z',
+          completedQty: 500,
+          note: 'First firing done',
+          photoUrl: null,
+        },
+      ],
     });
     expect(result.success).toBe(true);
   });

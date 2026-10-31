@@ -2,10 +2,10 @@
 
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
 import type { AllocationDto } from '@vcraft/contracts';
-import { Button, Card } from '@vcraft/ui';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useEffect, useId, useState } from 'react';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
+import { AllocationCard } from './allocation-card';
 
 type State =
   | { kind: 'loading' }
@@ -30,12 +30,10 @@ export function LiveAllocationWorkspace({
 
 function AllocationWorkspace({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
   const t = useTranslations('allocation');
-  const format = useFormatter();
   const titleId = useId();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [refresh, setRefresh] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [amounts, setAmounts] = useState<Record<string, string>>({});
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refresh explicitly reloads the allocations after confirm, decline and progress reports.
   useEffect(() => {
@@ -91,58 +89,13 @@ function AllocationWorkspace({ rfqId, client }: { rfqId: string; client: Quotati
         {t('title')}
       </h1>
       {state.allocations.map((allocation) => (
-        <Card key={allocation.id} className="flex flex-col gap-2 p-4">
-          <p>
-            {format.number(allocation.completedQty)} / {format.number(allocation.quantity)}
-          </p>
-          <p>{t(`status.${allocation.status}`)}</p>
-          {allocation.status === 'PROPOSED' ? (
-            <div className="flex gap-2">
-              <Button
-                disabled={busy}
-                onClick={() =>
-                  void run(() => client.confirmAllocation(allocation.id, allocation.version))
-                }
-              >
-                {t('confirm')}
-              </Button>
-              <Button
-                disabled={busy}
-                onClick={() =>
-                  void run(() => client.declineAllocation(allocation.id, allocation.version))
-                }
-              >
-                {t('decline')}
-              </Button>
-            </div>
-          ) : null}
-          {allocation.status === 'IN_PROGRESS' ? (
-            <form
-              className="flex gap-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                const raw = amounts[allocation.id] ?? '';
-                const completedQty = raw.trim() === '' ? Number.NaN : Number(raw);
-                void run(() =>
-                  client.reportProgress(allocation.id, allocation.version, { completedQty }),
-                );
-              }}
-            >
-              <input
-                aria-label={t('completedQty')}
-                className="h-10 rounded-input border border-ink/20 bg-paper px-2 text-right tabular-nums"
-                inputMode="numeric"
-                value={amounts[allocation.id] ?? ''}
-                onChange={(event) =>
-                  setAmounts((prev) => ({ ...prev, [allocation.id]: event.target.value }))
-                }
-              />
-              <Button type="submit" disabled={busy}>
-                {t('report')}
-              </Button>
-            </form>
-          ) : null}
-        </Card>
+        <AllocationCard
+          key={allocation.id}
+          allocation={allocation}
+          client={client}
+          busy={busy}
+          run={run}
+        />
       ))}
     </section>
   );

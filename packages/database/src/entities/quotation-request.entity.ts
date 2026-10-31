@@ -53,6 +53,10 @@ export class QuotationRequest extends BaseEntity {
   @Property({ type: 'json' })
   invitedHouseholdIds: string[] = [];
 
+  /** Invited households that said no. Never sent to other households or to the buyer. */
+  @Property({ type: 'json', nullable: true })
+  declinedHouseholdIds?: string[] | null;
+
   @Property({ type: 'boolean' })
   coordinationOptIn: Opt<boolean> = false;
 

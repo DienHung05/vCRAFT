@@ -123,6 +123,14 @@ export class RfqController {
     return this.rfqs.getCoordination(actor, id);
   }
 
+  /** An invited household declines. Sealed: only that household's own state changes. */
+  @Post(':id/decline')
+  @HttpCode(200)
+  @Roles('HOUSEHOLD')
+  decline(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
+    return this.rfqs.declineInvitation(actor, id);
+  }
+
   @Post(':id/contributions')
   @Roles('HOUSEHOLD')
   createContribution(
@@ -218,6 +226,24 @@ export class RfqController {
   }
 }
 
+@Controller('me')
+@Roles('HOUSEHOLD')
+export class MyQuotationWorkController {
+  constructor(private readonly rfqs: RfqService) {}
+
+  @Get('invitations')
+  @Header('Cache-Control', 'private, no-store')
+  invitations(@CurrentActor() actor: Actor) {
+    return this.rfqs.listInvitations(actor);
+  }
+
+  @Get('allocations')
+  @Header('Cache-Control', 'private, no-store')
+  allocations(@CurrentActor() actor: Actor) {
+    return this.rfqs.listMyAllocations(actor);
+  }
+}
+
 @Controller('admin/coordination')
 @Roles('ADMIN')
 export class AdminCoordinationController {
@@ -301,6 +327,6 @@ export class AllocationsController {
     @IfMatchVersion() version: number,
     @Body(new ZodValidationPipe(ReportProgressRequestSchema)) body: ReportProgressRequest,
   ): Promise<AllocationDto> {
-    return this.rfqs.reportProgress(actor, id, version, body.completedQty);
+    return this.rfqs.reportProgress(actor, id, version, body);
   }
 }

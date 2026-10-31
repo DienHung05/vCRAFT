@@ -2,6 +2,7 @@
 
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
 import type { ContributionDto, RfqResponse } from '@vcraft/contracts';
+import { Button } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
@@ -31,6 +32,7 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
   const t = useTranslations('contribution');
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [refresh, setRefresh] = useState(0);
+  const [declineFailed, setDeclineFailed] = useState(false);
   // biome-ignore lint/correctness/useExhaustiveDependencies: refresh explicitly reloads the contribution after a saved edit or withdrawal.
   useEffect(() => {
     let active = true;
@@ -95,10 +97,32 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
       throw new Error(t('sendFailed'));
     }
   };
+  const decline = async () => {
+    setDeclineFailed(false);
+    try {
+      await client.declineInvitation(rfqId);
+      setRefresh((value) => value + 1);
+    } catch {
+      setDeclineFailed(true);
+    }
+  };
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-h2">{request.design}</h1>
+      <h1 className="text-h2">{request.title}</h1>
+      <p className="break-words whitespace-pre-wrap text-ash">{request.design}</p>
       {closed ? <p>{t('closed')}</p> : null}
+      {request.declinedByMe ? <p role="status">{t('declined')}</p> : null}
+      {!closed && !request.declinedByMe && contribution?.status !== 'ACTIVE' ? (
+        <Button
+          type="button"
+          variant="secondary"
+          className="self-start"
+          onClick={() => void decline()}
+        >
+          {t('decline')}
+        </Button>
+      ) : null}
+      {declineFailed ? <p role="alert">{t('sendFailed')}</p> : null}
       <ContributionForm
         key={contribution?.version ?? 'new'}
         rfqCode={request.id}

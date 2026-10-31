@@ -734,7 +734,10 @@
     "signIn": "Bạn cần đăng nhập bằng tài khoản đại diện hộ để đề xuất tham gia.",
     "notFound": "Không tìm thấy yêu cầu này, hoặc hộ của bạn không được mời.",
     "loadFailed": "Tải không thành công.",
-    "closed": "Đã hết hạn chào giá, không còn sửa hoặc gửi đề xuất được."
+    "closed": "Đã hết hạn chào giá, không còn sửa hoặc gửi đề xuất được.",
+    "decline": "Từ chối lời mời",
+    "declined": "Hộ đã từ chối lời mời này. Vẫn có thể gửi đề xuất trước hạn.",
+    "allInvitations": "Lời mời báo giá"
   },
   "order": {
     "title": "Đơn hàng",
@@ -780,7 +783,14 @@
       "IN_PROGRESS": "Đang làm",
       "DONE": "Đã xong",
       "CANCELLED": "Đã hủy"
-    }
+    },
+    "note": "Ghi chú (không bắt buộc)",
+    "photo": "Ảnh tiến độ (không bắt buộc)",
+    "history": "Các lần báo cáo",
+    "photoAlt": "Ảnh tiến độ ngày {date}",
+    "photoFailed": "Không tải được ảnh. Hãy thử ảnh khác hoặc báo cáo không kèm ảnh.",
+    "uploading": "Đang tải ảnh…",
+    "invalidQty": "Số lượng đã xong phải từ 0 đến {max}."
   },
   "notifications": {
     "title": "Thông báo",
@@ -1204,8 +1214,7 @@
       "products": "Sản phẩm",
       "quotations": "Báo giá",
       "orders": "Đơn hàng",
-      "profile": "Hồ sơ",
-      "soon": "Sắp có"
+      "profile": "Hồ sơ"
     },
     "signIn": "Hãy đăng nhập bằng tài khoản đại diện hộ để vào Studio.",
     "notHousehold": "Tài khoản này chưa đại diện cho hộ nào. Hãy đăng ký làm nghệ nhân để mở Studio.",
@@ -1384,6 +1393,36 @@
       "corrects": "Đính chính mốc {n}",
       "correctedBy": "Đã được đính chính bởi mốc {n}",
       "delete": "Xóa mốc"
+    },
+    "invitations": {
+      "title": "Lời mời báo giá",
+      "lead": "Các yêu cầu Ban quản lý hoặc người mua mời hộ tham gia. Giá của hộ được giữ kín: hộ khác không thấy.",
+      "loading": "Đang tải lời mời…",
+      "failed": "Không tải được lời mời.",
+      "retry": "Thử lại",
+      "signIn": "Đăng nhập bằng tài khoản đại diện hộ để xem lời mời.",
+      "empty": "Hộ chưa có lời mời nào.",
+      "quantity": "Cần {quantity} {unit}",
+      "deadline": "Hạn chào giá",
+      "requiredBy": "Ngày cần hàng",
+      "open": "Mở",
+      "noOffer": "Chưa gửi đề xuất",
+      "active": "Đã gửi: {price} một {unit}, tối đa {quantity}",
+      "withdrawn": "Đã rút đề xuất",
+      "declined": "Đã từ chối",
+      "closed": "Đã đóng"
+    },
+    "allocations": {
+      "title": "Đơn hàng",
+      "lead": "Phần việc được giao cho hộ trong các đơn đã chốt: xác nhận hoặc từ chối, rồi ghi lại tiến độ.",
+      "loading": "Đang tải đơn hàng…",
+      "failed": "Không tải được đơn hàng.",
+      "retry": "Thử lại",
+      "signIn": "Đăng nhập bằng tài khoản đại diện hộ để xem đơn hàng.",
+      "empty": "Hộ chưa có đơn hàng nào.",
+      "promised": "Hẹn hoàn thành",
+      "requiredBy": "Ngày cần hàng",
+      "orderStatus": "Trạng thái đơn"
     }
   },
   "media": {

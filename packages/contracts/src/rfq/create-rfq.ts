@@ -62,6 +62,8 @@ export const RfqResponseSchema = z.strictObject({
   biddingClosesAt: IsoDateTimeSchema,
   invitedHouseholdIds: z.array(IdSchema),
   coordinationOptIn: z.boolean(),
+  /** Set only on a household representative's read of a request it was invited to. */
+  declinedByMe: z.boolean().optional(),
 });
 export type RfqResponse = z.infer<typeof RfqResponseSchema>;
 

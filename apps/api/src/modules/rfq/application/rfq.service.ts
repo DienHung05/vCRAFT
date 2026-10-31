@@ -11,6 +11,9 @@ import type {
   CreateCooperativeQuotationRequest,
   CreateRfqRequest,
   ListRfqsQuery,
+  MyAllocationDto,
+  MyInvitationDto,
+  ReportProgressRequest,
   RfqListDto,
   RfqResponse,
 } from '@vcraft/contracts';
@@ -34,6 +37,7 @@ import {
 import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
+import { MediaService } from '../../media/application/media.service';
 import { QuotationNotifier } from './quotation-notifier';
 
 /** All plan/input writes lock the request first, so changes cannot race with composition. */
@@ -42,6 +46,7 @@ export class RfqService {
   constructor(
     private readonly orm: MikroORM,
     private readonly notifier: QuotationNotifier,
+    private readonly media: MediaService,
   ) {}
 
   async createRequest(actor: Actor, input: CreateRfqRequest): Promise<RfqResponse> {
@@ -133,8 +138,94 @@ export class RfqService {
     if (actor.role === 'HOUSEHOLD') {
       const household = await this.ownHousehold(em, actor, false);
       response.invitedHouseholdIds = [household.id];
+      response.declinedByMe = (request.declinedHouseholdIds ?? []).includes(household.id);
     }
     return response;
+  }
+
+  /** The household's invitations (FR-RFQ-04), open ones first by the nearest deadline. */
+  async listInvitations(actor: Actor): Promise<MyInvitationDto[]> {
+    const em = this.orm.em.fork();
+    const household = await this.ownHousehold(em, actor, false);
+    // `invitedHouseholdIds` is a JSON column with no portable "contains" across both drivers.
+    const requests = (
+      await em.find(
+        QuotationRequest,
+        { status: { $ne: 'DRAFT' } },
+        { orderBy: { biddingClosesAt: 'desc' }, limit: 1000 },
+      )
+    ).filter((request) => request.invitedHouseholdIds.includes(household.id));
+    const offers = await em.find(
+      ContributionOfferEntity,
+      { household, request: { $in: requests.map((request) => request.id) } },
+      { populate: ['household'] },
+    );
+    const byRequest = new Map(offers.map((offer) => [offer.request.id, offer]));
+    const isOpen = (request: QuotationRequest) =>
+      (request.status === 'SENT' || request.status === 'BIDDING') && !requestExpired(request);
+    return requests
+      .sort(
+        (a, b) =>
+          Number(isOpen(b)) - Number(isOpen(a)) ||
+          (isOpen(a) ? 1 : -1) * (a.biddingClosesAt.getTime() - b.biddingClosesAt.getTime()),
+      )
+      .map((request) => {
+        const offer = byRequest.get(request.id);
+        return {
+          request: { ...toRfqResponse(request), invitedHouseholdIds: [household.id] },
+          contribution: offer ? toContributionDto(offer) : null,
+          declined: (request.declinedHouseholdIds ?? []).includes(household.id),
+        };
+      });
+  }
+
+  /** An invited household says no (FR-RFQ-04). It can still send an offer before the deadline. */
+  async declineInvitation(actor: Actor, id: string) {
+    return this.orm.em.fork().transactional(async (em) => {
+      const request = await this.request(em, id, true);
+      const household = await this.ownHousehold(em, actor);
+      if (!request.invitedHouseholdIds.includes(household.id)) throw notFound();
+      this.open(request);
+      const active = await em.count(ContributionOfferEntity, {
+        request,
+        household,
+        status: 'ACTIVE',
+      });
+      if (active > 0) throw new AppError('INVALID_TRANSITION', 'withdraw the active offer first');
+      const declined = request.declinedHouseholdIds ?? [];
+      if (!declined.includes(household.id))
+        request.declinedHouseholdIds = [...declined, household.id];
+      await em.flush();
+      return {
+        ...toRfqResponse(request),
+        invitedHouseholdIds: [household.id],
+        declinedByMe: true,
+      };
+    });
+  }
+
+  /** The household's own shares across orders (FR-ORD-05 … 07), newest first. */
+  async listMyAllocations(actor: Actor): Promise<MyAllocationDto[]> {
+    const em = this.orm.em.fork();
+    const household = await this.ownHousehold(em, actor, false);
+    const allocations = await em.find(
+      OrderAllocationEntity,
+      { household },
+      { populate: ['household', 'quotation.request'], orderBy: { createdAt: 'desc' }, limit: 500 },
+    );
+    return allocations.map((allocation) => {
+      const request = allocation.quotation.request;
+      const part = allocation.quotation.parts.find((p) => p.householdId === household.id);
+      return {
+        ...toAllocationDto(allocation),
+        requestId: request.id,
+        requestTitle: request.title ?? request.design,
+        requestStatus: toRfqResponse(request).status,
+        unit: request.unit,
+        requiredBy: request.requiredBy.toISOString(),
+        completionDate: part?.completionDate ?? null,
+      };
+    });
   }
 
   async submitRequest(actor: Actor, id: string, version: number): Promise<RfqResponse> {
@@ -260,6 +351,9 @@ export class RfqService {
       if (!request.invitedHouseholdIds.includes(household.id)) throw notFound();
       if (household.status !== 'APPROVED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
       this.completion(input.completionDate, request);
+      request.declinedHouseholdIds = (request.declinedHouseholdIds ?? []).filter(
+        (id) => id !== household.id,
+      );
       const offer = em.create(ContributionOfferEntity, {
         request,
         household,
@@ -683,7 +777,21 @@ export class RfqService {
    * GH#11: hộ báo cáo tiến độ theo phân bổ IN_PROGRESS của mình.
    * completedQty phải nằm trong 0..quantity; đủ số ⇒ DONE.
    */
-  async reportProgress(actor: Actor, allocationId: string, version: number, completedQty: number) {
+  async reportProgress(
+    actor: Actor,
+    allocationId: string,
+    version: number,
+    input: ReportProgressRequest,
+  ) {
+    const { completedQty } = input;
+    let photoUrl: string | null = null;
+    if (input.photoMediaId) {
+      const owned = await this.media.ownedBy(actor.id, [input.photoMediaId]);
+      photoUrl = owned.has(input.photoMediaId)
+        ? ((await this.media.publicUrls([input.photoMediaId])).get(input.photoMediaId) ?? null)
+        : null;
+      if (!photoUrl) throw new AppError('VALIDATION_FAILED', 'photo is not available');
+    }
     return this.orm.em.fork().transactional(async (em) => {
       const allocation = await this.allocation(em, allocationId);
       const request = await this.request(em, allocation.quotation.request.id, true);
@@ -695,6 +803,10 @@ export class RfqService {
       const check = checkProgressReport(allocation.quantity, completedQty);
       if (!check.ok) throw new AppError('VALIDATION_FAILED', 'completedQty out of range');
       allocation.completedQty = completedQty;
+      allocation.progressLog = [
+        ...(allocation.progressLog ?? []),
+        { at: new Date().toISOString(), completedQty, note: input.note ?? null, photoUrl },
+      ];
       if (completedQty === allocation.quantity) {
         allocation.status = unwrap(
           allocationTransition(allocation.status, 'COMPLETE', {
@@ -1187,5 +1299,6 @@ function toAllocationDto(allocation: OrderAllocationEntity): AllocationDto {
     quantity: allocation.quantity,
     completedQty: allocation.completedQty,
     status: allocation.status,
+    progressLog: allocation.progressLog ?? [],
   };
 }

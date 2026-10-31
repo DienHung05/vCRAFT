@@ -734,7 +734,10 @@
     "signIn": "Sign in with a household representative account to submit a contribution offer.",
     "notFound": "This request was not found, or your household is not invited.",
     "loadFailed": "Loading failed.",
-    "closed": "The bidding deadline has passed; contribution offers can no longer be sent or changed."
+    "closed": "The bidding deadline has passed; contribution offers can no longer be sent or changed.",
+    "decline": "Decline invitation",
+    "declined": "Your household declined this invitation. You can still send an offer before the deadline.",
+    "allInvitations": "Quote invitations"
   },
   "order": {
     "title": "Order",
@@ -780,7 +783,14 @@
       "IN_PROGRESS": "In progress",
       "DONE": "Done",
       "CANCELLED": "Cancelled"
-    }
+    },
+    "note": "Note (optional)",
+    "photo": "Progress photo (optional)",
+    "history": "Reports so far",
+    "photoAlt": "Progress photo from {date}",
+    "photoFailed": "The photo could not be uploaded. Try another one, or report without it.",
+    "uploading": "Uploading photo…",
+    "invalidQty": "Completed quantity must be between 0 and {max}."
   },
   "notifications": {
     "title": "Notifications",
@@ -1204,8 +1214,7 @@
       "products": "Products",
       "quotations": "Quotations",
       "orders": "Orders",
-      "profile": "Profile",
-      "soon": "Coming soon"
+      "profile": "Profile"
     },
     "signIn": "Sign in with the household representative account to open the Studio.",
     "notHousehold": "This account does not represent a household yet. Register as an artisan to open the Studio.",
@@ -1384,6 +1393,36 @@
       "corrects": "Corrects entry {n}",
       "correctedBy": "Corrected by entry {n}",
       "delete": "Delete entry"
+    },
+    "invitations": {
+      "title": "Quote invitations",
+      "lead": "Requests your household was invited to. Your prices stay private: other households never see them.",
+      "loading": "Loading invitations…",
+      "failed": "The invitations could not be loaded.",
+      "retry": "Retry",
+      "signIn": "Sign in with a household representative account to view invitations.",
+      "empty": "Your household has no invitations yet.",
+      "quantity": "Needs {quantity} {unit}",
+      "deadline": "Bidding deadline",
+      "requiredBy": "Delivery date",
+      "open": "Open",
+      "noOffer": "No offer sent yet",
+      "active": "Sent: {price} per {unit}, up to {quantity}",
+      "withdrawn": "Offer withdrawn",
+      "declined": "Declined",
+      "closed": "Closed"
+    },
+    "allocations": {
+      "title": "Orders",
+      "lead": "Your household's shares in accepted orders: confirm or decline, then record progress.",
+      "loading": "Loading orders…",
+      "failed": "The orders could not be loaded.",
+      "retry": "Retry",
+      "signIn": "Sign in with a household representative account to view orders.",
+      "empty": "Your household has no orders yet.",
+      "promised": "Promised by",
+      "requiredBy": "Delivery date",
+      "orderStatus": "Order status"
     }
   },
   "media": {
