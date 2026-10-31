@@ -77,6 +77,10 @@ const COPY: Record<NotificationType, { subject: string; body: string }> = {
     subject: 'Hộ của bạn được trưng bày trở lại',
     body: 'Ban quản lý đã khôi phục trưng bày cho hộ của bạn.',
   },
+  NEWS_PUBLISHED: {
+    subject: 'Ban quản lý vừa đăng một tin quan trọng',
+    body: 'Ban quản lý làng nghề vừa đăng một tin quan trọng dành cho các hộ.',
+  },
 };
 
 /** Đường dẫn tiếng Việt của từng trang đích (không có dấu `/` đầu); `{id}` là mã đối tượng. */
@@ -85,6 +89,7 @@ const PAGE_PATH: Record<NotificationTargetPage, string> = {
   STUDIO_CONTRIBUTION: 'studio/de-xuat-tham-gia/{id}',
   ADMIN_COORDINATION: 'admin/dieu-phoi/{id}',
   STUDIO_APPLICATION: 'studio/ho-so',
+  NEWS_ARTICLE: 'tin-tuc/{id}',
 };
 
 export function noticeLink(appUrl: string, target: NotificationTarget): string {

@@ -3,8 +3,8 @@ import { QUOTATION_NOTICE_KINDS, type QuotationNoticeKind } from '../rfq/quotati
 
 /**
  * Thông báo in-app của mọi vai trò (GH#37, FR-NOTI-01…03): gồm các loại trong luồng báo giá (xem
- * `quotation-notice.ts`) và các quyết định của Ban quản lý về hồ sơ hộ. Tin tức mới chưa có luồng
- * đăng bài trên API nên chưa có loại tương ứng.
+ * `quotation-notice.ts`), các quyết định của Ban quản lý về hồ sơ hộ, và tin quan trọng vừa đăng
+ * (`NEWS_PUBLISHED`, gửi tới đại diện các hộ đã được chấp nhận).
  *
  * | Loại                   | Người nhận                           |
  * | ---------------------- | ------------------------------------ |
@@ -23,8 +23,12 @@ export const HOUSEHOLD_NOTICE_KINDS = [
 ] as const;
 export type HouseholdNoticeKind = (typeof HOUSEHOLD_NOTICE_KINDS)[number];
 
-export const NOTIFICATION_TYPES = [...QUOTATION_NOTICE_KINDS, ...HOUSEHOLD_NOTICE_KINDS] as const;
-export type NotificationType = QuotationNoticeKind | HouseholdNoticeKind;
+export const NOTIFICATION_TYPES = [
+  ...QUOTATION_NOTICE_KINDS,
+  ...HOUSEHOLD_NOTICE_KINDS,
+  'NEWS_PUBLISHED',
+] as const;
+export type NotificationType = QuotationNoticeKind | HouseholdNoticeKind | 'NEWS_PUBLISHED';
 
 export function isNotificationType(value: unknown): value is NotificationType {
   return (NOTIFICATION_TYPES as readonly unknown[]).includes(value);
@@ -67,6 +71,7 @@ export const NOTIFICATION_TYPES_BY_ROLE: Record<AccountRole, readonly Notificati
     'ORDER_CANCELLED',
     'PRODUCTION_STARTED',
     'ORDER_RECEIVED',
+    'NEWS_PUBLISHED',
   ],
   ADMIN: [
     'CONTRIBUTION_RECEIVED',
@@ -89,6 +94,8 @@ export const NOTIFICATION_TARGET_PAGES = [
   'ADMIN_COORDINATION',
   /** Hộ: trạng thái hồ sơ đã nộp (kết quả duyệt). */
   'STUDIO_APPLICATION',
+  /** News article, addressed by the news id. */
+  'NEWS_ARTICLE',
 ] as const;
 export type NotificationTargetPage = (typeof NOTIFICATION_TARGET_PAGES)[number];
 
@@ -118,5 +125,6 @@ export function notificationTarget(
     return { page: 'STUDIO_APPLICATION', id: null };
   }
   if (!subjectId) return null;
+  if (type === 'NEWS_PUBLISHED') return { page: 'NEWS_ARTICLE', id: subjectId };
   return { page: REQUEST_PAGE[role], id: subjectId };
 }

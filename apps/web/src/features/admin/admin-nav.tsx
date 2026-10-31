@@ -9,12 +9,7 @@ import { useAdminClient } from './admin-dashboard';
 /** Số hồ sơ chờ trên menu tự làm mới; lỗi mạng thì giữ số cũ. */
 const BADGE_REFRESH_MS = 60_000;
 
-const LATER = ['news'] as const;
-
-/**
- * Điều hướng Admin: dọc ở màn rộng, hàng cuộn ngang ở màn hẹp. Các mục chưa có màn hiển thị nhưng
- * chưa bấm được (`aria-disabled`).
- */
+/** Điều hướng Admin: dọc ở màn rộng, hàng cuộn ngang ở màn hẹp. */
 export function AdminNav() {
   const t = useTranslations('admin.nav');
   const pathname = usePathname();
@@ -43,6 +38,7 @@ export function AdminNav() {
   const onQueue = pathname.startsWith('/admin/duyet-ho');
   const onCoordination = pathname.startsWith('/admin/dieu-phoi');
   const onAudit = pathname.startsWith('/admin/nhat-ky');
+  const onNews = pathname.startsWith('/admin/tin-tuc');
 
   return (
     <nav aria-label={t('label')} className="overflow-x-auto lg:overflow-visible">
@@ -92,14 +88,15 @@ export function AdminNav() {
             {t('audit')}
           </Link>
         </li>
-        {LATER.map((key) => (
-          <li key={key}>
-            <span aria-disabled="true" className={cn(itemClass, 'text-ash/70')}>
-              {t(key)}
-              <span className="rounded-chip bg-ink/6 px-1.5 text-[0.7rem]">{t('soon')}</span>
-            </span>
-          </li>
-        ))}
+        <li>
+          <Link
+            href="/admin/tin-tuc"
+            aria-current={onNews ? 'page' : undefined}
+            className={linkClass(onNews)}
+          >
+            {t('news')}
+          </Link>
+        </li>
       </ul>
     </nav>
   );

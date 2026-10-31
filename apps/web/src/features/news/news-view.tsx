@@ -24,9 +24,6 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
   return (
     <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section">
       <header className="flex max-w-prose-vn flex-col gap-3">
-        <Badge tone="outline" className="self-start whitespace-normal">
-          {t('demoNote')}
-        </Badge>
         <h1 className="text-h1">{t('title')}</h1>
         <p className="text-ash">{t('lead')}</p>
         {result.status === 'ok' && (
@@ -77,7 +74,14 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
                       {format.dateTime(new Date(n.publishedAt), 'long')}
                     </time>
                   </div>
-                  <h2 className="text-h3">{n.title}</h2>
+                  <h2 className="text-h3">
+                    <Link
+                      href={{ pathname: '/tin-tuc/[slug]', params: { slug: n.slug } }}
+                      className="transition-colors hover:text-clay"
+                    >
+                      {n.title}
+                    </Link>
+                  </h2>
                   <p className="text-ash">{n.summary}</p>
                   <p className="text-small text-ash">
                     {n.householdSlug && n.householdName ? (

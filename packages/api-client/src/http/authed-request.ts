@@ -42,6 +42,7 @@ export function createAuthedRequest(options: AuthedClientOptions) {
       },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
+    if (response.status === 204) return schema.parse(undefined);
     let data: unknown;
     try {
       data = await response.json();

@@ -49,7 +49,6 @@
     "news": {
       "title": "Village news",
       "lead": "Village-wide news and updates from individual households: events, craft stories, news from the workshops.",
-      "demoNote": "Demo: these items are sample data, not real news.",
       "count": "{count, plural, one {# item} other {# items}}",
       "empty": "No news yet.",
       "unavailable": "News could not be loaded right now. Please try again in a few minutes.",
@@ -63,8 +62,18 @@
       "categories": {
         "HOUSEHOLD_UPDATE": "From a household",
         "VILLAGE_EVENT": "Village event",
-        "CRAFT_STORY": "Craft story"
-      }
+        "CRAFT_STORY": "Craft story",
+        "MATERIAL_PRICES": "Material prices",
+        "POWER_SCHEDULE": "Power outage schedule",
+        "SUPPORT_POLICY": "Support policy",
+        "GENERAL": "General"
+      },
+      "allNews": "All news",
+      "related": "Related news",
+      "villageOnly": "Village households only",
+      "villageTitle": "News for households",
+      "notFound": "This item was not found, or it is only for village households.",
+      "loading": "Loading…"
     },
     "rfq": {
       "title": "Quote requests",
@@ -462,7 +471,6 @@
       "coordination": "Coordination",
       "news": "News",
       "audit": "Audit log",
-      "soon": "Soon",
       "overview": "Overview",
       "pending": "{count} applications waiting"
     },
@@ -672,7 +680,94 @@
           "start_production": "Started production",
           "confirm_receipt": "Confirmed receipt",
           "cancel": "Cancelled order"
+        },
+        "news": {
+          "create": "Created news",
+          "update": "Edited news",
+          "publish": "Published news",
+          "unpublish": "Moved news back to draft",
+          "delete": "Deleted news"
         }
+      }
+    },
+    "news": {
+      "title": "News",
+      "lead": "Write and publish village news. Every action is recorded in the audit log.",
+      "new": "Write news",
+      "newTitle": "Write news",
+      "editTitle": "Edit news",
+      "back": "All news",
+      "loading": "Loading news…",
+      "signIn": "Sign in with a management board account to manage news.",
+      "failed": "The news could not be loaded.",
+      "retry": "Retry",
+      "empty": "No news yet.",
+      "more": "Load more",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Delete this item?",
+      "deleteText": "\"{title}\" will be permanently deleted. This cannot be undone.",
+      "keep": "Keep it",
+      "deleteFailed": "It could not be deleted. It may have just been edited: reload and try again.",
+      "pinned": "Pinned",
+      "important": "Important",
+      "state": {
+        "DRAFT": "Draft",
+        "SCHEDULED": "Scheduled",
+        "PUBLISHED": "Published"
+      },
+      "visibility": {
+        "PUBLIC": "Public",
+        "VILLAGE": "Village households only"
+      },
+      "stateFilter": "Status",
+      "allStates": "All",
+      "publishedAt": "Published {date}",
+      "scheduledAt": "Publishes {date}",
+      "form": {
+        "title": "Title",
+        "slug": "URL slug (optional)",
+        "slugHint": "Left empty, it is made from the title.",
+        "summary": "Summary",
+        "body": "Content",
+        "category": "Category",
+        "visibility": "Visibility",
+        "pinned": "Pin to the top of the list",
+        "important": "Important: notify all households when it goes live",
+        "publication": "Publishing",
+        "draft": "Save as draft",
+        "now": "Publish now",
+        "schedule": "Schedule",
+        "publishAt": "Publish at",
+        "cover": "Cover image",
+        "coverAlt": "Cover image description",
+        "removeCover": "Remove cover",
+        "coverUploading": "Processing image…",
+        "coverFailed": "The cover image could not be uploaded.",
+        "save": "Save",
+        "saving": "Saving…",
+        "failed": "It could not be saved. Please try again.",
+        "stale": "Someone else just edited this item. Reload the page and try again.",
+        "slugTaken": "Another item already uses this slug.",
+        "problem": {
+          "title": "Enter a title.",
+          "summary": "Enter a summary.",
+          "body": "Enter the content.",
+          "publishAt": "Choose a time in the future.",
+          "slug": "A slug uses lowercase letters without accents, numbers and hyphens."
+        }
+      },
+      "editor": {
+        "toolbar": "Formatting",
+        "bold": "Bold",
+        "italic": "Italic",
+        "heading2": "Large heading",
+        "heading3": "Small heading",
+        "bullet": "Bulleted list",
+        "ordered": "Numbered list",
+        "quote": "Quote",
+        "link": "Link",
+        "linkPrompt": "Enter the link address:"
       }
     }
   },
@@ -823,7 +918,8 @@
       "HOUSEHOLD_REJECTED": "Your household application was not approved.",
       "HOUSEHOLD_INFO_REQUESTED": "Your household application needs more information.",
       "HOUSEHOLD_SUSPENDED": "Your household is suspended from the exhibition.",
-      "HOUSEHOLD_REINSTATED": "Your household is back in the exhibition."
+      "HOUSEHOLD_REINSTATED": "Your household is back in the exhibition.",
+      "NEWS_PUBLISHED": "The management board published important news."
     }
   },
   "account": {
@@ -862,7 +958,8 @@
       "topic": {
         "application": "Household application",
         "quotation": "Requests and quotations",
-        "order": "Allocations and orders"
+        "order": "Allocations and orders",
+        "news": "News"
       }
     }
   },

@@ -1,7 +1,7 @@
 import type { NotificationTypeDto } from '@vcraft/contracts';
 
 /** Nhóm hiển thị các loại thông báo trong trang tài khoản (chỉ để sắp xếp; lưu vẫn theo từng loại). */
-export const EMAIL_TOPICS = ['application', 'quotation', 'order'] as const;
+export const EMAIL_TOPICS = ['application', 'quotation', 'order', 'news'] as const;
 export type EmailTopic = (typeof EMAIL_TOPICS)[number];
 
 const TOPIC_OF: Record<NotificationTypeDto, EmailTopic> = {
@@ -21,6 +21,7 @@ const TOPIC_OF: Record<NotificationTypeDto, EmailTopic> = {
   PRODUCTION_STARTED: 'order',
   PROGRESS_REPORTED: 'order',
   ORDER_RECEIVED: 'order',
+  NEWS_PUBLISHED: 'news',
 };
 
 export function topicOf(type: NotificationTypeDto): EmailTopic {

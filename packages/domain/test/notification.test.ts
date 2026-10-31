@@ -64,7 +64,7 @@ describe('notification types', () => {
   });
 
   it('rejects unknown values', () => {
-    expect(isNotificationType('NEWS_PUBLISHED')).toBe(false);
+    expect(isNotificationType('NOT_A_NOTICE_TYPE')).toBe(false);
     expect(isNotificationType(null)).toBe(false);
   });
 });

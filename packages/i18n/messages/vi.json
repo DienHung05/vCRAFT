@@ -49,7 +49,6 @@
     "news": {
       "title": "Tin tức làng nghề",
       "lead": "Tin chung của làng và tin từ từng hộ: sự kiện, chuyện nghề, cập nhật từ xưởng.",
-      "demoNote": "Bản trình diễn: các tin này là dữ liệu mẫu, không phải tin thật.",
       "count": "{count, plural, other {# tin}}",
       "empty": "Chưa có tin nào.",
       "unavailable": "Chưa tải được tin tức lúc này. Bạn thử lại sau ít phút nhé.",
@@ -63,8 +62,18 @@
       "categories": {
         "HOUSEHOLD_UPDATE": "Từ hộ làng nghề",
         "VILLAGE_EVENT": "Sự kiện làng",
-        "CRAFT_STORY": "Chuyện nghề"
-      }
+        "CRAFT_STORY": "Chuyện nghề",
+        "MATERIAL_PRICES": "Giá nguyên vật liệu",
+        "POWER_SCHEDULE": "Lịch cúp điện",
+        "SUPPORT_POLICY": "Chính sách hỗ trợ",
+        "GENERAL": "Tin chung"
+      },
+      "allNews": "Tất cả tin",
+      "related": "Tin liên quan",
+      "villageOnly": "Chỉ hộ trong làng",
+      "villageTitle": "Tin dành cho các hộ",
+      "notFound": "Không tìm thấy tin này, hoặc tin chỉ dành cho các hộ trong làng.",
+      "loading": "Đang tải tin…"
     },
     "rfq": {
       "title": "Yêu cầu báo giá",
@@ -462,7 +471,6 @@
       "coordination": "Điều phối",
       "news": "Tin tức",
       "audit": "Nhật ký",
-      "soon": "Sắp có",
       "overview": "Tổng quan",
       "pending": "{count} hồ sơ đang chờ duyệt"
     },
@@ -672,7 +680,94 @@
           "start_production": "Bắt đầu sản xuất",
           "confirm_receipt": "Xác nhận đã nhận hàng",
           "cancel": "Hủy đơn"
+        },
+        "news": {
+          "create": "Tạo tin",
+          "update": "Sửa tin",
+          "publish": "Đăng tin",
+          "unpublish": "Gỡ tin về nháp",
+          "delete": "Xóa tin"
         }
+      }
+    },
+    "news": {
+      "title": "Tin tức",
+      "lead": "Viết và đăng tin của làng nghề. Mọi thao tác đều được ghi vào nhật ký kiểm toán.",
+      "new": "Viết tin",
+      "newTitle": "Viết tin mới",
+      "editTitle": "Sửa tin",
+      "back": "Tất cả tin",
+      "loading": "Đang tải tin…",
+      "signIn": "Đăng nhập bằng tài khoản Ban quản lý để quản lý tin.",
+      "failed": "Không tải được tin.",
+      "retry": "Thử lại",
+      "empty": "Chưa có tin nào.",
+      "more": "Xem thêm",
+      "edit": "Sửa",
+      "delete": "Xóa",
+      "deleteTitle": "Xóa tin này?",
+      "deleteText": "Tin \"{title}\" sẽ bị xóa hẳn. Không thể hoàn tác.",
+      "keep": "Giữ lại",
+      "deleteFailed": "Không xóa được. Tin có thể vừa được sửa, hãy tải lại rồi thử lại.",
+      "pinned": "Ghim",
+      "important": "Quan trọng",
+      "state": {
+        "DRAFT": "Bản nháp",
+        "SCHEDULED": "Hẹn giờ",
+        "PUBLISHED": "Đã đăng"
+      },
+      "visibility": {
+        "PUBLIC": "Công khai",
+        "VILLAGE": "Chỉ hộ trong làng"
+      },
+      "stateFilter": "Trạng thái",
+      "allStates": "Tất cả",
+      "publishedAt": "Đăng lúc {date}",
+      "scheduledAt": "Sẽ đăng lúc {date}",
+      "form": {
+        "title": "Tiêu đề",
+        "slug": "Đường dẫn (không bắt buộc)",
+        "slugHint": "Để trống thì tạo từ tiêu đề.",
+        "summary": "Tóm tắt",
+        "body": "Nội dung",
+        "category": "Chuyên mục",
+        "visibility": "Phạm vi hiển thị",
+        "pinned": "Ghim lên đầu danh sách",
+        "important": "Tin quan trọng: báo cho tất cả các hộ khi đăng",
+        "publication": "Đăng tin",
+        "draft": "Lưu nháp",
+        "now": "Đăng ngay",
+        "schedule": "Hẹn giờ đăng",
+        "publishAt": "Thời điểm đăng",
+        "cover": "Ảnh bìa",
+        "coverAlt": "Mô tả ảnh bìa",
+        "removeCover": "Bỏ ảnh bìa",
+        "coverUploading": "Đang xử lý ảnh…",
+        "coverFailed": "Không tải được ảnh bìa.",
+        "save": "Lưu",
+        "saving": "Đang lưu…",
+        "failed": "Không lưu được. Hãy thử lại.",
+        "stale": "Tin vừa được người khác sửa. Hãy tải lại trang rồi thử lại.",
+        "slugTaken": "Đường dẫn này đã có tin khác dùng.",
+        "problem": {
+          "title": "Hãy nhập tiêu đề.",
+          "summary": "Hãy nhập tóm tắt.",
+          "body": "Hãy nhập nội dung.",
+          "publishAt": "Hãy chọn thời điểm trong tương lai.",
+          "slug": "Đường dẫn chỉ gồm chữ thường không dấu, số và dấu gạch ngang."
+        }
+      },
+      "editor": {
+        "toolbar": "Định dạng",
+        "bold": "Đậm",
+        "italic": "Nghiêng",
+        "heading2": "Tiêu đề lớn",
+        "heading3": "Tiêu đề nhỏ",
+        "bullet": "Danh sách",
+        "ordered": "Danh sách số",
+        "quote": "Trích dẫn",
+        "link": "Liên kết",
+        "linkPrompt": "Nhập địa chỉ liên kết:"
       }
     }
   },
@@ -823,7 +918,8 @@
       "HOUSEHOLD_REJECTED": "Hồ sơ hộ của bạn chưa được chấp nhận.",
       "HOUSEHOLD_INFO_REQUESTED": "Hồ sơ hộ của bạn cần bổ sung thông tin.",
       "HOUSEHOLD_SUSPENDED": "Hộ của bạn đang tạm ngừng trưng bày.",
-      "HOUSEHOLD_REINSTATED": "Hộ của bạn được trưng bày trở lại."
+      "HOUSEHOLD_REINSTATED": "Hộ của bạn được trưng bày trở lại.",
+      "NEWS_PUBLISHED": "Ban quản lý vừa đăng một tin quan trọng."
     }
   },
   "account": {
@@ -862,7 +958,8 @@
       "topic": {
         "application": "Hồ sơ hộ",
         "quotation": "Yêu cầu và chào giá",
-        "order": "Phân bổ và đơn hàng"
+        "order": "Phân bổ và đơn hàng",
+        "news": "Tin tức"
       }
     }
   },

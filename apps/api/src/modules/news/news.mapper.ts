@@ -16,6 +16,16 @@ export function toNewsSummaryDto(news: News, cover: PublicImageDto | null): News
   };
 }
 
-export function toNewsDetailDto(news: News, cover: PublicImageDto | null): NewsDetailDto {
-  return { ...toNewsSummaryDto(news, cover), body: news.body };
+export function toNewsDetailDto(
+  news: News,
+  cover: PublicImageDto | null,
+  related: NewsSummaryDto[],
+): NewsDetailDto {
+  return {
+    ...toNewsSummaryDto(news, cover),
+    body: news.body,
+    bodyHtml: news.bodyHtml ?? null,
+    visibility: news.visibility,
+    related,
+  };
 }

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { fetchNews } from '@/features/news/news-api';
 import { NewsView } from '@/features/news/news-view';
+import { VillageNews } from '@/features/news/village-news';
 import { resolveLocale } from '@/lib/locale';
 
 // Tin lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
@@ -27,5 +28,10 @@ export default async function NewsIndexPage({
   const query = await searchParams;
   const householdSlug = first(query.household);
   const result = await fetchNews({ householdSlug, cursor: first(query.cursor) });
-  return <NewsView result={result} householdSlug={householdSlug} />;
+  return (
+    <>
+      <VillageNews />
+      <NewsView result={result} householdSlug={householdSlug} />
+    </>
+  );
 }
