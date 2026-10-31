@@ -3,16 +3,16 @@ import { useTranslations } from 'next-intl';
 import { PHOTO_BY_ID } from '@/lib/demo/photo-credits';
 
 export interface PhotoCreditProps {
-  /** Ảnh trong bộ ảnh tĩnh của web: tra ghi nguồn theo id. */
+  /** Image in the web app's static set: the credit is looked up by id. */
   id?: string | undefined;
-  /** Ghi nguồn API trả về cho ảnh trong kho media; được ưu tiên hơn `id`. */
+  /** Credit returned by the API for an image in the media store; takes priority over `id`. */
   credit?: MediaCreditDto | null | undefined;
   className?: string;
 }
 
 /**
- * Dòng ghi nguồn dưới ảnh có giấy phép CC (CC BY / BY-SA bắt buộc ghi tác giả và giấy phép).
- * Không vẽ gì khi ảnh không có ghi nguồn (ảnh giữ chỗ, ảnh do hộ tự chụp).
+ * Credit line under a CC-licensed image (CC BY / BY-SA require naming the author and licence).
+ * Renders nothing when the image has no credit (placeholders, photos taken by the household).
  */
 export function PhotoCredit({ id, credit, className }: PhotoCreditProps) {
   const t = useTranslations('credits');

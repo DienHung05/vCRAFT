@@ -89,7 +89,7 @@ describe('view models', () => {
     expect(tintOf('ABC')).toBe(tintOf('ABC'));
   });
 
-  it('mốc nhật ký giữ ảnh thật và ghi nguồn của API', () => {
+  it('keeps the real images and credits the API returns on journal entries', () => {
     const image = {
       url: 'https://cdn.test/nung.webp',
       sha256: 'a'.repeat(64),

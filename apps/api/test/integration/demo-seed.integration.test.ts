@@ -206,7 +206,7 @@ describe('Demo seed and guarded reset', () => {
       expect(entry.images[0].credit.license).toBeTruthy();
     }
 
-    // Hồ sơ hộ và tin công khai đọc được ảnh thật cùng ghi công từ `media_link` (GH#54).
+    // Public household profiles and news read real images and credits from `media_link` (GH#54).
     const profile = await t.request({ method: 'GET', url: '/households/gom-minh-hai' });
     expect(profile.body.portrait.credit.author).toBeTruthy();
     expect(profile.body.banner.url).toBe(minhHai.coverUrl);

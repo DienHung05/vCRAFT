@@ -132,14 +132,14 @@ export interface HouseholdParts {
   makers: ReadonlyMap<string, ProductMaker[]>;
   /** URL công khai của ảnh đã xử lý xong, theo `mediaId`. */
   mediaUrls?: ReadonlyMap<string, string>;
-  /** Ảnh thẻ, ảnh bìa và thư viện gắn qua `media_link`. */
+  /** Portrait, banner and gallery images linked through `media_link`. */
   linked?: readonly LinkedImage[];
 }
 
 const linkedOf = (parts: HouseholdParts, role: PublicLinkRole) =>
   (parts.linked ?? []).filter((item) => item.role === role).map((item) => item.image);
 
-/** Ảnh hộ tự gắn trong Studio. */
+/** Images the household attached itself in Studio. */
 function toGalleryDto(h: Household, parts: HouseholdParts) {
   return (h.gallery ?? []).map((item) => ({
     mediaId: item.mediaId ?? null,

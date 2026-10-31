@@ -28,7 +28,7 @@ export const NewsSummaryResponseSchema = z.object({
   /** Trống khi là tin chung của làng. */
   householdName: z.string().nullable(),
   householdSlug: z.string().nullable(),
-  /** Trống khi tin chưa có ảnh bìa. */
+  /** Null when the news item has no cover. */
   cover: PublicImageSchema.nullable(),
 });
 export type NewsSummaryDto = z.infer<typeof NewsSummaryResponseSchema>;

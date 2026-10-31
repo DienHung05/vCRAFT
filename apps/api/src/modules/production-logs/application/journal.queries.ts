@@ -23,7 +23,7 @@ export function loadEntries(em: EntityManager, product: Product): Promise<Journa
   return em.find(JournalEntry, { product }, { orderBy: { seq: 'asc' }, populate: ['supersedes'] });
 }
 
-/** Ghi nguồn của ảnh mốc, theo `sha256`: mốc chỉ lưu URL và dấu băm của ảnh, không lưu id tệp. */
+/** Credits for entry images, keyed by `sha256`: entries store only the image URL and hash, not a file id. */
 async function loadCredits(
   em: EntityManager,
   entries: readonly JournalEntry[],

@@ -26,8 +26,8 @@ const CREDIT: MediaCredit = {
 const sha256Of = (name: string) => createHash('sha256').update(name).digest('hex');
 
 /**
- * GH#54 — API công khai đọc ảnh và ghi công từ `media_link` / `media_asset` trên CSDL thật: thứ tự theo
- * `position`, ưu tiên mô tả của liên kết, không bao giờ lộ giấy tờ, tệp riêng tư hay tệp chưa xử lý xong.
+ * GH#54 — the public API reads images and credits from `media_link` / `media_asset` on a real database:
+ * ordered by `position`, preferring the link's alt text, never exposing documents, private or unprocessed files.
  */
 describe('Public images from media_link', () => {
   let db: TestDatabase;
@@ -155,7 +155,7 @@ describe('Public images from media_link', () => {
 
     await link(await asset('chan-dung'), 'HOUSEHOLD', household.id, 'PORTRAIT');
     await link(await asset('bia-ho'), 'HOUSEHOLD', household.id, 'BANNER');
-    // Tạo ngược thứ tự để chắc API sắp theo `position`, không theo lúc tạo.
+    // Created out of order to prove the API sorts by `position`, not by creation time.
     await link(await asset('thu-vien-2'), 'HOUSEHOLD', household.id, 'GALLERY', 2, {
       altText: 'Mô tả riêng chỗ này',
       caption: 'Chú thích',
@@ -167,7 +167,7 @@ describe('Public images from media_link', () => {
       'GALLERY',
       1,
     );
-    // Không bao giờ được hiện ra công khai.
+    // Must never appear publicly.
     await link(
       await asset('giay-to', { visibility: 'PRIVATE' }),
       'HOUSEHOLD',
@@ -207,7 +207,7 @@ describe('Public images from media_link', () => {
     await db?.stop();
   });
 
-  it('hồ sơ hộ trả ảnh thẻ, ảnh bìa và thư viện theo `position`, kèm mô tả và ghi công', async () => {
+  it('household profile returns portrait, banner and gallery by `position`, with alt text and credit', async () => {
     const res = await t.request({ method: 'GET', url: '/households/gom-anh' });
     expect(res.status).toBe(200);
     expect(res.body.portrait).toMatchObject({
@@ -241,7 +241,7 @@ describe('Public images from media_link', () => {
     ]);
   });
 
-  it('giấy tờ, tệp riêng tư và tệp chưa xử lý xong không lọt ra hồ sơ công khai', async () => {
+  it('documents, private and unprocessed files stay out of the public profile', async () => {
     const res = await t.request({ method: 'GET', url: '/households/gom-anh' });
     const raw = JSON.stringify(res.body);
     for (const name of ['giay-to', 'giay-to-lo', 'dang-xu-ly', 'rieng-tu']) {
@@ -249,7 +249,7 @@ describe('Public images from media_link', () => {
     }
   });
 
-  it('hồ sơ riêng chỉ có ảnh hộ tự gắn, nên gửi lại thư viện không vướng ảnh của Ban quản lý', async () => {
+  it('private profile has only the household images, so saving the gallery is not blocked by admin media', async () => {
     const mine = await t.request({ method: 'GET', url: '/me/household', auth: repAuth });
     expect(mine.status).toBe(200);
     expect(mine.body.gallery.map((item: { mediaId: string }) => item.mediaId)).toEqual([
@@ -270,7 +270,7 @@ describe('Public images from media_link', () => {
     expect(saved.status).toBe(200);
   });
 
-  it('danh sách và chi tiết tin trả ảnh bìa; tin chưa gắn ảnh thì trống', async () => {
+  it('news list and detail return the cover; news without one returns null', async () => {
     const list = await t.request({ method: 'GET', url: '/news' });
     expect(list.status).toBe(200);
     const bySlug = new Map(
@@ -289,7 +289,7 @@ describe('Public images from media_link', () => {
     expect(empty.body.cover).toBeNull();
   });
 
-  it('truy xuất và chi tiết sản phẩm trả ảnh công đoạn kèm ghi công, ảnh tự chụp thì trống', async () => {
+  it('trace and product detail return stage photos with credit; own photos have none', async () => {
     const trace = await t.request({ method: 'GET', url: '/trace/BT7K2QXA' });
     expect(trace.status).toBe(200);
     expect(trace.body.coverCredit).toEqual(CREDIT);
@@ -308,7 +308,7 @@ describe('Public images from media_link', () => {
     expect(detail.body.journal.entries[0].images[0].credit).toEqual(CREDIT);
   });
 
-  it('hộ thay bìa bằng ảnh tự tải lên thì không còn ghi công của bìa cũ', async () => {
+  it('replacing the cover with an uploaded photo drops the old cover credit', async () => {
     const em = db.orm.em.fork();
     const product = await em.findOneOrFail(Product, { slug: 'binh-co-anh' });
     product.coverUrl = null;

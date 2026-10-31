@@ -271,7 +271,7 @@ export const PublicHouseholdResponseSchema = z.object({
   village: z.string().nullable(),
   craft: z.string().nullable(),
   coverUrl: z.string().nullable(),
-  /** Ảnh thẻ và ảnh bìa gắn qua `media_link`. */
+  /** Portrait and banner linked through `media_link`. */
   portrait: PublicImageSchema.nullable(),
   banner: PublicImageSchema.nullable(),
   foundedYear: z.int().nullable(),
@@ -279,8 +279,9 @@ export const PublicHouseholdResponseSchema = z.object({
   timeline: z.array(TimelineEventSchema),
   certifications: z.array(CertificationInputSchema.extend({ verified: z.boolean() })),
   /**
-   * Công khai: ảnh `media_link` (theo `position`) rồi tới ảnh hộ tự gắn. Hồ sơ riêng chỉ có ảnh hộ tự
-   * gắn, vì hộ chỉ được gửi lại ảnh của mình. `url` trống khi ảnh còn chờ xử lý; trang công khai bỏ qua.
+   * Public: `media_link` images (by `position`), then the household's own. The private profile has only
+   * the household's own, since a household may resubmit only its own media. `url` is null while an image
+   * is still processing; public pages skip those.
    */
   gallery: z.array(
     z.object({
@@ -324,7 +325,7 @@ export const TraceAvailabilityResponseSchema = z.discriminatedUnion('availabilit
   z.object({
     availability: z.literal('VISIBLE'),
     product: ProductResponseSchema,
-    /** Ghi nguồn của `product.coverUrl`; trống khi bìa là ảnh hộ tự tải lên. */
+    /** Credit for `product.coverUrl`; null when the cover is a photo the household uploaded. */
     coverCredit: MediaCreditSchema.nullable(),
     household: z.object({ name: z.string(), slug: z.string() }),
     journal: JournalResponseSchema,
@@ -343,7 +344,7 @@ export type TraceAvailabilityDto = z.infer<typeof TraceAvailabilityResponseSchem
 /** Chi tiết công khai của một sản phẩm: nội dung, hộ làm ra và nhật ký để tóm tắt. */
 export const ProductDetailResponseSchema = z.object({
   product: ProductResponseSchema,
-  /** Ghi nguồn của `product.coverUrl`; trống khi bìa là ảnh hộ tự tải lên. */
+  /** Credit for `product.coverUrl`; null when the cover is a photo the household uploaded. */
   coverCredit: MediaCreditSchema.nullable(),
   household: z.object({ name: z.string(), slug: z.string() }),
   journal: JournalResponseSchema,

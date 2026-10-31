@@ -72,7 +72,7 @@ const STAGE_TINTS: Record<JournalStage, string> = {
 export interface LogEntryView extends ChainEntry {
   stage: JournalStage;
   tint: string;
-  /** Ảnh thật của mốc, kèm ghi nguồn. */
+  /** The entry's real images, with their credits. */
   images: JournalEntryDto['images'];
 }
 

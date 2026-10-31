@@ -22,7 +22,7 @@ import { OBJECT_STORAGE } from '../../../infrastructure/storage/storage.module';
 /** Sự kiện outbox để worker chuyển đổi ảnh (ARCHITECTURE §7.1). */
 export const MEDIA_UPLOADED_EVENT = 'media.uploaded';
 
-/** `DOCUMENT` là giấy tờ riêng tư, không bao giờ đi ra API công khai. */
+/** `DOCUMENT` files are private papers and never reach the public API. */
 export type PublicLinkRole = Exclude<MediaLinkRole, 'DOCUMENT'>;
 
 export interface LinkedImage {
@@ -111,7 +111,7 @@ export class MediaService {
     return urls;
   }
 
-  /** Ảnh công khai đã xử lý xong gắn vào các đối tượng, theo `targetId`, mỗi vai trò theo `position`. */
+  /** Processed public images linked to the targets, keyed by `targetId`, each role ordered by `position`. */
   async linkedImages(
     targetType: MediaLinkTarget,
     targetIds: readonly string[],
@@ -149,8 +149,8 @@ export class MediaService {
   }
 
   /**
-   * Ghi nguồn bìa sản phẩm. Chỉ áp dụng khi bìa còn là `coverUrl` có sẵn: hộ tải ảnh lên thì `coverUrl`
-   * bị xóa, còn `media_link` cũ vẫn nằm đó và không còn nói về ảnh đang hiện.
+   * Credit for the product cover. Applies only while the cover is still the preset `coverUrl`: uploading
+   * photos clears `coverUrl`, but the old `media_link` stays and no longer describes the displayed image.
    */
   async productCoverCredit(product: Product): Promise<MediaCredit | null> {
     if (!product.coverUrl) return null;
@@ -187,7 +187,7 @@ export class MediaService {
     return { bytes, mime: type?.mime ?? 'application/octet-stream' };
   }
 
-  /** Bản WebP gần 1280 px nhất. */
+  /** The WebP variant closest to 1280 px. */
   private displayUrl(asset: MediaAsset): string | undefined {
     const webp = asset.variants
       .filter((variant) => variant.format === 'webp')

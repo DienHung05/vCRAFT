@@ -42,7 +42,7 @@ export const JournalEntryResponseSchema = z.object({
   stage: JournalStageSchema,
   declaredDate: IsoDateSchema,
   note: z.string(),
-  /** `credit` lấy từ `media_asset` theo `sha256`, không nằm trong chuỗi băm; ảnh hộ tự chụp thì trống. */
+  /** `credit` comes from `media_asset` by `sha256` and is not part of the hash chain; null for the household's own photos. */
   images: z.array(JournalImageSchema.extend({ credit: MediaCreditSchema.nullable() })),
   skipReason: z.string().nullable(),
   /** `seq` của mốc mà mốc này đính chính. */

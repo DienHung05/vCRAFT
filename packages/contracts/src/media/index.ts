@@ -49,7 +49,7 @@ export const MediaReadUrlResponseSchema = z.strictObject({
 });
 export type MediaReadUrlResponse = z.infer<typeof MediaReadUrlResponseSchema>;
 
-/** Ghi nguồn ảnh có giấy phép (CC BY / BY-SA bắt buộc ghi tác giả và giấy phép). */
+/** Credit for a licensed image (CC BY / BY-SA require naming the author and licence). */
 export const MediaCreditSchema = z.object({
   title: z.string(),
   author: z.string(),
@@ -59,7 +59,7 @@ export const MediaCreditSchema = z.object({
 });
 export type MediaCreditDto = z.infer<typeof MediaCreditSchema>;
 
-/** Ảnh công khai gắn qua `media_link`; `credit` trống với ảnh do chính hộ chụp. */
+/** Public image linked through `media_link`; `credit` is null for the household's own photos. */
 export const PublicImageSchema = z.object({
   mediaId: IdSchema,
   url: z.url(),
