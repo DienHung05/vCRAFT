@@ -22,6 +22,8 @@ const HOUSEHOLD: HouseholdDto = {
   village: 'Bát Tràng',
   craft: 'men lam',
   coverUrl: null,
+  portrait: null,
+  banner: null,
   foundedYear: null,
   generations: null,
   timeline: [],
@@ -134,7 +136,7 @@ describe('ProfileEditor', () => {
     const client = fakeClient({
       getHousehold: vi.fn(async () => ({
         ...HOUSEHOLD,
-        gallery: [{ mediaId: HOUSEHOLD.id, url: null, alt: '', caption: null }],
+        gallery: [{ mediaId: HOUSEHOLD.id, url: null, alt: '', caption: null, credit: null }],
       })),
     });
     renderVi(<ProfileEditor client={client} />);

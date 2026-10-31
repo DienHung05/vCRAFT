@@ -526,6 +526,7 @@ export class HouseholdsService {
         (await this.makersOf(em, [product])).get(product.id),
         await this.media.publicUrls(productMediaIds([product])),
       ),
+      coverCredit: await this.media.productCoverCredit(product),
       household: { name: product.household.name, slug: product.household.slug },
       journal: await loadJournal(em, product),
       scanCount: await em.count(TraceScan, { product }),
@@ -571,6 +572,11 @@ export class HouseholdsService {
         orderBy: { createdAt: 'asc' },
       }),
     ]);
+    const linked = await this.media.linkedImages(
+      'HOUSEHOLD',
+      [household.id],
+      ['PORTRAIT', 'BANNER', 'GALLERY'],
+    );
     const mediaIds = [
       ...(household.gallery ?? []).flatMap((item) => (item.mediaId ? [item.mediaId] : [])),
       ...productMediaIds(products),
@@ -581,6 +587,7 @@ export class HouseholdsService {
       products,
       makers: await this.makersOf(em, products),
       mediaUrls: await this.media.publicUrls(mediaIds),
+      linked: linked.get(household.id) ?? [],
     };
   }
 

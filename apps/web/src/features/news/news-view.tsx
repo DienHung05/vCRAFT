@@ -1,5 +1,8 @@
 import { Badge, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
+import { ImageSlot } from '@/components/image-slot';
+import { PhotoCredit } from '@/components/photo-credit';
+import { photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
 import type { NewsResult } from './news-api';
 
@@ -55,6 +58,18 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
             <li key={n.slug}>
               <Card className="p-5 md:p-6">
                 <article className="flex flex-col gap-2">
+                  {n.cover ? (
+                    <div className="mb-2">
+                      <ImageSlot
+                        alt={n.cover.alt || n.title}
+                        tint={tintOf(n.slug)}
+                        ratio="3/2"
+                        {...slotPhoto(photoFromUrl(n.cover.url, n.cover.alt || n.title))}
+                        sizes="(min-width: 768px) 40rem, 100vw"
+                      />
+                      <PhotoCredit credit={n.cover.credit} />
+                    </div>
+                  ) : null}
                   <div className="flex flex-wrap items-center gap-2 text-small text-ash">
                     {n.pinned && <Badge tone="seal">{t('pinned')}</Badge>}
                     <Badge tone="clay">{category(n.category)}</Badge>

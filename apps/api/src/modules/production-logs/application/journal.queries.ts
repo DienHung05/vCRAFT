@@ -1,6 +1,6 @@
 import type { EntityManager } from '@mikro-orm/core';
 import type { JournalDto, JournalEntryDto } from '@vcraft/contracts';
-import { JournalEntry, type Product } from '@vcraft/database';
+import { JournalEntry, MediaAsset, type MediaCredit, type Product } from '@vcraft/database';
 import { type ChainEntry, isJournalInProgress, missingStages } from '@vcraft/domain';
 
 /** Mốc đã lưu → đầu vào của chuỗi băm (cùng thuật toán với trình duyệt). */
@@ -23,7 +23,31 @@ export function loadEntries(em: EntityManager, product: Product): Promise<Journa
   return em.find(JournalEntry, { product }, { orderBy: { seq: 'asc' }, populate: ['supersedes'] });
 }
 
-export function toJournalDto(product: Product, entries: readonly JournalEntry[]): JournalDto {
+/** Credits for entry images, keyed by `sha256`: entries store only the image URL and hash, not a file id. */
+async function loadCredits(
+  em: EntityManager,
+  entries: readonly JournalEntry[],
+): Promise<Map<string, MediaCredit>> {
+  const checksums = [...new Set(entries.flatMap((e) => e.images.map((image) => image.sha256)))];
+  const credits = new Map<string, MediaCredit>();
+  if (checksums.length === 0) return credits;
+  const assets = await em.find(MediaAsset, {
+    sha256: { $in: checksums },
+    status: 'READY',
+    visibility: 'PUBLIC',
+  });
+  for (const asset of assets) {
+    if (asset.credit) credits.set(asset.sha256, asset.credit);
+  }
+  return credits;
+}
+
+export async function toJournalDto(
+  em: EntityManager,
+  product: Product,
+  entries: readonly JournalEntry[],
+): Promise<JournalDto> {
+  const credits = await loadCredits(em, entries);
   const supersededBy = new Map<number, number>();
   for (const entry of entries) {
     if (entry.supersedes) supersededBy.set(entry.supersedes.seq, entry.seq);
@@ -39,7 +63,10 @@ export function toJournalDto(product: Product, entries: readonly JournalEntry[])
         stage: e.stage,
         declaredDate: e.declaredDate,
         note: e.note,
-        images: e.images,
+        images: e.images.map((image) => ({
+          ...image,
+          credit: credits.get(image.sha256) ?? null,
+        })),
         skipReason: e.skipReason ?? null,
         supersedesSeq: e.supersedes?.seq ?? null,
         supersededBySeq: supersededBy.get(e.seq) ?? null,
@@ -54,5 +81,5 @@ export function toJournalDto(product: Product, entries: readonly JournalEntry[])
 }
 
 export async function loadJournal(em: EntityManager, product: Product): Promise<JournalDto> {
-  return toJournalDto(product, await loadEntries(em, product));
+  return toJournalDto(em, product, await loadEntries(em, product));
 }

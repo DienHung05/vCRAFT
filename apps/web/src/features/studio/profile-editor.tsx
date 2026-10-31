@@ -298,7 +298,7 @@ function GallerySection({ household, client, reload }: SectionProps) {
         setRows((current) =>
           current.some((row) => row.mediaId === mediaId)
             ? current
-            : [...current, { mediaId, url: null, alt: '', caption: null }],
+            : [...current, { mediaId, url: null, alt: '', caption: null, credit: null }],
         );
       }
     }

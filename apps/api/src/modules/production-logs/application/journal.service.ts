@@ -83,7 +83,7 @@ export class JournalService {
       });
       entry.hash = await computeEntryHash(product.id, toChainEntry(entry));
       await em.flush();
-      return toJournalDto(product, [...entries, entry]);
+      return toJournalDto(em, product, [...entries, entry]);
     });
   }
 
@@ -114,7 +114,7 @@ export class JournalService {
       });
       await this.reseal(product, entries, entry.seq);
       await em.flush();
-      return toJournalDto(product, entries);
+      return toJournalDto(em, product, entries);
     });
   }
 
@@ -134,7 +134,7 @@ export class JournalService {
       }
       await this.reseal(product, remaining, entry.seq);
       await em.flush();
-      return toJournalDto(product, remaining);
+      return toJournalDto(em, product, remaining);
     });
   }
 

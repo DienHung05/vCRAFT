@@ -1,8 +1,9 @@
 import { type FilterQuery, MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
-import type { ListNewsQuery, NewsDetailDto, NewsListDto } from '@vcraft/contracts';
+import type { ListNewsQuery, NewsDetailDto, NewsListDto, PublicImageDto } from '@vcraft/contracts';
 import { News } from '@vcraft/database';
 import { AppError, notFound } from '../../../common/errors/app-error';
+import { MediaService } from '../../media/application/media.service';
 import { toNewsDetailDto, toNewsSummaryDto } from '../news.mapper';
 
 /** Khóa con trỏ: vị trí của dòng cuối trang theo thứ tự (ghim, ngày xuất bản, id) giảm dần. */
@@ -44,7 +45,10 @@ function decodeCursor(raw: string): NewsCursor {
  */
 @Injectable()
 export class NewsService {
-  constructor(private readonly orm: MikroORM) {}
+  constructor(
+    private readonly orm: MikroORM,
+    private readonly media: MediaService,
+  ) {}
 
   async list(query: ListNewsQuery): Promise<NewsListDto> {
     const em = this.orm.em.fork();
@@ -76,8 +80,9 @@ export class NewsService {
     );
     const page = rows.slice(0, query.limit);
     const last = page.at(-1);
+    const covers = await this.covers(page.map((news) => news.id));
     return {
-      data: page.map(toNewsSummaryDto),
+      data: page.map((news) => toNewsSummaryDto(news, covers.get(news.id) ?? null)),
       nextCursor: rows.length > query.limit && last ? encodeCursor(last) : null,
     };
   }
@@ -94,6 +99,15 @@ export class NewsService {
       { populate: ['household'] },
     );
     if (!news) throw notFound();
-    return toNewsDetailDto(news);
+    return toNewsDetailDto(news, (await this.covers([news.id])).get(news.id) ?? null);
+  }
+
+  private async covers(newsIds: readonly string[]): Promise<Map<string, PublicImageDto>> {
+    const linked = await this.media.linkedImages('NEWS', newsIds, ['COVER']);
+    const covers = new Map<string, PublicImageDto>();
+    for (const [id, [cover]] of linked) {
+      if (cover) covers.set(id, cover.image);
+    }
+    return covers;
   }
 }

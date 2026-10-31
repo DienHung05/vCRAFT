@@ -295,7 +295,15 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
           <ul className="mt-8 grid gap-6 md:grid-cols-3">
             {newsResult.page.data.map((n) => (
               <li key={n.slug} className="flex flex-col gap-3">
-                <ImageSlot alt={n.title} tint={tintOf(n.slug)} ratio="3/2" />
+                <div>
+                  <ImageSlot
+                    alt={n.cover?.alt || n.title}
+                    tint={tintOf(n.slug)}
+                    ratio="3/2"
+                    {...slotPhoto(photoFromUrl(n.cover?.url ?? null, n.cover?.alt || n.title))}
+                  />
+                  <PhotoCredit credit={n.cover?.credit} />
+                </div>
                 <time dateTime={n.publishedAt} className="text-small text-ash">
                   {format.dateTime(new Date(n.publishedAt), 'long')}
                 </time>

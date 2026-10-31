@@ -154,7 +154,7 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                   />
                 )}
               </ImageSlot>
-              {image?.photo ? <PhotoCredit id={image.photo.id} /> : null}
+              <PhotoCredit id={image?.photo?.id} credit={visible.coverCredit} />
               {visible.product.artisanNote ? (
                 <blockquote className="mt-6 font-display text-h3 leading-snug text-ink type-soft">
                   “{visible.product.artisanNote}”

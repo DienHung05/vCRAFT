@@ -52,7 +52,10 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
 
   const household = result.data;
   const representative = household.artisans[0];
-  const cover = photoFromUrl(household.coverUrl, t('coverAlt', { household: household.name }));
+  const coverAlt = household.banner?.alt || t('coverAlt', { household: household.name });
+  const cover = photoFromUrl(household.banner?.url ?? household.coverUrl, coverAlt);
+  const portrait = household.portrait;
+  const portraitPhoto = portrait ? photoFromUrl(portrait.url, portrait.alt) : undefined;
   const featured = household.products[0];
   const story = household.history.split(/\n{2,}/).filter(Boolean);
   const gallery = household.gallery.flatMap((item) => (item.url ? [item] : []));
@@ -66,7 +69,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
       {/* Hero toàn màn: ảnh xưởng + tên hộ Fraunces cực lớn. */}
       <header className="relative">
         <ImageSlot
-          alt={t('coverAlt', { household: household.name })}
+          alt={coverAlt}
           tint={tintOf(household.slug)}
           {...slotPhoto(cover)}
           priority
@@ -108,9 +111,13 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
           </div>
         </div>
       </header>
-      {cover?.photo ? (
+      {cover ? (
         <div className="mx-auto max-w-editorial px-gutter">
-          <PhotoCredit id={cover.photo.id} className="mt-2 text-right text-[0.75rem] text-ash" />
+          <PhotoCredit
+            id={cover.photo?.id}
+            credit={household.banner?.credit}
+            className="mt-2 text-right text-[0.75rem] text-ash"
+          />
         </div>
       ) : null}
 
@@ -120,6 +127,18 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
         aria-label={t('bentoLabel')}
       >
         <Card className="p-8 md:col-span-4 md:row-span-2">
+          {portrait ? (
+            <figure className="mb-6 sm:float-right sm:mb-2 sm:ml-6 sm:w-44">
+              <ImageSlot
+                alt={portrait.alt}
+                tint={tintOf(portrait.url)}
+                ratio="4/5"
+                {...slotPhoto(portraitPhoto)}
+                sizes="(min-width: 640px) 11rem, 100vw"
+              />
+              <PhotoCredit id={portraitPhoto?.photo?.id} credit={portrait.credit} />
+            </figure>
+          ) : null}
           <h2 className="text-h3">{t('story')}</h2>
           {story.map((paragraph) => (
             <p key={paragraph.slice(0, 24)} className="mt-4 max-w-prose-vn">
@@ -225,7 +244,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
                     {...slotPhoto(image)}
                     sizes="(min-width: 1024px) 28vw, (min-width: 640px) 45vw, 100vw"
                   />
-                  {image?.photo ? <PhotoCredit id={image.photo.id} /> : null}
+                  <PhotoCredit id={image?.photo?.id} credit={item.credit} />
                 </figure>
               );
             })}

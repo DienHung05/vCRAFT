@@ -14,6 +14,7 @@ import {
   profileCompleteness,
   splitWorkshops,
 } from '@vcraft/domain';
+import type { LinkedImage, PublicLinkRole } from '../media/application/media.service';
 
 const toNumber = (value: string | null | undefined): number | null =>
   value === null || value === undefined ? null : Number(value);
@@ -131,19 +132,27 @@ export interface HouseholdParts {
   makers: ReadonlyMap<string, ProductMaker[]>;
   /** URL công khai của ảnh đã xử lý xong, theo `mediaId`. */
   mediaUrls?: ReadonlyMap<string, string>;
+  /** Portrait, banner and gallery images linked through `media_link`. */
+  linked?: readonly LinkedImage[];
 }
 
+const linkedOf = (parts: HouseholdParts, role: PublicLinkRole) =>
+  (parts.linked ?? []).filter((item) => item.role === role).map((item) => item.image);
+
+/** Images the household attached itself in Studio. */
 function toGalleryDto(h: Household, parts: HouseholdParts) {
   return (h.gallery ?? []).map((item) => ({
     mediaId: item.mediaId ?? null,
     url: item.url ?? (item.mediaId ? (parts.mediaUrls?.get(item.mediaId) ?? null) : null),
     alt: item.alt,
     caption: item.caption ?? null,
+    credit: null,
   }));
 }
 
 export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): PublicHouseholdDto {
-  const gallery = toGalleryDto(h, parts);
+  const gallery = [...linkedOf(parts, 'GALLERY'), ...toGalleryDto(h, parts)];
+  const [banner] = linkedOf(parts, 'BANNER');
   return {
     id: h.id,
     name: h.name,
@@ -152,7 +161,9 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
     village: h.village ?? null,
     craft: h.craft ?? null,
     // Chưa chọn bìa riêng thì dùng ảnh xưởng đầu tiên đã xử lý xong.
-    coverUrl: h.coverUrl ?? gallery.find((item) => item.url)?.url ?? null,
+    coverUrl: h.coverUrl ?? banner?.url ?? gallery.find((item) => item.url)?.url ?? null,
+    portrait: linkedOf(parts, 'PORTRAIT')[0] ?? null,
+    banner: banner ?? null,
     foundedYear: h.foundedYear ?? null,
     generations: h.generations ?? null,
     timeline: h.timeline ?? [],
@@ -172,6 +183,7 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
 export function toHouseholdDto(h: Household, parts: HouseholdParts): HouseholdDto {
   return {
     ...toPublicHouseholdDto(h, parts),
+    gallery: toGalleryDto(h, parts),
     version: h.version,
     status: h.status,
     statusReason: h.statusReason ?? null,

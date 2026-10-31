@@ -1,8 +1,16 @@
 import { createHash } from 'node:crypto';
 import { MikroORM } from '@mikro-orm/core';
 import { Inject, Injectable } from '@nestjs/common';
-import type { MediaAssetResponse, MediaReadUrlResponse } from '@vcraft/contracts';
-import { MediaAsset, OutboxEvent } from '@vcraft/database';
+import type { MediaAssetResponse, MediaReadUrlResponse, PublicImageDto } from '@vcraft/contracts';
+import {
+  MediaAsset,
+  type MediaCredit,
+  MediaLink,
+  type MediaLinkRole,
+  type MediaLinkTarget,
+  OutboxEvent,
+  type Product,
+} from '@vcraft/database';
 import { checkMediaUpload, type MediaPurpose } from '@vcraft/domain';
 import { LocalObjectStorage, type ObjectStorage, PRESIGN_TTL_SECONDS } from '@vcraft/storage';
 import { fileTypeFromBuffer } from 'file-type';
@@ -13,6 +21,14 @@ import { OBJECT_STORAGE } from '../../../infrastructure/storage/storage.module';
 
 /** Sự kiện outbox để worker chuyển đổi ảnh (ARCHITECTURE §7.1). */
 export const MEDIA_UPLOADED_EVENT = 'media.uploaded';
+
+/** `DOCUMENT` files are private papers and never reach the public API. */
+export type PublicLinkRole = Exclude<MediaLinkRole, 'DOCUMENT'>;
+
+export interface LinkedImage {
+  role: PublicLinkRole;
+  image: PublicImageDto;
+}
 
 export interface UploadedFile {
   readonly declaredMime: string;
@@ -89,12 +105,57 @@ export class MediaService {
       .fork()
       .find(MediaAsset, { id: { $in: [...ids] }, status: 'READY', visibility: 'PUBLIC' });
     for (const asset of assets) {
-      const webp = asset.variants
-        .filter((variant) => variant.format === 'webp')
-        .sort((a, b) => Math.abs(a.width - 1280) - Math.abs(b.width - 1280))[0];
-      if (webp) urls.set(asset.id, this.storage.publicUrl(webp.key));
+      const url = this.displayUrl(asset);
+      if (url) urls.set(asset.id, url);
     }
     return urls;
+  }
+
+  /** Processed public images linked to the targets, keyed by `targetId`, each role ordered by `position`. */
+  async linkedImages(
+    targetType: MediaLinkTarget,
+    targetIds: readonly string[],
+    roles: readonly PublicLinkRole[],
+  ): Promise<Map<string, LinkedImage[]>> {
+    const byTarget = new Map<string, LinkedImage[]>();
+    if (targetIds.length === 0) return byTarget;
+    const links = await this.orm.em.fork().find(
+      MediaLink,
+      {
+        targetType,
+        targetId: { $in: [...targetIds] },
+        role: { $in: [...roles] },
+        media: { status: 'READY', visibility: 'PUBLIC' },
+      },
+      { populate: ['media'], orderBy: { position: 'asc' } },
+    );
+    for (const link of links) {
+      const url = this.displayUrl(link.media);
+      if (!url) continue;
+      const list = byTarget.get(link.targetId) ?? [];
+      list.push({
+        role: link.role as PublicLinkRole,
+        image: {
+          mediaId: link.media.id,
+          url,
+          alt: link.altText ?? link.media.altText ?? '',
+          caption: link.caption ?? null,
+          credit: link.media.credit ?? null,
+        },
+      });
+      byTarget.set(link.targetId, list);
+    }
+    return byTarget;
+  }
+
+  /**
+   * Credit for the product cover. Applies only while the cover is still the preset `coverUrl`: uploading
+   * photos clears `coverUrl`, but the old `media_link` stays and no longer describes the displayed image.
+   */
+  async productCoverCredit(product: Product): Promise<MediaCredit | null> {
+    if (!product.coverUrl) return null;
+    const linked = await this.linkedImages('PRODUCT', [product.id], ['COVER']);
+    return linked.get(product.id)?.[0]?.image.credit ?? null;
   }
 
   /** Những id mà người này tải lên; dùng để chặn gắn ảnh của người khác vào hồ sơ. */
@@ -124,6 +185,14 @@ export class MediaService {
     if (!bytes) throw notFound();
     const type = await fileTypeFromBuffer(bytes);
     return { bytes, mime: type?.mime ?? 'application/octet-stream' };
+  }
+
+  /** The WebP variant closest to 1280 px. */
+  private displayUrl(asset: MediaAsset): string | undefined {
+    const webp = asset.variants
+      .filter((variant) => variant.format === 'webp')
+      .sort((a, b) => Math.abs(a.width - 1280) - Math.abs(b.width - 1280))[0];
+    return webp && this.storage.publicUrl(webp.key);
   }
 
   /** Người tải lên hoặc Ban quản lý; người khác nhận 404 để không lộ sự tồn tại của tệp. */

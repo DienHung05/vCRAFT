@@ -48,3 +48,23 @@ export const MediaReadUrlResponseSchema = z.strictObject({
   expiresAt: IsoDateTimeSchema,
 });
 export type MediaReadUrlResponse = z.infer<typeof MediaReadUrlResponseSchema>;
+
+/** Credit for a licensed image (CC BY / BY-SA require naming the author and licence). */
+export const MediaCreditSchema = z.object({
+  title: z.string(),
+  author: z.string(),
+  license: z.string(),
+  licenseUrl: z.url(),
+  sourceUrl: z.url(),
+});
+export type MediaCreditDto = z.infer<typeof MediaCreditSchema>;
+
+/** Public image linked through `media_link`; `credit` is null for the household's own photos. */
+export const PublicImageSchema = z.object({
+  mediaId: IdSchema,
+  url: z.url(),
+  alt: z.string(),
+  caption: z.string().nullable(),
+  credit: MediaCreditSchema.nullable(),
+});
+export type PublicImageDto = z.infer<typeof PublicImageSchema>;

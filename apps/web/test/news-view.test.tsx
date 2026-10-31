@@ -39,6 +39,19 @@ const page: NewsListDto = {
       publishedAt: '2026-08-30T03:00:00.000Z',
       householdName: null,
       householdSlug: null,
+      cover: {
+        mediaId: '00000000-0000-4000-8000-000000000001',
+        url: 'https://cdn.test/cho-gom.webp',
+        alt: 'Quầy gốm dưới ánh đèn',
+        caption: null,
+        credit: {
+          title: 'File:Cho-gom.jpg',
+          author: 'Tác giả ảnh',
+          license: 'CC BY 4.0',
+          licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+          sourceUrl: 'https://commons.wikimedia.org/wiki/File:Cho-gom.jpg',
+        },
+      },
     },
     {
       slug: 'men-lam',
@@ -49,12 +62,30 @@ const page: NewsListDto = {
       publishedAt: '2026-08-27T03:00:00.000Z',
       householdName: 'Gốm Minh Hải',
       householdSlug: 'gom-minh-hai',
+      cover: null,
     },
   ],
   nextCursor: 'abc',
 };
 
 describe('NewsView', () => {
+  it('shows the cover image with its credit, and nothing for news without a cover', () => {
+    renderVi(<NewsView result={{ status: 'ok', page }} />);
+    const [withCover, withoutCover] = within(
+      screen.getByRole('list', { name: 'Danh sách tin tức' }),
+    ).getAllByRole('listitem') as [HTMLElement, HTMLElement];
+    expect(within(withCover).getByRole('img', { name: 'Quầy gốm dưới ánh đèn' })).toBeTruthy();
+    expect(withCover.querySelector('img')?.getAttribute('src')).toBe(
+      'https://cdn.test/cho-gom.webp',
+    );
+    expect(within(withCover).getByText(/Tác giả ảnh/)).toBeTruthy();
+    expect(within(withCover).getByRole('link', { name: 'CC BY 4.0' }).getAttribute('href')).toBe(
+      'https://creativecommons.org/licenses/by/4.0/',
+    );
+    expect(withoutCover.querySelector('img')).toBeNull();
+    expect(within(withoutCover).queryByRole('img')).toBeNull();
+  });
+
   it('renders one h1 and a list with pinned badge, category, household and village labels', () => {
     renderVi(<NewsView result={{ status: 'ok', page }} />);
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);

@@ -89,6 +89,44 @@ describe('view models', () => {
     expect(tintOf('ABC')).toBe(tintOf('ABC'));
   });
 
+  it('keeps the real images and credits the API returns on journal entries', () => {
+    const image = {
+      url: 'https://cdn.test/nung.webp',
+      sha256: 'a'.repeat(64),
+      credit: {
+        title: 'File:Nung.jpg',
+        author: 'Tác giả ảnh',
+        license: 'CC0',
+        licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+        sourceUrl: 'https://commons.wikimedia.org/wiki/File:Nung.jpg',
+      },
+    };
+    const [entry] = toLogEntries({
+      productId: '00000000-0000-4000-8000-000000000001',
+      inProgress: false,
+      missingStages: [],
+      entries: [
+        {
+          id: '00000000-0000-4000-8000-000000000002',
+          version: 1,
+          seq: 0,
+          stage: 'fire',
+          declaredDate: '2026-09-01',
+          note: 'Nung',
+          images: [image],
+          skipReason: null,
+          supersedesSeq: null,
+          supersededBySeq: null,
+          recordedAt: '2026-09-01T00:00:00.000Z',
+          prevHash: 'GENESIS',
+          hash: 'b'.repeat(64),
+        },
+      ],
+    });
+    expect(entry?.images).toEqual([image]);
+    expect(entry?.mediaChecksums).toEqual([image.sha256]);
+  });
+
   it('nhật ký của API qua được bước tự kiểm chuỗi băm của trình duyệt', async () => {
     const productId = '00000000-0000-4000-8000-000000000001';
     const sealed = await sealChain(productId, [
