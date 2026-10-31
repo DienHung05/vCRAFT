@@ -1,4 +1,4 @@
-import { buttonVariants, Card, cn, SealMark, WaveDivider } from '@vcraft/ui';
+import { Badge, buttonVariants, Card, cn, SealMark, VaseFigure, WaveDivider } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
@@ -40,8 +40,10 @@ export async function generateMetadata({
 export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-nhan/[slug]'>) {
   await resolveLocale(params);
   const { slug } = await params;
-  const [t, ex, result] = await Promise.all([
+  const [t, common, categories, ex, result] = await Promise.all([
     getTranslations('artisan'),
+    getTranslations('common'),
+    getTranslations('catalog.categories'),
     getTranslations('exhibition'),
     fetchHousehold(slug),
   ]);
@@ -53,6 +55,11 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
   const cover = photoFromUrl(household.coverUrl, t('coverAlt', { household: household.name }));
   const featured = household.products[0];
   const story = household.history.split(/\n{2,}/).filter(Boolean);
+  const gallery = household.gallery.flatMap((item) => (item.url ? [item] : []));
+  const capacities = Object.entries(household.capacityByCategory) as [
+    keyof typeof household.capacityByCategory,
+    number,
+  ][];
 
   return (
     <article>
@@ -75,6 +82,12 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
             <span aria-hidden="true"> / </span>
             <span aria-current="page">{household.name}</span>
           </nav>
+          {household.generations && household.foundedYear ? (
+            <p className="font-mono text-small tracking-[0.2em] text-paper/80 uppercase">
+              {common('generation', { n: household.generations })} ·{' '}
+              {common('since', { year: household.foundedYear })}
+            </p>
+          ) : null}
           <h1 className="mt-3 text-display text-paper type-wonk">{household.name}</h1>
           <p className="mt-4 text-paper/85">
             {[representative?.name, household.craft, household.village].filter(Boolean).join(' · ')}
@@ -101,11 +114,12 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
         </div>
       ) : null}
 
+      {/* Bento: câu chuyện, đời thứ N, chứng nhận. */}
       <section
-        className="mx-auto max-w-editorial px-gutter py-section"
+        className="mx-auto grid max-w-editorial gap-5 px-gutter py-section md:grid-cols-6"
         aria-label={t('bentoLabel')}
       >
-        <Card className="p-8">
+        <Card className="p-8 md:col-span-4 md:row-span-2">
           <h2 className="text-h3">{t('story')}</h2>
           {story.map((paragraph) => (
             <p key={paragraph.slice(0, 24)} className="mt-4 max-w-prose-vn">
@@ -113,7 +127,111 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
             </p>
           ))}
         </Card>
+        {household.generations && household.foundedYear ? (
+          <Card className="relative flex flex-col justify-between overflow-hidden bg-glaze p-8 text-paper md:col-span-2">
+            <VaseFigure
+              className="absolute -right-6 -bottom-4 h-40 opacity-25"
+              body="var(--color-paper)"
+              band="var(--color-glaze)"
+            />
+            <p className="text-small text-paper/75">{t('lineage')}</p>
+            <p className="font-display text-display leading-none text-paper type-wonk">
+              {household.generations}
+            </p>
+            <p className="text-small text-paper/85">
+              {t('lineageText', { n: household.generations, year: household.foundedYear })}
+            </p>
+          </Card>
+        ) : null}
+        {household.certifications.length > 0 ? (
+          <Card className="p-8 md:col-span-2">
+            <h2 className="text-h3">{t('certs')}</h2>
+            <ul className="mt-4 space-y-4">
+              {household.certifications.map((c) => (
+                <li key={`${c.name}-${c.year}`} className="flex items-start gap-3">
+                  {c.verified ? (
+                    <SealMark size={24} bleed={false} />
+                  ) : (
+                    <span className="size-6 shrink-0 rounded-sm border border-ink/25 border-dashed" />
+                  )}
+                  <div>
+                    <p className="font-medium">{c.name}</p>
+                    <p className="text-small text-ash">
+                      {c.issuer} · {c.year}
+                    </p>
+                    <Badge tone={c.verified ? 'lacquer' : 'outline'} className="mt-1">
+                      {c.verified ? common('verified') : common('unverified')}
+                    </Badge>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        ) : null}
       </section>
+
+      {/* Timeline gia đình nằm ngang, kéo được (FR-ART-02). */}
+      {household.timeline.length > 0 ? (
+        <section className="pb-section" aria-labelledby="timeline-title">
+          <div className="mx-auto max-w-editorial px-gutter">
+            <h2 id="timeline-title">{t('timeline')}</h2>
+            <p className="mt-2 text-small text-ash">{t('timelineHint')}</p>
+          </div>
+          <ol
+            aria-labelledby="timeline-title"
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: vùng cuộn ngang phải nhận focus để cuộn bằng phím mũi tên (WCAG 2.1.1, axe scrollable-region-focusable).
+            tabIndex={0}
+            className="relative mt-10 flex snap-x gap-0 overflow-x-auto px-gutter pb-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glaze"
+          >
+            {household.timeline.map((e, i) => (
+              <li key={`${e.year}-${e.title}`} className="relative w-72 shrink-0 snap-start pr-8">
+                <span
+                  aria-hidden="true"
+                  className="absolute top-[0.95rem] right-0 left-0 h-px bg-linear-to-r from-clay/60 to-clay/20"
+                />
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'relative block size-8 rotate-45 rounded-[3px] border-2 border-clay bg-paper',
+                    i === household.timeline.length - 1 && 'bg-clay',
+                  )}
+                />
+                <p className="mt-5 font-display text-h2 text-clay type-soft">{e.year}</p>
+                <h3 className="mt-1 font-sans text-body font-semibold text-ink">{e.title}</h3>
+                <p className="mt-1 text-small text-ash">{e.text}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
+
+      {/* Thư viện ảnh xưởng kiểu masonry (FR-ART-04). */}
+      {gallery.length > 0 ? (
+        <section
+          className="mx-auto max-w-editorial px-gutter pb-section"
+          aria-labelledby="gallery-title"
+        >
+          <h2 id="gallery-title">{t('gallery')}</h2>
+          <div className="mt-8 columns-1 gap-5 sm:columns-2 lg:columns-3">
+            {gallery.map((item) => {
+              const image = photoFromUrl(item.url, item.alt);
+              return (
+                <figure key={item.url} className="mb-5 break-inside-avoid">
+                  <ImageSlot
+                    alt={item.alt}
+                    tint={tintOf(item.alt)}
+                    ratio="3/2"
+                    {...(item.caption ? { caption: item.caption } : {})}
+                    {...slotPhoto(image)}
+                    sizes="(min-width: 1024px) 28vw, (min-width: 640px) 45vw, 100vw"
+                  />
+                  {image?.photo ? <PhotoCredit id={image.photo.id} /> : null}
+                </figure>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       <MakerCredits
         className="mx-auto max-w-editorial px-gutter pb-section"
@@ -181,6 +299,16 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
             {ex('wholesaleTitle')}
           </h2>
           <p className="mt-3 max-w-prose-vn text-paper">{ex('wholesaleText')}</p>
+          {capacities.length > 0 ? (
+            <p className="mt-2 text-small text-paper">
+              {t('capacity')}:{' '}
+              {capacities
+                .map(
+                  ([category, count]) => `${categories(category)} ${t('capacityValue', { count })}`,
+                )
+                .join(' · ')}
+            </p>
+          ) : null}
           <Link
             href="/yeu-cau-bao-gia"
             className={cn(

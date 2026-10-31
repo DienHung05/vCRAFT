@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import {
   type ApplyHouseholdRequest,
   ApplyHouseholdRequestSchema,
@@ -12,6 +12,8 @@ import {
   ListHouseholdsQuerySchema,
   type SetProductMakersRequest,
   SetProductMakersRequestSchema,
+  type UpdateHouseholdProfileRequest,
+  UpdateHouseholdProfileRequestSchema,
   WithdrawProductRequestSchema,
 } from '@vcraft/contracts';
 import type { HouseholdEvent } from '@vcraft/domain';
@@ -40,6 +42,29 @@ export class MyHouseholdController {
   @Roles('HOUSEHOLD')
   get(@CurrentActor() actor: Actor) {
     return this.households.getMine(actor);
+  }
+
+  @Patch()
+  @Roles('HOUSEHOLD')
+  updateProfile(
+    @CurrentActor() actor: Actor,
+    @IfMatchVersion() version: number,
+    @Body(new ZodValidationPipe(UpdateHouseholdProfileRequestSchema))
+    body: UpdateHouseholdProfileRequest,
+  ) {
+    return this.households.updateProfile(actor, version, body);
+  }
+
+  @Put('workshops/:id')
+  @Roles('HOUSEHOLD')
+  updateWorkshop(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+    @Body(new ZodValidationPipe(CreateWorkshopRequestSchema))
+    body: CreateWorkshopRequest,
+  ) {
+    return this.households.updateWorkshop(actor, id, version, body);
   }
 
   @Post('workshops')

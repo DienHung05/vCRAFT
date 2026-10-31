@@ -8,7 +8,12 @@ import type {
   WorkshopDto,
 } from '@vcraft/contracts';
 import type { Artisan, Household, Product, ProductMaker, Workshop } from '@vcraft/database';
-import { isVisitable, POSTED_BY_ADMINISTRATION, splitWorkshops } from '@vcraft/domain';
+import {
+  isVisitable,
+  POSTED_BY_ADMINISTRATION,
+  profileCompleteness,
+  splitWorkshops,
+} from '@vcraft/domain';
 
 const toNumber = (value: string | null | undefined): number | null =>
   value === null || value === undefined ? null : Number(value);
@@ -101,9 +106,21 @@ export interface HouseholdParts {
   products: Product[];
   /** Ghi công theo `product.id`. */
   makers: ReadonlyMap<string, ProductMaker[]>;
+  /** URL công khai của ảnh đã xử lý xong, theo `mediaId`. */
+  mediaUrls?: ReadonlyMap<string, string>;
+}
+
+function toGalleryDto(h: Household, parts: HouseholdParts) {
+  return (h.gallery ?? []).map((item) => ({
+    mediaId: item.mediaId ?? null,
+    url: item.url ?? (item.mediaId ? (parts.mediaUrls?.get(item.mediaId) ?? null) : null),
+    alt: item.alt,
+    caption: item.caption ?? null,
+  }));
 }
 
 export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): PublicHouseholdDto {
+  const gallery = toGalleryDto(h, parts);
   return {
     id: h.id,
     name: h.name,
@@ -111,7 +128,14 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
     history: h.history,
     village: h.village ?? null,
     craft: h.craft ?? null,
-    coverUrl: h.coverUrl ?? null,
+    // Chưa chọn bìa riêng thì dùng ảnh xưởng đầu tiên đã xử lý xong.
+    coverUrl: h.coverUrl ?? gallery.find((item) => item.url)?.url ?? null,
+    foundedYear: h.foundedYear ?? null,
+    generations: h.generations ?? null,
+    timeline: h.timeline ?? [],
+    certifications: h.certifications ?? [],
+    gallery,
+    capacityByCategory: h.capacityByCategory ?? {},
     artisans: parts.artisans.map(toArtisanDto),
     workshops: parts.workshops.map(toWorkshopDto),
     visit: {
@@ -129,5 +153,16 @@ export function toHouseholdDto(h: Household, parts: HouseholdParts): HouseholdDt
     status: h.status,
     statusReason: h.statusReason ?? null,
     approvedAt: h.approvedAt?.toISOString() ?? null,
+    completeness: profileCompleteness({
+      history: h.history,
+      foundedYear: h.foundedYear ?? null,
+      generations: h.generations ?? null,
+      timelineCount: h.timeline?.length ?? 0,
+      certificationCount: h.certifications?.length ?? 0,
+      galleryCount: h.gallery?.length ?? 0,
+      workshopHasLocation: parts.workshops.some((w) => w.lat != null && w.lng != null),
+      workshopHasHours: parts.workshops.some((w) => (w.openingHours?.length ?? 0) > 0),
+      capacityCategories: Object.keys(h.capacityByCategory ?? {}).length,
+    }),
   };
 }
