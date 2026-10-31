@@ -199,7 +199,8 @@
     "gallery": "Trong xưởng",
     "products": "Sản phẩm của hộ",
     "productsEmpty": "Xưởng chưa có sản phẩm nào ra lò. Bạn quay lại sau nhé.",
-    "coverAlt": "Ảnh xưởng của hộ {household}"
+    "coverAlt": "Ảnh xưởng của hộ {household}",
+    "capacityBy": "Năng lực theo danh mục"
   },
   "product": {
     "breadcrumb": "Đường dẫn trang",
@@ -265,7 +266,9 @@
     "inProgress": "Đang làm · chưa ghi: {stages}",
     "hashHint": "Dấu băm SHA-256 của mốc này, nối với mốc trước đó.",
     "withdrawnTitle": "Món đồ này không còn được trưng bày",
-    "withdrawnText": "Hộ làm ra món đồ đã rút nó khỏi triển lãm, nên nhật ký không còn hiện công khai."
+    "withdrawnText": "Hộ làm ra món đồ đã rút nó khỏi triển lãm, nên nhật ký không còn hiện công khai.",
+    "lockedTitle": "Chưa xác thực được món đồ này",
+    "lockedText": "Hộ làm ra mã {code} đang bị Ban quản lý làng tạm khóa. Hãy thận trọng: món đồ này hiện không được vCraft xác nhận."
   },
   "rfq": {
     "breadcrumb": "Đường dẫn trang",
@@ -403,7 +406,9 @@
       "coordination": "Điều phối",
       "news": "Tin tức",
       "audit": "Nhật ký",
-      "soon": "Sắp có"
+      "soon": "Sắp có",
+      "overview": "Tổng quan",
+      "pending": "{count} hồ sơ đang chờ duyệt"
     },
     "coordination": {
       "breadcrumb": "Đường dẫn trang",
@@ -486,6 +491,68 @@
       "receive": "Xác nhận đã nhận hàng",
       "cancelOrder": "Hủy đơn",
       "cancelReason": "Ghi lý do hủy đơn:"
+    },
+    "dashboard": {
+      "title": "Tổng quan",
+      "loading": "Đang tải…",
+      "signIn": "Hãy đăng nhập bằng tài khoản Ban quản lý.",
+      "failed": "Chưa tải được số liệu.",
+      "retry": "Thử lại",
+      "activeHouseholds": "Hộ đang hoạt động",
+      "pendingApplications": "Hồ sơ chờ duyệt",
+      "openRfqs": "Yêu cầu báo giá đang mở",
+      "ordersInProduction": "Đơn đang sản xuất",
+      "qrScans30Days": "Lượt quét QR 30 ngày",
+      "reviewCta": "Duyệt {count} hồ sơ đang chờ"
+    },
+    "queue": {
+      "title": "Duyệt hộ",
+      "filters": "Lọc hồ sơ",
+      "status": "Trạng thái",
+      "allStatuses": "Mọi trạng thái",
+      "from": "Từ ngày",
+      "to": "Đến ngày",
+      "loading": "Đang tải…",
+      "signIn": "Hãy đăng nhập bằng tài khoản Ban quản lý.",
+      "failed": "Chưa tải được hàng đợi.",
+      "retry": "Thử lại",
+      "empty": "Không có hồ sơ nào khớp bộ lọc."
+    },
+    "review": {
+      "back": "Về hàng đợi",
+      "loading": "Đang tải…",
+      "signIn": "Hãy đăng nhập bằng tài khoản Ban quản lý.",
+      "missing": "Không tìm thấy hộ này.",
+      "failed": "Chưa tải được hồ sơ.",
+      "retry": "Thử lại",
+      "declared": "Thông tin khai báo",
+      "craft": "Nghề",
+      "village": "Làng",
+      "foundedYear": "Năm thành lập",
+      "artisans": "Người làm",
+      "approvedAt": "Ngày duyệt",
+      "currentReason": "Ghi chú hiện tại: {reason}",
+      "documents": "Giấy tờ",
+      "documentsHint": "Mỗi lần mở tạo một đường dẫn riêng, hết hạn sau 5 phút.",
+      "noDocuments": "Hộ chưa nộp giấy tờ.",
+      "openDocument": "Mở",
+      "documentFailed": "Chưa mở được giấy tờ này.",
+      "workshops": "Xưởng trên bản đồ",
+      "noWorkshops": "Hộ chưa khai xưởng.",
+      "noLocation": "Xưởng chưa khai vị trí.",
+      "decision": "Quyết định",
+      "reason": "Lý do",
+      "sealed": "Đã duyệt và đóng ấn.",
+      "saved": "Đã lưu quyết định.",
+      "stale": "Hồ sơ vừa thay đổi. Đã tải lại bản mới, bạn kiểm tra rồi quyết định lại.",
+      "failed_action": "Chưa lưu được quyết định.",
+      "actions": {
+        "approve": "Duyệt",
+        "reject": "Từ chối",
+        "request-info": "Yêu cầu bổ sung",
+        "suspend": "Tạm khóa hộ",
+        "reinstate": "Mở khóa hộ"
+      }
     }
   },
   "exhibition": {
@@ -684,5 +751,473 @@
       "price_asc": "Giá tăng dần",
       "price_desc": "Giá giảm dần"
     }
+  },
+  "auth": {
+    "nav": {
+      "signIn": "Đăng nhập",
+      "register": "Đăng ký",
+      "account": "Tài khoản của bạn",
+      "signOut": "Đăng xuất",
+      "signingOut": "Đang đăng xuất…",
+      "roleLabel": "Vai trò",
+      "checking": "Đang kiểm tra phiên đăng nhập",
+      "area": "Vào khu làm việc"
+    },
+    "roles": {
+      "BUYER": "Khách",
+      "HOUSEHOLD": "Người đại diện hộ",
+      "ADMIN": "Quản trị viên làng"
+    },
+    "areas": {
+      "BUYER": "Yêu cầu báo giá của tôi",
+      "HOUSEHOLD": "Hồ sơ hộ",
+      "ADMIN": "Điều phối"
+    },
+    "fields": {
+      "email": "Email",
+      "emailPlaceholder": "ten@vidu.vn",
+      "password": "Mật khẩu",
+      "passwordHint": "Ít nhất 8 ký tự, gồm cả chữ và số.",
+      "newPassword": "Mật khẩu mới",
+      "confirmPassword": "Nhập lại mật khẩu mới",
+      "showPassword": "Hiện",
+      "hidePassword": "Ẩn",
+      "optional": "không bắt buộc"
+    },
+    "validation": {
+      "emailRequired": "Nhập email của bạn.",
+      "emailInvalid": "Email chưa đúng dạng, ví dụ ten@vidu.vn.",
+      "passwordRequired": "Nhập mật khẩu.",
+      "passwordShort": "Mật khẩu cần ít nhất 8 ký tự.",
+      "passwordWeak": "Mật khẩu cần có cả chữ và số.",
+      "confirmMismatch": "Hai mật khẩu chưa giống nhau, hãy nhập lại cho khớp.",
+      "nameShort": "Tên hộ cần ít nhất 2 ký tự.",
+      "slugRequired": "Đường dẫn trang không được để trống.",
+      "slugInvalid": "Đường dẫn chỉ gồm chữ thường không dấu, số và dấu gạch ngang, ví dụ gom-minh-hai.",
+      "workshopNameShort": "Tên xưởng cần ít nhất 2 ký tự.",
+      "addressShort": "Địa chỉ cần ít nhất 5 ký tự để khách tìm được xưởng.",
+      "locationRequired": "Hãy chọn vị trí xưởng trên bản đồ hoặc nhập tọa độ.",
+      "latInvalid": "Vĩ độ phải là số từ -90 đến 90.",
+      "lngInvalid": "Kinh độ phải là số từ -180 đến 180."
+    },
+    "errors": {
+      "invalid_credentials": "Email hoặc mật khẩu chưa đúng. Kiểm tra lại, hoặc chọn \"Quên mật khẩu\" để đặt mật khẩu mới.",
+      "email_not_confirmed": "Email này chưa được xác minh. Mở thư vCraft đã gửi và bấm liên kết xác minh, hoặc gửi lại thư ở dưới.",
+      "email_exists": "Không tạo được tài khoản với email này. Nếu bạn từng đăng ký, hãy đăng nhập hoặc chọn \"Quên mật khẩu\".",
+      "rate_limited": "Bạn thao tác hơi nhanh. Chờ vài phút rồi thử lại, dữ liệu đã nhập vẫn còn nguyên.",
+      "weak_password": "Mật khẩu này quá dễ đoán hoặc đã từng bị lộ. Hãy chọn mật khẩu dài hơn và khó đoán hơn.",
+      "same_password": "Mật khẩu mới phải khác mật khẩu đang dùng.",
+      "user_banned": "Tài khoản đang bị tạm khóa. Hãy liên hệ Ban quản lý để được hỗ trợ.",
+      "link_invalid": "Liên kết đã hết hạn hoặc đã được dùng. Hãy yêu cầu một liên kết mới.",
+      "signup_disabled": "Hiện chưa mở đăng ký tài khoản mới. Bạn thử lại sau nhé.",
+      "email_invalid": "Email này không dùng được. Hãy thử một địa chỉ khác.",
+      "network": "Không kết nối được tới máy chủ. Kiểm tra mạng rồi thử lại, dữ liệu bạn nhập vẫn còn nguyên.",
+      "unknown": "Lò hơi trục trặc, bạn thử lại sau ít phút nhé.",
+      "unconfigured": "Môi trường này chưa cấu hình kết nối Supabase Auth (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY).",
+      "sessionExpired": "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại rồi tiếp tục, dữ liệu bạn nhập vẫn còn nguyên.",
+      "slugTaken": "Đường dẫn này đã có hộ khác dùng. Hãy sửa đường dẫn rồi thử lại.",
+      "locked": "Tài khoản đang bị khóa, nên chưa thể thực hiện thao tác này. Hãy liên hệ Ban quản lý.",
+      "forbidden": "Tài khoản này không có quyền thực hiện thao tác này.",
+      "mediaTooLarge": "Tệp lớn hơn 10 MB. Hãy chụp lại ở độ phân giải thấp hơn hoặc nén tệp.",
+      "mediaUnsupported": "Chỉ nhận ảnh JPG, PNG, WebP, AVIF hoặc tệp PDF.",
+      "apiDown": "Không gọi được máy chủ vCraft. Bạn thử lại sau ít phút nhé."
+    },
+    "signIn": {
+      "title": "Đăng nhập",
+      "lead": "Vào vCraft để theo dõi yêu cầu báo giá, hoặc quản lý hồ sơ hộ của bạn.",
+      "submit": "Đăng nhập",
+      "submitting": "Đang đăng nhập…",
+      "forgot": "Quên mật khẩu?",
+      "noAccount": "Chưa có tài khoản?",
+      "registerLink": "Đăng ký làm khách",
+      "householdLink": "Hộ làng nghề? Đăng ký tham gia triển lãm",
+      "resend": "Gửi lại thư xác minh",
+      "resending": "Đang gửi…",
+      "resent": "Đã gửi lại thư xác minh tới {email}. Kiểm tra cả mục thư rác nhé.",
+      "needSignIn": "Bạn cần đăng nhập để vào trang này.",
+      "notice": {
+        "linkInvalid": "Liên kết xác minh đã hết hạn hoặc đã được dùng. Đăng nhập nếu bạn đã xác minh, hoặc đăng ký lại để nhận thư mới."
+      }
+    },
+    "register": {
+      "title": "Đăng ký tài khoản khách",
+      "lead": "Tài khoản khách giúp bạn gửi yêu cầu báo giá sỉ tới các hộ làng nghề và theo dõi đơn hàng.",
+      "submit": "Tạo tài khoản",
+      "submitting": "Đang tạo tài khoản…",
+      "haveAccount": "Đã có tài khoản?",
+      "signInLink": "Đăng nhập",
+      "householdLink": "Bạn là hộ làm nghề? Đăng ký tham gia triển lãm",
+      "verifyNote": "Chúng tôi sẽ gửi một thư xác minh. Cần bấm liên kết trong thư thì mới đăng nhập được."
+    },
+    "checkEmail": {
+      "title": "Kiểm tra hộp thư của bạn",
+      "lead": "Chúng tôi đã gửi thư xác minh tới {email}. Bấm liên kết trong thư để kích hoạt tài khoản.",
+      "spam": "Chưa thấy thư? Xem mục thư rác, hoặc gửi lại sau ít phút.",
+      "resend": "Gửi lại thư",
+      "resending": "Đang gửi…",
+      "resent": "Đã gửi lại thư.",
+      "cooldown": "Gửi lại sau {seconds} giây",
+      "verified": "Đã bấm liên kết rồi?",
+      "signInLink": "Đăng nhập để tiếp tục"
+    },
+    "forgot": {
+      "title": "Quên mật khẩu",
+      "lead": "Nhập email đã đăng ký. Chúng tôi sẽ gửi liên kết để bạn đặt mật khẩu mới.",
+      "submit": "Gửi liên kết đặt lại",
+      "submitting": "Đang gửi…",
+      "back": "Quay lại đăng nhập",
+      "sentTitle": "Đã gửi hướng dẫn",
+      "sent": "Nếu {email} đã có tài khoản, một thư đặt lại mật khẩu đang trên đường tới. Liên kết dùng được một lần và hết hạn sau ít phút."
+    },
+    "reset": {
+      "title": "Đặt mật khẩu mới",
+      "lead": "Chọn mật khẩu mới cho tài khoản của bạn. Các thiết bị khác sẽ bị đăng xuất.",
+      "submit": "Lưu mật khẩu mới",
+      "submitting": "Đang lưu…",
+      "invalidTitle": "Liên kết không dùng được",
+      "invalid": "Liên kết đặt lại mật khẩu đã hết hạn hoặc đã được dùng. Hãy yêu cầu liên kết mới.",
+      "requestNew": "Yêu cầu liên kết mới"
+    },
+    "invitation": {
+      "title": "Chào mừng tới vCraft",
+      "lead": "Ban quản lý đã mời hộ của bạn vào triển lãm số. Đặt mật khẩu để kích hoạt tài khoản.",
+      "submit": "Đặt mật khẩu và vào vCraft",
+      "submitting": "Đang kích hoạt…",
+      "invalidTitle": "Lời mời không dùng được",
+      "invalid": "Liên kết mời chỉ dùng được một lần và đã hết hạn hoặc đã được dùng. Hãy nhờ Ban quản lý gửi lại lời mời.",
+      "signInLink": "Đã đặt mật khẩu? Đăng nhập"
+    },
+    "wizard": {
+      "title": "Đăng ký hộ làng nghề",
+      "lead": "Bốn bước ngắn để hồ sơ hộ của bạn tới tay Ban quản lý. Sau khi nộp, hồ sơ ở trạng thái chờ duyệt và chưa hiện công khai.",
+      "stepsLabel": "Các bước đăng ký hộ",
+      "steps": {
+        "account": "Tài khoản",
+        "household": "Thông tin hộ",
+        "workshop": "Vị trí xưởng",
+        "documents": "Giấy tờ xác minh"
+      },
+      "account": {
+        "title": "Tạo tài khoản người đại diện",
+        "lead": "Tài khoản này đứng tên hộ của bạn. Email cần được xác minh trước khi sang bước tiếp theo.",
+        "submit": "Tạo tài khoản và gửi thư xác minh",
+        "haveAccount": "Đã có tài khoản?",
+        "signInLink": "Đăng nhập rồi quay lại đây"
+      },
+      "household": {
+        "title": "Thông tin hộ",
+        "lead": "Tên và câu chuyện này sẽ hiện trên trang công khai của hộ sau khi Ban quản lý chấp nhận.",
+        "name": "Tên hộ",
+        "namePlaceholder": "Gốm Minh Hải",
+        "slug": "Đường dẫn trang",
+        "slugHint": "Địa chỉ trang hộ: {path}",
+        "village": "Làng nghề",
+        "villagePlaceholder": "Bát Tràng",
+        "history": "Câu chuyện của hộ",
+        "historyHint": "Vài dòng về lịch sử, đời nghề, điều làm hộ khác biệt. Bạn có thể bổ sung sau.",
+        "submit": "Lưu và tiếp tục",
+        "submitting": "Đang lưu hồ sơ…"
+      },
+      "workshop": {
+        "title": "Vị trí xưởng",
+        "lead": "Khách sẽ tìm tới xưởng qua bản đồ làng. Chọn đúng vị trí cổng xưởng.",
+        "name": "Tên xưởng",
+        "namePlaceholder": "Lò Minh Hải",
+        "address": "Địa chỉ",
+        "addressPlaceholder": "Xóm 3, Bát Tràng, Gia Lâm, Hà Nội",
+        "purpose": "Xưởng dùng để",
+        "purposes": {
+          "PRODUCTION": "Sản xuất",
+          "SHOWROOM": "Trưng bày, đón khách",
+          "BOTH": "Cả hai"
+        },
+        "acceptsVisitors": "Xưởng đón khách tham quan",
+        "visitingInfo": "Thông tin đón khách",
+        "visitingInfoHint": "Giờ mở cửa, có cần đặt trước không, lưu ý khi tới.",
+        "submit": "Lưu xưởng và tiếp tục",
+        "submitting": "Đang lưu xưởng…"
+      },
+      "map": {
+        "label": "Bản đồ chọn vị trí xưởng",
+        "hint": "Nhấp lên bản đồ để đặt ghim, hoặc kéo ghim tới đúng vị trí. Bạn cũng có thể nhập tọa độ.",
+        "lat": "Vĩ độ",
+        "lng": "Kinh độ",
+        "useMyLocation": "Dùng vị trí hiện tại của tôi",
+        "locating": "Đang xác định vị trí…",
+        "locationDenied": "Không lấy được vị trí. Hãy cho phép truy cập vị trí hoặc chọn trên bản đồ.",
+        "unavailable": "Bản đồ không tải được trên thiết bị này. Bạn vẫn có thể nhập tọa độ ở dưới.",
+        "loading": "Đang tải bản đồ…",
+        "attribution": "Dữ liệu bản đồ © OpenStreetMap",
+        "marker": "Vị trí xưởng"
+      },
+      "documents": {
+        "title": "Giấy tờ xác minh",
+        "lead": "Tải lên giấy phép kinh doanh, giấy chứng nhận làng nghề hoặc giấy tờ tương đương. Tệp nằm trong kho riêng tư, chỉ Ban quản lý xem được.",
+        "pick": "Chọn tệp",
+        "drop": "Ảnh JPG, PNG, WebP, AVIF hoặc PDF, mỗi tệp tối đa 10 MB.",
+        "empty": "Chưa chọn tệp nào.",
+        "listLabel": "Tệp giấy tờ đã chọn",
+        "status": {
+          "queued": "Chờ tải lên",
+          "uploading": "Đang tải lên…",
+          "done": "Đã tải lên",
+          "error": "Lỗi"
+        },
+        "retry": "Thử lại",
+        "remove": "Bỏ tệp {name}",
+        "submit": "Nộp hồ sơ",
+        "submitting": "Đang nộp…",
+        "needOne": "Cần tải lên ít nhất một giấy tờ trước khi nộp hồ sơ.",
+        "waitUploads": "Đợi các tệp tải xong rồi nộp hồ sơ."
+      },
+      "alreadyAdmin": "Tài khoản quản trị viên không đại diện cho hộ nào. Hãy đăng xuất rồi dùng email khác để đăng ký hộ.",
+      "alreadyApplied": "Tài khoản này đã nộp hồ sơ hộ."
+    },
+    "profile": {
+      "title": "Hồ sơ hộ",
+      "submitted": "Đã nộp hồ sơ. Ban quản lý sẽ xem xét và trạng thái ở trang này sẽ đổi khi có kết quả.",
+      "statusLabel": "Trạng thái hồ sơ",
+      "status": {
+        "PENDING_REVIEW": "Chờ duyệt",
+        "APPROVED": "Đã chấp nhận",
+        "REJECTED": "Chưa được chấp nhận",
+        "SUSPENDED": "Tạm ngừng trưng bày"
+      },
+      "pending": {
+        "title": "Hồ sơ của {name} đang chờ Ban quản lý duyệt",
+        "lead": "Trong lúc chờ, bạn chưa đăng sản phẩm hay nhận báo giá được. Khi hồ sơ được chấp nhận, các khu làm việc của hộ sẽ mở ra."
+      },
+      "approved": {
+        "title": "Hộ {name} đã có mặt trong triển lãm số",
+        "lead": "Hồ sơ đã được chấp nhận. Trang công khai của hộ đang hiển thị với khách."
+      },
+      "rejected": {
+        "title": "Hồ sơ của {name} chưa được chấp nhận",
+        "lead": "Bạn có thể liên hệ Ban quản lý để biết cần bổ sung gì."
+      },
+      "suspended": {
+        "title": "Hộ {name} đang tạm ngừng trưng bày",
+        "lead": "Trang công khai của hộ tạm ẩn, các bản ghi riêng của bạn vẫn còn nguyên."
+      },
+      "reason": "Lý do từ Ban quản lý",
+      "publicPage": "Xem trang công khai của hộ",
+      "stepsLabel": "Tiến trình hồ sơ",
+      "steps": {
+        "submitted": "Đã nộp hồ sơ",
+        "review": "Ban quản lý xem xét",
+        "accepted": "Được chấp nhận"
+      }
+    },
+    "forbidden": {
+      "title": "Bạn chưa có quyền vào trang này",
+      "signedInAs": "Bạn đang đăng nhập bằng {email}, vai trò {role}.",
+      "locked": "Tài khoản của bạn đang bị tạm khóa nên không vào được khu làm việc. Hãy liên hệ Ban quản lý để được hỗ trợ.",
+      "lead": "Khu vực này dành cho một vai trò khác. Đăng nhập bằng tài khoản phù hợp, hoặc quay về trang chủ.",
+      "home": "Về trang chủ",
+      "switch": "Đăng nhập tài khoản khác"
+    },
+    "serviceDown": {
+      "title": "Chưa kiểm tra được phiên đăng nhập",
+      "lead": "Máy chủ vCraft đang không phản hồi. Bạn thử lại sau ít phút nhé.",
+      "retry": "Thử lại"
+    }
+  },
+  "studio": {
+    "nav": {
+      "label": "Điều hướng Studio",
+      "home": "Trang chủ",
+      "products": "Sản phẩm",
+      "quotations": "Báo giá",
+      "orders": "Đơn hàng",
+      "profile": "Hồ sơ",
+      "soon": "Sắp có"
+    },
+    "signIn": "Hãy đăng nhập bằng tài khoản đại diện hộ để vào Studio.",
+    "notHousehold": "Tài khoản này chưa đại diện cho hộ nào. Hãy đăng ký làm nghệ nhân để mở Studio.",
+    "loadFailed": "Chưa tải được dữ liệu của hộ. Bạn thử lại sau ít phút.",
+    "retry": "Thử lại",
+    "loading": "Đang tải…",
+    "saved": "Đã lưu.",
+    "save": "Lưu",
+    "stale": "Hồ sơ vừa được sửa ở nơi khác. Đã tải lại bản mới, bạn kiểm tra rồi lưu lại.",
+    "saveFailed": "Chưa lưu được. Bạn kiểm tra nội dung rồi thử lại.",
+    "home": {
+      "title": "Chào {household}",
+      "status": "Trạng thái hồ sơ",
+      "statuses": {
+        "PENDING_REVIEW": "Đang chờ Ban quản lý duyệt",
+        "APPROVED": "Đã được duyệt, đang trưng bày công khai",
+        "REJECTED": "Chưa được chấp nhận",
+        "SUSPENDED": "Đang tạm ngừng, không hiện công khai"
+      },
+      "reason": "Lý do: {reason}",
+      "completeness": "Độ hoàn thiện hồ sơ",
+      "complete": "Hồ sơ đã đủ các mục.",
+      "missingLead": "Nên bổ sung:",
+      "counts": "Số liệu",
+      "drafts": "Sản phẩm nháp",
+      "published": "Đang trưng bày",
+      "artisans": "Người làm",
+      "workshops": "Xưởng",
+      "actions": "Làm nhanh",
+      "editProfile": "Sửa hồ sơ",
+      "viewPublic": "Xem trang công khai",
+      "sections": {
+        "story": "Câu chuyện của hộ (ít nhất vài câu)",
+        "lineage": "Năm thành lập và số đời làm nghề",
+        "timeline": "Dòng thời gian gia đình",
+        "certifications": "Chứng nhận",
+        "gallery": "Ảnh xưởng",
+        "workshopLocation": "Vị trí xưởng trên bản đồ",
+        "openingHours": "Giờ mở cửa",
+        "capacity": "Năng lực sản xuất"
+      },
+      "newProduct": "Thêm sản phẩm"
+    },
+    "profile": {
+      "title": "Hồ sơ của hộ",
+      "lead": "Những gì bạn lưu ở đây hiện ngay trên trang công khai của hộ.",
+      "story": "Câu chuyện",
+      "storyLabel": "Câu chuyện của hộ",
+      "craft": "Nghề",
+      "foundedYear": "Năm thành lập",
+      "generations": "Số đời làm nghề",
+      "timeline": "Dòng thời gian gia đình",
+      "addEvent": "Thêm sự kiện",
+      "year": "Năm",
+      "eventTitle": "Tiêu đề",
+      "eventText": "Nội dung",
+      "remove": "Xóa",
+      "certifications": "Chứng nhận",
+      "addCertification": "Thêm chứng nhận",
+      "certName": "Tên chứng nhận",
+      "certIssuer": "Đơn vị cấp",
+      "verified": "Đã xác minh",
+      "unverified": "Chưa xác minh",
+      "gallery": "Ảnh xưởng",
+      "galleryHint": "Mỗi ảnh cần mô tả đúng điều nhìn thấy, để người không xem được ảnh vẫn hiểu.",
+      "addPhotos": "Thêm ảnh",
+      "alt": "Mô tả ảnh (bắt buộc)",
+      "caption": "Chú thích",
+      "processing": "Ảnh đang được xử lý",
+      "altRequired": "Mỗi ảnh cần có mô tả ít nhất 3 ký tự.",
+      "workshop": "Xưởng",
+      "addWorkshop": "Thêm xưởng",
+      "workshopName": "Tên xưởng",
+      "address": "Địa chỉ",
+      "purpose": "Mục đích",
+      "purposes": {
+        "PRODUCTION": "Sản xuất",
+        "SHOWROOM": "Phòng trưng bày",
+        "BOTH": "Vừa làm vừa đón khách"
+      },
+      "acceptsVisitors": "Đón khách tham quan",
+      "visitingInfo": "Thông tin cho khách",
+      "lat": "Vĩ độ",
+      "lng": "Kinh độ",
+      "useMyLocation": "Dùng vị trí của tôi",
+      "mapHint": "Bấm trên bản đồ để chọn vị trí xưởng.",
+      "locationDenied": "Không lấy được vị trí. Bạn bấm chọn trên bản đồ hoặc nhập tọa độ.",
+      "hours": "Giờ mở cửa",
+      "closed": "Nghỉ",
+      "open": "Mở",
+      "close": "Đóng",
+      "capacity": "Năng lực sản xuất (đơn vị/tháng)"
+    },
+    "products": {
+      "title": "Sản phẩm",
+      "add": "Thêm sản phẩm",
+      "empty": "Chưa có sản phẩm nào ở mục này.",
+      "filterLabel": "Lọc theo trạng thái",
+      "all": "Tất cả",
+      "statuses": {
+        "DRAFT": "Nháp",
+        "PUBLISHED": "Đang trưng bày",
+        "WITHDRAWN": "Đã rút"
+      },
+      "newTitle": "Sản phẩm mới",
+      "editTitle": "Sửa sản phẩm",
+      "notFound": "Không tìm thấy sản phẩm này trong hộ của bạn.",
+      "name": "Tên sản phẩm",
+      "description": "Mô tả",
+      "category": "Danh mục",
+      "kind": "Loại",
+      "kinds": {
+        "OBJECT": "Độc bản (một vật)",
+        "BATCH": "Lô sản xuất"
+      },
+      "batchSize": "Số vật trong lô",
+      "price": "Giá bán (đ, để 0 nếu chưa niêm yết)",
+      "stock": "Số còn bán",
+      "material": "Chất liệu",
+      "dimensions": "Kích thước",
+      "weight": "Khối lượng (g)",
+      "note": "Lời người làm",
+      "create": "Tạo sản phẩm",
+      "details": "Thông tin",
+      "photos": "Ảnh sản phẩm",
+      "photosHint": "Tối đa 12 ảnh. Kéo để đổi thứ tự, ảnh đầu tiên là ảnh bìa.",
+      "addPhotos": "Thêm ảnh",
+      "alt": "Mô tả ảnh (bắt buộc)",
+      "moveHandle": "Kéo để đổi thứ tự ảnh {n}",
+      "processing": "Đang xử lý",
+      "remove": "Xóa",
+      "altRequired": "Mỗi ảnh cần có mô tả ít nhất 3 ký tự.",
+      "makers": "Người làm",
+      "makersHint": "Ghi công từng người theo phần việc của họ.",
+      "noArtisans": "Hộ chưa có người làm nào. Thêm người làm bên dưới trước.",
+      "contribution": "Phần việc của {name}",
+      "newArtisan": "Tên người làm mới",
+      "newArtisanRole": "Vai trò",
+      "addArtisan": "Thêm người làm",
+      "publishing": "Xuất bản",
+      "publish": "Xuất bản",
+      "republish": "Xuất bản lại",
+      "withdraw": "Rút khỏi trưng bày",
+      "withdrawReason": "Lý do rút",
+      "notApproved": "Hộ cần được duyệt trước khi xuất bản.",
+      "publishFailed": "Chưa đổi được trạng thái. Bạn thử lại sau.",
+      "qr": "Mã QR",
+      "qrLead": "In mã này lên tem dán đáy sản phẩm. Mã không đổi khi đổi tên.",
+      "qrDownload": "Tải PNG",
+      "journalLink": "Nhật ký sản xuất"
+    },
+    "journal": {
+      "title": "Nhật ký: {product}",
+      "back": "Về sản phẩm",
+      "template": "Các công đoạn",
+      "empty": "Chưa có mốc nào. Bắt đầu bằng công đoạn đầu tiên.",
+      "stageDone": "đã ghi",
+      "stageTodo": "chưa ghi",
+      "published": "Sản phẩm đã xuất bản: nhật ký chỉ ghi thêm. Muốn sửa sai, hãy thêm mốc đính chính.",
+      "addStage": "Thêm mốc",
+      "stage": "Công đoạn",
+      "date": "Ngày",
+      "time": "Giờ",
+      "note": "Ghi chú",
+      "photo": "Ảnh công đoạn",
+      "skipReason": "Lý do bỏ qua công đoạn trước",
+      "cancel": "Hủy",
+      "save": "Lưu mốc",
+      "exifFilled": "Đã điền ngày giờ theo ảnh.",
+      "exifOld": "Ảnh chụp cách đây hơn 30 ngày. Hãy kiểm tra lại ngày trước khi lưu.",
+      "waitingPhoto": "Đang chờ xử lý ảnh…",
+      "photoFailed": "Ảnh chưa xử lý xong. Bạn thử lại sau hoặc lưu mốc không kèm ảnh.",
+      "saveFailed": "Chưa lưu được mốc. Bạn kiểm tra nội dung rồi thử lại.",
+      "correct": "Đính chính",
+      "correctionTitle": "Đính chính mốc {n}",
+      "corrects": "Đính chính mốc {n}",
+      "correctedBy": "Đã được đính chính bởi mốc {n}",
+      "delete": "Xóa mốc"
+    }
+  },
+  "media": {
+    "uploads": "Ảnh đang tải lên",
+    "retry": "Thử lại",
+    "cancel": "Hủy",
+    "failed": "Tải lên không thành công.",
+    "uploading": "Đang tải {name}",
+    "preparing": "Đang chuẩn bị {name}",
+    "tooMany": "Đã bỏ {count} ảnh vượt giới hạn."
   }
 }

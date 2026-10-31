@@ -1,0 +1,91 @@
+'use client';
+
+import { type AdminClient, ApiError, createAdminClient } from '@vcraft/api-client';
+import type { AdminDashboardDto } from '@vcraft/contracts';
+import { Button, Card } from '@vcraft/ui';
+import { useFormatter, useTranslations } from 'next-intl';
+import { useCallback, useEffect, useState } from 'react';
+import { Link } from '@/i18n/navigation';
+import { useLiveClient } from '@/lib/api/live-session';
+
+const REFRESH_MS = 30_000;
+
+export function useAdminClient(provided?: AdminClient) {
+  return useLiveClient(provided, (getAccessToken) => createAdminClient({ getAccessToken }));
+}
+
+const METRICS = [
+  'activeHouseholds',
+  'pendingApplications',
+  'openRfqs',
+  'ordersInProduction',
+  'qrScans30Days',
+] as const;
+
+/** Tổng quan của Ban quản lý (FR-ADM-06): số liệu tự cập nhật, không cần tải lại trang. */
+export function AdminDashboard({ client: provided }: { client?: AdminClient }) {
+  const t = useTranslations('admin.dashboard');
+  const format = useFormatter();
+  const { client, loading } = useAdminClient(provided);
+  const [data, setData] = useState<AdminDashboardDto | null>(null);
+  const [state, setState] = useState<'loading' | 'ready' | 'error' | 'signed-out'>('loading');
+
+  const load = useCallback(async () => {
+    if (!client) return;
+    try {
+      setData(await client.dashboard());
+      setState('ready');
+    } catch (error) {
+      setState(error instanceof ApiError && error.status === 401 ? 'signed-out' : 'error');
+    }
+  }, [client]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!client) {
+      setState('signed-out');
+      return;
+    }
+    void load();
+    const timer = window.setInterval(() => {
+      if (!document.hidden) void load();
+    }, REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, [client, load, loading]);
+
+  return (
+    <div className="flex flex-col gap-6">
+      <h1 className="text-h2">{t('title')}</h1>
+      {state === 'loading' ? <p role="status">{t('loading')}</p> : null}
+      {state === 'signed-out' ? <p>{t('signIn')}</p> : null}
+      {state === 'error' && !data ? (
+        <div role="alert" className="flex flex-col items-start gap-3">
+          <p>{t('failed')}</p>
+          <Button type="button" variant="secondary" onClick={() => void load()}>
+            {t('retry')}
+          </Button>
+        </div>
+      ) : null}
+      {data ? (
+        <>
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5" data-testid="admin-metrics">
+            {METRICS.map((key) => (
+              <Card key={key} className="p-4">
+                <dt className="text-small text-ash">{t(key)}</dt>
+                <dd className="mt-1 font-display text-h1">{format.number(data[key])}</dd>
+              </Card>
+            ))}
+          </dl>
+          {data.pendingApplications > 0 ? (
+            <Link
+              href="/admin/duyet-ho"
+              className="self-start text-clay underline underline-offset-4"
+            >
+              {t('reviewCta', { count: data.pendingApplications })}
+            </Link>
+          ) : null}
+        </>
+      ) : null}
+    </div>
+  );
+}

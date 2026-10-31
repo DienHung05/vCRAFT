@@ -1,9 +1,31 @@
 import { type Opt } from '@mikro-orm/core';
 import { Entity, Index, ManyToOne, Property, Unique } from '@mikro-orm/decorators/legacy';
-import type { HouseholdStatus } from '@vcraft/domain';
+import type { HouseholdStatus, ProductCategory } from '@vcraft/domain';
 import { normalizeSearchText } from '@vcraft/utils';
 import { AppUser } from './app-user.entity.js';
 import { BaseEntity } from './base.entity.js';
+
+export interface HouseholdTimelineEvent {
+  year: number;
+  title: string;
+  text: string;
+}
+
+/** Chứng nhận do hộ khai; chỉ Ban quản lý mới đánh dấu `verified` (FR-ART-03). */
+export interface HouseholdCertification {
+  name: string;
+  issuer: string;
+  year: number;
+  verified: boolean;
+}
+
+/** Ảnh xưởng: tải lên (`mediaId`) hoặc ảnh có sẵn của dữ liệu mẫu (`url`); `alt` luôn bắt buộc. */
+export interface HouseholdGalleryItem {
+  mediaId?: string;
+  url?: string;
+  alt: string;
+  caption?: string;
+}
 
 const householdSearchText = (h: Household) =>
   normalizeSearchText(`${h.name} ${h.village ?? ''} ${h.craft ?? ''}`);
@@ -35,6 +57,28 @@ export class Household extends BaseEntity {
   /** Ảnh bìa (đường dẫn tương đối hoặc URL công khai); không có thì giao diện dùng hình thay thế. */
   @Property({ type: 'string', length: 500, nullable: true })
   coverUrl?: string | null;
+
+  @Property({ type: 'integer', nullable: true })
+  foundedYear?: number | null;
+
+  /** Số đời làm nghề. */
+  @Property({ type: 'integer', nullable: true })
+  generations?: number | null;
+
+  /** Dòng thời gian lịch sử gia đình (FR-ART-02). */
+  @Property({ type: 'json', nullable: true })
+  timeline?: HouseholdTimelineEvent[] | null;
+
+  @Property({ type: 'json', nullable: true })
+  certifications?: HouseholdCertification[] | null;
+
+  /** Thư viện ảnh xưởng, theo thứ tự hiển thị (FR-ART-04). */
+  @Property({ type: 'json', nullable: true })
+  gallery?: HouseholdGalleryItem[] | null;
+
+  /** Năng lực sản xuất (đơn vị/tháng) theo danh mục (FR-ART-06). */
+  @Property({ type: 'json', nullable: true })
+  capacityByCategory?: Partial<Record<ProductCategory, number>> | null;
 
   /** Tên, làng, nghề đã bỏ dấu cho tìm kiếm (FR-CAT-04); tự tính lại mỗi lần ghi. */
   @Property({

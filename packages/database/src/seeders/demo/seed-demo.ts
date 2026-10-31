@@ -67,6 +67,39 @@ const DAY = 24 * 60 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
 const NAMESPACE = '6f5c3d8e-2b1a-4c7d-9e0f-1a2b3c4d5e6f';
 const TRACE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+/** Bốn hộ khớp dữ liệu triển lãm dựng sẵn: thêm năm thành lập, dòng thời gian, chứng nhận thật của bản mẫu. */
+const HOUSEHOLD_SHOWCASE: Record<string, Partial<Household>> = {
+  'Gốm Minh Hải': {
+    foundedYear: 1962,
+    generations: 5,
+    timeline: [
+      {
+        year: 1962,
+        title: 'Đỏ lửa lò bầu',
+        text: 'Cụ Nguyễn Văn Sinh dựng lò bầu đầu tiên bên bến sông.',
+      },
+      {
+        year: 2019,
+        title: 'Nghệ nhân ưu tú',
+        text: 'Anh Minh Hải được phong tặng danh hiệu Nghệ nhân ưu tú.',
+      },
+    ],
+    certifications: [
+      { name: 'Nghệ nhân ưu tú', issuer: 'Chủ tịch nước', year: 2019, verified: true },
+      { name: 'OCOP 4 sao', issuer: 'UBND TP. Hà Nội', year: 2023, verified: true },
+      { name: 'Giải Bàn tay vàng', issuer: 'Hiệp hội Làng nghề', year: 2024, verified: false },
+    ],
+  },
+  'Gốm Lam Ngọc': {
+    foundedYear: 1978,
+    generations: 3,
+    timeline: [
+      { year: 1978, title: 'Mở xưởng', text: 'Hộ bắt đầu thử nghiệm men ngọc và men rạn.' },
+    ],
+    certifications: [{ name: 'OCOP 3 sao', issuer: 'UBND TP. Hà Nội', year: 2022, verified: true }],
+  },
+};
+
 /** Ảnh bìa có giấy phép đã nằm trong `apps/web/public/images/demo` (xem `photo-credits.ts` của web). */
 const HOUSEHOLD_COVERS: Record<string, string> = {
   'Gốm Minh Hải': '/images/demo/bia-minh-hai-1280.webp',
@@ -654,6 +687,10 @@ export async function seedDemoData(
       village: 'Bát Tràng',
       craft: row.seed.craft,
       coverUrl: HOUSEHOLD_COVERS[row.seed.name] ?? null,
+      foundedYear: 1940 + ((row.index * 7) % 60),
+      generations: 2 + (row.index % 4),
+      capacityByCategory: { VASE: 200 + row.index * 10, TABLEWARE: 500 + row.index * 20 },
+      ...HOUSEHOLD_SHOWCASE[row.seed.name],
       status: row.status,
       statusReason: null,
       approvedAt: pending ? null : new Date(createdMs + 2 * DAY),

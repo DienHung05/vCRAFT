@@ -1,24 +1,33 @@
 import { type EntityManager, MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type {
+  AdminDashboardDto,
+  AdminHouseholdDto,
   ApplyHouseholdRequest,
   CreateArtisanRequest,
   CreateProductRequest,
   CreateWorkshopRequest,
+  HouseholdDocumentDto,
   HouseholdDto,
   MapPinsDto,
   ProductDto,
   PublicHouseholdDto,
   SetProductMakersRequest,
   TraceAvailabilityDto,
+  UpdateHouseholdProfileRequest,
+  UpdateProductRequest,
 } from '@vcraft/contracts';
 import {
   AppUser,
   Artisan,
   AuditLog,
   Household,
+  MediaAsset,
+  OutboxEvent,
   Product,
   ProductMaker,
+  QuotationRequest,
+  TraceScan,
   Workshop,
 } from '@vcraft/database';
 import {
@@ -35,9 +44,11 @@ import { slugify } from '@vcraft/utils';
 import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
+import { MediaService } from '../../media/application/media.service';
 import { loadJournal } from '../../production-logs/application/journal.queries';
 import {
   type HouseholdParts,
+  productMediaIds,
   toArtisanDto,
   toHouseholdDto,
   toMapPinDto,
@@ -55,7 +66,10 @@ import { generateTraceCode } from './trace-code';
  */
 @Injectable()
 export class HouseholdsService {
-  constructor(private readonly orm: MikroORM) {}
+  constructor(
+    private readonly orm: MikroORM,
+    private readonly media: MediaService,
+  ) {}
 
   // --- Người đại diện hộ ---
 
@@ -90,6 +104,75 @@ export class HouseholdsService {
     const em = this.orm.em.fork();
     const household = await this.ownHousehold(em, actor);
     return toHouseholdDto(household, await this.parts(em, household, false));
+  }
+
+  /** Chủ hộ sửa hồ sơ của chính mình; chứng nhận đã xác minh giữ nguyên dấu khi không đổi nội dung. */
+  async updateProfile(
+    actor: Actor,
+    expectedVersion: number,
+    input: UpdateHouseholdProfileRequest,
+  ): Promise<HouseholdDto> {
+    const updated = await this.orm.em.fork().transactional(async (em) => {
+      const household = await this.ownWritableHousehold(em, actor);
+      assertVersion(household, expectedVersion);
+      if (input.gallery) {
+        const ids = input.gallery.flatMap((item) => ('mediaId' in item ? [item.mediaId] : []));
+        const owned = await this.media.ownedBy(actor.id, ids);
+        if (ids.some((id) => !owned.has(id))) throw forbidden('gallery media is not yours');
+        household.gallery = input.gallery.map((item) => ({ ...item }));
+      }
+      if (input.certifications) {
+        const verified = new Set(
+          (household.certifications ?? [])
+            .filter((c) => c.verified)
+            .map((c) => `${c.name}|${c.issuer}|${c.year}`),
+        );
+        household.certifications = input.certifications.map((c) => ({
+          ...c,
+          verified: verified.has(`${c.name}|${c.issuer}|${c.year}`),
+        }));
+      }
+      if (input.history !== undefined) household.history = input.history;
+      if (input.craft !== undefined) household.craft = input.craft || null;
+      if (input.village !== undefined) household.village = input.village || null;
+      if (input.foundedYear !== undefined) household.foundedYear = input.foundedYear;
+      if (input.generations !== undefined) household.generations = input.generations;
+      if (input.timeline !== undefined) {
+        household.timeline = [...input.timeline].sort((a, b) => a.year - b.year);
+      }
+      if (input.capacityByCategory !== undefined) {
+        household.capacityByCategory = input.capacityByCategory;
+      }
+      await em.flush();
+      return household.id;
+    });
+    const em = this.orm.em.fork();
+    const household = await em.findOneOrFail(Household, updated);
+    return toHouseholdDto(household, await this.parts(em, household, false));
+  }
+
+  async updateWorkshop(
+    actor: Actor,
+    workshopId: string,
+    expectedVersion: number,
+    input: CreateWorkshopRequest,
+  ) {
+    return this.orm.em.fork().transactional(async (em) => {
+      const household = await this.ownWritableHousehold(em, actor);
+      const workshop = await em.findOne(Workshop, { id: workshopId, household });
+      if (!workshop) throw notFound();
+      assertVersion(workshop, expectedVersion);
+      workshop.name = input.name;
+      workshop.address = input.address;
+      workshop.purpose = input.purpose;
+      workshop.acceptsVisitors = input.acceptsVisitors;
+      workshop.visitingInfo = input.visitingInfo ?? null;
+      workshop.openingHours = input.openingHours ?? null;
+      workshop.lat = input.lat === undefined ? null : input.lat.toFixed(6);
+      workshop.lng = input.lng === undefined ? null : input.lng.toFixed(6);
+      await em.flush();
+      return toWorkshopDto(workshop);
+    });
   }
 
   async addWorkshop(actor: Actor, input: CreateWorkshopRequest) {
@@ -149,6 +232,52 @@ export class HouseholdsService {
       await em.flush();
       return toProductDto(product);
     });
+  }
+
+  /** Chủ hộ sửa thông tin và ảnh sản phẩm; ảnh chỉ được gắn khi chính họ đã tải lên. */
+  async updateProduct(
+    actor: Actor,
+    productId: string,
+    expectedVersion: number,
+    input: UpdateProductRequest,
+  ): Promise<ProductDto> {
+    const id = await this.orm.em.fork().transactional(async (em) => {
+      const household = await this.ownWritableHousehold(em, actor);
+      const product = await em.findOne(Product, { id: productId, household });
+      if (!product) throw notFound();
+      assertVersion(product, expectedVersion);
+      if (input.images) {
+        const ids = input.images.map((image) => image.mediaId);
+        const owned = await this.media.ownedBy(actor.id, ids);
+        if (ids.some((mediaId) => !owned.has(mediaId))) {
+          throw forbidden('product media is not yours');
+        }
+        product.images = input.images;
+        // Ảnh tải lên thay bìa có sẵn của dữ liệu mẫu.
+        if (input.images.length > 0) {
+          product.coverUrl = null;
+          product.coverAlt = null;
+        }
+      }
+      if (input.name !== undefined) product.name = input.name;
+      if (input.description !== undefined) product.description = input.description;
+      if (input.category !== undefined) product.category = input.category;
+      if (input.priceVnd !== undefined) product.priceVnd = input.priceVnd;
+      if (input.stock !== undefined) product.stock = input.stock;
+      if (input.material !== undefined) product.material = input.material || null;
+      if (input.dimensions !== undefined) product.dimensions = input.dimensions || null;
+      if (input.weightGrams !== undefined) product.weightGrams = input.weightGrams;
+      if (input.artisanNote !== undefined) product.artisanNote = input.artisanNote || null;
+      await em.flush();
+      return product.id;
+    });
+    const em = this.orm.em.fork();
+    const product = await em.findOneOrFail(Product, id);
+    return toProductDto(
+      product,
+      (await this.makersOf(em, [product])).get(product.id),
+      await this.media.publicUrls(productMediaIds([product])),
+    );
   }
 
   /** Xuất bản / rút / xuất bản lại một sản phẩm; Ban quản lý chỉ được rút. */
@@ -229,14 +358,89 @@ export class HouseholdsService {
 
   // --- Ban quản lý ---
 
-  async listForAdmin(status?: HouseholdStatus): Promise<HouseholdDto[]> {
+  /** Hàng đợi duyệt: hồ sơ nộp trước đứng trước; `from`/`to` là ngày theo giờ Việt Nam. */
+  async listForAdmin(filters: {
+    status?: HouseholdStatus | undefined;
+    from?: string | undefined;
+    to?: string | undefined;
+  }): Promise<AdminHouseholdDto[]> {
     const em = this.orm.em.fork();
-    const households = await em.find(Household, status ? { status } : {}, {
-      orderBy: { createdAt: 'asc' },
-    });
-    return Promise.all(
-      households.map(async (h) => toHouseholdDto(h, await this.parts(em, h, false))),
+    const households = await em.find(
+      Household,
+      {
+        ...(filters.status && { status: filters.status }),
+        ...((filters.from || filters.to) && {
+          createdAt: {
+            ...(filters.from && { $gte: new Date(`${filters.from}T00:00:00.000+07:00`) }),
+            ...(filters.to && { $lte: new Date(`${filters.to}T23:59:59.999+07:00`) }),
+          },
+        }),
+      },
+      { orderBy: { createdAt: 'asc' } },
     );
+    return households.map((h) => ({
+      id: h.id,
+      version: h.version,
+      name: h.name,
+      status: h.status,
+      submittedAt: h.createdAt.toISOString(),
+    }));
+  }
+
+  /** Hồ sơ đầy đủ cho màn duyệt, ở mọi trạng thái. */
+  async getForAdmin(householdId: string): Promise<HouseholdDto> {
+    const em = this.orm.em.fork();
+    const household = await em.findOne(Household, householdId);
+    if (!household) throw notFound();
+    return toHouseholdDto(household, await this.parts(em, household, false));
+  }
+
+  /** Giấy tờ riêng tư do người đại diện tải lên; nội dung đọc qua `GET /media/:id/read-url`. */
+  async documentsForAdmin(householdId: string): Promise<{ data: HouseholdDocumentDto[] }> {
+    const em = this.orm.em.fork();
+    const household = await em.findOne(Household, householdId);
+    if (!household) throw notFound();
+    const assets = await em.find(
+      MediaAsset,
+      { ownerId: household.representative.id, purpose: 'CERTIFICATE', visibility: 'PRIVATE' },
+      { orderBy: { createdAt: 'asc' } },
+    );
+    return {
+      data: assets.map((a) => ({
+        id: a.id,
+        mimeType: a.mimeType,
+        sizeBytes: a.sizeBytes,
+        createdAt: a.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  async dashboard(): Promise<AdminDashboardDto> {
+    const em = this.orm.em.fork();
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const [activeHouseholds, pendingApplications, openRfqs, ordersInProduction, qrScans30Days] =
+      await Promise.all([
+        em.count(Household, { status: 'APPROVED' }),
+        em.count(Household, { status: 'PENDING_REVIEW' }),
+        em.count(QuotationRequest, { status: { $in: ['SENT', 'BIDDING'] } }),
+        em.count(QuotationRequest, { status: 'IN_PRODUCTION' }),
+        em.count(TraceScan, { createdAt: { $gte: since } }),
+      ]);
+    return { activeHouseholds, pendingApplications, openRfqs, ordersInProduction, qrScans30Days };
+  }
+
+  /** Ghi một lượt quét QR; mã không tồn tại hoặc không còn công khai thì bỏ qua, không báo lỗi. */
+  async recordScan(traceCode: string): Promise<void> {
+    await this.orm.em.fork().transactional(async (em) => {
+      const product = await em.findOne(
+        Product,
+        { traceCode: traceCode.toUpperCase() },
+        { populate: ['household'] },
+      );
+      if (!product) return;
+      if (publicProductAvailability(product.household.status, product.status) !== 'VISIBLE') return;
+      em.create(TraceScan, { product });
+    });
   }
 
   async decide(
@@ -263,6 +467,11 @@ export class HouseholdsService {
         entityId: household.id,
         before: { status: before },
         after: { status: household.status, reason: reason ?? null },
+      });
+      // Thư báo quyết định đi qua outbox cùng giao dịch: quyết định lưu được thì thư mới được gửi.
+      em.create(OutboxEvent, {
+        type: 'household.decision',
+        payload: { householdId: household.id, decision: event, reason: reason ?? null },
       });
       await em.flush();
       return toHouseholdDto(household, await this.parts(em, household, false));
@@ -300,9 +509,14 @@ export class HouseholdsService {
     }
     return {
       availability,
-      product: toProductDto(product, (await this.makersOf(em, [product])).get(product.id)),
+      product: toProductDto(
+        product,
+        (await this.makersOf(em, [product])).get(product.id),
+        await this.media.publicUrls(productMediaIds([product])),
+      ),
       household: { name: product.household.name, slug: product.household.slug },
       journal: await loadJournal(em, product),
+      scanCount: await em.count(TraceScan, { product }),
     };
   }
 
@@ -345,7 +559,17 @@ export class HouseholdsService {
         orderBy: { createdAt: 'asc' },
       }),
     ]);
-    return { artisans, workshops, products, makers: await this.makersOf(em, products) };
+    const mediaIds = [
+      ...(household.gallery ?? []).flatMap((item) => (item.mediaId ? [item.mediaId] : [])),
+      ...productMediaIds(products),
+    ];
+    return {
+      artisans,
+      workshops,
+      products,
+      makers: await this.makersOf(em, products),
+      mediaUrls: await this.media.publicUrls(mediaIds),
+    };
   }
 
   private async makersOf(

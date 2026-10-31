@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
     '@vcraft/utils',
   ],
   reactCompiler: true,
+  // `forbidden()` + `forbidden.tsx` cho trang 403 của khu vực theo vai trò (lib/auth/guard.ts)
+  experimental: { authInterrupts: true },
   // Dùng một AGENTS.md duy nhất ở gốc repo, không để `next dev` sinh thêm bản riêng
   agentRules: false,
   // Vercel không có Caddy: Next chuyển tiếp /api/* sang API (Render) và đặt header bảo mật (ADR-16).

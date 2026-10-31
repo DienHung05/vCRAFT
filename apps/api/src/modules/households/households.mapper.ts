@@ -8,7 +8,12 @@ import type {
   WorkshopDto,
 } from '@vcraft/contracts';
 import type { Artisan, Household, Product, ProductMaker, Workshop } from '@vcraft/database';
-import { isVisitable, POSTED_BY_ADMINISTRATION, splitWorkshops } from '@vcraft/domain';
+import {
+  isVisitable,
+  POSTED_BY_ADMINISTRATION,
+  profileCompleteness,
+  splitWorkshops,
+} from '@vcraft/domain';
 
 const toNumber = (value: string | null | undefined): number | null =>
   value === null || value === undefined ? null : Number(value);
@@ -47,8 +52,26 @@ export function toMakerCreditDto(m: ProductMaker): MakerCreditDto {
   };
 }
 
+/** Id ảnh tải lên của các sản phẩm, để tra URL một lần. */
+export const productMediaIds = (products: readonly Product[]): string[] =>
+  products.flatMap((p) => (p.images ?? []).map((image) => image.mediaId));
+
+/** Bìa là bìa riêng (dữ liệu mẫu) hoặc ảnh đầu tiên đã xử lý xong. */
+export function productCover(p: Product, mediaUrls?: ReadonlyMap<string, string>) {
+  if (p.coverUrl) return { url: p.coverUrl, alt: p.coverAlt ?? null };
+  const ready = (p.images ?? []).find((image) => mediaUrls?.has(image.mediaId));
+  return ready
+    ? { url: mediaUrls?.get(ready.mediaId) ?? null, alt: ready.alt }
+    : { url: null, alt: null };
+}
+
 /** `makers` phải đã sắp theo `position` và nạp sẵn `artisan`. */
-export function toProductDto(p: Product, makers: readonly ProductMaker[] = []): ProductDto {
+export function toProductDto(
+  p: Product,
+  makers: readonly ProductMaker[] = [],
+  mediaUrls?: ReadonlyMap<string, string>,
+): ProductDto {
+  const cover = productCover(p, mediaUrls);
   return {
     id: p.id,
     version: p.version,
@@ -65,8 +88,13 @@ export function toProductDto(p: Product, makers: readonly ProductMaker[] = []): 
     dimensions: p.dimensions ?? null,
     weightGrams: p.weightGrams ?? null,
     artisanNote: p.artisanNote ?? null,
-    coverUrl: p.coverUrl ?? null,
-    coverAlt: p.coverAlt ?? null,
+    coverUrl: cover.url,
+    coverAlt: cover.alt,
+    images: (p.images ?? []).map((image) => ({
+      mediaId: image.mediaId,
+      url: mediaUrls?.get(image.mediaId) ?? null,
+      alt: image.alt,
+    })),
     status: p.status,
     publishedAt: p.publishedAt?.toISOString() ?? null,
     makers: makers.map(toMakerCreditDto),
@@ -101,9 +129,21 @@ export interface HouseholdParts {
   products: Product[];
   /** Ghi công theo `product.id`. */
   makers: ReadonlyMap<string, ProductMaker[]>;
+  /** URL công khai của ảnh đã xử lý xong, theo `mediaId`. */
+  mediaUrls?: ReadonlyMap<string, string>;
+}
+
+function toGalleryDto(h: Household, parts: HouseholdParts) {
+  return (h.gallery ?? []).map((item) => ({
+    mediaId: item.mediaId ?? null,
+    url: item.url ?? (item.mediaId ? (parts.mediaUrls?.get(item.mediaId) ?? null) : null),
+    alt: item.alt,
+    caption: item.caption ?? null,
+  }));
 }
 
 export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): PublicHouseholdDto {
+  const gallery = toGalleryDto(h, parts);
   return {
     id: h.id,
     name: h.name,
@@ -111,14 +151,21 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
     history: h.history,
     village: h.village ?? null,
     craft: h.craft ?? null,
-    coverUrl: h.coverUrl ?? null,
+    // Chưa chọn bìa riêng thì dùng ảnh xưởng đầu tiên đã xử lý xong.
+    coverUrl: h.coverUrl ?? gallery.find((item) => item.url)?.url ?? null,
+    foundedYear: h.foundedYear ?? null,
+    generations: h.generations ?? null,
+    timeline: h.timeline ?? [],
+    certifications: h.certifications ?? [],
+    gallery,
+    capacityByCategory: h.capacityByCategory ?? {},
     artisans: parts.artisans.map(toArtisanDto),
     workshops: parts.workshops.map(toWorkshopDto),
     visit: {
       showrooms: splitWorkshops(parts.workshops).showrooms.map(toWorkshopDto),
       productionWorkshops: splitWorkshops(parts.workshops).production.map(toWorkshopDto),
     },
-    products: parts.products.map((p) => toProductDto(p, parts.makers.get(p.id))),
+    products: parts.products.map((p) => toProductDto(p, parts.makers.get(p.id), parts.mediaUrls)),
   };
 }
 
@@ -129,5 +176,16 @@ export function toHouseholdDto(h: Household, parts: HouseholdParts): HouseholdDt
     status: h.status,
     statusReason: h.statusReason ?? null,
     approvedAt: h.approvedAt?.toISOString() ?? null,
+    completeness: profileCompleteness({
+      history: h.history,
+      foundedYear: h.foundedYear ?? null,
+      generations: h.generations ?? null,
+      timelineCount: h.timeline?.length ?? 0,
+      certificationCount: h.certifications?.length ?? 0,
+      galleryCount: h.gallery?.length ?? 0,
+      workshopHasLocation: parts.workshops.some((w) => w.lat != null && w.lng != null),
+      workshopHasHours: parts.workshops.some((w) => (w.openingHours?.length ?? 0) > 0),
+      capacityCategories: Object.keys(h.capacityByCategory ?? {}).length,
+    }),
   };
 }

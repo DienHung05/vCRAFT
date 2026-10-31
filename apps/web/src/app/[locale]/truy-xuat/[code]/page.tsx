@@ -1,4 +1,4 @@
-import { buttonVariants, Crackle, Logo, TraceSealFrame, VaseFigure } from '@vcraft/ui';
+import { Badge, buttonVariants, Crackle, Logo, TraceSealFrame, VaseFigure } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
@@ -55,6 +55,7 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
   const trace = result.status === 'ok' ? result.data : null;
   // Mã không có, hoặc hộ làm ra nó đã bị khóa, là cảnh báo hàng không xác thực; sản phẩm tự rút thì chỉ là thông báo.
   const withdrawn = trace?.availability === 'UNAVAILABLE' && trace.reason === 'PRODUCT_WITHDRAWN';
+  const locked = trace?.availability === 'UNAVAILABLE' && trace.reason === 'HOUSEHOLD_SUSPENDED';
   const visible = trace?.availability === 'VISIBLE' ? trace : null;
   const profile = visible ? await fetchHousehold(visible.household.slug) : null;
   const image = visible
@@ -88,9 +89,13 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
           <section className="relative mx-5 mt-6 overflow-hidden rounded-card border border-seal/40 p-8 text-center">
             <Crackle className="text-seal" opacity={0.25} />
             <VaseFigure className="relative mx-auto h-20 opacity-60" body="var(--color-ash)" />
-            <h1 className="relative mt-6 text-h2 text-seal">{t('notFoundTitle')}</h1>
+            <h1 className="relative mt-6 text-h2 text-seal">
+              {t(locked ? 'lockedTitle' : 'notFoundTitle')}
+            </h1>
             <p className="relative mt-3 text-ink/85">
-              {t('notFoundText', { code: code.toUpperCase() })}
+              {locked
+                ? t('lockedText', { code: code.toUpperCase() })
+                : t('notFoundText', { code: code.toUpperCase() })}
             </p>
             <Link href="/" className={`${buttonVariants({ variant: 'secondary' })} relative mt-6`}>
               {t('home')}
@@ -110,6 +115,9 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
               entries={toLogEntries(visible.journal)}
               household={visible.household.name}
             />
+            <p className="mx-5 mt-3 text-small text-ash">
+              {t('scans', { count: visible.scanCount })}
+            </p>
 
             <section aria-labelledby="journey-title" className="px-5 pt-12">
               <h2 id="journey-title">{t('timelineTitle')}</h2>
@@ -165,6 +173,23 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
               household={visible.household.name}
               workshops={profile?.status === 'ok' ? toVisitWorkshops(profile.data.workshops) : []}
             />
+
+            {profile?.status === 'ok' && profile.data.certifications.some((c) => c.verified) ? (
+              <section aria-labelledby="certs-title" className="px-5 pt-12">
+                <h2 id="certs-title">{t('certsTitle')}</h2>
+                <ul className="mt-5 flex flex-wrap gap-2">
+                  {profile.data.certifications
+                    .filter((c) => c.verified)
+                    .map((c) => (
+                      <li key={c.name}>
+                        <Badge tone="lacquer">
+                          {c.name} · {c.year}
+                        </Badge>
+                      </li>
+                    ))}
+                </ul>
+              </section>
+            ) : null}
 
             {/* Ấn truy xuất: chính cái tem ở đáy sản phẩm. */}
             <section className="flex flex-col items-center px-5 pt-14">

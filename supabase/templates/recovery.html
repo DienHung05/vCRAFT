@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Đặt lại mật khẩu vCraft</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#f5efe4;">
+    <!-- Dòng xem trước trong hộp thư -->
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f5efe4;">Liên kết đặt mật khẩu mới cho tài khoản vCraft của bạn.</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5efe4;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+            <tr>
+              <td style="padding:0 0 20px 0;">
+                <table role="presentation" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="background-color:#c2261c;width:34px;height:34px;border-radius:6px 9px 7px 10px;text-align:center;font-family:Georgia,'Times New Roman',serif;font-size:22px;line-height:34px;color:#f5efe4;font-style:italic;">v</td>
+                    <td style="padding-left:10px;font-family:Georgia,'Times New Roman',serif;font-size:26px;line-height:34px;color:#1e3a6e;font-weight:bold;">vCraft</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="background-color:#fbf8f2;border:1px solid #e3dccf;border-radius:12px;padding:32px 28px;font-family:'Be Vietnam Pro',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.65;color:#1c1814;">
+                <h1 style="margin:0 0 16px 0;font-family:Georgia,'Times New Roman',serif;font-size:26px;line-height:1.25;color:#1e3a6e;font-weight:bold;">Đặt lại mật khẩu</h1>
+                <p style="margin:0 0 16px 0;">Chào bạn,</p>
+                <p style="margin:0 0 16px 0;">Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản vCraft <strong>{{ .Email }}</strong>. Bấm nút dưới đây để chọn mật khẩu mới.</p>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+                  <tr>
+                    <td style="background-color:#a8482a;border-radius:4px;">
+                      <a href="{{ .SiteURL }}/vi/dat-lai-mat-khau?token_hash={{ .TokenHash }}&amp;type=recovery" style="display:inline-block;padding:13px 24px;font-family:'Be Vietnam Pro',Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;color:#f5efe4;text-decoration:none;">Đặt mật khẩu mới</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0 0 16px 0;font-size:14px;color:#6b635a;">Nút không bấm được? Dán liên kết này vào thanh địa chỉ của trình duyệt:<br /><a href="{{ .SiteURL }}/vi/dat-lai-mat-khau?token_hash={{ .TokenHash }}&amp;type=recovery" style="color:#a8482a;word-break:break-all;">{{ .SiteURL }}/vi/dat-lai-mat-khau?token_hash={{ .TokenHash }}&amp;type=recovery</a></p>
+                <p style="margin:0 0 16px 0;font-size:14px;color:#6b635a;">Liên kết chỉ dùng một lần và sẽ hết hạn sau ít phút. Sau khi đổi mật khẩu, các thiết bị khác sẽ bị đăng xuất.</p>
+                <p style="margin:0 0 16px 0;font-size:14px;color:#6b635a;margin-bottom:0;">Nếu bạn không yêu cầu, cứ bỏ qua thư này, mật khẩu hiện tại vẫn nguyên như cũ.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 8px 0 8px;font-family:'Be Vietnam Pro',Arial,Helvetica,sans-serif;font-size:13px;line-height:1.6;color:#6b635a;text-align:center;">
+                <em style="font-family:Georgia,'Times New Roman',serif;color:#1e3a6e;">Tinh hoa làng nghề, muôn phương lan tỏa</em><br />
+                vCraft · triển lãm số và điều phối đơn hàng cho làng nghề truyền thống<br />
+                Thư tự động, vui lòng không trả lời trực tiếp.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

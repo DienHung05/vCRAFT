@@ -3,9 +3,10 @@ import {
   isValidOpeningInterval,
   PRODUCT_CATEGORIES,
   PRODUCT_STATUSES,
+  PROFILE_SECTIONS,
 } from '@vcraft/domain';
 import { z } from 'zod';
-import { IdSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
+import { IdSchema, IsoDateSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
 import { JournalResponseSchema } from '../journal';
 
 /** Hộ sản xuất, xưởng, nghệ nhân, sản phẩm và các quyết định duyệt / xuất bản (vCRAFT-9hg.2, 9hg.3). */
@@ -45,7 +46,84 @@ export type HouseholdDecisionRequest = z.infer<typeof HouseholdDecisionRequestSc
 
 export const ListHouseholdsQuerySchema = z.object({
   status: HouseholdStatusSchema.optional(),
+  /** Ngày nộp hồ sơ, tính cả hai đầu. */
+  from: IsoDateSchema.optional(),
+  to: IsoDateSchema.optional(),
 });
+
+/** Một dòng trong hàng đợi duyệt hộ. */
+export const AdminHouseholdSchema = z.object({
+  id: IdSchema,
+  version: VersionSchema,
+  name: z.string(),
+  status: HouseholdStatusSchema,
+  submittedAt: IsoDateTimeSchema,
+});
+export type AdminHouseholdDto = z.infer<typeof AdminHouseholdSchema>;
+export const AdminHouseholdListSchema = z.array(AdminHouseholdSchema);
+
+/** Giấy tờ xác minh riêng tư; nội dung chỉ đọc qua URL ký 5 phút (FR-MEDIA-04). */
+export const HouseholdDocumentSchema = z.object({
+  id: IdSchema,
+  mimeType: z.string(),
+  sizeBytes: z.int().nonnegative(),
+  createdAt: IsoDateTimeSchema,
+});
+export type HouseholdDocumentDto = z.infer<typeof HouseholdDocumentSchema>;
+export const HouseholdDocumentListSchema = z.object({ data: z.array(HouseholdDocumentSchema) });
+
+/** Số liệu tổng quan của Ban quản lý (FR-ADM-06). */
+export const AdminDashboardSchema = z.object({
+  activeHouseholds: z.int().nonnegative(),
+  pendingApplications: z.int().nonnegative(),
+  openRfqs: z.int().nonnegative(),
+  ordersInProduction: z.int().nonnegative(),
+  qrScans30Days: z.int().nonnegative(),
+});
+export type AdminDashboardDto = z.infer<typeof AdminDashboardSchema>;
+
+const CURRENT_YEAR_LIMIT = 2100;
+const YearSchema = z.int().min(1000, 'Năm không hợp lệ').max(CURRENT_YEAR_LIMIT);
+
+export const TimelineEventSchema = z.object({
+  year: YearSchema,
+  title: z.string().trim().min(2, 'Hãy đặt tiêu đề').max(160),
+  text: z.string().trim().max(1_000).default(''),
+});
+
+const CertificationInputSchema = z.object({
+  name: z.string().trim().min(2, 'Hãy ghi tên chứng nhận').max(160),
+  issuer: z.string().trim().min(2, 'Hãy ghi đơn vị cấp').max(160),
+  year: YearSchema,
+});
+
+const AltSchema = z.string().trim().min(3, 'Hãy mô tả điều nhìn thấy trong ảnh').max(300);
+
+/** Hộ chỉ gắn ảnh mình đã tải lên, hoặc giữ lại ảnh có sẵn trong bộ ảnh mẫu. */
+const GalleryInputSchema = z.union([
+  z.object({ mediaId: IdSchema, alt: AltSchema, caption: z.string().trim().max(200).optional() }),
+  z.object({
+    url: z.string().regex(/^\/images\/demo\/[\w-]+\.(?:webp|avif)$/),
+    alt: AltSchema,
+    caption: z.string().trim().max(200).optional(),
+  }),
+]);
+
+const CapacitySchema = z.partialRecord(z.enum(PRODUCT_CATEGORIES), z.int().min(0).max(10_000_000));
+
+/** Sửa hồ sơ hộ (FR-ART-01 … 06): chỉ gửi phần đổi; `If-Match` bắt buộc. */
+export const UpdateHouseholdProfileRequestSchema = z.object({
+  history: z.string().trim().max(10_000).optional(),
+  craft: z.string().trim().max(160).optional(),
+  village: z.string().trim().max(160).optional(),
+  foundedYear: YearSchema.nullable().optional(),
+  generations: z.int().min(1).max(50).nullable().optional(),
+  timeline: z.array(TimelineEventSchema).max(50).optional(),
+  certifications: z.array(CertificationInputSchema).max(30).optional(),
+  gallery: z.array(GalleryInputSchema).max(30).optional(),
+  capacityByCategory: CapacitySchema.optional(),
+});
+export type UpdateHouseholdProfileRequest = z.infer<typeof UpdateHouseholdProfileRequestSchema>;
 
 export const CreateWorkshopRequestSchema = z.object({
   name: NameSchema,
@@ -66,9 +144,13 @@ export const CreateArtisanRequestSchema = z.object({
 });
 export type CreateArtisanRequest = z.infer<typeof CreateArtisanRequestSchema>;
 
+/** Tối đa 12 ảnh mỗi sản phẩm (FR-PRD-02); mô tả ảnh bắt buộc. */
+export const MAX_PRODUCT_IMAGES = 12;
+const ProductImageInputSchema = z.object({ mediaId: IdSchema, alt: AltSchema });
+
 export const CreateProductRequestSchema = z
   .object({
-    name: z.string().trim().min(2).max(200),
+    name: z.string().trim().min(2, 'Tên cần ít nhất 2 ký tự').max(200),
     description: z.string().trim().max(10_000).default(''),
     kind: ProductKindSchema.default('OBJECT'),
     batchSize: z.int().min(2).max(100_000).optional(),
@@ -85,6 +167,21 @@ export const CreateProductRequestSchema = z
     path: ['batchSize'],
   });
 export type CreateProductRequest = z.infer<typeof CreateProductRequestSchema>;
+
+/** Sửa sản phẩm: chỉ gửi phần đổi; loại và cỡ lô đi cùng nhau, `If-Match` bắt buộc. */
+export const UpdateProductRequestSchema = z.object({
+  name: z.string().trim().min(2, 'Tên cần ít nhất 2 ký tự').max(200).optional(),
+  description: z.string().trim().max(10_000).optional(),
+  category: CategorySchema.optional(),
+  priceVnd: z.int().min(0).max(2_000_000_000).optional(),
+  stock: z.int().min(0).max(1_000_000).optional(),
+  material: z.string().trim().max(200).optional(),
+  dimensions: z.string().trim().max(200).optional(),
+  weightGrams: z.int().positive().max(1_000_000).nullable().optional(),
+  artisanNote: z.string().trim().max(2_000).optional(),
+  images: z.array(ProductImageInputSchema).max(MAX_PRODUCT_IMAGES).optional(),
+});
+export type UpdateProductRequest = z.infer<typeof UpdateProductRequestSchema>;
 
 export const WithdrawProductRequestSchema = z.object({ reason: ReasonSchema });
 
@@ -154,6 +251,8 @@ export const ProductResponseSchema = z.object({
   artisanNote: z.string().nullable(),
   coverUrl: z.string().nullable(),
   coverAlt: z.string().nullable(),
+  /** `url` trống khi ảnh còn chờ xử lý; trang công khai bỏ qua các ảnh đó. */
+  images: z.array(z.object({ mediaId: IdSchema, url: z.string().nullable(), alt: z.string() })),
   status: ProductStatusSchema,
   publishedAt: IsoDateTimeSchema.nullable(),
   makers: z.array(MakerCreditSchema),
@@ -171,6 +270,20 @@ export const PublicHouseholdResponseSchema = z.object({
   village: z.string().nullable(),
   craft: z.string().nullable(),
   coverUrl: z.string().nullable(),
+  foundedYear: z.int().nullable(),
+  generations: z.int().nullable(),
+  timeline: z.array(TimelineEventSchema),
+  certifications: z.array(CertificationInputSchema.extend({ verified: z.boolean() })),
+  /** `url` trống khi ảnh còn chờ xử lý; trang công khai bỏ qua các ảnh đó. */
+  gallery: z.array(
+    z.object({
+      mediaId: IdSchema.nullable(),
+      url: z.string().nullable(),
+      alt: z.string(),
+      caption: z.string().nullable(),
+    }),
+  ),
+  capacityByCategory: CapacitySchema,
   artisans: z.array(ArtisanResponseSchema),
   workshops: z.array(WorkshopResponseSchema),
   /** Phòng trưng bày đón khách, tách khỏi các xưởng chỉ để sản xuất. */
@@ -188,6 +301,10 @@ export const HouseholdResponseSchema = PublicHouseholdResponseSchema.extend({
   status: HouseholdStatusSchema,
   statusReason: z.string().nullable(),
   approvedAt: IsoDateTimeSchema.nullable(),
+  completeness: z.object({
+    percent: z.int().min(0).max(100),
+    missing: z.array(z.enum(PROFILE_SECTIONS)),
+  }),
 });
 export type HouseholdDto = z.infer<typeof HouseholdResponseSchema>;
 
@@ -201,6 +318,8 @@ export const TraceAvailabilityResponseSchema = z.discriminatedUnion('availabilit
     product: ProductResponseSchema,
     household: z.object({ name: z.string(), slug: z.string() }),
     journal: JournalResponseSchema,
+    /** Số lượt quét mã QR của sản phẩm này. */
+    scanCount: z.int().nonnegative(),
   }),
   z.object({
     availability: z.literal('UNAVAILABLE'),

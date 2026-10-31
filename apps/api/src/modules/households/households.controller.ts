@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import {
   type ApplyHouseholdRequest,
   ApplyHouseholdRequestSchema,
@@ -12,6 +12,10 @@ import {
   ListHouseholdsQuerySchema,
   type SetProductMakersRequest,
   SetProductMakersRequestSchema,
+  type UpdateHouseholdProfileRequest,
+  UpdateHouseholdProfileRequestSchema,
+  type UpdateProductRequest,
+  UpdateProductRequestSchema,
   WithdrawProductRequestSchema,
 } from '@vcraft/contracts';
 import type { HouseholdEvent } from '@vcraft/domain';
@@ -42,6 +46,29 @@ export class MyHouseholdController {
     return this.households.getMine(actor);
   }
 
+  @Patch()
+  @Roles('HOUSEHOLD')
+  updateProfile(
+    @CurrentActor() actor: Actor,
+    @IfMatchVersion() version: number,
+    @Body(new ZodValidationPipe(UpdateHouseholdProfileRequestSchema))
+    body: UpdateHouseholdProfileRequest,
+  ) {
+    return this.households.updateProfile(actor, version, body);
+  }
+
+  @Put('workshops/:id')
+  @Roles('HOUSEHOLD')
+  updateWorkshop(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+    @Body(new ZodValidationPipe(CreateWorkshopRequestSchema))
+    body: CreateWorkshopRequest,
+  ) {
+    return this.households.updateWorkshop(actor, id, version, body);
+  }
+
   @Post('workshops')
   @Roles('HOUSEHOLD')
   addWorkshop(
@@ -70,6 +97,17 @@ export class MyHouseholdController {
     @Body(new ZodValidationPipe(SetProductMakersRequestSchema)) body: SetProductMakersRequest,
   ) {
     return this.households.setMakers(actor, id, body);
+  }
+
+  @Patch('products/:id')
+  @Roles('HOUSEHOLD')
+  updateProduct(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+    @Body(new ZodValidationPipe(UpdateProductRequestSchema)) body: UpdateProductRequest,
+  ) {
+    return this.households.updateProduct(actor, id, version, body);
   }
 
   @Post('products')
@@ -124,9 +162,21 @@ export class ProductPublicationController {
 const HOUSEHOLD_ACTIONS: Record<string, HouseholdEvent> = {
   approve: 'APPROVE',
   reject: 'REJECT',
+  'request-info': 'REQUEST_INFO',
   suspend: 'SUSPEND',
   reinstate: 'REINSTATE',
 };
+
+@Controller('admin/dashboard')
+@Roles('ADMIN')
+export class AdminDashboardController {
+  constructor(private readonly households: HouseholdsService) {}
+
+  @Get()
+  get() {
+    return this.households.dashboard();
+  }
+}
 
 /** Ban quản lý duyệt hộ (`/admin/households`). */
 @Controller('admin/households')
@@ -139,7 +189,17 @@ export class AdminHouseholdsController {
     @Query(new ZodValidationPipe(ListHouseholdsQuerySchema))
     query: ReturnType<typeof ListHouseholdsQuerySchema.parse>,
   ) {
-    return this.households.listForAdmin(query.status);
+    return this.households.listForAdmin(query);
+  }
+
+  @Get(':id')
+  getOne(@Param('id', new UuidPipe()) id: string) {
+    return this.households.getForAdmin(id);
+  }
+
+  @Get(':id/documents')
+  documents(@Param('id', new UuidPipe()) id: string) {
+    return this.households.documentsForAdmin(id);
   }
 
   /** `POST /admin/households/:id/{approve|reject|suspend|reinstate}`. */
@@ -178,5 +238,12 @@ export class PublicHouseholdsController {
   @Get('trace/:code')
   trace(@Param('code') code: string) {
     return this.households.trace(code);
+  }
+
+  /** Đường dẫn ngắn `/q/<code>` báo một lượt quét; luôn 204 để không dò được mã nào tồn tại. */
+  @Post('trace/:code/scan')
+  @HttpCode(204)
+  async scan(@Param('code') code: string) {
+    await this.households.recordScan(code);
   }
 }
