@@ -1,10 +1,16 @@
 import {
   ArtisanResponseSchema,
   type CreateArtisanRequest,
+  type CreateJournalEntryRequest,
+  type CreateProductRequest,
   type CreateWorkshopRequest,
   HouseholdResponseSchema,
+  JournalResponseSchema,
   MediaAssetResponseSchema,
+  ProductResponseSchema,
+  type SetProductMakersRequest,
   type UpdateHouseholdProfileRequest,
+  type UpdateProductRequest,
   WorkshopResponseSchema,
 } from '@vcraft/contracts';
 import { type AuthedClientOptions, createAuthedRequest } from './http/authed-request';
@@ -27,6 +33,39 @@ export function createStudioClient(options: AuthedClientOptions) {
     addArtisan: (body: CreateArtisanRequest) =>
       request('/me/household/artisans', ArtisanResponseSchema, { method: 'POST', body }),
     getMedia: (id: string) => request(`/media/${id}`, MediaAssetResponseSchema),
+    createProduct: (body: CreateProductRequest) =>
+      request('/me/household/products', ProductResponseSchema, { method: 'POST', body }),
+    updateProduct: (id: string, version: number, body: UpdateProductRequest) =>
+      request(`/me/household/products/${id}`, ProductResponseSchema, {
+        method: 'PATCH',
+        body,
+        version,
+      }),
+    setMakers: (id: string, body: SetProductMakersRequest) =>
+      request(`/me/household/products/${id}/makers`, ProductResponseSchema, {
+        method: 'PUT',
+        body,
+      }),
+    publishProduct: (id: string, version: number, republish: boolean) =>
+      request(`/products/${id}/${republish ? 'republish' : 'publish'}`, ProductResponseSchema, {
+        method: 'POST',
+        version,
+      }),
+    withdrawProduct: (id: string, version: number, reason: string) =>
+      request(`/products/${id}/withdraw`, ProductResponseSchema, {
+        method: 'POST',
+        version,
+        body: { reason },
+      }),
+    getJournal: (productId: string) =>
+      request(`/me/household/products/${productId}/journal`, JournalResponseSchema),
+    appendJournalEntry: (productId: string, body: CreateJournalEntryRequest) =>
+      request(`/me/household/products/${productId}/journal`, JournalResponseSchema, {
+        method: 'POST',
+        body,
+      }),
+    deleteJournalEntry: (entryId: string, version: number) =>
+      request(`/journal-entries/${entryId}`, JournalResponseSchema, { method: 'DELETE', version }),
   };
 }
 export type StudioClient = ReturnType<typeof createStudioClient>;

@@ -7,7 +7,7 @@ import { Link, usePathname } from '@/i18n/navigation';
 /** `href` trống là màn chưa có; hiện để hộ biết sẽ có, nhưng chưa bấm được. */
 const ITEMS = [
   { key: 'home', href: '/studio' },
-  { key: 'products', href: null },
+  { key: 'products', href: '/studio/san-pham' },
   { key: 'quotations', href: null },
   { key: 'orders', href: null },
   { key: 'profile', href: '/studio/ho-so' },

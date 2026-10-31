@@ -14,6 +14,8 @@ import {
   SetProductMakersRequestSchema,
   type UpdateHouseholdProfileRequest,
   UpdateHouseholdProfileRequestSchema,
+  type UpdateProductRequest,
+  UpdateProductRequestSchema,
   WithdrawProductRequestSchema,
 } from '@vcraft/contracts';
 import type { HouseholdEvent } from '@vcraft/domain';
@@ -95,6 +97,17 @@ export class MyHouseholdController {
     @Body(new ZodValidationPipe(SetProductMakersRequestSchema)) body: SetProductMakersRequest,
   ) {
     return this.households.setMakers(actor, id, body);
+  }
+
+  @Patch('products/:id')
+  @Roles('HOUSEHOLD')
+  updateProduct(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+    @Body(new ZodValidationPipe(UpdateProductRequestSchema)) body: UpdateProductRequest,
+  ) {
+    return this.households.updateProduct(actor, id, version, body);
   }
 
   @Post('products')

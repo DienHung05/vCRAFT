@@ -32,6 +32,13 @@ export const pathnames = {
   '/studio/ho-so': { vi: '/studio/ho-so', en: '/studio/profile' },
   '/admin': '/admin',
   '/studio': '/studio',
+  '/studio/san-pham': { vi: '/studio/san-pham', en: '/studio/products' },
+  '/studio/san-pham/moi': { vi: '/studio/san-pham/moi', en: '/studio/products/new' },
+  '/studio/san-pham/[id]': { vi: '/studio/san-pham/[id]', en: '/studio/products/[id]' },
+  '/studio/san-pham/[id]/nhat-ky': {
+    vi: '/studio/san-pham/[id]/nhat-ky',
+    en: '/studio/products/[id]/journal',
+  },
   '/admin/dieu-phoi': { vi: '/admin/dieu-phoi', en: '/admin/coordination' },
   '/admin/dieu-phoi/[code]': { vi: '/admin/dieu-phoi/[code]', en: '/admin/coordination/[code]' },
 } as const;
