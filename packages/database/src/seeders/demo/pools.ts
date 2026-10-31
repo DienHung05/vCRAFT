@@ -1,4 +1,4 @@
-import type { JournalStage } from '@vcraft/domain';
+import type { JournalStage, ProductCategory } from '@vcraft/domain';
 
 /** Dữ liệu hư cấu cho làng gốm Bát Tràng; mọi tên người, tên hộ đều là mẫu minh họa, không phải người thật. */
 
@@ -109,6 +109,30 @@ export const PRODUCT_TEMPLATES = [
   'Tô sứ',
   'Khay trà',
 ] as const;
+/** Danh mục của từng mẫu sản phẩm; giữ riêng khỏi danh sách để thứ tự mẫu (và dữ liệu đóng băng) không đổi. */
+export const TEMPLATE_CATEGORY: Record<(typeof PRODUCT_TEMPLATES)[number], ProductCategory> = {
+  'Bình hút lộc': 'VASE',
+  'Bát chiết yêu': 'TABLEWARE',
+  'Cốc quai': 'TEA',
+  'Bộ ấm chén': 'TEA',
+  'Đĩa tròn': 'TABLEWARE',
+  'Lọ hoa miệng loe': 'VASE',
+  'Âu đựng canh': 'TABLEWARE',
+  'Tách trà': 'TEA',
+  'Lục bình': 'VASE',
+  'Chậu cây mini': 'DECOR',
+  'Ống đựng bút': 'DECOR',
+  'Bình ngâm rượu': 'VASE',
+  'Đĩa trà': 'TEA',
+  'Hũ đựng trà': 'TEA',
+  'Bình đựng nước': 'VASE',
+  'Bát ăn cơm': 'TABLEWARE',
+  'Chén tống': 'TEA',
+  'Lư hương': 'WORSHIP',
+  'Tô sứ': 'TABLEWARE',
+  'Khay trà': 'TEA',
+};
+
 export const GLAZES = [
   'men lam',
   'men rạn',
@@ -169,7 +193,6 @@ export const SKIP_REASONS: Record<JournalStage, string> = {
   finish: 'Chưa hoàn thiện.',
 };
 
-export const WORKSHOP_NAMES = ['Xưởng vuốt', 'Lò nung', 'Phòng trưng bày', 'Xưởng vẽ'] as const;
 export const VILLAGE_PARTS = [
   'Xóm 1',
   'Xóm 2',

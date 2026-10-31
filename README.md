@@ -120,7 +120,8 @@ MySQL chỉ có hệ migration của MikroORM (không có `supabase/migrations`)
 ### Reverse proxy
 
 - Dev: `infra/caddy/Caddyfile.dev` (HTTP `:8080`, `auto_https off`), `pnpm infra:up` nạp sẵn.
-- Production: `infra/caddy/Caddyfile.prod` dùng `{$DOMAIN}`, bật auto HTTPS, chuyển hướng HTTP sang HTTPS, kèm HSTS. Đặt `DOMAIN`, `API_UPSTREAM`, `WEB_UPSTREAM` rồi chạy `caddy run --config Caddyfile.prod --adapter caddyfile`. Cú pháp đã qua `caddy validate`; việc cấp chứng chỉ thật chưa thử, cần kiểm tra trên máy có tên miền trước khi ra mắt.
+- Production chính thức: web trên Vercel, API + worker trên Render, không dùng Caddy ([ADR-16](docs/adr/0016-deploy-vercel-render.md), [docs/deploy.md](docs/deploy.md), `render.yaml`). `Caddyfile.prod` dưới đây chỉ còn cho phương án tự host/dự phòng.
+- Tự host: `infra/caddy/Caddyfile.prod` dùng `{$DOMAIN}`, bật auto HTTPS, chuyển hướng HTTP sang HTTPS, kèm HSTS. Đặt `DOMAIN`, `API_UPSTREAM`, `WEB_UPSTREAM` rồi chạy `caddy run --config Caddyfile.prod --adapter caddyfile`. Cú pháp đã qua `caddy validate`; việc cấp chứng chỉ thật chưa thử, cần kiểm tra trên máy có tên miền trước khi ra mắt.
 
 ## Quy ước
 

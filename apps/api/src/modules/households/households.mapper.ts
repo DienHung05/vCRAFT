@@ -22,6 +22,7 @@ export function toWorkshopDto(w: Workshop): WorkshopDto {
     purpose: w.purpose,
     acceptsVisitors: w.acceptsVisitors,
     visitingInfo: w.visitingInfo ?? null,
+    openingHours: w.openingHours ?? null,
     lat: toNumber(w.lat),
     lng: toNumber(w.lng),
   };
@@ -57,6 +58,15 @@ export function toProductDto(p: Product, makers: readonly ProductMaker[] = []): 
     description: p.description,
     kind: p.kind,
     batchSize: p.batchSize ?? null,
+    category: p.category,
+    priceVnd: p.priceVnd,
+    stock: p.stock,
+    material: p.material ?? null,
+    dimensions: p.dimensions ?? null,
+    weightGrams: p.weightGrams ?? null,
+    artisanNote: p.artisanNote ?? null,
+    coverUrl: p.coverUrl ?? null,
+    coverAlt: p.coverAlt ?? null,
     status: p.status,
     publishedAt: p.publishedAt?.toISOString() ?? null,
     makers: makers.map(toMakerCreditDto),
@@ -73,9 +83,15 @@ export function toMapPinDto(w: Workshop): MapPinDto {
     purpose: w.purpose,
     visitable: isVisitable(w),
     visitingInfo: isVisitable(w) ? (w.visitingInfo ?? null) : null,
+    openingHours: isVisitable(w) ? (w.openingHours ?? null) : null,
     lat: Number(w.lat),
     lng: Number(w.lng),
-    household: { name: w.household.name, slug: w.household.slug },
+    household: {
+      name: w.household.name,
+      slug: w.household.slug,
+      craft: w.household.craft ?? null,
+      coverUrl: w.household.coverUrl ?? null,
+    },
   };
 }
 
@@ -94,6 +110,8 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
     slug: h.slug,
     history: h.history,
     village: h.village ?? null,
+    craft: h.craft ?? null,
+    coverUrl: h.coverUrl ?? null,
     artisans: parts.artisans.map(toArtisanDto),
     workshops: parts.workshops.map(toWorkshopDto),
     visit: {

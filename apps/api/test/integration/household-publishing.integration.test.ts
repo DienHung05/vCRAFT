@@ -180,7 +180,11 @@ describe('Household approval and publishing', () => {
     expect((await t.request({ method: 'GET', url: '/households/gom-dong-hai' })).status).toBe(404);
     const trace = await t.request({ method: 'GET', url: `/trace/${traceCode}` });
     expect(trace.status).toBe(200);
-    expect(trace.body).toEqual({ availability: 'UNAVAILABLE', traceCode });
+    expect(trace.body).toEqual({
+      availability: 'UNAVAILABLE',
+      traceCode,
+      reason: 'HOUSEHOLD_SUSPENDED',
+    });
 
     const mine = await t.request({ method: 'GET', url: '/me/household', auth: rep.auth });
     expect(mine.status).toBe(200);
@@ -215,7 +219,11 @@ describe('Household approval and publishing', () => {
     const profile = await t.request({ method: 'GET', url: '/households/gom-dong-hai' });
     expect(profile.body.products).toEqual([]);
     const trace = await t.request({ method: 'GET', url: `/trace/${traceCode}` });
-    expect(trace.body).toEqual({ availability: 'UNAVAILABLE', traceCode });
+    expect(trace.body).toEqual({
+      availability: 'UNAVAILABLE',
+      traceCode,
+      reason: 'PRODUCT_WITHDRAWN',
+    });
 
     const mine = await t.request({ method: 'GET', url: '/me/household', auth: rep.auth });
     expect(mine.body.products[0].status).toBe('WITHDRAWN');
