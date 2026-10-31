@@ -48,7 +48,6 @@ import {
   SKIP_REASONS,
   STAGE_NOTES,
   VILLAGE_PARTS,
-  WORKSHOP_NAMES,
 } from './pools.js';
 
 /**
@@ -66,7 +65,21 @@ const DAY = 24 * 60 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
 const NAMESPACE = '6f5c3d8e-2b1a-4c7d-9e0f-1a2b3c4d5e6f';
 const TRACE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+/** Ảnh bìa có giấy phép đã nằm trong `apps/web/public/images/demo` (xem `photo-credits.ts` của web). */
+const HOUSEHOLD_COVERS: Record<string, string> = {
+  'Gốm Minh Hải': '/images/demo/bia-minh-hai-1280.webp',
+  'Gốm Lam Ngọc': '/images/demo/bia-lam-ngoc-1280.webp',
+  'Lò Đức Phát': '/images/demo/bia-duc-phat-1280.webp',
+  'Gốm Hạnh Thủy': '/images/demo/bia-hanh-thuy-1280.webp',
+};
+const WORKSHOP_NAME_BY_PURPOSE = {
+  SHOWROOM: 'Phòng trưng bày',
+  BOTH: 'Xưởng vẽ',
+  PRODUCTION: 'Lò nung',
+} as const;
 const PRODUCTS_PER_HOUSEHOLD = 11;
+/** Khớp `visitingInfo` của phòng trưng bày mẫu: 8:00 – 17:00 hằng ngày. */
+const SHOWROOM_HOURS = [0, 1, 2, 3, 4, 5, 6].map((day) => ({ day, open: '08:00', close: '17:00' }));
 /** Ngày (tính từ mốc đầu) của từng công đoạn khi ghi đủ bảy công đoạn. */
 const STAGE_OFFSET_DAYS = [0, 2, 7, 10, 13, 16, 18];
 
@@ -578,6 +591,8 @@ export async function seedDemoData(
       slug,
       history: `[Dữ liệu mẫu] Hộ ${row.seed.name} do ${row.seed.owner} đại diện, làm nghề gốm ở Bát Tràng, chuyên ${row.seed.craft}. Đây là hồ sơ hư cấu dùng để trình diễn, không phải hộ thật.`,
       village: 'Bát Tràng',
+      craft: row.seed.craft,
+      coverUrl: HOUSEHOLD_COVERS[row.seed.name] ?? null,
       status: row.status,
       statusReason: null,
       approvedAt: pending ? null : new Date(createdMs + 2 * DAY),
@@ -627,16 +642,18 @@ export async function seedDemoData(
       em.create(Workshop, {
         id: idOf('workshop', `${row.index}-${w}`),
         household,
-        name: `${WORKSHOP_NAMES[(row.index + w) % WORKSHOP_NAMES.length]} ${row.seed.name}`,
+        name: `${WORKSHOP_NAME_BY_PURPOSE[purpose]} ${row.seed.name}`,
         address: `${random.pick(VILLAGE_PARTS)}, Bát Tràng, Gia Lâm, Hà Nội`,
         purpose,
         acceptsVisitors: purpose !== 'PRODUCTION',
+        openingHours: purpose === 'PRODUCTION' ? null : SHOWROOM_HOURS,
         visitingInfo:
           purpose === 'PRODUCTION'
             ? null
             : 'Mở cửa 8:00 – 17:00 hằng ngày, nên báo trước qua điện thoại.',
         lat: (20.9758 + (random.next() - 0.5) * 0.012).toFixed(6),
-        lng: (105.9139 + (random.next() - 0.5) * 0.012).toFixed(6),
+        // Lệch về phía đông: phía tây Bát Tràng là sông Hồng.
+        lng: (105.9139 + (random.next() - 0.1) * 0.009).toFixed(6),
         createdAt: new Date(createdMs + w * HOUR),
         updatedAt: new Date(createdMs + w * HOUR),
       });

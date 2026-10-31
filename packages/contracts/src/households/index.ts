@@ -1,4 +1,4 @@
-import { HOUSEHOLD_STATUSES, PRODUCT_STATUSES } from '@vcraft/domain';
+import { HOUSEHOLD_STATUSES, isValidOpeningInterval, PRODUCT_STATUSES } from '@vcraft/domain';
 import { z } from 'zod';
 import { IdSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
 import { JournalResponseSchema } from '../journal';
@@ -11,6 +11,14 @@ export const WorkshopPurposeSchema = z.enum(['PRODUCTION', 'SHOWROOM', 'BOTH']);
 export const ProductKindSchema = z.enum(['OBJECT', 'BATCH']);
 
 const NameSchema = z.string().trim().min(2, 'Tên cần ít nhất 2 ký tự').max(160);
+const TimeOfDaySchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Giờ có dạng HH:mm');
+
+/** Một khoảng mở cửa trong tuần (FR-ART-05), giờ Việt Nam. */
+export const OpeningIntervalSchema = z
+  .object({ day: z.int().min(0).max(6), open: TimeOfDaySchema, close: TimeOfDaySchema })
+  .refine(isValidOpeningInterval, { message: 'Giờ mở phải trước giờ đóng', path: ['close'] });
+export type OpeningIntervalDto = z.infer<typeof OpeningIntervalSchema>;
+
 const ReasonSchema = z.string().trim().min(3, 'Hãy ghi lý do (ít nhất 3 ký tự)').max(500);
 
 // --- Request ---
@@ -39,6 +47,7 @@ export const CreateWorkshopRequestSchema = z.object({
   purpose: WorkshopPurposeSchema.default('PRODUCTION'),
   acceptsVisitors: z.boolean().default(false),
   visitingInfo: z.string().trim().max(2_000).optional(),
+  openingHours: z.array(OpeningIntervalSchema).max(21).optional(),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
 });
@@ -90,6 +99,7 @@ export const WorkshopResponseSchema = z.object({
   purpose: WorkshopPurposeSchema,
   acceptsVisitors: z.boolean(),
   visitingInfo: z.string().nullable(),
+  openingHours: z.array(OpeningIntervalSchema).nullable(),
   lat: z.number().nullable(),
   lng: z.number().nullable(),
 });
@@ -183,9 +193,16 @@ export const MapPinSchema = z.object({
   purpose: WorkshopPurposeSchema,
   visitable: z.boolean(),
   visitingInfo: z.string().nullable(),
+  /** Trình duyệt tự tính "đang mở" từ đây bằng `openState` (giờ Việt Nam). */
+  openingHours: z.array(OpeningIntervalSchema).nullable(),
   lat: z.number(),
   lng: z.number(),
-  household: z.object({ name: z.string(), slug: z.string() }),
+  household: z.object({
+    name: z.string(),
+    slug: z.string(),
+    craft: z.string().nullable(),
+    coverUrl: z.string().nullable(),
+  }),
 });
 export type MapPinDto = z.infer<typeof MapPinSchema>;
 

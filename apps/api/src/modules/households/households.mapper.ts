@@ -22,6 +22,7 @@ export function toWorkshopDto(w: Workshop): WorkshopDto {
     purpose: w.purpose,
     acceptsVisitors: w.acceptsVisitors,
     visitingInfo: w.visitingInfo ?? null,
+    openingHours: w.openingHours ?? null,
     lat: toNumber(w.lat),
     lng: toNumber(w.lng),
   };
@@ -73,9 +74,15 @@ export function toMapPinDto(w: Workshop): MapPinDto {
     purpose: w.purpose,
     visitable: isVisitable(w),
     visitingInfo: isVisitable(w) ? (w.visitingInfo ?? null) : null,
+    openingHours: isVisitable(w) ? (w.openingHours ?? null) : null,
     lat: Number(w.lat),
     lng: Number(w.lng),
-    household: { name: w.household.name, slug: w.household.slug },
+    household: {
+      name: w.household.name,
+      slug: w.household.slug,
+      craft: w.household.craft ?? null,
+      coverUrl: w.household.coverUrl ?? null,
+    },
   };
 }
 
