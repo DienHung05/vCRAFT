@@ -102,6 +102,7 @@ export class HouseholdsService {
         purpose: input.purpose,
         acceptsVisitors: input.acceptsVisitors,
         visitingInfo: input.visitingInfo ?? null,
+        openingHours: input.openingHours ?? null,
         lat: input.lat === undefined ? null : input.lat.toFixed(6),
         lng: input.lng === undefined ? null : input.lng.toFixed(6),
       });

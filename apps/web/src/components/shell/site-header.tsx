@@ -3,10 +3,10 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { LocaleSwitcher } from './locale-switcher';
 
-// `/ban-do` chưa có trang (PLAN: E5); thêm lại vào đây khi trang sẵn sàng.
 const NAV = [
   { href: '/san-pham', key: 'products' },
   { href: '/nghe-nhan', key: 'artisans' },
+  { href: '/ban-do', key: 'map' },
   { href: '/tin-tuc', key: 'news' },
   { href: '/yeu-cau-bao-gia', key: 'quotes' },
 ] as const;
