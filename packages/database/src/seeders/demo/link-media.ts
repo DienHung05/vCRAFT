@@ -32,13 +32,19 @@ export interface LinkDemoMediaSummary {
   journalEntriesWithImage: number;
 }
 
-/** Biến thể WebP gần 640px nhất của tệp; `undefined` khi tệp chưa có biến thể. */
-export function pickDisplayVariant(variants: readonly MediaVariant[]): MediaVariant | undefined {
+/** Chiều rộng biến thể dùng cho ảnh bìa sản phẩm/hộ mà API công khai trả (`coverUrl`). */
+const COVER_IMAGE_WIDTH = 1280;
+
+/** Biến thể WebP gần `width` px nhất (mặc định 640) của tệp; `undefined` khi tệp chưa có biến thể. */
+export function pickDisplayVariant(
+  variants: readonly MediaVariant[],
+  width: number = JOURNAL_IMAGE_WIDTH,
+): MediaVariant | undefined {
   return variants
     .filter((v) => v.format === 'webp')
     .sort((a, b) => {
-      const da = Math.abs(a.width - JOURNAL_IMAGE_WIDTH);
-      const db = Math.abs(b.width - JOURNAL_IMAGE_WIDTH);
+      const da = Math.abs(a.width - width);
+      const db = Math.abs(b.width - width);
       return da - db || a.width - b.width;
     })[0];
 }
@@ -128,6 +134,23 @@ export async function linkDemoMedia(
         caption: link.caption ?? null,
       });
       links++;
+    }
+    // API công khai (GH#47) trả ảnh bìa từ `coverUrl`/`coverAlt`: trỏ chúng về bản 1280px trong bucket.
+    for (const link of DEMO_PHOTO_LINKS) {
+      const isProductCover = link.target === 'PRODUCT' && link.role === 'COVER';
+      const isHouseholdCover = link.target === 'HOUSEHOLD' && link.role === 'BANNER';
+      if (!isProductCover && !isHouseholdCover) continue;
+      const variant = pickDisplayVariant(
+        (photoAssets.get(link.photo) as MediaAsset).variants,
+        COVER_IMAGE_WIDTH,
+      );
+      if (!variant) throw new Error(`Ảnh bìa "${link.photo}" chưa có biến thể WebP`);
+      const coverUrl = options.publicUrl(variant.key);
+      if (isProductCover) {
+        await tx.nativeUpdate(Product, { traceCode: link.key }, { coverUrl, coverAlt: link.alt });
+      } else {
+        await tx.nativeUpdate(Household, { slug: link.key }, { coverUrl });
+      }
     }
     for (const [position, doc] of DEMO_VERIFICATION_DOCS.entries()) {
       tx.create(MediaLink, {

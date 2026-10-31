@@ -1,3 +1,6 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   AppUser,
@@ -5,6 +8,7 @@ import {
   clearBusinessData,
   DEMO_ACCOUNTS,
   DEMO_HOUSEHOLD_IDS,
+  DEMO_PHOTOS,
   DEMO_QR_TRACE_CODE,
   DEMO_REQUEST_IDS,
   DEMO_VERIFICATION_DOCS,
@@ -22,6 +26,7 @@ import {
   verifyDemoData,
 } from '@vcraft/database';
 import { type ChainEntry, verifyChain } from '@vcraft/domain';
+import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { publishDemoMedia } from '../../../worker/src/demo/publish-demo-media.js';
 import { startTestApp, type TestApp } from './support/test-app.js';
@@ -125,7 +130,17 @@ describe('Demo seed and guarded reset', () => {
   });
 
   it('ảnh có giấy phép và giấy tờ mẫu: tải lên, gắn vào seed, verify xanh, chạy lại được sau reset', async () => {
-    const imagesDir = fileURLToPath(new URL('../../../web/public/images/demo', import.meta.url));
+    // CI chậm: dùng bản thu nhỏ 160px của đúng 38 tệp (cùng tên, cùng đường xử lý ảnh) để bước mã hóa AVIF/WebP không
+    // chiếm thời gian; ảnh thật đầy đủ được kiểm bằng `demo:verify` trên project Supabase.
+    const realImagesDir = fileURLToPath(
+      new URL('../../../web/public/images/demo', import.meta.url),
+    );
+    const imagesDir = await mkdtemp(join(tmpdir(), 'vcraft-demo-photos-'));
+    for (const photo of DEMO_PHOTOS) {
+      const name = `${photo.id}-${Math.max(...photo.widths)}.webp`;
+      const small = await sharp(join(realImagesDir, name)).resize({ width: 160 }).webp().toBuffer();
+      await writeFile(join(imagesDir, name), small);
+    }
     const specimenDir = fileURLToPath(
       new URL('../../../../scripts/demo-photos/specimen-docs', import.meta.url),
     );
@@ -175,6 +190,12 @@ describe('Demo seed and guarded reset', () => {
     });
     expect([403, 404]).toContain(buyerRead.status);
 
+    // Ảnh bìa mà API công khai trả (`coverUrl`) đã trỏ về bucket, không còn đường dẫn tĩnh của web.
+    const cup = await db.orm.em.fork().findOneOrFail(Product, { traceCode: DEMO_QR_TRACE_CODE });
+    expect(cup.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\/.+\.webp$/);
+    const minhHai = await db.orm.em.fork().findOneOrFail(Household, { slug: 'gom-minh-hai' });
+    expect(minhHai.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
+
     // Trang truy xuất công khai nhận được ảnh của từng mốc, kèm sha256 nằm trong chuỗi băm.
     const trace = await t.request({ method: 'GET', url: `/trace/${DEMO_QR_TRACE_CODE}` });
     expect(trace.status).toBe(200);
@@ -188,7 +209,8 @@ describe('Demo seed and guarded reset', () => {
     expect((await verifyDemoData(db.orm.em.fork(), now)).ok).toBe(false);
     await publish();
     expect((await verifyDemoData(db.orm.em.fork(), now)).ok).toBe(true);
-  }, 300_000);
+    await rm(imagesDir, { recursive: true, force: true });
+  }, 120_000);
 
   it('mỗi sản phẩm có 4–7 mốc nhật ký và chuỗi băm kiểm được bằng mã miền', async () => {
     const em = db.orm.em.fork();

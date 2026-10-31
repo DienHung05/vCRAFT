@@ -277,6 +277,27 @@ async function verifyMedia(
       : `thiếu ${missing.length}: ${missing.slice(0, 3).join(', ')}`,
   );
 
+  const coverLinks = DEMO_PHOTO_LINKS.filter(
+    (l) =>
+      (l.target === 'PRODUCT' && l.role === 'COVER') ||
+      (l.target === 'HOUSEHOLD' && l.role === 'BANNER'),
+  );
+  const badCovers: string[] = [];
+  for (const link of coverLinks) {
+    const row =
+      link.target === 'PRODUCT'
+        ? await em.findOne(Product, { traceCode: link.key }, { fields: ['coverUrl'] })
+        : await em.findOne(Household, { slug: link.key }, { fields: ['coverUrl'] });
+    if (!row?.coverUrl?.startsWith('http')) badCovers.push(link.key);
+  }
+  add(
+    'Ảnh bìa mà API công khai trả (coverUrl) trỏ về bucket Storage',
+    badCovers.length === 0,
+    badCovers.length === 0
+      ? `${coverLinks.length} ảnh bìa (sản phẩm và hộ)`
+      : `chưa trỏ về bucket: ${badCovers.join(', ')}`,
+  );
+
   const noImage = entries.filter(
     (e) => e.images.length === 0 || !e.images.every((i) => i.url.startsWith('http')),
   );
