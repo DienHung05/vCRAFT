@@ -45,6 +45,7 @@ Submission and changes stop at the quotation deadline. Reads report unaccepted o
 
 With an existing authenticated Supabase browser session, the UUID request ID selects the live views:
 
+- `/vi/admin/dieu-phoi` lists requests that opted into coordination, with one claim per request.
 - `/vi/admin/dieu-phoi/:requestId` lets the assigned coordinator compose the manual quotation, or claim an unassigned request that opted into coordination.
 - `/vi/studio/de-xuat-tham-gia/:requestId` lets an invited representative create, revise, withdraw or reactivate their contribution.
 - `/vi/yeu-cau-bao-gia/:requestId` shows the owning buyer the complete quotations without internal household rates.

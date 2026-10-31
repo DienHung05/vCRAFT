@@ -4,6 +4,7 @@ import { AuthModule } from './common/auth/auth.module';
 import { ProblemDetailsFilter } from './common/filters/problem-details.filter';
 import { DatabaseModule } from './infrastructure/database/database.module';
 import { StorageModule } from './infrastructure/storage/storage.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { HealthModule } from './modules/health/health.module';
 import { HouseholdsModule } from './modules/households/households.module';
@@ -20,6 +21,7 @@ import { UsersModule } from './modules/users/users.module';
     StorageModule,
     AuthModule,
     HealthModule,
+    AdminModule,
     HouseholdsModule,
     CatalogModule,
     MediaModule,

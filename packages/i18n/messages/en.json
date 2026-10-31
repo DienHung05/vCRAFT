@@ -410,18 +410,6 @@
       "overview": "Overview",
       "pending": "{count} applications waiting"
     },
-    "coordination": {
-      "breadcrumb": "Breadcrumb",
-      "section": "Coordination",
-      "buyer": "Buyer",
-      "quantity": "Quantity",
-      "requiredBy": "Delivery date",
-      "reasonLabel": "Needs coordination",
-      "reason": {
-        "requested": "The buyer asked the management board to split the order across households.",
-        "no-full-bid": "No household bid for the full quantity, so several need to be combined."
-      }
-    },
     "board": {
       "barTitle": "Splitting {quantity} {unit} across households",
       "barLabel": "{sum} of {quantity} {unit} allocated",
@@ -552,6 +540,83 @@
         "request-info": "Request more information",
         "suspend": "Lock household",
         "reinstate": "Unlock household"
+      }
+    },
+    "coordinationQueue": {
+      "title": "Coordination",
+      "breadcrumb": "Breadcrumb",
+      "lead": "Requests whose buyer asked the management board to coordinate. Each request has one administrator in charge.",
+      "loading": "Loading the queue…",
+      "signIn": "Sign in with a management board account to view the queue.",
+      "failed": "The queue could not be loaded.",
+      "retry": "Retry",
+      "empty": "No requests need coordination right now.",
+      "buyer": "Buyer",
+      "quantity": "Quantity",
+      "deadline": "Bidding deadline",
+      "requiredBy": "Delivery date",
+      "offers": "{count, plural, =0 {No offers yet} one {# offer} other {# offers}}",
+      "claim": "Claim coordination",
+      "claiming": "Claiming…",
+      "open": "Open",
+      "mine": "You are coordinating this",
+      "claimedBy": "{name} is coordinating this",
+      "claimedByOther": "Another administrator is coordinating this",
+      "claimFailed": "Someone just claimed this request, or it changed. The list has been refreshed.",
+      "unclaimed": "Not claimed yet"
+    },
+    "audit": {
+      "title": "Audit log",
+      "lead": "Every administrative action: who, what, when, on which target, and the values before and after.",
+      "filters": "Filters",
+      "actor": "Actor",
+      "allActors": "Everyone",
+      "action": "Action",
+      "allActions": "All actions",
+      "from": "From",
+      "to": "To",
+      "loading": "Loading the log…",
+      "signIn": "Sign in with a management board account to view the log.",
+      "failed": "The log could not be loaded.",
+      "retry": "Retry",
+      "empty": "No entries match these filters.",
+      "more": "Load more",
+      "unknownActor": "Account no longer exists",
+      "when": "When",
+      "who": "Who",
+      "what": "What",
+      "target": "Target",
+      "before": "Before",
+      "after": "After",
+      "noValue": "—",
+      "entity": {
+        "household": "Household",
+        "product": "Product",
+        "rfq": "Quote request",
+        "quotation": "Cooperative quotation",
+        "news": "News"
+      },
+      "actions": {
+        "household": {
+          "approve": "Approved household",
+          "reject": "Rejected household",
+          "request_info": "Requested more information",
+          "suspend": "Suspended household",
+          "reinstate": "Reinstated household"
+        },
+        "product": {
+          "publish": "Published product",
+          "withdraw": "Withdrew product",
+          "republish": "Republished product"
+        },
+        "rfq": {
+          "claim": "Claimed coordination",
+          "invite": "Invited households",
+          "quotation_submit": "Submitted cooperative quotation",
+          "start_production": "Started production",
+          "confirm_receipt": "Confirmed receipt",
+          "cancel": "Cancelled order"
+        }
       }
     }
   },

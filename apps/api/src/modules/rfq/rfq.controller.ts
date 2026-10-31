@@ -184,6 +184,18 @@ export class RfqController {
   }
 }
 
+@Controller('admin/coordination')
+@Roles('ADMIN')
+export class AdminCoordinationController {
+  constructor(private readonly rfqs: RfqService) {}
+
+  @Get()
+  @Header('Cache-Control', 'private, no-store')
+  queue(@CurrentActor() actor: Actor) {
+    return this.rfqs.coordinationQueue(actor);
+  }
+}
+
 @Controller('contributions')
 export class ContributionsController {
   constructor(private readonly rfqs: RfqService) {}

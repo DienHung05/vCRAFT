@@ -410,18 +410,6 @@
       "overview": "Tổng quan",
       "pending": "{count} hồ sơ đang chờ duyệt"
     },
-    "coordination": {
-      "breadcrumb": "Đường dẫn trang",
-      "section": "Điều phối",
-      "buyer": "Bên mua",
-      "quantity": "Số lượng",
-      "requiredBy": "Hạn giao",
-      "reasonLabel": "Cần điều phối",
-      "reason": {
-        "requested": "Bên mua nhờ ban quản lý chia đơn cho nhiều hộ.",
-        "no-full-bid": "Không hộ nào chào đủ số lượng, cần ghép nhiều hộ lại."
-      }
-    },
     "board": {
       "barTitle": "Chia {quantity} {unit} cho các hộ",
       "barLabel": "Đã chia {sum} trên {quantity} {unit}",
@@ -552,6 +540,83 @@
         "request-info": "Yêu cầu bổ sung",
         "suspend": "Tạm khóa hộ",
         "reinstate": "Mở khóa hộ"
+      }
+    },
+    "coordinationQueue": {
+      "title": "Điều phối",
+      "breadcrumb": "Đường dẫn",
+      "lead": "Các yêu cầu mà người mua nhờ Ban quản lý điều phối. Mỗi yêu cầu chỉ do một quản trị viên phụ trách.",
+      "loading": "Đang tải hàng đợi…",
+      "signIn": "Đăng nhập bằng tài khoản Ban quản lý để xem hàng đợi.",
+      "failed": "Không tải được hàng đợi.",
+      "retry": "Thử lại",
+      "empty": "Hiện không có yêu cầu nào cần điều phối.",
+      "buyer": "Người mua",
+      "quantity": "Số lượng",
+      "deadline": "Hạn chào giá",
+      "requiredBy": "Ngày cần hàng",
+      "offers": "{count, plural, =0 {Chưa có đề xuất} other {# đề xuất}}",
+      "claim": "Nhận điều phối",
+      "claiming": "Đang nhận…",
+      "open": "Mở",
+      "mine": "Bạn đang phụ trách",
+      "claimedBy": "{name} đang phụ trách",
+      "claimedByOther": "Quản trị viên khác đang phụ trách",
+      "claimFailed": "Yêu cầu vừa có người nhận hoặc đã thay đổi. Danh sách đã được làm mới.",
+      "unclaimed": "Chưa có người nhận"
+    },
+    "audit": {
+      "title": "Nhật ký kiểm toán",
+      "lead": "Mọi thao tác quản trị: ai, làm gì, lúc nào, trên đối tượng nào, giá trị trước và sau.",
+      "filters": "Bộ lọc",
+      "actor": "Người thực hiện",
+      "allActors": "Tất cả",
+      "action": "Hành động",
+      "allActions": "Tất cả",
+      "from": "Từ ngày",
+      "to": "Đến ngày",
+      "loading": "Đang tải nhật ký…",
+      "signIn": "Đăng nhập bằng tài khoản Ban quản lý để xem nhật ký.",
+      "failed": "Không tải được nhật ký.",
+      "retry": "Thử lại",
+      "empty": "Không có mục nào khớp bộ lọc.",
+      "more": "Xem thêm",
+      "unknownActor": "Tài khoản không còn tồn tại",
+      "when": "Lúc",
+      "who": "Người thực hiện",
+      "what": "Hành động",
+      "target": "Đối tượng",
+      "before": "Trước",
+      "after": "Sau",
+      "noValue": "—",
+      "entity": {
+        "household": "Hộ",
+        "product": "Sản phẩm",
+        "rfq": "Yêu cầu báo giá",
+        "quotation": "Chào giá liên kết",
+        "news": "Tin tức"
+      },
+      "actions": {
+        "household": {
+          "approve": "Duyệt hộ",
+          "reject": "Từ chối hộ",
+          "request_info": "Yêu cầu bổ sung hồ sơ",
+          "suspend": "Tạm ngừng hộ",
+          "reinstate": "Khôi phục hộ"
+        },
+        "product": {
+          "publish": "Xuất bản sản phẩm",
+          "withdraw": "Rút sản phẩm",
+          "republish": "Xuất bản lại sản phẩm"
+        },
+        "rfq": {
+          "claim": "Nhận điều phối",
+          "invite": "Mời thêm hộ",
+          "quotation_submit": "Gửi chào giá liên kết",
+          "start_production": "Bắt đầu sản xuất",
+          "confirm_receipt": "Xác nhận đã nhận hàng",
+          "cancel": "Hủy đơn"
+        }
       }
     }
   },
