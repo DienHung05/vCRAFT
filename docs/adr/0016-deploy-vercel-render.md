@@ -21,7 +21,8 @@ Nhóm chọn dùng nền tảng quản lý sẵn: Vercel cho Next.js, Render cho
    - `API_INTERNAL_URL` (server Next gọi trực tiếp, vd. trang tin tức) và đích rewrite là cùng một biến, nên chỉ một nơi để sai.
 5. **Header bảo mật chuyển từ Caddy sang Next** (`headers()` trong `next.config.ts`): HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` giữ nguyên giá trị của `routes.caddy`, thêm CSP chống nhúng iframe (`frame-ancestors 'none'; base-uri 'self'; object-src 'none'`). Phản hồi API đi qua rewrite không nhận header của Next (đã kiểm với `next start`), nên API tự đặt header qua `@fastify/helmet`.
 6. **API chạy được trên Render:** nghe `0.0.0.0` tại `API_PORT`, nếu trống thì `PORT` (Render đặt), nếu trống thì 4000; `TRUST_PROXY=true` để lấy IP thật từ `X-Forwarded-For`; production start bằng `node apps/<app>/dist/main.js` (không phụ thuộc công cụ dev).
-7. **Mã QR và domain:** domain thi trỏ vào Vercel (HTTPS tự động); `NEXT_PUBLIC_SITE_URL` nhúng vào QR lúc build phải đúng domain đó, nên đặt trước khi build production.
+7. **Vùng chạy theo Supabase, không theo người dùng.** Project Supabase ở `eu-west-1` (Ireland) nên `vcraft-api`, `vcraft-worker`, `vcraft-redis` đều ở Render `frankfurt` (vùng gần nhất), và hàm SSR của Vercel ở `fra1` (`regions` trong `apps/web/vercel.json`). Nhờ vậy chuỗi SSR → API → CSDL nằm trọn ở châu Âu, mỗi truy vấn chỉ vài ms thay vì 150–200 ms nếu API đặt ở Singapore. Người dùng ở Việt Nam vẫn nhận tài nguyên tĩnh từ edge của Vercel; chỉ phần SSR/API chịu thêm một lượt vượt lục địa cho mỗi request. Đổi project Supabase sang vùng khác thì phải đổi cả ba vùng (Render không cho đổi vùng sau khi tạo: tạo lại service) và `regions` của Vercel.
+8. **Mã QR và domain:** domain thi trỏ vào Vercel (HTTPS tự động); `NEXT_PUBLIC_SITE_URL` nhúng vào QR lúc build phải đúng domain đó, nên đặt trước khi build production.
 
 ## Phương án đã cân nhắc
 

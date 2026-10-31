@@ -19,7 +19,7 @@ Trình duyệt ──HTTPS──> Vercel (apps/web)  ──rewrite /api/*──>
 | --- | --- |
 | Tài khoản GitHub có quyền vào repo | Vercel và Render đều đăng nhập bằng GitHub |
 | Tài khoản Vercel, Render | Render cần thẻ thanh toán (gói `starter`, xem §7) |
-| Project Supabase đang chạy | Lấy được các giá trị ở bảng §2 |
+| Project Supabase đang chạy | Lấy được các giá trị ở bảng §2. Vùng hiện tại `eu-west-1` (Ireland) quyết định vùng Render/Vercel bên dưới |
 | Domain thi | Quản lý DNS được; QR in trên cốc mã hóa domain này nên **không được đổi sau khi in** |
 | Nhà cung cấp SMTP | Gửi email xác thực (Supabase Auth) và thông báo (worker); đã xác minh domain gửi (SPF/DKIM) |
 | File `infra/certs/supabase-root-2021.crt` đã có trên `main` | CA của pooler Supabase (PR riêng). Thiếu file thì API không khởi động được; hoặc dùng `DB_SSL_CA` (§2) |
@@ -53,7 +53,7 @@ Tất cả lấy từ Supabase Dashboard (đường dẫn trong ngoặc theo `.e
 ## 3. Render: tạo Blueprint
 
 1. Render Dashboard → **New → Blueprint** → kết nối GitHub, chọn repo vCraft, nhánh **`main`**, file `render.yaml` (mặc định).
-2. Render liệt kê ba tài nguyên: `vcraft-api` (web), `vcraft-worker` (background worker), `vcraft-redis` (Key Value). Kiểm tra gói `starter` đã hiển thị giá.
+2. Render liệt kê ba tài nguyên, cả ba ở vùng **Frankfurt** (gần `eu-west-1` của Supabase nhất; không đổi được sau khi tạo, và phải cùng vùng để Redis kết nối nội bộ): `vcraft-api` (web), `vcraft-worker` (background worker), `vcraft-redis` (Key Value). Kiểm tra gói `starter` đã hiển thị giá.
 3. Màn hình hỏi giá trị cho các biến `sync: false`: dán theo bảng §2 cho **cả hai** service (biến trùng tên nhập hai lần, giá trị giống nhau).
 4. **Apply**. Lần đầu Render build, chạy migration (`pnpm --filter @vcraft/database db:migrate`) rồi mới khởi động API. Migration lỗi thì deploy bị hủy và log nằm ở tab *Events* của `vcraft-api`.
 5. Khi `vcraft-api` báo *Live*, ghi lại URL `https://vcraft-api.onrender.com` (tên thật có thể có hậu tố). Mở `<URL>/api/v1/health`, phải thấy `{"status":"ok",...}`.
@@ -68,7 +68,7 @@ Tùy chọn: `CORS_ORIGINS=https://<domain>` ở `vcraft-api` chỉ khi có clie
 1. Vercel Dashboard → **Add New → Project** → import repo vCraft.
 2. **Root Directory: `apps/web`**. Giữ bật *Include source files outside of the Root Directory in the Build Step* (mặc định bật, cần vì web dùng các package trong `packages/`).
 3. Framework Preset **Next.js**. Install và Build Command lấy từ `apps/web/vercel.json` (không cần sửa: cài từ gốc repo bằng pnpm, build bằng `turbo run build --filter=@vcraft/web`). Output Directory `.next`.
-4. Settings → General → **Node.js Version: 24.x**.
+4. Settings → General → **Node.js Version: 24.x**. Vùng hàm SSR đã khai báo `fra1` (Frankfurt) trong `vercel.json`, để SSR → API → CSDL cùng ở châu Âu; kiểm tra ở Settings → Functions → Function Region. Trang tĩnh vẫn phục vụ từ edge gần người dùng. Nếu đổi vùng project Supabase, đổi lại cả `regions` ở đây và vùng Render.
 5. Settings → Git → **Production Branch: `main`**. Pull request có preview tự động.
 6. Settings → Environment Variables (đánh dấu **Production** và **Preview**):
 
