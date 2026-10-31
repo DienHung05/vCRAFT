@@ -21,6 +21,7 @@ export const pathnames = {
   '/truy-xuat/[code]': { vi: '/truy-xuat/[code]', en: '/trace/[code]' },
   '/ghi-nhan-anh': { vi: '/ghi-nhan-anh', en: '/image-credits' },
   '/yeu-cau-bao-gia': { vi: '/yeu-cau-bao-gia', en: '/quotes' },
+  '/yeu-cau-bao-gia/moi': { vi: '/yeu-cau-bao-gia/moi', en: '/quotes/new' },
   '/yeu-cau-bao-gia/[code]': { vi: '/yeu-cau-bao-gia/[code]', en: '/quotes/[code]' },
   // Tài khoản và phiên (FR-AUTH, SRS §5.1)
   '/dang-nhap': { vi: '/dang-nhap', en: '/login' },

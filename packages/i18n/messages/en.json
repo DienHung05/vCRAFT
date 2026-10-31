@@ -312,12 +312,6 @@
       "REASON_REQUIRED": "Please give a reason for cancelling.",
       "NOT_YET_EXPIRED": "It isn't time for this request to expire yet."
     },
-    "actions": {
-      "title": "Actions",
-      "none": "Nothing more for you to do in this state.",
-      "acceptInTable": "To accept, press “Accept” on the bid you choose below.",
-      "demoNote": "Demo build: actions only change this browser, nothing is sent to a server."
-    },
     "accepted": {
       "title": "Sealed.",
       "text": "You accepted the bid from {bidder}. The order is created, the other bids are declined and every household gets a notification."
@@ -333,12 +327,6 @@
       "reasonLabel": "Reason for cancelling",
       "reasonPlaceholder": "For example: plans changed, need a different quantity.",
       "confirmText": "Are you sure you want to do this?"
-    },
-    "acceptDialog": {
-      "title": "Accept the bid from {bidder}?",
-      "text": "You accept {quantity} {unit} at {price} each, {total} in total. The other bids will be declined and every household notified. This can't be undone.",
-      "confirm": "Accept bid",
-      "back": "Review again"
     },
     "summary": {
       "title": "Request summary",
@@ -395,6 +383,74 @@
       "coveragePartial": "Partial · {percent}% ({count, number})",
       "accept": "Accept",
       "acceptBlocked": "Only a bid for the full {quantity} {unit} can be accepted."
+    },
+    "form": {
+      "title": "New quote request",
+      "lead": "Describe what you need. Your draft saves automatically, so you can close this page and come back.",
+      "requestTitle": "Title",
+      "category": "Category",
+      "chooseCategory": "Choose a category",
+      "description": "Description",
+      "quantity": "Quantity",
+      "unit": "Unit",
+      "budgetMin": "Budget from (VND, optional)",
+      "budgetMax": "Budget to (VND, optional)",
+      "deadline": "Bidding deadline",
+      "requiredBy": "Delivery date",
+      "destination": "Deliver to",
+      "coordinate": "Ask the village board to coordinate",
+      "coordinateHint": "Recommended: the board combines household offers into the quotation you receive.",
+      "households": "Choose households to invite",
+      "householdsLoading": "Loading households…",
+      "householdsFailed": "The households could not be loaded.",
+      "send": "Send request",
+      "sending": "Sending…",
+      "saving": "Saving draft…",
+      "saved": "Draft saved",
+      "savedLocal": "Saved in this browser for now",
+      "saveFailed": "The draft could not be saved to the server. Your text is still in this browser.",
+      "sendFailed": "The request could not be sent. Please try again.",
+      "emailNotVerified": "Please verify your email before sending the request.",
+      "signIn": "Sign in with a buyer account to create a request.",
+      "problem": {
+        "title": "Enter a title.",
+        "category": "Choose a category.",
+        "description": "Describe what you need.",
+        "quantity": "Quantity must be a whole number, 1 or more.",
+        "unit": "Enter a unit.",
+        "destination": "Enter where to deliver.",
+        "deadline": "The bidding deadline must be at least 24 hours after sending.",
+        "requiredBy": "The delivery date must be after the bidding deadline.",
+        "budget": "The budget must be whole numbers, with the lower amount first.",
+        "households": "Choose at least one household, or ask the board to coordinate."
+      }
+    },
+    "list": {
+      "allStatuses": "All statuses",
+      "statusFilter": "Status",
+      "new": "New request",
+      "loading": "Loading requests…",
+      "signIn": "Sign in with a buyer account to view your requests.",
+      "failed": "Your requests could not be loaded.",
+      "retry": "Retry",
+      "more": "Load more",
+      "quotations": "{count, plural, =0 {No quotations yet} one {# quotation waiting} other {# quotations waiting}}",
+      "continueDraft": "Continue"
+    },
+    "detail": {
+      "accept": "Accept this quotation",
+      "acceptTitle": "Accept this quotation?",
+      "acceptText": "You accept {quantity} {unit} for {total} in total. The other quotations will be declined. This cannot be undone.",
+      "acceptFailed": "The quotation could not be accepted. The data just changed, or the quotation is no longer valid.",
+      "best": "Lowest total",
+      "latest": "Latest completion",
+      "cancel": "Cancel request",
+      "cancelFailed": "The request could not be cancelled. The data just changed, please try again.",
+      "reasonRequired": "Please give a reason.",
+      "stale": "This request was just updated. The data has been refreshed, please try again.",
+      "description": "Description",
+      "category": "Category",
+      "coordinated": "Village board coordinating"
     }
   },
   "admin": {

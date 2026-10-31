@@ -312,12 +312,6 @@
       "REASON_REQUIRED": "Bạn cần ghi lý do hủy.",
       "NOT_YET_EXPIRED": "Chưa tới lúc yêu cầu hết hạn."
     },
-    "actions": {
-      "title": "Hành động",
-      "none": "Ở trạng thái này, bạn không cần làm gì thêm.",
-      "acceptInTable": "Muốn chốt, bấm “Chốt” ở chào giá bạn chọn bên dưới.",
-      "demoNote": "Bản trình diễn: thao tác chỉ thay đổi trên trình duyệt của bạn, chưa gửi lên máy chủ."
-    },
     "accepted": {
       "title": "Đã đóng ấn.",
       "text": "Bạn đã chốt chào giá của {bidder}. Đơn hàng được tạo, các chào giá còn lại bị từ chối và mọi hộ sẽ nhận thông báo."
@@ -333,12 +327,6 @@
       "reasonLabel": "Lý do hủy",
       "reasonPlaceholder": "Ví dụ: đổi kế hoạch, cần số lượng khác.",
       "confirmText": "Bạn có chắc muốn thực hiện thao tác này không?"
-    },
-    "acceptDialog": {
-      "title": "Chốt chào giá của {bidder}?",
-      "text": "Bạn chốt {quantity} {unit} với đơn giá {price}, tổng {total}. Các chào giá còn lại sẽ bị từ chối và mọi hộ nhận thông báo. Việc này không hoàn tác được.",
-      "confirm": "Chốt chào giá",
-      "back": "Xem lại"
     },
     "summary": {
       "title": "Tóm tắt yêu cầu",
@@ -395,6 +383,74 @@
       "coveragePartial": "Một phần · {percent}% ({count, number})",
       "accept": "Chốt",
       "acceptBlocked": "Chỉ chốt được chào giá đủ {quantity} {unit}."
+    },
+    "form": {
+      "title": "Yêu cầu báo giá mới",
+      "lead": "Mô tả nhu cầu của bạn. Nháp được lưu tự động, đóng trang rồi mở lại vẫn còn.",
+      "requestTitle": "Tiêu đề",
+      "category": "Danh mục",
+      "chooseCategory": "Chọn danh mục",
+      "description": "Mô tả",
+      "quantity": "Số lượng",
+      "unit": "Đơn vị",
+      "budgetMin": "Ngân sách từ (VND, không bắt buộc)",
+      "budgetMax": "Ngân sách đến (VND, không bắt buộc)",
+      "deadline": "Hạn chào giá",
+      "requiredBy": "Ngày cần hàng",
+      "destination": "Nơi giao hàng",
+      "coordinate": "Nhờ Ban quản lý làng điều phối",
+      "coordinateHint": "Nên bật: Ban quản lý là bên tổng hợp đề xuất của các hộ thành chào giá gửi cho bạn.",
+      "households": "Chọn hộ được mời",
+      "householdsLoading": "Đang tải danh sách hộ…",
+      "householdsFailed": "Không tải được danh sách hộ.",
+      "send": "Gửi yêu cầu",
+      "sending": "Đang gửi…",
+      "saving": "Đang lưu nháp…",
+      "saved": "Đã lưu nháp",
+      "savedLocal": "Đã lưu tạm trên trình duyệt này",
+      "saveFailed": "Chưa lưu được nháp lên máy chủ. Nội dung vẫn còn trên trình duyệt này.",
+      "sendFailed": "Không gửi được yêu cầu. Vui lòng thử lại.",
+      "emailNotVerified": "Hãy xác minh email trước khi gửi yêu cầu.",
+      "signIn": "Đăng nhập bằng tài khoản người mua để tạo yêu cầu.",
+      "problem": {
+        "title": "Hãy nhập tiêu đề.",
+        "category": "Hãy chọn danh mục.",
+        "description": "Hãy mô tả nhu cầu.",
+        "quantity": "Số lượng phải là số nguyên từ 1 trở lên.",
+        "unit": "Hãy nhập đơn vị.",
+        "destination": "Hãy nhập nơi giao hàng.",
+        "deadline": "Hạn chào giá phải sau thời điểm gửi ít nhất 24 giờ.",
+        "requiredBy": "Ngày cần hàng phải sau hạn chào giá.",
+        "budget": "Ngân sách phải là số nguyên, và mức từ không lớn hơn mức đến.",
+        "households": "Chọn ít nhất một hộ, hoặc nhờ Ban quản lý điều phối."
+      }
+    },
+    "list": {
+      "allStatuses": "Tất cả trạng thái",
+      "statusFilter": "Trạng thái",
+      "new": "Tạo yêu cầu",
+      "loading": "Đang tải yêu cầu…",
+      "signIn": "Đăng nhập bằng tài khoản người mua để xem yêu cầu của bạn.",
+      "failed": "Không tải được danh sách yêu cầu.",
+      "retry": "Thử lại",
+      "more": "Xem thêm",
+      "quotations": "{count, plural, =0 {Chưa có chào giá} other {# chào giá đang chờ}}",
+      "continueDraft": "Viết tiếp"
+    },
+    "detail": {
+      "accept": "Chốt chào giá này",
+      "acceptTitle": "Chốt chào giá này?",
+      "acceptText": "Bạn chốt {quantity} {unit} với tổng {total}. Các chào giá khác sẽ bị từ chối. Không thể hoàn tác.",
+      "acceptFailed": "Không chốt được. Dữ liệu vừa thay đổi hoặc chào giá không còn hiệu lực.",
+      "best": "Tổng thấp nhất",
+      "latest": "Hoàn thành muộn nhất",
+      "cancel": "Hủy yêu cầu",
+      "cancelFailed": "Không hủy được. Dữ liệu vừa thay đổi, hãy thử lại.",
+      "reasonRequired": "Hãy ghi lý do.",
+      "stale": "Yêu cầu vừa được cập nhật. Dữ liệu đã được làm mới, hãy thử lại.",
+      "description": "Mô tả",
+      "category": "Danh mục",
+      "coordinated": "Nhờ Ban quản lý điều phối"
     }
   },
   "admin": {

@@ -23,6 +23,7 @@ import type { HttpReply, HttpRequest } from '../http/http-types';
  */
 const DOMAIN_CODE_MAP: Readonly<Record<string, ErrorCode>> = {
   FORBIDDEN_ACTOR: 'AUTH_FORBIDDEN',
+  EMAIL_NOT_VERIFIED: 'AUTH_EMAIL_NOT_VERIFIED',
   REASON_REQUIRED: 'VALIDATION_FAILED',
   MISSING_CONTEXT: 'VALIDATION_FAILED',
   JOURNAL_FROZEN: 'HOUSEHOLD_ACCOUNT_LOCKED',

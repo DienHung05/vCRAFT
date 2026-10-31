@@ -53,6 +53,12 @@ describe('GH#9 contracts: request creation', () => {
       version: 3,
       revision: 1,
       status: 'DRAFT',
+      title: 'Logo cups',
+      category: null,
+      budgetMinVnd: null,
+      budgetMaxVnd: null,
+      cancelReason: null,
+      createdAt: '2026-10-31T00:00:00.000Z',
       ...valid,
     });
     expect(res.success).toBe(true);

@@ -1,4 +1,4 @@
-import { type EntityManager, LockMode, MikroORM } from '@mikro-orm/core';
+import { type EntityManager, type FilterQuery, LockMode, MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type {
   AcceptQuotationRequest,
@@ -10,6 +10,8 @@ import type {
   CreateContributionRequest,
   CreateCooperativeQuotationRequest,
   CreateRfqRequest,
+  ListRfqsQuery,
+  RfqListDto,
   RfqResponse,
 } from '@vcraft/contracts';
 import {
@@ -48,18 +50,79 @@ export class RfqService {
       await this.checkHouseholds(em, input.invitedHouseholdIds);
       const request = em.create(QuotationRequest, {
         buyer: em.getReference(AppUser, actor.id),
-        design: input.design,
-        quantity: input.quantity,
-        unit: input.unit,
-        destination: input.destination,
-        requiredBy: new Date(input.requiredBy),
-        biddingClosesAt: new Date(input.biddingClosesAt),
-        invitedHouseholdIds: [...new Set(input.invitedHouseholdIds)],
-        coordinationOptIn: input.coordinationOptIn,
+        ...requestFields(input),
       });
       await em.flush();
       return toRfqResponse(request);
     });
+  }
+
+  /** Autosave of a draft (FR-RFQ-02). Only the owner can change it, and only while it is a draft. */
+  async updateRequest(
+    actor: Actor,
+    id: string,
+    version: number,
+    input: CreateRfqRequest,
+  ): Promise<RfqResponse> {
+    if (actor.locked) throw forbidden();
+    return this.orm.em.fork().transactional(async (em) => {
+      const request = await this.request(em, id, true);
+      if (request.buyer.id !== actor.id) throw notFound();
+      assertVersion(request, version);
+      if (request.status !== 'DRAFT') throw new AppError('INVALID_TRANSITION');
+      await this.checkHouseholds(em, input.invitedHouseholdIds);
+      Object.assign(request, requestFields(input));
+      await em.flush();
+      return toRfqResponse(request);
+    });
+  }
+
+  async listRequests(actor: Actor, query: ListRfqsQuery): Promise<RfqListDto> {
+    const em = this.orm.em.fork();
+    const and: FilterQuery<QuotationRequest>[] = [{ buyer: actor.id }];
+    const now = new Date();
+    const open = ['SENT', 'BIDDING'] as const;
+    if (query.status === 'EXPIRED')
+      and.push({
+        $or: [
+          { status: 'EXPIRED' },
+          { status: { $in: [...open] }, biddingClosesAt: { $lte: now } },
+        ],
+      });
+    else if (query.status === 'SENT' || query.status === 'BIDDING')
+      and.push({ status: query.status, biddingClosesAt: { $gt: now } });
+    else if (query.status) and.push({ status: query.status });
+    if (query.cursor) {
+      const cursor = decodeRequestCursor(query.cursor);
+      const at = new Date(cursor.t);
+      and.push({ $or: [{ createdAt: { $lt: at } }, { createdAt: at, id: { $lt: cursor.id } }] });
+    }
+    const rows = await em.find(
+      QuotationRequest,
+      { $and: and },
+      { orderBy: { createdAt: 'desc', id: 'desc' }, limit: query.limit + 1 },
+    );
+    const page = rows.slice(0, query.limit);
+    const quotations = await em.find(CooperativeQuotationEntity, {
+      request: { $in: page.map((request) => request.id) },
+      status: 'SUBMITTED',
+    });
+    const counts = new Map<string, number>();
+    for (const quotation of quotations)
+      counts.set(quotation.request.id, (counts.get(quotation.request.id) ?? 0) + 1);
+    const last = page.at(-1);
+    return {
+      data: page.map((request) => ({
+        ...toRfqResponse(request),
+        openQuotationCount: requestExpired(request) ? 0 : (counts.get(request.id) ?? 0),
+      })),
+      nextCursor:
+        rows.length > query.limit && last
+          ? Buffer.from(JSON.stringify({ t: last.createdAt.toISOString(), id: last.id })).toString(
+              'base64url',
+            )
+          : null,
+    };
   }
 
   async getRequest(actor: Actor, id: string): Promise<RfqResponse> {
@@ -653,34 +716,45 @@ export class RfqService {
     });
   }
 
-  /** GH#11: admin dieu phoi huy don sau san xuat (T7). Allocations con hieu luc CANCELLED. */
+  /**
+   * Cancels a request with a required reason: the owning buyer before production (T6, FR-RFQ-09),
+   * or the coordinator after acceptance (T7). Open quotations and live allocations end with it.
+   */
   async cancelOrder(actor: Actor, requestId: string, version: number, reason: string) {
     return this.orm.em.fork().transactional(async (em) => {
       const request = await this.request(em, requestId, true);
       if (actor.locked) throw forbidden();
+      const owner = actor.role === 'BUYER' && request.buyer.id === actor.id;
+      if (!owner) this.coordinator(actor, request);
       assertVersion(request, version);
-      this.coordinator(actor, request);
+      if (requestExpired(request)) throw new AppError('INVALID_TRANSITION');
       const statusBefore = request.status;
       request.status = unwrap(
-        transition(request.status, 'ADMIN_CANCEL', { actor: 'ADMIN', reason }),
+        owner
+          ? transition(request.status, 'CANCEL', { actor: 'BUYER_OWNER', reason })
+          : transition(request.status, 'ADMIN_CANCEL', { actor: 'ADMIN', reason }),
       );
-      this.audit(
-        em,
-        actor,
-        'rfq.cancel',
-        'rfq',
-        request.id,
-        { status: statusBefore },
-        {
-          status: request.status,
-          reason,
-        },
-      );
+      request.cancelReason = reason;
+      if (!owner)
+        this.audit(
+          em,
+          actor,
+          'rfq.cancel',
+          'rfq',
+          request.id,
+          { status: statusBefore },
+          { status: request.status, reason },
+        );
+      for (const quotation of await em.find(CooperativeQuotationEntity, {
+        request,
+        status: 'SUBMITTED',
+      }))
+        quotation.status = 'WITHDRAWN';
       const accepted = await em.findOne(CooperativeQuotationEntity, {
         request,
         status: 'ACCEPTED',
       });
-      const householdIds: string[] = [];
+      const householdIds = [...request.invitedHouseholdIds];
       if (accepted) {
         const allocations = await em.find(OrderAllocationEntity, { quotation: accepted });
         for (const allocation of allocations) {
@@ -690,17 +764,19 @@ export class RfqService {
           }
         }
       }
-      await this.notifier.notify(em, {
-        kind: 'ORDER_CANCELLED',
-        requestId: request.id,
-        quotationId: accepted?.id,
-        actorId: actor.id,
-        recipientIds: [
-          request.buyer.id,
-          request.coordinatorId,
-          ...(await this.notifier.representativeIds(em, householdIds)),
-        ],
-      });
+      // Nobody else has seen a draft, so cancelling one notifies nobody.
+      if (statusBefore !== 'DRAFT')
+        await this.notifier.notify(em, {
+          kind: 'ORDER_CANCELLED',
+          requestId: request.id,
+          quotationId: accepted?.id,
+          actorId: actor.id,
+          recipientIds: [
+            request.buyer.id,
+            request.coordinatorId,
+            ...(await this.notifier.representativeIds(em, [...new Set(householdIds)])),
+          ],
+        });
       request.revision++;
       await em.flush();
       return toRfqResponse(request);
@@ -973,6 +1049,38 @@ export class RfqService {
   }
 }
 
+function requestFields(input: CreateRfqRequest) {
+  return {
+    title: input.title ?? null,
+    category: input.category ?? null,
+    budgetMinVnd: input.budgetMinVnd ?? null,
+    budgetMaxVnd: input.budgetMaxVnd ?? null,
+    design: input.design,
+    quantity: input.quantity,
+    unit: input.unit,
+    destination: input.destination,
+    requiredBy: new Date(input.requiredBy),
+    biddingClosesAt: new Date(input.biddingClosesAt),
+    invitedHouseholdIds: [...new Set(input.invitedHouseholdIds)],
+    coordinationOptIn: input.coordinationOptIn,
+  };
+}
+
+function decodeRequestCursor(raw: string): { t: string; id: string } {
+  try {
+    const value = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8'));
+    if (
+      typeof value.t === 'string' &&
+      typeof value.id === 'string' &&
+      !Number.isNaN(Date.parse(value.t))
+    )
+      return { t: value.t, id: value.id };
+  } catch {
+    // Falls through to the error below.
+  }
+  throw new AppError('VALIDATION_MALFORMED_REQUEST', 'cursor is not valid');
+}
+
 function requestExpired(request: QuotationRequest): boolean {
   return (
     (request.status === 'SENT' || request.status === 'BIDDING') &&
@@ -992,6 +1100,12 @@ function toRfqResponse(request: QuotationRequest): RfqResponse {
     version: request.version,
     revision: request.revision,
     status: requestExpired(request) ? 'EXPIRED' : request.status,
+    title: request.title ?? request.design,
+    category: request.category ?? null,
+    budgetMinVnd: request.budgetMinVnd ?? null,
+    budgetMaxVnd: request.budgetMaxVnd ?? null,
+    cancelReason: request.cancelReason ?? null,
+    createdAt: request.createdAt.toISOString(),
     design: request.design,
     quantity: request.quantity,
     unit: request.unit,

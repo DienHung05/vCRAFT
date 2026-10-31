@@ -13,6 +13,7 @@ export const ERROR_CATALOG = {
   AUTH_TOKEN_INVALID: { status: 401, title: 'Invalid access token' },
   AUTH_TOKEN_EXPIRED: { status: 401, title: 'Access token expired' },
   AUTH_FORBIDDEN: { status: 403, title: 'Permission denied' },
+  AUTH_EMAIL_NOT_VERIFIED: { status: 403, title: 'Email not verified' },
   /** FR-AUTH-10: tài khoản bị tạm khóa, chặn ngay ở request kế tiếp. */
   AUTH_ACCOUNT_SUSPENDED: { status: 403, title: 'Account suspended' },
   /** NFR-SEC: Admin cần phiên `aal2` (đã qua MFA). */
