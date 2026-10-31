@@ -17,6 +17,8 @@
       "!pnpm-lock.yaml",
       "!pnpm-workspace.yaml",
       "!.claude",
+      "!.agents",
+      "!.beads",
       "!docs/design"
     ]
   },
