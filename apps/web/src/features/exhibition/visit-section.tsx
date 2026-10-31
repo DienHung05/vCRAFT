@@ -1,12 +1,12 @@
 import { splitWorkshops } from '@vcraft/domain';
 import { Card, cn } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
-import type { DemoWorkshop } from '@/lib/demo/data';
+import type { VisitWorkshopView } from '@/features/catalog/view-models';
 import { MapWithList } from './map-with-list';
 
 export interface VisitSectionProps {
   household: string;
-  workshops: readonly DemoWorkshop[];
+  workshops: readonly VisitWorkshopView[];
   className?: string;
 }
 

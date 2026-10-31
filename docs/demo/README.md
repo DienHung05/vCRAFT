@@ -7,7 +7,7 @@
 
 - **Đã có và đã chạy thử:** seeder dữ liệu mẫu, `pnpm demo:reset` có cổng chặn, `pnpm demo:verify`, bộ kiểm tra `demo-seed.integration.test.ts` (chạy qua API thật trên cả PostgreSQL và MySQL), script tạo tài khoản Supabase Auth, script đo ảnh 12 MB, script đua hai tab.
 - **Tin tức đã có:** entity `News`, API công khai `GET /api/v1/news` (+ `/news/:slug`) và trang `/vi/tin-tuc` (EN: `/en/news`). Trang này đọc API thật phía server qua `API_INTERNAL_URL` (xem `.env.example`; API không gọi được thì trang hiện thông báo, không lỗi). Seed nạp 18 tin.
-- **Trang công khai của `apps/web` vẫn dùng dữ liệu minh họa tĩnh** (`apps/web/src/lib/demo/data.ts`), chưa đọc từ API. Dữ liệu seed hiện phục vụ các màn đã gọi API thật: yêu cầu báo giá của Buyer, đề xuất/phân bổ của hộ, điều phối của Admin, cùng các endpoint `/trace/:code`, `/households/:slug`, duyệt hộ, xuất bản. Khi trang công khai chuyển sang API, dữ liệu seed đã sẵn sàng (cùng slug, cùng mã truy xuất).
+- **Trang công khai của `apps/web` đọc API thật** (trang chủ, sản phẩm, nghệ nhân, truy xuất, bản đồ, tin tức). `apps/web/src/lib/demo/data.ts` chỉ còn phục vụ các màn yêu cầu báo giá và điều phối đang dùng dữ liệu minh họa.
 - Một số bước chưa có màn hình (duyệt hộ của Admin, xuất bản của hộ, nút "Chốt" của Buyer): kịch bản e2e gọi thẳng API bằng đúng phiên đã đăng nhập và ghi chú ở từng bước.
 - **Chưa kiểm chứng được ở máy phát triển:** chạy trên URL đã triển khai, Lighthouse, tạo người dùng trên Supabase Auth thật, dựng Supabase cục bộ. Các mục này nằm trong checklist §7 để làm một lần trước ngày thi.
 
