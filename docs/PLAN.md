@@ -143,9 +143,9 @@ Phiên bản đã đối chiếu npm ngày 27/10/2026. Sprint 0 khóa phiên b�
 | Tải / tranh chấp | k6                                                                                                                                                                                                        |
 | Hiệu năng        | Lighthouse CI                                                                                                                                                                                             |
 | Dev infra          | Docker Compose: mysql (profile), redis, mailpit, caddy; CSDL + file trên Supabase                                                                                                                             |
-| Reverse proxy      | Caddy 2 (HTTPS tự động, rewrite, header bảo mật)                                                                                                                                                     |
+| Reverse proxy      | Caddy 2 (HTTPS tự động, rewrite, header bảo mật) cho dev và dự phòng; production: rewrite + header ở `next.config.ts` trên Vercel ([ADR-16](adr/0016-deploy-vercel-render.md))                                                                                                                                                     |
 | CI/CD              | GitHub Actions                                                                                                                                                                                            |
-| Hosting demo       | 1 VPS (GitHub Student Pack có credit DigitalOcean) + tên miền (`.id.vn` miễn phí cho người 18–23 tuổi — kiểm tra điều kiện, hoặc `.me` qua Student Pack); dự phòng Cloudflare Tunnel |
+| Hosting demo       | **Đã thay bằng Vercel (web) + Render (API, worker) + Supabase, xem [ADR-16](adr/0016-deploy-vercel-render.md); phần dưới là kế hoạch cũ:** 1 VPS (GitHub Student Pack có credit DigitalOcean) + tên miền (`.id.vn` miễn phí cho người 18–23 tuổi — kiểm tra điều kiện, hoặc `.me` qua Student Pack); dự phòng Cloudflare Tunnel |
 
 ---
 

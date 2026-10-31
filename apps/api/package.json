@@ -15,6 +15,7 @@
     "@aws-sdk/client-s3": "^3.1156.0",
     "@aws-sdk/s3-request-presigner": "^3.1156.0",
     "@casl/ability": "^7.0.2",
+    "@fastify/cors": "^11.3.1",
     "@fastify/helmet": "^13.2.0",
     "@fastify/multipart": "^10.1.6",
     "@mikro-orm/core": "^7.2.5",
