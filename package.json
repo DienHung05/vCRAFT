@@ -20,6 +20,7 @@
     "deps:check": "depcruise apps packages --config .dependency-cruiser.cjs",
     "demo:reset": "pnpm --filter @vcraft/domain --filter @vcraft/utils run build && pnpm --filter @vcraft/database exec node --disable-warning=DEP0205 --env-file-if-exists=../../.env --import @swc-node/register/esm-register ./src/seeders/demo/reset-cli.ts",
     "demo:verify": "pnpm --filter @vcraft/domain --filter @vcraft/utils run build && pnpm --filter @vcraft/database exec node --disable-warning=DEP0205 --env-file-if-exists=../../.env --import @swc-node/register/esm-register ./src/seeders/demo/verify-cli.ts",
+    "demo:media": "pnpm --filter \"@vcraft/worker...\" run build && pnpm --filter @vcraft/worker exec node --disable-warning=DEP0205 --env-file-if-exists=../../.env dist/demo/cli.js",
     "demo:auth": "node --env-file-if-exists=.env scripts/demo-auth.mjs",
     "demo:check:media": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file-if-exists=.env scripts/demo-check-media.mjs",
     "demo:check:concurrency": "node --env-file-if-exists=.env scripts/demo-check-concurrency.mjs",

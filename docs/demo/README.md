@@ -7,6 +7,7 @@
 
 - **Đã có và đã chạy thử:** seeder dữ liệu mẫu, `pnpm demo:reset` có cổng chặn, `pnpm demo:verify`, bộ kiểm tra `demo-seed.integration.test.ts` (chạy qua API thật trên cả PostgreSQL và MySQL), script tạo tài khoản Supabase Auth, script đo ảnh 12 MB, script đua hai tab.
 - **Tin tức đã có:** entity `News`, API công khai `GET /api/v1/news` (+ `/news/:slug`) và trang `/vi/tin-tuc` (EN: `/en/news`). Trang này đọc API thật phía server qua `API_INTERNAL_URL` (xem `.env.example`; API không gọi được thì trang hiện thông báo, không lỗi). Seed nạp 18 tin.
+- **Ảnh có giấy phép đã nằm trong CSDL và Supabase Storage** (GH#26, §1B): `pnpm demo:media` tải ảnh minh hoạ lên `vcraft-media`, giấy tờ mẫu lên `vcraft-private` và nối vào seed kèm ghi công. Trang web chưa đọc chúng từ API (GH#28).
 - **Trang công khai của `apps/web` vẫn dùng dữ liệu minh họa tĩnh** (`apps/web/src/lib/demo/data.ts`), chưa đọc từ API. Dữ liệu seed hiện phục vụ các màn đã gọi API thật: yêu cầu báo giá của Buyer, đề xuất/phân bổ của hộ, điều phối của Admin, cùng các endpoint `/trace/:code`, `/households/:slug`, duyệt hộ, xuất bản. Khi trang công khai chuyển sang API, dữ liệu seed đã sẵn sàng (cùng slug, cùng mã truy xuất).
 - Một số bước chưa có màn hình (duyệt hộ của Admin, xuất bản của hộ, nút "Chốt" của Buyer): kịch bản e2e gọi thẳng API bằng đúng phiên đã đăng nhập và ghi chú ở từng bước.
 - **Chưa kiểm chứng được ở máy phát triển:** chạy trên URL đã triển khai, Lighthouse, tạo người dùng trên Supabase Auth thật, dựng Supabase cục bộ. Các mục này nằm trong checklist §7 để làm một lần trước ngày thi.
@@ -26,7 +27,7 @@ Nạp bằng entity MikroORM, chạy giống hệt trên PostgreSQL và MySQL (`
 | Đề xuất tham gia / chào giá / phân bổ | 24 / 7 / 12 | Chào giá dựng bằng `assembleCooperativeQuotation` nên đúng luật tổng và năng lực |
 | Tin tức | 18 | Đều `PUBLISHED`: 6 tin chung của làng + 12 tin của hộ `APPROVED`, 2 tin ghim; nội dung có nhãn `[Dữ liệu mẫu]`; ngày đăng tính từ mốc đóng băng |
 
-Ảnh nhật ký: seed để trống (`images: []`), vì ảnh thật phải đi qua đường tải lên (bước đo 12 MB → 1,5 MB trình diễn đúng điều đó). Muốn trang có ảnh thì tải ảnh có giấy phép rõ ràng qua Studio rồi ghi công.
+Ảnh: seed (`demo:reset`) để trống `images: []` ở nhật ký và không có ảnh bìa; ảnh có giấy phép được nối vào bằng `pnpm demo:media` (§1B). Chạy `demo:reset` mà không chạy `demo:media` thì `demo:verify` báo đỏ ở nhóm kiểm ảnh.
 
 ### Cái gì cố định, cái gì tính theo thời điểm nạp
 
@@ -55,6 +56,62 @@ Vì sao hai đơn riêng cho "xác nhận" và "tiến độ → nhận hàng": 
 ### Chiếc cốc có QR
 
 Sản phẩm cố định **`DF6P3WZE`** ("Cốc men trắng quai tròn", lô 300 cái, hộ Lò Đức Phát, 7 mốc, đã xuất bản). **QR dán lên cốc thật phải mã hóa đường dẫn ổn định `https://<DOMAIN>/q/DF6P3WZE`** (mã không đổi khi đổi tên/slug; `/q/<mã>` chuyển 308 sang trang truy xuất theo ngôn ngữ). In 3 cỡ, thử quét trên iOS và Android (PLAN §9). Mã `BT7K2QXM` (bình hút lộc, 7 mốc) và `HX2M9KQD` (bát vẽ sen men trong) cũng có sẵn làm vật thay thế.
+
+## 1A. Dựng dữ liệu trên một project Supabase mới (thứ tự lệnh)
+
+Làm một lần cho mỗi project (kết quả của GH#26 trên project hiện tại). Mọi lệnh chạy ở gốc repo; các script tự đọc `.env` ở gốc.
+
+**Điều kiện ở Dashboard:** Storage có sẵn hai bucket `vcraft-media` (công khai) và `vcraft-private` (riêng tư, **không** bật public), mỗi bucket giới hạn 10 MB; đã tạo S3 access key (Storage → S3 Configuration).
+
+**Khóa `.env` cần có** (mẫu đầy đủ ở `.env.example`; không commit):
+
+| Nhóm | Khóa | Dùng cho |
+| --- | --- | --- |
+| CSDL | `DB_DRIVER=postgresql`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` (Session pooler) | `db:migrate`, `demo:reset`, `demo:media`, `demo:verify` |
+| TLS | `DB_SSL=true` và **một** trong `DB_SSL_CA_FILE=../../infra/certs/supabase-root-2021.crt` (đã commit, chứng chỉ công khai) hoặc `DB_SSL_CA` (nội dung PEM, xuống dòng viết `\n`) | mọi lệnh nói chuyện với CSDL; pooler Supabase dùng CA riêng nên thiếu cái này sẽ lỗi `self-signed certificate in certificate chain` |
+| Storage | `STORAGE_DRIVER=s3`, `S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_FORCE_PATH_STYLE=true`, `S3_BUCKET_PUBLIC=vcraft-media`, `S3_BUCKET_PRIVATE=vcraft-private`, `MEDIA_PUBLIC_BASE_URL=https://<ref>.supabase.co/storage/v1/object/public/vcraft-media` | `demo:media` |
+| Auth | `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `DEMO_ADMIN_PASSWORD`, `DEMO_BUYER_PASSWORD`, `DEMO_HOUSEHOLD_PASSWORD`, `DEMO_PENDING_PASSWORD` | `demo:auth` |
+| Cổng chặn | `APP_ENV=demo`, `DEMO_RESET_CONFIRM=<DB_HOST>:<DB_PORT>/<DB_NAME>` (gõ literal, đừng để dấu `$` trong `.env`), `NODE_ENV=production` khi reset | `demo:reset` (`demo:media` chỉ cần `APP_ENV=demo`) |
+
+`DB_SSL_CA_FILE` là đường dẫn tương đối tính từ thư mục chạy lệnh; `packages/database`, `apps/worker` và `apps/api` đều cách gốc repo hai cấp nên cùng một giá trị `../../infra/certs/supabase-root-2021.crt` đúng cho cả ba. Dự án Supabase khác hoặc CA được đổi: tải lại ở Dashboard → Database → Settings → SSL Configuration và thay file.
+
+**Thứ tự lệnh (chạy từ project trống):**
+
+```bash
+pnpm install
+pnpm db:migrate                                  # 1. schema + RLS: 11 migration PostgreSQL (… news, media_link)
+APP_ENV=demo NODE_ENV=production pnpm demo:reset # 2. xóa bảng nghiệp vụ và nạp seed (cần DEMO_RESET_CONFIRM trong .env)
+APP_ENV=demo pnpm demo:media                     # 3. ảnh minh hoạ -> vcraft-media, giấy tờ mẫu -> vcraft-private, nối vào seed
+pnpm demo:auth                                   # 4. bốn tài khoản Supabase Auth, id khớp app_user
+APP_ENV=demo pnpm demo:verify                    # 5. mọi dòng PASS (gồm HEAD tới URL ảnh công khai); thêm -- --offline để bỏ HEAD
+pnpm demo:auth -- --check
+```
+
+**Sau mỗi lần `demo:reset` phải chạy lại `pnpm demo:media`** (bước 3): reset xóa `media_asset`, `media_link` và dấu băm nhật ký có ảnh, nhưng không đụng tệp trong bucket; `demo:media` dựng lại đúng các dòng đó (cùng id, cùng key, ghi đè tệp cũ) nên chạy lại được bao nhiêu lần cũng ra cùng kết quả. Thứ tự `demo:reset` → `demo:media` → `demo:verify` là thứ tự chuẩn của buổi sáng thi (§7 mục 15).
+
+## 1B. Ảnh có giấy phép và giấy tờ mẫu
+
+**Cách làm (và vì sao):** `pnpm demo:media` đi đúng đường của API: bản gốc vào bucket riêng tư `originals/<chủ>/<id>`, dòng `media_asset` `PROCESSING`, rồi chính `processMediaAsset` của worker xóa metadata, sinh AVIF/WebP 320/640/1280 vào bucket công khai, đặt `READY`. Ảnh đầu vào là các ảnh Wikimedia Commons (CC0 / CC BY / CC BY-SA) đã cắt đúng tỉ lệ khung và đã nằm trong `apps/web/public/images/demo`, nên không cần mạng ngoài ngoài Supabase. Ghi công (tác giả, giấy phép, trang nguồn) và mô tả (`alt`) nằm trên chính dòng `media_asset` (`credit`, `alt_text`). Cân nhắc và phương án đã loại: xem mô tả PR GH#26.
+
+| Gắn vào | Cách | Số lượng |
+| --- | --- | --- |
+| Sản phẩm (`BT7K2QXM`, `HX2M9KQD`, `DF6P3WZE`) | `media_link` (`PRODUCT`, `COVER`) | 3 ảnh bìa |
+| Hộ (4 hộ có ảnh: Minh Hải, Lam Ngọc, Lò Đức Phát, Hạnh Thủy) | `media_link` (`HOUSEHOLD`, `PORTRAIT` / `BANNER` / `GALLERY` kèm `caption`) | 26 liên kết |
+| Tin (chợ gốm, ủ đất sét, lớp vuốt gốm) | `media_link` (`NEWS`, `COVER`) | 3 ảnh bìa |
+| Mốc nhật ký (mọi sản phẩm) | `journal_entry.images` = ảnh minh hoạ của công đoạn (`tl-<công đoạn>`); `sha256` của ảnh đi vào chuỗi băm nên dấu băm của cả 1.295 mốc được niêm phong lại và `verifyChain` vẫn đúng | 1.295 mốc, 7 ảnh |
+| Hộ chờ duyệt Gốm Bảo Châu | `media_asset` mục đích `CERTIFICATE`, riêng tư, chủ là người đại diện; `media_link` (`HOUSEHOLD`, `DOCUMENT`) | 3 giấy tờ mẫu |
+
+Ánh xạ ảnh ↔ sản phẩm/hộ/tin **giữ nguyên bản đã sửa ở GH#25**: file `packages/database/src/seeders/demo/photo-manifest.ts` do `node scripts/demo-photos/export-manifest.mjs` sinh thẳng từ `apps/web/src/lib/demo/data.ts` và `stage-photos.ts`. Giới hạn đã biết: sản phẩm `LN4R8TPA` (Ấm trà men ngọc) chỉ có trong dữ liệu tĩnh của web, **không có trong seed CSDL** (seed đóng băng, thêm sản phẩm sẽ đổi mọi mã truy xuất phía sau), nên ảnh của nó chưa dùng; 215 sản phẩm còn lại không có ảnh riêng và vẫn dùng hình giữ chỗ, giống trang web hiện nay. Ảnh công đoạn là ảnh minh hoạ (alt mở đầu bằng "Ảnh minh hoạ"), không phải ảnh chụp đúng món đồ.
+
+**Đọc ra cho GH#28 (API công khai):** ảnh của hộ/sản phẩm/tin = `media_link` theo (`target_type`, `target_id`, `role`, `position`) → `media_asset.variants` (URL = `MEDIA_PUBLIC_BASE_URL` + `key`), `credit`, `alt_text` (ưu tiên `media_link.alt_text`). Ảnh của mốc nhật ký: `journal_entry.images[].url` đã là URL công khai; ghi công tra bằng `images[].sha256` = `media_asset.sha256` (chủ là tài khoản `admin`).
+
+**Giấy tờ mẫu:** ba ảnh vẽ cục bộ bằng `scripts/demo-photos/make-specimen-docs.mjs` (căn cước, xác nhận cư trú, ảnh xưởng), toàn dữ liệu giả và đóng dấu chéo "MẪU – KHÔNG CÓ GIÁ TRỊ"; không bao giờ dùng giấy tờ thật. Chỉ nằm ở `vcraft-private`: Admin đọc qua `GET /media/{id}/read-url` (URL ký 5 phút), người khác bị từ chối, không có biến thể công khai.
+
+```bash
+APP_ENV=demo pnpm demo:media                 # tải lên + nối vào seed; chạy lại được
+APP_ENV=demo pnpm demo:media -- --force      # làm lại cả tệp đã READY
+APP_ENV=demo pnpm demo:media -- --check      # chỉ đọc lại bucket, so với CSDL (nội dung và kích thước)
+```
 
 ## 2. Tài khoản cố định và cách khôi phục
 
@@ -85,10 +142,11 @@ Sau khi tạo: đăng nhập từng tài khoản **một lần** trên đúng th
 # Trên máy/môi trường demo, .env có APP_ENV=demo, DB_* của CSDL demo
 export DEMO_RESET_CONFIRM="<DB_HOST>:<DB_PORT>/<DB_NAME>"     # gõ lại đích danh CSDL sắp bị xóa
 NODE_ENV=production pnpm demo:reset
+pnpm demo:media                                               # nối lại ảnh và giấy tờ mẫu (APP_ENV=demo; xem §1B)
 pnpm demo:verify                                              # kiểm dữ liệu còn nguyên (chỉ đọc)
 ```
 
-`demo:reset` xóa **mọi** bảng nghiệp vụ (kể cả bản ghi do tập dượt, hộp thư, outbox, `media_asset`) theo thứ tự con trước cha rồi nạp lại, trong một giao dịch (lỗi giữa chừng thì không mất gì). Không đụng bảng migration, schema `auth`/`storage` của Supabase hay tệp trong bucket.
+`demo:reset` xóa **mọi** bảng nghiệp vụ (kể cả bản ghi do tập dượt, hộp thư, outbox, `media_asset`) theo thứ tự con trước cha rồi nạp lại, trong một giao dịch (lỗi giữa chừng thì không mất gì). Không đụng bảng migration, schema `auth`/`storage` của Supabase hay tệp trong bucket: vì vậy sau reset phải chạy `pnpm demo:media` để dựng lại `media_asset`, `media_link` và ảnh của nhật ký (chạy lại được, §1B).
 
 **Cổng chặn** (hàm thuần `evaluateDemoResetGuard`, có unit test; chạy **trước** khi mở kết nối). Phải thỏa đồng thời:
 
@@ -99,7 +157,7 @@ pnpm demo:verify                                              # kiểm dữ li�
 
 Bị từ chối thì in **mọi** lý do, ghi "Không có dữ liệu nào bị xóa", thoát mã khác 0 (script gốc trả 2; qua `pnpm` hiện là 1), không chạm CSDL. `pnpm db:seed` cũng chỉ nạp khi `APP_ENV` là `development` hoặc `demo` và chỉ vào CSDL trống (nạp lần hai báo lỗi, bảo dùng `demo:reset`).
 
-Lỗi thường gặp: `Dữ liệu demo đã tồn tại` (dùng `demo:reset`, đừng dùng `db:seed`); `Thiếu cột/bảng` (chưa `pnpm db:migrate`; migration `*_quotation_notice_inbox` và `*_media_asset` cần được áp).
+Lỗi thường gặp: `self-signed certificate in certificate chain` (thiếu `DB_SSL_CA_FILE`, §1A); `Dữ liệu demo đã tồn tại` (dùng `demo:reset`, đừng dùng `db:seed`); `Thiếu cột/bảng` (chưa `pnpm db:migrate`; migration `*_quotation_notice_inbox` và `*_media_asset` cần được áp).
 
 ## 4. Ma trận nghiệm thu
 
@@ -161,7 +219,7 @@ DB_DRIVER=postgresql DB_HOST=127.0.0.1 DB_PORT=55433 DB_USER=postgres DB_PASSWOR
 docker rm -f vc-restore
 ```
 
-`demo:verify` đỏ ở mục nào thì nơi đó khôi phục chưa đủ. Khôi phục thật lên project Supabase mới: chạy `pnpm db:migrate` trước (tạo schema và RLS), rồi `pg_restore --data-only`, rồi `pnpm demo:auth` (tạo lại người dùng với đúng id), rồi `aws s3 sync` ngược lại. Ghi lại **thời gian khôi phục** của lần diễn tập vào checklist §7.
+`demo:verify` đỏ ở mục nào thì nơi đó khôi phục chưa đủ. Khôi phục thật lên project Supabase mới: chạy `pnpm db:migrate` trước (tạo schema và RLS), rồi `pg_restore --data-only` (hoặc `demo:reset` + `demo:media`, §1A), rồi `pnpm demo:auth` (tạo lại người dùng với đúng id), rồi `aws s3 sync` ngược lại. Ghi lại **thời gian khôi phục** của lần diễn tập vào checklist §7.
 
 ## 7. Kiểm tra trước giờ thi (trên dữ liệu đóng băng)
 
@@ -169,7 +227,7 @@ Làm theo thứ tự, trên bản đã triển khai, **sau** `pnpm demo:reset`. 
 
 | # | Kiểm tra | Lệnh / cách làm | Kết quả đạt | Thời gian ~ |
 | --- | --- | --- | --- | --- |
-| 1 | Dữ liệu còn nguyên | `pnpm demo:verify` | Mọi dòng `PASS` (hộ, sản phẩm, chuỗi băm, 12 yêu cầu, đơn 4 hộ, ≥ 15 tin tức, 4 tài khoản, hạn còn ≥ 3 ngày) | 1 phút |
+| 1 | Dữ liệu còn nguyên | `pnpm demo:verify` | Mọi dòng `PASS` (hộ, sản phẩm, chuỗi băm, 12 yêu cầu, đơn 4 hộ, ≥ 15 tin tức, 4 tài khoản, hạn còn ≥ 3 ngày, ảnh gắn đủ và có ghi công, 3 giấy tờ mẫu ở bucket riêng tư, URL ảnh mở được) | 1 phút |
 | 2 | Tài khoản Auth | `pnpm demo:auth -- --check` | 4 dòng `PASS` | 1 phút |
 | 3 | Kịch bản QR → biên nhận | §4: `pnpm demo:reset && E2E_BASE_URL=... pnpm demo:e2e && pnpm demo:reset` | Các bước chạy được xanh (kể cả bước tin tức) | 5 phút |
 | 4 | Lighthouse ≥ 90 | Xem lệnh bên dưới, 5 trang × (mobile, desktop) | Performance, Accessibility, Best Practices, SEO đều ≥ 90 ở mỗi trang; ghi điểm | 15 phút |
@@ -183,7 +241,7 @@ Làm theo thứ tự, trên bản đã triển khai, **sau** `pnpm demo:reset`. 
 | 12 | Sao lưu và khôi phục | §6, bao gồm `demo:verify` trên bản khôi phục | `demo:verify` xanh trên bản khôi phục; ghi thời gian | 15 phút |
 | 13 | QR vật lý | Quét cốc thật bằng 1 iPhone + 1 Android, mạng 4G | Mở đúng trang, dưới 3 giây | 5 phút |
 | 14 | Dự phòng | Diễn tập §8 một lần trọn vẹn (tắt Wi-Fi VPS giả lập mất mạng) | Dựng được bản local + tunnel trong ≤ 10 phút | 30 phút |
-| 15 | Đóng gói | Sáng thi: `pnpm demo:reset`, `pnpm demo:verify`, đăng nhập ba thiết bị, kiểm project Supabase Free chưa bị tạm dừng (trang Usage), sạc đầy pin | Mọi thứ sẵn sàng | 10 phút |
+| 15 | Đóng gói | Sáng thi: `pnpm demo:reset`, `pnpm demo:media`, `pnpm demo:verify`, đăng nhập ba thiết bị, kiểm project Supabase Free chưa bị tạm dừng (trang Usage), sạc đầy pin | Mọi thứ sẵn sàng | 10 phút |
 
 Lệnh Lighthouse (cần Chrome; không thêm dependency, dùng `npx`):
 
@@ -289,7 +347,8 @@ Sau khi chuyển sang local, nhớ: dữ liệu local độc lập với Supabas
 | Lệnh | Việc |
 | --- | --- |
 | `pnpm demo:reset` | Xóa bảng nghiệp vụ và nạp lại dữ liệu mẫu (có cổng chặn, §3) |
-| `pnpm demo:verify` | Kiểm dữ liệu demo còn nguyên (chỉ đọc) |
+| `pnpm demo:media [-- --force \| --check]` | Tải ảnh có giấy phép + giấy tờ mẫu lên Storage và nối vào seed (cần `APP_ENV=demo`; chạy sau mỗi `demo:reset`, §1B) |
+| `pnpm demo:verify [-- --offline]` | Kiểm dữ liệu demo còn nguyên, gồm ảnh và giấy tờ (chỉ đọc; `--offline` bỏ HEAD tới URL ảnh) |
 | `pnpm demo:auth [-- --check]` | Tạo/kiểm 4 người dùng Supabase Auth với id cố định |
 | `pnpm demo:e2e` | Kịch bản QR → biên nhận trên `E2E_BASE_URL` (làm bẩn dữ liệu, reset sau) |
 | `pnpm demo:e2e:preexam` | WCAG, đáp ứng, không nạp lại trang, bàn phím (đặt `DEMO_PREEXAM=1` tự động) |

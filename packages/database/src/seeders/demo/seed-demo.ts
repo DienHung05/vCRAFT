@@ -91,7 +91,10 @@ export interface DemoSeedSummary {
   news: number;
 }
 
-const idOf = (kind: string, key: string | number) => uuidv5(`${kind}:${key}`, NAMESPACE);
+/** UUID v5 xác định của một dòng dữ liệu mẫu; dùng chung với bước gắn ảnh (`link-media.ts`) để tìm lại đúng dòng. */
+export const demoEntityId = (kind: string, key: string | number) =>
+  uuidv5(`${kind}:${key}`, NAMESPACE);
+const idOf = demoEntityId;
 
 /** mulberry32: bộ sinh giả ngẫu nhiên nhỏ, cùng hạt cho cùng chuỗi số. */
 function rng(seed: number) {
