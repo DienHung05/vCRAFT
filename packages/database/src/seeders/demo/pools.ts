@@ -169,7 +169,6 @@ export const SKIP_REASONS: Record<JournalStage, string> = {
   finish: 'Chưa hoàn thiện.',
 };
 
-export const WORKSHOP_NAMES = ['Xưởng vuốt', 'Lò nung', 'Phòng trưng bày', 'Xưởng vẽ'] as const;
 export const VILLAGE_PARTS = [
   'Xóm 1',
   'Xóm 2',

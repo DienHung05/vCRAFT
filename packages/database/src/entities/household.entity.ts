@@ -24,6 +24,14 @@ export class Household extends BaseEntity {
   @Property({ type: 'string', length: 160, nullable: true })
   village?: string | null;
 
+  /** Nghề của hộ (lọc trên bản đồ, FR-MAP-03), văn bản ngắn do hộ khai. */
+  @Property({ type: 'string', length: 160, nullable: true })
+  craft?: string | null;
+
+  /** Ảnh bìa (đường dẫn tương đối hoặc URL công khai); không có thì giao diện dùng hình thay thế. */
+  @Property({ type: 'string', length: 500, nullable: true })
+  coverUrl?: string | null;
+
   @Property({ type: 'string', length: 20 })
   status: Opt<HouseholdStatus> = 'PENDING_REVIEW';
 
