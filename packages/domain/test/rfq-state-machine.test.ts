@@ -380,9 +380,9 @@ describe('RFQ guards (SRS §4.1 cột "Điều kiện")', () => {
       expect(codeOf(run('IN_PRODUCTION', 'ADMIN_CANCEL', { reason: 'đơn không khả thi' }))).toBe(
         'OK',
       );
-      expect(
-        codeOf(run('IN_PRODUCTION', 'ADMIN_CANCEL', { actor: 'BUYER_OWNER' })),
-      ).toBe('ACTOR_NOT_ALLOWED');
+      expect(codeOf(run('IN_PRODUCTION', 'ADMIN_CANCEL', { actor: 'BUYER_OWNER' }))).toBe(
+        'ACTOR_NOT_ALLOWED',
+      );
     });
   });
 
