@@ -294,7 +294,12 @@ function GallerySection({ household, client, reload }: SectionProps) {
       if (item.status === 'done' && item.result && !seen.current.has(item.id)) {
         seen.current.add(item.id);
         const mediaId = item.result;
-        setRows((current) => [...current, { mediaId, url: null, alt: '', caption: null }]);
+        // Server chống trùng theo SHA-256: tải lại đúng ảnh cũ trả về cùng id.
+        setRows((current) =>
+          current.some((row) => row.mediaId === mediaId)
+            ? current
+            : [...current, { mediaId, url: null, alt: '', caption: null }],
+        );
       }
     }
   }, [uploads]);

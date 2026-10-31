@@ -12,6 +12,7 @@ import type {
   SetProductMakersRequest,
   TraceAvailabilityDto,
   UpdateHouseholdProfileRequest,
+  UpdateProductRequest,
 } from '@vcraft/contracts';
 import {
   AppUser,
@@ -40,6 +41,7 @@ import { MediaService } from '../../media/application/media.service';
 import { loadJournal } from '../../production-logs/application/journal.queries';
 import {
   type HouseholdParts,
+  productMediaIds,
   toArtisanDto,
   toHouseholdDto,
   toMapPinDto,
@@ -225,6 +227,52 @@ export class HouseholdsService {
     });
   }
 
+  /** Chủ hộ sửa thông tin và ảnh sản phẩm; ảnh chỉ được gắn khi chính họ đã tải lên. */
+  async updateProduct(
+    actor: Actor,
+    productId: string,
+    expectedVersion: number,
+    input: UpdateProductRequest,
+  ): Promise<ProductDto> {
+    const id = await this.orm.em.fork().transactional(async (em) => {
+      const household = await this.ownWritableHousehold(em, actor);
+      const product = await em.findOne(Product, { id: productId, household });
+      if (!product) throw notFound();
+      assertVersion(product, expectedVersion);
+      if (input.images) {
+        const ids = input.images.map((image) => image.mediaId);
+        const owned = await this.media.ownedBy(actor.id, ids);
+        if (ids.some((mediaId) => !owned.has(mediaId))) {
+          throw forbidden('product media is not yours');
+        }
+        product.images = input.images;
+        // Ảnh tải lên thay bìa có sẵn của dữ liệu mẫu.
+        if (input.images.length > 0) {
+          product.coverUrl = null;
+          product.coverAlt = null;
+        }
+      }
+      if (input.name !== undefined) product.name = input.name;
+      if (input.description !== undefined) product.description = input.description;
+      if (input.category !== undefined) product.category = input.category;
+      if (input.priceVnd !== undefined) product.priceVnd = input.priceVnd;
+      if (input.stock !== undefined) product.stock = input.stock;
+      if (input.material !== undefined) product.material = input.material || null;
+      if (input.dimensions !== undefined) product.dimensions = input.dimensions || null;
+      if (input.weightGrams !== undefined) product.weightGrams = input.weightGrams;
+      if (input.artisanNote !== undefined) product.artisanNote = input.artisanNote || null;
+      await em.flush();
+      return product.id;
+    });
+    const em = this.orm.em.fork();
+    const product = await em.findOneOrFail(Product, id);
+    return toProductDto(
+      product,
+      (await this.makersOf(em, [product])).get(product.id),
+      await this.media.publicUrls(productMediaIds([product])),
+    );
+  }
+
   /** Xuất bản / rút / xuất bản lại một sản phẩm; Ban quản lý chỉ được rút. */
   async changeProduct(
     actor: Actor,
@@ -374,7 +422,11 @@ export class HouseholdsService {
     }
     return {
       availability,
-      product: toProductDto(product, (await this.makersOf(em, [product])).get(product.id)),
+      product: toProductDto(
+        product,
+        (await this.makersOf(em, [product])).get(product.id),
+        await this.media.publicUrls(productMediaIds([product])),
+      ),
       household: { name: product.household.name, slug: product.household.slug },
       journal: await loadJournal(em, product),
     };
@@ -419,9 +471,10 @@ export class HouseholdsService {
         orderBy: { createdAt: 'asc' },
       }),
     ]);
-    const mediaIds = (household.gallery ?? []).flatMap((item) =>
-      item.mediaId ? [item.mediaId] : [],
-    );
+    const mediaIds = [
+      ...(household.gallery ?? []).flatMap((item) => (item.mediaId ? [item.mediaId] : [])),
+      ...productMediaIds(products),
+    ];
     return {
       artisans,
       workshops,

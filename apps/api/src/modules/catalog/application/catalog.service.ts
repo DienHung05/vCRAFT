@@ -14,7 +14,8 @@ import { Artisan, Household, News, Product, ProductMaker, Workshop } from '@vcra
 import { isVisitable } from '@vcraft/domain';
 import { searchTerms } from '@vcraft/utils';
 import { AppError, notFound } from '../../../common/errors/app-error';
-import { toProductDto } from '../../households/households.mapper';
+import { productCover, productMediaIds, toProductDto } from '../../households/households.mapper';
+import { MediaService } from '../../media/application/media.service';
 import { loadJournal } from '../../production-logs/application/journal.queries';
 
 interface ProductCursor {
@@ -68,7 +69,8 @@ const ORDER_BY = {
   price_desc: { priceVnd: 'desc', id: 'asc' },
 } as const;
 
-function toCardDto(p: Product): ProductCardDto {
+function toCardDto(p: Product, mediaUrls: ReadonlyMap<string, string>): ProductCardDto {
+  const cover = productCover(p, mediaUrls);
   return {
     id: p.id,
     name: p.name,
@@ -78,8 +80,8 @@ function toCardDto(p: Product): ProductCardDto {
     category: p.category,
     priceVnd: p.priceVnd,
     stock: p.stock,
-    coverUrl: p.coverUrl ?? null,
-    coverAlt: p.coverAlt ?? null,
+    coverUrl: cover.url,
+    coverAlt: cover.alt,
     publishedAt: p.publishedAt?.toISOString() ?? null,
     household: { name: p.household.name, slug: p.household.slug },
   };
@@ -91,7 +93,10 @@ function toCardDto(p: Product): ProductCardDto {
  */
 @Injectable()
 export class CatalogService {
-  constructor(private readonly orm: MikroORM) {}
+  constructor(
+    private readonly orm: MikroORM,
+    private readonly media: MediaService,
+  ) {}
 
   async listProducts(query: ListProductsQuery): Promise<ProductListDto> {
     const em = this.orm.em.fork();
@@ -127,8 +132,9 @@ export class CatalogService {
     );
     const page = rows.slice(0, query.limit);
     const last = page.at(-1);
+    const mediaUrls = await this.media.publicUrls(productMediaIds(page));
     return {
-      data: page.map(toCardDto),
+      data: page.map((product) => toCardDto(product, mediaUrls)),
       nextCursor: rows.length > query.limit && last ? encodeCursor(last, query.sort) : null,
     };
   }
@@ -148,7 +154,11 @@ export class CatalogService {
       { populate: ['artisan'], orderBy: { position: 'asc' } },
     );
     return {
-      product: toProductDto(product, makers),
+      product: toProductDto(
+        product,
+        makers,
+        await this.media.publicUrls(productMediaIds([product])),
+      ),
       household: { name: product.household.name, slug: product.household.slug },
       journal: await loadJournal(em, product),
     };
