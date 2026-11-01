@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { DataUnavailable } from '@/components/data-unavailable';
 import { fetchNewsArticle } from '@/features/news/news-api';
 import { NewsArticleView } from '@/features/news/news-article';
 import { VillageArticle } from '@/features/news/village-news';
@@ -33,9 +34,7 @@ export default async function NewsArticlePage({ params }: PageProps<'/[locale]/t
     return (
       <div className="mx-auto max-w-prose-vn px-gutter py-12">
         <h1 className="text-h1">{t('title')}</h1>
-        <p role="status" className="mt-4 text-ash">
-          {t('unavailable')}
-        </p>
+        <DataUnavailable className="mt-4" message={t('unavailable')} />
       </div>
     );
   return <VillageArticle slug={slug} />;

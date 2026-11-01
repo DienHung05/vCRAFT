@@ -6,7 +6,11 @@ import { Badge, Button, buttonVariants, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { EmptyState } from '@/components/states/empty-state';
+import { ErrorState } from '@/components/states/error-state';
+import { ListSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
+import { notify } from '@/lib/notify';
 import { useAdminClient } from './admin-dashboard';
 
 const STATES = ['DRAFT', 'SCHEDULED', 'PUBLISHED'] as const;
@@ -65,6 +69,7 @@ export function AdminNewsList({ client: provided }: { client?: AdminClient }) {
       await client.deleteNews(deleting.id, deleting.version);
       setDeleting(null);
       await load();
+      notify.success(t('deletedToast'));
     } catch {
       setDeleteFailed(true);
     } finally {
@@ -110,16 +115,26 @@ export function AdminNewsList({ client: provided }: { client?: AdminClient }) {
         </select>
       </label>
       {failed ? (
-        <div role="alert" className="flex flex-col items-start gap-3">
-          <p>{t('failed')}</p>
-          <Button type="button" variant="secondary" onClick={() => void load()}>
-            {t('retry')}
-          </Button>
-        </div>
+        <ErrorState message={t('failed')} onRetry={() => void load()} />
       ) : rows === null ? (
-        <p role="status">{t('loading')}</p>
+        <ListSkeleton label={t('loading')} className="" rows={3} withHeader={false} />
       ) : rows.length === 0 ? (
-        <p className="text-ash">{t('empty')}</p>
+        <EmptyState
+          illustration="scroll"
+          title={t('empty')}
+          description={t('emptyHint')}
+          action={
+            state ? (
+              <Button type="button" variant="secondary" onClick={() => setState(undefined)}>
+                {t('allStates')}
+              </Button>
+            ) : (
+              <Link href="/admin/tin-tuc/moi" className={buttonVariants()}>
+                {t('new')}
+              </Link>
+            )
+          }
+        />
       ) : (
         <ul className="flex flex-col gap-3" data-testid="admin-news">
           {rows.map((row) => (

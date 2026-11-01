@@ -10,6 +10,7 @@ import { FormAlert, PasswordField } from '@/features/auth/fields';
 import { type ChangePasswordValues, changePasswordSchema } from '@/features/auth/schemas';
 import { useValidationMessage } from '@/features/auth/use-validation-message';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
+import { notify } from '@/lib/notify';
 
 type FailureKey = AuthErrorKey | 'currentWrong';
 
@@ -23,7 +24,6 @@ export function ChangePasswordForm({ email }: { email: string }) {
   const tAuth = useTranslations('auth');
   const message = useValidationMessage();
   const [error, setError] = useState<FailureKey | null>(null);
-  const [done, setDone] = useState(false);
   const {
     register,
     handleSubmit,
@@ -37,7 +37,6 @@ export function ChangePasswordForm({ email }: { email: string }) {
 
   const onSubmit = handleSubmit(async ({ current, password }) => {
     setError(null);
-    setDone(false);
     const supabase = browserSupabase();
     if (!supabase) return setError('unconfigured');
     try {
@@ -51,7 +50,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
       const others = await supabase.auth.signOut({ scope: 'others' });
       if (others.error) return setError(authErrorKey(others.error));
       reset();
-      setDone(true);
+      notify.success(t('success'));
     } catch (failure) {
       setError(authErrorKey(failure));
     }
@@ -64,7 +63,6 @@ export function ChangePasswordForm({ email }: { email: string }) {
           {error === 'currentWrong' ? t('currentWrong') : tAuth(`errors.${error}`)}
         </FormAlert>
       ) : null}
-      {done ? <FormAlert tone="success">{t('success')}</FormAlert> : null}
       <PasswordField
         label={t('current')}
         autoComplete="current-password"

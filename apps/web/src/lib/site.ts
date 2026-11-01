@@ -28,3 +28,11 @@ export const TRACE_CODE_PATTERN = /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}$/;
 export function isTraceCode(code: string): boolean {
   return TRACE_CODE_PATTERN.test(code.toUpperCase());
 }
+
+/**
+ * Email that receives data-access and deletion requests (NFR-SEC-07), shown on the privacy page.
+ * `NEXT_PUBLIC_PRIVACY_EMAIL`; unset means the page names the Management Board's channel instead.
+ */
+export function privacyContactEmail(): string | null {
+  return process.env.NEXT_PUBLIC_PRIVACY_EMAIL?.trim() || null;
+}

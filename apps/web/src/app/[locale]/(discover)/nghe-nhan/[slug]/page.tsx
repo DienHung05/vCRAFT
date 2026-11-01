@@ -2,9 +2,11 @@ import { Badge, buttonVariants, Card, cn, SealMark, VaseFigure, WaveDivider } fr
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
+import { Breadcrumbs } from '@/components/breadcrumbs';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
+import { EmptyState } from '@/components/states/empty-state';
 import { fetchHousehold } from '@/features/catalog/exhibition-api';
 import { ProductCard } from '@/features/catalog/product-card';
 import {
@@ -40,9 +42,10 @@ export async function generateMetadata({
 export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-nhan/[slug]'>) {
   await resolveLocale(params);
   const { slug } = await params;
-  const [t, common, categories, ex, result] = await Promise.all([
+  const [t, common, nav, categories, ex, result] = await Promise.all([
     getTranslations('artisan'),
     getTranslations('common'),
+    getTranslations('nav'),
     getTranslations('catalog.categories'),
     getTranslations('exhibition'),
     fetchHousehold(slug),
@@ -78,13 +81,14 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
         />
         <div className="absolute inset-0 bg-linear-to-t from-ink/85 via-ink/40 to-ink/10" />
         <div className="absolute inset-x-0 bottom-0 mx-auto max-w-editorial px-gutter pb-12">
-          <nav aria-label={t('breadcrumb')} className="mb-6 text-small text-paper/75">
-            <Link href="/nghe-nhan" className="hover:text-paper">
-              {t('allArtisans')}
-            </Link>
-            <span aria-hidden="true"> / </span>
-            <span aria-current="page">{household.name}</span>
-          </nav>
+          <Breadcrumbs
+            className="mb-6 text-paper/75 [&_a:hover]:text-paper [&_span[aria-current]]:text-paper"
+            items={[
+              { label: common('home'), href: '/' },
+              { label: t('allArtisans'), href: '/nghe-nhan' },
+              { label: household.name },
+            ]}
+          />
           {household.generations && household.foundedYear ? (
             <p className="font-mono text-small tracking-[0.2em] text-paper/80 uppercase">
               {common('generation', { n: household.generations })} ·{' '}
@@ -273,7 +277,17 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
             ))}
           </ul>
         ) : (
-          <p className="mt-6 text-ash">{t('productsEmpty')}</p>
+          <EmptyState
+            className="mt-6"
+            illustration="vase"
+            headingLevel="h3"
+            title={t('productsEmpty')}
+            action={
+              <Link href="/san-pham" className={buttonVariants({ variant: 'secondary' })}>
+                {nav('products')}
+              </Link>
+            }
+          />
         )}
       </section>
 

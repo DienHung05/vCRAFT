@@ -136,6 +136,7 @@ describe('RfqForm', () => {
     type('Hạn chào giá', '2099-12-01');
     type('Ngày cần hàng', '2100-02-01');
     type('Nơi giao hàng', 'Hanoi');
+    fireEvent.click(screen.getByRole('checkbox', { name: /Chính sách quyền riêng tư/ }));
   };
 
   it('keeps an unfinished form in the browser and restores it', async () => {
@@ -163,6 +164,19 @@ describe('RfqForm', () => {
     fireEvent.change(screen.getByLabelText('Đơn vị'), { target: { value: 'set' } });
     await waitFor(() => expect(updateRequest).toHaveBeenCalled(), { timeout: 2000 });
     expect(updateRequest).toHaveBeenCalledWith(ID, 1, expect.objectContaining({ unit: 'set' }));
+  });
+
+  it('does not send, or save the address to the server, before the buyer consents', async () => {
+    const createRequest = vi.fn();
+    const submitRequest = vi.fn();
+    renderVi(<RfqForm client={client({ createRequest, submitRequest })} />);
+    await fill();
+    fireEvent.click(screen.getByRole('checkbox', { name: /Chính sách quyền riêng tư/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }));
+    expect(await screen.findByText(/Hãy đồng ý với chính sách quyền riêng tư/)).toBeTruthy();
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    expect(createRequest).not.toHaveBeenCalled();
+    expect(submitRequest).not.toHaveBeenCalled();
   });
 
   it('shows what is missing instead of sending an incomplete form', async () => {
@@ -289,7 +303,7 @@ describe('BuyerRfqDetail', () => {
           client={client({ getRequest: vi.fn().mockResolvedValue({ ...REQUEST, status }) })}
         />,
       );
-      await screen.findByText('Logo cups');
+      await screen.findByRole('heading', { name: 'Logo cups' });
       await waitFor(() => expect(screen.getByTestId('quotation-comparison')).toBeTruthy());
       expect(screen.queryByRole('button', { name: 'Hủy yêu cầu' }) !== null).toBe(can);
       expect(screen.queryByRole('button', { name: 'Chốt chào giá này' })).toBeNull();
@@ -316,7 +330,7 @@ describe('BuyerRfqDetail', () => {
       />,
     );
     await screen.findByText('Đang tiến hành', {}, { timeout: 1000 }).catch(() => undefined);
-    await screen.findByText('Logo cups');
+    await screen.findByRole('heading', { name: 'Logo cups' });
     expect(screen.queryByRole('button', { name: 'Xác nhận đã nhận hàng' })).toBeNull();
     unmount();
     renderVi(

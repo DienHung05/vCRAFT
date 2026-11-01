@@ -6,6 +6,9 @@ import { RFQ_STATUSES, type RfqStatus } from '@vcraft/domain';
 import { Badge, Button, buttonVariants, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
+import { EmptyState } from '@/components/states/empty-state';
+import { ErrorState } from '@/components/states/error-state';
+import { ListSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 
@@ -13,7 +16,7 @@ import { useQuotationClient } from '@/lib/api/use-quotation-client';
 export function BuyerRfqList({ client: provided }: { client?: QuotationClient }) {
   const t = useTranslations('rfq.list');
   const { client, loading } = useQuotationClient(provided);
-  if (loading) return <p className="px-gutter pt-8">{t('loading')}</p>;
+  if (loading) return <ListSkeleton label={t('loading')} />;
   if (!client) return <p className="px-gutter pt-8">{t('signIn')}</p>;
   return <List client={client} />;
 }
@@ -98,16 +101,26 @@ function List({ client }: { client: QuotationClient }) {
       {state === 'signed-out' ? (
         <p>{t('signIn')}</p>
       ) : state === 'failed' ? (
-        <div role="alert" className="flex flex-col items-start gap-3">
-          <p>{t('failed')}</p>
-          <Button type="button" variant="secondary" onClick={() => void load()}>
-            {t('retry')}
-          </Button>
-        </div>
+        <ErrorState message={t('failed')} onRetry={() => void load()} />
       ) : rows === null ? (
-        <p role="status">{t('loading')}</p>
+        <ListSkeleton label={t('loading')} className="" rows={3} withHeader={false} />
       ) : rows.length === 0 ? (
-        <p className="text-ash">{page('empty')}</p>
+        <EmptyState
+          illustration="scroll"
+          title={status ? t('emptyFiltered') : t('emptyTitle')}
+          description={status ? undefined : page('empty')}
+          action={
+            status ? (
+              <Button type="button" variant="secondary" onClick={() => setStatus(undefined)}>
+                {t('clearFilter')}
+              </Button>
+            ) : (
+              <Link href="/yeu-cau-bao-gia/moi" className={buttonVariants()}>
+                {t('new')}
+              </Link>
+            )
+          }
+        />
       ) : (
         <ul className="flex flex-col gap-4" data-testid="buyer-rfqs">
           {rows.map((row) => (

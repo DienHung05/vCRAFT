@@ -2,12 +2,18 @@
 
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
 import type { AllocationDto, BuyerQuotationDto, RfqResponse } from '@vcraft/contracts';
-import { Badge, Button, Card, Crackle, Stepper } from '@vcraft/ui';
+import { Badge, Button, buttonVariants, Card, Crackle, Stepper } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
+import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { EmptyState } from '@/components/states/empty-state';
+import { ErrorState } from '@/components/states/error-state';
+import { ListSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
+import { notify } from '@/lib/notify';
+import { useMoney } from '@/lib/use-money';
 import { DeadlineCountdown } from './deadline-countdown';
 import { buyerEvents, rfqStepperModel } from './rfq-flow';
 import { RfqForm } from './rfq-form';
@@ -41,22 +47,35 @@ export function BuyerRfqDetail({
 }) {
   const t = useTranslations('rfq.live');
   const { client, loading } = useQuotationClient(provided);
-  if (loading) return <p className="px-gutter pt-8">{t('loading')}</p>;
+  if (loading) return <DetailLoading label={t('loading')} />;
   if (!client) return <p className="px-gutter pt-8">{t('signIn')}</p>;
   return <Detail key={rfqId} rfqId={rfqId} client={client} />;
+}
+
+function DetailLoading({ label }: { label: string }) {
+  return (
+    <article className="mx-auto flex max-w-editorial flex-col gap-8 px-gutter pt-8 pb-section">
+      <ListSkeleton label={label} className="" rows={2} withHeader />
+    </article>
+  );
 }
 
 function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
   const live = useTranslations('rfq.live');
   const t = useTranslations('rfq.detail');
   const rfq = useTranslations('rfq');
+  const common = useTranslations('common');
   const bids = useTranslations('rfq.bids');
   const order = useTranslations('order');
   const categories = useTranslations('catalog.categories');
   const format = useFormatter();
+  const money = useMoney();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [dialog, setDialog] = useState<
-    { kind: 'accept'; quotation: BuyerQuotationDto } | { kind: 'cancel' } | null
+    | { kind: 'accept'; quotation: BuyerQuotationDto }
+    | { kind: 'cancel' }
+    | { kind: 'receive' }
+    | null
   >(null);
   const [reason, setReason] = useState('');
   const [reasonMissing, setReasonMissing] = useState(false);
@@ -119,20 +138,24 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
     };
   }, [isDraft, load]);
 
-  const shell = (children: React.ReactNode) => (
+  const shell = (children: React.ReactNode, title?: string) => (
     <article className="mx-auto flex max-w-editorial flex-col gap-8 px-gutter pt-8 pb-section">
-      <nav aria-label={rfq('breadcrumb')} className="text-small text-ash">
-        <Link href="/yeu-cau-bao-gia" className="hover:text-ink">
-          {rfq('allRequests')}
-        </Link>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: common('home'), href: '/' },
+          { label: rfq('allRequests'), href: '/yeu-cau-bao-gia' },
+          { label: title ?? rfqId.slice(0, 8) },
+        ]}
+      />
       {children}
     </article>
   );
 
-  if (state.kind === 'loading') return shell(<p role="status">{live('loading')}</p>);
+  if (state.kind === 'loading')
+    return shell(<ListSkeleton label={live('loading')} className="" rows={2} withHeader />);
   if (state.kind === 'unauthenticated') return shell(<p>{live('signIn')}</p>);
-  if (state.kind === 'error') return shell(<p role="alert">{live('loadFailed')}</p>);
+  if (state.kind === 'error')
+    return shell(<ErrorState message={live('loadFailed')} onRetry={() => void load()} />);
 
   const { request, quotations, allocations, withdrawnNotice } = state;
   const events = buyerEvents(request.status);
@@ -143,7 +166,6 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
     allocations.length > 0 &&
     allocations.every((allocation) => allocation.status === 'DONE');
   const model = rfqStepperModel(request.status, quotations.length > 0);
-  const money = (amount: number) => format.number(amount, 'vnd');
   const day = (iso: string) => format.dateTime(new Date(iso), 'long');
   const open = quotations.filter((quotation) => quotation.status === 'SUBMITTED');
   const lowest = open.length > 1 ? Math.min(...open.map((quotation) => quotation.totalVnd)) : null;
@@ -155,13 +177,14 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
     setActionError(null);
   };
 
-  const run = async (action: () => Promise<unknown>, failure: string) => {
+  const run = async (action: () => Promise<unknown>, failure: string, success: string) => {
     setBusy(true);
     setActionError(null);
     try {
       await action();
       closeDialog();
       await load();
+      notify.success(success);
     } catch (error) {
       const stale = error instanceof QuotationApiError && error.code === 'STALE_VERSION';
       setActionError(stale ? t('stale') : failure);
@@ -177,7 +200,11 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
       setReasonMissing(true);
       return;
     }
-    void run(() => client.cancelOrder(rfqId, request.version, { reason: text }), t('cancelFailed'));
+    void run(
+      () => client.cancelOrder(rfqId, request.version, { reason: text }),
+      t('cancelFailed'),
+      t('cancelledToast'),
+    );
   };
 
   return shell(
@@ -256,7 +283,22 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
 
           <section aria-labelledby="quotations-title" className="flex flex-col gap-4">
             <h2 id="quotations-title">{bids('title')}</h2>
-            {quotations.length === 0 ? <p className="text-ash">{bids('empty')}</p> : null}
+            {quotations.length === 0 ? (
+              <EmptyState
+                illustration="scroll"
+                headingLevel="h3"
+                title={bids('emptyTitle')}
+                description={bids('empty')}
+                action={
+                  <Link
+                    href="/yeu-cau-bao-gia"
+                    className={buttonVariants({ variant: 'secondary' })}
+                  >
+                    {rfq('allRequests')}
+                  </Link>
+                }
+              />
+            ) : null}
             <ul className="flex flex-col gap-4" data-testid="quotation-comparison">
               {quotations.map((quotation) => (
                 <li key={quotation.id}>
@@ -341,12 +383,7 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
       {canReceive || canCancel ? (
         <div className="flex flex-wrap gap-3">
           {canReceive ? (
-            <Button
-              disabled={busy}
-              onClick={() =>
-                void run(() => client.confirmReceipt(rfqId, request.version), order('stale'))
-              }
-            >
+            <Button disabled={busy} onClick={() => setDialog({ kind: 'receive' })}>
               {order('receive')}
             </Button>
           ) : null}
@@ -374,6 +411,7 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
                   quotationId: dialog.quotation.id,
                 }),
               t('acceptFailed'),
+              t('acceptedToast'),
             );
         }}
       >
@@ -386,6 +424,29 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
             })}
           </p>
         ) : null}
+        {actionError ? (
+          <p role="alert" className="text-small text-seal">
+            {actionError}
+          </p>
+        ) : null}
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={dialog?.kind === 'receive'}
+        title={t('receiveTitle')}
+        confirmLabel={order('receive')}
+        cancelLabel={rfq('dialog.back')}
+        confirmDisabled={busy}
+        onClose={closeDialog}
+        onConfirm={() =>
+          void run(
+            () => client.confirmReceipt(rfqId, request.version),
+            order('stale'),
+            t('receivedToast'),
+          )
+        }
+      >
+        <p className="text-ash">{t('receiveText')}</p>
         {actionError ? (
           <p role="alert" className="text-small text-seal">
             {actionError}
@@ -425,6 +486,7 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
         ) : null}
       </ConfirmDialog>
     </>,
+    request.title,
   );
 }
 

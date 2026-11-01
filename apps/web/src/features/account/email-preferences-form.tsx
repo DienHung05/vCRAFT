@@ -5,11 +5,14 @@ import type { NotificationPreferenceDto } from '@vcraft/contracts';
 import { Button } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { type FormEvent, useEffect, useState } from 'react';
+import { ErrorState } from '@/components/states/error-state';
+import { FormSkeleton } from '@/components/states/skeletons';
 import { FormAlert } from '@/features/auth/fields';
 import { browserAccountClient } from '@/lib/auth/supabase-browser';
+import { notify } from '@/lib/notify';
 import { EMAIL_TOPICS, topicOf } from './email-topics';
 
-type Status = 'idle' | 'saving' | 'saved' | 'failed';
+type Status = 'idle' | 'saving' | 'failed';
 
 /**
  * Chọn loại thông báo nào cũng gửi email (GH#37, FR-NOTI-02). Danh sách do API trả theo vai trò của
@@ -21,7 +24,9 @@ export function EmailPreferencesForm({ client: provided }: { client?: AccountCli
   const [prefs, setPrefs] = useState<NotificationPreferenceDto[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
+  const [attempt, setAttempt] = useState(0);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `attempt` re-runs the fetch when the user retries.
   useEffect(() => {
     let active = true;
     (provided ?? browserAccountClient())
@@ -31,16 +36,20 @@ export function EmailPreferencesForm({ client: provided }: { client?: AccountCli
     return () => {
       active = false;
     };
-  }, [provided]);
+  }, [provided, attempt]);
 
-  if (loadFailed) return <FormAlert tone="error">{t('loadFailed')}</FormAlert>;
-  if (!prefs) {
+  if (loadFailed) {
     return (
-      <p role="status" className="text-ash text-small">
-        {t('loading')}
-      </p>
+      <ErrorState
+        message={t('loadFailed')}
+        onRetry={() => {
+          setLoadFailed(false);
+          setAttempt((count) => count + 1);
+        }}
+      />
     );
   }
+  if (!prefs) return <FormSkeleton label={t('loading')} className="" fields={3} />;
 
   const toggle = (type: NotificationPreferenceDto['type'], email: boolean) => {
     setStatus('idle');
@@ -56,7 +65,8 @@ export function EmailPreferencesForm({ client: provided }: { client?: AccountCli
         preferences: prefs,
       });
       setPrefs(saved.data);
-      setStatus('saved');
+      setStatus('idle');
+      notify.success(t('saved'));
     } catch {
       setStatus('failed');
     }
@@ -84,7 +94,6 @@ export function EmailPreferencesForm({ client: provided }: { client?: AccountCli
           </fieldset>
         );
       })}
-      {status === 'saved' ? <FormAlert tone="success">{t('saved')}</FormAlert> : null}
       {status === 'failed' ? <FormAlert tone="error">{t('saveFailed')}</FormAlert> : null}
       <div>
         <Button type="submit" disabled={status === 'saving'}>

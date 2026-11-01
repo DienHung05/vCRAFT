@@ -1,8 +1,10 @@
+import { buttonVariants } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCreditsNote } from '@/components/photo-credits-note';
+import { EmptyState } from '@/components/states/empty-state';
 import { fetchHouseholds } from '@/features/catalog/exhibition-api';
 import { photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
@@ -22,9 +24,10 @@ export async function generateMetadata({
 /** Danh sách hộ nghệ nhân (FR-CAT-06): mỗi hộ đã duyệt một thẻ, lấy từ `GET /households`. */
 export default async function ArtisansIndexPage({ params }: PageProps<'/[locale]/nghe-nhan'>) {
   await resolveLocale(params);
-  const [t, artisan, result] = await Promise.all([
+  const [t, artisan, nav, result] = await Promise.all([
     getTranslations('indexPages.artisans'),
     getTranslations('artisan'),
+    getTranslations('nav'),
     fetchHouseholds(),
   ]);
   if (result.status !== 'ok') return <DataUnavailable />;
@@ -67,7 +70,17 @@ export default async function ArtisansIndexPage({ params }: PageProps<'/[locale]
           ))}
         </ul>
       ) : (
-        <p className="mt-10 text-ash">{t('empty')}</p>
+        <EmptyState
+          className="mt-10"
+          illustration="vase"
+          title={t('empty')}
+          description={t('emptyHint')}
+          action={
+            <Link href="/san-pham" className={buttonVariants({ variant: 'secondary' })}>
+              {nav('products')}
+            </Link>
+          }
+        />
       )}
       <PhotoCreditsNote />
     </div>

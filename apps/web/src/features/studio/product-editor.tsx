@@ -5,8 +5,13 @@ import type { HouseholdDto, ProductDto, UpdateProductRequest } from '@vcraft/con
 import { Badge, Button, buttonVariants, Card, TraceSealFrame } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { Breadcrumbs } from '@/components/breadcrumbs';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { ConsentCheckbox } from '@/components/consent-checkbox';
+import { EmptyState } from '@/components/states/empty-state';
 import { TraceQr } from '@/features/traceability/trace-qr';
 import { Link } from '@/i18n/navigation';
+import { notify } from '@/lib/notify';
 import { traceShortUrl } from '@/lib/site';
 import { HouseholdGate } from './household-gate';
 import { type ProductDraft, ProductFields, toProductDraft } from './product-fields';
@@ -38,13 +43,14 @@ function DetailsSection({ product, client, reload }: SectionProps) {
   const t = useTranslations('studio.products');
   const common = useTranslations('studio');
   const [draft, setDraft] = useState(() => toProductDraft(product));
-  const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'stale' | 'failed'>('idle');
+  const [state, setState] = useState<'idle' | 'saving' | 'stale' | 'failed'>('idle');
   const save = async () => {
     setState('saving');
     try {
       await client.updateProduct(product.id, product.version, toProductUpdate(draft));
       await reload();
-      setState('saved');
+      setState('idle');
+      notify.success(common('saved'));
     } catch (error) {
       const stale = error instanceof ApiError && error.status === 409;
       if (stale) await reload();
@@ -63,11 +69,6 @@ function DetailsSection({ product, client, reload }: SectionProps) {
         <Button type="button" disabled={state === 'saving'} onClick={() => void save()}>
           {common('save')}
         </Button>
-        {state === 'saved' ? (
-          <p role="status" className="text-small text-glaze">
-            {common('saved')}
-          </p>
-        ) : null}
         {state === 'stale' || state === 'failed' ? (
           <p role="alert" className="text-small text-seal">
             {common(state === 'stale' ? 'stale' : 'saveFailed')}
@@ -86,7 +87,9 @@ function MakersSection({ product, household, client, reload }: SectionProps) {
   );
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
-  const [state, setState] = useState<'idle' | 'saved' | 'failed'>('idle');
+  // Adding a person publishes their name on the household page, so the household confirms they agree.
+  const [artisanConsent, setArtisanConsent] = useState(false);
+  const [state, setState] = useState<'idle' | 'failed'>('idle');
   const save = async () => {
     try {
       await client.setMakers(product.id, {
@@ -96,7 +99,8 @@ function MakersSection({ product, household, client, reload }: SectionProps) {
         }),
       });
       await reload();
-      setState('saved');
+      setState('idle');
+      notify.success(common('saved'));
     } catch {
       setState('failed');
     }
@@ -106,7 +110,10 @@ function MakersSection({ product, household, client, reload }: SectionProps) {
       await client.addArtisan({ name, ...(role.trim() ? { craftRole: role.trim() } : {}) });
       setName('');
       setRole('');
+      setArtisanConsent(false);
       await reload();
+      setState('idle');
+      notify.success(t('artisanAdded'));
     } catch {
       setState('failed');
     }
@@ -141,11 +148,6 @@ function MakersSection({ product, household, client, reload }: SectionProps) {
         >
           {common('save')}
         </Button>
-        {state === 'saved' ? (
-          <p role="status" className="text-small text-glaze">
-            {common('saved')}
-          </p>
-        ) : null}
         {state === 'failed' ? (
           <p role="alert" className="text-small text-seal">
             {common('saveFailed')}
@@ -172,26 +174,35 @@ function MakersSection({ product, household, client, reload }: SectionProps) {
         <Button
           type="button"
           variant="secondary"
-          disabled={name.trim().length < 2}
+          disabled={name.trim().length < 2 || !artisanConsent}
           onClick={() => void addArtisan()}
         >
           {t('addArtisan')}
         </Button>
       </div>
+      <ConsentCheckbox
+        id="artisan-consent"
+        purpose="artisan"
+        checked={artisanConsent}
+        onChange={(event) => setArtisanConsent(event.target.checked)}
+      />
     </Card>
   );
 }
 
 function PublishSection({ product, household, client, reload }: SectionProps) {
   const t = useTranslations('studio.products');
+  const common = useTranslations('studio');
   const [reason, setReason] = useState('');
   const [failed, setFailed] = useState(false);
-  const run = async (action: () => Promise<unknown>) => {
+  const [confirm, setConfirm] = useState<'publish' | 'withdraw' | null>(null);
+  const run = async (action: () => Promise<unknown>, success: string) => {
     setFailed(false);
     try {
       await action();
       await reload();
       setReason('');
+      notify.success(success);
     } catch {
       setFailed(true);
     }
@@ -219,24 +230,14 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
             type="button"
             variant="secondary"
             disabled={reason.trim().length < 3}
-            onClick={() =>
-              void run(() => client.withdrawProduct(product.id, product.version, reason.trim()))
-            }
+            onClick={() => setConfirm('withdraw')}
           >
             {t('withdraw')}
           </Button>
         </div>
       ) : (
         <div>
-          <Button
-            type="button"
-            disabled={!approved}
-            onClick={() =>
-              void run(() =>
-                client.publishProduct(product.id, product.version, product.status === 'WITHDRAWN'),
-              )
-            }
-          >
+          <Button type="button" disabled={!approved} onClick={() => setConfirm('publish')}>
             {product.status === 'WITHDRAWN' ? t('republish') : t('publish')}
           </Button>
           {!approved ? <p className="mt-2 text-small text-ash">{t('notApproved')}</p> : null}
@@ -247,6 +248,40 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
           {t('publishFailed')}
         </p>
       ) : null}
+      <ConfirmDialog
+        open={confirm === 'publish'}
+        title={t('publishTitle')}
+        confirmLabel={product.status === 'WITHDRAWN' ? t('republish') : t('publish')}
+        cancelLabel={common('cancel')}
+        onClose={() => setConfirm(null)}
+        onConfirm={() => {
+          setConfirm(null);
+          void run(
+            () =>
+              client.publishProduct(product.id, product.version, product.status === 'WITHDRAWN'),
+            t('publishedToast'),
+          );
+        }}
+      >
+        <p className="text-ash">{t('publishText')}</p>
+      </ConfirmDialog>
+      <ConfirmDialog
+        open={confirm === 'withdraw'}
+        tone="seal"
+        title={t('withdrawTitle')}
+        confirmLabel={t('withdraw')}
+        cancelLabel={common('cancel')}
+        onClose={() => setConfirm(null)}
+        onConfirm={() => {
+          setConfirm(null);
+          void run(
+            () => client.withdrawProduct(product.id, product.version, reason.trim()),
+            t('withdrawnToast'),
+          );
+        }}
+      >
+        <p className="text-ash">{t('withdrawText', { reason: reason.trim() })}</p>
+      </ConfirmDialog>
     </Card>
   );
 }
@@ -296,15 +331,34 @@ function QrSection({ product }: { product: ProductDto }) {
 /** Màn sửa một sản phẩm: thông tin, ảnh, người làm, xuất bản, mã QR và lối vào nhật ký. */
 export function ProductEditor({ productId, client }: { productId: string; client?: StudioClient }) {
   const t = useTranslations('studio.products');
+  const nav = useTranslations('studio.nav');
   return (
     <HouseholdGate client={client}>
       {({ household, client: live, reload }) => {
         const product = household.products.find((p) => p.id === productId);
         if (!product)
-          return <p className="mx-auto max-w-editorial px-gutter py-12">{t('notFound')}</p>;
+          return (
+            <EmptyState
+              className="py-section"
+              illustration="vase"
+              title={t('notFound')}
+              action={
+                <Link href="/studio/san-pham" className={buttonVariants({ variant: 'secondary' })}>
+                  {t('title')}
+                </Link>
+              }
+            />
+          );
         const props = { product, household, client: live, reload };
         return (
           <div className="mx-auto flex max-w-editorial flex-col gap-6 px-gutter py-8 pb-24 md:pb-12">
+            <Breadcrumbs
+              items={[
+                { label: nav('home'), href: '/studio' },
+                { label: t('title'), href: '/studio/san-pham' },
+                { label: product.name },
+              ]}
+            />
             <header className="flex flex-wrap items-center justify-between gap-4">
               <h1 className="text-h1">{product.name}</h1>
               <Link

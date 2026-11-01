@@ -26,6 +26,7 @@ vi.mock('@/i18n/navigation', () => ({
       {children}
     </a>
   ),
+  useRouter: () => ({ refresh: vi.fn() }),
 }));
 
 const page: NewsListDto = {
@@ -125,9 +126,10 @@ describe('NewsView', () => {
     expect(screen.queryByRole('link', { name: /Xem thêm tin/ })).toBeNull();
   });
 
-  it('shows a status message instead of failing when the API is unavailable', () => {
+  it('shows an error with a retry button instead of failing when the API is unavailable', () => {
     renderVi(<NewsView result={{ status: 'unavailable' }} />);
-    expect(screen.getByRole('status').textContent).toMatch(/Chưa tải được tin tức/);
+    expect(screen.getByRole('alert').textContent).toMatch(/Chưa tải được tin tức/);
+    expect(screen.getByRole('button', { name: 'Thử lại' })).toBeTruthy();
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(screen.queryByRole('list')).toBeNull();
   });

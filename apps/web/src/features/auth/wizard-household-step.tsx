@@ -9,6 +9,7 @@ import { useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { getPathname } from '@/i18n/navigation';
 import { browserAccountClient } from '@/lib/auth/supabase-browser';
+import { notify } from '@/lib/notify';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
 import { FormAlert, TextAreaField, TextField } from './fields';
 import { type HouseholdStepValues, householdStepSchema } from './schemas';
@@ -59,6 +60,7 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
         history: values.history,
         ...(values.village ? { village: values.village } : {}),
       });
+      notify.success(t('wizard.household.savedToast'));
       onDone();
     } catch (failure) {
       if (failure instanceof AccountApiError && failure.fieldErrors.length > 0) {

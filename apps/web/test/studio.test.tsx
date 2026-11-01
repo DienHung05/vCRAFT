@@ -8,6 +8,10 @@ import { toWorkshopRequest } from '@/features/studio/workshop-editor';
 import { renderVi } from './render';
 
 vi.mock('next/dynamic', () => ({ default: () => () => null }));
+const notifySuccess = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/notify', () => ({
+  notify: { success: notifySuccess, error: vi.fn(), info: vi.fn() },
+}));
 vi.mock('@/i18n/navigation', () => ({
   Link: ({ children }: { children: React.ReactNode }) => <a href="/x">{children}</a>,
   usePathname: () => '/studio',
@@ -108,7 +112,7 @@ describe('ProfileEditor', () => {
         }),
       ),
     );
-    expect(await screen.findByText('Đã lưu.')).toBeTruthy();
+    await waitFor(() => expect(notifySuccess).toHaveBeenCalledWith('Đã lưu.'));
   });
 
   it('bản cũ (409) tải lại hồ sơ và báo cho người dùng', async () => {

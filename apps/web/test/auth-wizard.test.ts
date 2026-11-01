@@ -70,18 +70,25 @@ describe('luật kiểm tra form tài khoản (khóa i18n, không phải câu ch
   });
 
   it('đăng ký: tối thiểu 8 ký tự và có cả chữ lẫn số', () => {
-    expect(messageOf(registerSchema.safeParse({ email: 'a@b.vn', password: 'abc1' }))).toContain(
+    const base = { email: 'a@b.vn', consent: true };
+    expect(messageOf(registerSchema.safeParse({ ...base, password: 'abc1' }))).toContain(
       'passwordShort',
     );
-    expect(
-      messageOf(registerSchema.safeParse({ email: 'a@b.vn', password: 'chiToanChu' })),
-    ).toContain('passwordWeak');
-    expect(
-      messageOf(registerSchema.safeParse({ email: 'a@b.vn', password: '1234567890' })),
-    ).toContain('passwordWeak');
-    expect(registerSchema.safeParse({ email: 'a@b.vn', password: 'matkhau2026' }).success).toBe(
-      true,
+    expect(messageOf(registerSchema.safeParse({ ...base, password: 'chiToanChu' }))).toContain(
+      'passwordWeak',
     );
+    expect(messageOf(registerSchema.safeParse({ ...base, password: '1234567890' }))).toContain(
+      'passwordWeak',
+    );
+    expect(registerSchema.safeParse({ ...base, password: 'matkhau2026' }).success).toBe(true);
+  });
+
+  it('đăng ký: bắt buộc đồng ý chính sách quyền riêng tư', () => {
+    const values = { email: 'a@b.vn', password: 'matkhau2026' };
+    expect(messageOf(registerSchema.safeParse({ ...values, consent: false }))).toContain(
+      'consentRequired',
+    );
+    expect(registerSchema.safeParse({ ...values, consent: true }).success).toBe(true);
   });
 
   it('đặt mật khẩu: hai ô phải khớp', () => {

@@ -1,6 +1,7 @@
 import { Badge, VaseFigure } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { ImageSlot } from '@/components/image-slot';
+import { UsdReference } from '@/components/usd-reference';
 import { Link } from '@/i18n/navigation';
 import { type ProductCardView, slotPhoto } from './view-models';
 
@@ -44,8 +45,9 @@ export function ProductCard({
         <Heading className="font-sans text-body font-medium text-ink transition-colors group-hover:text-clay">
           {product.name}
         </Heading>
-        <span className="shrink-0 text-small text-ash">
+        <span className="shrink-0 text-right text-small text-ash">
           {product.price > 0 ? format.number(product.price, 'vnd') : t('priceOnRequest')}
+          <UsdReference vnd={product.price} className="block text-[0.75rem]" />
         </span>
       </div>
     </Link>

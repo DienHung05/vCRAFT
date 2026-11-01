@@ -7,9 +7,14 @@ import { Button } from '@vcraft/ui';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
+import { Breadcrumbs } from '@/components/breadcrumbs';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { ErrorState } from '@/components/states/error-state';
+import { FormSkeleton } from '@/components/states/skeletons';
 import { prepareImage, sendMedia } from '@/features/media/prepare-image';
 import { Link, useRouter } from '@/i18n/navigation';
 import { browserAccessToken } from '@/lib/api/live-session';
+import { notify } from '@/lib/notify';
 import { useAdminClient } from './admin-dashboard';
 
 // The editor is heavy and only works in the browser.
@@ -120,6 +125,7 @@ export function AdminNewsForm({
 }) {
   const t = useTranslations('admin.news');
   const form = useTranslations('admin.news.form');
+  const nav = useTranslations('admin.nav');
   const categories = useTranslations('indexPages.news.categories');
   const router = useRouter();
   const { client, loading } = useAdminClient(provided);
@@ -130,10 +136,13 @@ export function AdminNewsForm({
   const [removeCover, setRemoveCover] = useState(false);
   const [showProblems, setShowProblems] = useState(false);
   const [saving, setSaving] = useState<'idle' | 'cover' | 'saving'>('idle');
+  const [reloads, setReloads] = useState(0);
+  const [confirmPublish, setConfirmPublish] = useState(false);
   const [saveError, setSaveError] = useState<
     'failed' | 'stale' | 'slugTaken' | 'coverFailed' | null
   >(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `reloads` re-runs the fetch after a failed load is retried.
   useEffect(() => {
     if (!newsId || !client) return;
     client
@@ -144,11 +153,23 @@ export function AdminNewsForm({
         setState('ready');
       })
       .catch(() => setState('failed'));
-  }, [newsId, client]);
+  }, [newsId, client, reloads]);
 
   if (!loading && !client) return <p>{t('signIn')}</p>;
-  if (state === 'failed') return <p role="alert">{t('failed')}</p>;
-  if (state === 'loading' || !client) return <p role="status">{t('loading')}</p>;
+  if (state === 'failed') {
+    return (
+      <ErrorState
+        message={t('failed')}
+        onRetry={() => {
+          setState('loading');
+          setReloads((count) => count + 1);
+        }}
+      />
+    );
+  }
+  if (state === 'loading' || !client) {
+    return <FormSkeleton label={t('loading')} className="mx-auto max-w-3xl" />;
+  }
 
   const set = <K extends keyof Values>(key: K, value: Values[K]) =>
     setValues((current) => ({ ...current, [key]: value }));
@@ -197,6 +218,15 @@ export function AdminNewsForm({
     try {
       if (existing) await client.updateNews(existing.id, existing.version, body);
       else await client.createNews(body);
+      notify.success(
+        form(
+          values.publication === 'draft'
+            ? 'draftSavedToast'
+            : values.publication === 'schedule'
+              ? 'scheduledToast'
+              : 'publishedToast',
+        ),
+      );
       router.push('/admin/tin-tuc');
     } catch (error) {
       const code = error instanceof ApiError ? error.code : null;
@@ -213,14 +243,25 @@ export function AdminNewsForm({
       className="mx-auto flex max-w-3xl flex-col gap-5"
       onSubmit={(event) => {
         event.preventDefault();
+        // Publishing now is public at once (and notifies every household when marked important).
+        if (
+          values.publication === 'now' &&
+          existing?.state !== 'PUBLISHED' &&
+          Object.keys(problems).length === 0
+        ) {
+          setConfirmPublish(true);
+          return;
+        }
         void save();
       }}
     >
-      <nav className="text-small text-ash">
-        <Link href="/admin/tin-tuc" className="hover:text-clay">
-          {t('back')}
-        </Link>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: nav('overview'), href: '/admin' },
+          { label: t('title'), href: '/admin/tin-tuc' },
+          { label: t(existing ? 'editTitle' : 'newTitle') },
+        ]}
+      />
       <h1 className="text-h2">{t(existing ? 'editTitle' : 'newTitle')}</h1>
       <label className="flex flex-col gap-1">
         {form('title')}
@@ -381,6 +422,21 @@ export function AdminNewsForm({
             ? form('saving')
             : form('save')}
       </Button>
+      <ConfirmDialog
+        open={confirmPublish}
+        title={form('publishTitle')}
+        confirmLabel={form('now')}
+        cancelLabel={form('back')}
+        onClose={() => setConfirmPublish(false)}
+        onConfirm={() => {
+          setConfirmPublish(false);
+          void save();
+        }}
+      >
+        <p className="text-ash">
+          {form(values.important ? 'publishImportantText' : 'publishText')}
+        </p>
+      </ConfirmDialog>
     </form>
   );
 }

@@ -4,7 +4,13 @@ import type { CoordinationDto, RfqResponse } from '@vcraft/contracts';
 import { describe, expect, it, vi } from 'vitest';
 import { LiveCoordination } from '@/features/admin/live-coordination';
 import { LiveContributionWorkspace } from '@/features/rfq/live-contribution-workspace';
+import { confirmDialog } from './confirm';
 import { renderVi } from './render';
+
+vi.mock('@/i18n/navigation', () => ({
+  Link: ({ children }: { children: React.ReactNode }) => <a href="/x">{children}</a>,
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
 
 const id = '123e4567-e89b-12d3-a456-426614174000';
 const request: RfqResponse = {
@@ -73,6 +79,7 @@ describe('live quotation workspaces', () => {
       target: { value: '5' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Gửi chào giá liên kết' }));
+    confirmDialog('Gửi chào giá liên kết');
     await waitFor(() =>
       expect(client.submitQuotation).toHaveBeenCalledWith(id, 4, {
         parts: [

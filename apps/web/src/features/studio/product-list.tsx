@@ -2,9 +2,11 @@
 
 import type { StudioClient } from '@vcraft/api-client';
 import { PRODUCT_STATUSES, type ProductStatus } from '@vcraft/domain';
-import { Badge, buttonVariants, cn } from '@vcraft/ui';
+import { Badge, Button, buttonVariants, cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { EmptyState } from '@/components/states/empty-state';
+import { UsdReference } from '@/components/usd-reference';
 import { Link } from '@/i18n/navigation';
 import { HouseholdGate } from './household-gate';
 
@@ -47,7 +49,22 @@ export function ProductList({ client }: { client?: StudioClient }) {
               ))}
             </fieldset>
             {products.length === 0 ? (
-              <p className="text-ash">{t('empty')}</p>
+              <EmptyState
+                illustration="vase"
+                title={t('empty')}
+                description={filter === 'ALL' ? t('emptyHint') : undefined}
+                action={
+                  filter === 'ALL' ? (
+                    <Link href="/studio/san-pham/moi" className={buttonVariants({})}>
+                      {t('add')}
+                    </Link>
+                  ) : (
+                    <Button type="button" variant="secondary" onClick={() => setFilter('ALL')}>
+                      {t('all')}
+                    </Button>
+                  )
+                }
+              />
             ) : (
               <ul className="flex flex-col" data-testid="studio-products">
                 {products.map((product) => (
@@ -61,6 +78,7 @@ export function ProductList({ client }: { client?: StudioClient }) {
                         {product.priceVnd > 0
                           ? format.number(product.priceVnd, 'vnd')
                           : common('priceOnRequest')}
+                        <UsdReference vnd={product.priceVnd} />
                         <Badge tone={product.status === 'PUBLISHED' ? 'lacquer' : 'outline'}>
                           {t(`statuses.${product.status}`)}
                         </Badge>

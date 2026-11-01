@@ -12,6 +12,7 @@ import {
 import { ProductEditor, toProductUpdate } from '@/features/studio/product-editor';
 import { EMPTY_PRODUCT, parseNewProduct } from '@/features/studio/product-fields';
 import { ProductList } from '@/features/studio/product-list';
+import { confirmDialog } from './confirm';
 import { renderVi } from './render';
 
 const push = vi.fn();
@@ -136,11 +137,14 @@ describe('ProductEditor', () => {
     const api = client();
     const first = renderVi(<ProductEditor productId={`${ID}1`} client={api} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Xuất bản' }));
+    expect(api.publishProduct).not.toHaveBeenCalled();
+    confirmDialog('Xuất bản');
     await waitFor(() => expect(api.publishProduct).toHaveBeenCalledWith(`${ID}1`, 2, false));
     first.unmount();
 
     renderVi(<ProductEditor productId={`${ID}3`} client={api} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Xuất bản lại' }));
+    confirmDialog('Xuất bản lại');
     await waitFor(() => expect(api.publishProduct).toHaveBeenCalledWith(`${ID}3`, 2, true));
   });
 
@@ -151,6 +155,7 @@ describe('ProductEditor', () => {
     expect((withdraw as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(screen.getByLabelText('Lý do rút'), { target: { value: 'Hết hàng' } });
     fireEvent.click(withdraw);
+    confirmDialog('Rút khỏi trưng bày');
     await waitFor(() => expect(api.withdrawProduct).toHaveBeenCalledWith(`${ID}2`, 2, 'Hết hàng'));
   });
 
@@ -228,6 +233,9 @@ describe('JournalEditor', () => {
     const draft = client();
     const first = renderVi(<JournalEditor productId={`${ID}1`} client={draft} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Xóa mốc' }));
+    // Deleting a milestone is irreversible, so it waits for a confirmation.
+    expect(draft.deleteJournalEntry).not.toHaveBeenCalled();
+    confirmDialog('Xóa mốc');
     await waitFor(() => expect(draft.deleteJournalEntry).toHaveBeenCalledWith(`${ID}5`, 1));
     first.unmount();
 
@@ -238,6 +246,8 @@ describe('JournalEditor', () => {
     const form = screen.getByTestId('journal-form');
     fireEvent.change(within(form).getByLabelText('Ghi chú'), { target: { value: 'Sửa lại ngày' } });
     fireEvent.click(within(form).getByRole('button', { name: 'Lưu mốc' }));
+    expect(sealed.appendJournalEntry).not.toHaveBeenCalled();
+    confirmDialog('Lưu mốc');
     await waitFor(() =>
       expect(sealed.appendJournalEntry).toHaveBeenCalledWith(
         `${ID}2`,

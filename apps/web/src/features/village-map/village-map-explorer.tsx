@@ -5,6 +5,7 @@ import { Button } from '@vcraft/ui';
 import dynamic from 'next/dynamic';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
+import { EmptyState } from '@/components/states/empty-state';
 import { Link } from '@/i18n/navigation';
 import { useUntabbable } from '@/lib/a11y/use-untabbable';
 import {
@@ -185,7 +186,25 @@ export function VillageMapExplorer({ pins }: { pins: readonly MapPinDto[] }) {
             ) : null}
           </div>
           {listed.length === 0 ? (
-            <p className="mt-4 text-ash">{t('empty')}</p>
+            <EmptyState
+              className="mt-4"
+              illustration="magnifier"
+              title={t('empty')}
+              action={
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setOpenNow(false);
+                    setVisitable(false);
+                    setCraft('');
+                    setBounds(null);
+                  }}
+                >
+                  {t('clearFilters')}
+                </Button>
+              }
+            />
           ) : (
             <ol className="mt-4 flex flex-col" data-testid="workshop-list">
               {listed.map((pin) => {

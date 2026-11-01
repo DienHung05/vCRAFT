@@ -2,12 +2,18 @@
 
 import { type AdminClient, ApiError, type HouseholdAction } from '@vcraft/api-client';
 import type { HouseholdDocumentDto, HouseholdDto } from '@vcraft/contracts';
-import { Badge, Button, Card, SealMark } from '@vcraft/ui';
+import { Badge, Button, buttonVariants, Card, SealMark } from '@vcraft/ui';
 import dynamic from 'next/dynamic';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
+import { Breadcrumbs } from '@/components/breadcrumbs';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { EmptyState } from '@/components/states/empty-state';
+import { ErrorState } from '@/components/states/error-state';
+import { DashboardSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
 import { useUntabbable } from '@/lib/a11y/use-untabbable';
+import { notify } from '@/lib/notify';
 import { useAdminClient } from './admin-dashboard';
 
 const WorkshopReviewMap = dynamic(() => import('./workshop-review-map'), {
@@ -74,6 +80,7 @@ export function HouseholdReview({
   client?: AdminClient;
 }) {
   const t = useTranslations('admin.review');
+  const nav = useTranslations('admin.nav');
   const statuses = useTranslations('studio.home.statuses');
   const format = useFormatter();
   const { client, loading } = useAdminClient(provided);
@@ -82,6 +89,7 @@ export function HouseholdReview({
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'failed'>('loading');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState<HouseholdAction | null>(null);
   const [result, setResult] = useState<'sealed' | 'done' | 'stale' | 'failed' | null>(null);
   // The review map is decorative (the workshop list below has the same facts); keep it out of the tab order.
   const map = useUntabbable<HTMLDivElement>(household);
@@ -106,18 +114,23 @@ export function HouseholdReview({
   }, [load]);
 
   if (!loading && !client) return <p>{t('signIn')}</p>;
-  if (state === 'missing') return <p>{t('missing')}</p>;
-  if (state === 'failed') {
+  if (state === 'missing') {
     return (
-      <div role="alert" className="flex flex-col items-start gap-3">
-        <p>{t('failed')}</p>
-        <Button type="button" variant="secondary" onClick={() => void load()}>
-          {t('retry')}
-        </Button>
-      </div>
+      <EmptyState
+        illustration="magnifier"
+        title={t('missing')}
+        action={
+          <Link href="/admin/duyet-ho" className={buttonVariants({ variant: 'secondary' })}>
+            {t('back')}
+          </Link>
+        }
+      />
     );
   }
-  if (!household || !client) return <p role="status">{t('loading')}</p>;
+  if (state === 'failed') {
+    return <ErrorState message={t('failed')} onRetry={() => void load()} />;
+  }
+  if (!household || !client) return <DashboardSkeleton label={t('loading')} className="" />;
 
   const decide = async (action: HouseholdAction) => {
     setBusy(true);
@@ -126,6 +139,7 @@ export function HouseholdReview({
       setHousehold(await client.decide(household.id, action, household.version, reason.trim()));
       setReason('');
       setResult(action === 'approve' ? 'sealed' : 'done');
+      notify.success(t(action === 'approve' ? 'sealed' : 'saved'));
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         await load();
@@ -143,11 +157,13 @@ export function HouseholdReview({
 
   return (
     <div className="flex flex-col gap-6">
-      <nav className="text-small text-ash">
-        <Link href="/admin/duyet-ho" className="hover:text-ink">
-          {t('back')}
-        </Link>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: nav('overview'), href: '/admin' },
+          { label: nav('queue'), href: '/admin/duyet-ho' },
+          { label: household.name },
+        ]}
+      />
       <header className="flex flex-wrap items-center gap-3">
         <h1 className="text-h2">{household.name}</h1>
         <Badge tone={household.status === 'PENDING_REVIEW' ? 'lacquer' : 'outline'}>
@@ -248,7 +264,7 @@ export function HouseholdReview({
                 type="button"
                 variant={needsReason ? 'secondary' : 'primary'}
                 disabled={busy || (needsReason && !reasonOk)}
-                onClick={() => void decide(action)}
+                onClick={() => setPending(action)}
               >
                 {t(`actions.${action}`)}
               </Button>
@@ -256,11 +272,27 @@ export function HouseholdReview({
           </div>
         </Card>
       ) : null}
-      {result === 'sealed' || result === 'done' ? (
-        <p role="status" className="text-small text-glaze">
-          {t(result === 'sealed' ? 'sealed' : 'saved')}
-        </p>
-      ) : null}
+      <ConfirmDialog
+        open={pending !== null}
+        tone={pending === 'reject' || pending === 'suspend' ? 'seal' : 'primary'}
+        title={pending ? t(`confirm.${pending}.title`) : ''}
+        confirmLabel={pending ? t(`actions.${pending}`) : ''}
+        cancelLabel={t('back')}
+        confirmDisabled={busy}
+        onClose={() => setPending(null)}
+        onConfirm={() => {
+          const action = pending;
+          setPending(null);
+          if (action) void decide(action);
+        }}
+      >
+        {pending ? (
+          <p className="text-ash">{t(`confirm.${pending}.text`, { name: household.name })}</p>
+        ) : null}
+        {pending && reason.trim() ? (
+          <p className="text-small">{t('currentReason', { reason: reason.trim() })}</p>
+        ) : null}
+      </ConfirmDialog>
       {result === 'stale' || result === 'failed' ? (
         <p role="alert" className="text-small text-seal">
           {t(result === 'stale' ? 'stale' : 'failed_action')}

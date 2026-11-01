@@ -3,6 +3,8 @@
 import { Button, Card, cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { notify } from '@/lib/notify';
 
 export interface ContributionFormValues {
   maxQuantity: number;
@@ -77,6 +79,7 @@ export function ContributionForm({
     initial?.completionDate !== undefined ? initial.completionDate.slice(0, 10) : '',
   );
   const [submit, setSubmit] = useState<SubmitState>({ kind: 'idle' });
+  const [confirmWithdraw, setConfirmWithdraw] = useState(false);
   const locked = disabled || submit.kind === 'sending' || submit.kind === 'sent';
   const demo = onSubmit === undefined;
 
@@ -122,6 +125,7 @@ export function ContributionForm({
         completionDate: `${completionDate}T00:00:00.000Z`,
       });
       setSubmit({ kind: 'sent' });
+      notify.success(t(version === undefined ? 'sentToast' : 'updatedToast'));
     } catch (error) {
       setSubmit({
         kind: 'error',
@@ -135,6 +139,7 @@ export function ContributionForm({
     setSubmit({ kind: 'sending' });
     try {
       await onWithdraw();
+      notify.success(t('withdrawnToast'));
     } catch (error) {
       setSubmit({
         kind: 'error',
@@ -252,7 +257,7 @@ export function ContributionForm({
                 : t('update')}
         </Button>
         {version !== undefined && onWithdraw && !withdrawn ? (
-          <Button variant="secondary" disabled={locked} onClick={() => void withdraw()}>
+          <Button variant="secondary" disabled={locked} onClick={() => setConfirmWithdraw(true)}>
             {t('withdraw')}
           </Button>
         ) : null}
@@ -278,6 +283,20 @@ export function ContributionForm({
       <span id={`${formId}-hint`} className="sr-only">
         {t('privacyNote')}
       </span>
+      <ConfirmDialog
+        open={confirmWithdraw}
+        tone="seal"
+        title={t('withdrawTitle')}
+        confirmLabel={t('withdraw')}
+        cancelLabel={t('cancel')}
+        onClose={() => setConfirmWithdraw(false)}
+        onConfirm={() => {
+          setConfirmWithdraw(false);
+          void withdraw();
+        }}
+      >
+        <p className="text-ash">{t('withdrawText')}</p>
+      </ConfirmDialog>
     </Card>
   );
 }

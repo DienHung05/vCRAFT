@@ -5,6 +5,7 @@ import type { AllocationDto } from '@vcraft/contracts';
 import { Button, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { type ReactNode, useState } from 'react';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { prepareImage, sendMedia } from '@/features/media/prepare-image';
 import { browserAccessToken } from '@/lib/api/live-session';
 
@@ -44,7 +45,8 @@ export function AllocationCard({
   allocation: AllocationDto;
   client: QuotationClient;
   busy: boolean;
-  run: (action: () => Promise<unknown>) => Promise<void>;
+  /** Runs an action, refreshes the data, and toasts `success` once it went through. */
+  run: (action: () => Promise<unknown>, success?: string) => Promise<void>;
   uploadPhoto?: (client: QuotationClient, file: File) => Promise<string>;
   /** Order details shown above the numbers. */
   children?: ReactNode;
@@ -57,6 +59,7 @@ export function AllocationCard({
   const [photo, setPhoto] = useState<File | null>(null);
   const [problem, setProblem] = useState<'invalidQty' | 'photoFailed' | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [declining, setDeclining] = useState(false);
 
   const report = async () => {
     const completedQty = amount.trim() === '' ? Number.NaN : Number(amount);
@@ -77,12 +80,14 @@ export function AllocationCard({
         setUploading(false);
       }
     }
-    await run(() =>
-      client.reportProgress(allocation.id, allocation.version, {
-        completedQty,
-        ...(note.trim() ? { note: note.trim() } : {}),
-        ...(photoMediaId ? { photoMediaId } : {}),
-      }),
+    await run(
+      () =>
+        client.reportProgress(allocation.id, allocation.version, {
+          completedQty,
+          ...(note.trim() ? { note: note.trim() } : {}),
+          ...(photoMediaId ? { photoMediaId } : {}),
+        }),
+      t('reportedToast'),
     );
     setNote('');
     setPhoto(null);
@@ -102,18 +107,15 @@ export function AllocationCard({
           <Button
             disabled={busy}
             onClick={() =>
-              void run(() => client.confirmAllocation(allocation.id, allocation.version))
+              void run(
+                () => client.confirmAllocation(allocation.id, allocation.version),
+                t('confirmedToast'),
+              )
             }
           >
             {t('confirm')}
           </Button>
-          <Button
-            variant="secondary"
-            disabled={busy}
-            onClick={() =>
-              void run(() => client.declineAllocation(allocation.id, allocation.version))
-            }
-          >
+          <Button variant="secondary" disabled={busy} onClick={() => setDeclining(true)}>
             {t('decline')}
           </Button>
         </div>
@@ -197,6 +199,23 @@ export function AllocationCard({
           </ul>
         </section>
       ) : null}
+      <ConfirmDialog
+        open={declining}
+        tone="seal"
+        title={t('declineTitle')}
+        confirmLabel={t('decline')}
+        cancelLabel={t('cancel')}
+        onClose={() => setDeclining(false)}
+        onConfirm={() => {
+          setDeclining(false);
+          void run(
+            () => client.declineAllocation(allocation.id, allocation.version),
+            t('declinedToast'),
+          );
+        }}
+      >
+        <p className="text-ash">{t('declineText')}</p>
+      </ConfirmDialog>
     </Card>
   );
 }

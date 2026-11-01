@@ -90,15 +90,19 @@ const DAY: Partial<Record<LogStage, DemoPhotoRef>> = {
   },
 };
 
+/** Points the photo's alt text at the `photoAlt` messages (vi/en) keyed by its id. */
+const localized = (photo: DemoPhotoRef): DemoPhotoRef => ({ ...photo, altKey: photo.id });
+
 export function timelinePhoto(stage: LogStage, corrects: boolean): DemoPhotoRef {
-  return corrects && stage === 'fire' ? TIMELINE_CORRECTED_FIRE : TIMELINE[stage];
+  return localized(corrects && stage === 'fire' ? TIMELINE_CORRECTED_FIRE : TIMELINE[stage]);
 }
 
 /** Ảnh thumbnail theo công đoạn; công đoạn không có ảnh vuông riêng dùng ảnh 3:2 (cắt giữa). */
 export function squarePhoto(stage: LogStage): DemoPhotoRef {
-  return SQUARE[stage] ?? TIMELINE[stage];
+  return localized(SQUARE[stage] ?? TIMELINE[stage]);
 }
 
 export function dayPhoto(stage: LogStage): DemoPhotoRef | undefined {
-  return DAY[stage];
+  const photo = DAY[stage];
+  return photo ? localized(photo) : undefined;
 }

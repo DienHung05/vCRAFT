@@ -1,7 +1,9 @@
-import { Badge, Card } from '@vcraft/ui';
+import { Badge, buttonVariants, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
+import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
+import { EmptyState } from '@/components/states/empty-state';
 import { photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
 import type { NewsResult } from './news-api';
@@ -16,6 +18,7 @@ interface NewsViewProps {
 export function NewsView({ result, householdSlug }: NewsViewProps) {
   const t = useTranslations('indexPages.news');
   const category = useTranslations('indexPages.news.categories');
+  const nav = useTranslations('nav');
   const format = useFormatter();
   const items = result.status === 'ok' ? result.page.data : [];
   const nextCursor = result.status === 'ok' ? result.page.nextCursor : null;
@@ -41,12 +44,23 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
       )}
 
       {result.status === 'unavailable' && (
-        <p role="status" className="mt-10 text-ash">
-          {t('unavailable')}
-        </p>
+        <DataUnavailable className="mt-10" message={t('unavailable')} />
       )}
       {result.status === 'ok' && items.length === 0 && (
-        <p className="mt-10 text-ash">{t('empty')}</p>
+        <EmptyState
+          className="mt-10"
+          illustration="scroll"
+          title={t('empty')}
+          description={t('emptyHint')}
+          action={
+            <Link
+              href={householdSlug ? '/tin-tuc' : '/san-pham'}
+              className={buttonVariants({ variant: 'secondary' })}
+            >
+              {householdSlug ? t('clearFilter') : nav('products')}
+            </Link>
+          }
+        />
       )}
 
       {items.length > 0 && (

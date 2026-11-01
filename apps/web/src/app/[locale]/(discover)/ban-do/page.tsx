@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { RetryLink } from '@/components/retry-link';
+import { DataUnavailable } from '@/components/data-unavailable';
 import { fetchMapPins } from '@/features/village-map/map-model';
 import { VillageMapExplorer } from '@/features/village-map/village-map-explorer';
 import { resolveLocale } from '@/lib/locale';
@@ -30,10 +30,7 @@ export default async function VillageMapPage({ params }: PageProps<'/[locale]/ba
       {result.status === 'ok' ? (
         <VillageMapExplorer pins={result.pins} />
       ) : (
-        <div role="alert" className="mt-8 flex flex-col items-start gap-3">
-          <p className="text-ash">{t('unavailable')}</p>
-          <RetryLink />
-        </div>
+        <DataUnavailable className="mt-8" message={t('unavailable')} />
       )}
     </div>
   );

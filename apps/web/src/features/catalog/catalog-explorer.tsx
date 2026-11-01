@@ -8,9 +8,12 @@ import {
   type ProductSort,
 } from '@vcraft/contracts';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
-import { Button } from '@vcraft/ui';
+import { Button, buttonVariants } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { EmptyState } from '@/components/states/empty-state';
+import { ErrorState } from '@/components/states/error-state';
+import { Link } from '@/i18n/navigation';
 import {
   type CatalogFilters,
   catalogSearchParams,
@@ -53,6 +56,7 @@ export function CatalogExplorer({
   fetchProducts = browserFetch,
 }: CatalogExplorerProps) {
   const t = useTranslations('catalog');
+  const nav = useTranslations('nav');
   const [filters, setFilters] = useState(initialFilters);
   const [items, setItems] = useState(initialItems);
   const [cursor, setCursor] = useState(initialCursor);
@@ -236,7 +240,22 @@ export function CatalogExplorer({
       {replacing ? (
         <ProductGridSkeleton label={t('loading')} />
       ) : items.length === 0 && !failed ? (
-        <p className="text-ash">{t('empty')}</p>
+        <EmptyState
+          illustration="magnifier"
+          title={t('empty')}
+          description={hasFilters ? t('emptyHint') : undefined}
+          action={
+            hasFilters ? (
+              <Button type="button" variant="secondary" onClick={() => apply(EMPTY_FILTERS)}>
+                {t('clear')}
+              </Button>
+            ) : (
+              <Link href="/nghe-nhan" className={buttonVariants({ variant: 'secondary' })}>
+                {nav('artisans')}
+              </Link>
+            )
+          }
+        />
       ) : (
         <ul
           aria-busy={loading === 'more'}
@@ -255,12 +274,7 @@ export function CatalogExplorer({
       {loading === 'more' ? <ProductGridSkeleton label={t('loading')} count={4} /> : null}
 
       {failed ? (
-        <div role="alert" className="flex flex-col items-start gap-3">
-          <p className="text-ash">{t('unavailable')}</p>
-          <Button type="button" variant="secondary" onClick={() => void load(filters, cursor)}>
-            {t('retry')}
-          </Button>
-        </div>
+        <ErrorState message={t('unavailable')} onRetry={() => void load(filters, cursor)} />
       ) : cursor && !loading ? (
         <Button type="button" variant="secondary" onClick={() => void load(filters, cursor)}>
           {t('loadMore')}
