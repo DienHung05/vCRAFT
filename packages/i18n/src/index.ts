@@ -21,6 +21,7 @@ export const pathnames = {
   '/tin-tuc/[slug]': { vi: '/tin-tuc/[slug]', en: '/news/[slug]' },
   '/truy-xuat/[code]': { vi: '/truy-xuat/[code]', en: '/trace/[code]' },
   '/ghi-nhan-anh': { vi: '/ghi-nhan-anh', en: '/image-credits' },
+  '/chinh-sach-quyen-rieng-tu': { vi: '/chinh-sach-quyen-rieng-tu', en: '/privacy-policy' },
   '/yeu-cau-bao-gia': { vi: '/yeu-cau-bao-gia', en: '/quotes' },
   '/yeu-cau-bao-gia/moi': { vi: '/yeu-cau-bao-gia/moi', en: '/quotes/new' },
   '/yeu-cau-bao-gia/[code]': { vi: '/yeu-cau-bao-gia/[code]', en: '/quotes/[code]' },

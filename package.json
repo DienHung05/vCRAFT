@@ -25,7 +25,7 @@
     "demo:check:media": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --env-file-if-exists=.env scripts/demo-check-media.mjs",
     "demo:check:concurrency": "node --env-file-if-exists=.env scripts/demo-check-concurrency.mjs",
     "demo:e2e": "pnpm --filter @vcraft/e2e exec node --env-file-if-exists=../../.env ./node_modules/@playwright/test/cli.js test specs/demo/qr-to-receipt.spec.ts",
-    "demo:e2e:preexam": "DEMO_PREEXAM=1 pnpm --filter @vcraft/e2e exec node --env-file-if-exists=../../.env ./node_modules/@playwright/test/cli.js test specs/demo/pre-exam.spec.ts"
+    "demo:e2e:preexam": "DEMO_PREEXAM=1 pnpm --filter @vcraft/e2e exec node --env-file-if-exists=../../.env ./node_modules/@playwright/test/cli.js test specs/demo/pre-exam.spec.ts specs/demo/ui-quality.spec.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.3",

@@ -15,7 +15,16 @@
     "retry": "Thử lại",
     "priceOnRequest": "Liên hệ báo giá",
     "dataUnavailable": "Chưa tải được dữ liệu. Bạn thử lại sau ít phút.",
-    "householdCoverAlt": "Ảnh xưởng của hộ {household}"
+    "householdCoverAlt": "Ảnh xưởng của hộ {household}",
+    "loading": "Đang tải…",
+    "breadcrumb": "Đường dẫn trang",
+    "notifications": "Thông báo",
+    "dismiss": "Đóng thông báo",
+    "usdApprox": "≈ US${amount}",
+    "usdRateNote": "Giá USD chỉ để tham khảo, quy đổi theo 1 US$ = {rate} ₫. Đơn hàng được báo và thanh toán bằng VND.",
+    "home": "Trang chủ",
+    "cancel": "Hủy",
+    "close": "Đóng"
   },
   "nav": {
     "home": "Về trang chủ vCraft",
@@ -44,7 +53,8 @@
       "empty": "Chưa có hộ nào.",
       "meta": "{artisan} · {craft}",
       "since": "Đời thứ {n} · từ năm {year}",
-      "productCount": "{count, plural, other {# sản phẩm}}"
+      "productCount": "{count, plural, other {# sản phẩm}}",
+      "emptyHint": "Các hộ nghệ nhân sẽ xuất hiện ở đây sau khi được Ban quản lý duyệt."
     },
     "news": {
       "title": "Tin tức làng nghề",
@@ -73,7 +83,8 @@
       "villageOnly": "Chỉ hộ trong làng",
       "villageTitle": "Tin dành cho các hộ",
       "notFound": "Không tìm thấy tin này, hoặc tin chỉ dành cho các hộ trong làng.",
-      "loading": "Đang tải tin…"
+      "loading": "Đang tải tin…",
+      "emptyHint": "Tin mới của làng và của từng hộ sẽ hiện ở đây khi được đăng."
     },
     "rfq": {
       "title": "Yêu cầu báo giá",
@@ -92,7 +103,8 @@
     "business": "Đặt hàng số lượng",
     "rights": "© {year} vCraft. Giữ mọi quyền.",
     "demo": "Bản trình diễn: tên hộ, nghệ nhân và số liệu là dữ liệu mẫu.",
-    "credits": "Ghi nhận ảnh"
+    "credits": "Ghi nhận ảnh",
+    "privacy": "Chính sách quyền riêng tư"
   },
   "credits": {
     "photoBy": "Ảnh: {author}",
@@ -132,7 +144,8 @@
       "title": "Những bàn tay giữ nghề",
       "lead": "Mỗi hộ có một câu chuyện, một thứ men riêng và một cách vuốt đất không lẫn vào đâu được.",
       "all": "Xem tất cả nghệ nhân",
-      "portraitAlt": "Chân dung {name}"
+      "portraitAlt": "Chân dung {name}",
+      "empty": "Chưa có hộ nghệ nhân nào được giới thiệu."
     },
     "map": {
       "title": "Xưởng nào đang mở cửa?",
@@ -140,7 +153,8 @@
       "open": "Mở cửa · {hours}",
       "closed": "Đang nghỉ",
       "cta": "Mở bản đồ làng",
-      "mapLabel": "Bản đồ thu nhỏ các xưởng gốm ở Bát Tràng"
+      "mapLabel": "Bản đồ thu nhỏ các xưởng gốm ở Bát Tràng",
+      "empty": "Hiện chưa có xưởng nào đón khách."
     },
     "stats": {
       "title": "Làng nghề qua những con số",
@@ -152,7 +166,8 @@
     },
     "news": {
       "title": "Tin từ làng",
-      "all": "Mọi tin tức"
+      "all": "Mọi tin tức",
+      "empty": "Chưa có tin nào."
     }
   },
   "stages": {
@@ -391,7 +406,8 @@
       "coverageFull": "Đủ số lượng",
       "coveragePartial": "Một phần · {percent}% ({count, number})",
       "accept": "Chốt",
-      "acceptBlocked": "Chỉ chốt được chào giá đủ {quantity} {unit}."
+      "acceptBlocked": "Chỉ chốt được chào giá đủ {quantity} {unit}.",
+      "emptyTitle": "Chưa có chào giá nào"
     },
     "form": {
       "title": "Yêu cầu báo giá mới",
@@ -432,7 +448,9 @@
         "requiredBy": "Ngày cần hàng phải sau hạn chào giá.",
         "budget": "Ngân sách phải là số nguyên, và mức từ không lớn hơn mức đến.",
         "households": "Chọn ít nhất một hộ, hoặc nhờ Ban quản lý điều phối."
-      }
+      },
+      "sentToast": "Đã gửi yêu cầu báo giá. Các hộ sẽ nhận được lời mời chào giá.",
+      "consentRequired": "Hãy đồng ý với chính sách quyền riêng tư để gửi yêu cầu."
     },
     "list": {
       "allStatuses": "Tất cả trạng thái",
@@ -444,7 +462,10 @@
       "retry": "Thử lại",
       "more": "Xem thêm",
       "quotations": "{count, plural, =0 {Chưa có chào giá} other {# chào giá đang chờ}}",
-      "continueDraft": "Viết tiếp"
+      "continueDraft": "Viết tiếp",
+      "emptyTitle": "Bạn chưa có yêu cầu báo giá nào",
+      "emptyFiltered": "Không có yêu cầu nào ở trạng thái này.",
+      "clearFilter": "Xem mọi trạng thái"
     },
     "detail": {
       "accept": "Chốt chào giá này",
@@ -459,7 +480,12 @@
       "stale": "Yêu cầu vừa được cập nhật. Dữ liệu đã được làm mới, hãy thử lại.",
       "description": "Mô tả",
       "category": "Danh mục",
-      "coordinated": "Nhờ Ban quản lý điều phối"
+      "coordinated": "Nhờ Ban quản lý điều phối",
+      "acceptedToast": "Đã chốt chào giá. Các hộ sẽ được báo ngay.",
+      "cancelledToast": "Đã hủy yêu cầu báo giá.",
+      "receivedToast": "Đã xác nhận nhận hàng. Cảm ơn bạn.",
+      "receiveTitle": "Xác nhận đã nhận hàng?",
+      "receiveText": "Khi xác nhận, đơn được đánh dấu là đã giao và không thể hoàn tác."
     }
   },
   "admin": {
@@ -519,7 +545,11 @@
       "sentReal": {
         "title": "Đã gửi chào giá liên kết",
         "text": "Chào giá cho yêu cầu {code} đã lưu trên máy chủ. Bên mua sẽ thấy các hộ, phần chia, ngày hoàn thành và tổng trọn gói — không thấy giá riêng của từng hộ."
-      }
+      },
+      "sentToast": "Đã gửi chào giá liên kết cho bên mua.",
+      "confirmTitle": "Gửi chào giá liên kết?",
+      "confirmText": "Bên mua sẽ nhận chào giá với tổng {total} và có thể chốt ngay. Không thể thu hồi sau khi gửi.",
+      "cancel": "Quay lại"
     },
     "live": {
       "loading": "Đang tải yêu cầu…",
@@ -542,7 +572,18 @@
       "startProduction": "Bắt đầu sản xuất",
       "receive": "Xác nhận đã nhận hàng",
       "cancelOrder": "Hủy đơn",
-      "cancelReason": "Ghi lý do hủy đơn:"
+      "cancelReason": "Ghi lý do hủy đơn:",
+      "backToQueue": "Về hàng đợi điều phối",
+      "claimedToast": "Đã nhận điều phối yêu cầu này.",
+      "productionStartedToast": "Đơn đã chuyển sang sản xuất.",
+      "receivedToast": "Đã xác nhận nhận hàng.",
+      "cancelledToast": "Đã hủy đơn.",
+      "startTitle": "Bắt đầu sản xuất?",
+      "startText": "Các hộ sẽ được báo bắt đầu làm và đơn chuyển sang trạng thái đang sản xuất.",
+      "receiveTitle": "Xác nhận đã nhận hàng?",
+      "receiveText": "Đơn được đánh dấu là đã giao. Không thể hoàn tác.",
+      "back": "Quay lại",
+      "reasonRequired": "Hãy ghi lý do."
     },
     "dashboard": {
       "title": "Tổng quan",
@@ -568,7 +609,10 @@
       "signIn": "Hãy đăng nhập bằng tài khoản Ban quản lý.",
       "failed": "Chưa tải được hàng đợi.",
       "retry": "Thử lại",
-      "empty": "Không có hồ sơ nào khớp bộ lọc."
+      "empty": "Không có hồ sơ nào khớp bộ lọc.",
+      "emptyHint": "Thử đổi bộ lọc trạng thái hoặc khoảng ngày để xem các hồ sơ khác.",
+      "showAll": "Xem mọi trạng thái",
+      "showPending": "Xem hồ sơ đang chờ"
     },
     "review": {
       "back": "Về hàng đợi",
@@ -604,6 +648,28 @@
         "request-info": "Yêu cầu bổ sung",
         "suspend": "Tạm khóa hộ",
         "reinstate": "Mở khóa hộ"
+      },
+      "confirm": {
+        "approve": {
+          "title": "Duyệt hộ này?",
+          "text": "Hộ {name} sẽ được trưng bày công khai và được mời báo giá."
+        },
+        "reject": {
+          "title": "Từ chối hồ sơ này?",
+          "text": "Hộ {name} sẽ nhận lý do từ chối và không được trưng bày."
+        },
+        "request-info": {
+          "title": "Yêu cầu bổ sung thông tin?",
+          "text": "Hộ {name} sẽ nhận thông báo kèm nội dung cần bổ sung."
+        },
+        "suspend": {
+          "title": "Tạm khóa hộ này?",
+          "text": "Hộ {name} và các sản phẩm sẽ ngừng hiện công khai cho tới khi được mở khóa."
+        },
+        "reinstate": {
+          "title": "Mở khóa hộ này?",
+          "text": "Hộ {name} sẽ được trưng bày công khai trở lại."
+        }
       }
     },
     "coordinationQueue": {
@@ -627,7 +693,11 @@
       "claimedBy": "{name} đang phụ trách",
       "claimedByOther": "Quản trị viên khác đang phụ trách",
       "claimFailed": "Yêu cầu vừa có người nhận hoặc đã thay đổi. Danh sách đã được làm mới.",
-      "unclaimed": "Chưa có người nhận"
+      "unclaimed": "Chưa có người nhận",
+      "emptyHint": "Khi người mua nhờ Ban quản lý điều phối một yêu cầu, nó sẽ hiện ở đây.",
+      "emptyAction": "Về tổng quan",
+      "claimedToast": "Đã nhận điều phối yêu cầu này.",
+      "detail": "Yêu cầu"
     },
     "audit": {
       "title": "Nhật ký kiểm toán",
@@ -688,7 +758,10 @@
           "unpublish": "Gỡ tin về nháp",
           "delete": "Xóa tin"
         }
-      }
+      },
+      "emptyHint": "Mọi thao tác của quản trị viên sẽ được ghi lại ở đây.",
+      "clearFilters": "Bỏ bộ lọc",
+      "emptyAction": "Về tổng quan"
     },
     "news": {
       "title": "Tin tức",
@@ -755,7 +828,14 @@
           "body": "Hãy nhập nội dung.",
           "publishAt": "Hãy chọn thời điểm trong tương lai.",
           "slug": "Đường dẫn chỉ gồm chữ thường không dấu, số và dấu gạch ngang."
-        }
+        },
+        "draftSavedToast": "Đã lưu bản nháp.",
+        "scheduledToast": "Đã hẹn giờ đăng tin.",
+        "publishedToast": "Đã đăng tin.",
+        "publishTitle": "Đăng tin ngay?",
+        "publishText": "Tin sẽ hiện công khai ngay sau khi đăng.",
+        "publishImportantText": "Tin sẽ hiện công khai ngay và gửi thông báo cho tất cả các hộ.",
+        "back": "Quay lại"
       },
       "editor": {
         "toolbar": "Định dạng",
@@ -768,7 +848,9 @@
         "quote": "Trích dẫn",
         "link": "Liên kết",
         "linkPrompt": "Nhập địa chỉ liên kết:"
-      }
+      },
+      "emptyHint": "Viết tin đầu tiên để báo sự kiện, giá nguyên vật liệu hay chính sách hỗ trợ.",
+      "deletedToast": "Đã xóa tin."
     }
   },
   "exhibition": {
@@ -832,7 +914,17 @@
     "closed": "Đã hết hạn chào giá, không còn sửa hoặc gửi đề xuất được.",
     "decline": "Từ chối lời mời",
     "declined": "Hộ đã từ chối lời mời này. Vẫn có thể gửi đề xuất trước hạn.",
-    "allInvitations": "Lời mời báo giá"
+    "allInvitations": "Lời mời báo giá",
+    "breadcrumb": "Đề xuất tham gia",
+    "cancel": "Quay lại",
+    "sentToast": "Đã gửi đề xuất tham gia.",
+    "updatedToast": "Đã cập nhật đề xuất.",
+    "withdrawnToast": "Đã rút đề xuất.",
+    "declinedToast": "Đã từ chối lời mời.",
+    "withdrawTitle": "Rút đề xuất này?",
+    "withdrawText": "Đề xuất sẽ không còn được dùng để ghép chào giá. Bạn vẫn gửi lại được trước hạn.",
+    "declineTitle": "Từ chối lời mời này?",
+    "declineText": "Hộ sẽ không tham gia yêu cầu này. Bạn vẫn có thể gửi đề xuất trước hạn nếu đổi ý."
   },
   "order": {
     "title": "Đơn hàng",
@@ -885,7 +977,15 @@
     "photoAlt": "Ảnh tiến độ ngày {date}",
     "photoFailed": "Không tải được ảnh. Hãy thử ảnh khác hoặc báo cáo không kèm ảnh.",
     "uploading": "Đang tải ảnh…",
-    "invalidQty": "Số lượng đã xong phải từ 0 đến {max}."
+    "invalidQty": "Số lượng đã xong phải từ 0 đến {max}.",
+    "cancel": "Quay lại",
+    "confirmedToast": "Đã xác nhận phần việc.",
+    "declinedToast": "Đã từ chối phần việc.",
+    "reportedToast": "Đã ghi nhận tiến độ.",
+    "declineTitle": "Từ chối phần việc này?",
+    "declineText": "Ban quản lý sẽ phải chia lại phần này cho hộ khác. Không thể hoàn tác.",
+    "empty": "Chưa có phân bổ nào cho đơn này.",
+    "emptyAction": "Về danh sách đơn hàng"
   },
   "notifications": {
     "title": "Thông báo",
@@ -994,7 +1094,8 @@
       "4": "Thứ năm",
       "5": "Thứ sáu",
       "6": "Thứ bảy"
-    }
+    },
+    "clearFilters": "Bỏ bộ lọc"
   },
   "catalog": {
     "filtersLabel": "Lọc sản phẩm",
@@ -1031,7 +1132,8 @@
       "newest": "Mới nhất",
       "price_asc": "Giá tăng dần",
       "price_desc": "Giá giảm dần"
-    }
+    },
+    "emptyHint": "Thử bỏ bớt bộ lọc hoặc đổi khoảng giá để xem thêm sản phẩm."
   },
   "auth": {
     "nav": {
@@ -1080,7 +1182,8 @@
       "addressShort": "Địa chỉ cần ít nhất 5 ký tự để khách tìm được xưởng.",
       "locationRequired": "Hãy chọn vị trí xưởng trên bản đồ hoặc nhập tọa độ.",
       "latInvalid": "Vĩ độ phải là số từ -90 đến 90.",
-      "lngInvalid": "Kinh độ phải là số từ -180 đến 180."
+      "lngInvalid": "Kinh độ phải là số từ -180 đến 180.",
+      "consentRequired": "Hãy đồng ý với Chính sách quyền riêng tư để tạo tài khoản."
     },
     "errors": {
       "invalid_credentials": "Email hoặc mật khẩu chưa đúng. Kiểm tra lại, hoặc chọn \"Quên mật khẩu\" để đặt mật khẩu mới.",
@@ -1198,7 +1301,8 @@
         "history": "Câu chuyện của hộ",
         "historyHint": "Vài dòng về lịch sử, đời nghề, điều làm hộ khác biệt. Bạn có thể bổ sung sau.",
         "submit": "Lưu và tiếp tục",
-        "submitting": "Đang lưu hồ sơ…"
+        "submitting": "Đang lưu hồ sơ…",
+        "savedToast": "Đã lưu thông tin hộ."
       },
       "workshop": {
         "title": "Vị trí xưởng",
@@ -1217,7 +1321,8 @@
         "visitingInfo": "Thông tin đón khách",
         "visitingInfoHint": "Giờ mở cửa, có cần đặt trước không, lưu ý khi tới.",
         "submit": "Lưu xưởng và tiếp tục",
-        "submitting": "Đang lưu xưởng…"
+        "submitting": "Đang lưu xưởng…",
+        "savedToast": "Đã lưu vị trí xưởng."
       },
       "map": {
         "label": "Bản đồ chọn vị trí xưởng",
@@ -1250,7 +1355,8 @@
         "submit": "Nộp hồ sơ",
         "submitting": "Đang nộp…",
         "needOne": "Cần tải lên ít nhất một giấy tờ trước khi nộp hồ sơ.",
-        "waitUploads": "Đợi các tệp tải xong rồi nộp hồ sơ."
+        "waitUploads": "Đợi các tệp tải xong rồi nộp hồ sơ.",
+        "consentFirst": "Hãy đồng ý với Chính sách quyền riêng tư ở trên trước khi chọn tệp."
       },
       "alreadyAdmin": "Tài khoản quản trị viên không đại diện cho hộ nào. Hãy đăng xuất rồi dùng email khác để đăng ký hộ.",
       "alreadyApplied": "Tài khoản này đã nộp hồ sơ hộ."
@@ -1461,7 +1567,16 @@
       "qr": "Mã QR",
       "qrLead": "In mã này lên tem dán đáy sản phẩm. Mã không đổi khi đổi tên.",
       "qrDownload": "Tải PNG",
-      "journalLink": "Nhật ký sản xuất"
+      "journalLink": "Nhật ký sản xuất",
+      "emptyHint": "Thêm món đầu tiên, rồi ghi nhật ký sản xuất và xuất bản để khách thấy.",
+      "createdToast": "Đã tạo sản phẩm nháp.",
+      "artisanAdded": "Đã thêm người làm.",
+      "publishTitle": "Xuất bản sản phẩm này?",
+      "publishText": "Sản phẩm sẽ hiện công khai trên trang hộ và trong danh mục. Nhật ký sản xuất từ đây chỉ ghi thêm, không xóa được.",
+      "publishedToast": "Đã xuất bản sản phẩm.",
+      "withdrawTitle": "Rút sản phẩm khỏi trưng bày?",
+      "withdrawText": "Sản phẩm sẽ không còn hiện công khai. Lý do rút: {reason}. Bạn có thể xuất bản lại sau.",
+      "withdrawnToast": "Đã rút sản phẩm khỏi trưng bày."
     },
     "journal": {
       "title": "Nhật ký: {product}",
@@ -1489,7 +1604,17 @@
       "correctionTitle": "Đính chính mốc {n}",
       "corrects": "Đính chính mốc {n}",
       "correctedBy": "Đã được đính chính bởi mốc {n}",
-      "delete": "Xóa mốc"
+      "delete": "Xóa mốc",
+      "breadcrumb": "Nhật ký",
+      "savedToast": "Đã ghi mốc nhật ký.",
+      "correctedToast": "Đã thêm mốc đính chính.",
+      "sealTitle": "Ghi mốc vào nhật ký đã xuất bản?",
+      "sealText": "Nhật ký của sản phẩm đã xuất bản chỉ ghi thêm. Mốc này sẽ được niêm phong và không xóa được.",
+      "deleteTitle": "Xóa mốc này?",
+      "deleteText": "Mốc và ảnh kèm theo sẽ bị xóa khỏi nhật ký. Không thể hoàn tác.",
+      "deletedToast": "Đã xóa mốc.",
+      "deleteFailed": "Chưa xóa được mốc. Bạn thử lại sau.",
+      "emptyHint": "Mỗi mốc là một công đoạn có ngày, ghi chú và ảnh. Khách sẽ đọc chúng khi quét mã QR."
     },
     "invitations": {
       "title": "Lời mời báo giá",
@@ -1507,7 +1632,9 @@
       "active": "Đã gửi: {price} một {unit}, tối đa {quantity}",
       "withdrawn": "Đã rút đề xuất",
       "declined": "Đã từ chối",
-      "closed": "Đã đóng"
+      "closed": "Đã đóng",
+      "emptyHint": "Khi người mua hoặc Ban quản lý mời hộ báo giá, lời mời sẽ hiện ở đây.",
+      "emptyAction": "Hoàn thiện hồ sơ hộ"
     },
     "allocations": {
       "title": "Đơn hàng",
@@ -1519,8 +1646,12 @@
       "empty": "Hộ chưa có đơn hàng nào.",
       "promised": "Hẹn hoàn thành",
       "requiredBy": "Ngày cần hàng",
-      "orderStatus": "Trạng thái đơn"
-    }
+      "orderStatus": "Trạng thái đơn",
+      "emptyHint": "Khi một đơn được chốt và chia cho hộ, phần việc sẽ hiện ở đây.",
+      "emptyAction": "Xem lời mời báo giá"
+    },
+    "registerHousehold": "Đăng ký hộ nghệ nhân",
+    "cancel": "Quay lại"
   },
   "media": {
     "uploads": "Ảnh đang tải lên",
@@ -1530,5 +1661,103 @@
     "uploading": "Đang tải {name}",
     "preparing": "Đang chuẩn bị {name}",
     "tooMany": "Đã bỏ {count} ảnh vượt giới hạn."
+  },
+  "photoAlt": {
+    "hero-binh-chu-dau": "Chiếc bình gốm men ngà vẽ lam hoa mẫu đơn, cổ cao thon, bụng tròn, đặt trong một cửa hàng gốm",
+    "tl-clay": "Ảnh minh hoạ công đoạn nhào đất: những tảng đất sét vàng nhạt chất trong kho, xe đẩy dựng gần đó",
+    "tl-throw": "Ảnh minh hoạ công đoạn vuốt dáng: hai bàn tay chuốt thành bát gốm trắng trên bàn xoay",
+    "tl-dry": "Ảnh minh hoạ công đoạn phơi: khuôn thạch cao và gốm mộc xếp trên giá trong xưởng, chờ khô",
+    "tl-paint": "Ảnh minh hoạ công đoạn vẽ: người thợ cúi xuống vẽ lên những chiếc chén trắng xếp trên bàn, cạnh xô nước men",
+    "tl-glaze": "Ảnh minh hoạ công đoạn tráng men: những chiếc chum sứ lớn đã tráng men, vẽ lam và hoa lá, có vòi xếp thành hàng",
+    "tl-fire": "Ảnh minh hoạ công đoạn nung: những ô lửa đang cháy sáng giữa các cột gốm xếp trong lò",
+    "tl-finish": "Ảnh minh hoạ công đoạn hoàn thiện: ba chiếc bình sứ miệng loe vẽ lam hoa sen đặt cạnh nhau",
+    "tl-fire-2": "Ảnh minh hoạ công đoạn nung: cửa lò gạch vòm, ngọn lửa đỏ cháy bên dưới và chiếc xe đẩy dựng bên cạnh",
+    "sq-throw": "Ảnh minh hoạ công đoạn vuốt dáng: bàn tay đeo ngón bọc da chuốt gốm trắng trên bàn xoay",
+    "sq-dry": "Ảnh minh hoạ công đoạn phơi: chậu gốm mộc lồng nhau và gốm xếp cao phía sau, trong xưởng",
+    "sq-paint": "Ảnh minh hoạ công đoạn vẽ: người thợ cúi đầu vẽ lên chén trắng, cạnh xô nước men đỏ",
+    "sq-glaze": "Ảnh minh hoạ công đoạn tráng men: chum sứ lớn đã tráng men vẽ lam và hoa lá, có vòi",
+    "day-clay": "Những tảng đất sét vàng nhạt chất thành đống trong kho, xe đẩy tay phía sau",
+    "ban-tay-vuot-gom": "Hai bàn tay đeo ngón bọc da, đang chuốt thành một chiếc bát gốm trắng trên bàn xoay",
+    "day-dry": "Chậu gốm mộc lồng nhau trong xưởng, phía sau là cột gốm khác xếp cao chờ khô",
+    "day-paint": "Người thợ ngồi xổm cúi đầu, dùng bút vẽ lên gốm trắng, cạnh xô nước men",
+    "day-fire": "Cửa lò gạch vòm với lửa đỏ cháy bên dưới và chiếc xe đẩy dựng bên cạnh",
+    "day-finish": "Dãy chum sứ lớn có vòi, tráng men vẽ lam và hoa lá, xếp thẳng hàng"
+  },
+  "privacy": {
+    "title": "Chính sách quyền riêng tư",
+    "lead": "Bạn giao cho vCraft những thông tin cá nhân nào, để làm gì, ai nhìn thấy chúng và bạn làm chủ chúng ra sao. Trang này viết ngắn gọn để đọc được trên điện thoại.",
+    "updated": "Cập nhật lần cuối: 01/11/2026",
+    "demoNote": "Đây là bản trình diễn: hộ, nghệ nhân và số liệu là dữ liệu mẫu. Chính sách mô tả đúng cách hệ thống xử lý dữ liệu bạn nhập vào.",
+    "toc": "Nội dung trang",
+    "backToTop": "Về đầu trang",
+    "sections": {
+      "controller": {
+        "title": "Ai xử lý dữ liệu của bạn",
+        "text": "vCraft là nền tảng quản lý một làng nghề truyền thống, do Ban quản lý làng nghề vận hành. Ban quản lý quyết định mục đích và cách xử lý dữ liệu cá nhân trên nền tảng."
+      },
+      "collect": {
+        "title": "Chúng tôi thu thập gì",
+        "text": "Chỉ những thông tin cần cho từng tính năng bạn dùng:",
+        "items": {
+          "account": "Tài khoản: email, họ tên và vai trò. Mật khẩu do Supabase Auth băm và lưu; vCraft không đọc được mật khẩu của bạn.",
+          "household": "Đăng ký hộ nghệ nhân: thông tin người đại diện, số căn cước công dân, ảnh giấy tờ (CCCD, xác nhận cư trú), địa chỉ và vị trí xưởng, ảnh xưởng.",
+          "quote": "Yêu cầu báo giá: nội dung đơn hàng, ngân sách, địa chỉ nhận hàng và thông tin liên hệ gắn với tài khoản của bạn.",
+          "usage": "Thông báo, tùy chọn email và nhật ký thao tác quản trị.",
+          "technical": "Dữ liệu kỹ thuật: địa chỉ IP chỉ lưu dạng băm có muối; nhật ký hệ thống không chứa mật khẩu, mã thông báo hay số CCCD."
+        }
+      },
+      "purpose": {
+        "title": "Chúng tôi dùng dữ liệu để làm gì",
+        "text": "Tạo và bảo vệ tài khoản; xác minh và duyệt hộ nghệ nhân; gửi, nhận và điều phối yêu cầu báo giá, chào giá, đơn hàng; gửi các thông báo bạn đã chọn; phòng chống gian lận và giữ an toàn hệ thống. Chúng tôi không bán dữ liệu của bạn và không dùng nó để quảng cáo."
+      },
+      "basis": {
+        "title": "Cơ sở xử lý: sự đồng ý của bạn",
+        "text": "Chúng tôi xử lý dữ liệu cá nhân dựa trên sự đồng ý của bạn theo Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân. Bạn đồng ý bằng cách tích vào ô xác nhận khi đăng ký, đăng ký hộ nghệ nhân hoặc gửi yêu cầu báo giá. Bạn có thể rút lại sự đồng ý bất cứ lúc nào; việc rút lại không ảnh hưởng đến phần dữ liệu đã được xử lý trước đó."
+      },
+      "sharing": {
+        "title": "Ai nhìn thấy dữ liệu của bạn",
+        "items": {
+          "documents": "Ảnh giấy tờ xác minh nằm trong kho riêng tư; chỉ quản trị viên xem được, qua liên kết ký có hạn 5 phút. Số CCCD được mã hóa ở mức trường.",
+          "quote": "Yêu cầu báo giá chỉ hiện với các hộ được mời hoặc, khi bạn nhờ Ban quản lý điều phối, với Ban quản lý. Giá chào của một hộ không hiện cho hộ khác.",
+          "hosting": "Nhà cung cấp hạ tầng (Supabase cho xác thực, cơ sở dữ liệu và lưu trữ tệp; dịch vụ gửi email) xử lý dữ liệu thay mặt chúng tôi.",
+          "public": "Thông tin công khai của hộ đã được duyệt (tên hộ, câu chuyện, sản phẩm, vị trí phòng trưng bày) hiển thị cho mọi người."
+        }
+      },
+      "retention": {
+        "title": "Chúng tôi giữ dữ liệu bao lâu",
+        "text": "Trong thời gian tài khoản còn hoạt động. Khi bạn yêu cầu xóa, dữ liệu cá nhân được xóa; những bản ghi giao dịch cần giữ lại sẽ được ẩn danh hóa."
+      },
+      "security": {
+        "title": "Chúng tôi bảo vệ dữ liệu thế nào",
+        "text": "Dữ liệu truyền qua HTTPS. Phiên đăng nhập dùng cookie bảo mật, ảnh giấy tờ lưu ở kho riêng tư, số CCCD mã hóa AES-256-GCM, và mọi truy cập đều được kiểm tra quyền sở hữu."
+      },
+      "cookies": {
+        "title": "Cookie",
+        "text": "Chúng tôi chỉ dùng cookie cần thiết cho phiên đăng nhập và ngôn ngữ giao diện, không dùng cookie quảng cáo. Biểu mẫu đăng nhập và đăng ký có thể tải Cloudflare Turnstile để chặn tự động hóa."
+      },
+      "rights": {
+        "title": "Quyền của bạn",
+        "text": "Bạn có quyền được biết, truy cập, chỉnh sửa, tải về, hạn chế, phản đối, rút lại sự đồng ý và yêu cầu xóa dữ liệu cá nhân của mình, cũng như khiếu nại. Bạn tự sửa thông tin ngay trong trang Tài khoản và Studio. Để tải về hoặc xóa dữ liệu, hãy gửi yêu cầu tới Ban quản lý qua <contact>kênh liên hệ của Ban quản lý làng nghề</contact>."
+      },
+      "changes": {
+        "title": "Khi chính sách thay đổi",
+        "text": "Chúng tôi cập nhật trang này và ghi ngày cập nhật ở đầu trang. Thay đổi quan trọng sẽ được báo trong hệ thống."
+      }
+    },
+    "consent": {
+      "label": "Tôi đã đọc <link>Chính sách quyền riêng tư</link> và đồng ý để vCraft xử lý {purpose}.",
+      "required": "Hãy đồng ý với Chính sách quyền riêng tư để tiếp tục.",
+      "purposes": {
+        "account": "email và họ tên của tôi để tạo và quản lý tài khoản",
+        "household": "thông tin cá nhân, số CCCD và ảnh giấy tờ của tôi để xác minh hộ nghệ nhân",
+        "quote": "địa chỉ nhận hàng và thông tin liên hệ của tôi để gửi yêu cầu báo giá tới các hộ",
+        "artisan": "tên và ảnh của nghệ nhân để hiển thị công khai trên trang hộ (tôi đã được nghệ nhân đồng ý)"
+      }
+    },
+    "account": {
+      "title": "Dữ liệu của bạn",
+      "lead": "vCraft chỉ giữ thông tin bạn đã nhập. Bạn có quyền sửa, tải về hoặc xóa chúng.",
+      "link": "Đọc Chính sách quyền riêng tư"
+    }
   }
 }

@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { browserAccountClient } from '@/lib/auth/supabase-browser';
+import { notify } from '@/lib/notify';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
 import { CheckboxField, FormAlert, SelectField, TextAreaField, TextField } from './fields';
 import { LocationPicker } from './location-picker';
@@ -59,6 +60,7 @@ export function WizardWorkshopStep({ onDone }: { onDone: () => void }) {
         lat: values.lat,
         lng: values.lng,
       });
+      notify.success(t('wizard.workshop.savedToast'));
       onDone();
     } catch (failure) {
       if (failure instanceof AccountApiError && failure.fieldErrors.length > 0) {

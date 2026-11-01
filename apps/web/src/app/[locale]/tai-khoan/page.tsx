@@ -26,7 +26,11 @@ export async function generateMetadata({
 export default async function AccountPage({ params }: PageProps<'/[locale]/tai-khoan'>) {
   const locale = await resolveLocale(params);
   const viewer = await requireViewer(locale);
-  const [t, tAuth] = await Promise.all([getTranslations('account'), getTranslations('auth')]);
+  const [t, tAuth, privacy] = await Promise.all([
+    getTranslations('account'),
+    getTranslations('auth'),
+    getTranslations('privacy'),
+  ]);
   const workspace = workspacePath(viewer.role);
 
   return (
@@ -66,6 +70,17 @@ export default async function AccountPage({ params }: PageProps<'/[locale]/tai-k
           className="mt-5 inline-block text-clay text-small underline underline-offset-4"
         >
           {t('profile.workspace')}
+        </Link>
+      </Card>
+
+      <Card className="p-5 md:p-8">
+        <h2 className="font-display text-h3 text-glaze">{privacy('account.title')}</h2>
+        <p className="mt-1 mb-4 text-ash text-small">{privacy('account.lead')}</p>
+        <Link
+          href="/chinh-sach-quyen-rieng-tu"
+          className="text-clay text-small underline underline-offset-4"
+        >
+          {privacy('account.link')}
         </Link>
       </Card>
 

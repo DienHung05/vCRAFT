@@ -24,7 +24,15 @@ export interface StepperProps {
  */
 export function Stepper({ steps, current, state = 'active', label, className }: StepperProps) {
   return (
-    <nav aria-label={label} className={cn('overflow-x-auto', className)}>
+    <nav
+      aria-label={label}
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: a horizontally scrollable region must be focusable so keyboard users can scroll it (WCAG 2.1.1).
+      tabIndex={0}
+      className={cn(
+        'overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glaze',
+        className,
+      )}
+    >
       <ol className="flex min-w-max items-start">
         {steps.map((step, i) => {
           const done = i < current;

@@ -16,9 +16,15 @@ import {
 import { Badge, Button, buttonVariants, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
+import { Breadcrumbs } from '@/components/breadcrumbs';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { EmptyState } from '@/components/states/empty-state';
+import { ErrorState } from '@/components/states/error-state';
+import { TableSkeleton } from '@/components/states/skeletons';
 import { prepareImage, sendMedia } from '@/features/media/prepare-image';
 import { Link } from '@/i18n/navigation';
 import { browserAccessToken } from '@/lib/api/live-session';
+import { notify } from '@/lib/notify';
 import { HouseholdGate } from './household-gate';
 import { inputClass } from './workshop-editor';
 
@@ -94,6 +100,9 @@ function EntryForm({
   const [status, setStatus] = useState<'idle' | 'photo' | 'saving' | 'photo-failed' | 'failed'>(
     'idle',
   );
+  const [confirming, setConfirming] = useState(false);
+  // A published product's journal only grows: a saved milestone can be corrected, never removed.
+  const sealed = product.publishedAt !== null;
 
   const facts = journal.entries.map((e) => ({ seq: e.seq, stage: e.stage }));
   const needsReason = !corrects && skippedStagesFor(facts, stage).length > 0;
@@ -136,6 +145,7 @@ function EntryForm({
         ...(needsReason && skipReason.trim() ? { skipReason: skipReason.trim() } : {}),
         ...(corrects ? { supersedesEntryId: corrects.id } : {}),
       });
+      notify.success(t(corrects ? 'correctedToast' : 'savedToast'));
       onSaved(updated);
     } catch (error) {
       setStatus(
@@ -145,110 +155,125 @@ function EntryForm({
   };
 
   return (
-    <Card className="flex flex-col gap-4 p-5" data-testid="journal-form">
-      <h2 className="text-h3">
-        {corrects ? t('correctionTitle', { n: corrects.seq + 1 }) : t('addStage')}
-      </h2>
-      <label className="flex flex-col gap-1 text-small">
-        {t('photo')}
-        <input
-          type="file"
-          accept="image/*,.heic,.heif"
-          capture="environment"
-          onChange={(event) => void onPhoto(event.target.files?.[0])}
-        />
-      </label>
-      {exif === 'filled' ? (
-        <p role="status" className="text-small text-glaze">
-          {t('exifFilled')}
-        </p>
-      ) : null}
-      {exif === 'old' ? (
-        <p role="status" className="text-small text-seal">
-          {t('exifOld')}
-        </p>
-      ) : null}
-      <div className="grid gap-4 md:grid-cols-3">
+    <>
+      <Card className="flex flex-col gap-4 p-5" data-testid="journal-form">
+        <h2 className="text-h3">
+          {corrects ? t('correctionTitle', { n: corrects.seq + 1 }) : t('addStage')}
+        </h2>
         <label className="flex flex-col gap-1 text-small">
-          {t('stage')}
-          <select
-            value={stage}
-            onChange={(event) => setStage(event.target.value as JournalStage)}
+          {t('photo')}
+          <input
+            type="file"
+            accept="image/*,.heic,.heif"
+            capture="environment"
+            onChange={(event) => void onPhoto(event.target.files?.[0])}
+          />
+        </label>
+        {exif === 'filled' ? (
+          <p role="status" className="text-small text-glaze">
+            {t('exifFilled')}
+          </p>
+        ) : null}
+        {exif === 'old' ? (
+          <p role="status" className="text-small text-seal">
+            {t('exifOld')}
+          </p>
+        ) : null}
+        <div className="grid gap-4 md:grid-cols-3">
+          <label className="flex flex-col gap-1 text-small">
+            {t('stage')}
+            <select
+              value={stage}
+              onChange={(event) => setStage(event.target.value as JournalStage)}
+              className={inputClass}
+            >
+              {JOURNAL_STAGES.map((s) => (
+                <option key={s} value={s}>
+                  {stages(`${s}.name`)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-small">
+            {t('date')}
+            <input
+              type="date"
+              value={date}
+              onChange={(event) => setDate(event.target.value)}
+              className={inputClass}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-small">
+            {t('time')}
+            <input
+              type="time"
+              value={time}
+              onChange={(event) => setTime(event.target.value)}
+              className={inputClass}
+            />
+          </label>
+        </div>
+        <label className="flex flex-col gap-1 text-small">
+          {t('note')}
+          <textarea
+            rows={3}
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
             className={inputClass}
+          />
+        </label>
+        {needsReason ? (
+          <label className="flex flex-col gap-1 text-small">
+            {t('skipReason')}
+            <input
+              value={skipReason}
+              onChange={(event) => setSkipReason(event.target.value)}
+              className={inputClass}
+            />
+          </label>
+        ) : null}
+        {status === 'photo' ? (
+          <p role="status" className="text-small text-ash">
+            {t('waitingPhoto')}
+          </p>
+        ) : null}
+        {status === 'photo-failed' ? (
+          <p role="alert" className="text-small text-seal">
+            {t('photoFailed')}
+          </p>
+        ) : null}
+        {status === 'failed' ? (
+          <p role="alert" className="text-small text-seal">
+            {t('saveFailed')}
+          </p>
+        ) : null}
+        <div className="flex flex-wrap gap-3">
+          <Button
+            type="button"
+            disabled={!note.trim() || status === 'photo' || status === 'saving'}
+            onClick={() => (sealed ? setConfirming(true) : void save(status !== 'photo-failed'))}
           >
-            {JOURNAL_STAGES.map((s) => (
-              <option key={s} value={s}>
-                {stages(`${s}.name`)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-small">
-          {t('date')}
-          <input
-            type="date"
-            value={date}
-            onChange={(event) => setDate(event.target.value)}
-            className={inputClass}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-small">
-          {t('time')}
-          <input
-            type="time"
-            value={time}
-            onChange={(event) => setTime(event.target.value)}
-            className={inputClass}
-          />
-        </label>
-      </div>
-      <label className="flex flex-col gap-1 text-small">
-        {t('note')}
-        <textarea
-          rows={3}
-          value={note}
-          onChange={(event) => setNote(event.target.value)}
-          className={inputClass}
-        />
-      </label>
-      {needsReason ? (
-        <label className="flex flex-col gap-1 text-small">
-          {t('skipReason')}
-          <input
-            value={skipReason}
-            onChange={(event) => setSkipReason(event.target.value)}
-            className={inputClass}
-          />
-        </label>
-      ) : null}
-      {status === 'photo' ? (
-        <p role="status" className="text-small text-ash">
-          {t('waitingPhoto')}
-        </p>
-      ) : null}
-      {status === 'photo-failed' ? (
-        <p role="alert" className="text-small text-seal">
-          {t('photoFailed')}
-        </p>
-      ) : null}
-      {status === 'failed' ? (
-        <p role="alert" className="text-small text-seal">
-          {t('saveFailed')}
-        </p>
-      ) : null}
-      <div className="flex flex-wrap gap-3">
-        <Button
-          type="button"
-          disabled={!note.trim() || status === 'photo' || status === 'saving'}
-          onClick={() => void save(status !== 'photo-failed')}
-        >
-          {t('save')}
-        </Button>
-        <Button type="button" variant="ghost" onClick={onClose}>
-          {t('cancel')}
-        </Button>
-      </div>
-    </Card>
+            {t('save')}
+          </Button>
+          <Button type="button" variant="ghost" onClick={onClose}>
+            {t('cancel')}
+          </Button>
+        </div>
+      </Card>
+      <ConfirmDialog
+        open={confirming}
+        title={t('sealTitle')}
+        confirmLabel={t('save')}
+        cancelLabel={t('cancel')}
+        onClose={() => setConfirming(false)}
+        onConfirm={() => {
+          setConfirming(false);
+          void save(status !== 'photo-failed');
+        }}
+      >
+        <p className="text-ash">{t('sealText')}</p>
+      </ConfirmDialog>
+    </>
   );
 }
 
@@ -259,6 +284,7 @@ function JournalBody({ product, client }: { product: ProductDto; client: StudioC
   const format = useFormatter();
   const [journal, setJournal] = useState<JournalDto | null>(null);
   const [failed, setFailed] = useState(false);
+  const [removing, setRemoving] = useState<JournalEntryDto | null>(null);
   const [form, setForm] = useState<{
     stage: JournalStage;
     corrects: JournalEntryDto | null;
@@ -277,16 +303,9 @@ function JournalBody({ product, client }: { product: ProductDto; client: StudioC
   }, [load]);
 
   if (failed) {
-    return (
-      <div role="alert" className="flex flex-col items-start gap-3">
-        <p>{common('loadFailed')}</p>
-        <Button type="button" variant="secondary" onClick={() => void load()}>
-          {common('retry')}
-        </Button>
-      </div>
-    );
+    return <ErrorState message={common('loadFailed')} onRetry={() => void load()} />;
   }
-  if (!journal) return <p role="status">{common('loading')}</p>;
+  if (!journal) return <TableSkeleton label={common('loading')} className="" withHeader={false} />;
 
   // Đã từng xuất bản thì nhật ký chỉ ghi thêm: sửa sai bằng mốc đính chính.
   const sealed = product.publishedAt !== null;
@@ -334,7 +353,19 @@ function JournalBody({ product, client }: { product: ProductDto; client: StudioC
       )}
 
       {journal.entries.length === 0 ? (
-        <p className="text-ash">{t('empty')}</p>
+        <EmptyState
+          illustration="scroll"
+          headingLevel="h3"
+          title={t('empty')}
+          description={t('emptyHint')}
+          action={
+            form ? undefined : (
+              <Button type="button" onClick={() => setForm({ stage: nextStage, corrects: null })}>
+                {t('addStage')}
+              </Button>
+            )
+          }
+        />
       ) : (
         <ol className="flex flex-col gap-3" data-testid="journal-entries">
           {[...journal.entries].reverse().map((entry) => (
@@ -376,12 +407,7 @@ function JournalBody({ product, client }: { product: ProductDto; client: StudioC
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() =>
-                        void client
-                          .deleteJournalEntry(entry.id, entry.version)
-                          .then(setJournal)
-                          .catch(() => setFailed(true))
-                      }
+                      onClick={() => setRemoving(entry)}
                     >
                       {t('delete')}
                     </Button>
@@ -392,6 +418,28 @@ function JournalBody({ product, client }: { product: ProductDto; client: StudioC
           ))}
         </ol>
       )}
+      <ConfirmDialog
+        open={removing !== null}
+        tone="seal"
+        title={t('deleteTitle')}
+        confirmLabel={t('delete')}
+        cancelLabel={t('cancel')}
+        onClose={() => setRemoving(null)}
+        onConfirm={() => {
+          const entry = removing;
+          setRemoving(null);
+          if (!entry) return;
+          void client
+            .deleteJournalEntry(entry.id, entry.version)
+            .then((updated) => {
+              setJournal(updated);
+              notify.success(t('deletedToast'));
+            })
+            .catch(() => notify.error(t('deleteFailed')));
+        }}
+      >
+        <p className="text-ash">{t('deleteText')}</p>
+      </ConfirmDialog>
     </>
   );
 }
@@ -400,15 +448,38 @@ function JournalBody({ product, client }: { product: ProductDto; client: StudioC
 export function JournalEditor({ productId, client }: { productId: string; client?: StudioClient }) {
   const t = useTranslations('studio.journal');
   const products = useTranslations('studio.products');
+  const nav = useTranslations('studio.nav');
   return (
     <HouseholdGate client={client}>
       {({ household, client: live }) => {
         const product = household.products.find((p) => p.id === productId);
         if (!product) {
-          return <p className="mx-auto max-w-editorial px-gutter py-12">{products('notFound')}</p>;
+          return (
+            <EmptyState
+              className="py-section"
+              illustration="vase"
+              title={products('notFound')}
+              action={
+                <Link href="/studio/san-pham" className={buttonVariants({ variant: 'secondary' })}>
+                  {products('title')}
+                </Link>
+              }
+            />
+          );
         }
         return (
           <div className="mx-auto flex max-w-editorial flex-col gap-6 px-gutter py-8 pb-24 md:pb-12">
+            <Breadcrumbs
+              items={[
+                { label: nav('home'), href: '/studio' },
+                { label: products('title'), href: '/studio/san-pham' },
+                {
+                  label: product.name,
+                  href: { pathname: '/studio/san-pham/[id]', params: { id: product.id } },
+                },
+                { label: t('breadcrumb') },
+              ]}
+            />
             <header className="flex flex-wrap items-center justify-between gap-4">
               <h1 className="text-h2">{t('title', { product: product.name })}</h1>
               <Link

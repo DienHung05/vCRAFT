@@ -4,6 +4,7 @@ import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
 import { PhotoCreditsNote } from '@/components/photo-credits-note';
+import { EmptyState } from '@/components/states/empty-state';
 import {
   fetchHouseholds,
   fetchProducts,
@@ -22,6 +23,7 @@ import { resolveLocale } from '@/lib/locale';
 const HERO_PHOTO: DemoPhotoRef | undefined = {
   id: 'hero-binh-chu-dau',
   alt: 'Chiếc bình gốm men ngà vẽ lam hoa mẫu đơn, cổ cao thon, bụng tròn, đặt trong một cửa hàng gốm',
+  altKey: 'hero-binh-chu-dau',
 };
 
 const DAY_STAGES: readonly { stage: LogStage; tint: string }[] = [
@@ -103,7 +105,8 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             ratio="4/5"
             photo={HERO_PHOTO}
             priority
-            sizes="(min-width: 768px) 40vw, 100vw"
+            // 88vw (not 100vw) so phones at 1.75x pick the 640w file: the box is ~92vw wide.
+            sizes="(min-width: 768px) 40vw, 88vw"
             className="grid place-items-center"
           >
             {HERO_PHOTO ? null : (
@@ -131,11 +134,14 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
           <h2 id="day-title">{t('day.title')}</h2>
           <p className="mt-3 max-w-prose-vn text-ash">{t('day.lead')}</p>
         </div>
-        <section
+        {/* biome-ignore lint/a11y/useSemanticElements: a named group around a scroller, not a form fieldset; a second `section` would repeat the landmark name. */}
+        <div
+          role="group"
           aria-labelledby="day-title"
           // biome-ignore lint/a11y/noNoninteractiveTabindex: vùng cuộn ngang phải nhận focus để cuộn bằng phím mũi tên (WCAG 2.1.1, axe scrollable-region-focusable).
           tabIndex={0}
-          className="mt-10 snap-x snap-mandatory overflow-x-auto scroll-smooth focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glaze motion-reduce:scroll-auto"
+          // No `scroll-smooth` here: with mandatory snap it makes Chrome report no LCP at all (NO_LCP in Lighthouse).
+          className="mt-10 snap-x snap-mandatory overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glaze"
         >
           <ol className="flex w-max gap-5 px-gutter pb-4">
             {DAY_STAGES.map(({ stage, tint }, i) => (
@@ -156,13 +162,13 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
               </li>
             ))}
           </ol>
-        </section>
+        </div>
         <PhotoCreditsNote className="mx-auto mt-4 max-w-editorial px-gutter text-[0.75rem] leading-snug text-ash" />
       </section>
 
       {/* Nghệ nhân nổi bật: chân dung lớn, bố cục lệch kiểu tạp chí. */}
       <section
-        className="mx-auto max-w-editorial px-gutter pb-section"
+        className="cv-auto mx-auto max-w-editorial px-gutter pb-section"
         aria-labelledby="artisans-title"
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -176,6 +182,18 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
         </div>
         {householdsResult.status !== 'ok' ? (
           <DataUnavailable className="mt-10 flex flex-col items-start gap-3" />
+        ) : featured.length === 0 ? (
+          <EmptyState
+            className="mt-6"
+            illustration="vase"
+            headingLevel="h3"
+            title={t('artisans.empty')}
+            action={
+              <Link href="/san-pham" className={buttonVariants({ variant: 'secondary' })}>
+                {t('hero.ctaExplore')}
+              </Link>
+            }
+          />
         ) : (
           <ul className="mt-10 grid gap-8 md:grid-cols-3">
             {featured.map((h, i) => (
@@ -207,14 +225,16 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
       </section>
 
       {/* Bản đồ thu nhỏ "đang mở cửa" + số liệu làng. */}
-      <section className="bg-glaze text-paper" aria-labelledby="map-title">
+      <section className="cv-auto bg-glaze text-paper" aria-labelledby="map-title">
         <div className="mx-auto grid max-w-editorial gap-12 px-gutter py-section md:grid-cols-12">
           <div className="md:col-span-5">
             <h2 id="map-title" className="text-paper">
               {t('map.title')}
             </h2>
             <p className="mt-3 text-paper/75">{t('map.lead')}</p>
-            {pinsResult.status === 'ok' ? (
+            {pinsResult.status === 'ok' && visitable.length === 0 ? (
+              <p className="mt-8 text-paper/75">{t('map.empty')}</p>
+            ) : pinsResult.status === 'ok' ? (
               <ul className="mt-8 space-y-3">
                 {visitable.map((pin) => {
                   const state = pinOpenState(pin, now);
@@ -263,7 +283,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
       </section>
 
       <section
-        className="mx-auto max-w-editorial px-gutter py-section"
+        className="cv-auto mx-auto max-w-editorial px-gutter py-section"
         aria-labelledby="stats-title"
       >
         <h2 id="stats-title" className="sr-only">
@@ -287,11 +307,23 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
         </dl>
       </section>
 
-      <section className="mx-auto max-w-editorial px-gutter" aria-labelledby="news-title">
+      <section className="cv-auto mx-auto max-w-editorial px-gutter" aria-labelledby="news-title">
         <div className="flex items-end justify-between gap-4">
           <h2 id="news-title">{t('news.title')}</h2>
         </div>
-        {newsResult.status === 'ok' ? (
+        {newsResult.status === 'ok' && newsResult.page.data.length === 0 ? (
+          <EmptyState
+            className="mt-6"
+            illustration="scroll"
+            headingLevel="h3"
+            title={t('news.empty')}
+            action={
+              <Link href="/tin-tuc" className={buttonVariants({ variant: 'secondary' })}>
+                {t('news.all')}
+              </Link>
+            }
+          />
+        ) : newsResult.status === 'ok' ? (
           <ul className="mt-8 grid gap-6 md:grid-cols-3">
             {newsResult.page.data.map((n) => (
               <li key={n.slug} className="flex flex-col gap-3">

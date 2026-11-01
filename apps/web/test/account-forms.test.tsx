@@ -5,6 +5,11 @@ import { ChangePasswordForm } from '@/features/account/change-password-form';
 import { EmailPreferencesForm } from '@/features/account/email-preferences-form';
 import { renderVi } from './render';
 
+const notifySuccess = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/notify', () => ({
+  notify: { success: notifySuccess, error: vi.fn(), info: vi.fn() },
+}));
+
 const signInWithPassword = vi.fn();
 const updateUser = vi.fn();
 const signOut = vi.fn();
@@ -20,6 +25,7 @@ beforeEach(() => {
   signInWithPassword.mockReset().mockResolvedValue({ error: null });
   updateUser.mockReset().mockResolvedValue({ error: null });
   signOut.mockReset().mockResolvedValue({ error: null });
+  notifySuccess.mockReset();
 });
 
 function fillPasswords(current: string, next: string, confirm = next) {
@@ -33,8 +39,10 @@ describe('ChangePasswordForm', () => {
   it('verifies the current password, updates it, then signs the other devices out', async () => {
     renderVi(<ChangePasswordForm email="ban@vidu.vn" />);
     fillPasswords('mat-khau-cu-1', 'mat-khau-moi-2');
-    expect((await screen.findByRole('status')).textContent).toContain(
-      'Các thiết bị khác đã được đăng xuất',
+    await waitFor(() =>
+      expect(notifySuccess).toHaveBeenCalledWith(
+        expect.stringContaining('Các thiết bị khác đã được đăng xuất'),
+      ),
     );
     expect(signInWithPassword).toHaveBeenCalledWith({
       email: 'ban@vidu.vn',
@@ -115,7 +123,9 @@ describe('EmailPreferencesForm', () => {
 
     fireEvent.click(invited);
     fireEvent.click(screen.getByRole('button', { name: 'Lưu lựa chọn' }));
-    expect((await screen.findByRole('status')).textContent).toContain('Đã lưu');
+    await waitFor(() =>
+      expect(notifySuccess).toHaveBeenCalledWith(expect.stringContaining('Đã lưu')),
+    );
     expect(saveNotificationPreferences).toHaveBeenCalledWith({
       preferences: [
         { type: 'RFQ_INVITED', email: false },

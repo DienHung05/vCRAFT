@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { LiveContributionWorkspace } from '@/features/rfq/live-contribution-workspace';
 import { QuotationInvitations } from '@/features/studio/quotation-invitations';
 import { StudioAllocations } from '@/features/studio/studio-allocations';
+import { confirmDialog } from './confirm';
 import { renderVi } from './render';
 
 vi.mock('@/i18n/navigation', () => ({
@@ -140,6 +141,8 @@ describe('Decline in the contribution workspace', () => {
       />,
     );
     fireEvent.click(await screen.findByRole('button', { name: 'Từ chối lời mời' }));
+    expect(declineInvitation).not.toHaveBeenCalled();
+    confirmDialog('Từ chối lời mời');
     await waitFor(() => expect(declineInvitation).toHaveBeenCalledWith(ID));
     expect(await screen.findByText(/Hộ đã từ chối lời mời này/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Từ chối lời mời' })).toBeNull();

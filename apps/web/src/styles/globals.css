@@ -3,6 +3,12 @@
 @source "../../../../packages/ui/src";
 
 @layer base {
+  /* One visible keyboard focus ring everywhere (DESIGN.md: 2px glaze outline, 2px offset). */
+  :focus-visible {
+    outline: 2px solid var(--color-glaze);
+    outline-offset: 2px;
+  }
+
   body {
     background: var(--color-paper);
     color: var(--color-ink);
@@ -34,5 +40,33 @@
     font-size: var(--text-h3);
     line-height: var(--text-h3--line-height);
     letter-spacing: var(--text-h3--letter-spacing);
+  }
+}
+
+/*
+ * Sections far below the fold skip layout and paint (and their lazy images stay unfetched) until the
+ * reader scrolls near them. `auto` in contain-intrinsic-size remembers the rendered height afterwards.
+ */
+@utility cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 48rem;
+}
+
+/*
+ * Reduced motion (DESIGN.md: collapse motion to a short fade): no CSS transition or looping animation
+ * survives the preference, whatever utility asked for it. Unlayered, so it beats Tailwind's layered
+ * utilities without `!important`. The stamp keeps its 150ms fade (theme.css).
+ */
+@media (prefers-reduced-motion: reduce) {
+  *:not(.animate-stamp),
+  *:not(.animate-stamp)::before,
+  *:not(.animate-stamp)::after {
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+    scroll-behavior: auto;
+  }
+  .animate-pulse,
+  .animate-ping {
+    animation: none;
   }
 }

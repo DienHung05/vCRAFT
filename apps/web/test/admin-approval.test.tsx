@@ -5,11 +5,16 @@ import { describe, expect, it, vi } from 'vitest';
 import { AdminDashboard } from '@/features/admin/admin-dashboard';
 import { HouseholdQueue } from '@/features/admin/household-queue';
 import { HouseholdReview } from '@/features/admin/household-review';
+import { confirmDialog } from './confirm';
 import { renderVi } from './render';
 
 vi.mock('next/dynamic', () => ({ default: () => () => null }));
 vi.mock('@/i18n/navigation', () => ({
   Link: ({ children }: { children: React.ReactNode }) => <a href="/x">{children}</a>,
+}));
+const notifySuccess = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/notify', () => ({
+  notify: { success: notifySuccess, error: vi.fn(), info: vi.fn() },
 }));
 
 const ID = '00000000-0000-4000-8000-000000000001';
@@ -131,9 +136,11 @@ describe('HouseholdReview', () => {
     const api = client();
     renderVi(<HouseholdReview householdId={ID} client={api} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Duyệt' }));
+    // Every decision waits for a confirmation.
+    expect(api.decide).not.toHaveBeenCalled();
+    confirmDialog('Duyệt');
     await waitFor(() => expect(api.decide).toHaveBeenCalledWith(ID, 'approve', 4, ''));
-    expect(await screen.findByRole('status')).toBeTruthy();
-    expect(screen.getAllByText('Đã duyệt và đóng ấn.').length).toBeGreaterThan(0);
+    await waitFor(() => expect(notifySuccess).toHaveBeenCalledWith('Đã duyệt và đóng ấn.'));
     expect(screen.getByRole('button', { name: 'Tạm khóa hộ' })).toBeTruthy();
   });
 
@@ -145,6 +152,7 @@ describe('HouseholdReview', () => {
     fireEvent.change(screen.getByLabelText('Lý do'), { target: { value: 'Thiếu giấy cư trú' } });
     expect(reject.disabled).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: 'Yêu cầu bổ sung' }));
+    confirmDialog('Yêu cầu bổ sung');
     await waitFor(() =>
       expect(api.decide).toHaveBeenCalledWith(ID, 'request-info', 4, 'Thiếu giấy cư trú'),
     );
@@ -159,6 +167,7 @@ describe('HouseholdReview', () => {
     });
     renderVi(<HouseholdReview householdId={ID} client={api} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Mở khóa hộ' }));
+    confirmDialog('Mở khóa hộ');
     expect(await screen.findByRole('alert')).toBeTruthy();
     expect(api.getHousehold).toHaveBeenCalledTimes(2);
   });

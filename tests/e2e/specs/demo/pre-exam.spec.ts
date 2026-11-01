@@ -20,8 +20,19 @@ const PAGES = [
   `/vi/nghe-nhan/${DEMO.householdSlug}`,
   '/vi/san-pham',
   `/vi/truy-xuat/${DEMO.qrTraceCode}`,
+  // GH#38: the rest of the public pages and the auth screens.
+  '/en',
+  '/vi/ban-do',
+  '/vi/tin-tuc',
+  '/vi/ghi-nhan-anh',
+  '/vi/chinh-sach-quyen-rieng-tu',
+  '/vi/dang-nhap',
+  '/vi/dang-ky',
+  '/vi/dang-ky-nghe-nhan',
+  '/vi/quen-mat-khau',
+  '/vi/khong-co-trang-nao',
 ] as const;
-const WIDTHS = [360, 768, 1024, 1440] as const;
+const WIDTHS = [360, 768, 1024, 1280, 1440, 1536] as const;
 
 test.use({ locale: 'vi-VN' });
 

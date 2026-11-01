@@ -1,6 +1,7 @@
 import type { NewsDetailDto } from '@vcraft/contracts';
 import { Badge } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
+import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
 import { photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
@@ -10,14 +11,17 @@ import { Link } from '@/i18n/navigation';
 export function NewsArticleView({ article }: { article: NewsDetailDto }) {
   const t = useTranslations('indexPages.news');
   const category = useTranslations('indexPages.news.categories');
+  const common = useTranslations('common');
   const format = useFormatter();
   return (
     <article className="mx-auto flex max-w-prose-vn flex-col gap-6 px-gutter pt-12 pb-section">
-      <nav aria-label={t('allNews')} className="text-small text-ash">
-        <Link href="/tin-tuc" className="hover:text-ink">
-          {t('allNews')}
-        </Link>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: common('home'), href: '/' },
+          { label: t('allNews'), href: '/tin-tuc' },
+          { label: article.title },
+        ]}
+      />
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2 text-small text-ash">
           {article.pinned ? <Badge tone="seal">{t('pinned')}</Badge> : null}

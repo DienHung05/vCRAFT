@@ -2,8 +2,11 @@
 
 import { createVillageNewsClient, type VillageNewsClient } from '@vcraft/api-client';
 import type { NewsDetailDto, NewsSummaryDto } from '@vcraft/contracts';
+import { buttonVariants } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
+import { EmptyState } from '@/components/states/empty-state';
+import { ArticleSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
 import { useLiveClient } from '@/lib/api/live-session';
 import { NewsArticleView } from './news-article';
@@ -78,14 +81,17 @@ export function VillageArticle({
   }, [client, loading, slug]);
 
   if (state === 'ready' && article) return <NewsArticleView article={article} />;
+  if (state === 'loading') return <ArticleSkeleton label={t('loading')} />;
   return (
-    <div className="mx-auto flex max-w-prose-vn flex-col gap-4 px-gutter py-12">
-      <p role="status">{t(state === 'loading' ? 'loading' : 'notFound')}</p>
-      {state === 'not-found' ? (
-        <Link href="/tin-tuc" className="text-clay underline underline-offset-4">
+    <EmptyState
+      className="px-gutter py-section"
+      illustration="scroll"
+      title={t('notFound')}
+      action={
+        <Link href="/tin-tuc" className={buttonVariants({ variant: 'secondary' })}>
           {t('allNews')}
         </Link>
-      ) : null}
-    </div>
+      }
+    />
   );
 }

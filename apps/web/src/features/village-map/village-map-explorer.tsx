@@ -5,7 +5,9 @@ import { Button } from '@vcraft/ui';
 import dynamic from 'next/dynamic';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
+import { EmptyState } from '@/components/states/empty-state';
 import { Link } from '@/i18n/navigation';
+import { useUntabbable } from '@/lib/a11y/use-untabbable';
 import {
   craftsOf,
   distanceKm,
@@ -52,6 +54,9 @@ export function VillageMapExplorer({ pins }: { pins: readonly MapPinDto[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [origin, setOrigin] = useState<LatLng | null>(null);
   const [locationState, setLocationState] = useState<LocationState>('idle');
+  // The map frame is aria-hidden (the list beside it is the accessible equivalent), so nothing inside
+  // it may take focus.
+  const frame = useUntabbable<HTMLDivElement>(webgl);
 
   useEffect(() => {
     setWebgl(supportsWebGL());
@@ -145,6 +150,7 @@ export function VillageMapExplorer({ pins }: { pins: readonly MapPinDto[] }) {
         ) : (
           // Bản đồ chỉ là minh họa thêm; nội dung tương đương nằm trong danh sách bên cạnh.
           <div
+            ref={frame}
             aria-hidden="true"
             data-testid="map-frame"
             className="h-[55svh] min-h-80 overflow-hidden rounded-card shadow-warm lg:sticky lg:top-6 lg:h-[75svh]"
@@ -180,7 +186,25 @@ export function VillageMapExplorer({ pins }: { pins: readonly MapPinDto[] }) {
             ) : null}
           </div>
           {listed.length === 0 ? (
-            <p className="mt-4 text-ash">{t('empty')}</p>
+            <EmptyState
+              className="mt-4"
+              illustration="magnifier"
+              title={t('empty')}
+              action={
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setOpenNow(false);
+                    setVisitable(false);
+                    setCraft('');
+                    setBounds(null);
+                  }}
+                >
+                  {t('clearFilters')}
+                </Button>
+              }
+            />
           ) : (
             <ol className="mt-4 flex flex-col" data-testid="workshop-list">
               {listed.map((pin) => {

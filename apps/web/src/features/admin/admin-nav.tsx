@@ -33,7 +33,7 @@ export function AdminNav() {
   const linkClass = (active: boolean) =>
     cn(
       itemClass,
-      active ? 'bg-clay/12 font-medium text-clay' : 'text-ink/80 hover:bg-ink/6 hover:text-ink',
+      active ? 'bg-clay/12 font-medium text-clay-ink' : 'text-ink/80 hover:bg-ink/6 hover:text-ink',
     );
   const onQueue = pathname.startsWith('/admin/duyet-ho');
   const onCoordination = pathname.startsWith('/admin/dieu-phoi');

@@ -2,12 +2,16 @@
 
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
 import type { MyInvitationDto } from '@vcraft/contracts';
-import { Badge, Button, Card } from '@vcraft/ui';
+import { Badge, buttonVariants, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
+import { EmptyState } from '@/components/states/empty-state';
+import { ErrorState } from '@/components/states/error-state';
+import { ListSkeleton } from '@/components/states/skeletons';
 import { DeadlineCountdown } from '@/features/rfq/deadline-countdown';
 import { Link } from '@/i18n/navigation';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
+import { useMoney } from '@/lib/use-money';
 
 const isOpen = ({ request }: MyInvitationDto) =>
   ['SENT', 'BIDDING'].includes(request.status) &&
@@ -17,7 +21,15 @@ const isOpen = ({ request }: MyInvitationDto) =>
 export function QuotationInvitations({ client: provided }: { client?: QuotationClient }) {
   const t = useTranslations('studio.invitations');
   const { client, loading } = useQuotationClient(provided);
-  if (loading) return <p className="mx-auto max-w-editorial px-gutter py-12">{t('loading')}</p>;
+  if (loading) {
+    return (
+      <ListSkeleton
+        label={t('loading')}
+        className="mx-auto max-w-editorial px-gutter py-8"
+        rows={3}
+      />
+    );
+  }
   if (!client) return <p className="mx-auto max-w-editorial px-gutter py-12">{t('signIn')}</p>;
   return <Invitations client={client} />;
 }
@@ -25,6 +37,7 @@ export function QuotationInvitations({ client: provided }: { client?: QuotationC
 function Invitations({ client }: { client: QuotationClient }) {
   const t = useTranslations('studio.invitations');
   const format = useFormatter();
+  const money = useMoney();
   const [rows, setRows] = useState<readonly MyInvitationDto[] | null>(null);
   const [state, setState] = useState<'ok' | 'failed' | 'signed-out'>('ok');
 
@@ -46,7 +59,7 @@ function Invitations({ client }: { client: QuotationClient }) {
   const offerLabel = ({ request, contribution, declined }: MyInvitationDto) => {
     if (contribution?.status === 'ACTIVE')
       return t('active', {
-        price: format.number(contribution.unitPriceVnd, 'vnd'),
+        price: money(contribution.unitPriceVnd),
         unit: request.unit,
         quantity: format.number(contribution.maxQuantity),
       });
@@ -63,16 +76,20 @@ function Invitations({ client }: { client: QuotationClient }) {
       {state === 'signed-out' ? (
         <p>{t('signIn')}</p>
       ) : state === 'failed' ? (
-        <div role="alert" className="flex flex-col items-start gap-3">
-          <p>{t('failed')}</p>
-          <Button type="button" variant="secondary" onClick={() => void load()}>
-            {t('retry')}
-          </Button>
-        </div>
+        <ErrorState message={t('failed')} onRetry={() => void load()} />
       ) : rows === null ? (
-        <p role="status">{t('loading')}</p>
+        <ListSkeleton label={t('loading')} className="" rows={3} withHeader={false} />
       ) : rows.length === 0 ? (
-        <p className="text-ash">{t('empty')}</p>
+        <EmptyState
+          illustration="scroll"
+          title={t('empty')}
+          description={t('emptyHint')}
+          action={
+            <Link href="/studio/ho-so" className={buttonVariants({ variant: 'secondary' })}>
+              {t('emptyAction')}
+            </Link>
+          }
+        />
       ) : (
         <ul className="flex flex-col gap-3" data-testid="invitations">
           {rows.map((row) => (

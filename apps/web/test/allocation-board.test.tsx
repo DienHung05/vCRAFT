@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { AllocationBoard, type AllocationBoardProps } from '@/features/admin/allocation-board';
+import { confirmDialog } from './confirm';
 import { renderVi } from './render';
 
 const CLOSING = '2026-11-10T10:00:00.000Z';
@@ -52,6 +53,12 @@ function props(overrides: Partial<AllocationBoardProps> = {}): AllocationBoardPr
 
 const set = (name: string, value: string) =>
   fireEvent.change(screen.getByLabelText(`Nhập số lượng cho ${name}`), { target: { value } });
+
+/** With a live `onSubmit` the send button first asks for a confirmation. */
+const sendAndConfirm = () => {
+  fireEvent.click(submitButton());
+  confirmDialog('Gửi chào giá liên kết');
+};
 
 const submitButton = () =>
   screen.getByRole('button', { name: 'Gửi chào giá liên kết' }) as HTMLButtonElement;
@@ -141,7 +148,7 @@ describe('AllocationBoard (chia đơn thủ công, GH#10)', () => {
     set('Gốm Minh Hải', '1200');
     set('Gốm Lam Ngọc', '900');
     set('Lò Đức Phát', '900');
-    fireEvent.click(submitButton());
+    sendAndConfirm();
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit).toHaveBeenCalledWith({
       requestVersion: 4,
@@ -180,11 +187,11 @@ describe('AllocationBoard (chia đơn thủ công, GH#10)', () => {
     set('Gốm Minh Hải', '1200');
     set('Gốm Lam Ngọc', '900');
     set('Lò Đức Phát', '900');
-    fireEvent.click(submitButton());
+    sendAndConfirm();
     await waitFor(() => expect(screen.getByText('MẠNG LỖI')).toBeTruthy());
     expect(submitButton().disabled).toBe(false);
     // Gửi lại được sau khi lỗi.
-    fireEvent.click(submitButton());
+    sendAndConfirm();
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2));
   });
 
@@ -205,7 +212,7 @@ it('sends only the selected households when their quantities cover the whole req
   set('Gốm Minh Hải', '1200');
   set('Gốm Lam Ngọc', '900');
   expect(submitButton().disabled).toBe(false);
-  fireEvent.click(submitButton());
+  sendAndConfirm();
   await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
   expect(
     onSubmit.mock.calls[0]?.[0].parts.map((part: { householdId: string }) => part.householdId),

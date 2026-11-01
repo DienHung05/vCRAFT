@@ -32,7 +32,10 @@ export interface FamilyEvent {
 /** Ảnh thật có giấy phép (xem `photo-credits.ts`): `id` khớp file trong /images/demo, `alt` mô tả đúng điều nhìn thấy. */
 export interface DemoPhotoRef {
   id: string;
+  /** Vietnamese description; shown only when there is no translation under `photoAlt.<altKey>`. */
   alt: string;
+  /** Key in the `photoAlt` message namespace, so the alt text follows the interface language. */
+  altKey?: string;
 }
 
 export interface GalleryShot {

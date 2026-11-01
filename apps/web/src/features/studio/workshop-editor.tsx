@@ -6,6 +6,7 @@ import { Button, Card } from '@vcraft/ui';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { notify } from '@/lib/notify';
 
 const WorkshopMapPicker = dynamic(() => import('./workshop-map-picker'), {
   ssr: false,
@@ -67,7 +68,7 @@ export function WorkshopEditor({
   const common = useTranslations('studio');
   const days = useTranslations('villageMap.days');
   const [draft, setDraft] = useState(() => toDraft(workshop));
-  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'failed' | 'denied'>('idle');
+  const [status, setStatus] = useState<'idle' | 'saving' | 'failed' | 'denied'>('idle');
   const patch = (change: Partial<Draft>) => setDraft((current) => ({ ...current, ...change }));
 
   const toggleDay = (day: number, open: boolean) =>
@@ -94,7 +95,8 @@ export function WorkshopEditor({
       if (workshop) await client.updateWorkshop(workshop.id, workshop.version, body);
       else await client.addWorkshop(body);
       await onSaved();
-      setStatus('saved');
+      setStatus('idle');
+      notify.success(common('saved'));
     } catch {
       setStatus('failed');
     }
@@ -139,6 +141,7 @@ export function WorkshopEditor({
         <p className="text-small text-ash">{t('mapHint')}</p>
         <div className="h-64 overflow-hidden rounded-card" data-testid="workshop-map">
           <WorkshopMapPicker
+            {...(workshop?.name ? { label: workshop.name } : {})}
             lat={draft.lat}
             lng={draft.lng}
             onPick={(lat, lng) => patch({ lat, lng })}
@@ -247,11 +250,6 @@ export function WorkshopEditor({
         <Button type="button" disabled={status === 'saving'} onClick={() => void save()}>
           {common('save')}
         </Button>
-        {status === 'saved' ? (
-          <p role="status" className="text-small text-glaze">
-            {common('saved')}
-          </p>
-        ) : null}
         {status === 'failed' ? (
           <p role="alert" className="text-small text-seal">
             {common('saveFailed')}

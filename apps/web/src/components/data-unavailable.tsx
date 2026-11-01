@@ -1,18 +1,24 @@
-import { useTranslations } from 'next-intl';
 import { RetryLink } from './retry-link';
+import { ErrorState } from './states/error-state';
 
-/** Khối báo lỗi tải dữ liệu từ API, kèm nút thử lại (phân biệt với 404 thật). */
-export function DataUnavailable({ className }: { className?: string }) {
-  const t = useTranslations('common');
+/**
+ * Block shown when a server-rendered data block could not load from the API, with a retry button
+ * that reloads the route's data (distinct from a real 404). Client-loaded blocks use `ErrorState`
+ * with their own `onRetry`.
+ */
+export function DataUnavailable({
+  className,
+  message,
+}: {
+  className?: string;
+  /** More specific text than the generic "could not load". */
+  message?: string;
+}) {
   return (
-    <div
-      role="alert"
-      className={
-        className ?? 'mx-auto flex max-w-editorial flex-col items-start gap-3 px-gutter py-section'
-      }
-    >
-      <p className="text-ash">{t('dataUnavailable')}</p>
-      <RetryLink />
-    </div>
+    <ErrorState
+      message={message}
+      action={<RetryLink />}
+      className={className ?? 'mx-auto max-w-editorial px-gutter py-section'}
+    />
   );
 }

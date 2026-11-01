@@ -13,7 +13,14 @@ import { useAccount } from '@/lib/auth/use-account';
  * tài khoản với email, vai trò (theo CSDL vCraft) và nút đăng xuất. Dùng được ở mọi khung (header
  * công khai, thanh bên Admin). `align` quyết định menu xổ về phía nào.
  */
-export function AccountMenu({ align = 'end' }: { align?: 'start' | 'end' }) {
+export function AccountMenu({
+  align = 'end',
+  compact = false,
+}: {
+  align?: 'start' | 'end';
+  /** Show only the avatar until 2xl: the crowded public header has no room for the email. */
+  compact?: boolean;
+}) {
   const t = useTranslations('auth');
   const locale = useLocale();
   const account = useAccount();
@@ -25,7 +32,12 @@ export function AccountMenu({ align = 'end' }: { align?: 'start' | 'end' }) {
     const close = (event: Event) => {
       const el = menu.current;
       if (!el?.open) return;
-      if (event instanceof KeyboardEvent && event.key !== 'Escape') return;
+      if (event instanceof KeyboardEvent) {
+        if (event.key !== 'Escape') return;
+        el.open = false;
+        el.querySelector('summary')?.focus();
+        return;
+      }
       if (
         event instanceof MouseEvent &&
         event.target instanceof Node &&
@@ -79,17 +91,23 @@ export function AccountMenu({ align = 'end' }: { align?: 'start' | 'end' }) {
 
   return (
     <details ref={menu} className="group relative">
-      <summary
-        aria-label={t('nav.account')}
-        className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-input pr-2 pl-1 text-small text-ink hover:bg-ink/6 focus-visible:outline-2 focus-visible:outline-glaze [&::-webkit-details-marker]:hidden"
-      >
+      <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-input pr-2 pl-1 text-small text-ink hover:bg-ink/6 focus-visible:outline-2 focus-visible:outline-glaze [&::-webkit-details-marker]:hidden">
         <span
           aria-hidden="true"
           className="grid size-7 place-items-center rounded-full bg-glaze font-medium text-paper"
         >
           {initial}
         </span>
-        <span className="hidden max-w-36 truncate md:inline">{email}</span>
+        {/* The name comes from the content, so the visible email is always part of it (WCAG 2.5.3). */}
+        <span
+          className={cn(
+            'max-w-36 truncate',
+            compact ? 'sr-only 2xl:not-sr-only' : 'sr-only md:not-sr-only',
+          )}
+        >
+          <span className="sr-only">{t('nav.account')}: </span>
+          {email}
+        </span>
       </summary>
       <div
         className={cn(

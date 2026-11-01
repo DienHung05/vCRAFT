@@ -25,6 +25,7 @@ import { prepareImage, sendMedia } from '@/features/media/prepare-image';
 import { UploadList } from '@/features/media/upload-list';
 import { type UploadItem, UploadQueue } from '@/features/media/upload-queue';
 import { browserAccessToken } from '@/lib/api/live-session';
+import { notify } from '@/lib/notify';
 import { inputClass } from './workshop-editor';
 
 type Photo = ProductDto['images'][number];
@@ -102,7 +103,7 @@ export function ProductPhotos({
   const [photos, setPhotos] = useState(product.images);
   const [uploads, setUploads] = useState<readonly UploadItem<string>[]>([]);
   const [skipped, setSkipped] = useState(0);
-  const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'failed' | 'stale'>('idle');
+  const [state, setState] = useState<'idle' | 'saving' | 'failed' | 'stale'>('idle');
   const seen = useRef(new Set<string>());
   const queue = useRef<UploadQueue<string> | null>(null);
   const sensors = useSensors(
@@ -159,7 +160,8 @@ export function ProductPhotos({
         images: photos.map(({ mediaId, alt }) => ({ mediaId, alt })),
       });
       await onSaved();
-      setState('saved');
+      setState('idle');
+      notify.success(common('saved'));
     } catch (error) {
       setState(error instanceof ApiError && error.status === 409 ? 'stale' : 'failed');
       if (error instanceof ApiError && error.status === 409) await onSaved();
@@ -222,11 +224,6 @@ export function ProductPhotos({
         <Button type="button" disabled={!valid || state === 'saving'} onClick={() => void save()}>
           {common('save')}
         </Button>
-        {state === 'saved' ? (
-          <p role="status" className="text-small text-glaze">
-            {common('saved')}
-          </p>
-        ) : null}
         {state === 'stale' || state === 'failed' ? (
           <p role="alert" className="text-small text-seal">
             {common(state === 'stale' ? 'stale' : 'saveFailed')}

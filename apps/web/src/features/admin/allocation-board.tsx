@@ -4,6 +4,9 @@ import { assembleCooperativeQuotation, isCompletionDateValid } from '@vcraft/dom
 import { Button, Card, Crackle, cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useId, useMemo, useState } from 'react';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { notify } from '@/lib/notify';
+import { useMoney } from '@/lib/use-money';
 
 const STEP = 10;
 
@@ -102,6 +105,7 @@ export function AllocationBoard({
   const [additionalCharge, setAdditionalCharge] = useState('0');
   const [deliveryTerms, setDeliveryTerms] = useState<'INCLUDED' | 'SEPARATE'>('INCLUDED');
   const [submit, setSubmit] = useState<SubmitState>({ kind: 'idle' });
+  const [confirming, setConfirming] = useState(false);
 
   const parsed = useMemo(
     () =>
@@ -192,6 +196,7 @@ export function AllocationBoard({
         deliveryTerms,
       });
       setSubmit({ kind: 'sent' });
+      notify.success(t('sentToast'));
     } catch (error) {
       setSubmit({
         kind: 'error',
@@ -200,7 +205,7 @@ export function AllocationBoard({
     }
   };
 
-  const money = (v: number) => format.number(v, 'vnd');
+  const money = useMoney();
   const num = (v: number) => format.number(v);
   const barTotal = Math.max(quantity, sum);
   const total =
@@ -443,7 +448,7 @@ export function AllocationBoard({
           <div className="flex flex-col gap-2">
             <Button
               disabled={!ready || submit.kind === 'sending' || submit.kind === 'sent'}
-              onClick={send}
+              onClick={() => (onSubmit ? setConfirming(true) : void send())}
             >
               {submit.kind === 'sending'
                 ? t('sendingLabel')
@@ -467,6 +472,20 @@ export function AllocationBoard({
           </div>
         </Card>
       </div>
+
+      <ConfirmDialog
+        open={confirming}
+        title={t('confirmTitle')}
+        confirmLabel={t('send')}
+        cancelLabel={t('cancel')}
+        onClose={() => setConfirming(false)}
+        onConfirm={() => {
+          setConfirming(false);
+          void send();
+        }}
+      >
+        <p className="text-ash">{t('confirmText', { total: money(total) })}</p>
+      </ConfirmDialog>
 
       {submit.kind === 'sent' ? (
         <section
