@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import type { DemoPhotoRef } from '@/lib/demo/data';
 import { PHOTO_BY_ID } from '@/lib/demo/photo-credits';
-import { buildResponsiveImage, type ImageVariant } from '@/lib/images';
+import { aboveTheFoldUrl, buildResponsiveImage, type ImageVariant } from '@/lib/images';
 
 export interface ImageSlotProps {
   /** Mô tả ảnh (alt), bắt buộc như ảnh thật (FR-ART-04). Khi có `photo`, dùng alt của ảnh. */
@@ -58,7 +58,7 @@ export function ImageSlot({
     credit?.widths.map((w) => `${base}-${w}.${ext} ${w}w`).join(', ');
   const smallest = credit ? Math.min(...credit.widths) : 0;
   const [rw = 1, rh = 1] = (ratio ?? credit?.ratio ?? '1/1').split('/').map(Number);
-  const responsive = buildResponsiveImage(variants);
+  const responsive = buildResponsiveImage(variants, priority ? aboveTheFoldUrl : undefined);
 
   return (
     <div
@@ -96,7 +96,7 @@ export function ImageSlot({
             <source type="image/webp" srcSet={responsive.webp} sizes={sizes} />
           ) : null}
           <img
-            src={src}
+            src={priority ? aboveTheFoldUrl(src) : src}
             alt=""
             {...(responsive.width && { width: responsive.width, height: responsive.height })}
             loading={priority ? 'eager' : 'lazy'}

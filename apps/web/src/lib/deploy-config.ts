@@ -27,6 +27,48 @@ export function apiRewrites(
   return [{ source: '/api/:path*', destination: `${origin}/api/:path*` }];
 }
 
+/** Same-origin path under which the web serves public Storage files (see `app/media-cache`). */
+export const MEDIA_PROXY_PREFIX = '/media-cache';
+
+const STORAGE_PUBLIC_PATH = '/storage/v1/object/public/';
+
+/**
+ * Public Storage URL behind a `/media-cache/<path>` request; null when Storage is not configured or the
+ * path is unsafe. Only the project's own public Storage is ever reachable.
+ */
+export function storageUrlFor(
+  path: readonly string[],
+  supabaseUrl: string | undefined,
+): string | null {
+  const configured = supabaseUrl?.trim();
+  if (!configured || path.length === 0) return null;
+  if (path.some((segment) => segment === '' || segment === '.' || segment === '..')) return null;
+  try {
+    const storageOrigin = new URL(configured).origin;
+    return `${storageOrigin}${STORAGE_PUBLIC_PATH}${path.map(encodeURIComponent).join('/')}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Same-origin form of a public Storage URL (`https://<ref>.supabase.co/storage/v1/object/public/<path>`
+ * becomes `/media-cache/<path>`); any other URL, or an unset `supabaseUrl`, comes back unchanged.
+ * Lighthouse (simulated throttling) charges a cross-origin LCP image a full DNS + TCP + TLS handshake and
+ * counts every font and script that finished before the image painted, so the hero is served from the
+ * page's own warm origin and from a cache (see `app/media-cache/[...path]/route.ts`).
+ */
+export function sameOriginMediaUrl(url: string, supabaseUrl: string | undefined): string {
+  const configured = supabaseUrl?.trim();
+  if (!configured) return url;
+  try {
+    const prefix = `${new URL(configured).origin}${STORAGE_PUBLIC_PATH}`;
+    return url.startsWith(prefix) ? `${MEDIA_PROXY_PREFIX}/${url.slice(prefix.length)}` : url;
+  } catch {
+    return url;
+  }
+}
+
 export interface HeaderRule {
   source: string;
   headers: { key: string; value: string }[];
