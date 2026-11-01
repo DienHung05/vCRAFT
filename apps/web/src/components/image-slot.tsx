@@ -95,7 +95,6 @@ export function ImageSlot({
           {responsive.webp ? (
             <source type="image/webp" srcSet={responsive.webp} sizes={sizes} />
           ) : null}
-          {/* biome-ignore lint/performance/noImgElement: variants come pre-optimised from the media store, so next/image has nothing to add. */}
           <img
             src={src}
             alt=""

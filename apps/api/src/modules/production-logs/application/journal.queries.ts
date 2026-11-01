@@ -25,7 +25,6 @@ export function loadEntries(em: EntityManager, product: Product): Promise<Journa
 }
 
 export async function toJournalDto(
-  em: EntityManager,
   product: Product,
   entries: readonly JournalEntry[],
   media: MediaService,
@@ -71,5 +70,5 @@ export async function loadJournal(
   product: Product,
   media: MediaService,
 ): Promise<JournalDto> {
-  return toJournalDto(em, product, await loadEntries(em, product), media);
+  return toJournalDto(product, await loadEntries(em, product), media);
 }
