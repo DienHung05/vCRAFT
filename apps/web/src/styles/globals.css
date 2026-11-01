@@ -2,6 +2,23 @@
 @import "@vcraft/ui/theme.css";
 @source "../../../../packages/ui/src";
 
+/*
+ * Font families (see src/lib/web-fonts.ts): `<html style>` carries `--font-*-web` (the web font plus its
+ * fallback) and `--font-*-fallback` (the metric-matched fallback only). The page starts on the fallbacks
+ * and `<WebFonts>` sets data-fonts="ready" after hydration, so no font file competes with the hero image.
+ */
+html {
+  --font-fraunces: var(--font-fraunces-fallback);
+  --font-be-vietnam: var(--font-be-vietnam-fallback);
+  --font-jetbrains-mono: var(--font-jetbrains-mono-fallback);
+}
+
+html[data-fonts="ready"] {
+  --font-fraunces: var(--font-fraunces-web);
+  --font-be-vietnam: var(--font-be-vietnam-web);
+  --font-jetbrains-mono: var(--font-jetbrains-mono-web);
+}
+
 @layer base {
   /* One visible keyboard focus ring everywhere (DESIGN.md: 2px glaze outline, 2px offset). */
   :focus-visible {

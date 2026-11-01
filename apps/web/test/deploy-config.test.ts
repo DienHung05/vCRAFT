@@ -1,5 +1,43 @@
 import { describe, expect, it } from 'vitest';
-import { apiRewrites, securityHeaders } from '../src/lib/deploy-config';
+import {
+  apiRewrites,
+  sameOriginMediaUrl,
+  securityHeaders,
+  storageUrlFor,
+} from '../src/lib/deploy-config';
+
+const SUPABASE = 'https://ref.supabase.co';
+
+describe('storageUrlFor', () => {
+  it('maps a /media-cache path onto the project public Storage', () => {
+    expect(storageUrlFor(['media', 'v', 'a b', '640.avif'], SUPABASE)).toBe(
+      'https://ref.supabase.co/storage/v1/object/public/media/v/a%20b/640.avif',
+    );
+    expect(storageUrlFor(['m', '1.avif'], `${SUPABASE}/some/path`)).toBe(
+      'https://ref.supabase.co/storage/v1/object/public/m/1.avif',
+    );
+  });
+
+  it('refuses traversal, empty paths and a missing or malformed project URL', () => {
+    expect(storageUrlFor(['..', 'x'], SUPABASE)).toBeNull();
+    expect(storageUrlFor(['a', '', 'x'], SUPABASE)).toBeNull();
+    expect(storageUrlFor([], SUPABASE)).toBeNull();
+    expect(storageUrlFor(['a'], undefined)).toBeNull();
+    expect(storageUrlFor(['a'], 'not a url')).toBeNull();
+  });
+});
+
+describe('sameOriginMediaUrl', () => {
+  it('rewrites public Storage URLs of the project and leaves every other URL alone', () => {
+    const url = `${SUPABASE}/storage/v1/object/public/media/v/1280.avif`;
+    expect(sameOriginMediaUrl(url, SUPABASE)).toBe('/media-cache/media/v/1280.avif');
+    expect(sameOriginMediaUrl('https://other.test/a.avif', SUPABASE)).toBe(
+      'https://other.test/a.avif',
+    );
+    expect(sameOriginMediaUrl('/images/demo/a.webp', SUPABASE)).toBe('/images/demo/a.webp');
+    expect(sameOriginMediaUrl(url, undefined)).toBe(url);
+  });
+});
 
 describe('apiRewrites', () => {
   it('chỉ lấy origin của API_INTERNAL_URL, bỏ tiền tố /api/v1', () => {

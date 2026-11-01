@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ImageSlot } from '@/components/image-slot';
 import { photoFromUrl, slotPhoto } from '@/features/catalog/view-models';
 import { buildResponsiveImage, type ImageVariant } from '@/lib/images';
@@ -47,6 +47,11 @@ describe('buildResponsiveImage', () => {
     expect(built.webp).toBe('https://cdn.test/v/640.webp 640w');
   });
 
+  it('maps every variant URL through the given function', () => {
+    const built = buildResponsiveImage(VARIANTS, (url) => url.replace('https://cdn.test', ''));
+    expect(built.avif).toBe('/v/320.avif 320w, /v/640.avif 640w, /v/1280.avif 1280w');
+  });
+
   it('lists a width only once', () => {
     const built = buildResponsiveImage([variant('webp', 640), variant('webp', 640)]);
     expect(built.webp).toBe('https://cdn.test/v/640.webp 640w');
@@ -91,5 +96,39 @@ describe('<ImageSlot> with variants', () => {
     );
     expect(container.querySelectorAll('source')).toHaveLength(0);
     expect(container.querySelector('img')?.getAttribute('src')).toBe('https://cdn.test/one.webp');
+  });
+});
+
+describe('<ImageSlot> priority image from Storage', () => {
+  const storage = 'https://ref.supabase.co/storage/v1/object/public/media/v';
+  const variants: ImageVariant[] = [
+    { format: 'avif', width: 640, height: 360, url: `${storage}/640.avif` },
+    { format: 'webp', width: 640, height: 360, url: `${storage}/640.webp` },
+  ];
+  const view = photoFromUrl(`${storage}/640.webp`, 'Alt', variants);
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('serves the above-the-fold image from the web origin, and lazy images from Storage', () => {
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://ref.supabase.co');
+    const hero = renderVi(
+      <ImageSlot alt="Alt" tint="#888" priority {...slotPhoto(view)} />,
+    ).container;
+    expect(hero.querySelector('img')?.getAttribute('src')).toBe('/media-cache/media/v/640.webp');
+    expect(hero.querySelector('source[type="image/avif"]')?.getAttribute('srcset')).toBe(
+      '/media-cache/media/v/640.avif 640w',
+    );
+    const lazy = renderVi(<ImageSlot alt="Alt" tint="#888" {...slotPhoto(view)} />).container;
+    expect(lazy.querySelector('img')?.getAttribute('src')).toBe(`${storage}/640.webp`);
+  });
+
+  it('keeps the Storage URL when the project URL is not configured', () => {
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', '');
+    const { container } = renderVi(
+      <ImageSlot alt="Alt" tint="#888" priority {...slotPhoto(view)} />,
+    );
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(`${storage}/640.webp`);
   });
 });

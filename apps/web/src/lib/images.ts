@@ -1,3 +1,5 @@
+import { sameOriginMediaUrl } from './deploy-config';
+
 /** One generated size of a public image, as the API returns it (`variants` in the public contracts). */
 export interface ImageVariant {
   format: 'avif' | 'webp';
@@ -16,7 +18,11 @@ export interface ResponsiveImage {
   height?: number;
 }
 
-function srcSetOf(variants: readonly ImageVariant[], format: ImageVariant['format']) {
+function srcSetOf(
+  variants: readonly ImageVariant[],
+  format: ImageVariant['format'],
+  mapUrl: (url: string) => string,
+) {
   // One entry per width: duplicates (same width listed twice) would make the srcset invalid.
   const byWidth = new Map<number, ImageVariant>();
   for (const variant of variants) {
@@ -27,7 +33,7 @@ function srcSetOf(variants: readonly ImageVariant[], format: ImageVariant['forma
   if (byWidth.size === 0) return undefined;
   return [...byWidth.values()]
     .sort((a, b) => a.width - b.width)
-    .map((variant) => `${variant.url} ${variant.width}w`)
+    .map((variant) => `${mapUrl(variant.url)} ${variant.width}w`)
     .join(', ');
 }
 
@@ -38,10 +44,11 @@ function srcSetOf(variants: readonly ImageVariant[], format: ImageVariant['forma
  */
 export function buildResponsiveImage(
   variants: readonly ImageVariant[] | undefined,
+  mapUrl: (url: string) => string = (url) => url,
 ): ResponsiveImage {
   if (!variants || variants.length === 0) return {};
-  const avif = srcSetOf(variants, 'avif');
-  const webp = srcSetOf(variants, 'webp');
+  const avif = srcSetOf(variants, 'avif', mapUrl);
+  const webp = srcSetOf(variants, 'webp', mapUrl);
   const widest = (format: ImageVariant['format']) =>
     variants.filter((v) => v.format === format).sort((a, b) => b.width - a.width)[0];
   const intrinsic = widest('webp') ?? widest('avif');
@@ -50,4 +57,12 @@ export function buildResponsiveImage(
     ...(webp && { webp }),
     ...(intrinsic && { width: intrinsic.width, height: intrinsic.height }),
   };
+}
+
+/**
+ * Maps a public Storage URL onto the web's own origin (see `mediaRewrites`). For the above-the-fold
+ * image only: it saves the handshake to the Storage origin on the LCP path.
+ */
+export function aboveTheFoldUrl(url: string): string {
+  return sameOriginMediaUrl(url, process.env.NEXT_PUBLIC_SUPABASE_URL);
 }
