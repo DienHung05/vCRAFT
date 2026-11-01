@@ -671,7 +671,13 @@
           "title": "Mở khóa hộ này?",
           "text": "Hộ {name} sẽ được trưng bày công khai trở lại."
         }
-      }
+      },
+      "idNumber": "Số CCCD",
+      "noIdNumber": "Chưa khai",
+      "revealIdNumber": "Xem số đầy đủ",
+      "hideIdNumber": "Ẩn",
+      "revealAudited": "Mỗi lần xem số đầy đủ đều được ghi vào nhật ký kiểm toán.",
+      "idNumberFailed": "Chưa xem được số CCCD."
     },
     "coordinationQueue": {
       "title": "Điều phối",
@@ -738,7 +744,8 @@
           "reject": "Từ chối hộ",
           "request_info": "Yêu cầu bổ sung hồ sơ",
           "suspend": "Tạm ngừng hộ",
-          "reinstate": "Khôi phục hộ"
+          "reinstate": "Khôi phục hộ",
+          "reveal_id_number": "Xem số CCCD đầy đủ"
         },
         "product": {
           "publish": "Xuất bản sản phẩm",
@@ -1188,7 +1195,8 @@
       "locationRequired": "Hãy chọn vị trí xưởng trên bản đồ hoặc nhập tọa độ.",
       "latInvalid": "Vĩ độ phải là số từ -90 đến 90.",
       "lngInvalid": "Kinh độ phải là số từ -180 đến 180.",
-      "consentRequired": "Hãy đồng ý với Chính sách quyền riêng tư để tạo tài khoản."
+      "consentRequired": "Hãy đồng ý với Chính sách quyền riêng tư để tạo tài khoản.",
+      "idNumberInvalid": "Số CCCD gồm đúng 12 chữ số, không có dấu cách."
     },
     "errors": {
       "invalid_credentials": "Email hoặc mật khẩu chưa đúng. Kiểm tra lại, hoặc chọn \"Quên mật khẩu\" để đặt mật khẩu mới.",
@@ -1308,7 +1316,9 @@
         "historyHint": "Vài dòng về lịch sử, đời nghề, điều làm hộ khác biệt. Bạn có thể bổ sung sau.",
         "submit": "Lưu và tiếp tục",
         "submitting": "Đang lưu hồ sơ…",
-        "savedToast": "Đã lưu thông tin hộ."
+        "savedToast": "Đã lưu thông tin hộ.",
+        "idNumber": "Số CCCD của người đại diện",
+        "idNumberHint": "12 chữ số. Số được mã hóa khi lưu; chỉ bạn thấy dạng che, Ban quản lý chỉ xem khi duyệt hồ sơ."
       },
       "workshop": {
         "title": "Vị trí xưởng",
@@ -1515,7 +1525,18 @@
       "closed": "Nghỉ",
       "open": "Mở",
       "close": "Đóng",
-      "capacity": "Năng lực sản xuất (đơn vị/tháng)"
+      "capacity": "Năng lực sản xuất (đơn vị/tháng)",
+      "idNumber": {
+        "title": "Số CCCD",
+        "lead": "Số CCCD của người đại diện, được mã hóa khi lưu. Ở đây chỉ hiện dạng che.",
+        "none": "Chưa có số CCCD.",
+        "add": "Nhập số CCCD (12 chữ số)",
+        "replace": "Đổi số CCCD (12 chữ số)",
+        "save": "Lưu số CCCD",
+        "saved": "Đã lưu số CCCD.",
+        "invalid": "Số CCCD gồm đúng 12 chữ số.",
+        "failed": "Chưa lưu được số CCCD. Bạn thử lại sau."
+      }
     },
     "products": {
       "title": "Sản phẩm",
@@ -1723,7 +1744,7 @@
       "sharing": {
         "title": "Ai nhìn thấy dữ liệu của bạn",
         "items": {
-          "documents": "Ảnh giấy tờ xác minh nằm trong kho riêng tư; chỉ quản trị viên xem được, qua liên kết ký có hạn 5 phút. Số CCCD được mã hóa ở mức trường.",
+          "documents": "Ảnh giấy tờ xác minh nằm trong kho riêng tư; chỉ quản trị viên xem được, qua liên kết ký có hạn 5 phút. Số CCCD được mã hóa ở mức trường: bạn chỉ thấy dạng che, quản trị viên chỉ xem số đầy đủ khi bấm xem trong lúc duyệt hồ sơ, và mỗi lần xem đều được ghi vào nhật ký kiểm toán.",
           "quote": "Yêu cầu báo giá chỉ hiện với các hộ được mời hoặc, khi bạn nhờ Ban quản lý điều phối, với Ban quản lý. Giá chào của một hộ không hiện cho hộ khác.",
           "hosting": "Nhà cung cấp hạ tầng (Supabase cho xác thực, cơ sở dữ liệu và lưu trữ tệp; dịch vụ gửi email) xử lý dữ liệu thay mặt chúng tôi.",
           "public": "Thông tin công khai của hộ đã được duyệt (tên hộ, câu chuyện, sản phẩm, vị trí phòng trưng bày) hiển thị cho mọi người."

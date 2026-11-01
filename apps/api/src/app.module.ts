@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { AuthModule } from './common/auth/auth.module';
 import { ProblemDetailsFilter } from './common/filters/problem-details.filter';
+import { CryptoModule } from './infrastructure/crypto/crypto.module';
 import { DatabaseModule } from './infrastructure/database/database.module';
 import { StorageModule } from './infrastructure/storage/storage.module';
 import { AdminModule } from './modules/admin/admin.module';
@@ -20,6 +21,7 @@ import { UsersModule } from './modules/users/users.module';
 @Module({
   imports: [
     DatabaseModule,
+    CryptoModule,
     StorageModule,
     AuthModule,
     HealthModule,

@@ -1,4 +1,15 @@
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import {
   type ApplyHouseholdRequest,
   ApplyHouseholdRequestSchema,
@@ -10,6 +21,8 @@ import {
   CreateWorkshopRequestSchema,
   HouseholdDecisionRequestSchema,
   ListHouseholdsQuerySchema,
+  type SetIdNumberRequest,
+  SetIdNumberRequestSchema,
   type SetProductMakersRequest,
   SetProductMakersRequestSchema,
   type UpdateHouseholdProfileRequest,
@@ -55,6 +68,15 @@ export class MyHouseholdController {
     body: UpdateHouseholdProfileRequest,
   ) {
     return this.households.updateProfile(actor, version, body);
+  }
+
+  @Put('id-number')
+  @Roles('HOUSEHOLD')
+  setIdNumber(
+    @CurrentActor() actor: Actor,
+    @Body(new ZodValidationPipe(SetIdNumberRequestSchema)) body: SetIdNumberRequest,
+  ) {
+    return this.households.setIdNumber(actor, body);
   }
 
   @Put('workshops/:id')
@@ -195,6 +217,13 @@ export class AdminHouseholdsController {
   @Get(':id')
   getOne(@Param('id', new UuidPipe()) id: string) {
     return this.households.getForAdmin(id);
+  }
+
+  /** Full citizen ID number, only on request; every call is written to the audit log. */
+  @Get(':id/id-number')
+  @Header('Cache-Control', 'private, no-store')
+  idNumber(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
+    return this.households.revealIdNumber(actor, id);
   }
 
   @Get(':id/documents')

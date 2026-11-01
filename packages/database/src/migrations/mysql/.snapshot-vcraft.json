@@ -1441,6 +1441,23 @@
           "enumItems": [],
           "mappedType": "string"
         },
+        "id_number_enc": {
+          "name": "id_number_enc",
+          "type": "varchar(255)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 255,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
         "name": {
           "name": "name",
           "type": "varchar(160)",

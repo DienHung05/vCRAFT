@@ -101,7 +101,13 @@ describe('luật kiểm tra form tài khoản (khóa i18n, không phải câu ch
   });
 
   it('thông tin hộ: tên ≥ 2 ký tự, đường dẫn chữ thường không dấu', () => {
-    const base = { name: 'Gốm Minh Hải', slug: 'gom-minh-hai', village: '', history: '' };
+    const base = {
+      name: 'Gốm Minh Hải',
+      slug: 'gom-minh-hai',
+      village: '',
+      idNumber: '079203004567',
+      history: '',
+    };
     expect(householdStepSchema.safeParse(base).success).toBe(true);
     expect(messageOf(householdStepSchema.safeParse({ ...base, name: 'A' }))).toContain('nameShort');
     expect(messageOf(householdStepSchema.safeParse({ ...base, slug: 'Gốm Minh Hải' }))).toContain(
@@ -110,6 +116,11 @@ describe('luật kiểm tra form tài khoản (khóa i18n, không phải câu ch
     expect(messageOf(householdStepSchema.safeParse({ ...base, slug: '' }))).toContain(
       'slugRequired',
     );
+    for (const idNumber of ['', '12345678901', '1234567890123', '07920300456x', '0792 0300 4567']) {
+      expect(messageOf(householdStepSchema.safeParse({ ...base, idNumber }))).toContain(
+        'idNumberInvalid',
+      );
+    }
   });
 
   it('xưởng: bắt buộc chọn vị trí trên bản đồ, tọa độ trong khoảng hợp lệ', () => {

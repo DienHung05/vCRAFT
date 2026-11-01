@@ -134,6 +134,8 @@ export interface HouseholdParts {
   mediaUrls?: ReadonlyMap<string, string>;
   /** Portrait, banner and gallery images linked through `media_link`. */
   linked?: readonly LinkedImage[];
+  /** Masked citizen ID number for the owner and admin views (never the full number). */
+  idNumberMasked?: string | null;
 }
 
 const linkedOf = (parts: HouseholdParts, role: PublicLinkRole) =>
@@ -188,6 +190,7 @@ export function toHouseholdDto(h: Household, parts: HouseholdParts): HouseholdDt
     status: h.status,
     statusReason: h.statusReason ?? null,
     approvedAt: h.approvedAt?.toISOString() ?? null,
+    idNumberMasked: parts.idNumberMasked ?? null,
     completeness: profileCompleteness({
       history: h.history,
       foundedYear: h.foundedYear ?? null,

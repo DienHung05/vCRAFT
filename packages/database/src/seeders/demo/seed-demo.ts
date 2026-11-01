@@ -16,6 +16,7 @@ import {
 } from '@vcraft/domain';
 import { slugify } from '@vcraft/utils';
 import { v5 as uuidv5 } from 'uuid';
+import { createFieldCipher, FIELD_CONTEXTS, type FieldCipher } from '../../crypto/field-cipher.js';
 import {
   AppUser,
   Artisan,
@@ -137,6 +138,8 @@ const SHOWROOM_HOURS = [0, 1, 2, 3, 4, 5, 6].map((day) => ({ day, open: '08:00',
 const STAGE_OFFSET_DAYS = [0, 2, 7, 10, 13, 16, 18];
 
 export interface DemoSeedOptions {
+  /** Seals the sample citizen ID numbers. Default: built from `FIELD_ENCRYPTION_KEYS` (required to seed). */
+  cipher?: FieldCipher;
   /** Thời điểm nạp, dùng cho mốc thời gian tương đối của yêu cầu báo giá. Mặc định `new Date()`. */
   now?: Date;
 }
@@ -553,6 +556,7 @@ export async function seedDemoData(
       'Dữ liệu demo đã tồn tại; chạy `pnpm demo:reset` (APP_ENV=demo) để nạp lại từ đầu.',
     );
   }
+  const cipher = options.cipher ?? createFieldCipher(process.env);
   const now = new Date(Math.floor((options.now ?? new Date()).getTime() / 1000) * 1000);
   const random = rng(20261101);
   const summary: DemoSeedSummary = {
@@ -710,6 +714,11 @@ export async function seedDemoData(
       status: row.status,
       statusReason: null,
       approvedAt: pending ? null : new Date(createdMs + 2 * DAY),
+      // Obviously fake (eight zeros, then the household number) and encrypted like a real one.
+      idNumberEnc: cipher.encrypt(
+        `00000000${String(row.index).padStart(4, '0')}`,
+        FIELD_CONTEXTS.householdIdNumber,
+      ),
       representative,
       createdAt: new Date(createdMs),
       updatedAt: new Date(createdMs),

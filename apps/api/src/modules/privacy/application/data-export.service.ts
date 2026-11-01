@@ -7,6 +7,8 @@ import {
   ConsentRecord,
   ContributionOffer,
   CooperativeQuotation,
+  FIELD_CONTEXTS,
+  FieldCipher,
   Household,
   JournalEntry,
   Notification,
@@ -30,15 +32,15 @@ const iso = (date: Date | null | undefined) => (date ? date.toISOString() : null
  * one JSON document. Each query is scoped to the caller's own id or household, so nothing of another
  * account can leak in; quotations are summarised without the other households' parts or prices.
  *
- * Values are exported as stored. No column is encrypted at field level today (the planned AES-256-GCM
- * field encryption of NFR-SEC-03 has no column yet); when one is added it must be decrypted here, for
- * the owner, before it goes into the document.
+ * Values are exported in the clear. Encrypted columns (NFR-SEC-03: the citizen ID number) are decrypted
+ * here, for the owner, before they go into the document; a new encrypted column must be added here too.
  */
 @Injectable()
 export class DataExportService {
   constructor(
     private readonly orm: MikroORM,
     private readonly media: MediaService,
+    private readonly cipher: FieldCipher,
   ) {}
 
   async export(actor: Actor): Promise<DataExportDto> {
@@ -174,6 +176,10 @@ export class DataExportService {
         slug: household.slug,
         status: household.status,
         statusReason: household.statusReason ?? null,
+        // Decrypted for the owner, who is the only person this document goes to.
+        idNumber: household.idNumberEnc
+          ? this.cipher.decrypt(household.idNumberEnc, FIELD_CONTEXTS.householdIdNumber)
+          : null,
         history: household.history,
         village: household.village ?? null,
         craft: household.craft ?? null,

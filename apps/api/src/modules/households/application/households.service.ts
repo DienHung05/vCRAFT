@@ -12,6 +12,8 @@ import type {
   MapPinsDto,
   ProductDto,
   PublicHouseholdDto,
+  RevealedIdNumberDto,
+  SetIdNumberRequest,
   SetProductMakersRequest,
   TraceAvailabilityDto,
   UpdateHouseholdProfileRequest,
@@ -21,6 +23,8 @@ import {
   AppUser,
   Artisan,
   AuditLog,
+  FIELD_CONTEXTS,
+  FieldCipher,
   Household,
   MediaAsset,
   OutboxEvent,
@@ -37,6 +41,7 @@ import {
   householdNoticeKind,
   householdTransition,
   isHouseholdPublic,
+  maskIdNumber,
   type ProductEvent,
   productTransition,
   publicProductAvailability,
@@ -74,6 +79,7 @@ export class HouseholdsService {
     private readonly media: MediaService,
     private readonly notifications: NotificationPublisher,
     private readonly consents: ConsentService,
+    private readonly cipher: FieldCipher,
   ) {}
 
   // --- Người đại diện hộ ---
@@ -93,6 +99,9 @@ export class HouseholdsService {
         slug: input.slug,
         history: input.history,
         village: input.village ?? null,
+        idNumberEnc: input.idNumber
+          ? this.cipher.encrypt(input.idNumber, FIELD_CONTEXTS.householdIdNumber)
+          : null,
         representative: user,
       });
       await em.flush();
@@ -101,6 +110,7 @@ export class HouseholdsService {
         workshops: [],
         products: [],
         makers: new Map(),
+        idNumberMasked: input.idNumber ? maskIdNumber(input.idNumber) : null,
       });
     });
   }
@@ -110,6 +120,40 @@ export class HouseholdsService {
     const em = this.orm.em.fork();
     const household = await this.ownHousehold(em, actor);
     return toHouseholdDto(household, await this.parts(em, household, false));
+  }
+
+  /** Add or replace the representative's citizen ID number. Stored encrypted; the answer shows it masked. */
+  async setIdNumber(actor: Actor, input: SetIdNumberRequest): Promise<HouseholdDto> {
+    const em = this.orm.em.fork();
+    const household = await this.ownWritableHousehold(em, actor);
+    household.idNumberEnc = this.cipher.encrypt(input.idNumber, FIELD_CONTEXTS.householdIdNumber);
+    await em.flush();
+    return toHouseholdDto(household, await this.parts(em, household, false));
+  }
+
+  /**
+   * Full citizen ID number for the review screen. Revealing it is an explicit, audited act: the audit entry
+   * records who looked at which household, never the number itself.
+   */
+  async revealIdNumber(actor: Actor, householdId: string): Promise<RevealedIdNumberDto> {
+    return this.orm.em.fork().transactional(async (em) => {
+      const household = await em.findOne(Household, householdId);
+      if (!household) throw notFound();
+      em.create(AuditLog, {
+        actorId: actor.id,
+        action: 'household.reveal_id_number',
+        entity: 'household',
+        entityId: household.id,
+        before: null,
+        after: null,
+      });
+      await em.flush();
+      return {
+        idNumber: household.idNumberEnc
+          ? this.cipher.decrypt(household.idNumberEnc, FIELD_CONTEXTS.householdIdNumber)
+          : null,
+      };
+    });
   }
 
   /** Chủ hộ sửa hồ sơ của chính mình; chứng nhận đã xác minh giữ nguyên dấu khi không đổi nội dung. */
@@ -565,6 +609,13 @@ export class HouseholdsService {
     return household;
   }
 
+  private maskedIdNumber(household: Household): string | null {
+    if (!household.idNumberEnc) return null;
+    return maskIdNumber(
+      this.cipher.decrypt(household.idNumberEnc, FIELD_CONTEXTS.householdIdNumber),
+    );
+  }
+
   private async parts(
     em: EntityManager,
     household: Household,
@@ -590,6 +641,7 @@ export class HouseholdsService {
       artisans,
       workshops,
       products,
+      idNumberMasked: this.maskedIdNumber(household),
       makers: await this.makersOf(em, products),
       mediaUrls: await this.media.publicUrls(mediaIds),
       linked: linked.get(household.id) ?? [],

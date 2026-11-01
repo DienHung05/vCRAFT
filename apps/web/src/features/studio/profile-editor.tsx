@@ -2,7 +2,7 @@
 
 import { ApiError, type StudioClient } from '@vcraft/api-client';
 import type { HouseholdDto, UpdateHouseholdProfileRequest } from '@vcraft/contracts';
-import { PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
+import { isValidIdNumber, PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
 import { Badge, Button, Card } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
@@ -72,6 +72,73 @@ interface SectionProps {
   household: HouseholdDto;
   client: StudioClient;
   reload: () => Promise<void>;
+}
+
+/** Representative's citizen ID number: shown masked, replaced by typing a new one (stored encrypted). */
+function IdNumberSection({ household, client, reload }: SectionProps) {
+  const t = useTranslations('studio.profile.idNumber');
+  const [value, setValue] = useState('');
+  const [state, setState] = useState<'idle' | 'saving' | 'invalid' | 'failed'>('idle');
+  const save = async () => {
+    if (!isValidIdNumber(value.trim())) return setState('invalid');
+    setState('saving');
+    try {
+      await client.setIdNumber({ idNumber: value.trim() });
+      setValue('');
+      await reload();
+      setState('idle');
+      notify.success(t('saved'));
+    } catch {
+      setState('failed');
+    }
+  };
+  return (
+    <Card className="flex flex-col gap-3 p-5">
+      <h2 className="text-h3">{t('title')}</h2>
+      <p className="text-small text-ash">{t('lead')}</p>
+      <p className="text-small">
+        {household.idNumberMasked ? (
+          <span className="font-mono">{household.idNumberMasked}</span>
+        ) : (
+          t('none')
+        )}
+      </p>
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1 text-small">
+          {household.idNumberMasked ? t('replace') : t('add')}
+          <input
+            value={value}
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={12}
+            spellCheck={false}
+            onChange={(event) => {
+              setValue(event.target.value);
+              setState('idle');
+            }}
+            className={inputClass}
+          />
+        </label>
+        <Button
+          type="button"
+          disabled={state === 'saving' || value.trim() === ''}
+          onClick={() => void save()}
+        >
+          {t('save')}
+        </Button>
+      </div>
+      {state === 'invalid' ? (
+        <p role="alert" className="text-small text-seal">
+          {t('invalid')}
+        </p>
+      ) : null}
+      {state === 'failed' ? (
+        <p role="alert" className="text-small text-seal">
+          {t('failed')}
+        </p>
+      ) : null}
+    </Card>
+  );
 }
 
 function StorySection({ household, client, reload }: SectionProps) {
@@ -492,6 +559,7 @@ export function ProfileEditor({ client }: { client?: StudioClient }) {
             <h1 className="text-h1">{t('title')}</h1>
             <p className="text-ash">{t('lead')}</p>
           </header>
+          <IdNumberSection {...view} />
           <StorySection {...view} />
           <TimelineSection {...view} />
           <CertificationSection {...view} />

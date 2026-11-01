@@ -45,6 +45,7 @@ const PENDING = {
   status: 'PENDING_REVIEW',
   statusReason: null,
   approvedAt: null,
+  idNumberMasked: '••••••••4567',
 } as unknown as HouseholdDto;
 
 function client(overrides: Partial<AdminClient> = {}): AdminClient {
@@ -65,6 +66,7 @@ function client(overrides: Partial<AdminClient> = {}): AdminClient {
       },
     ]),
     getHousehold: vi.fn(async () => PENDING),
+    revealIdNumber: vi.fn(async () => ({ idNumber: '079203004567' })),
     documents: vi.fn(async () => ({
       data: [
         {
@@ -130,6 +132,40 @@ describe('HouseholdReview', () => {
     expect(within(columns).getByText('Hồ sơ khai.')).toBeTruthy();
     expect(within(columns).getByText('application/pdf')).toBeTruthy();
     expect(within(columns).getByText(/chưa khai vị trí/)).toBeTruthy();
+  });
+
+  it('shows the citizen ID masked and reveals the full number only on request', async () => {
+    const api = client();
+    renderVi(<HouseholdReview householdId={ID} client={api} />);
+    const columns = await screen.findByTestId('review-columns');
+    expect(within(columns).getByText('••••••••4567')).toBeTruthy();
+    expect(columns.textContent).not.toContain('079203004567');
+    expect(api.revealIdNumber).not.toHaveBeenCalled();
+
+    fireEvent.click(within(columns).getByRole('button', { name: 'Xem số đầy đủ' }));
+    expect((await screen.findByTestId('revealed-id-number')).textContent).toBe('079203004567');
+    expect(api.revealIdNumber).toHaveBeenCalledWith(ID);
+
+    fireEvent.click(within(columns).getByRole('button', { name: 'Ẩn' }));
+    expect(columns.textContent).not.toContain('079203004567');
+    expect(within(columns).getByText('••••••••4567')).toBeTruthy();
+  });
+
+  it('says so when no citizen ID number is on record, and when the reveal fails', async () => {
+    const none = client({
+      getHousehold: vi.fn(async () => ({ ...PENDING, idNumberMasked: null })),
+    });
+    const { unmount } = renderVi(<HouseholdReview householdId={ID} client={none} />);
+    expect(await screen.findByText('Chưa khai')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Xem số đầy đủ' })).toBeNull();
+    unmount();
+
+    const failing = client({
+      revealIdNumber: vi.fn().mockRejectedValue(new ApiError('INTERNAL_ERROR', 500)),
+    });
+    renderVi(<HouseholdReview householdId={ID} client={failing} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Xem số đầy đủ' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('Chưa xem được số CCCD');
   });
 
   it('duyệt gửi đúng phiên bản và đóng ấn', async () => {

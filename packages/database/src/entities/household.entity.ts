@@ -102,4 +102,11 @@ export class Household extends BaseEntity {
   @ManyToOne({ entity: () => AppUser })
   @Unique()
   representative!: AppUser;
+
+  /**
+   * Citizen ID number of the representative, sealed with AES-256-GCM (`FieldCipher`, NFR-SEC-03). Never the
+   * plaintext: services encrypt on write and decrypt only for the owner, an admin reveal and the owner's export.
+   */
+  @Property({ type: 'string', length: 255, nullable: true })
+  idNumberEnc?: string | null;
 }

@@ -1,5 +1,6 @@
 import {
   HOUSEHOLD_STATUSES,
+  ID_NUMBER_PATTERN,
   isValidOpeningInterval,
   PRODUCT_CATEGORIES,
   PRODUCT_STATUSES,
@@ -31,13 +32,29 @@ const ReasonSchema = z.string().trim().min(3, 'Hãy ghi lý do (ít nhất 3 ký
 
 // --- Request ---
 
+/** Representative's citizen ID number (CCCD): exactly 12 digits (NFR-SEC-03, stored encrypted). */
+export const IdNumberSchema = z
+  .string()
+  .trim()
+  .regex(ID_NUMBER_PATTERN, 'Số CCCD gồm đúng 12 chữ số');
+
 export const ApplyHouseholdRequestSchema = z.object({
   name: NameSchema,
   slug: SlugSchema,
   history: z.string().trim().max(10_000).default(''),
   village: z.string().trim().max(160).optional(),
+  /** Optional for households that applied before the number was collected; the wizard requires it. */
+  idNumber: IdNumberSchema.optional(),
 });
 export type ApplyHouseholdRequest = z.infer<typeof ApplyHouseholdRequestSchema>;
+
+/** `PUT /me/household/id-number`: add or replace the representative's citizen ID number. */
+export const SetIdNumberRequestSchema = z.strictObject({ idNumber: IdNumberSchema });
+export type SetIdNumberRequest = z.infer<typeof SetIdNumberRequestSchema>;
+
+/** `GET /admin/households/:id/id-number`: the full number, shown on explicit request and audited. */
+export const RevealedIdNumberResponseSchema = z.strictObject({ idNumber: z.string().nullable() });
+export type RevealedIdNumberDto = z.infer<typeof RevealedIdNumberResponseSchema>;
 
 /** Quyết định của Ban quản lý; `reason` bắt buộc với từ chối và tạm ngừng (domain kiểm). */
 export const HouseholdDecisionRequestSchema = z.object({
@@ -310,6 +327,8 @@ export const HouseholdResponseSchema = PublicHouseholdResponseSchema.extend({
   status: HouseholdStatusSchema,
   statusReason: z.string().nullable(),
   approvedAt: IsoDateTimeSchema.nullable(),
+  /** `••••••••1234`, or null when no citizen ID number is on record. Never the full number. */
+  idNumberMasked: z.string().nullable(),
   completeness: z.object({
     percent: z.int().min(0).max(100),
     missing: z.array(z.enum(PROFILE_SECTIONS)),

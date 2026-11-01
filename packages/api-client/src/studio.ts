@@ -10,6 +10,7 @@ import {
   JournalResponseSchema,
   MediaAssetResponseSchema,
   ProductResponseSchema,
+  type SetIdNumberRequest,
   type SetProductMakersRequest,
   type UpdateHouseholdProfileRequest,
   type UpdateProductRequest,
@@ -28,6 +29,9 @@ export function createStudioClient(options: AuthedClientOptions) {
         body: { purpose, policyVersion },
       }),
     getHousehold: () => request('/me/household', HouseholdResponseSchema),
+    /** Add or replace the representative's citizen ID number (stored encrypted). */
+    setIdNumber: (body: SetIdNumberRequest) =>
+      request('/me/household/id-number', HouseholdResponseSchema, { method: 'PUT', body }),
     updateProfile: (version: number, body: UpdateHouseholdProfileRequest) =>
       request('/me/household', HouseholdResponseSchema, { method: 'PATCH', body, version }),
     addWorkshop: (body: CreateWorkshopRequest) =>

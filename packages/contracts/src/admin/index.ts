@@ -9,6 +9,7 @@ export const AUDIT_ACTIONS = [
   'household.request_info',
   'household.suspend',
   'household.reinstate',
+  'household.reveal_id_number',
   'product.publish',
   'product.withdraw',
   'product.republish',

@@ -1,3 +1,5 @@
+export * from './crypto/field-cipher.js';
+export * from './crypto/rotate.js';
 export * from './entities/index.js';
 export {
   createMikroOrmOptions,
