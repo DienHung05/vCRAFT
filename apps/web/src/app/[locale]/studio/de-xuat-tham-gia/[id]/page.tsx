@@ -12,8 +12,9 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({
   params,
 }: PageProps<'/[locale]/studio/de-xuat-tham-gia/[id]'>): Promise<Metadata> {
-  const { id } = await params;
-  return { title: isRfqUuid(id) ? id : 'Contribution', robots: { index: false } };
+  await resolveLocale(params);
+  const t = await getTranslations('contribution');
+  return { title: t('breadcrumb'), robots: { index: false } };
 }
 
 /**

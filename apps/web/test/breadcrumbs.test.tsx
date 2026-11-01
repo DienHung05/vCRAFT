@@ -15,7 +15,7 @@ describe('buildBreadcrumbTrail', () => {
     const trail = buildBreadcrumbTrail([
       { label: 'Home', href: '/' },
       { label: 'Products', href: '/san-pham' },
-      { label: 'Vase', href: '/san-pham/vase' },
+      { label: 'Artisans', href: '/nghe-nhan' },
     ]);
     expect(trail.map((crumb) => crumb.current)).toEqual([false, false, true]);
     expect(trail[0]?.href).toBe('/');

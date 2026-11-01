@@ -1301,7 +1301,8 @@
         "history": "Câu chuyện của hộ",
         "historyHint": "Vài dòng về lịch sử, đời nghề, điều làm hộ khác biệt. Bạn có thể bổ sung sau.",
         "submit": "Lưu và tiếp tục",
-        "submitting": "Đang lưu hồ sơ…"
+        "submitting": "Đang lưu hồ sơ…",
+        "savedToast": "Đã lưu thông tin hộ."
       },
       "workshop": {
         "title": "Vị trí xưởng",
@@ -1320,7 +1321,8 @@
         "visitingInfo": "Thông tin đón khách",
         "visitingInfoHint": "Giờ mở cửa, có cần đặt trước không, lưu ý khi tới.",
         "submit": "Lưu xưởng và tiếp tục",
-        "submitting": "Đang lưu xưởng…"
+        "submitting": "Đang lưu xưởng…",
+        "savedToast": "Đã lưu vị trí xưởng."
       },
       "map": {
         "label": "Bản đồ chọn vị trí xưởng",

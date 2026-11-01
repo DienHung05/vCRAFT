@@ -1301,7 +1301,8 @@
         "history": "Household story",
         "historyHint": "A few lines on history, generations of craft and what sets the household apart. You can add more later.",
         "submit": "Save and continue",
-        "submitting": "Saving the household…"
+        "submitting": "Saving the household…",
+        "savedToast": "Household details saved."
       },
       "workshop": {
         "title": "Workshop location",
@@ -1320,7 +1321,8 @@
         "visitingInfo": "Visiting information",
         "visitingInfoHint": "Opening hours, whether booking is needed, anything to know before arriving.",
         "submit": "Save workshop and continue",
-        "submitting": "Saving the workshop…"
+        "submitting": "Saving the workshop…",
+        "savedToast": "Workshop location saved."
       },
       "map": {
         "label": "Map for picking the workshop location",
