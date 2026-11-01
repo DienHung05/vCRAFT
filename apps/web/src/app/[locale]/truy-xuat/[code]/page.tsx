@@ -59,7 +59,11 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
   const visible = trace?.availability === 'VISIBLE' ? trace : null;
   const profile = visible ? await fetchHousehold(visible.household.slug) : null;
   const image = visible
-    ? photoFromUrl(visible.product.coverUrl, visible.product.coverAlt ?? visible.product.name)
+    ? photoFromUrl(
+        visible.product.coverUrl,
+        visible.product.coverAlt ?? visible.product.name,
+        visible.product.coverVariants,
+      )
     : undefined;
 
   return (

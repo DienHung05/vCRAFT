@@ -90,7 +90,7 @@ export async function FireTimeline({
               {e.images.length > 0 ? (
                 e.images.map((image) => {
                   const alt = t('proofAlt', { stage: stages(`${e.stage}.name`) });
-                  const photo = photoFromUrl(image.url, alt);
+                  const photo = photoFromUrl(image.url, alt, image.variants);
                   return (
                     <div key={image.sha256}>
                       <ImageSlot

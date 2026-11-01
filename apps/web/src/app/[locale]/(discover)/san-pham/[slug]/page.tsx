@@ -54,7 +54,11 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
   const first = log[0];
   const last = log.at(-1);
   const tint = tintOf(product.traceCode);
-  const image = photoFromUrl(product.coverUrl, product.coverAlt ?? product.name);
+  const image = photoFromUrl(
+    product.coverUrl,
+    product.coverAlt ?? product.name,
+    product.coverVariants,
+  );
   const more =
     siblings.status === 'ok'
       ? siblings.data.data.filter((p) => p.slug !== product.slug).slice(0, 4)
@@ -99,7 +103,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
                       tint={e.tint}
                       ratio="1/1"
                       {...(own
-                        ? slotPhoto(photoFromUrl(own.url, alt))
+                        ? slotPhoto(photoFromUrl(own.url, alt, own.variants))
                         : { photo: squarePhoto(e.stage) })}
                       sizes="(min-width: 768px) 14vw, 22vw"
                     />

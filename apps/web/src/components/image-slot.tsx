@@ -3,6 +3,7 @@ import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import type { DemoPhotoRef } from '@/lib/demo/data';
 import { PHOTO_BY_ID } from '@/lib/demo/photo-credits';
+import { buildResponsiveImage, type ImageVariant } from '@/lib/images';
 
 export interface ImageSlotProps {
   /** Mô tả ảnh (alt), bắt buộc như ảnh thật (FR-ART-04). Khi có `photo`, dùng alt của ảnh. */
@@ -17,6 +18,8 @@ export interface ImageSlotProps {
   photo?: DemoPhotoRef | undefined;
   /** Ảnh ở URL công khai khác (kho media), không thuộc bộ ảnh có giấy phép. */
   src?: string | undefined;
+  /** Sizes of the `src` image from the API (AVIF + WebP, several widths); without them `src` is a single file. */
+  variants?: readonly ImageVariant[] | undefined;
   /** `sizes` cho `<picture>`: chiều rộng ảnh theo viewport. */
   sizes?: string;
   /** Ảnh trên màn đầu (LCP): nạp ngay thay vì lười. */
@@ -39,6 +42,7 @@ export function ImageSlot({
   caption,
   photo,
   src,
+  variants,
   sizes = DEFAULT_SIZES,
   priority = false,
   className,
@@ -54,6 +58,7 @@ export function ImageSlot({
     credit?.widths.map((w) => `${base}-${w}.${ext} ${w}w`).join(', ');
   const smallest = credit ? Math.min(...credit.widths) : 0;
   const [rw = 1, rh = 1] = (ratio ?? credit?.ratio ?? '1/1').split('/').map(Number);
+  const responsive = buildResponsiveImage(variants);
 
   return (
     <div
@@ -83,14 +88,24 @@ export function ImageSlot({
         </picture>
       ) : null}
       {src && !credit ? (
-        // biome-ignore lint/performance/noImgElement: URL của kho media đã là bản tối ưu, không qua next/image.
-        <img
-          src={src}
-          alt=""
-          loading={priority ? 'eager' : 'lazy'}
-          decoding="async"
-          className="absolute inset-0 size-full object-cover"
-        />
+        <picture>
+          {responsive.avif ? (
+            <source type="image/avif" srcSet={responsive.avif} sizes={sizes} />
+          ) : null}
+          {responsive.webp ? (
+            <source type="image/webp" srcSet={responsive.webp} sizes={sizes} />
+          ) : null}
+          {/* biome-ignore lint/performance/noImgElement: variants come pre-optimised from the media store, so next/image has nothing to add. */}
+          <img
+            src={src}
+            alt=""
+            {...(responsive.width && { width: responsive.width, height: responsive.height })}
+            loading={priority ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : undefined}
+            decoding="async"
+            className="absolute inset-0 size-full object-cover"
+          />
+        </picture>
       ) : null}
       {children}
       {caption ? (

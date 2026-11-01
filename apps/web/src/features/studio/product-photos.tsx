@@ -120,7 +120,7 @@ export function ProductPhotos({
         setPhotos((current) =>
           current.some((photo) => photo.mediaId === mediaId)
             ? current
-            : [...current, { mediaId, url: null, alt: product.name }],
+            : [...current, { mediaId, url: null, variants: [], alt: product.name }],
         );
       }
     }

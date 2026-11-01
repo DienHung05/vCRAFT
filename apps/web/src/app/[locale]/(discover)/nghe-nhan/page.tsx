@@ -53,7 +53,11 @@ export default async function ArtisansIndexPage({ params }: PageProps<'/[locale]
                   tint={tintOf(h.slug)}
                   ratio="3/4"
                   {...slotPhoto(
-                    photoFromUrl(h.coverUrl, artisan('coverAlt', { household: h.name })),
+                    photoFromUrl(
+                      h.coverUrl,
+                      artisan('coverAlt', { household: h.name }),
+                      h.coverVariants,
+                    ),
                   )}
                   sizes="(min-width: 768px) 30vw, (min-width: 640px) 50vw, 100vw"
                   className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"

@@ -43,6 +43,9 @@ const page: NewsListDto = {
       cover: {
         mediaId: '00000000-0000-4000-8000-000000000001',
         url: 'https://cdn.test/cho-gom.webp',
+        width: null,
+        height: null,
+        variants: [],
         alt: 'Quầy gốm dưới ánh đèn',
         caption: null,
         credit: {

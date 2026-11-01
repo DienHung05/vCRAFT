@@ -75,7 +75,9 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
                         alt={n.cover.alt || n.title}
                         tint={tintOf(n.slug)}
                         ratio="3/2"
-                        {...slotPhoto(photoFromUrl(n.cover.url, n.cover.alt || n.title))}
+                        {...slotPhoto(
+                          photoFromUrl(n.cover.url, n.cover.alt || n.title, n.cover.variants),
+                        )}
                         sizes="(min-width: 768px) 40rem, 100vw"
                       />
                       <PhotoCredit credit={n.cover.credit} />

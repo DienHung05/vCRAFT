@@ -45,7 +45,13 @@ export function NewsArticleView({ article }: { article: NewsDetailDto }) {
             alt={article.cover.alt || article.title}
             tint={tintOf(article.slug)}
             ratio="3/2"
-            {...slotPhoto(photoFromUrl(article.cover.url, article.cover.alt || article.title))}
+            {...slotPhoto(
+              photoFromUrl(
+                article.cover.url,
+                article.cover.alt || article.title,
+                article.cover.variants,
+              ),
+            )}
             sizes="(min-width: 768px) 40rem, 100vw"
           />
           <PhotoCredit credit={article.cover.credit} />
