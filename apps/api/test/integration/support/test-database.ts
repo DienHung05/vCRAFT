@@ -2,6 +2,7 @@ import { MikroORM, type Options } from '@mikro-orm/core';
 import { MySqlContainer, type StartedMySqlContainer } from '@testcontainers/mysql';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { createMikroOrmOptions, type DbDriver, resolveDbDriver } from '@vcraft/database';
+import { DbProxy } from './db-proxy.js';
 
 /** CSDL dưới test: CI đặt `DB_DRIVER=postgresql|mysql`; chạy cục bộ không đặt thì dùng PostgreSQL. */
 export const testDriver: DbDriver = resolveDbDriver(process.env);
@@ -15,7 +16,16 @@ export interface TestDatabase {
   orm: MikroORM;
   /** Chạy toàn bộ migration MikroORM của `packages/database` cho driver hiện tại. */
   migrate: () => Promise<void>;
+  /** Present when started with `proxy: true`: the app reaches the container only through this proxy. */
+  proxy?: DbProxy;
   stop: () => Promise<void>;
+}
+
+export interface TestDatabaseOptions {
+  /** Extra env for the production config factory, e.g. `DB_POOL_MAX`; the connection variables are not overridable. */
+  env?: Record<string, string>;
+  /** Route the app's connections through a {@link DbProxy} that can drop the link silently. */
+  proxy?: boolean;
 }
 
 /**
@@ -24,7 +34,7 @@ export interface TestDatabase {
  *
  * Postgres dùng user `postgres` để khớp migration Supabase (`alter default privileges for role postgres`).
  */
-export async function startTestDatabase(): Promise<TestDatabase> {
+export async function startTestDatabase(options: TestDatabaseOptions = {}): Promise<TestDatabase> {
   let container: StartedPostgreSqlContainer | StartedMySqlContainer;
   let env: Record<string, string>;
 
@@ -60,6 +70,13 @@ export async function startTestDatabase(): Promise<TestDatabase> {
     };
   }
 
+  let proxy: DbProxy | undefined;
+  if (options.proxy) {
+    proxy = await DbProxy.start({ host: env.DB_HOST as string, port: Number(env.DB_PORT) });
+    env = { ...env, DB_HOST: '127.0.0.1', DB_PORT: String(proxy.port) };
+  }
+  env = { ...options.env, ...env };
+
   // Dùng chính factory của production, chỉ đổi thông tin kết nối (container không bật TLS)
   // Kiểu cấu hình khác nhau theo driver; test chỉ dùng API chung nên nới về Options mặc định.
   // Tắt snapshot: nếu không, `migrator.up()` ghi đè `.snapshot-vcraft.json` trong repo bằng schema của CSDL test.
@@ -76,7 +93,9 @@ export async function startTestDatabase(): Promise<TestDatabase> {
     migrate: async () => {
       await orm.migrator.up();
     },
+    ...(proxy && { proxy }),
     stop: async () => {
+      await proxy?.stop();
       await orm.close(true);
       await container.stop();
     },
