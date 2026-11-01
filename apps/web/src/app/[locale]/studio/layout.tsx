@@ -9,9 +9,12 @@ export default async function StudioLayout({ children, params }: LayoutProps<'/[
   const locale = await resolveLocale(params);
   await requireArea('studio', locale);
   return (
-    <PublicShell>
-      <StudioNav />
-      {children}
-    </PublicShell>
+    // The phone tab bar is fixed to the bottom edge; this keeps the footer clear of it.
+    <div className="pb-16 md:pb-0">
+      <PublicShell>
+        <StudioNav />
+        {children}
+      </PublicShell>
+    </div>
   );
 }

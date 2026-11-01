@@ -17,6 +17,8 @@
   --color-seal: #c2261c;
   --color-celadon: #5e8a7d;
   --color-lacquer: #8c6a24;
+  /* Fired clay pulled toward ink for text on a clay wash (clay on 12% clay is only 4.3:1, AA needs 4.5:1). */
+  --color-clay-ink: color-mix(in oklch, var(--color-clay) 80%, var(--color-ink));
 
   /*
    * Font: next/font gán tên font thật vào các biến --font-fraunces / --font-be-vietnam /

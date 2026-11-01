@@ -32,7 +32,7 @@ export function ProductList({ client }: { client?: StudioClient }) {
                 <label
                   key={status}
                   className={cn(
-                    'cursor-pointer rounded-chip border border-ink/15 px-3 py-1.5 text-small has-checked:bg-clay/12 has-checked:text-clay',
+                    'cursor-pointer rounded-chip border border-ink/15 px-3 py-1.5 text-small has-checked:bg-clay/12 has-checked:text-clay-ink',
                   )}
                 >
                   <input
