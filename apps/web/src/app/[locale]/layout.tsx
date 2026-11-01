@@ -5,32 +5,35 @@ import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Toaster } from '@/components/toaster';
 import { UsdRateProvider } from '@/components/usd-rate-provider';
+import { WebFonts } from '@/components/web-fonts';
 import { routing } from '@/i18n/routing';
 import { FALLBACK_USD_RATE, showsUsdReference } from '@/lib/currency';
 import { getUsdRate } from '@/lib/usd-rate';
+import { FONTS_FLAG_SCRIPT, webFontVars } from '@/lib/web-fonts';
 import '../../styles/globals.css';
 
 // Fraunces ships only the SOFT axis: the full opsz/SOFT/WONK file was ~120KB for latin alone, and the
 // brand uses neither opsz nor WONK on any glyph in the wordmark or headings.
 // Tự host qua next/font (BRAND §4), subset vietnamese + latin. Tên biến CSS khớp
 // `--font-display/sans/mono` trong packages/ui/src/tokens/theme.css.
+// No preload and no `.variable` class: `--font-fraunces/-be-vietnam/-jetbrains-mono` are set by
+// globals.css and the web fonts are only switched on after hydration (see lib/web-fonts.ts).
 const fraunces = Fraunces({
   subsets: ['vietnamese', 'latin'],
   axes: ['SOFT'],
-  variable: '--font-fraunces',
   display: 'swap',
+  preload: false,
 });
 
 const beVietnamPro = Be_Vietnam_Pro({
   subsets: ['vietnamese', 'latin'],
   weight: ['400', '500', '600'],
-  variable: '--font-be-vietnam',
   display: 'swap',
+  preload: false,
 });
 
 const jetBrainsMono = JetBrains_Mono({
   subsets: ['vietnamese', 'latin'],
-  variable: '--font-jetbrains-mono',
   display: 'swap',
   // Mono only marks trace/RFQ codes; keep its 40KB latin file out of the critical path.
   preload: false,
@@ -61,9 +64,28 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
   return (
     <html
       lang={locale}
-      className={`${fraunces.variable} ${beVietnamPro.variable} ${jetBrainsMono.variable}`}
+      style={webFontVars({
+        'font-fraunces': fraunces.style.fontFamily,
+        'font-be-vietnam': beVietnamPro.style.fontFamily,
+        'font-jetbrains-mono': jetBrainsMono.style.fontFamily,
+      })}
+      // The head script below may set data-fonts before React hydrates.
+      suppressHydrationWarning
     >
+      <head>
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a constant script; as a JSX child React would escape its quotes. */}
+        <script dangerouslySetInnerHTML={{ __html: FONTS_FLAG_SCRIPT }} />
+        <noscript>
+          {/* Without JS nothing flips data-fonts, so the web fonts are switched on by CSS alone. */}
+          <style>
+            {
+              ':root{--font-fraunces:var(--font-fraunces-web);--font-be-vietnam:var(--font-be-vietnam-web);--font-jetbrains-mono:var(--font-jetbrains-mono-web)}'
+            }
+          </style>
+        </noscript>
+      </head>
       <body className="grain-fixed">
+        <WebFonts />
         <NextIntlClientProvider>
           <UsdRateProvider value={usdRate}>{children}</UsdRateProvider>
           <Toaster />
