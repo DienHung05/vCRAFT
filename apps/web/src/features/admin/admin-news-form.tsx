@@ -5,12 +5,13 @@ import type { AdminNewsDto, SaveNewsRequest } from '@vcraft/contracts';
 import { NEWS_CATEGORIES, NEWS_VISIBILITIES, type NewsCategory } from '@vcraft/domain';
 import { Button } from '@vcraft/ui';
 import dynamic from 'next/dynamic';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { ErrorState } from '@/components/states/error-state';
 import { FormSkeleton } from '@/components/states/skeletons';
+import { altFor } from '@/features/catalog/view-models';
 import { prepareImage, sendMedia } from '@/features/media/prepare-image';
 import { Link, useRouter } from '@/i18n/navigation';
 import { browserAccessToken } from '@/lib/api/live-session';
@@ -123,6 +124,7 @@ export function AdminNewsForm({
   client?: AdminClient;
   upload?: (client: AdminClient, file: File) => Promise<string>;
 }) {
+  const locale = useLocale();
   const t = useTranslations('admin.news');
   const form = useTranslations('admin.news.form');
   const nav = useTranslations('admin.nav');
@@ -341,7 +343,11 @@ export function AdminNewsForm({
         {form('cover')}
         {existing?.cover && !removeCover && !cover ? (
           // biome-ignore lint/performance/noImgElement: a small admin preview of an image from a storage host that varies by deployment.
-          <img src={existing.cover.url} alt={existing.cover.alt} className="max-h-40 w-fit" />
+          <img
+            src={existing.cover.url}
+            alt={altFor(locale, existing.cover.alt, existing.cover.altEn)}
+            className="max-h-40 w-fit"
+          />
         ) : null}
         <input
           type="file"
