@@ -1,6 +1,7 @@
 export * from './DatabaseSeeder.js';
 export * from './DemoSeeder.js';
 export * from './demo/accounts.js';
+export * from './demo/backfill-id-numbers.js';
 export * from './demo/guard.js';
 export * from './demo/link-media.js';
 export * from './demo/photo-manifest.js';
