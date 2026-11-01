@@ -288,7 +288,7 @@
     },
     "scans": "{count, plural, one {# scan} other {# scans}}",
     "timelineTitle": "A journey through fire",
-    "timelineLead": "Each step was recorded by the maker themselves, with a photo and a hash.",
+    "timelineLead": "Each step was recorded by the maker themselves, with a hash, and a photo when the maker took one.",
     "whereTitle": "Where it was made",
     "certsTitle": "The household's certifications",
     "qrLabel": "Trace seal for code {code}",
@@ -1653,7 +1653,7 @@
       "deleteText": "The milestone and its photo will be removed from the journal. This cannot be undone.",
       "deletedToast": "Milestone deleted.",
       "deleteFailed": "Could not delete the milestone. Please try again later.",
-      "emptyHint": "Each milestone is one stage with a date, a note and a photo. Visitors read them when they scan the QR code."
+      "emptyHint": "Each milestone is one stage with a date, a note and, if you have one, a photo. Visitors read them when they scan the QR code."
     },
     "invitations": {
       "title": "Quote invitations",

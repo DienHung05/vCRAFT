@@ -288,7 +288,7 @@
     },
     "scans": "{count, plural, other {# lượt quét}}",
     "timelineTitle": "Hành trình qua lửa",
-    "timelineLead": "Từng công đoạn do chính người thợ ghi lại, kèm ảnh và dấu băm.",
+    "timelineLead": "Từng công đoạn do chính người thợ ghi lại, kèm dấu băm, và ảnh khi người thợ có chụp.",
     "whereTitle": "Nơi món gốm ra đời",
     "certsTitle": "Chứng nhận của hộ",
     "qrLabel": "Ấn truy xuất mã {code}",
@@ -1653,7 +1653,7 @@
       "deleteText": "Mốc và ảnh kèm theo sẽ bị xóa khỏi nhật ký. Không thể hoàn tác.",
       "deletedToast": "Đã xóa mốc.",
       "deleteFailed": "Chưa xóa được mốc. Bạn thử lại sau.",
-      "emptyHint": "Mỗi mốc là một công đoạn có ngày, ghi chú và ảnh. Khách sẽ đọc chúng khi quét mã QR."
+      "emptyHint": "Mỗi mốc là một công đoạn có ngày, ghi chú và có thể kèm ảnh. Khách sẽ đọc chúng khi quét mã QR."
     },
     "invitations": {
       "title": "Lời mời báo giá",

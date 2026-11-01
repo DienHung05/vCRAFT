@@ -15,7 +15,6 @@ import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
 import { fetchHousehold, fetchTrace } from '@/features/catalog/exhibition-api';
-import { presetKindOf } from '@/features/catalog/preset-figure';
 import {
   altFor,
   photoFromUrl,
@@ -72,6 +71,7 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
   const locked = trace?.availability === 'UNAVAILABLE' && trace.reason === 'HOUSEHOLD_SUSPENDED';
   const visible = trace?.availability === 'VISIBLE' ? trace : null;
   const profile = visible ? await fetchHousehold(visible.household.slug) : null;
+  // The product's own photo, only when it has one; there is no stand-in picture for a product.
   const image = visible
     ? photoFromUrl(
         visible.product.coverUrl,
@@ -83,6 +83,16 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
         visible.product.coverVariants,
       )
     : undefined;
+  // The household slot shows the household's own banner when it has one, else a workshop illustration.
+  const household = profile?.status === 'ok' ? profile.data : null;
+  const householdAlt = household?.banner
+    ? altFor(locale, household.banner.alt, household.banner.altEn) || preset('household')
+    : preset('household');
+  const householdImage = household?.banner
+    ? photoFromUrl(household.banner.url, householdAlt, household.banner.variants)
+    : household
+      ? photoFromUrl(household.coverUrl, householdAlt, household.coverVariants)
+      : undefined;
 
   return (
     <div className="mx-auto min-h-svh max-w-xl bg-paper">
@@ -129,6 +139,18 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
               <p className="text-small text-ash">{t('scanned')}</p>
               <h1 className="mt-1 text-h1">{visible.product.name}</h1>
               <p className="mt-2 text-ash">{visible.household.name}</p>
+              {image ? (
+                <figure className="mt-5 max-w-xs">
+                  <ImageSlot
+                    alt={image.alt}
+                    tint={tintOf(visible.product.traceCode)}
+                    ratio="4/5"
+                    {...slotPhoto(image)}
+                    sizes="(min-width: 640px) 20rem, 80vw"
+                  />
+                  <PhotoCredit id={image.photo?.id} credit={visible.coverCredit} />
+                </figure>
+              ) : null}
             </section>
 
             {/* Biến thể C: mở ngay bằng ấn và nhật ký. Ấn chỉ đóng khi trình duyệt tự kiểm chuỗi băm khớp. */}
@@ -161,25 +183,23 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
             <section aria-labelledby="household-title" className="px-5 pt-12">
               <h2 id="household-title">{ex('householdTitle')}</h2>
               <ImageSlot
-                alt={
-                  image?.alt ?? preset(presetKindOf(visible.product.category, visible.product.name))
-                }
-                tint={tintOf(visible.product.traceCode)}
-                ratio="4/5"
-                {...slotPhoto(image)}
+                alt={householdAlt}
+                tint={tintOf(visible.household.slug)}
+                ratio="3/2"
+                {...slotPhoto(householdImage)}
                 sizes="(min-width: 640px) 32rem, 100vw"
                 className="mt-6 grid place-items-center"
               >
-                {image ? null : (
+                {householdImage ? null : (
                   <ProductFigure
-                    kind={presetKindOf(visible.product.category, visible.product.name)}
-                    className="h-3/5"
+                    kind="generic"
+                    className="h-1/2"
                     body="var(--color-paper)"
-                    band={tintOf(visible.product.traceCode)}
+                    band={tintOf(visible.household.slug)}
                   />
                 )}
               </ImageSlot>
-              <PhotoCredit id={image?.photo?.id} credit={visible.coverCredit} />
+              <PhotoCredit id={householdImage?.photo?.id} credit={household?.banner?.credit} />
               {visible.product.artisanNote ? (
                 <blockquote className="mt-6 font-display text-h3 leading-snug text-ink type-soft">
                   “{visible.product.artisanNote}”
