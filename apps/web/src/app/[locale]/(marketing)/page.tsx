@@ -103,7 +103,8 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             ratio="4/5"
             photo={HERO_PHOTO}
             priority
-            sizes="(min-width: 768px) 40vw, 100vw"
+            // 88vw (not 100vw) so phones at 1.75x pick the 640w file: the box is ~92vw wide.
+            sizes="(min-width: 768px) 40vw, 88vw"
             className="grid place-items-center"
           >
             {HERO_PHOTO ? null : (
@@ -135,7 +136,8 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
           aria-labelledby="day-title"
           // biome-ignore lint/a11y/noNoninteractiveTabindex: vùng cuộn ngang phải nhận focus để cuộn bằng phím mũi tên (WCAG 2.1.1, axe scrollable-region-focusable).
           tabIndex={0}
-          className="mt-10 snap-x snap-mandatory overflow-x-auto scroll-smooth focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glaze motion-reduce:scroll-auto"
+          // No `scroll-smooth` here: with mandatory snap it makes Chrome report no LCP at all (NO_LCP in Lighthouse).
+          className="mt-10 snap-x snap-mandatory overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glaze"
         >
           <ol className="flex w-max gap-5 px-gutter pb-4">
             {DAY_STAGES.map(({ stage, tint }, i) => (
@@ -162,7 +164,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
 
       {/* Nghệ nhân nổi bật: chân dung lớn, bố cục lệch kiểu tạp chí. */}
       <section
-        className="mx-auto max-w-editorial px-gutter pb-section"
+        className="cv-auto mx-auto max-w-editorial px-gutter pb-section"
         aria-labelledby="artisans-title"
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -207,7 +209,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
       </section>
 
       {/* Bản đồ thu nhỏ "đang mở cửa" + số liệu làng. */}
-      <section className="bg-glaze text-paper" aria-labelledby="map-title">
+      <section className="cv-auto bg-glaze text-paper" aria-labelledby="map-title">
         <div className="mx-auto grid max-w-editorial gap-12 px-gutter py-section md:grid-cols-12">
           <div className="md:col-span-5">
             <h2 id="map-title" className="text-paper">
@@ -263,7 +265,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
       </section>
 
       <section
-        className="mx-auto max-w-editorial px-gutter py-section"
+        className="cv-auto mx-auto max-w-editorial px-gutter py-section"
         aria-labelledby="stats-title"
       >
         <h2 id="stats-title" className="sr-only">
@@ -287,7 +289,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
         </dl>
       </section>
 
-      <section className="mx-auto max-w-editorial px-gutter" aria-labelledby="news-title">
+      <section className="cv-auto mx-auto max-w-editorial px-gutter" aria-labelledby="news-title">
         <div className="flex items-end justify-between gap-4">
           <h2 id="news-title">{t('news.title')}</h2>
         </div>
