@@ -21,7 +21,8 @@
     "notifications": "Thông báo",
     "dismiss": "Đóng thông báo",
     "usdApprox": "≈ US${amount}",
-    "usdRateNote": "Giá USD chỉ để tham khảo, quy đổi theo 1 US$ = {rate} ₫. Đơn hàng được báo và thanh toán bằng VND.",
+    "usdRateNote": "Giá USD chỉ để tham khảo, quy đổi theo 1 US$ = {rate} ₫ (tỷ giá ngày {date}). Đơn hàng được báo và thanh toán bằng VND.",
+    "usdRateNoteFallback": "Giá USD chỉ để tham khảo, quy đổi theo khoảng 1 US$ = {rate} ₫. Đơn hàng được báo và thanh toán bằng VND.",
     "home": "Trang chủ",
     "cancel": "Hủy",
     "close": "Đóng"

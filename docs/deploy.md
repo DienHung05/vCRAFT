@@ -80,9 +80,12 @@ Tùy chọn: `CORS_ORIGINS=https://<domain>` ở `vcraft-api` chỉ khi có clie
    | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Khóa `sb_publishable_...` |
    | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Site key Turnstile (nếu dùng) |
    | `NEXT_PUBLIC_MAP_STYLE_URL`, `NEXT_PUBLIC_MAP_CENTER` | Như `.env.example` (tùy chọn) |
+   | `NEXT_PUBLIC_USD_VND_RATE` | Optional. Fallback VND-per-USD rate (default `25000`) used only when the daily rate source is unreachable; see below |
 
    Mọi biến ở trên được **chốt lúc build**: sửa xong phải **Redeploy**. Không đặt `SUPABASE_SECRET_KEY` hay bất kỳ bí mật nào ở Vercel; web không cần.
 7. **Deploy**. Mở URL `*.vercel.app` được cấp.
+
+**Daily USD reference rate (BR-07).** The English site shows a USD figure next to VND prices. The Next.js server on Vercel fetches the VND-per-USD rate from the keyless fawazahmed0/currency-api (jsDelivr CDN, Cloudflare Pages mirror) and keeps it in Next's data cache for 24 hours (`revalidate: 86400`), so there is no extra service, API route or worker job and no request from the visitor's browser. The date of the rate is shown in the rate note under the price. If both hosts fail, time out (3 s each) or return a rate outside 10,000 to 60,000, the site uses `NEXT_PUBLIC_USD_VND_RATE` (or 25,000) and the note says "about" with no date. A failed fetch is not cached by Next, but the page that rendered with the fallback stays cached until its next 24-hour revalidation, so a one-off outage can show the fallback for up to a day. The Vietnamese site never shows USD and does not fetch the rate.
 
 Preview deployment dùng chung API và CSDL production (không có staging); đừng thao tác phá hủy từ bản preview.
 
