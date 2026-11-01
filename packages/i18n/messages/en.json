@@ -15,7 +15,6 @@
     "retry": "Try again",
     "priceOnRequest": "Price on request",
     "dataUnavailable": "We could not load this data. Please try again in a few minutes.",
-    "householdCoverAlt": "Workshop of the {household} household",
     "loading": "Loading…",
     "breadcrumb": "Breadcrumb",
     "notifications": "Notifications",
@@ -152,7 +151,7 @@
     },
     "day": {
       "title": "A day in Bat Trang",
-      "lead": "From kneading clay to opening the kiln, six steps that every piece goes through. Swipe sideways to follow each one."
+      "lead": "From kneading clay to opening the kiln, six steps that every piece goes through. The photos only illustrate each step in general; they are not photos of any particular piece. Swipe sideways to follow each one."
     },
     "artisans": {
       "title": "The hands that keep the craft alive",
@@ -237,7 +236,6 @@
     "gallery": "Inside the workshop",
     "products": "Products from this household",
     "productsEmpty": "Nothing has come out of this workshop's kiln yet. Check back soon.",
-    "coverAlt": "Workshop of the {household} household",
     "capacityBy": "Capacity by category"
   },
   "product": {
@@ -646,6 +644,7 @@
       "documentsHint": "Each open creates a private link that expires in 5 minutes.",
       "noDocuments": "No documents submitted.",
       "openDocument": "Open",
+      "openNamed": "Open {name}",
       "documentFailed": "We could not open this document.",
       "workshops": "Workshops on the map",
       "noWorkshops": "No workshops declared.",
@@ -1704,24 +1703,23 @@
   },
   "photoAlt": {
     "hero-binh-chu-dau": "An ivory-glazed ceramic vase painted with blue peonies, with a slender neck and round belly, standing in a pottery shop",
-    "tl-clay": "Illustrative photo of the clay-wedging stage: pale yellow lumps of clay piled in a storeroom, a hand cart nearby",
-    "tl-throw": "Illustrative photo of the throwing stage: two hands shaping a white ceramic bowl on a potter's wheel",
-    "tl-dry": "Illustrative photo of the drying stage: plaster moulds and unglazed pottery stacked on shelves in the workshop, waiting to dry",
-    "tl-paint": "Illustrative photo of the painting stage: a craftsman bending over to paint white cups lined up on a table, next to a bucket of glaze",
-    "tl-glaze": "Illustrative photo of the glazing stage: large glazed porcelain jars with spouts, painted in blue with flowers and leaves, lined up in a row",
-    "tl-fire": "Illustrative photo of the firing stage: glowing flames burning between the stacked pottery columns inside the kiln",
-    "tl-finish": "Illustrative photo of the finishing stage: three flared-neck porcelain vases painted with blue lotus flowers, side by side",
-    "tl-fire-2": "Illustrative photo of the firing stage: an arched brick kiln door, red flames burning below and a hand cart standing beside it",
-    "sq-throw": "Illustrative photo of the throwing stage: a hand in a leather finger guard shaping white pottery on a potter's wheel",
-    "sq-dry": "Illustrative photo of the drying stage: nested unglazed pottery basins with taller pottery stacked behind, in the workshop",
-    "sq-paint": "Illustrative photo of the painting stage: a craftsman bending over to paint a white cup, next to a bucket of red glaze",
-    "sq-glaze": "Illustrative photo of the glazing stage: a large glazed jar painted in blue with flowers and leaves, with a spout",
     "day-clay": "Pale yellow clay lumps heaped in a storeroom, a hand cart behind",
     "ban-tay-vuot-gom": "Two hands in leather finger guards shaping a white ceramic bowl on a potter's wheel",
     "day-dry": "Nested unglazed pottery basins in the workshop, with more pottery stacked high behind them, waiting to dry",
     "day-paint": "A craftsman crouching and bending over, painting white pottery with a brush, next to a bucket of glaze",
     "day-fire": "An arched brick kiln door with red flames burning below and a hand cart standing beside it",
     "day-finish": "A row of large glazed jars with spouts, painted in blue with flowers and leaves, lined up straight"
+  },
+  "presetFigure": {
+    "bowl": "Illustration of a bowl; this product has no photo yet",
+    "cup": "Illustration of a cup; this product has no photo yet",
+    "vase": "Illustration of a vase; this product has no photo yet",
+    "jar": "Illustration of a jar; this product has no photo yet",
+    "plate": "Illustration of a plate; this product has no photo yet",
+    "teaset": "Illustration of a tea set; this product has no photo yet",
+    "incense": "Illustration of an incense burner; this product has no photo yet",
+    "generic": "Illustration of a piece of pottery; this product has no photo yet",
+    "household": "Illustration of a piece of pottery; this household has no workshop photo yet"
   },
   "privacy": {
     "title": "Privacy policy",

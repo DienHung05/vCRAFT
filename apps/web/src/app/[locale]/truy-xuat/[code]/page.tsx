@@ -1,4 +1,12 @@
-import { Badge, buttonVariants, Crackle, Logo, TraceSealFrame, VaseFigure } from '@vcraft/ui';
+import {
+  Badge,
+  buttonVariants,
+  Crackle,
+  Logo,
+  ProductFigure,
+  TraceSealFrame,
+  VaseFigure,
+} from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
@@ -7,7 +15,9 @@ import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
 import { fetchHousehold, fetchTrace } from '@/features/catalog/exhibition-api';
+import { presetKindOf } from '@/features/catalog/preset-figure';
 import {
+  altFor,
   photoFromUrl,
   slotPhoto,
   tintOf,
@@ -44,12 +54,16 @@ export async function generateMetadata({
  * kèm danh sách) → chứng nhận → tem QR, kèm liên kết về trang chủ.
  */
 export default async function TracePage({ params }: PageProps<'/[locale]/truy-xuat/[code]'>) {
-  await resolveLocale(params);
+  const locale = await resolveLocale(params);
   const { code } = await params;
   // Mã sai định dạng (BR-04) là đường dẫn sai ⇒ 404; mã đúng định dạng mà không có trong hệ thống
   // thì hiện cảnh báo hàng không xác thực bên dưới (FR-TRC-08).
   if (!isTraceCode(code)) notFound();
-  const [t, ex] = await Promise.all([getTranslations('trace'), getTranslations('exhibition')]);
+  const [t, ex, preset] = await Promise.all([
+    getTranslations('trace'),
+    getTranslations('exhibition'),
+    getTranslations('presetFigure'),
+  ]);
   const result = await fetchTrace(code);
   if (result.status === 'unavailable') return <DataUnavailable />;
   const trace = result.status === 'ok' ? result.data : null;
@@ -61,7 +75,11 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
   const image = visible
     ? photoFromUrl(
         visible.product.coverUrl,
-        visible.product.coverAlt ?? visible.product.name,
+        altFor(
+          locale,
+          visible.product.coverAlt ?? visible.product.name,
+          visible.product.coverAltEn,
+        ),
         visible.product.coverVariants,
       )
     : undefined;
@@ -143,7 +161,9 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
             <section aria-labelledby="household-title" className="px-5 pt-12">
               <h2 id="household-title">{ex('householdTitle')}</h2>
               <ImageSlot
-                alt={image?.alt ?? visible.product.name}
+                alt={
+                  image?.alt ?? preset(presetKindOf(visible.product.category, visible.product.name))
+                }
                 tint={tintOf(visible.product.traceCode)}
                 ratio="4/5"
                 {...slotPhoto(image)}
@@ -151,7 +171,8 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                 className="mt-6 grid place-items-center"
               >
                 {image ? null : (
-                  <VaseFigure
+                  <ProductFigure
+                    kind={presetKindOf(visible.product.category, visible.product.name)}
                     className="h-3/5"
                     body="var(--color-paper)"
                     band={tintOf(visible.product.traceCode)}

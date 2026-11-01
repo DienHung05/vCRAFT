@@ -1,7 +1,9 @@
 import type { JournalDto, JournalEntryDto, ProductCardDto, WorkshopDto } from '@vcraft/contracts';
 import type { ChainEntry, JournalStage } from '@vcraft/domain';
+import type { ProductFigureKind } from '@vcraft/ui';
 import { PHOTO_BY_ID } from '@/lib/demo/photo-credits';
 import type { ImageVariant } from '@/lib/images';
+import { presetKindOf } from './preset-figure';
 
 /** Tham chiếu ảnh có giấy phép trong `/images/demo` (kèm ghi công) hoặc ảnh tải lên qua kho media. */
 export interface PhotoView {
@@ -12,6 +14,11 @@ export interface PhotoView {
   /** Sizes of `src` for `srcset`; empty or absent when the file exists at one size only. */
   variants?: readonly ImageVariant[];
   alt: string;
+}
+
+/** Description to show for `locale`: the English one on `/en` when there is one, else the Vietnamese one. */
+export function altFor(locale: string, alt: string, altEn?: string | null): string {
+  return locale === 'en' && altEn?.trim() ? altEn : alt;
 }
 
 const DEMO_PHOTO_URL = /^\/images\/demo\/(.+)-\d+\.(?:webp|avif)$/;
@@ -49,6 +56,8 @@ export function tintOf(seed: string): string {
 export interface ProductCardView {
   slug: string;
   name: string;
+  /** Which placeholder illustration to draw while the product has no photo. */
+  presetKind: ProductFigureKind;
   tint: string;
   /** `0` là chưa niêm yết giá. */
   price: number;
@@ -56,14 +65,19 @@ export interface ProductCardView {
   image?: PhotoView | undefined;
 }
 
-export function toProductCardView(dto: ProductCardDto): ProductCardView {
+export function toProductCardView(dto: ProductCardDto, locale = 'vi'): ProductCardView {
   return {
     slug: dto.slug,
     name: dto.name,
+    presetKind: presetKindOf(dto.category, dto.name),
     tint: tintOf(dto.traceCode),
     price: dto.priceVnd,
     oneOfAKind: dto.kind === 'OBJECT',
-    image: photoFromUrl(dto.coverUrl, dto.coverAlt ?? dto.name, dto.coverVariants),
+    image: photoFromUrl(
+      dto.coverUrl,
+      altFor(locale, dto.coverAlt ?? dto.name, dto.coverAltEn),
+      dto.coverVariants,
+    ),
   };
 }
 

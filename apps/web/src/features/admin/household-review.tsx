@@ -104,8 +104,14 @@ function DocumentRow({ doc, client }: { doc: HouseholdDocumentDto; client: Admin
   };
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 border-ink/10 border-b py-2 last:border-b-0">
-      <span className="text-small">{doc.mimeType}</span>
-      <Button type="button" variant="secondary" size="sm" onClick={() => void open()}>
+      <span className="text-small">{doc.caption ?? doc.mimeType}</span>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        aria-label={t('openNamed', { name: doc.caption ?? doc.mimeType })}
+        onClick={() => void open()}
+      >
         {t('openDocument')}
       </Button>
       {failed ? (

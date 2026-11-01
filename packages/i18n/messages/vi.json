@@ -15,7 +15,6 @@
     "retry": "Thử lại",
     "priceOnRequest": "Liên hệ báo giá",
     "dataUnavailable": "Chưa tải được dữ liệu. Bạn thử lại sau ít phút.",
-    "householdCoverAlt": "Ảnh xưởng của hộ {household}",
     "loading": "Đang tải…",
     "breadcrumb": "Đường dẫn trang",
     "notifications": "Thông báo",
@@ -152,7 +151,7 @@
     },
     "day": {
       "title": "Một ngày ở Bát Tràng",
-      "lead": "Từ nhào đất tới ra lò là sáu chặng mà món gốm nào cũng đi qua. Vuốt ngang để xem từng chặng."
+      "lead": "Từ nhào đất tới ra lò là sáu chặng mà món gốm nào cũng đi qua. Ảnh chỉ minh hoạ chung cho từng chặng, không phải ảnh của một món cụ thể. Vuốt ngang để xem từng chặng."
     },
     "artisans": {
       "title": "Những bàn tay giữ nghề",
@@ -237,7 +236,6 @@
     "gallery": "Trong xưởng",
     "products": "Sản phẩm của hộ",
     "productsEmpty": "Xưởng chưa có sản phẩm nào ra lò. Bạn quay lại sau nhé.",
-    "coverAlt": "Ảnh xưởng của hộ {household}",
     "capacityBy": "Năng lực theo danh mục"
   },
   "product": {
@@ -646,6 +644,7 @@
       "documentsHint": "Mỗi lần mở tạo một đường dẫn riêng, hết hạn sau 5 phút.",
       "noDocuments": "Hộ chưa nộp giấy tờ.",
       "openDocument": "Mở",
+      "openNamed": "Mở {name}",
       "documentFailed": "Chưa mở được giấy tờ này.",
       "workshops": "Xưởng trên bản đồ",
       "noWorkshops": "Hộ chưa khai xưởng.",
@@ -1704,24 +1703,23 @@
   },
   "photoAlt": {
     "hero-binh-chu-dau": "Chiếc bình gốm men ngà vẽ lam hoa mẫu đơn, cổ cao thon, bụng tròn, đặt trong một cửa hàng gốm",
-    "tl-clay": "Ảnh minh hoạ công đoạn nhào đất: những tảng đất sét vàng nhạt chất trong kho, xe đẩy dựng gần đó",
-    "tl-throw": "Ảnh minh hoạ công đoạn vuốt dáng: hai bàn tay chuốt thành bát gốm trắng trên bàn xoay",
-    "tl-dry": "Ảnh minh hoạ công đoạn phơi: khuôn thạch cao và gốm mộc xếp trên giá trong xưởng, chờ khô",
-    "tl-paint": "Ảnh minh hoạ công đoạn vẽ: người thợ cúi xuống vẽ lên những chiếc chén trắng xếp trên bàn, cạnh xô nước men",
-    "tl-glaze": "Ảnh minh hoạ công đoạn tráng men: những chiếc chum sứ lớn đã tráng men, vẽ lam và hoa lá, có vòi xếp thành hàng",
-    "tl-fire": "Ảnh minh hoạ công đoạn nung: những ô lửa đang cháy sáng giữa các cột gốm xếp trong lò",
-    "tl-finish": "Ảnh minh hoạ công đoạn hoàn thiện: ba chiếc bình sứ miệng loe vẽ lam hoa sen đặt cạnh nhau",
-    "tl-fire-2": "Ảnh minh hoạ công đoạn nung: cửa lò gạch vòm, ngọn lửa đỏ cháy bên dưới và chiếc xe đẩy dựng bên cạnh",
-    "sq-throw": "Ảnh minh hoạ công đoạn vuốt dáng: bàn tay đeo ngón bọc da chuốt gốm trắng trên bàn xoay",
-    "sq-dry": "Ảnh minh hoạ công đoạn phơi: chậu gốm mộc lồng nhau và gốm xếp cao phía sau, trong xưởng",
-    "sq-paint": "Ảnh minh hoạ công đoạn vẽ: người thợ cúi đầu vẽ lên chén trắng, cạnh xô nước men đỏ",
-    "sq-glaze": "Ảnh minh hoạ công đoạn tráng men: chum sứ lớn đã tráng men vẽ lam và hoa lá, có vòi",
     "day-clay": "Những tảng đất sét vàng nhạt chất thành đống trong kho, xe đẩy tay phía sau",
     "ban-tay-vuot-gom": "Hai bàn tay đeo ngón bọc da, đang chuốt thành một chiếc bát gốm trắng trên bàn xoay",
     "day-dry": "Chậu gốm mộc lồng nhau trong xưởng, phía sau là cột gốm khác xếp cao chờ khô",
     "day-paint": "Người thợ ngồi xổm cúi đầu, dùng bút vẽ lên gốm trắng, cạnh xô nước men",
     "day-fire": "Cửa lò gạch vòm với lửa đỏ cháy bên dưới và chiếc xe đẩy dựng bên cạnh",
     "day-finish": "Dãy chum sứ lớn có vòi, tráng men vẽ lam và hoa lá, xếp thẳng hàng"
+  },
+  "presetFigure": {
+    "bowl": "Hình minh hoạ chiếc bát, chưa có ảnh thật của sản phẩm này",
+    "cup": "Hình minh hoạ chiếc cốc, chưa có ảnh thật của sản phẩm này",
+    "vase": "Hình minh hoạ chiếc bình, chưa có ảnh thật của sản phẩm này",
+    "jar": "Hình minh hoạ chiếc hũ, chưa có ảnh thật của sản phẩm này",
+    "plate": "Hình minh hoạ chiếc đĩa, chưa có ảnh thật của sản phẩm này",
+    "teaset": "Hình minh hoạ bộ ấm chén, chưa có ảnh thật của sản phẩm này",
+    "incense": "Hình minh hoạ chiếc lư hương, chưa có ảnh thật của sản phẩm này",
+    "generic": "Hình minh hoạ đồ gốm, chưa có ảnh thật của sản phẩm này",
+    "household": "Hình minh hoạ đồ gốm, hộ này chưa có ảnh xưởng"
   },
   "privacy": {
     "title": "Chính sách quyền riêng tư",

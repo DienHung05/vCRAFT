@@ -164,7 +164,15 @@ describe('ProfileEditor', () => {
       getHousehold: vi.fn(async () => ({
         ...HOUSEHOLD,
         gallery: [
-          { mediaId: HOUSEHOLD.id, url: null, variants: [], alt: '', caption: null, credit: null },
+          {
+            mediaId: HOUSEHOLD.id,
+            url: null,
+            variants: [],
+            alt: '',
+            altEn: null,
+            caption: null,
+            credit: null,
+          },
         ],
       })),
     });

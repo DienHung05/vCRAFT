@@ -8,6 +8,7 @@ import { UsdRateProvider } from '@/components/usd-rate-provider';
 import { WebFonts } from '@/components/web-fonts';
 import { routing } from '@/i18n/routing';
 import { FALLBACK_USD_RATE, showsUsdReference } from '@/lib/currency';
+import { siteOrigin } from '@/lib/site';
 import { getUsdRate } from '@/lib/usd-rate';
 import { FONTS_FLAG_SCRIPT, webFontVars } from '@/lib/web-fonts';
 import '../../styles/globals.css';
@@ -48,8 +49,18 @@ export async function generateMetadata({ params }: LayoutProps<'/[locale]'>): Pr
   if (!hasLocale(routing.locales, locale)) return {};
   const t = await getTranslations({ locale, namespace: 'meta' });
   return {
+    // Absolute origin for the share image and the other metadata URLs (see lib/site.ts).
+    metadataBase: new URL(siteOrigin()),
     title: { default: t('title'), template: `%s · vCraft` },
     description: t('description'),
+    openGraph: {
+      type: 'website',
+      siteName: 'vCraft',
+      locale: locale === 'vi' ? 'vi_VN' : 'en_US',
+      title: t('title'),
+      description: t('description'),
+    },
+    twitter: { card: 'summary_large_image', title: t('title'), description: t('description') },
   };
 }
 

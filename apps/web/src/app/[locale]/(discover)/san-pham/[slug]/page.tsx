@@ -1,4 +1,4 @@
-import { Badge, buttonVariants, Card, cn, SealMark, VaseFigure } from '@vcraft/ui';
+import { Badge, buttonVariants, Card, cn, ProductFigure, SealMark } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations } from 'next-intl/server';
@@ -9,8 +9,10 @@ import { PhotoCredit } from '@/components/photo-credit';
 import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { UsdRateNote, UsdReference } from '@/components/usd-reference';
 import { fetchProduct, fetchProducts } from '@/features/catalog/exhibition-api';
+import { presetKindOf } from '@/features/catalog/preset-figure';
 import { ProductCard } from '@/features/catalog/product-card';
 import {
+  altFor,
   photoFromUrl,
   slotPhoto,
   tintOf,
@@ -18,7 +20,6 @@ import {
   toProductCardView,
 } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
-import { squarePhoto } from '@/lib/demo/stage-photos';
 import { resolveLocale } from '@/lib/locale';
 
 // Dữ liệu lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
@@ -36,17 +37,18 @@ export async function generateMetadata({
 
 /** Chi tiết sản phẩm (FR-PRD, BRAND §9): ảnh 4:5 sticky bên trái, thông tin bên phải, nhật ký rút gọn. */
 export default async function ProductPage({ params }: PageProps<'/[locale]/san-pham/[slug]'>) {
-  await resolveLocale(params);
+  const locale = await resolveLocale(params);
   const { slug } = await params;
   const result = await fetchProduct(slug);
   if (result.status === 'not-found') notFound();
   if (result.status === 'unavailable') return <DataUnavailable />;
   const { product, coverCredit, household, journal } = result.data;
-  const [t, common, stages, categories, format, siblings] = await Promise.all([
+  const [t, common, stages, categories, preset, format, siblings] = await Promise.all([
     getTranslations('product'),
     getTranslations('common'),
     getTranslations('stages'),
     getTranslations('catalog.categories'),
+    getTranslations('presetFigure'),
     getFormatter(),
     fetchProducts({ household: household.slug, limit: 5 }),
   ]);
@@ -56,9 +58,14 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
   const tint = tintOf(product.traceCode);
   const image = photoFromUrl(
     product.coverUrl,
-    product.coverAlt ?? product.name,
+    altFor(locale, product.coverAlt ?? product.name, product.coverAltEn),
     product.coverVariants,
   );
+  const presetKind = presetKindOf(product.category, product.name);
+  // Only photos the household really attached to a journal entry are shown; there is no stand-in picture.
+  const entryPhotos = log
+    .slice(1, 5)
+    .flatMap((e) => e.images.slice(0, 1).map((image) => ({ e, image })));
   const more =
     siblings.status === 'ok'
       ? siblings.data.data.filter((p) => p.slug !== product.slug).slice(0, 4)
@@ -79,7 +86,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
         <div className="md:col-span-7">
           <div className="md:sticky md:top-24">
             <ImageSlot
-              alt={image?.alt ?? product.name}
+              alt={image?.alt ?? preset(presetKind)}
               tint={tint}
               ratio="4/5"
               {...slotPhoto(image)}
@@ -88,30 +95,34 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
               className="grid place-items-center"
             >
               {image ? null : (
-                <VaseFigure className="h-3/5" body="var(--color-paper)" band={tint} />
+                <ProductFigure
+                  kind={presetKind}
+                  className="h-3/5"
+                  body="var(--color-paper)"
+                  band={tint}
+                />
               )}
             </ImageSlot>
             <PhotoCredit id={image?.photo?.id} credit={coverCredit} />
-            <ul className="mt-4 grid grid-cols-4 gap-3" aria-label={t('gallery')}>
-              {log.slice(1, 5).map((e) => {
-                const alt = stages(`${e.stage}.name`);
-                const [own] = e.images;
-                return (
-                  <li key={e.hash}>
-                    <ImageSlot
-                      alt={alt}
-                      tint={e.tint}
-                      ratio="1/1"
-                      {...(own
-                        ? slotPhoto(photoFromUrl(own.url, alt, own.variants))
-                        : { photo: squarePhoto(e.stage) })}
-                      sizes="(min-width: 768px) 14vw, 22vw"
-                    />
-                  </li>
-                );
-              })}
-            </ul>
-            {log.length > 0 ? <PhotoCreditsNote /> : null}
+            {entryPhotos.length > 0 ? (
+              <ul className="mt-4 grid grid-cols-4 gap-3" aria-label={t('gallery')}>
+                {entryPhotos.map(({ e, image: own }) => {
+                  const alt = stages(`${e.stage}.name`);
+                  return (
+                    <li key={e.hash}>
+                      <ImageSlot
+                        alt={alt}
+                        tint={e.tint}
+                        ratio="1/1"
+                        {...slotPhoto(photoFromUrl(own.url, alt, own.variants))}
+                        sizes="(min-width: 768px) 14vw, 22vw"
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+            {image || entryPhotos.length > 0 ? <PhotoCreditsNote /> : null}
           </div>
         </div>
 
@@ -250,7 +261,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
           <ul className="mt-8 grid grid-cols-2 gap-6 md:grid-cols-4">
             {more.map((p) => (
               <li key={p.slug}>
-                <ProductCard product={toProductCardView(p)} />
+                <ProductCard product={toProductCardView(p, locale)} />
               </li>
             ))}
           </ul>

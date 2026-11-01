@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/states/empty-state';
 import { fetchHousehold } from '@/features/catalog/exhibition-api';
 import { ProductCard } from '@/features/catalog/product-card';
 import {
+  altFor,
   photoFromUrl,
   slotPhoto,
   tintOf,
@@ -40,14 +41,15 @@ export async function generateMetadata({
  * → đặt hàng số lượng.
  */
 export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-nhan/[slug]'>) {
-  await resolveLocale(params);
+  const locale = await resolveLocale(params);
   const { slug } = await params;
-  const [t, common, nav, categories, ex, result] = await Promise.all([
+  const [t, common, nav, categories, ex, preset, result] = await Promise.all([
     getTranslations('artisan'),
     getTranslations('common'),
     getTranslations('nav'),
     getTranslations('catalog.categories'),
     getTranslations('exhibition'),
+    getTranslations('presetFigure'),
     fetchHousehold(slug),
   ]);
   if (result.status === 'not-found') notFound();
@@ -55,13 +57,17 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
 
   const household = result.data;
   const representative = household.artisans[0];
-  const coverAlt = household.banner?.alt || t('coverAlt', { household: household.name });
+  // The description of what the banner really shows; without a photo the frame is only an illustration.
+  const coverAlt = household.banner
+    ? altFor(locale, household.banner.alt, household.banner.altEn) || preset('household')
+    : preset('household');
   const cover = household.banner
     ? photoFromUrl(household.banner.url, coverAlt, household.banner.variants)
     : photoFromUrl(household.coverUrl, coverAlt, household.coverVariants);
   const portrait = household.portrait;
+  const portraitAlt = portrait ? altFor(locale, portrait.alt, portrait.altEn) : '';
   const portraitPhoto = portrait
-    ? photoFromUrl(portrait.url, portrait.alt, portrait.variants)
+    ? photoFromUrl(portrait.url, portraitAlt, portrait.variants)
     : undefined;
   const featured = household.products[0];
   const story = household.history.split(/\n{2,}/).filter(Boolean);
@@ -138,7 +144,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
           {portrait ? (
             <figure className="mb-6 sm:float-right sm:mb-2 sm:ml-6 sm:w-44">
               <ImageSlot
-                alt={portrait.alt}
+                alt={portraitAlt}
                 tint={tintOf(portrait.url)}
                 ratio="4/5"
                 {...slotPhoto(portraitPhoto)}
@@ -242,11 +248,12 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
           <h2 id="gallery-title">{t('gallery')}</h2>
           <div className="mt-8 columns-1 gap-5 sm:columns-2 lg:columns-3">
             {gallery.map((item) => {
-              const image = photoFromUrl(item.url, item.alt, item.variants);
+              const itemAlt = altFor(locale, item.alt, item.altEn);
+              const image = photoFromUrl(item.url, itemAlt, item.variants);
               return (
                 <figure key={item.url} className="mb-5 break-inside-avoid">
                   <ImageSlot
-                    alt={item.alt}
+                    alt={itemAlt}
                     tint={tintOf(item.alt)}
                     ratio="3/2"
                     {...(item.caption ? { caption: item.caption } : {})}
@@ -278,7 +285,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
           <ul className="mt-8 grid grid-cols-2 gap-6 md:grid-cols-4">
             {household.products.map((p) => (
               <li key={p.slug}>
-                <ProductCard product={toProductCardView({ ...p, household })} />
+                <ProductCard product={toProductCardView({ ...p, household }, locale)} />
               </li>
             ))}
           </ul>

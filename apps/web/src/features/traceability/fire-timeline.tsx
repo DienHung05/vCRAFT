@@ -4,7 +4,6 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
 import { type LogEntryView, photoFromUrl, slotPhoto } from '@/features/catalog/view-models';
-import { timelinePhoto } from '@/lib/demo/stage-photos';
 
 /**
  * Dòng thời gian lửa (BRAND §6.3 #3): đường nối nóng dần từ màu đất sang màu lửa, mỗi mốc như
@@ -87,37 +86,23 @@ export async function FireTimeline({
               {e.skipReason ? (
                 <p className="mt-1 text-small text-ash">{t('skipped', { reason: e.skipReason })}</p>
               ) : null}
-              {e.images.length > 0 ? (
-                e.images.map((image) => {
-                  const alt = t('proofAlt', { stage: stages(`${e.stage}.name`) });
-                  const photo = photoFromUrl(image.url, alt, image.variants);
-                  return (
-                    <div key={image.sha256}>
-                      <ImageSlot
-                        alt={alt}
-                        tint={e.tint}
-                        ratio="3/2"
-                        {...slotPhoto(photo)}
-                        sizes="(min-width: 640px) 24rem, 100vw"
-                        className="mt-3 max-w-sm"
-                      />
-                      <PhotoCredit id={photo?.photo?.id} credit={image.credit} />
-                    </div>
-                  );
-                })
-              ) : (
-                <>
-                  <ImageSlot
-                    alt={t('proofAlt', { stage: stages(`${e.stage}.name`) })}
-                    tint={e.tint}
-                    ratio="3/2"
-                    photo={timelinePhoto(e.stage, e.supersedesSeq !== undefined)}
-                    sizes="(min-width: 640px) 24rem, 100vw"
-                    className="mt-3 max-w-sm"
-                  />
-                  <PhotoCredit id={timelinePhoto(e.stage, e.supersedesSeq !== undefined).id} />
-                </>
-              )}
+              {e.images.map((image) => {
+                const alt = t('proofAlt', { stage: stages(`${e.stage}.name`) });
+                const photo = photoFromUrl(image.url, alt, image.variants);
+                return (
+                  <div key={image.sha256}>
+                    <ImageSlot
+                      alt={alt}
+                      tint={e.tint}
+                      ratio="3/2"
+                      {...slotPhoto(photo)}
+                      sizes="(min-width: 640px) 24rem, 100vw"
+                      className="mt-3 max-w-sm"
+                    />
+                    <PhotoCredit id={photo?.photo?.id} credit={image.credit} />
+                  </div>
+                );
+              })}
               {/* Hiển thị rút gọn cho gọn mắt; dấu băm đầy đủ 64 hex nằm ở `title`. */}
               <p
                 className="mt-2 font-mono text-[0.7rem] text-ash"

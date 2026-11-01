@@ -1,10 +1,10 @@
 import type { NewsDetailDto } from '@vcraft/contracts';
 import { Badge } from '@vcraft/ui';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
-import { photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
+import { altFor, photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
 
 /** Full article: cover, category, body and related news (FR-NEWS-01). */
@@ -13,6 +13,7 @@ export function NewsArticleView({ article }: { article: NewsDetailDto }) {
   const category = useTranslations('indexPages.news.categories');
   const common = useTranslations('common');
   const format = useFormatter();
+  const locale = useLocale();
   return (
     <article className="mx-auto flex max-w-prose-vn flex-col gap-6 px-gutter pt-12 pb-section">
       <Breadcrumbs
@@ -42,13 +43,13 @@ export function NewsArticleView({ article }: { article: NewsDetailDto }) {
       {article.cover ? (
         <div>
           <ImageSlot
-            alt={article.cover.alt || article.title}
+            alt={altFor(locale, article.cover.alt || article.title, article.cover.altEn)}
             tint={tintOf(article.slug)}
             ratio="3/2"
             {...slotPhoto(
               photoFromUrl(
                 article.cover.url,
-                article.cover.alt || article.title,
+                altFor(locale, article.cover.alt || article.title, article.cover.altEn),
                 article.cover.variants,
               ),
             )}

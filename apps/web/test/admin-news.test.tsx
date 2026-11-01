@@ -72,6 +72,7 @@ const ARTICLE: NewsDetailDto = {
     height: null,
     variants: [],
     alt: 'Ảnh men',
+    altEn: null,
     caption: null,
     credit: null,
   },
