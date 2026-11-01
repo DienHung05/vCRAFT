@@ -59,7 +59,7 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
   } = useForm<HouseholdStepValues>({
     resolver: zodResolver(householdStepSchema),
     mode: 'onTouched',
-    defaultValues: { name: '', slug: '', village: '', history: '' },
+    defaultValues: { name: '', slug: '', village: '', idNumber: '', history: '' },
   });
   const slug = useWatch({ control, name: 'slug' });
 
@@ -87,6 +87,7 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
         name: values.name,
         slug: values.slug,
         history: values.history,
+        idNumber: values.idNumber,
         ...(values.village ? { village: values.village } : {}),
       });
       notify.success(t('wizard.household.savedToast'));
@@ -94,7 +95,13 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
     } catch (failure) {
       if (failure instanceof AccountApiError && failure.fieldErrors.length > 0) {
         for (const { path, message: text } of failure.fieldErrors) {
-          if (path === 'name' || path === 'slug' || path === 'village' || path === 'history') {
+          if (
+            path === 'name' ||
+            path === 'slug' ||
+            path === 'village' ||
+            path === 'idNumber' ||
+            path === 'history'
+          ) {
             setFieldError(path, { message: text });
           }
         }
@@ -143,6 +150,16 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
         placeholder={t('wizard.household.villagePlaceholder')}
         error={message(errors.village)}
         {...register('village')}
+      />
+      <TextField
+        label={t('wizard.household.idNumber')}
+        hint={t('wizard.household.idNumberHint')}
+        inputMode="numeric"
+        autoComplete="off"
+        maxLength={12}
+        spellCheck={false}
+        error={message(errors.idNumber)}
+        {...register('idNumber')}
       />
       <TextAreaField
         label={t('wizard.household.history')}

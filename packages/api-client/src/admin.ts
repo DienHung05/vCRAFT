@@ -13,6 +13,7 @@ import {
   type ListAdminNewsQuery,
   MediaAssetResponseSchema,
   MediaReadUrlResponseSchema,
+  RevealedIdNumberResponseSchema,
   RfqResponseSchema,
   type SaveNewsRequest,
 } from '@vcraft/contracts';
@@ -39,6 +40,9 @@ export function createAdminClient(options: AuthedClientOptions) {
       return request(`/admin/households${suffix}`, AdminHouseholdListSchema);
     },
     getHousehold: (id: string) => request(`/admin/households/${id}`, HouseholdResponseSchema),
+    /** The full citizen ID number. Each call is written to the audit log (NFR-SEC-03). */
+    revealIdNumber: (id: string) =>
+      request(`/admin/households/${id}/id-number`, RevealedIdNumberResponseSchema),
     coordinationQueue: () => request('/admin/coordination', CoordinationQueueSchema),
     claimCoordination: (id: string, version: number) =>
       request(`/rfqs/${id}/coordinate`, RfqResponseSchema, { method: 'POST', version }),

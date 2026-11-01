@@ -13,6 +13,8 @@ import {
   DEMO_REQUEST_IDS,
   DEMO_VERIFICATION_DOCS,
   demoDocumentAssetId,
+  FIELD_CONTEXTS,
+  FieldCipher,
   Household,
   JournalEntry,
   linkDemoMedia,
@@ -29,7 +31,7 @@ import { type ChainEntry, verifyChain } from '@vcraft/domain';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { publishDemoMedia } from '../../../worker/src/demo/publish-demo-media.js';
-import { startTestApp, type TestApp } from './support/test-app.js';
+import { startTestApp, TEST_FIELD_KEYS, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
 
 /**
@@ -62,7 +64,7 @@ describe('Demo seed and guarded reset', () => {
     const em = db.orm.em.fork();
     await em.transactional(async (tx) => {
       await clearBusinessData(tx);
-      await seedDemoData(tx, { now });
+      await seedDemoData(tx, { now, cipher: new FieldCipher(TEST_FIELD_KEYS) });
     });
   };
 
@@ -113,6 +115,26 @@ describe('Demo seed and guarded reset', () => {
       populate: ['representative'],
     });
     expect(own.representative.id).toBe(DEMO_ACCOUNTS.household.id);
+  });
+
+  it('every sample household has an obviously fake citizen ID number, stored encrypted', async () => {
+    const cipher = new FieldCipher(TEST_FIELD_KEYS);
+    const households = await db.orm.em.fork().find(Household, {});
+    expect(households.length).toBeGreaterThan(0);
+    for (const household of households) {
+      const stored = household.idNumberEnc as string;
+      expect(stored).toMatch(/^v1:/);
+      const plain = cipher.decrypt(stored, FIELD_CONTEXTS.householdIdNumber);
+      expect(plain).toMatch(/^00000000\d{4}$/);
+      expect(stored).not.toContain(plain);
+    }
+    // The review screen for a demo household shows the masked fake number and can reveal it.
+    const admin = await t.request({
+      method: 'GET',
+      url: `/admin/households/${DEMO_HOUSEHOLD_IDS.household}`,
+      auth: `Bearer test:${DEMO_ACCOUNTS.admin.id}`,
+    });
+    expect(admin.body.idNumberMasked).toMatch(/^••••••••\d{4}$/);
   });
 
   it('bộ kiểm tra `demo:verify` báo dữ liệu còn nguyên ngay sau khi nạp', async () => {
@@ -301,7 +323,9 @@ describe('Demo seed and guarded reset', () => {
 
   it('seed lần hai khi chưa reset bị từ chối (không nhân đôi dữ liệu)', async () => {
     const em = db.orm.em.fork();
-    await expect(seedDemoData(em, { now })).rejects.toThrow(/demo:reset/);
+    await expect(
+      seedDemoData(em, { now, cipher: new FieldCipher(TEST_FIELD_KEYS) }),
+    ).rejects.toThrow(/demo:reset/);
   });
 
   it('kịch bản demo chạy trên API thật: QR → duyệt hộ → xuất bản → chốt giá → xác nhận → tiến độ → nhận hàng', async () => {

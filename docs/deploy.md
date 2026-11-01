@@ -44,7 +44,7 @@ Tất cả lấy từ Supabase Dashboard (đường dẫn trong ngoặc theo `.e
 | `SUPABASE_URL`, `SUPABASE_JWKS_URL` | API (+ `SUPABASE_URL` cho worker) | Project URL; JWKS: `<URL>/auth/v1/.well-known/jwks.json` |
 | `SUPABASE_PUBLISHABLE_KEY` | API | Settings → API Keys (khóa `sb_publishable_...`) |
 | `SUPABASE_SECRET_KEY` | API, worker | Khóa `sb_secret_...`. **Chỉ dán vào Render**, không bao giờ vào Vercel |
-| `FIELD_ENCRYPTION_KEYS` | API, worker | Sinh mới: `v1:` + `openssl rand -base64 32`. **Giống nhau ở cả hai service**; giữ bản sao ở nơi an toàn, mất khóa là mất dữ liệu đã mã hóa |
+| `FIELD_ENCRYPTION_KEYS` | API, worker | Sinh mới: `v1:` + `openssl rand -base64 32`. **Giống nhau ở cả hai service**; giữ bản sao ở nơi an toàn, mất khóa là mất dữ liệu đã mã hóa. Thiếu hoặc sai định dạng thì API và worker không khởi động. Xoay khóa: đặt khóa mới lên đầu (`v2:<khóa mới>,v1:<khóa cũ>`), redeploy cả hai service, chạy `pnpm db:rotate-field-keys` (cần cùng `DB_*` và `FIELD_ENCRYPTION_KEYS`), rồi mới bỏ `v1` khỏi danh sách (xem ADR-18) |
 | `NEXT_PUBLIC_PRIVACY_EMAIL` | Web (Vercel) | Optional. Mailbox that receives personal-data requests the account page cannot handle (an order in progress blocks self-service deletion). Shown as a mailto link in the privacy policy (NFR-SEC-07); empty shows the generic Management Board wording. Build-time: Redeploy after changing it |
 | `SMTP_URL`, `MAIL_FROM` | worker | Nhà cung cấp SMTP, vd. `smtps://user:pass@smtp.example.com:465`; `MAIL_FROM="vCraft <no-reply@<domain>>"` |
 | `APP_URL` | API, worker | Origin công khai của web: `https://<domain>` (không có `/` cuối). Worker dùng để sinh liên kết trong email |

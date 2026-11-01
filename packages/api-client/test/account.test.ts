@@ -99,15 +99,24 @@ describe('account HTTP client', () => {
           status: 'PENDING_REVIEW',
           statusReason: null,
           approvedAt: null,
+          idNumberMasked: '••••••••4567',
           completeness: { percent: 0, missing: [] },
         },
         { status: 201 },
       ),
     );
-    await api.applyHousehold({ name: 'Gốm Bảo Châu', slug: 'gom-bao-chau', history: '' });
+    await api.applyHousehold({
+      name: 'Gốm Bảo Châu',
+      slug: 'gom-bao-chau',
+      history: '',
+      idNumber: '079203004567',
+    });
     expect(calls[0]?.url).toBe('/api/v1/me/household');
     expect(calls[0]?.init.method).toBe('POST');
-    expect(JSON.parse(String(calls[0]?.init.body))).toMatchObject({ slug: 'gom-bao-chau' });
+    expect(JSON.parse(String(calls[0]?.init.body))).toMatchObject({
+      slug: 'gom-bao-chau',
+      idNumber: '079203004567',
+    });
   });
 
   it('tải giấy tờ lên bằng multipart với mục đích CERTIFICATE và không tự đặt Content-Type', async () => {

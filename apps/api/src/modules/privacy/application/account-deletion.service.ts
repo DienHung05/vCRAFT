@@ -250,6 +250,7 @@ export class AccountDeletionService {
     household.name = REMOVED_HOUSEHOLD_NAME;
     household.slug = `removed-${household.id}`;
     household.history = '';
+    household.idNumberEnc = null;
     household.village = null;
     household.craft = null;
     household.coverUrl = null;

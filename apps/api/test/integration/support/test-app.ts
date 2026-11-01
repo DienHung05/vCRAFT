@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { MikroORM } from '@mikro-orm/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
-import { AppUser, ConsentRecord } from '@vcraft/database';
+import { AppUser, ConsentRecord, FieldCipher } from '@vcraft/database';
 import { type AccountRole, CONSENT_PURPOSES, PRIVACY_POLICY_VERSION } from '@vcraft/domain';
 import { LocalObjectStorage } from '@vcraft/storage';
 import { AppModule } from '../../../src/app.module.js';
@@ -48,10 +48,15 @@ export class FakeAuthAdmin extends AuthAdmin {
   }
 }
 
+/** Throwaway key for tests; the value means nothing outside this process. */
+export const TEST_FIELD_KEYS = 'v1:dGVzdC1maWVsZC1rZXktMDEyMzQ1Njc4OWFiY2RlZmc=';
+
 export interface TestApp {
   app: NestFastifyApplication;
   /** Object storage trên thư mục tạm (ADR-14 `STORAGE_DRIVER=local`), xóa khi `close()`. */
   storage: LocalObjectStorage;
+  /** The cipher the app uses, for tests that read or seal encrypted columns. */
+  cipher: FieldCipher;
   /** Fake for the Supabase Auth admin API used by account deletion. */
   authAdmin: FakeAuthAdmin;
   /**
@@ -84,6 +89,7 @@ export async function startTestApp(db: TestDatabase): Promise<TestApp> {
     signingKey: 'integration-test-signing-key',
   });
   const authAdmin = new FakeAuthAdmin();
+  const cipher = new FieldCipher(TEST_FIELD_KEYS);
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(OBJECT_STORAGE)
     .useValue(storage)
@@ -91,6 +97,8 @@ export async function startTestApp(db: TestDatabase): Promise<TestApp> {
     .useValue(db.orm)
     .overrideProvider(IdentityVerifier)
     .useClass(FakeIdentityVerifier)
+    .overrideProvider(FieldCipher)
+    .useValue(cipher)
     .overrideProvider(AuthAdmin)
     .useValue(authAdmin)
     .compile();
@@ -103,6 +111,7 @@ export async function startTestApp(db: TestDatabase): Promise<TestApp> {
     app,
     storage,
     authAdmin,
+    cipher,
     async createUser(role, options) {
       const em = db.orm.em.fork();
       const user = em.create(AppUser, {

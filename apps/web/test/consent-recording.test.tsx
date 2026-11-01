@@ -36,8 +36,12 @@ beforeEach(() => {
 });
 
 describe('WizardHouseholdStep consent', () => {
-  const fillName = () =>
+  const fillName = () => {
     fireEvent.change(screen.getByLabelText('Tên hộ'), { target: { value: 'Gốm Mai' } });
+    fireEvent.change(screen.getByLabelText('Số CCCD của người đại diện'), {
+      target: { value: '079203004567' },
+    });
+  };
 
   it('asks for consent when none is on record, records it, then applies', async () => {
     account.listConsents.mockResolvedValue({ currentPolicyVersion: POLICY, data: [] });

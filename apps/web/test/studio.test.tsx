@@ -41,12 +41,14 @@ const HOUSEHOLD: HouseholdDto = {
   status: 'PENDING_REVIEW',
   statusReason: null,
   approvedAt: null,
+  idNumberMasked: '••••••••4567',
   completeness: { percent: 25, missing: ['story', 'timeline'] },
 };
 
 function fakeClient(overrides: Partial<StudioClient> = {}): StudioClient {
   return {
     getHousehold: vi.fn(async () => HOUSEHOLD),
+    setIdNumber: vi.fn(async () => HOUSEHOLD),
     updateProfile: vi.fn(async () => HOUSEHOLD),
     addWorkshop: vi.fn(),
     updateWorkshop: vi.fn(),
@@ -113,6 +115,26 @@ describe('ProfileEditor', () => {
       ),
     );
     await waitFor(() => expect(notifySuccess).toHaveBeenCalledWith('Đã lưu.'));
+  });
+
+  it('shows the citizen ID masked and replaces it with a valid 12-digit number', async () => {
+    const client = fakeClient();
+    renderVi(<ProfileEditor client={client} />);
+    expect(await screen.findByText('••••••••4567')).toBeTruthy();
+    const input = screen.getByLabelText('Đổi số CCCD (12 chữ số)');
+    const save = screen.getByRole('button', { name: 'Lưu số CCCD' });
+
+    fireEvent.change(input, { target: { value: '12345' } });
+    fireEvent.click(save);
+    expect((await screen.findByRole('alert')).textContent).toContain('đúng 12 chữ số');
+    expect(client.setIdNumber).not.toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: '079203004568' } });
+    fireEvent.click(save);
+    await waitFor(() =>
+      expect(client.setIdNumber).toHaveBeenCalledWith({ idNumber: '079203004568' }),
+    );
+    await waitFor(() => expect(notifySuccess).toHaveBeenCalledWith('Đã lưu số CCCD.'));
   });
 
   it('bản cũ (409) tải lại hồ sơ và báo cho người dùng', async () => {

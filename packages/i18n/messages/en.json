@@ -671,7 +671,13 @@
           "title": "Reinstate this household?",
           "text": "{name} will be shown publicly again."
         }
-      }
+      },
+      "idNumber": "Citizen ID",
+      "noIdNumber": "Not provided",
+      "revealIdNumber": "Show full number",
+      "hideIdNumber": "Hide",
+      "revealAudited": "Every time the full number is shown it is written to the audit log.",
+      "idNumberFailed": "The ID number could not be shown."
     },
     "coordinationQueue": {
       "title": "Coordination",
@@ -738,7 +744,8 @@
           "reject": "Rejected household",
           "request_info": "Requested more information",
           "suspend": "Suspended household",
-          "reinstate": "Reinstated household"
+          "reinstate": "Reinstated household",
+          "reveal_id_number": "Viewed full citizen ID number"
         },
         "product": {
           "publish": "Published product",
@@ -1188,7 +1195,8 @@
       "locationRequired": "Pick the workshop location on the map or enter coordinates.",
       "latInvalid": "Latitude must be a number between -90 and 90.",
       "lngInvalid": "Longitude must be a number between -180 and 180.",
-      "consentRequired": "Agree to the Privacy policy to create an account."
+      "consentRequired": "Agree to the Privacy policy to create an account.",
+      "idNumberInvalid": "The ID number is exactly 12 digits, without spaces."
     },
     "errors": {
       "invalid_credentials": "The email or password is not right. Check them, or choose \"Forgot password\" to set a new one.",
@@ -1308,7 +1316,9 @@
         "historyHint": "A few lines on history, generations of craft and what sets the household apart. You can add more later.",
         "submit": "Save and continue",
         "submitting": "Saving the household…",
-        "savedToast": "Household details saved."
+        "savedToast": "Household details saved.",
+        "idNumber": "Representative's citizen ID number",
+        "idNumberHint": "12 digits. It is encrypted when saved; you only ever see it masked, and the Management Board sees it only while reviewing the application."
       },
       "workshop": {
         "title": "Workshop location",
@@ -1515,7 +1525,18 @@
       "closed": "Closed",
       "open": "Opens",
       "close": "Closes",
-      "capacity": "Production capacity (units per month)"
+      "capacity": "Production capacity (units per month)",
+      "idNumber": {
+        "title": "Citizen ID number",
+        "lead": "The representative's citizen ID number, encrypted when saved. Only the masked form is shown here.",
+        "none": "No citizen ID number on record.",
+        "add": "Enter the citizen ID number (12 digits)",
+        "replace": "Replace the citizen ID number (12 digits)",
+        "save": "Save ID number",
+        "saved": "Citizen ID number saved.",
+        "invalid": "The ID number is exactly 12 digits.",
+        "failed": "The ID number could not be saved. Try again later."
+      }
     },
     "products": {
       "title": "Products",
@@ -1723,7 +1744,7 @@
       "sharing": {
         "title": "Who can see your data",
         "items": {
-          "documents": "Identity document photos sit in a private store; only administrators can open them, through a signed link valid for 5 minutes. The ID number is encrypted at field level.",
+          "documents": "Identity document photos sit in a private store; only administrators can open them, through a signed link valid for 5 minutes. The ID number is encrypted at field level: you only ever see it masked, an administrator sees the full number only by asking for it while reviewing the application, and every such view is written to the audit log.",
           "quote": "A quotation request is visible only to the invited households or, if you ask the Management Board to coordinate it, to the Management Board. One household's quote is never shown to another.",
           "hosting": "Infrastructure providers (Supabase for authentication, the database and file storage; an email delivery service) process data on our behalf.",
           "public": "The public information of an approved household (household name, story, products, showroom location) is visible to everyone."

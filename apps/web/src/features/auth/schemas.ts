@@ -1,4 +1,5 @@
 import { SLUG_PATTERN } from '@vcraft/contracts';
+import { ID_NUMBER_PATTERN } from '@vcraft/domain';
 import { z } from 'zod';
 
 /**
@@ -22,6 +23,7 @@ export const VALIDATION_KEYS = [
   'latInvalid',
   'lngInvalid',
   'consentRequired',
+  'idNumberInvalid',
 ] as const;
 export type ValidationKey = (typeof VALIDATION_KEYS)[number];
 
@@ -90,6 +92,8 @@ export const householdStepSchema = z.object({
     .max(160, key('slugInvalid'))
     .regex(SLUG_PATTERN, key('slugInvalid')),
   village: z.string().trim().max(160),
+  /** Citizen ID number (CCCD): the API stores it encrypted (NFR-SEC-03). */
+  idNumber: z.string().trim().regex(ID_NUMBER_PATTERN, key('idNumberInvalid')),
   history: z.string().trim().max(10_000),
 });
 export type HouseholdStepValues = z.infer<typeof householdStepSchema>;

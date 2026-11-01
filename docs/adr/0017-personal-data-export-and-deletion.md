@@ -22,7 +22,7 @@ NFR-SEC-07 asks for a privacy policy, consent when ID documents are collected, a
 
 `GET /me/data-export` returns one JSON document (`DataExportSchema`): account, household (profile, workshops, makers, products with their journal), quotation requests, offers, allocations, notifications, email choices, consents, and every uploaded file with a link (signed, 5 minutes, for private files). Every query is scoped to the caller, and quotations are summarised without other households' parts or prices.
 
-There is no field-level encrypted column in the schema yet (`FIELD_ENCRYPTION_KEYS` is configured but unused; NFR-SEC-03 is still to do). The export service documents that such values must be decrypted there, for the owner, when they exist.
+The representative's citizen ID number is stored encrypted ([ADR-18](0018-field-level-encryption.md)); the export service decrypts it for the owner, and any new encrypted column must be added there too.
 
 ### Deletion policy
 

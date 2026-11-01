@@ -36,6 +36,56 @@ const ACTIONS: Record<
   REJECTED: [],
 };
 
+/** Citizen ID number: masked until an admin asks to see it; each reveal is audited server-side. */
+function IdNumberRow({ household, client }: { household: HouseholdDto; client: AdminClient }) {
+  const t = useTranslations('admin.review');
+  const [shown, setShown] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  const reveal = async () => {
+    setFailed(false);
+    try {
+      const { idNumber } = await client.revealIdNumber(household.id);
+      setShown(idNumber);
+    } catch {
+      setFailed(true);
+    }
+  };
+  return (
+    <>
+      <dt className="text-ash">{t('idNumber')}</dt>
+      <dd className="flex flex-wrap items-center gap-2">
+        {shown ? (
+          <>
+            <span className="font-mono" data-testid="revealed-id-number">
+              {shown}
+            </span>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setShown(null)}>
+              {t('hideIdNumber')}
+            </Button>
+          </>
+        ) : household.idNumberMasked ? (
+          <>
+            <span className="font-mono">{household.idNumberMasked}</span>
+            <Button type="button" variant="secondary" size="sm" onClick={() => void reveal()}>
+              {t('revealIdNumber')}
+            </Button>
+          </>
+        ) : (
+          <span className="text-ash">{t('noIdNumber')}</span>
+        )}
+        {failed ? (
+          <span role="alert" className="w-full text-seal">
+            {t('idNumberFailed')}
+          </span>
+        ) : null}
+      </dd>
+      {household.idNumberMasked ? (
+        <p className="col-span-2 text-ash text-xs">{t('revealAudited')}</p>
+      ) : null}
+    </>
+  );
+}
+
 function DocumentRow({ doc, client }: { doc: HouseholdDocumentDto; client: AdminClient }) {
   const t = useTranslations('admin.review');
   const [failed, setFailed] = useState(false);
@@ -189,6 +239,7 @@ export function HouseholdReview({
             <dd>{household.village ?? '—'}</dd>
             <dt className="text-ash">{t('foundedYear')}</dt>
             <dd>{household.foundedYear ?? '—'}</dd>
+            <IdNumberRow household={household} client={client} />
             <dt className="text-ash">{t('artisans')}</dt>
             <dd>{household.artisans.map((a) => a.name).join(', ') || '—'}</dd>
             {household.approvedAt ? (
