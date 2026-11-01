@@ -197,19 +197,6 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
     widths: [640, 1280],
   },
   {
-    id: 'ln-cua-lo-vom',
-    alt: 'Cửa lò nung xây bằng gạch đỏ, vòm nhọn, bên trong tối',
-    credit: {
-      title: 'File:Kiln in Vietnam in Chau Thanh District, 07.jpg',
-      author: 'Karel Bilek',
-      license: 'CC BY-SA 4.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
-      sourceUrl:
-        'https://commons.wikimedia.org/wiki/File:Kiln_in_Vietnam_in_Chau_Thanh_District,_07.jpg',
-    },
-    widths: [640, 1280],
-  },
-  {
     id: 'chan-dung-duc-phat',
     alt: 'Người thợ ngồi quay lưng giữa nền xưởng, quanh là chậu và bình gốm mộc màu hồng, kem, bên cạnh xô nước men trắng',
     credit: {
@@ -296,57 +283,6 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
       licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
       sourceUrl:
         'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2647.JPG',
-    },
-    widths: [640, 1280],
-  },
-  {
-    id: 'ht-binh-hoa-lam-vo',
-    alt: 'Chiếc bình men ngà vẽ cây trúc và chim bằng nét xanh đen, miệng loe, đặt cạnh những bình khác',
-    credit: {
-      title: 'File:Vase by Chu Dau ceramic 3.JPG',
-      author: 'Hungda',
-      license: 'CC BY-SA 3.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
-      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Vase_by_Chu_Dau_ceramic_3.JPG',
-    },
-    widths: [640, 1280],
-  },
-  {
-    id: 'ht-den-dau-su',
-    alt: 'Chiếc đèn dầu bằng sứ trắng vẽ rồng lam, bên cạnh những bình sứ vẽ mây',
-    credit: {
-      title: 'File:Kerosene lamps in Vietnam (đèn dầu bằng sứ).JPG',
-      author: 'Hungda',
-      license: 'CC BY-SA 3.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
-      sourceUrl:
-        'https://commons.wikimedia.org/wiki/File:Kerosene_lamps_in_Vietnam_(%C4%91%C3%A8n_d%E1%BA%A7u_b%E1%BA%B1ng_s%E1%BB%A9).JPG',
-    },
-    widths: [640, 1280],
-  },
-  {
-    id: 'ht-de-lu-chu-dau',
-    alt: 'Đế lư tròn men ngà có chân cuộn, vẽ chàm đậm hình đầu thú và rồng',
-    credit: {
-      title: 'File:Jar support by Chu Dau ceramic.JPG',
-      author: 'Hungda',
-      license: 'CC BY-SA 3.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
-      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Jar_support_by_Chu_Dau_ceramic.JPG',
-    },
-    widths: [640, 1280],
-  },
-  {
-    id: 'ht-binh-ngoc-ho-xuan',
-    alt: 'Bình dáng quả lê thon, thân vẽ chim bằng lam trên nền men trắng xanh nhạt',
-    credit: {
-      title:
-        'File:Yuhuchun vase, Chu Dau kiln, Hai Duong, Early Le dynasty, 15th century AD, blue & white glazed ceramic with polychrome - National Museum of Vietnamese History - Hanoi, Vietnam - DSC05693.JPG',
-      author: 'Daderot',
-      license: 'CC0',
-      licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
-      sourceUrl:
-        'https://commons.wikimedia.org/wiki/File:Yuhuchun_vase,_Chu_Dau_kiln,_Hai_Duong,_Early_Le_dynasty,_15th_century_AD,_blue_%26_white_glazed_ceramic_with_polychrome_-_National_Museum_of_Vietnamese_History_-_Hanoi,_Vietnam_-_DSC05693.JPG',
     },
     widths: [640, 1280],
   },
@@ -517,16 +453,6 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
     caption: 'Hũ quai men rạn xám nâu',
   },
   {
-    photo: 'ln-cua-lo-vom',
-    target: 'HOUSEHOLD',
-    key: 'gom-lam-ngoc',
-    role: 'GALLERY',
-    position: 3,
-    alt: 'Cửa lò nung xây bằng gạch đỏ, vòm nhọn, bên trong tối',
-    altEn: 'A red-brick kiln mouth with a pointed arch, dark inside',
-    caption: 'Cửa lò xây vòm',
-  },
-  {
     photo: 'chan-dung-duc-phat',
     target: 'HOUSEHOLD',
     key: 'lo-duc-phat',
@@ -596,50 +522,6 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
     altEn: 'A shop aisle with shelves full of blue-and-white bowls, plates and vases',
   },
   {
-    photo: 'ht-binh-hoa-lam-vo',
-    target: 'HOUSEHOLD',
-    key: 'gom-hanh-thuy',
-    role: 'GALLERY',
-    position: 0,
-    alt: 'Chiếc bình men ngà vẽ cây trúc và chim bằng nét xanh đen, miệng loe, đặt cạnh những bình khác',
-    altEn:
-      'A cream-glazed vase with a flared mouth, painted with bamboo and a bird in dark blue, beside other vases',
-    caption: 'Bình vẽ tre trúc',
-  },
-  {
-    photo: 'ht-den-dau-su',
-    target: 'HOUSEHOLD',
-    key: 'gom-hanh-thuy',
-    role: 'GALLERY',
-    position: 1,
-    alt: 'Chiếc đèn dầu bằng sứ trắng vẽ rồng lam, bên cạnh những bình sứ vẽ mây',
-    altEn:
-      'A white porcelain oil lamp painted with a blue dragon, next to porcelain vases painted with clouds',
-    caption: 'Đèn dầu sứ',
-  },
-  {
-    photo: 'ht-de-lu-chu-dau',
-    target: 'HOUSEHOLD',
-    key: 'gom-hanh-thuy',
-    role: 'GALLERY',
-    position: 2,
-    alt: 'Đế lư tròn men ngà có chân cuộn, vẽ chàm đậm hình đầu thú và rồng',
-    altEn:
-      'A round cream incense-burner base with scroll feet, painted in dark indigo with a beast head and dragons',
-    caption: 'Đế lư men ngà vẽ chàm',
-  },
-  {
-    photo: 'ht-binh-ngoc-ho-xuan',
-    target: 'HOUSEHOLD',
-    key: 'gom-hanh-thuy',
-    role: 'GALLERY',
-    position: 3,
-    alt: 'Bình dáng quả lê thon, thân vẽ chim bằng lam trên nền men trắng xanh nhạt',
-    altEn:
-      'A slender pear-shaped vase painted with a bird in blue on a pale blue-green white glaze',
-    caption: 'Bình lê men trắng xanh',
-  },
-  {
     photo: 'binh-men-lam-xam',
     target: 'PRODUCT',
     key: 'BT7K2QXM',
@@ -682,6 +564,12 @@ export const NO_COVER_DEMO_PRODUCTS: readonly string[] = ['HX2M9KQD', 'DF6P3WZE'
  * `pnpm demo:media` deletes their `media_asset` rows and storage objects. Never attach one again.
  */
 export const RETIRED_DEMO_PHOTO_IDS: readonly string[] = [
+  // Shot or made outside Bát Tràng according to Commons (Châu Thành in Đồng Tháp; Chu Đậu ware of Hải Dương):
+  'ln-cua-lo-vom',
+  'ht-binh-hoa-lam-vo',
+  'ht-den-dau-su',
+  'ht-de-lu-chu-dau',
+  'ht-binh-ngoc-ho-xuan',
   'bat-ve-sen-men-trong',
   'coc-men-trang-quai-tron',
   'news-cho-gom',

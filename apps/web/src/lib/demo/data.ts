@@ -373,10 +373,6 @@ const artisans: Artisan[] = [
         caption: 'Cửa lò xây vòm',
         ratio: '3/4',
         tint: '#80776d',
-        photo: {
-          id: 'ln-cua-lo-vom',
-          alt: 'Cửa lò nung xây bằng gạch đỏ, vòm nhọn, bên trong tối',
-        },
       },
     ],
   },
@@ -478,37 +474,21 @@ const artisans: Artisan[] = [
         caption: 'Bình vẽ tre trúc',
         ratio: '3/4',
         tint: '#8a8174',
-        photo: {
-          id: 'ht-binh-hoa-lam-vo',
-          alt: 'Chiếc bình men ngà vẽ cây trúc và chim bằng nét xanh đen, miệng loe, đặt cạnh những bình khác',
-        },
       },
       {
         caption: 'Đèn dầu sứ',
         ratio: '1/1',
         tint: '#7d8793',
-        photo: {
-          id: 'ht-den-dau-su',
-          alt: 'Chiếc đèn dầu bằng sứ trắng vẽ rồng lam, bên cạnh những bình sứ vẽ mây',
-        },
       },
       {
         caption: 'Đế lư men ngà vẽ chàm',
         ratio: '3/2',
         tint: '#8b8f90',
-        photo: {
-          id: 'ht-de-lu-chu-dau',
-          alt: 'Đế lư tròn men ngà có chân cuộn, vẽ chàm đậm hình đầu thú và rồng',
-        },
       },
       {
         caption: 'Bình lê men trắng xanh',
         ratio: '3/4',
         tint: '#8a8d77',
-        photo: {
-          id: 'ht-binh-ngoc-ho-xuan',
-          alt: 'Bình dáng quả lê thon, thân vẽ chim bằng lam trên nền men trắng xanh nhạt',
-        },
       },
     ],
   },
