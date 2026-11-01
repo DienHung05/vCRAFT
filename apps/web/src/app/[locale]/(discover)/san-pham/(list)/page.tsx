@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { CatalogExplorer } from '@/features/catalog/catalog-explorer';
 import { parseCatalogParams, toProductFilters } from '@/features/catalog/catalog-filters';
+import { CatalogHeader } from '@/features/catalog/catalog-header';
 import { fetchHouseholds, fetchProducts } from '@/features/catalog/exhibition-api';
 import { resolveLocale } from '@/lib/locale';
 
@@ -24,18 +25,14 @@ export default async function ProductsIndexPage({
 }: PageProps<'/[locale]/san-pham'>) {
   await resolveLocale(params);
   const filters = parseCatalogParams(await searchParams);
-  const [t, products, households] = await Promise.all([
-    getTranslations('indexPages.products'),
+  const [products, households] = await Promise.all([
     fetchProducts({ ...toProductFilters(filters), limit: 24 }),
     fetchHouseholds(),
   ]);
 
   return (
     <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section">
-      <header className="flex max-w-prose-vn flex-col gap-3">
-        <h1 className="text-h1">{t('title')}</h1>
-        <p className="text-ash">{t('lead')}</p>
-      </header>
+      <CatalogHeader />
       <CatalogExplorer
         // Điều hướng tới URL lọc khác (vd. từ ô tìm kiếm) phải dựng lại từ dữ liệu mới của server.
         key={JSON.stringify(filters)}
