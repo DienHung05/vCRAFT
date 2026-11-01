@@ -165,6 +165,23 @@ export const demoEntityId = (kind: string, key: string | number) =>
   uuidv5(`${kind}:${key}`, NAMESPACE);
 const idOf = demoEntityId;
 
+/** Index of the household represented by the demo `household` account (Lò Đức Phát). */
+const DEMO_H = 2; // chỉ số hộ do tài khoản household đại diện (Lò Đức Phát)
+
+/** Seed households: the approved ones (index 0..N-1) followed by the pending one (index N). */
+export const DEMO_HOUSEHOLD_COUNT = HOUSEHOLDS.length + 1;
+
+/** Fixed id of the demo household at `index` (the pending one is the last index, see {@link DEMO_HOUSEHOLD_COUNT}). */
+export function demoHouseholdId(index: number): string {
+  if (index === HOUSEHOLDS.length) return DEMO_HOUSEHOLD_IDS.pending;
+  if (index === DEMO_H) return DEMO_HOUSEHOLD_IDS.household;
+  return idOf('household', index);
+}
+
+/** Obviously fake citizen ID number of the demo household at `index`: eight zeros, then the household number. */
+export const demoHouseholdIdNumber = (index: number): string =>
+  `00000000${String(index).padStart(4, '0')}`;
+
 /** mulberry32: bộ sinh giả ngẫu nhiên nhỏ, cùng hạt cho cùng chuỗi số. */
 function rng(seed: number) {
   let a = seed >>> 0;
@@ -230,8 +247,6 @@ interface RequestSpec {
   quotations?: QuotationSpec[];
   allocations?: AllocationSpec[];
 }
-
-const DEMO_H = 2; // chỉ số hộ do tài khoản household đại diện (Lò Đức Phát)
 
 /** 12 yêu cầu trải đủ 8 trạng thái RFQ. Chỉ số `h` là vị trí trong HOUSEHOLDS. */
 const REQUESTS: readonly RequestSpec[] = [
@@ -696,11 +711,7 @@ export async function seedDemoData(
       summary.users++;
     }
     const household = em.create(Household, {
-      id: pending
-        ? DEMO_HOUSEHOLD_IDS.pending
-        : row.index === DEMO_H
-          ? DEMO_HOUSEHOLD_IDS.household
-          : idOf('household', row.index),
+      id: demoHouseholdId(row.index),
       name: row.seed.name,
       slug,
       history: `[Dữ liệu mẫu] Hộ ${row.seed.name} do ${row.seed.owner} đại diện, làm nghề gốm ở Bát Tràng, chuyên ${row.seed.craft}. Đây là hồ sơ hư cấu dùng để trình diễn, không phải hộ thật.`,
@@ -714,9 +725,9 @@ export async function seedDemoData(
       status: row.status,
       statusReason: null,
       approvedAt: pending ? null : new Date(createdMs + 2 * DAY),
-      // Obviously fake (eight zeros, then the household number) and encrypted like a real one.
+      // Obviously fake and encrypted like a real one.
       idNumberEnc: cipher.encrypt(
-        `00000000${String(row.index).padStart(4, '0')}`,
+        demoHouseholdIdNumber(row.index),
         FIELD_CONTEXTS.householdIdNumber,
       ),
       representative,
