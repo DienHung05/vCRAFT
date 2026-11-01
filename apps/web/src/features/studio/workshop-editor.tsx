@@ -139,6 +139,7 @@ export function WorkshopEditor({
         <p className="text-small text-ash">{t('mapHint')}</p>
         <div className="h-64 overflow-hidden rounded-card" data-testid="workshop-map">
           <WorkshopMapPicker
+            {...(workshop?.name ? { label: workshop.name } : {})}
             lat={draft.lat}
             lng={draft.lng}
             onPick={(lat, lng) => patch({ lat, lng })}

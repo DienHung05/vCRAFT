@@ -31,9 +31,12 @@ export default async function NewsArticlePage({ params }: PageProps<'/[locale]/t
   if (result.status === 'ok') return <NewsArticleView article={result.article} />;
   if (result.status === 'unavailable')
     return (
-      <p role="status" className="mx-auto max-w-prose-vn px-gutter py-12 text-ash">
-        {t('unavailable')}
-      </p>
+      <div className="mx-auto max-w-prose-vn px-gutter py-12">
+        <h1 className="text-h1">{t('title')}</h1>
+        <p role="status" className="mt-4 text-ash">
+          {t('unavailable')}
+        </p>
+      </div>
     );
   return <VillageArticle slug={slug} />;
 }

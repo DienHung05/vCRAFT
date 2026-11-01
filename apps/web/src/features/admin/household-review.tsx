@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from '@/i18n/navigation';
+import { useUntabbable } from '@/lib/a11y/use-untabbable';
 import { useAdminClient } from './admin-dashboard';
 
 const WorkshopReviewMap = dynamic(() => import('./workshop-review-map'), {
@@ -82,6 +83,8 @@ export function HouseholdReview({
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<'sealed' | 'done' | 'stale' | 'failed' | null>(null);
+  // The review map is decorative (the workshop list below has the same facts); keep it out of the tab order.
+  const map = useUntabbable<HTMLDivElement>(household);
 
   const load = useCallback(async () => {
     if (!client) return;
@@ -199,7 +202,7 @@ export function HouseholdReview({
         <Card className="flex flex-col gap-3 p-5">
           <h2 className="text-h3">{t('workshops')}</h2>
           {household.workshops.some((w) => w.lat !== null) ? (
-            <div aria-hidden="true" className="h-56 overflow-hidden rounded-input">
+            <div ref={map} aria-hidden="true" className="h-56 overflow-hidden rounded-input">
               <WorkshopReviewMap workshops={household.workshops} />
             </div>
           ) : null}

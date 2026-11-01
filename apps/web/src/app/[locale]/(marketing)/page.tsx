@@ -132,7 +132,9 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
           <h2 id="day-title">{t('day.title')}</h2>
           <p className="mt-3 max-w-prose-vn text-ash">{t('day.lead')}</p>
         </div>
-        <section
+        {/* biome-ignore lint/a11y/useSemanticElements: a named group around a scroller, not a form fieldset; a second `section` would repeat the landmark name. */}
+        <div
+          role="group"
           aria-labelledby="day-title"
           // biome-ignore lint/a11y/noNoninteractiveTabindex: vùng cuộn ngang phải nhận focus để cuộn bằng phím mũi tên (WCAG 2.1.1, axe scrollable-region-focusable).
           tabIndex={0}
@@ -158,7 +160,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
               </li>
             ))}
           </ol>
-        </section>
+        </div>
         <PhotoCreditsNote className="mx-auto mt-4 max-w-editorial px-gutter text-[0.75rem] leading-snug text-ash" />
       </section>
 

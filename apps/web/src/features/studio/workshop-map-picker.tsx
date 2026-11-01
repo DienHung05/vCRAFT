@@ -15,14 +15,18 @@ export default function WorkshopMapPicker({
   lat,
   lng,
   onPick,
+  label,
 }: {
   lat: number | null;
   lng: number | null;
   onPick: (lat: number, lng: number) => void;
+  /** Accessible name of the map region; pages with several maps need distinct names (WCAG 1.3.1). */
+  label?: string;
 }) {
   return (
     <MapGL
       mapStyle={STYLE_URL}
+      {...(label ? { locale: { 'Map.Title': label } } : {})}
       initialViewState={{ longitude: lng ?? 105.9139, latitude: lat ?? 20.9758, zoom: 14 }}
       style={{ width: '100%', height: '100%' }}
       cursor="crosshair"
