@@ -1,4 +1,5 @@
 import { cn } from '@vcraft/ui';
+import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import type { DemoPhotoRef } from '@/lib/demo/data';
 import { PHOTO_BY_ID } from '@/lib/demo/photo-credits';
@@ -43,7 +44,11 @@ export function ImageSlot({
   className,
   children,
 }: ImageSlotProps) {
+  const photoAlt = useTranslations('photoAlt');
   const credit = photo ? PHOTO_BY_ID.get(photo.id) : undefined;
+  const altText = photo?.altKey
+    ? photoAlt(photo.altKey as Parameters<typeof photoAlt>[0])
+    : photo?.alt;
   const base = credit ? `/images/demo/${credit.id}` : undefined;
   const srcSet = (ext: 'avif' | 'webp') =>
     credit?.widths.map((w) => `${base}-${w}.${ext} ${w}w`).join(', ');
@@ -67,7 +72,7 @@ export function ImageSlot({
           <source type="image/webp" srcSet={srcSet('webp')} sizes={sizes} />
           <img
             src={`${base}-${smallest}.webp`}
-            alt={photo.alt}
+            alt={altText ?? photo.alt}
             width={smallest}
             height={Math.round((smallest * rh) / rw)}
             loading={priority ? 'eager' : 'lazy'}

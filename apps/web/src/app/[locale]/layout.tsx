@@ -3,6 +3,7 @@ import { Be_Vietnam_Pro, Fraunces, JetBrains_Mono } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { Toaster } from '@/components/toaster';
 import { routing } from '@/i18n/routing';
 import '../../styles/globals.css';
 
@@ -53,7 +54,10 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
       className={`${fraunces.variable} ${beVietnamPro.variable} ${jetBrainsMono.variable}`}
     >
       <body className="grain-fixed">
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          {children}
+          <Toaster />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

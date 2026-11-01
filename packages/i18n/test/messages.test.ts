@@ -40,6 +40,18 @@ describe('từ điển vi/en', () => {
     }
   });
 
+  it('bản en không còn chữ tiếng Việt (trừ tên riêng và tên ngôn ngữ)', () => {
+    // Letters that exist only in Vietnamese orthography (no plain Latin/French/etc. overlap).
+    const vietnamese = /[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i;
+    // Proper nouns and the name of the Vietnamese language keep their spelling in English text.
+    const allowed = ['nav.switchTo'];
+    const properNouns = /Bát Tràng/g;
+    for (const [path, text] of en) {
+      if (allowed.includes(path)) continue;
+      expect(vietnamese.test(text.replace(properNouns, '')), `${path}: ${text}`).toBe(false);
+    }
+  });
+
   it('có đủ khóa trạng thái RFQ cho mọi trạng thái của domain', () => {
     for (const status of [
       'DRAFT',

@@ -7,6 +7,7 @@ export {
   badgeVariants,
   buttonVariants,
   Card,
+  Skeleton,
   Stepper,
   type StepperProps,
   type StepperStep,
