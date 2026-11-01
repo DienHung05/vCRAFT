@@ -38,6 +38,7 @@ import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
 import { MediaService } from '../../media/application/media.service';
+import { ConsentService } from '../../privacy/application/consent.service';
 import { QuotationNotifier } from './quotation-notifier';
 
 /** All plan/input writes lock the request first, so changes cannot race with composition. */
@@ -47,10 +48,13 @@ export class RfqService {
     private readonly orm: MikroORM,
     private readonly notifier: QuotationNotifier,
     private readonly media: MediaService,
+    private readonly consents: ConsentService,
   ) {}
 
   async createRequest(actor: Actor, input: CreateRfqRequest): Promise<RfqResponse> {
     if (actor.locked) throw forbidden();
+    // The request carries a delivery address, so it is only stored after the buyer consented (NFR-SEC-07).
+    await this.consents.require(actor.id, 'RFQ_CONTACT');
     return this.orm.em.fork().transactional(async (em) => {
       await this.checkHouseholds(em, input.invitedHouseholdIds);
       const request = em.create(QuotationRequest, {

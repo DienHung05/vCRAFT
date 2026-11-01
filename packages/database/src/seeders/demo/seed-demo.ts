@@ -3,10 +3,12 @@ import {
   type AllocationStatus,
   assembleCooperativeQuotation,
   type BidStatus,
+  CONSENT_PURPOSES,
   checkNewEntry,
   type DeliveryTerms,
   JOURNAL_STAGES,
   type JournalStage,
+  PRIVACY_POLICY_VERSION,
   type ProductCategory,
   type RfqStatus,
   sealChain,
@@ -18,6 +20,7 @@ import {
   AppUser,
   Artisan,
   AuditLog,
+  ConsentRecord,
   ContributionOffer,
   CooperativeQuotation,
   Household,
@@ -584,6 +587,19 @@ export async function seedDemoData(
     summary.users++;
   }
   const buyer = accounts.get('buyer') as AppUser;
+  // Sample accounts count as having ticked every consent box, so the demo can use every flow (NFR-SEC-07).
+  for (const account of Object.values(DEMO_ACCOUNTS)) {
+    if (account.role === 'ADMIN') continue;
+    for (const purpose of CONSENT_PURPOSES) {
+      em.create(ConsentRecord, {
+        userId: account.id,
+        purpose,
+        policyVersion: PRIVACY_POLICY_VERSION,
+        createdAt: new Date(FROZEN_ANCHOR.getTime() - 299 * DAY),
+        updatedAt: new Date(FROZEN_ANCHOR.getTime() - 299 * DAY),
+      });
+    }
+  }
 
   // --- Mã truy xuất duy nhất, đúng bảng chữ của API (trace-code.ts) ---
   const usedCodes = new Set<string>(['BT7K2QXM', 'HX2M9KQD', DEMO_QR_TRACE_CODE]);

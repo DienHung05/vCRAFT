@@ -2,11 +2,13 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AccountApiError } from '@vcraft/api-client';
+import { PRIVACY_POLICY_VERSION } from '@vcraft/domain';
 import { Button } from '@vcraft/ui';
 import { slugify } from '@vcraft/utils';
 import { useLocale, useTranslations } from 'next-intl';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
+import { ConsentCheckbox } from '@/components/consent-checkbox';
 import { getPathname } from '@/i18n/navigation';
 import { browserAccountClient } from '@/lib/auth/supabase-browser';
 import { notify } from '@/lib/notify';
@@ -26,6 +28,26 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
   const message = useValidationMessage();
   const [error, setError] = useState<AuthErrorKey | null>(null);
   const slugEdited = useRef(false);
+  // Accounts created through the sign-up form already have their consent on record (the API reads it
+  // from the sign-up metadata). Anyone else is asked here, because the API refuses an application without it.
+  const [needsConsent, setNeedsConsent] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [consentMissing, setConsentMissing] = useState(false);
+  useEffect(() => {
+    let active = true;
+    browserAccountClient()
+      .listConsents()
+      .then((list) => {
+        const given = list.data.some(
+          (item) => item.purpose === 'SIGN_UP' && item.policyVersion === list.currentPolicyVersion,
+        );
+        if (active) setNeedsConsent(!given);
+      })
+      .catch(() => active && setNeedsConsent(true));
+    return () => {
+      active = false;
+    };
+  }, []);
   const {
     register,
     handleSubmit,
@@ -53,7 +75,14 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
 
   const onSubmit = handleSubmit(async (values) => {
     setError(null);
+    if (needsConsent && !consent) {
+      setConsentMissing(true);
+      return;
+    }
     try {
+      if (needsConsent) {
+        await browserAccountClient().recordConsent('SIGN_UP', PRIVACY_POLICY_VERSION);
+      }
       await browserAccountClient().applyHousehold({
         name: values.name,
         slug: values.slug,
@@ -122,6 +151,18 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
         error={message(errors.history)}
         {...register('history')}
       />
+      {needsConsent ? (
+        <ConsentCheckbox
+          id="household-consent"
+          purpose="account"
+          checked={consent}
+          onChange={(event) => {
+            setConsent(event.target.checked);
+            setConsentMissing(false);
+          }}
+          error={consentMissing ? t('validation.consentRequired') : undefined}
+        />
+      ) : null}
       <Button type="submit" size="lg" disabled={isSubmitting}>
         {isSubmitting ? t('wizard.household.submitting') : t('wizard.household.submit')}
       </Button>

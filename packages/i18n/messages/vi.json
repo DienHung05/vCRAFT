@@ -729,7 +729,8 @@
         "product": "Sản phẩm",
         "rfq": "Yêu cầu báo giá",
         "quotation": "Chào giá liên kết",
-        "news": "Tin tức"
+        "news": "Tin tức",
+        "app_user": "Tài khoản"
       },
       "actions": {
         "household": {
@@ -758,6 +759,9 @@
           "publish": "Đăng tin",
           "unpublish": "Gỡ tin về nháp",
           "delete": "Xóa tin"
+        },
+        "account": {
+          "delete": "Xóa tài khoản"
         }
       },
       "emptyHint": "Mọi thao tác của quản trị viên sẽ được ghi lại ở đây.",
@@ -1206,7 +1210,8 @@
       "forbidden": "Tài khoản này không có quyền thực hiện thao tác này.",
       "mediaTooLarge": "Tệp lớn hơn 10 MB. Hãy chụp lại ở độ phân giải thấp hơn hoặc nén tệp.",
       "mediaUnsupported": "Chỉ nhận ảnh JPG, PNG, WebP, AVIF hoặc tệp PDF.",
-      "apiDown": "Không gọi được máy chủ vCraft. Bạn thử lại sau ít phút nhé."
+      "apiDown": "Không gọi được máy chủ vCraft. Bạn thử lại sau ít phút nhé.",
+      "consentRequired": "Cần đồng ý với Chính sách quyền riêng tư trước khi thực hiện thao tác này. Hãy tích ô đồng ý rồi thử lại."
     },
     "signIn": {
       "title": "Đăng nhập",
@@ -1703,7 +1708,7 @@
           "account": "Tài khoản: email, họ tên và vai trò. Mật khẩu do Supabase Auth băm và lưu; vCraft không đọc được mật khẩu của bạn.",
           "household": "Đăng ký hộ nghệ nhân: thông tin người đại diện, số căn cước công dân, ảnh giấy tờ (CCCD, xác nhận cư trú), địa chỉ và vị trí xưởng, ảnh xưởng.",
           "quote": "Yêu cầu báo giá: nội dung đơn hàng, ngân sách, địa chỉ nhận hàng và thông tin liên hệ gắn với tài khoản của bạn.",
-          "usage": "Thông báo, tùy chọn email và nhật ký thao tác quản trị.",
+          "usage": "Thông báo, lựa chọn email, các sự đồng ý bạn đã đưa ra (nội dung, phiên bản chính sách, thời điểm) và nhật ký các thao tác quản trị.",
           "technical": "Dữ liệu kỹ thuật: địa chỉ IP chỉ lưu dạng băm có muối; nhật ký hệ thống không chứa mật khẩu, mã thông báo hay số CCCD."
         }
       },
@@ -1713,7 +1718,7 @@
       },
       "basis": {
         "title": "Cơ sở xử lý: sự đồng ý của bạn",
-        "text": "Chúng tôi xử lý dữ liệu cá nhân dựa trên sự đồng ý của bạn theo Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân. Bạn đồng ý bằng cách tích vào ô xác nhận khi đăng ký, đăng ký hộ nghệ nhân hoặc gửi yêu cầu báo giá. Bạn có thể rút lại sự đồng ý bất cứ lúc nào; việc rút lại không ảnh hưởng đến phần dữ liệu đã được xử lý trước đó."
+        "text": "Chúng tôi xử lý dữ liệu cá nhân dựa trên sự đồng ý của bạn theo Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân. Bạn đồng ý bằng cách tích vào ô xác nhận khi đăng ký, đăng ký hộ nghệ nhân hoặc gửi yêu cầu báo giá. Bạn có thể rút lại sự đồng ý bất cứ lúc nào; việc rút lại không ảnh hưởng đến phần dữ liệu đã được xử lý trước đó. Mỗi sự đồng ý được ghi lại: bạn đồng ý điều gì, theo phiên bản chính sách nào và vào lúc nào."
       },
       "sharing": {
         "title": "Ai nhìn thấy dữ liệu của bạn",
@@ -1726,7 +1731,7 @@
       },
       "retention": {
         "title": "Chúng tôi giữ dữ liệu bao lâu",
-        "text": "Trong thời gian tài khoản còn hoạt động. Khi bạn yêu cầu xóa, dữ liệu cá nhân được xóa; những bản ghi giao dịch cần giữ lại sẽ được ẩn danh hóa."
+        "text": "Trong thời gian tài khoản còn hoạt động. Khi bạn tự xóa tài khoản trong trang Tài khoản, email, họ tên, các sự đồng ý, thông báo, lựa chọn email và mọi tệp bạn đã tải lên (kể cả ảnh giấy tờ) bị xóa; hồ sơ hộ, xưởng, người làm và tin của hộ được gỡ bỏ. Đơn hàng, chào giá và nhật ký sản xuất của sản phẩm vẫn được giữ, không còn gắn với tên bạn, vì người khác dựa vào những bản ghi đó; địa chỉ nhận hàng ở các yêu cầu cũ bị xóa. Tài khoản còn đơn hàng đang thực hiện chưa thể xóa cho tới khi đơn xong hoặc Ban quản lý hủy đơn."
       },
       "security": {
         "title": "Chúng tôi bảo vệ dữ liệu thế nào",
@@ -1738,7 +1743,7 @@
       },
       "rights": {
         "title": "Quyền của bạn",
-        "text": "Bạn có quyền được biết, truy cập, chỉnh sửa, tải về, hạn chế, phản đối, rút lại sự đồng ý và yêu cầu xóa dữ liệu cá nhân của mình, cũng như khiếu nại. Bạn tự sửa thông tin ngay trong trang Tài khoản và Studio. Để tải về hoặc xóa dữ liệu, hãy gửi yêu cầu tới Ban quản lý qua <contact>kênh liên hệ của Ban quản lý làng nghề</contact>."
+        "text": "Bạn có quyền được biết, truy cập, chỉnh sửa, tải về, hạn chế, phản đối, rút lại sự đồng ý và yêu cầu xóa dữ liệu cá nhân của mình, cũng như khiếu nại. Bạn tự sửa thông tin ngay trong trang Tài khoản và Studio, tự tải toàn bộ dữ liệu về và tự xóa tài khoản ngay trong <account>trang Tài khoản</account>. Với các yêu cầu khác, hoặc khi chưa tự xóa được (ví dụ còn đơn hàng đang thực hiện), hãy gửi yêu cầu tới Ban quản lý qua <contact>kênh liên hệ của Ban quản lý làng nghề</contact>."
       },
       "changes": {
         "title": "Khi chính sách thay đổi",
@@ -1757,8 +1762,34 @@
     },
     "account": {
       "title": "Dữ liệu của bạn",
-      "lead": "vCraft chỉ giữ thông tin bạn đã nhập. Bạn có quyền sửa, tải về hoặc xóa chúng.",
-      "link": "Đọc Chính sách quyền riêng tư"
+      "lead": "vCraft chỉ giữ thông tin bạn đã nhập. Bạn có quyền sửa, tải về hoặc xóa chúng ngay tại đây.",
+      "link": "Đọc Chính sách quyền riêng tư",
+      "download": {
+        "title": "Tải dữ liệu của bạn",
+        "text": "Một tệp JSON gồm thông tin tài khoản, hồ sơ hộ hoặc các yêu cầu báo giá của bạn, thông báo, các sự đồng ý và liên kết tới những tệp bạn đã tải lên. Liên kết tới ảnh giấy tờ hết hạn sau 5 phút.",
+        "button": "Tải dữ liệu của tôi",
+        "working": "Đang chuẩn bị…",
+        "done": "Đã tải xuống tệp dữ liệu của bạn.",
+        "failed": "Chưa tải được dữ liệu. Bạn thử lại sau ít phút."
+      },
+      "delete": {
+        "title": "Xóa tài khoản",
+        "text": "Xóa tài khoản là vĩnh viễn và không hoàn tác được.",
+        "removed": "Chúng tôi xóa: email và họ tên của bạn, các sự đồng ý, thông báo, lựa chọn email và mọi tệp bạn đã tải lên (kể cả ảnh giấy tờ). Nếu bạn đại diện một hộ: hồ sơ hộ, xưởng, người làm và tin của hộ cũng bị gỡ. Yêu cầu báo giá còn nháp bị xóa, yêu cầu đang mở bị hủy.",
+        "kept": "Chúng tôi giữ, không còn gắn với tên bạn: đơn hàng, chào giá và nhật ký sản xuất của sản phẩm, vì người khác dựa vào những bản ghi này. Địa chỉ nhận hàng ở các yêu cầu cũ bị xóa.",
+        "button": "Xóa tài khoản của tôi",
+        "dialogTitle": "Xóa tài khoản này?",
+        "typeLabel": "Nhập email của tài khoản để xác nhận",
+        "typeHint": "Bạn đang đăng nhập bằng {email}.",
+        "confirm": "Xóa vĩnh viễn",
+        "cancel": "Giữ tài khoản",
+        "working": "Đang xóa…",
+        "done": "Đã xóa tài khoản của bạn.",
+        "mismatch": "Email này không phải của tài khoản.",
+        "blockedOrders": "Bạn còn đơn hàng đang thực hiện nên chưa xóa được. Hãy hoàn tất hoặc hủy đơn, hoặc nhờ Ban quản lý hủy đơn, rồi thử lại.",
+        "blockedAdmin": "Tài khoản quản trị không tự xóa ở đây. Hãy nhờ một quản trị viên khác.",
+        "failed": "Chưa xóa được tài khoản và chưa có gì bị thay đổi. Bạn thử lại sau ít phút."
+      }
     }
   }
 }

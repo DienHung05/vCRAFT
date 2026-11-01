@@ -729,7 +729,8 @@
         "product": "Product",
         "rfq": "Quote request",
         "quotation": "Cooperative quotation",
-        "news": "News"
+        "news": "News",
+        "app_user": "Account"
       },
       "actions": {
         "household": {
@@ -758,6 +759,9 @@
           "publish": "Published news",
           "unpublish": "Moved news back to draft",
           "delete": "Deleted news"
+        },
+        "account": {
+          "delete": "Account deleted by its owner"
         }
       },
       "emptyHint": "Every administrator action will be recorded here.",
@@ -1206,7 +1210,8 @@
       "forbidden": "This account is not allowed to do that.",
       "mediaTooLarge": "The file is larger than 10 MB. Retake it at a lower resolution or compress it.",
       "mediaUnsupported": "Only JPG, PNG, WebP, AVIF images or PDF files are accepted.",
-      "apiDown": "Cannot reach the vCraft server. Please try again in a few minutes."
+      "apiDown": "Cannot reach the vCraft server. Please try again in a few minutes.",
+      "consentRequired": "You need to agree to the Privacy policy before doing this. Tick the consent box and try again."
     },
     "signIn": {
       "title": "Sign in",
@@ -1703,7 +1708,7 @@
           "account": "Account: email, full name and role. Your password is hashed and stored by Supabase Auth; vCraft cannot read it.",
           "household": "Artisan household registration: the representative's details, citizen ID number, photos of documents (ID card, proof of residence), workshop address and location, workshop photos.",
           "quote": "Quotation requests: order details, budget, delivery address and contact details linked to your account.",
-          "usage": "Notifications, email preferences and the audit trail of administrative actions.",
+          "usage": "Notifications, email preferences, the consents you gave (what, which policy version, when) and the audit trail of administrative actions.",
           "technical": "Technical data: IP addresses are stored only as salted hashes; system logs contain no passwords, tokens or ID numbers."
         }
       },
@@ -1713,7 +1718,7 @@
       },
       "basis": {
         "title": "Basis: your consent",
-        "text": "We process personal data on the basis of your consent, in line with Vietnam's Decree 13/2023/ND-CP on personal data protection. You give it by ticking the confirmation box when you register, register a household or send a quotation request. You can withdraw consent at any time; withdrawing does not affect processing that already took place."
+        "text": "We process personal data on the basis of your consent, in line with Vietnam's Decree 13/2023/ND-CP on personal data protection. You give it by ticking the confirmation box when you register, register a household or send a quotation request. You can withdraw consent at any time; withdrawing does not affect processing that already took place. Each consent is recorded: what you agreed to, under which version of the policy, and when."
       },
       "sharing": {
         "title": "Who can see your data",
@@ -1726,7 +1731,7 @@
       },
       "retention": {
         "title": "How long we keep it",
-        "text": "While your account is active. When you ask for deletion, personal data is deleted; transaction records that must be kept are anonymized."
+        "text": "While your account is active. When you delete your account yourself on the Account page, your email, name, consents, notifications, email choices and every file you uploaded (identity papers included) are deleted, and the household profile, workshops, makers and news are taken down. Orders, quotations and the production journal of products are kept without your name, because other people rely on those records; delivery addresses on past requests are erased. An account with an order in progress cannot be deleted until the order is finished or the Management Board cancels it."
       },
       "security": {
         "title": "How we protect it",
@@ -1738,7 +1743,7 @@
       },
       "rights": {
         "title": "Your rights",
-        "text": "You have the right to know, access, correct, download, restrict, object to, withdraw consent for and request deletion of your personal data, and to lodge a complaint. You can correct your details yourself in Account and Studio. To download or delete your data, send a request to the Management Board through <contact>the village Management Board's contact channel</contact>."
+        "text": "You have the right to know, access, correct, download, restrict, object to, withdraw consent for and request deletion of your personal data, and to lodge a complaint. You can correct your details yourself in Account and Studio, download all of your data and delete your account yourself on <account>the Account page</account>. For anything else, or when you cannot delete yet (for example an order is in progress), send a request to the Management Board through <contact>the village Management Board's contact channel</contact>."
       },
       "changes": {
         "title": "When the policy changes",
@@ -1757,8 +1762,34 @@
     },
     "account": {
       "title": "Your data",
-      "lead": "vCraft keeps only what you entered. You have the right to correct, download or delete it.",
-      "link": "Read the Privacy policy"
+      "lead": "vCraft only keeps what you entered. You can correct, download or delete it right here.",
+      "link": "Read the Privacy policy",
+      "download": {
+        "title": "Download your data",
+        "text": "A JSON file with your account, your household or quotation requests, notifications, consents and links to the files you uploaded. Links to identity papers expire after 5 minutes.",
+        "button": "Download my data",
+        "working": "Preparing…",
+        "done": "Your data file was downloaded.",
+        "failed": "Your data could not be downloaded. Try again in a few minutes."
+      },
+      "delete": {
+        "title": "Delete account",
+        "text": "Deleting your account is permanent and cannot be undone.",
+        "removed": "We delete: your email and name, your consents, notifications, email choices and every file you uploaded (identity papers included). If you represent a household, its profile, workshops, makers and news are taken down too. Draft quotation requests are removed and open ones are cancelled.",
+        "kept": "We keep, no longer linked to your name: orders, quotations and the production journal of products, because other people rely on those records. Delivery addresses on past requests are erased.",
+        "button": "Delete my account",
+        "dialogTitle": "Delete this account?",
+        "typeLabel": "Type the account email to confirm",
+        "typeHint": "You are signed in as {email}.",
+        "confirm": "Delete permanently",
+        "cancel": "Keep my account",
+        "working": "Deleting…",
+        "done": "Your account was deleted.",
+        "mismatch": "That is not the email of this account.",
+        "blockedOrders": "You have an order in progress, so the account cannot be deleted yet. Finish or cancel the order, or ask the Management Board to cancel it, then try again.",
+        "blockedAdmin": "Administrator accounts cannot delete themselves here. Ask another administrator.",
+        "failed": "The account could not be deleted and nothing was changed. Try again in a few minutes."
+      }
     }
   }
 }

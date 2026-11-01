@@ -200,4 +200,50 @@ describe('account HTTP client', () => {
       );
     });
   });
+  describe('personal data (NFR-SEC-07)', () => {
+    it('records consent for a purpose and policy version', async () => {
+      const { api, calls } = client(() =>
+        Response.json({
+          id: userId,
+          purpose: 'ID_DOCUMENT',
+          policyVersion: '2026-11-01',
+          givenAt: '2026-11-01T00:00:00.000Z',
+        }),
+      );
+      await expect(api.recordConsent('ID_DOCUMENT', '2026-11-01')).resolves.toMatchObject({
+        purpose: 'ID_DOCUMENT',
+      });
+      expect(calls[0]?.url).toBe('/api/v1/me/consents');
+      expect(calls[0]?.init.method).toBe('POST');
+      expect(calls[0]?.init.body).toBe(
+        JSON.stringify({ purpose: 'ID_DOCUMENT', policyVersion: '2026-11-01' }),
+      );
+    });
+
+    it('deletes the account with the typed email and accepts the empty 204 answer', async () => {
+      const { api, calls } = client(() => new Response(null, { status: 204 }));
+      await expect(api.deleteAccount('buyer@example.com')).resolves.toBeUndefined();
+      expect(calls[0]?.url).toBe('/api/v1/me');
+      expect(calls[0]?.init.method).toBe('DELETE');
+      expect(calls[0]?.init.body).toBe(JSON.stringify({ confirmation: 'buyer@example.com' }));
+    });
+
+    it('turns a blocked deletion into an AccountApiError with the stable code', async () => {
+      const { api } = client(() =>
+        Response.json(
+          {
+            type: '/problems/account-deletion-active-orders',
+            title: 'Account has orders in progress',
+            status: 409,
+            code: 'ACCOUNT_DELETION_ACTIVE_ORDERS',
+          },
+          { status: 409 },
+        ),
+      );
+      await expect(api.deleteAccount('buyer@example.com')).rejects.toMatchObject({
+        code: 'ACCOUNT_DELETION_ACTIVE_ORDERS',
+        status: 409,
+      });
+    });
+  });
 });

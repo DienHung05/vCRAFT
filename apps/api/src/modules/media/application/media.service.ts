@@ -1,7 +1,12 @@
 import { createHash } from 'node:crypto';
 import { MikroORM } from '@mikro-orm/core';
 import { Inject, Injectable } from '@nestjs/common';
-import type { MediaAssetResponse, MediaReadUrlResponse, PublicImageDto } from '@vcraft/contracts';
+import type {
+  ExportedMediaDto,
+  MediaAssetResponse,
+  MediaReadUrlResponse,
+  PublicImageDto,
+} from '@vcraft/contracts';
 import {
   MediaAsset,
   type MediaCredit,
@@ -18,6 +23,7 @@ import type { Actor } from '../../../common/auth/auth.guard';
 import { unwrap } from '../../../common/domain/unwrap';
 import { forbidden, notFound } from '../../../common/errors/app-error';
 import { OBJECT_STORAGE } from '../../../infrastructure/storage/storage.module';
+import { ConsentService } from '../../privacy/application/consent.service';
 
 /** Sự kiện outbox để worker chuyển đổi ảnh (ARCHITECTURE §7.1). */
 export const MEDIA_UPLOADED_EVENT = 'media.uploaded';
@@ -44,6 +50,7 @@ export class MediaService {
   constructor(
     private readonly orm: MikroORM,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
+    private readonly consents: ConsentService,
   ) {}
 
   async upload(
@@ -52,6 +59,8 @@ export class MediaService {
     file: UploadedFile,
   ): Promise<MediaAssetResponse> {
     if (actor.locked) throw forbidden();
+    // Identity papers are only collected after the person consented to the privacy policy (NFR-SEC-07).
+    if (purpose === 'CERTIFICATE') await this.consents.require(actor.id, 'ID_DOCUMENT');
     const sniffed = await fileTypeFromBuffer(file.bytes);
     const plan = unwrap(
       checkMediaUpload({
@@ -165,6 +174,51 @@ export class MediaService {
       .fork()
       .find(MediaAsset, { id: { $in: [...ids] }, ownerId }, { fields: ['id'] });
     return new Set(assets.map((asset) => asset.id));
+  }
+
+  /** Every file the person uploaded, with a link to it (signed and short-lived for private files). */
+  async exportOwned(ownerId: string): Promise<ExportedMediaDto[]> {
+    const assets = await this.orm.em
+      .fork()
+      .find(MediaAsset, { ownerId }, { orderBy: { createdAt: 'asc', id: 'asc' } });
+    const items: ExportedMediaDto[] = [];
+    for (const asset of assets) {
+      let url: string | null = null;
+      let urlExpiresAt: string | null = null;
+      if (asset.visibility === 'PRIVATE') {
+        url = await this.storage.presignGet(asset.originalKey, PRESIGN_TTL_SECONDS);
+        urlExpiresAt = new Date(Date.now() + PRESIGN_TTL_SECONDS * 1000).toISOString();
+      } else if (asset.status === 'READY') {
+        url = this.displayUrl(asset) ?? null;
+      }
+      items.push({
+        id: asset.id,
+        purpose: asset.purpose,
+        visibility: asset.visibility,
+        status: asset.status,
+        mimeType: asset.mimeType,
+        sizeBytes: asset.sizeBytes,
+        sha256: asset.sha256,
+        createdAt: asset.createdAt.toISOString(),
+        url,
+        urlExpiresAt,
+      });
+    }
+    return items;
+  }
+
+  /** Remove the stored objects of deleted assets. Returns the ids whose files could not be removed. */
+  async deleteFiles(assets: readonly MediaAsset[]): Promise<string[]> {
+    const failed: string[] = [];
+    for (const asset of assets) {
+      try {
+        await this.storage.delete('private', asset.originalKey);
+        for (const variant of asset.variants) await this.storage.delete('public', variant.key);
+      } catch {
+        failed.push(asset.id);
+      }
+    }
+    return failed;
   }
 
   async get(actor: Actor, id: string): Promise<MediaAssetResponse> {

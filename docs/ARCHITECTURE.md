@@ -583,6 +583,7 @@ Nguyên tắc:
 | Lạm dụng       | `@nestjs/throttler` (Redis): 100 req/phút/IP cho API; endpoint xác thực có rate limit + CAPTCHA của Supabase                                                                              |
 | Kiểm toán      | `@Audit()` ghi `AuditLog` cho hành động Admin và từ chối truy cập                                                                                                                         |
 | Chuỗi cung ứng | `pnpm audit`, Renovate, lockfile cố định, không commit `.env`                                                                                                                             |
+| Dữ liệu cá nhân | NFR-SEC-07 ([ADR-17](adr/0017-personal-data-export-and-deletion.md)): recorded consent per purpose and policy version (`consent_record`, enforced by the API), `GET /me/data-export`, `DELETE /me` (anonymizes and keeps orders and the hash-chained journal valid) |
 
 ### 8.2 Bảng OWASP Top 10 (2021) → biện pháp
 
@@ -738,5 +739,6 @@ Log JSON (pino) có `requestId` xuyên suốt web → api → worker; `/api/v1/h
 | ADR-14 | [Object storage trên **Supabase Storage** qua giao thức S3](adr/0014-object-storage-supabase.md) | MinIO + Cloudflare R2; SDK `supabase-js`; BLOB trong CSDL | Gom dịch vụ ngoài về một project Supabase; giữ `StoragePort → S3Adapter` trung lập nên đổi nhà cung cấp chỉ cần đổi env; `LocalDiskAdapter` cho test/offline |
 | ADR-15 | [CSDL nghiệp vụ trên **Supabase Postgres**](adr/0015-business-db-on-supabase.md) | Postgres trong container mỗi máy; schema riêng ngoài Data API | Cả nhóm dùng chung và theo dõi trên Dashboard; event trigger tự bật RLS chặn Data API; MySQL vẫn kiểm chứng trong CI |
 | ADR-16 | [Web trên **Vercel**, API + worker trên **Render**, giữ Supabase](adr/0016-deploy-vercel-render.md) | 1 VPS + Docker Compose + Caddy; web và API cùng Render; gọi chéo origin có CORS | Không phải tự vận hành máy chủ; HTTPS, preview theo PR, rollback có sẵn; rewrite `/api/*` giữ một origin nên không cần CORS. Thay thế kế hoạch VPS ở §13 và ý "Redis cục bộ" của ADR-15 |
+| ADR-17 | [Recorded consent, personal data export and self-service deletion](adr/0017-personal-data-export-and-deletion.md) | Request-and-approve through the Management Board; hard delete; consent only in the browser | Consent is evidence and is enforced; people export and delete without waiting; orders and the hash-chained journal stay valid |
 
 Rủi ro kỹ thuật cần kiểm chứng ở Sprint 0: (0) project Supabase gói Free tự tạm dừng sau 7 ngày không hoạt động ⇒ giữ hoạt động trước buổi thi và cấu hình SMTP riêng cho email xác thực; (1) adapter NestJS của `@supabase/server` chỉ hỗ trợ Nest 10/11 ⇒ tự viết guard bọc `verifyAuth()`. (Đã xử lý 27/10: package dùng ở backend được build bằng tsdown — xem §3.2.)

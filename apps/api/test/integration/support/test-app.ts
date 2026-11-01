@@ -4,10 +4,11 @@ import { join } from 'node:path';
 import { MikroORM } from '@mikro-orm/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
-import { AppUser } from '@vcraft/database';
-import type { AccountRole } from '@vcraft/domain';
+import { AppUser, ConsentRecord } from '@vcraft/database';
+import { type AccountRole, CONSENT_PURPOSES, PRIVACY_POLICY_VERSION } from '@vcraft/domain';
 import { LocalObjectStorage } from '@vcraft/storage';
 import { AppModule } from '../../../src/app.module.js';
+import { AuthAdmin } from '../../../src/common/auth/auth-admin.js';
 import {
   IdentityVerifier,
   InvalidTokenError,
@@ -25,13 +26,25 @@ class FakeIdentityVerifier extends IdentityVerifier {
   async verify(headers: Readonly<Record<string, string | string[] | undefined>>) {
     const auth = headers.authorization;
     if (typeof auth !== 'string') return null;
-    const match = /^Bearer test:([0-9a-f-]{36})$/.exec(auth);
+    const match = /^Bearer test:([0-9a-f-]{36})(?:\|consent=(\S+))?$/.exec(auth);
     if (!match?.[1]) throw new InvalidTokenError('bad test token');
     return {
       sub: match[1],
       email: `${match[1]}@test.local`,
       emailVerified: true,
+      // `Bearer test:<id>|consent=<version>` mimics the sign-up form's metadata.
+      ...(match[2] && { consentPolicyVersion: match[2] }),
     } satisfies VerifiedIdentity;
+  }
+}
+
+/** Stands in for Supabase Auth admin: records deletions, can be told to fail. Never touches a real project. */
+export class FakeAuthAdmin extends AuthAdmin {
+  readonly deleted: string[] = [];
+  failWith: Error | null = null;
+  async deleteUser(id: string): Promise<void> {
+    if (this.failWith) throw this.failWith;
+    this.deleted.push(id);
   }
 }
 
@@ -39,8 +52,17 @@ export interface TestApp {
   app: NestFastifyApplication;
   /** Object storage trên thư mục tạm (ADR-14 `STORAGE_DRIVER=local`), xóa khi `close()`. */
   storage: LocalObjectStorage;
-  /** Tạo tài khoản với vai trò cho trước; trả header Authorization dùng cho request. */
-  createUser: (role: AccountRole) => Promise<{ id: string; auth: string }>;
+  /** Fake for the Supabase Auth admin API used by account deletion. */
+  authAdmin: FakeAuthAdmin;
+  /**
+   * Tạo tài khoản với vai trò cho trước; trả header Authorization dùng cho request.
+   * Mặc định tài khoản đã đồng ý mọi mục đích của chính sách hiện hành (như sau khi tick các ô đồng ý);
+   * truyền `{ consent: false }` để tạo tài khoản chưa đồng ý gì.
+   */
+  createUser: (
+    role: AccountRole,
+    options?: { consent?: boolean },
+  ) => Promise<{ id: string; auth: string; email: string }>;
   request: (opts: {
     method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     url: string;
@@ -61,6 +83,7 @@ export async function startTestApp(db: TestDatabase): Promise<TestApp> {
     signedBaseUrl: 'http://localhost:8080/api/v1/media/files',
     signingKey: 'integration-test-signing-key',
   });
+  const authAdmin = new FakeAuthAdmin();
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(OBJECT_STORAGE)
     .useValue(storage)
@@ -68,6 +91,8 @@ export async function startTestApp(db: TestDatabase): Promise<TestApp> {
     .useValue(db.orm)
     .overrideProvider(IdentityVerifier)
     .useClass(FakeIdentityVerifier)
+    .overrideProvider(AuthAdmin)
+    .useValue(authAdmin)
     .compile();
   const app = moduleRef.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
   await configureHttp(app);
@@ -77,15 +102,25 @@ export async function startTestApp(db: TestDatabase): Promise<TestApp> {
   return {
     app,
     storage,
-    async createUser(role) {
+    authAdmin,
+    async createUser(role, options) {
       const em = db.orm.em.fork();
       const user = em.create(AppUser, {
         id: crypto.randomUUID(),
         email: `${crypto.randomUUID()}@test.local`,
         role,
       });
+      if (options?.consent !== false) {
+        for (const purpose of CONSENT_PURPOSES) {
+          em.create(ConsentRecord, {
+            userId: user.id,
+            purpose,
+            policyVersion: PRIVACY_POLICY_VERSION,
+          });
+        }
+      }
       await em.flush();
-      return { id: user.id, auth: `Bearer test:${user.id}` };
+      return { id: user.id, auth: `Bearer test:${user.id}`, email: user.email };
     },
     async request({ method, url, auth, body, headers }) {
       const res = await app.inject({

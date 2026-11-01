@@ -47,6 +47,7 @@ import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
 import { MediaService } from '../../media/application/media.service';
 import { NotificationPublisher } from '../../notifications/application/notification-publisher';
+import { ConsentService } from '../../privacy/application/consent.service';
 import { loadJournal } from '../../production-logs/application/journal.queries';
 import {
   type HouseholdParts,
@@ -72,11 +73,13 @@ export class HouseholdsService {
     private readonly orm: MikroORM,
     private readonly media: MediaService,
     private readonly notifications: NotificationPublisher,
+    private readonly consents: ConsentService,
   ) {}
 
   // --- Người đại diện hộ ---
 
   async apply(actor: Actor, input: ApplyHouseholdRequest): Promise<HouseholdDto> {
+    if (actor.role !== 'ADMIN') await this.consents.require(actor.id, 'SIGN_UP');
     return this.orm.em.fork().transactional(async (em) => {
       if (actor.role === 'ADMIN') throw forbidden('administrators do not represent households');
       if (await em.findOne(Household, { representative: actor.id })) {
@@ -198,6 +201,8 @@ export class HouseholdsService {
   }
 
   async addArtisan(actor: Actor, input: CreateArtisanRequest) {
+    // A maker's name and role are published on the household page, so the household must have agreed.
+    await this.consents.require(actor.id, 'MAKER_PROFILE');
     return this.orm.em.fork().transactional(async (em) => {
       const household = await this.ownWritableHousehold(em, actor);
       const artisan = em.create(Artisan, {

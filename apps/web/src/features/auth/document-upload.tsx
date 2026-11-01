@@ -1,6 +1,6 @@
 'use client';
 
-import { MEDIA_MAX_BYTES } from '@vcraft/domain';
+import { MEDIA_MAX_BYTES, PRIVACY_POLICY_VERSION } from '@vcraft/domain';
 import { Button, buttonVariants, cn } from '@vcraft/ui';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
@@ -50,6 +50,8 @@ export function DocumentUpload() {
   // Identity papers are only collected after the representative agrees to the privacy policy.
   const [consent, setConsent] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  // The API refuses identity papers without a recorded consent, so it is recorded once, before the first file.
+  const consentRecorded = useRef<Promise<unknown> | null>(null);
 
   const patch = (id: string, change: Partial<Omit<UploadItem, 'id' | 'file'>>) =>
     setItems((prev) =>
@@ -63,6 +65,14 @@ export function DocumentUpload() {
   const upload = async (item: UploadItem) => {
     patch(item.id, { status: 'uploading' });
     try {
+      consentRecorded.current ??= browserAccountClient().recordConsent(
+        'ID_DOCUMENT',
+        PRIVACY_POLICY_VERSION,
+      );
+      await consentRecorded.current.catch((failure: unknown) => {
+        consentRecorded.current = null;
+        throw failure;
+      });
       await browserAccountClient().uploadCertificate(item.file, item.file.name);
       patch(item.id, { status: 'done' });
     } catch (failure) {

@@ -18,6 +18,7 @@ export type AuthErrorKey =
   | 'sessionExpired'
   | 'slugTaken'
   | 'locked'
+  | 'consentRequired'
   | 'forbidden'
   | 'mediaTooLarge'
   | 'mediaUnsupported'
@@ -53,6 +54,7 @@ const API_CODES: Readonly<Record<string, AuthErrorKey>> = {
   AUTH_FORBIDDEN: 'forbidden',
   AUTH_ACCOUNT_SUSPENDED: 'locked',
   HOUSEHOLD_ACCOUNT_LOCKED: 'locked',
+  CONSENT_REQUIRED: 'consentRequired',
   CONFLICT_DUPLICATE: 'slugTaken',
   MEDIA_TOO_LARGE: 'mediaTooLarge',
   MEDIA_UNSUPPORTED_TYPE: 'mediaUnsupported',

@@ -5,6 +5,11 @@ export interface VerifiedIdentity {
   readonly sub: string;
   readonly email: string;
   readonly emailVerified?: boolean;
+  /**
+   * Privacy policy version the person ticked on the sign-up form, carried in the Supabase user metadata
+   * (`privacy_policy_version`). Only used to record `SIGN_UP` consent when the account is first created.
+   */
+  readonly consentPolicyVersion?: string;
 }
 
 /**
@@ -35,10 +40,12 @@ export class SupabaseIdentityVerifier extends IdentityVerifier {
     const userResult = await supabase.auth.getUser(data.token ?? undefined);
     if (userResult.error || !userResult.data.user)
       throw new InvalidTokenError('could not verify user');
+    const claimed: unknown = userResult.data.user.user_metadata?.privacy_policy_version;
     return {
       sub: data.userClaims.id,
       email: userResult.data.user.email ?? '',
       emailVerified: Boolean(userResult.data.user.email_confirmed_at),
+      ...(typeof claimed === 'string' && { consentPolicyVersion: claimed }),
     };
   }
 }

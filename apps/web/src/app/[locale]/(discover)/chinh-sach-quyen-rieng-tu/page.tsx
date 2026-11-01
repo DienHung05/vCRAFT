@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import { Link } from '@/i18n/navigation';
 import { resolveLocale } from '@/lib/locale';
 import { privacyContactEmail } from '@/lib/site';
 
@@ -44,7 +45,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
 
 /**
  * Privacy policy (NFR-SEC-07): what is collected, why, who sees it, how long it is kept and the
- * data subject's rights. Static copy from the `privacy` messages in both languages; the contact
+ * data subject's rights (download and deletion are self-service on the account page). Static copy from the `privacy` messages in both languages; the contact
  * email shows only when `NEXT_PUBLIC_PRIVACY_EMAIL` is set.
  */
 export default async function PrivacyPolicyPage({
@@ -115,6 +116,11 @@ export default async function PrivacyPolicyPage({
       <Section id="rights" title={t('sections.rights.title')}>
         <p>
           {t.rich('sections.rights.text', {
+            account: (chunks) => (
+              <Link href="/tai-khoan" className="text-clay underline underline-offset-4">
+                {chunks}
+              </Link>
+            ),
             contact: (chunks) =>
               email ? (
                 <a href={`mailto:${email}`} className="text-clay underline underline-offset-4">

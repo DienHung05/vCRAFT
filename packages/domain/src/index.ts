@@ -9,7 +9,8 @@
  * - media/        Luật upload (loại thật theo magic bytes, kích thước, bucket) và mốc biến thể ảnh
  * - news/         Phân loại và trạng thái tin tức làng nghề
  * - notification/ Loại thông báo in-app, người nhận theo vai trò và trang đích
- * - shared/      DomainError, Result, helper máy trạng thái; (sau này) Money, GeoPoint, OpeningHours
+ * - privacy/      Mục đích và phiên bản chính sách của sự đồng ý xử lý dữ liệu cá nhân (NFR-SEC-07)
+ * - shared/     DomainError, Result, helper máy trạng thái; (sau này) Money, GeoPoint, OpeningHours
  */
 export * from './allocation';
 export * from './exhibition';
@@ -18,5 +19,6 @@ export * from './journal';
 export * from './media';
 export * from './news';
 export * from './notification';
+export * from './privacy';
 export * from './rfq';
 export * from './shared';

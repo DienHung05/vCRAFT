@@ -2,6 +2,7 @@ export * from './app-user.entity.js';
 export * from './artisan.entity.js';
 export * from './audit-log.entity.js';
 export * from './base.entity.js';
+export * from './consent-record.entity.js';
 export * from './contribution-offer.entity.js';
 export * from './cooperative-quotation.entity.js';
 export * from './household.entity.js';

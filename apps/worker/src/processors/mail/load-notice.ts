@@ -27,7 +27,8 @@ export function createNoticeLoader(orm: MikroORM) {
       subjectId = notification.subjectId ?? null;
     }
     const user = await em.findOne(AppUser, recipientId);
-    if (!user) return null;
+    // A deleted account has no email address any more (NFR-SEC-07).
+    if (!user || user.status === 'DELETED') return null;
     const preference = await em.findOne(NotificationPreference, {
       userId: recipientId,
       type: kind,

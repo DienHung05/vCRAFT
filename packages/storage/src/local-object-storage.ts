@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import {
   assertObjectKey,
@@ -40,6 +40,10 @@ export class LocalObjectStorage implements ObjectStorage {
 
   async get(bucket: BucketKind, key: string): Promise<Uint8Array> {
     return new Uint8Array(await readFile(this.path(bucket, key)));
+  }
+
+  async delete(bucket: BucketKind, key: string): Promise<void> {
+    await rm(this.path(bucket, key), { force: true });
   }
 
   async presignGet(key: string, ttlSeconds = PRESIGN_TTL_SECONDS): Promise<string> {

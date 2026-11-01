@@ -1,5 +1,7 @@
 import {
   ArtisanResponseSchema,
+  type ConsentPurposeDto,
+  ConsentResponseSchema,
   type CreateArtisanRequest,
   type CreateJournalEntryRequest,
   type CreateProductRequest,
@@ -19,6 +21,12 @@ import { type AuthedClientOptions, createAuthedRequest } from './http/authed-req
 export function createStudioClient(options: AuthedClientOptions) {
   const request = createAuthedRequest(options);
   return {
+    /** Record consent to the privacy policy for publishing a maker's name (NFR-SEC-07). */
+    recordConsent: (purpose: ConsentPurposeDto, policyVersion: string) =>
+      request('/me/consents', ConsentResponseSchema, {
+        method: 'POST',
+        body: { purpose, policyVersion },
+      }),
     getHousehold: () => request('/me/household', HouseholdResponseSchema),
     updateProfile: (version: number, body: UpdateHouseholdProfileRequest) =>
       request('/me/household', HouseholdResponseSchema, { method: 'PATCH', body, version }),

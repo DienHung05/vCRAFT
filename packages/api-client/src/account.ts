@@ -1,8 +1,12 @@
 import {
   type ApplyHouseholdRequest,
   ApplyHouseholdRequestSchema,
+  ConsentListResponseSchema,
+  type ConsentPurposeDto,
+  ConsentResponseSchema,
   type CreateWorkshopRequest,
   CreateWorkshopRequestSchema,
+  DataExportSchema,
   type ErrorCode,
   type FieldError,
   HouseholdResponseSchema,
@@ -78,6 +82,29 @@ export function createAccountClient(options: AccountClientOptions) {
     return schema.parse(data);
   }
 
+  /** For calls whose success answer has no JSON body (204). Errors are read like in {@link request}. */
+  async function requestVoid(path: string, init: { method: string; json: unknown }): Promise<void> {
+    const token = await options.getAccessToken();
+    if (!token) throw new AccountApiError('AUTH_UNAUTHENTICATED', 401);
+    const response = await fetcher(`/api/v1${path}`, {
+      method: init.method,
+      cache: 'no-store',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(init.json),
+    });
+    if (response.ok) return;
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new AccountApiError('INTERNAL_ERROR', response.status);
+    }
+    const problem = ProblemDetailsSchema.safeParse(data);
+    throw problem.success
+      ? new AccountApiError(problem.data.code, response.status, problem.data.errors)
+      : new AccountApiError('INTERNAL_ERROR', response.status);
+  }
+
   return {
     /** Người đang đăng nhập, theo CSDL vCraft: nguồn cho guard vai trò. */
     me() {
@@ -107,6 +134,25 @@ export function createAccountClient(options: AccountClientOptions) {
         method: 'POST',
         form,
       });
+    },
+    /** Consents on record and the policy version currently asked for (NFR-SEC-07). */
+    listConsents() {
+      return request('/me/consents', ConsentListResponseSchema);
+    },
+    /** Record that the person ticked the consent box for `purpose` under the current policy. */
+    recordConsent(purpose: ConsentPurposeDto, policyVersion: string) {
+      return request('/me/consents', ConsentResponseSchema, {
+        method: 'POST',
+        json: { purpose, policyVersion },
+      });
+    },
+    /** Everything the platform holds about the person, as one JSON document (NFR-SEC-07). */
+    exportMyData() {
+      return request('/me/data-export', DataExportSchema);
+    },
+    /** Delete the account. `confirmation` is the account's own email, typed by the person. */
+    deleteAccount(confirmation: string) {
+      return requestVoid('/me', { method: 'DELETE', json: { confirmation } });
     },
     /** Chuông thông báo: `limit` thông báo mới nhất kèm tổng số chưa đọc. */
     listNotifications(limit = 30) {

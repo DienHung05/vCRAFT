@@ -56,7 +56,12 @@ export class AuditLogService {
     const actors = await em.find(AppUser, {
       id: { $in: [...new Set(page.map((row) => row.actorId))] },
     });
-    const names = new Map(actors.map((user) => [user.id, accountName(user)]));
+    // A deleted account has no name any more (NFR-SEC-07).
+    const names = new Map(
+      actors
+        .filter((user) => user.status !== 'DELETED')
+        .map((user) => [user.id, accountName(user)]),
+    );
     const last = page.at(-1);
     return {
       data: page.map((row) => ({

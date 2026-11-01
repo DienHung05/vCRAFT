@@ -92,6 +92,14 @@ export const ERROR_CATALOG = {
   MEDIA_UNSUPPORTED_TYPE: { status: 415, title: 'Unsupported media type' },
   MEDIA_TOO_LARGE: { status: 413, title: 'Media too large' },
 
+  // --- PRIVACY: đồng ý, xuất và xóa dữ liệu cá nhân (NFR-SEC-07) ---
+  /** The action collects personal data and no consent for the current policy version is on record. */
+  CONSENT_REQUIRED: { status: 403, title: 'Consent required' },
+  /** The account represents a household or buyer with orders still in progress. */
+  ACCOUNT_DELETION_ACTIVE_ORDERS: { status: 409, title: 'Account has orders in progress' },
+  /** Administrator accounts are removed by another administrator, not through self-service. */
+  ACCOUNT_DELETION_ADMIN: { status: 409, title: 'Administrator accounts cannot self-delete' },
+
   // --- HẠ TẦNG ---
   /** NFR-SEC-04: rate limit; kèm header `Retry-After`. */
   RATE_LIMITED: { status: 429, title: 'Too many requests' },

@@ -20,7 +20,8 @@ export class UsersService {
       email: user.email,
       fullName: user.fullName ?? null,
       role: user.role,
-      status: user.status,
+      // The guard turns away deleted accounts before this runs.
+      status: user.status === 'LOCKED' ? 'LOCKED' : 'ACTIVE',
       emailVerified: actor.emailVerified === true,
       household: household
         ? {

@@ -66,6 +66,16 @@ describe('createNoticeLoader', () => {
     expect(await load('n1')).toMatchObject({ emailEnabled: false });
   });
 
+  it('returns null for a recipient whose account was deleted (NFR-SEC-07)', async () => {
+    const load = createNoticeLoader(
+      fakeOrm({
+        quotation: { recipientId: 'u1', kind: 'RFQ_INVITED', requestId: 'req-1' },
+        user: { email: 'deleted-u1@deleted.invalid', role: 'HOUSEHOLD', status: 'DELETED' },
+      }),
+    );
+    expect(await load('n1')).toBeNull();
+  });
+
   it('returns null when the notice or the recipient is gone', async () => {
     expect(await createNoticeLoader(fakeOrm({}))('gone')).toBeNull();
     const noUser = fakeOrm({

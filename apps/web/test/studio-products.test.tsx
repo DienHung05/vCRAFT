@@ -100,6 +100,7 @@ function client(overrides: Partial<StudioClient> = {}): StudioClient {
     updateProduct: vi.fn(async () => product(1)),
     setMakers: vi.fn(async () => product(1)),
     addArtisan: vi.fn(),
+    recordConsent: vi.fn().mockResolvedValue({}),
     ...overrides,
   } as unknown as StudioClient;
 }
@@ -174,6 +175,23 @@ describe('ProductEditor', () => {
     );
     expect(screen.getByTestId('qr')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Tải PNG' })).toBeTruthy();
+  });
+
+  it('records the maker consent on the server before adding a person', async () => {
+    const api = client({ addArtisan: vi.fn(async () => ({})) as never });
+    renderVi(<ProductEditor productId={`${ID}1`} client={api} />);
+    fireEvent.change(await screen.findByLabelText('Tên người làm mới'), {
+      target: { value: 'Lan' },
+    });
+    const add = screen.getByRole('button', { name: 'Thêm người làm' });
+    expect((add as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('checkbox', { name: /Chính sách quyền riêng tư/ }));
+    fireEvent.click(add);
+    await waitFor(() => expect(api.addArtisan).toHaveBeenCalledWith({ name: 'Lan' }));
+    expect(api.recordConsent).toHaveBeenCalledWith('MAKER_PROFILE', '2026-11-01');
+    expect(vi.mocked(api.recordConsent).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(api.addArtisan).mock.invocationCallOrder[0] ?? 0,
+    );
   });
 
   it('sản phẩm của hộ khác không mở được', async () => {
