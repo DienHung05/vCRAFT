@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { ChangePasswordForm } from '@/features/account/change-password-form';
 import { EmailPreferencesForm } from '@/features/account/email-preferences-form';
+import { PersonalDataCard } from '@/features/account/personal-data';
 import { Link } from '@/i18n/navigation';
 import { workspacePath } from '@/lib/auth/access';
 import { requireViewer } from '@/lib/auth/guard';
@@ -20,7 +21,8 @@ export async function generateMetadata({
 
 /**
  * Trang tài khoản cho mọi vai trò (GH#37, FR-AUTH-06, FR-NOTI-02): thông tin cơ bản, đổi mật khẩu
- * (đăng xuất các thiết bị khác) và chọn loại thông báo nào cũng gửi email. Khách bị chuyển tới
+ * (đăng xuất các thiết bị khác), chọn loại thông báo nào cũng gửi email, và tải về hoặc xóa dữ liệu
+ * cá nhân của chính mình (NFR-SEC-07). Khách bị chuyển tới
  * đăng nhập rồi quay lại đây.
  */
 export default async function AccountPage({ params }: PageProps<'/[locale]/tai-khoan'>) {
@@ -82,6 +84,9 @@ export default async function AccountPage({ params }: PageProps<'/[locale]/tai-k
         >
           {privacy('account.link')}
         </Link>
+        <div className="mt-6 border-ink/10 border-t pt-6">
+          <PersonalDataCard email={viewer.email} accountRole={viewer.role} />
+        </div>
       </Card>
 
       <Card className="p-5 md:p-8">

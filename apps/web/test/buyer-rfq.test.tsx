@@ -66,6 +66,7 @@ function client(overrides: Partial<QuotationClient> = {}): QuotationClient {
     listBuyerQuotations: vi.fn().mockResolvedValue([]),
     listAllocations: vi.fn().mockRejectedValue(new QuotationApiError('NOT_FOUND', 404)),
     listNotices: vi.fn().mockResolvedValue([]),
+    recordConsent: vi.fn().mockResolvedValue({}),
     ...overrides,
   } as unknown as QuotationClient;
 }
@@ -157,9 +158,16 @@ describe('RfqForm', () => {
   it('saves a complete form as a server draft, then updates it with the returned version', async () => {
     const createRequest = vi.fn().mockResolvedValue({ ...REQUEST, status: 'DRAFT', version: 1 });
     const updateRequest = vi.fn().mockResolvedValue({ ...REQUEST, status: 'DRAFT', version: 2 });
-    renderVi(<RfqForm client={client({ createRequest, updateRequest })} />);
+    const recordConsent = vi.fn().mockResolvedValue({});
+    renderVi(<RfqForm client={client({ createRequest, updateRequest, recordConsent })} />);
     await fill();
     await waitFor(() => expect(createRequest).toHaveBeenCalledTimes(1), { timeout: 2000 });
+    // Consent is recorded server-side once, before the first save of the address.
+    expect(recordConsent).toHaveBeenCalledTimes(1);
+    expect(recordConsent).toHaveBeenCalledWith('RFQ_CONTACT', '2026-11-01');
+    expect(recordConsent.mock.invocationCallOrder[0]).toBeLessThan(
+      createRequest.mock.invocationCallOrder[0] ?? 0,
+    );
     expect(await screen.findByText('Đã lưu nháp')).toBeTruthy();
     fireEvent.change(screen.getByLabelText('Đơn vị'), { target: { value: 'set' } });
     await waitFor(() => expect(updateRequest).toHaveBeenCalled(), { timeout: 2000 });
@@ -169,13 +177,15 @@ describe('RfqForm', () => {
   it('does not send, or save the address to the server, before the buyer consents', async () => {
     const createRequest = vi.fn();
     const submitRequest = vi.fn();
-    renderVi(<RfqForm client={client({ createRequest, submitRequest })} />);
+    const recordConsent = vi.fn();
+    renderVi(<RfqForm client={client({ createRequest, submitRequest, recordConsent })} />);
     await fill();
     fireEvent.click(screen.getByRole('checkbox', { name: /Chính sách quyền riêng tư/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }));
     expect(await screen.findByText(/Hãy đồng ý với chính sách quyền riêng tư/)).toBeTruthy();
     await new Promise((resolve) => setTimeout(resolve, 1000));
     expect(createRequest).not.toHaveBeenCalled();
+    expect(recordConsent).not.toHaveBeenCalled();
     expect(submitRequest).not.toHaveBeenCalled();
   });
 

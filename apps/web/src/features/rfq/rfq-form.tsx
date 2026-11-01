@@ -2,7 +2,7 @@
 
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
 import type { HouseholdSummaryDto, RfqResponse } from '@vcraft/contracts';
-import { PRODUCT_CATEGORIES } from '@vcraft/domain';
+import { PRIVACY_POLICY_VERSION, PRODUCT_CATEGORIES } from '@vcraft/domain';
 import { Button } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -92,6 +92,8 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
       // Saves run one after another, so each one sends the version the previous one returned.
       saving.current = saving.current.then(async () => {
         const payload = rfqFormPayload(current);
+        // The request carries a delivery address: the consent is recorded before the first save.
+        if (!saved.current) await client.recordConsent('RFQ_CONTACT', PRIVACY_POLICY_VERSION);
         const response = saved.current
           ? await client.updateRequest(saved.current.id, saved.current.version, payload)
           : await client.createRequest(payload);

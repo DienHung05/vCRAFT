@@ -5,6 +5,8 @@ import {
   BuyerQuotationResponseSchema,
   type CancelOrderRequest,
   CancelOrderRequestSchema,
+  type ConsentPurposeDto,
+  ConsentResponseSchema,
   ContributionResponseSchema,
   CoordinationResponseSchema,
   type CreateContributionRequest,
@@ -86,6 +88,10 @@ export function createQuotationClient(options: QuotationClientOptions) {
   }
 
   return {
+    /** Record consent to the privacy policy for the delivery address of a request (NFR-SEC-07). */
+    recordConsent(purpose: ConsentPurposeDto, policyVersion: string) {
+      return request('/me/consents', ConsentResponseSchema, 'POST', { purpose, policyVersion });
+    },
     coordinate(id: string, version: number) {
       return request(
         `/rfqs/${IdSchema.parse(id)}/coordinate`,

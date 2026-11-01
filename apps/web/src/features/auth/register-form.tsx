@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { PRIVACY_POLICY_VERSION } from '@vcraft/domain';
 import { Button } from '@vcraft/ui';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -53,7 +54,14 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
       const { error: failure } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { locale, ...(household && wizardPath ? { next: wizardPath } : {}) } },
+        options: {
+          data: {
+            locale,
+            // The API records the sign-up consent from this when the account is first created.
+            privacy_policy_version: PRIVACY_POLICY_VERSION,
+            ...(household && wizardPath ? { next: wizardPath } : {}),
+          },
+        },
       });
       if (failure) return setError(authErrorKey(failure));
       // Email đã có tài khoản cũng ra màn này (Supabase che), nên không lộ email nào đã đăng ký.

@@ -2,6 +2,7 @@
 
 import { ApiError, type StudioClient } from '@vcraft/api-client';
 import type { HouseholdDto, ProductDto, UpdateProductRequest } from '@vcraft/contracts';
+import { PRIVACY_POLICY_VERSION } from '@vcraft/domain';
 import { Badge, Button, buttonVariants, Card, TraceSealFrame } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -107,6 +108,7 @@ function MakersSection({ product, household, client, reload }: SectionProps) {
   };
   const addArtisan = async () => {
     try {
+      await client.recordConsent('MAKER_PROFILE', PRIVACY_POLICY_VERSION);
       await client.addArtisan({ name, ...(role.trim() ? { craftRole: role.trim() } : {}) });
       setName('');
       setRole('');
