@@ -65,15 +65,15 @@ describe('createMikroOrmOptions', () => {
   });
 
   it('chỉ bật TLS khi DB_SSL=true', () => {
-    expect(createMikroOrmOptions({}).driverOptions).toBeUndefined();
-    expect(createMikroOrmOptions({ DB_SSL: 'false' }).driverOptions).toBeUndefined();
+    expect(createMikroOrmOptions({}).driverOptions).not.toHaveProperty('ssl');
+    expect(createMikroOrmOptions({ DB_SSL: 'false' }).driverOptions).not.toHaveProperty('ssl');
   });
 
   it('DB_SSL=true luôn xác thực chứng chỉ máy chủ (không có đường tắt)', () => {
     for (const driver of ['postgresql', 'mysql']) {
-      expect(createMikroOrmOptions({ DB_DRIVER: driver, DB_SSL: 'TRUE' }).driverOptions).toEqual({
-        ssl: { rejectUnauthorized: true },
-      });
+      expect(
+        createMikroOrmOptions({ DB_DRIVER: driver, DB_SSL: 'TRUE' }).driverOptions,
+      ).toMatchObject({ ssl: { rejectUnauthorized: true } });
     }
     // Không biến môi trường nào (kể cả tên "thân thiện") được tắt việc xác thực
     const options = createMikroOrmOptions({
@@ -81,24 +81,25 @@ describe('createMikroOrmOptions', () => {
       DB_SSL_REJECT_UNAUTHORIZED: 'false',
       NODE_TLS_REJECT_UNAUTHORIZED: '0',
     });
-    expect(options.driverOptions).toEqual({ ssl: { rejectUnauthorized: true } });
+    expect(options.driverOptions?.ssl).toEqual({ rejectUnauthorized: true });
   });
 
   it('DB_SSL_CA: tin CA riêng nhưng vẫn xác thực; chấp nhận chuỗi \\n trên một dòng', () => {
     const pem = readFileSync(CA_FILE, 'utf8');
     const oneLine = pem.trim().replaceAll('\n', '\\n');
-    expect(createMikroOrmOptions({ DB_SSL: 'true', DB_SSL_CA: pem }).driverOptions).toEqual({
-      ssl: { ca: pem.trim(), rejectUnauthorized: true },
+    expect(createMikroOrmOptions({ DB_SSL: 'true', DB_SSL_CA: pem }).driverOptions?.ssl).toEqual({
+      ca: pem.trim(),
+      rejectUnauthorized: true,
     });
-    expect(createMikroOrmOptions({ DB_SSL: 'true', DB_SSL_CA: oneLine }).driverOptions).toEqual({
-      ssl: { ca: pem.trim(), rejectUnauthorized: true },
-    });
+    expect(
+      createMikroOrmOptions({ DB_SSL: 'true', DB_SSL_CA: oneLine }).driverOptions?.ssl,
+    ).toEqual({ ca: pem.trim(), rejectUnauthorized: true });
   });
 
   it('DB_SSL_CA_FILE: đọc CA từ file; file hỏng hoặc đặt cả hai biến thì báo lỗi', () => {
     expect(
-      createMikroOrmOptions({ DB_SSL: 'true', DB_SSL_CA_FILE: CA_FILE }).driverOptions,
-    ).toEqual({ ssl: { ca: readFileSync(CA_FILE, 'utf8'), rejectUnauthorized: true } });
+      createMikroOrmOptions({ DB_SSL: 'true', DB_SSL_CA_FILE: CA_FILE }).driverOptions?.ssl,
+    ).toEqual({ ca: readFileSync(CA_FILE, 'utf8'), rejectUnauthorized: true });
     expect(() =>
       createMikroOrmOptions({ DB_SSL: 'true', DB_SSL_CA_FILE: '/khong/ton/tai.pem' }),
     ).toThrow(/DB_SSL_CA_FILE/);

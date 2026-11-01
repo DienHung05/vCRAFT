@@ -44,6 +44,9 @@ services:
         sync: false
       # Không đặt CORS_ORIGINS: web gọi API cùng origin qua rewrite của Next (ADR-16). Chỉ thêm khi có client gọi chéo origin.
       # Database (Supabase Session pooler)
+      # Session mode allows `pool_size` (15) clients per user+database across API, worker, migrations and dev machines.
+      - key: DB_POOL_MAX
+        value: "5"
       - key: DB_HOST
         sync: false
       - key: DB_USER
@@ -105,6 +108,10 @@ services:
       # Origin công khai của web: dùng để sinh liên kết trong email thông báo
       - key: APP_URL
         sync: false
+      # Up to 4 jobs run at once (media and mail queues, 2 each) but they spend most of their time outside the DB;
+      # a small pool leaves room in the shared Supavisor session pool. A job that cannot get a connection in 5 s fails and is retried.
+      - key: DB_POOL_MAX
+        value: "3"
       - key: DB_HOST
         sync: false
       - key: DB_USER

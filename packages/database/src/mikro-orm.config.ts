@@ -11,6 +11,7 @@ import {
   type PostgreSqlDriver,
 } from '@mikro-orm/postgresql';
 import { SeedManager } from '@mikro-orm/seeder';
+import { buildPoolDriverOptions, resolveDbPoolSettings } from './db-pool.js';
 import {
   AppUser,
   Artisan,
@@ -79,8 +80,8 @@ function resolvePort(env: DbEnv, driver: DbDriver): number {
  * - `DB_SSL_CA_FILE`: đường dẫn tới file PEM.
  * `pg` và `mysql2` cùng nhận khóa `ssl` trong tùy chọn pool.
  */
-function resolveDriverOptions(env: DbEnv): Record<string, unknown> | undefined {
-  if (env.DB_SSL?.trim().toLowerCase() !== 'true') return undefined;
+function resolveTlsOptions(env: DbEnv): Record<string, unknown> {
+  if (env.DB_SSL?.trim().toLowerCase() !== 'true') return {};
   const ca = resolveSslCa(env);
   return { ssl: { ...(ca !== undefined && { ca }), rejectUnauthorized: true } };
 }
@@ -113,6 +114,7 @@ export function createMikroOrmOptions(
 ): VcraftMikroOrmOptions {
   const driver = resolveDbDriver(env);
   const migrationsDir = join(PACKAGE_ROOT, 'src', 'migrations', driver);
+  const poolSettings = resolveDbPoolSettings(env);
 
   const common: Record<string, unknown> = {
     host: env.DB_HOST ?? 'localhost',
@@ -120,7 +122,13 @@ export function createMikroOrmOptions(
     dbName: env.DB_NAME ?? 'vcraft',
     user: env.DB_USER ?? 'vcraft',
     password: env.DB_PASSWORD ?? 'vcraft',
-    driverOptions: resolveDriverOptions(env),
+    // Bounded pool (db-pool.ts): small max for the Supavisor session pooler, bounded waits, keepalive, hung-query guard.
+    pool: {
+      min: poolSettings.min,
+      max: poolSettings.max,
+      idleTimeoutMillis: poolSettings.idleTimeoutMillis,
+    },
+    driverOptions: { ...buildPoolDriverOptions(driver, poolSettings), ...resolveTlsOptions(env) },
     entities: [
       BaseEntity,
       OutboxEvent,
