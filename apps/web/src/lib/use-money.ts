@@ -1,4 +1,5 @@
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
+import { useUsdRate } from '@/components/usd-rate-provider';
 import { showsUsdReference, usdFractionDigits, vndToUsd } from './currency';
 
 /**
@@ -10,10 +11,11 @@ export function useMoney(): (vnd: number) => string {
   const format = useFormatter();
   const locale = useLocale();
   const t = useTranslations('common');
+  const { rate } = useUsdRate();
   return (vnd) => {
     const base = format.number(vnd, 'vnd');
     if (!showsUsdReference(locale) || !(vnd > 0)) return base;
-    const usd = vndToUsd(vnd);
+    const usd = vndToUsd(vnd, rate);
     const digits = usdFractionDigits(usd);
     const amount = format.number(usd, {
       minimumFractionDigits: digits,

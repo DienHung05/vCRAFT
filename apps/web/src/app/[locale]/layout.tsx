@@ -4,7 +4,10 @@ import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Toaster } from '@/components/toaster';
+import { UsdRateProvider } from '@/components/usd-rate-provider';
 import { routing } from '@/i18n/routing';
+import { FALLBACK_USD_RATE, showsUsdReference } from '@/lib/currency';
+import { getUsdRate } from '@/lib/usd-rate';
 import '../../styles/globals.css';
 
 // Fraunces ships only the SOFT axis: the full opsz/SOFT/WONK file was ~120KB for latin alone, and the
@@ -51,6 +54,9 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
+  // Only the English site shows USD (FR-CAT-08). The rate comes from Next's data cache (24h), so
+  // this adds no request for visitors and the pages stay statically cacheable.
+  const usdRate = showsUsdReference(locale) ? await getUsdRate() : FALLBACK_USD_RATE;
 
   return (
     <html
@@ -59,7 +65,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
     >
       <body className="grain-fixed">
         <NextIntlClientProvider>
-          {children}
+          <UsdRateProvider value={usdRate}>{children}</UsdRateProvider>
           <Toaster />
         </NextIntlClientProvider>
       </body>

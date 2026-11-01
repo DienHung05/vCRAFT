@@ -21,7 +21,8 @@
     "notifications": "Notifications",
     "dismiss": "Dismiss notification",
     "usdApprox": "≈ US${amount}",
-    "usdRateNote": "USD prices are a reference only, converted at US$1 = {rate} ₫. Orders are quoted and paid in VND.",
+    "usdRateNote": "USD prices are a reference only, converted at US$1 = {rate} ₫ (rate of {date}). Orders are quoted and paid in VND.",
+    "usdRateNoteFallback": "USD prices are a reference only, converted at about US$1 = {rate} ₫. Orders are quoted and paid in VND.",
     "home": "Home",
     "cancel": "Cancel",
     "close": "Close"
