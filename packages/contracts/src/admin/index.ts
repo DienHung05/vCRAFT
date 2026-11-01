@@ -23,6 +23,7 @@ export const AUDIT_ACTIONS = [
   'news.publish',
   'news.unpublish',
   'news.delete',
+  'account.delete',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

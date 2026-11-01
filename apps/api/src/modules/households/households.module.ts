@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MediaModule } from '../media/media.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ConsentModule } from '../privacy/consent.module';
 import { HouseholdsService } from './application/households.service';
 import {
   AdminDashboardController,
@@ -11,7 +12,7 @@ import {
 } from './households.controller';
 
 @Module({
-  imports: [MediaModule, NotificationsModule],
+  imports: [MediaModule, NotificationsModule, ConsentModule],
   controllers: [
     MyHouseholdController,
     ProductPublicationController,

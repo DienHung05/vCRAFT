@@ -7,8 +7,8 @@ import {
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { AppUser } from '@vcraft/database';
-import type { AccountRole } from '@vcraft/domain';
+import { AppUser, ConsentRecord } from '@vcraft/database';
+import { type AccountRole, isCurrentPolicyVersion } from '@vcraft/domain';
 import { AppError } from '../errors/app-error';
 import type { HttpRequest } from '../http/http-types';
 import { IdentityVerifier, InvalidTokenError } from './identity-verifier';
@@ -78,8 +78,18 @@ export class AuthGuard implements CanActivate {
     let user = await em.findOne(AppUser, identity.sub);
     if (!user) {
       user = em.create(AppUser, { id: identity.sub, email: identity.email, role: 'BUYER' });
+      // The sign-up form's consent box travels in the user metadata; record it with the new account.
+      if (identity.consentPolicyVersion && isCurrentPolicyVersion(identity.consentPolicyVersion)) {
+        em.create(ConsentRecord, {
+          userId: user.id,
+          purpose: 'SIGN_UP',
+          policyVersion: identity.consentPolicyVersion,
+        });
+      }
       await em.flush();
     }
+    // The person deleted their account (NFR-SEC-07); a token issued before that must stop working now.
+    if (user.status === 'DELETED') throw new AppError('AUTH_TOKEN_INVALID');
     return {
       id: user.id,
       email: user.email,

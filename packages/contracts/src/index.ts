@@ -11,4 +11,5 @@ export * from './media';
 export * from './news';
 export * from './notification';
 export * from './orders';
+export * from './privacy';
 export * from './rfq';

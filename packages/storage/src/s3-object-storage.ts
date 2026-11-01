@@ -1,4 +1,9 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import {
   assertObjectKey,
@@ -55,6 +60,14 @@ export class S3ObjectStorage implements ObjectStorage {
     );
     if (!result.Body) throw new Error(`object ${key} has no body`);
     return result.Body.transformToByteArray();
+  }
+
+  async delete(bucket: BucketKind, key: string): Promise<void> {
+    assertObjectKey(key);
+    // S3 DeleteObject succeeds when the key does not exist.
+    await this.client.send(
+      new DeleteObjectCommand({ Bucket: this.config.buckets[bucket], Key: key }),
+    );
   }
 
   presignGet(key: string, ttlSeconds = PRESIGN_TTL_SECONDS): Promise<string> {

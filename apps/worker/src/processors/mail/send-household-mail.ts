@@ -68,7 +68,8 @@ export async function sendHouseholdMail(
   const household = await em.findOne(Household, job.householdId);
   if (!household) return false;
   const user = await em.findOne(AppUser, household.representative.id);
-  if (!user) return false;
+  // A deleted account has no email address any more (NFR-SEC-07).
+  if (!user || user.status === 'DELETED') return false;
   const preference = await em.findOne(NotificationPreference, {
     userId: user.id,
     type: householdNoticeKind(job.decision),

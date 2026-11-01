@@ -34,6 +34,13 @@ describe('LocalObjectStorage', () => {
     expect(await storage.get('private', 'originals/a/b')).toEqual(body);
   });
 
+  it('delete removes an object and does not fail when it is already gone', async () => {
+    await storage.put({ bucket: 'private', key: 'originals/a/b', body, contentType: 'image/jpeg' });
+    await storage.delete('private', 'originals/a/b');
+    await expect(storage.get('private', 'originals/a/b')).rejects.toThrow();
+    await expect(storage.delete('private', 'originals/a/b')).resolves.toBeUndefined();
+  });
+
   it('URL ký đọc được trước hạn, hết hạn hoặc sửa chữ ký thì không', async () => {
     await storage.put({
       bucket: 'private',

@@ -3,6 +3,7 @@ import {
   AppUser,
   Artisan,
   AuditLog,
+  ConsentRecord,
   ContributionOffer,
   CooperativeQuotation,
   Household,
@@ -29,6 +30,7 @@ export async function clearBusinessData(em: EntityManager): Promise<void> {
   await em.nativeUpdate(JournalEntry, {}, { supersedes: null });
   const order = [
     QuotationNotice,
+    ConsentRecord,
     OutboxEvent,
     News,
     AuditLog,

@@ -22,6 +22,8 @@ export const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
 export interface ObjectStorage {
   put(input: PutObjectInput): Promise<void>;
   get(bucket: BucketKind, key: string): Promise<Uint8Array>;
+  /** Xóa một đối tượng (xóa dữ liệu cá nhân, NFR-SEC-07). Không có đối tượng thì không lỗi. */
+  delete(bucket: BucketKind, key: string): Promise<void>;
   /** URL đọc tệp riêng tư, hết hạn sau `ttlSeconds`. */
   presignGet(key: string, ttlSeconds?: number): Promise<string>;
   /** URL công khai của một đối tượng trong bucket công khai. */
