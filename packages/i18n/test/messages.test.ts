@@ -45,7 +45,7 @@ describe('từ điển vi/en', () => {
     const vietnamese = /[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i;
     // Proper nouns and the name of the Vietnamese language keep their spelling in English text.
     const allowed = ['nav.switchTo'];
-    const properNouns = /Bát Tràng/g;
+    const properNouns = /Bát Tràng|Gia Lâm/g;
     for (const [path, text] of en) {
       if (allowed.includes(path)) continue;
       expect(vietnamese.test(text.replace(properNouns, '')), `${path}: ${text}`).toBe(false);
