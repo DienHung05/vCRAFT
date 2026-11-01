@@ -5,6 +5,7 @@ import type {
   ExportedMediaDto,
   MediaAssetResponse,
   MediaReadUrlResponse,
+  MediaVariantResponse,
   PublicImageDto,
 } from '@vcraft/contracts';
 import {
@@ -34,6 +35,12 @@ export type PublicLinkRole = Exclude<MediaLinkRole, 'DOCUMENT'>;
 export interface LinkedImage {
   role: PublicLinkRole;
   image: PublicImageDto;
+}
+
+/** A processed public file: the single ~1280 px URL plus every size, for `srcset`. */
+export interface PublicMedia {
+  url: string;
+  variants: MediaVariantResponse[];
 }
 
 export interface UploadedFile {
@@ -109,15 +116,47 @@ export class MediaService {
   /** URL công khai bản WebP phù hợp (gần 1280 px) của các tệp đã xử lý xong, theo id. */
   async publicUrls(ids: readonly string[]): Promise<Map<string, string>> {
     const urls = new Map<string, string>();
-    if (ids.length === 0) return urls;
+    for (const [id, media] of await this.publicMedia(ids)) urls.set(id, media.url);
+    return urls;
+  }
+
+  /** Like {@link publicUrls}, with every public variant too. */
+  async publicMedia(ids: readonly string[]): Promise<Map<string, PublicMedia>> {
+    const found = new Map<string, PublicMedia>();
+    if (ids.length === 0) return found;
     const assets = await this.orm.em
       .fork()
       .find(MediaAsset, { id: { $in: [...ids] }, status: 'READY', visibility: 'PUBLIC' });
     for (const asset of assets) {
       const url = this.displayUrl(asset);
-      if (url) urls.set(asset.id, url);
+      if (url) found.set(asset.id, { url, variants: this.publicVariants(asset) });
     }
-    return urls;
+    return found;
+  }
+
+  /**
+   * Credit and sizes of public files, keyed by `sha256`: journal entries store only an image URL and hash,
+   * not a file id. Files that are not (yet) public and processed are absent.
+   */
+  async entryImages(
+    checksums: readonly string[],
+  ): Promise<Map<string, { credit: MediaCredit | null; variants: MediaVariantResponse[] }>> {
+    const found = new Map<
+      string,
+      { credit: MediaCredit | null; variants: MediaVariantResponse[] }
+    >();
+    const unique = [...new Set(checksums)];
+    if (unique.length === 0) return found;
+    const assets = await this.orm.em
+      .fork()
+      .find(MediaAsset, { sha256: { $in: unique }, status: 'READY', visibility: 'PUBLIC' });
+    for (const asset of assets) {
+      found.set(asset.sha256, {
+        credit: asset.credit ?? null,
+        variants: this.publicVariants(asset),
+      });
+    }
+    return found;
   }
 
   /** Processed public images linked to the targets, keyed by `targetId`, each role ordered by `position`. */
@@ -147,6 +186,9 @@ export class MediaService {
         image: {
           mediaId: link.media.id,
           url,
+          width: link.media.width ?? null,
+          height: link.media.height ?? null,
+          variants: this.publicVariants(link.media),
           alt: link.altText ?? link.media.altText ?? '',
           caption: link.caption ?? null,
           credit: link.media.credit ?? null,
@@ -241,6 +283,18 @@ export class MediaService {
     return { bytes, mime: type?.mime ?? 'application/octet-stream' };
   }
 
+  /** Every public variant, narrowest first (AVIF before WebP at the same width). */
+  private publicVariants(asset: MediaAsset): MediaVariantResponse[] {
+    return asset.variants
+      .map((variant) => ({
+        format: variant.format,
+        width: variant.width,
+        height: variant.height,
+        url: this.storage.publicUrl(variant.key),
+      }))
+      .sort((a, b) => a.width - b.width || a.format.localeCompare(b.format));
+  }
+
   /** The WebP variant closest to 1280 px. */
   private displayUrl(asset: MediaAsset): string | undefined {
     const webp = asset.variants
@@ -271,14 +325,7 @@ export class MediaService {
       height: asset.height ?? null,
       thumbhash: asset.thumbhash ?? null,
       dominantColor: asset.dominantColor ?? null,
-      variants: published
-        ? asset.variants.map((variant) => ({
-            format: variant.format,
-            width: variant.width,
-            height: variant.height,
-            url: this.storage.publicUrl(variant.key),
-          }))
-        : [],
+      variants: published ? this.publicVariants(asset) : [],
       createdAt: asset.createdAt.toISOString(),
     };
   }

@@ -19,6 +19,7 @@ export const MediaVariantResponseSchema = z.strictObject({
   height: z.int().positive(),
   url: z.url(),
 });
+export type MediaVariantResponse = z.infer<typeof MediaVariantResponseSchema>;
 
 /**
  * Trạng thái một tệp. Upload trả ngay `PROCESSING` (202); client hỏi lại cho tới `READY`.
@@ -59,10 +60,24 @@ export const MediaCreditSchema = z.object({
 });
 export type MediaCreditDto = z.infer<typeof MediaCreditSchema>;
 
-/** Public image linked through `media_link`; `credit` is null for the household's own photos. */
+/**
+ * Public variants of a processed image: AVIF and WebP at each generated width. Empty for images that are
+ * not in the media store (static demo photos), so clients fall back to the single `url`. Defaults to empty
+ * when absent, so a web build that is newer than the API it talks to still parses the response.
+ */
+export const PublicImageVariantsSchema = z.array(MediaVariantResponseSchema).default([]);
+
+/**
+ * Public image linked through `media_link`; `credit` is null for the household's own photos. `url` is the
+ * single ~1280 px WebP kept for older clients; `variants` lists every size for `srcset`, and `width`/`height`
+ * are the intrinsic size (the aspect ratio) of the image.
+ */
 export const PublicImageSchema = z.object({
   mediaId: IdSchema,
   url: z.url(),
+  width: z.int().positive().nullable().default(null),
+  height: z.int().positive().nullable().default(null),
+  variants: PublicImageVariantsSchema,
   alt: z.string(),
   caption: z.string().nullable(),
   credit: MediaCreditSchema.nullable(),

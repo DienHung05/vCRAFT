@@ -14,8 +14,13 @@ import { Artisan, Household, News, Product, ProductMaker, Workshop } from '@vcra
 import { isVisitable } from '@vcraft/domain';
 import { searchTerms } from '@vcraft/utils';
 import { AppError, notFound } from '../../../common/errors/app-error';
-import { productCover, productMediaIds, toProductDto } from '../../households/households.mapper';
-import { MediaService } from '../../media/application/media.service';
+import {
+  productCover,
+  productMediaIds,
+  toProductDto,
+  variantsOfUrl,
+} from '../../households/households.mapper';
+import { MediaService, type PublicMedia } from '../../media/application/media.service';
 import { loadJournal } from '../../production-logs/application/journal.queries';
 
 interface ProductCursor {
@@ -69,8 +74,8 @@ const ORDER_BY = {
   price_desc: { priceVnd: 'desc', id: 'asc' },
 } as const;
 
-function toCardDto(p: Product, mediaUrls: ReadonlyMap<string, string>): ProductCardDto {
-  const cover = productCover(p, mediaUrls);
+function toCardDto(p: Product, media: ReadonlyMap<string, PublicMedia>): ProductCardDto {
+  const cover = productCover(p, media);
   return {
     id: p.id,
     name: p.name,
@@ -81,6 +86,7 @@ function toCardDto(p: Product, mediaUrls: ReadonlyMap<string, string>): ProductC
     priceVnd: p.priceVnd,
     stock: p.stock,
     coverUrl: cover.url,
+    coverVariants: cover.variants,
     coverAlt: cover.alt,
     publishedAt: p.publishedAt?.toISOString() ?? null,
     household: { name: p.household.name, slug: p.household.slug },
@@ -132,9 +138,9 @@ export class CatalogService {
     );
     const page = rows.slice(0, query.limit);
     const last = page.at(-1);
-    const mediaUrls = await this.media.publicUrls(productMediaIds(page));
+    const media = await this.media.publicMedia(productMediaIds(page));
     return {
-      data: page.map((product) => toCardDto(product, mediaUrls)),
+      data: page.map((product) => toCardDto(product, media)),
       nextCursor: rows.length > query.limit && last ? encodeCursor(last, query.sort) : null,
     };
   }
@@ -157,11 +163,11 @@ export class CatalogService {
       product: toProductDto(
         product,
         makers,
-        await this.media.publicUrls(productMediaIds([product])),
+        await this.media.publicMedia(productMediaIds([product])),
       ),
       coverCredit: await this.media.productCoverCredit(product),
       household: { name: product.household.name, slug: product.household.slug },
-      journal: await loadJournal(em, product),
+      journal: await loadJournal(em, product, this.media),
     };
   }
 
@@ -174,10 +180,11 @@ export class CatalogService {
     );
     if (households.length === 0) return { data: [] };
     const ids = households.map((h) => h.id);
-    const [artisans, workshops, products] = await Promise.all([
+    const [artisans, workshops, products, banners] = await Promise.all([
       em.find(Artisan, { household: { $in: ids } }, { orderBy: { createdAt: 'asc' } }),
       em.find(Workshop, { household: { $in: ids } }, { orderBy: { createdAt: 'asc' } }),
       em.find(Product, { household: { $in: ids }, status: 'PUBLISHED' }, { fields: ['household'] }),
+      this.media.linkedImages('HOUSEHOLD', ids, ['BANNER']),
     ]);
     return {
       data: households.map((h) => {
@@ -189,6 +196,10 @@ export class CatalogService {
           village: h.village ?? null,
           craft: h.craft ?? null,
           coverUrl: h.coverUrl ?? null,
+          coverVariants: variantsOfUrl(
+            h.coverUrl ?? null,
+            (banners.get(h.id) ?? []).map((item) => item.image),
+          ),
           representative: artisans.find((a) => a.household.id === h.id)?.name ?? null,
           productCount: products.filter((p) => p.household.id === h.id).length,
           openingHours: hours?.openingHours ?? null,
