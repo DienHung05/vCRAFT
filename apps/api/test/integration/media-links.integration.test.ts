@@ -72,7 +72,7 @@ describe('Public images from media_link', () => {
     targetId: string,
     role: MediaLinkRole,
     position = 0,
-    fields: { altText?: string; caption?: string } = {},
+    fields: { altText?: string; altEn?: string; caption?: string } = {},
   ) {
     const em = db.orm.em.fork();
     em.create(MediaLink, {
@@ -166,6 +166,7 @@ describe('Public images from media_link', () => {
     // Created out of order to prove the API sorts by `position`, not by creation time.
     await link(await asset('thu-vien-2'), 'HOUSEHOLD', household.id, 'GALLERY', 2, {
       altText: 'Mô tả riêng chỗ này',
+      altEn: 'Description of this place',
       caption: 'Chú thích',
     });
     await link(
@@ -233,6 +234,7 @@ describe('Public images from media_link', () => {
         url: urlOf('thu-vien-1'),
         variants: variantsOf('thu-vien-1'),
         alt: 'Mô tả mặc định thu-vien-1',
+        altEn: null,
         caption: null,
         credit: null,
       },
@@ -241,6 +243,7 @@ describe('Public images from media_link', () => {
         url: urlOf('thu-vien-2'),
         variants: variantsOf('thu-vien-2'),
         alt: 'Mô tả riêng chỗ này',
+        altEn: 'Description of this place',
         caption: 'Chú thích',
         credit: CREDIT,
       },
@@ -249,6 +252,7 @@ describe('Public images from media_link', () => {
         url: urlOf('anh-cua-ho'),
         variants: variantsOf('anh-cua-ho'),
         alt: 'Ảnh hộ tự gắn',
+        altEn: null,
         caption: null,
         credit: null,
       },

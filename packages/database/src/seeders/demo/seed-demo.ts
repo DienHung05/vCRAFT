@@ -122,8 +122,10 @@ interface FixedProduct {
   material: string;
   dimensions: string;
   weightGrams: number;
-  coverUrl: string;
-  coverAlt: string;
+  /** Only products with a matching Commons photo have a cover; the rest show a preset illustration. */
+  coverUrl?: string;
+  coverAlt?: string;
+  coverAltEn?: string;
 }
 
 const WORKSHOP_NAME_BY_PURPOSE = {
@@ -647,7 +649,9 @@ export async function seedDemoData(
         weightGrams: 2400,
         coverUrl: '/images/demo/binh-men-lam-xam-1280.webp',
         coverAlt:
-          'Bình gốm Bát Tràng cổ cao, bụng tròn, men xám lam, đắp nổi cành cây và một người cầm cần câu',
+          'Bình cổ cao, bụng tròn, men xám lam, đắp nổi cành cây và một người cầm cần câu nhuốm vàng',
+        coverAltEn:
+          'A tall-necked, round-bellied vase in grey-blue glaze with a relief branch and a gilded figure holding a fishing rod',
       },
     ],
     [
@@ -661,8 +665,6 @@ export async function seedDemoData(
         material: 'Đất sét trắng, men trong',
         dimensions: 'Đường kính 16 cm',
         weightGrams: 420,
-        coverUrl: '/images/demo/bat-ve-sen-men-trong-1280.webp',
-        coverAlt: 'Lòng chiếc bát gốm men trong ngả ngà, giữa vẽ lam một đoá sen cách điệu có lá',
       },
     ],
     [
@@ -677,8 +679,6 @@ export async function seedDemoData(
         material: 'Đất sét, men trắng',
         dimensions: '330 ml',
         weightGrams: 310,
-        coverUrl: '/images/demo/coc-men-trang-quai-tron-1280.webp',
-        coverAlt: 'Chiếc cốc sứ trắng thân thẳng, men bóng, quai tròn bên trái, đặt trên nền trắng',
       },
     ],
   ]);
@@ -866,6 +866,7 @@ export async function seedDemoData(
         weightGrams: fixed?.weightGrams ?? 300 + variant * 40,
         coverUrl: fixed?.coverUrl ?? null,
         coverAlt: fixed?.coverAlt ?? null,
+        coverAltEn: fixed?.coverAltEn ?? null,
         status: draft ? 'DRAFT' : 'PUBLISHED',
         publishedAt: draft ? null : new Date(lastMs + DAY + 8 * HOUR),
         withdrawnReason: null,

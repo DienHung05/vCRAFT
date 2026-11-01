@@ -413,10 +413,6 @@ const artisans: Artisan[] = [
         caption: 'Bát chậu xếp rơm',
         ratio: '3/2',
         tint: '#7d7865',
-        photo: {
-          id: 'dp-bat-xep-rom',
-          alt: 'Chồng bát và chậu men trắng vẽ lam xếp cùng rơm lót trong một gian kho nhỏ',
-        },
       },
       {
         caption: 'Chậu men nâu',
@@ -612,10 +608,6 @@ const rawProducts: (Omit<Product, 'log'> & { log: RawLogEntry[] })[] = [
     oneOfAKind: false,
     stock: 12,
     tint: '#6f9a8b',
-    photo: {
-      id: 'am-men-ngoc-ly',
-      alt: 'Chiếc ấm gốm men ngọc xanh nhạt ngả vàng, thân múi dưa phủ men rạn mảnh và một đường nứt đã gắn lại, nắp hình cánh sen, vòi đầu thú và quai vòng',
-    },
     description:
       'Ấm trà men ngọc xanh nhạt, thân múi dưa, nắp hình cánh sen, quai vòng; men rạn mảnh toàn thân.',
     artisanNote: '',
@@ -635,10 +627,6 @@ const rawProducts: (Omit<Product, 'log'> & { log: RawLogEntry[] })[] = [
     oneOfAKind: false,
     stock: 40,
     tint: '#b4895a',
-    photo: {
-      id: 'bat-ve-sen-men-trong',
-      alt: 'Lòng chiếc bát gốm men trong ngả ngà, giữa vẽ lam một đoá sen cách điệu có lá, viền miệng vẽ dải hoa văn nhỏ',
-    },
     description: 'Bát vẽ tay hoa sen xanh lam trong lòng bát, men trong.',
     artisanNote: '',
     scans: 31,
@@ -657,10 +645,6 @@ const rawProducts: (Omit<Product, 'log'> & { log: RawLogEntry[] })[] = [
     oneOfAKind: false,
     stock: 300,
     tint: '#9a8064',
-    photo: {
-      id: 'coc-men-trang-quai-tron',
-      alt: 'Chiếc cốc sứ trắng thân thẳng, men bóng, quai tròn bên trái, đặt trên nền trắng',
-    },
     description: 'Cốc thân thẳng men trắng bóng, quai tròn, có thể in logo theo đơn.',
     artisanNote: '',
     scans: 12,
@@ -688,10 +672,6 @@ const news: NewsItem[] = [
     date: '2026-10-25',
     tag: 'Sự kiện',
     tint: '#a8482a',
-    photo: {
-      id: 'news-cho-gom',
-      alt: 'Dãy gian hàng gốm men lam trắng dưới mái xanh ở chợ gốm, bàn ghế che bạt phía trước',
-    },
   },
   {
     slug: 'lop-vuot-gom-cuoi-tuan',

@@ -26,7 +26,7 @@ import {
   loadTargetResolver,
   pickDisplayVariant,
 } from './link-media.js';
-import { DEMO_PHOTO_LINKS, DEMO_PHOTOS } from './photo-manifest.js';
+import { DEMO_PHOTO_LINKS, DEMO_PHOTOS, RETIRED_DEMO_PHOTO_IDS } from './photo-manifest.js';
 import { DEMO_VERIFICATION_DOCS } from './verification-docs.js';
 
 export interface DemoCheck {
@@ -216,6 +216,7 @@ async function verifyMedia(
   checkPublicUrls: boolean,
 ): Promise<void> {
   const photoIds = new Map(DEMO_PHOTOS.map((p) => [demoPhotoAssetId(p.id), p]));
+  const docIdsAll = new Set(DEMO_VERIFICATION_DOCS.map((d) => demoDocumentAssetId(d.id)));
   const photoAssets = await em.find(MediaAsset, { id: { $in: [...photoIds.keys()] } });
   const readyPhotos = photoAssets.filter(
     (a) =>
@@ -298,13 +299,33 @@ async function verifyMedia(
       : `chưa trỏ về bucket: ${badCovers.join(', ')}`,
   );
 
-  const noImage = entries.filter(
-    (e) => e.images.length === 0 || !e.images.every((i) => i.url.startsWith('http')),
+  const withImage = entries.filter((e) => e.images.length > 0);
+  add(
+    'Mốc nhật ký: không gắn ảnh chung của công đoạn vào món đồ (chuỗi băm không có ảnh)',
+    entries.length > 0 && withImage.length === 0,
+    withImage.length === 0
+      ? `${entries.length} mốc không có ảnh`
+      : `${withImage.length} mốc còn ảnh; chạy pnpm demo:media`,
+  );
+
+  const retiredIds = RETIRED_DEMO_PHOTO_IDS.map(demoPhotoAssetId);
+  const retiredAssets = await em.count(MediaAsset, { id: { $in: retiredIds } });
+  const retiredLinks = await em.count(MediaLink, { media: { $in: retiredIds } });
+  add(
+    'Ảnh đã gỡ khỏi dữ liệu mẫu không còn tệp hay liên kết nào',
+    retiredAssets === 0 && retiredLinks === 0,
+    retiredAssets === 0 && retiredLinks === 0
+      ? `${RETIRED_DEMO_PHOTO_IDS.length} ảnh đã gỡ`
+      : `còn ${retiredAssets} tệp và ${retiredLinks} liên kết; chạy pnpm demo:media`,
+  );
+
+  const noAltEn = [...links, ...householdLinks].filter((l) =>
+    photoIds.has(l.media.id) || docIdsAll.has(l.media.id) ? !l.altEn?.trim() : false,
   );
   add(
-    'Mốc nhật ký: mỗi mốc có ảnh minh hoạ của công đoạn (chuỗi băm đã tính cả ảnh)',
-    entries.length > 0 && noImage.length === 0,
-    noImage.length === 0 ? `${entries.length} mốc có ảnh` : `${noImage.length} mốc chưa có ảnh`,
+    'Mỗi liên kết ảnh của dữ liệu mẫu có mô tả tiếng Anh (alt_en)',
+    noAltEn.length === 0,
+    noAltEn.length === 0 ? 'đủ mô tả tiếng Anh' : `thiếu alt_en ở ${noAltEn.length} liên kết`,
   );
 
   const docIds = new Map(DEMO_VERIFICATION_DOCS.map((d) => [demoDocumentAssetId(d.id), d]));
@@ -330,29 +351,38 @@ async function verifyMedia(
   );
 
   if (checkPublicUrls) {
-    const urls = new Map<string, string>();
-    for (const e of entries) for (const image of e.images) urls.set(image.url, e.id);
+    // Display variants of every photo (keys) plus the covers the public API returns (full URLs). The bucket's base URL
+    // is taken from a cover, since journal entries no longer carry a photo to read it from.
+    const keys = new Set<string>();
     for (const asset of readyPhotos) {
       const variant = pickDisplayVariant(asset.variants);
-      if (variant) urls.set(variant.key, asset.id);
+      if (variant) keys.add(variant.key);
     }
-    // Đã có URL đầy đủ ở ảnh nhật ký; ảnh khác chỉ có key, nên lấy gốc URL từ một ảnh nhật ký.
-    const sample = [...urls.keys()].find((u) => u.startsWith('http'));
-    const base = sample?.replace(/\/v\/.*$/, '');
-    const targets = new Set<string>();
-    for (const url of urls.keys())
-      targets.add(url.startsWith('http') ? url : base ? `${base}/${url}` : '');
-    targets.delete('');
+    const covers = [
+      ...(await em.find(Product, { coverUrl: { $ne: null } }, { fields: ['coverUrl'] })).map(
+        (p) => p.coverUrl as string,
+      ),
+      ...(await em.find(Household, { coverUrl: { $ne: null } }, { fields: ['coverUrl'] })).map(
+        (h) => h.coverUrl as string,
+      ),
+    ].filter((u) => u.startsWith('http'));
+    const base = covers[0]?.replace(/\/v\/.*$/, '');
+    const targets = new Set<string>(covers);
+    for (const key of keys) if (base) targets.add(`${base}/${key}`);
     const broken: string[] = [];
     for (const url of targets) {
-      const ok = await fetch(url, { method: 'HEAD' }).then(
-        (r) => r.ok,
+      // GET, not HEAD: Supabase Storage answers HEAD with wrong headers.
+      const ok = await fetch(url).then(
+        async (r) => {
+          await r.body?.cancel();
+          return r.ok && (r.headers.get('content-type') ?? '').startsWith('image/');
+        },
         () => false,
       );
       if (!ok) broken.push(url);
     }
     add(
-      'Ảnh công khai mở được qua URL bucket (HEAD)',
+      'Ảnh công khai mở được qua URL bucket (GET, đúng loại ảnh)',
       targets.size > 0 && broken.length === 0,
       broken.length === 0 ? `${targets.size} URL` : `${broken.length} URL lỗi, vd. ${broken[0]}`,
     );

@@ -6,13 +6,14 @@ import {
   DEMO_DOCUMENT_OWNER_ID,
   DEMO_PHOTO_OWNER_ID,
   DEMO_PHOTOS,
-  DEMO_STAGE_PHOTOS,
   DEMO_VERIFICATION_DOCS,
   demoDocumentAssetId,
   demoPhotoAssetId,
   MediaAsset,
+  type MediaCredit,
+  MediaLink,
+  RETIRED_DEMO_PHOTO_IDS,
 } from '@vcraft/database';
-import type { MediaPurpose } from '@vcraft/domain';
 import type { ObjectStorage } from '@vcraft/storage';
 import { processMediaAsset } from '../processors/media/process-media';
 
@@ -25,21 +26,30 @@ export interface PublishDemoMediaOptions {
   specimenDir: string;
   /** Làm lại cả những tệp đã READY với cùng nội dung. */
   force?: boolean;
+  /** Only count what would be done: nothing is uploaded or written. */
+  dryRun?: boolean;
   log?: (message: string) => void;
 }
 
 export interface PublishDemoMediaSummary {
   photosUploaded: number;
   photosSkipped: number;
+  /** Photos that were up to date but whose description or credit changed in the manifest. */
+  photosMetadataUpdated: number;
   documentsUploaded: number;
+  documentsSkipped: number;
 }
 
-const sha256Of = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
+/** Field by field: a JSON column does not keep key order, so comparing the serialised text would always differ. */
+const sameCredit = (a: MediaCredit | null | undefined, b: MediaCredit): boolean =>
+  !!a &&
+  a.title === b.title &&
+  a.author === b.author &&
+  a.license === b.license &&
+  a.licenseUrl === b.licenseUrl &&
+  a.sourceUrl === b.sourceUrl;
 
-/** Ảnh công đoạn thuộc mục đích `JOURNAL`; mọi ảnh công khai khác (sản phẩm, hộ, tin) dùng `PRODUCT`, mục đích công khai còn lại của API. */
-const STAGE_PHOTO_IDS = new Set(Object.values(DEMO_STAGE_PHOTOS));
-const purposeOf = (photoId: string): MediaPurpose =>
-  STAGE_PHOTO_IDS.has(photoId) ? 'JOURNAL' : 'PRODUCT';
+const sha256Of = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 
 /**
  * Tải ảnh minh hoạ và giấy tờ mẫu lên object storage qua ĐÚNG đường của API: bản gốc vào bucket riêng tư
@@ -58,7 +68,9 @@ export async function publishDemoMedia(
   const summary: PublishDemoMediaSummary = {
     photosUploaded: 0,
     photosSkipped: 0,
+    photosMetadataUpdated: 0,
     documentsUploaded: 0,
+    documentsSkipped: 0,
   };
 
   for (const photo of DEMO_PHOTOS) {
@@ -79,6 +91,21 @@ export async function publishDemoMedia(
       existing.variants.length > 0
     ) {
       summary.photosSkipped++;
+      // Same bytes, but the manifest may carry a corrected description or credit.
+      if (existing.altText !== photo.alt || !sameCredit(existing.credit, photo.credit)) {
+        summary.photosMetadataUpdated++;
+        if (!options.dryRun) {
+          existing.altText = photo.alt;
+          existing.credit = photo.credit;
+          await em.flush();
+          log(`ảnh ${photo.id}: cập nhật mô tả/ghi công`);
+        }
+      }
+      continue;
+    }
+    if (options.dryRun) {
+      summary.photosUploaded++;
+      log(`ảnh ${photo.id}: sẽ tải lên (dry run)`);
       continue;
     }
 
@@ -87,7 +114,7 @@ export async function publishDemoMedia(
       em.create(MediaAsset, {
         id,
         ownerId: DEMO_PHOTO_OWNER_ID,
-        purpose: purposeOf(photo.id),
+        purpose: 'PRODUCT',
         visibility: 'PUBLIC',
         status: 'PROCESSING',
         mimeType: 'image/webp',
@@ -125,8 +152,23 @@ export async function publishDemoMedia(
     const sha256 = sha256Of(bytes);
     const id = demoDocumentAssetId(doc.id);
     const em = options.orm.em.fork();
+    const existingDoc = await em.findOne(MediaAsset, id);
+    if (
+      !options.force &&
+      existingDoc?.status === 'READY' &&
+      existingDoc.sha256 === sha256 &&
+      existingDoc.altText === doc.altText
+    ) {
+      // Same bytes and description: nothing to write (keeps a second run at zero changes).
+      summary.documentsSkipped++;
+      continue;
+    }
+    if (options.dryRun) {
+      summary.documentsUploaded++;
+      continue;
+    }
     const asset =
-      (await em.findOne(MediaAsset, id)) ??
+      existingDoc ??
       em.create(MediaAsset, {
         id,
         ownerId: DEMO_DOCUMENT_OWNER_ID,
@@ -186,4 +228,63 @@ export async function checkDemoMediaObjects(
     }
   }
   return problems;
+}
+
+export interface PruneSummary {
+  assetsDeleted: number;
+  linksDeleted: number;
+  objectsDeleted: number;
+  /** Assets whose objects could not all be removed from storage (the rows are kept for a retry). */
+  failed: string[];
+}
+
+/**
+ * Removes the photos that earlier versions published and the manifest has retired
+ * (`RETIRED_DEMO_PHOTO_IDS`): their `media_link` rows, `media_asset` rows and every storage object (private
+ * original and public variants). Ids are derived from the photo id, so a user's own uploads are never touched.
+ * Idempotent: once they are gone it finds nothing. Run it after `linkDemoMedia` so nothing points at them.
+ */
+export async function pruneRetiredDemoMedia(options: {
+  orm: MikroORM;
+  storage: ObjectStorage;
+  dryRun?: boolean;
+  log?: (message: string) => void;
+}): Promise<PruneSummary> {
+  const log = options.log ?? (() => undefined);
+  const summary: PruneSummary = {
+    assetsDeleted: 0,
+    linksDeleted: 0,
+    objectsDeleted: 0,
+    failed: [],
+  };
+  const ids = RETIRED_DEMO_PHOTO_IDS.map(demoPhotoAssetId);
+  const em = options.orm.em.fork();
+  const assets = await em.find(MediaAsset, { id: { $in: ids } });
+  for (const asset of assets) {
+    const links = await em.find(MediaLink, { media: asset });
+    const keys = [
+      { bucket: 'private' as const, key: asset.originalKey },
+      ...asset.variants.map((v) => ({ bucket: 'public' as const, key: v.key })),
+    ];
+    log(`ảnh đã gỡ ${asset.id}: ${links.length} liên kết, ${keys.length} đối tượng lưu trữ`);
+    if (options.dryRun) {
+      summary.assetsDeleted++;
+      summary.linksDeleted += links.length;
+      summary.objectsDeleted += keys.length;
+      continue;
+    }
+    try {
+      for (const k of keys) await options.storage.delete(k.bucket, k.key);
+    } catch (error) {
+      summary.failed.push(`${asset.id}: ${error instanceof Error ? error.message : String(error)}`);
+      continue;
+    }
+    for (const link of links) em.remove(link);
+    em.remove(asset);
+    await em.flush();
+    summary.assetsDeleted++;
+    summary.linksDeleted += links.length;
+    summary.objectsDeleted += keys.length;
+  }
+  return summary;
 }
