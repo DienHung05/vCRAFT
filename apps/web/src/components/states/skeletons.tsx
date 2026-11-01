@@ -2,6 +2,14 @@ import { Card, cn, Skeleton } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 
+/*
+ * Route `loading.tsx` and Lighthouse: a skeleton that streams first and is replaced by the real page
+ * makes the page's real text or hero a *second* LCP candidate, and Lighthouse then charges every
+ * script loaded before it to LCP (perf ~75 instead of 100). So public pages whose title or hero comes
+ * from data (home, product, news, news article, trace) have no `loading.tsx`, and list pages with
+ * a static title repeat it in the skeleton (see `CatalogHeader`). Do not add one without re-measuring.
+ */
+
 /** Standard page padding for public and Studio pages (matches the real pages, so nothing jumps). */
 export const PAGE_BOX = 'mx-auto max-w-editorial px-gutter pt-12 pb-section';
 

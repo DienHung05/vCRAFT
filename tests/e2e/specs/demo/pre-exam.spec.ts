@@ -25,6 +25,7 @@ const PAGES = [
   '/vi/ban-do',
   '/vi/tin-tuc',
   '/vi/ghi-nhan-anh',
+  '/vi/chinh-sach-quyen-rieng-tu',
   '/vi/dang-nhap',
   '/vi/dang-ky',
   '/vi/dang-ky-nghe-nhan',

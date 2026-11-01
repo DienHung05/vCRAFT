@@ -177,19 +177,21 @@ test.describe('header with a signed-in account', () => {
     });
   }
 
-  test('Studio tab bar fits a 360px phone', async ({ browser, baseURL }) => {
-    const base = (baseURL ?? '').replace(/\/$/, '');
-    const context = await browser.newContext({ baseURL: base });
-    await loginContext(context, 'household', base);
-    const page = await openAs(context, '/vi/studio', 360, 780);
-    const rights = await page
-      .getByRole('navigation', { name: /Studio|Gian hàng|Xưởng/i })
-      .getByRole('link')
-      .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().right)));
-    expect(rights).toHaveLength(5);
-    expect(Math.max(...rights)).toBeLessThanOrEqual(360);
-    await context.close();
-  });
+  for (const locale of ['vi', 'en'] as const) {
+    test(`Studio tab bar fits a 360px phone (${locale})`, async ({ browser, baseURL }) => {
+      const base = (baseURL ?? '').replace(/\/$/, '');
+      const context = await browser.newContext({ baseURL: base });
+      await loginContext(context, 'household', base);
+      const page = await openAs(context, `/${locale}/studio`, 360, 780);
+      const rights = await page
+        .getByRole('navigation', { name: /Studio/i })
+        .getByRole('link')
+        .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().right)));
+      expect(rights).toHaveLength(5);
+      expect(Math.max(...rights)).toBeLessThanOrEqual(360);
+      await context.close();
+    });
+  }
 });
 
 test.describe('keyboard and motion preferences', () => {
