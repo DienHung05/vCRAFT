@@ -1,6 +1,6 @@
 'use client';
 
-import { type SearchSuggestionsDto, SearchSuggestionsSchema } from '@vcraft/contracts';
+import type { SearchSuggestionsDto } from '@vcraft/contracts';
 import { useTranslations } from 'next-intl';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useRouter } from '@/i18n/navigation';
@@ -12,6 +12,28 @@ const browserFetch: FetchSuggestions = (query, signal) =>
   fetch(`/api/v1/search/suggest?q=${encodeURIComponent(query)}`, { signal });
 
 const NO_RESULTS: SearchSuggestionsDto = { products: [], households: [], news: [] };
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+const everyItem = (value: unknown, keys: readonly string[]) =>
+  Array.isArray(value) &&
+  value.every((v) => isRecord(v) && keys.every((k) => typeof v[k] === 'string'));
+
+/**
+ * Checks the shape of `GET /search/suggest` by hand: the contract's zod schema would put zod (~40KB
+ * gzipped) on the critical path of every public page, since the search box lives in the header.
+ */
+function parseSuggestions(value: unknown): SearchSuggestionsDto {
+  if (
+    !isRecord(value) ||
+    !everyItem(value.products, ['name', 'slug', 'household']) ||
+    !everyItem(value.households, ['name', 'slug']) ||
+    !everyItem(value.news, ['title', 'slug'])
+  ) {
+    throw new Error('Unexpected search suggestions payload');
+  }
+  return value as unknown as SearchSuggestionsDto;
+}
 
 /**
  * Ô tìm kiếm trên đầu trang (FR-CAT-04): gợi ý tức thời không dấu cho sản phẩm, hộ và tin; `Ctrl K`
@@ -54,7 +76,7 @@ export function SearchBox({
       try {
         const res = await fetchSuggestions(term, controller.signal);
         if (!res.ok) throw new Error(String(res.status));
-        setResults(SearchSuggestionsSchema.parse(await res.json()));
+        setResults(parseSuggestions(await res.json()));
         setFailed(false);
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') return;
