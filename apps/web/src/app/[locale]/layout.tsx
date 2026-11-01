@@ -6,11 +6,13 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
 import '../../styles/globals.css';
 
+// Fraunces ships only the SOFT axis: the full opsz/SOFT/WONK file was ~120KB for latin alone, and the
+// brand uses neither opsz nor WONK on any glyph in the wordmark or headings.
 // Tự host qua next/font (BRAND §4), subset vietnamese + latin. Tên biến CSS khớp
 // `--font-display/sans/mono` trong packages/ui/src/tokens/theme.css.
 const fraunces = Fraunces({
   subsets: ['vietnamese', 'latin'],
-  axes: ['opsz', 'SOFT', 'WONK'],
+  axes: ['SOFT'],
   variable: '--font-fraunces',
   display: 'swap',
 });
@@ -26,6 +28,8 @@ const jetBrainsMono = JetBrains_Mono({
   subsets: ['vietnamese', 'latin'],
   variable: '--font-jetbrains-mono',
   display: 'swap',
+  // Mono only marks trace/RFQ codes; keep its 40KB latin file out of the critical path.
+  preload: false,
 });
 
 export function generateStaticParams() {

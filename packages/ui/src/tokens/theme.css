@@ -123,7 +123,12 @@
   color-scheme: light;
   --grain-opacity: 0.04;
   --grain-size: 160px;
-  --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .11 0 0 0 0 .094 0 0 0 0 .078 0 0 0 3 -1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /*
+   * The noise is an alpha mask painted in `--color-ink` (ink grain on light paper, light dust on the
+   * dark kiln). A mask, not a background image, so the browser never picks a 160px data-URI tile as the
+   * page's Largest Contentful Paint candidate.
+   */
+  --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3 -1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 @utility grain {
@@ -133,8 +138,9 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background-image: var(--grain-image);
-    background-size: var(--grain-size);
+    background-color: var(--color-ink);
+    mask-image: var(--grain-image);
+    mask-size: var(--grain-size);
     opacity: var(--grain-opacity);
   }
 }
@@ -146,8 +152,9 @@
     inset: 0;
     z-index: 1000;
     pointer-events: none;
-    background-image: var(--grain-image);
-    background-size: var(--grain-size);
+    background-color: var(--color-ink);
+    mask-image: var(--grain-image);
+    mask-size: var(--grain-size);
     opacity: var(--grain-opacity);
   }
 }
@@ -183,8 +190,6 @@
     --color-lacquer: #c9a24d;
     /* Bóng trên nền tối: nâng viền sáng mảnh, đổ bóng sâu thay vì bóng nâu. */
     --shadow-warm: 0 1px 0 rgb(241 233 220 / 0.05), 0 12px 32px -12px rgb(0 0 0 / 0.55);
-    /* Bụi than: hạt sáng nhạt. */
-    --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .945 0 0 0 0 .914 0 0 0 0 .863 0 0 0 3 -1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 }
 :root[data-theme="dark"] {
@@ -199,7 +204,6 @@
   --color-celadon: #9cc7b8;
   --color-lacquer: #c9a24d;
   --shadow-warm: 0 1px 0 rgb(241 233 220 / 0.05), 0 12px 32px -12px rgb(0 0 0 / 0.55);
-  --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .945 0 0 0 0 .914 0 0 0 0 .863 0 0 0 3 -1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /*
