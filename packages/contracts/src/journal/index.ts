@@ -1,7 +1,7 @@
 import { JOURNAL_STAGES } from '@vcraft/domain';
 import { z } from 'zod';
 import { IdSchema, IsoDateSchema, IsoDateTimeSchema, VersionSchema } from '../common';
-import { MediaCreditSchema } from '../media';
+import { MediaCreditSchema, PublicImageVariantsSchema } from '../media';
 
 /** Nhật ký sản xuất và mốc đính chính (vCRAFT-9hg.4). */
 
@@ -42,8 +42,16 @@ export const JournalEntryResponseSchema = z.object({
   stage: JournalStageSchema,
   declaredDate: IsoDateSchema,
   note: z.string(),
-  /** `credit` comes from `media_asset` by `sha256` and is not part of the hash chain; null for the household's own photos. */
-  images: z.array(JournalImageSchema.extend({ credit: MediaCreditSchema.nullable() })),
+  /**
+   * `credit` and `variants` come from `media_asset` by `sha256` and are not part of the hash chain.
+   * `credit` is null for the household's own photos; `variants` is empty when the file is not in the media store.
+   */
+  images: z.array(
+    JournalImageSchema.extend({
+      credit: MediaCreditSchema.nullable(),
+      variants: PublicImageVariantsSchema,
+    }),
+  ),
   skipReason: z.string().nullable(),
   /** `seq` của mốc mà mốc này đính chính. */
   supersedesSeq: z.int().nullable(),

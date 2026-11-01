@@ -68,6 +68,9 @@ const ARTICLE: NewsDetailDto = {
   cover: {
     mediaId: ID,
     url: 'https://cdn.test/a.webp',
+    width: null,
+    height: null,
+    variants: [],
     alt: 'Ảnh men',
     caption: null,
     credit: null,

@@ -56,9 +56,13 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
   const household = result.data;
   const representative = household.artisans[0];
   const coverAlt = household.banner?.alt || t('coverAlt', { household: household.name });
-  const cover = photoFromUrl(household.banner?.url ?? household.coverUrl, coverAlt);
+  const cover = household.banner
+    ? photoFromUrl(household.banner.url, coverAlt, household.banner.variants)
+    : photoFromUrl(household.coverUrl, coverAlt, household.coverVariants);
   const portrait = household.portrait;
-  const portraitPhoto = portrait ? photoFromUrl(portrait.url, portrait.alt) : undefined;
+  const portraitPhoto = portrait
+    ? photoFromUrl(portrait.url, portrait.alt, portrait.variants)
+    : undefined;
   const featured = household.products[0];
   const story = household.history.split(/\n{2,}/).filter(Boolean);
   const gallery = household.gallery.flatMap((item) => (item.url ? [item] : []));
@@ -138,7 +142,8 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
                 tint={tintOf(portrait.url)}
                 ratio="4/5"
                 {...slotPhoto(portraitPhoto)}
-                sizes="(min-width: 640px) 11rem, 100vw"
+                // Below 640px the card is the page width minus gutters and padding; 80vw keeps 1.75x phones on the 640w file.
+                sizes="(min-width: 640px) 11rem, 80vw"
               />
               <PhotoCredit id={portraitPhoto?.photo?.id} credit={portrait.credit} />
             </figure>
@@ -231,13 +236,13 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
       {/* Thư viện ảnh xưởng kiểu masonry (FR-ART-04). */}
       {gallery.length > 0 ? (
         <section
-          className="mx-auto max-w-editorial px-gutter pb-section"
+          className="cv-auto mx-auto max-w-editorial px-gutter pb-section"
           aria-labelledby="gallery-title"
         >
           <h2 id="gallery-title">{t('gallery')}</h2>
           <div className="mt-8 columns-1 gap-5 sm:columns-2 lg:columns-3">
             {gallery.map((item) => {
-              const image = photoFromUrl(item.url, item.alt);
+              const image = photoFromUrl(item.url, item.alt, item.variants);
               return (
                 <figure key={item.url} className="mb-5 break-inside-avoid">
                   <ImageSlot
@@ -246,7 +251,8 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
                     ratio="3/2"
                     {...(item.caption ? { caption: item.caption } : {})}
                     {...slotPhoto(image)}
-                    sizes="(min-width: 1024px) 28vw, (min-width: 640px) 45vw, 100vw"
+                    // 88vw (not 100vw): the single column is ~92vw wide, and this keeps 1.75x phones on the 640w file.
+                    sizes="(min-width: 1024px) 28vw, (min-width: 640px) 45vw, 88vw"
                   />
                   <PhotoCredit id={image?.photo?.id} credit={item.credit} />
                 </figure>

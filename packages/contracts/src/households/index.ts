@@ -9,7 +9,7 @@ import {
 import { z } from 'zod';
 import { IdSchema, IsoDateSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
 import { JournalResponseSchema } from '../journal';
-import { MediaCreditSchema, PublicImageSchema } from '../media';
+import { MediaCreditSchema, PublicImageSchema, PublicImageVariantsSchema } from '../media';
 
 /** Hộ sản xuất, xưởng, nghệ nhân, sản phẩm và các quyết định duyệt / xuất bản (vCRAFT-9hg.2, 9hg.3). */
 
@@ -268,9 +268,18 @@ export const ProductResponseSchema = z.object({
   weightGrams: z.int().nullable(),
   artisanNote: z.string().nullable(),
   coverUrl: z.string().nullable(),
+  /** Sizes of the cover when it is an uploaded photo; empty for a preset cover. */
+  coverVariants: PublicImageVariantsSchema,
   coverAlt: z.string().nullable(),
   /** `url` trống khi ảnh còn chờ xử lý; trang công khai bỏ qua các ảnh đó. */
-  images: z.array(z.object({ mediaId: IdSchema, url: z.string().nullable(), alt: z.string() })),
+  images: z.array(
+    z.object({
+      mediaId: IdSchema,
+      url: z.string().nullable(),
+      variants: PublicImageVariantsSchema,
+      alt: z.string(),
+    }),
+  ),
   status: ProductStatusSchema,
   publishedAt: IsoDateTimeSchema.nullable(),
   makers: z.array(MakerCreditSchema),
@@ -288,6 +297,8 @@ export const PublicHouseholdResponseSchema = z.object({
   village: z.string().nullable(),
   craft: z.string().nullable(),
   coverUrl: z.string().nullable(),
+  /** Sizes of `coverUrl` when it is a processed media-store image; empty otherwise. */
+  coverVariants: PublicImageVariantsSchema,
   /** Portrait and banner linked through `media_link`. */
   portrait: PublicImageSchema.nullable(),
   banner: PublicImageSchema.nullable(),
@@ -304,6 +315,8 @@ export const PublicHouseholdResponseSchema = z.object({
     z.object({
       mediaId: IdSchema.nullable(),
       url: z.string().nullable(),
+      /** Empty for static demo photos, which exist at one size. */
+      variants: PublicImageVariantsSchema,
       alt: z.string(),
       caption: z.string().nullable(),
       credit: MediaCreditSchema.nullable(),

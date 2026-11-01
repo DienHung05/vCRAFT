@@ -207,7 +207,11 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
                     tint={tintOf(h.slug)}
                     ratio="3/4"
                     {...slotPhoto(
-                      photoFromUrl(h.coverUrl, common('householdCoverAlt', { household: h.name })),
+                      photoFromUrl(
+                        h.coverUrl,
+                        common('householdCoverAlt', { household: h.name }),
+                        h.coverVariants,
+                      ),
                     )}
                     sizes="(min-width: 768px) 30vw, 100vw"
                     className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
@@ -332,7 +336,13 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
                     alt={n.cover?.alt || n.title}
                     tint={tintOf(n.slug)}
                     ratio="3/2"
-                    {...slotPhoto(photoFromUrl(n.cover?.url ?? null, n.cover?.alt || n.title))}
+                    {...slotPhoto(
+                      photoFromUrl(
+                        n.cover?.url ?? null,
+                        n.cover?.alt || n.title,
+                        n.cover?.variants,
+                      ),
+                    )}
                   />
                   <PhotoCredit credit={n.cover?.credit} />
                 </div>

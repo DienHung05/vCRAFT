@@ -17,6 +17,7 @@ import {
 import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, notFound } from '../../../common/errors/app-error';
+import { MediaService } from '../../media/application/media.service';
 import { loadEntries, loadJournal, toChainEntry, toJournalDto } from './journal.queries';
 
 /**
@@ -28,12 +29,15 @@ import { loadEntries, loadJournal, toChainEntry, toJournalDto } from './journal.
  */
 @Injectable()
 export class JournalService {
-  constructor(private readonly orm: MikroORM) {}
+  constructor(
+    private readonly orm: MikroORM,
+    private readonly media: MediaService,
+  ) {}
 
   async get(actor: Actor, productId: string): Promise<JournalDto> {
     const em = this.orm.em.fork();
     const product = await this.ownProduct(em, actor, productId);
-    return loadJournal(em, product);
+    return loadJournal(em, product, this.media);
   }
 
   async append(
@@ -83,7 +87,7 @@ export class JournalService {
       });
       entry.hash = await computeEntryHash(product.id, toChainEntry(entry));
       await em.flush();
-      return toJournalDto(em, product, [...entries, entry]);
+      return toJournalDto(product, [...entries, entry], this.media);
     });
   }
 
@@ -114,7 +118,7 @@ export class JournalService {
       });
       await this.reseal(product, entries, entry.seq);
       await em.flush();
-      return toJournalDto(em, product, entries);
+      return toJournalDto(product, entries, this.media);
     });
   }
 
@@ -134,7 +138,7 @@ export class JournalService {
       }
       await this.reseal(product, remaining, entry.seq);
       await em.flush();
-      return toJournalDto(em, product, remaining);
+      return toJournalDto(product, remaining, this.media);
     });
   }
 

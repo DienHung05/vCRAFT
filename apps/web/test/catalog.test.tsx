@@ -38,6 +38,7 @@ function card(id: string, overrides: Partial<ProductCardDto> = {}): ProductCardD
     priceVnd: 100_000,
     stock: 3,
     coverUrl: null,
+    coverVariants: [],
     coverAlt: null,
     publishedAt: null,
     household: { name: 'Hộ A', slug: 'ho-a' },
@@ -92,6 +93,7 @@ describe('view models', () => {
   it('keeps the real images and credits the API returns on journal entries', () => {
     const image = {
       url: 'https://cdn.test/nung.webp',
+      variants: [],
       sha256: 'a'.repeat(64),
       credit: {
         title: 'File:Nung.jpg',

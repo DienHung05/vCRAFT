@@ -328,7 +328,7 @@ export class HouseholdsService {
     return toProductDto(
       product,
       (await this.makersOf(em, [product])).get(product.id),
-      await this.media.publicUrls(productMediaIds([product])),
+      await this.media.publicMedia(productMediaIds([product])),
     );
   }
 
@@ -573,11 +573,11 @@ export class HouseholdsService {
       product: toProductDto(
         product,
         (await this.makersOf(em, [product])).get(product.id),
-        await this.media.publicUrls(productMediaIds([product])),
+        await this.media.publicMedia(productMediaIds([product])),
       ),
       coverCredit: await this.media.productCoverCredit(product),
       household: { name: product.household.name, slug: product.household.slug },
-      journal: await loadJournal(em, product),
+      journal: await loadJournal(em, product, this.media),
       scanCount: await em.count(TraceScan, { product }),
     };
   }
@@ -643,7 +643,7 @@ export class HouseholdsService {
       products,
       idNumberMasked: this.maskedIdNumber(household),
       makers: await this.makersOf(em, products),
-      mediaUrls: await this.media.publicUrls(mediaIds),
+      media: await this.media.publicMedia(mediaIds),
       linked: linked.get(household.id) ?? [],
     };
   }

@@ -49,6 +49,8 @@ describe('Public images from media_link', () => {
       status: 'READY',
       mimeType: 'image/webp',
       sizeBytes: 1,
+      width: 1280,
+      height: 800,
       sha256: sha256Of(name),
       originalKey: `originals/${name}`,
       variants: [
@@ -85,6 +87,12 @@ describe('Public images from media_link', () => {
   }
 
   const urlOf = (name: string) => t.storage.publicUrl(`v/${name}-1280.webp`);
+  /** What `asset()` stores, as the public API lists it: narrowest first, AVIF before WebP at one width. */
+  const variantsOf = (name: string) => [
+    { format: 'webp', width: 320, height: 200, url: t.storage.publicUrl(`v/${name}-320.webp`) },
+    { format: 'avif', width: 1280, height: 800, url: t.storage.publicUrl(`v/${name}-1280.avif`) },
+    { format: 'webp', width: 1280, height: 800, url: t.storage.publicUrl(`v/${name}-1280.webp`) },
+  ];
 
   beforeAll(async () => {
     db = await startTestDatabase();
@@ -212,6 +220,9 @@ describe('Public images from media_link', () => {
     expect(res.status).toBe(200);
     expect(res.body.portrait).toMatchObject({
       url: urlOf('chan-dung'),
+      width: 1280,
+      height: 800,
+      variants: variantsOf('chan-dung'),
       alt: 'Mô tả mặc định chan-dung',
       credit: CREDIT,
     });
@@ -220,6 +231,7 @@ describe('Public images from media_link', () => {
       {
         mediaId: expect.any(String),
         url: urlOf('thu-vien-1'),
+        variants: variantsOf('thu-vien-1'),
         alt: 'Mô tả mặc định thu-vien-1',
         caption: null,
         credit: null,
@@ -227,6 +239,7 @@ describe('Public images from media_link', () => {
       {
         mediaId: expect.any(String),
         url: urlOf('thu-vien-2'),
+        variants: variantsOf('thu-vien-2'),
         alt: 'Mô tả riêng chỗ này',
         caption: 'Chú thích',
         credit: CREDIT,
@@ -234,6 +247,7 @@ describe('Public images from media_link', () => {
       {
         mediaId: ownMediaId,
         url: urlOf('anh-cua-ho'),
+        variants: variantsOf('anh-cua-ho'),
         alt: 'Ảnh hộ tự gắn',
         caption: null,
         credit: null,
@@ -278,6 +292,7 @@ describe('Public images from media_link', () => {
     );
     expect(bySlug.get('tin-co-anh')).toMatchObject({
       url: urlOf('bia-tin'),
+      variants: variantsOf('bia-tin'),
       alt: 'Mô tả mặc định bia-tin',
       credit: CREDIT,
     });
@@ -298,8 +313,14 @@ describe('Public images from media_link', () => {
         url: 'https://cdn.test/cong-doan.webp',
         sha256: sha256Of('cong-doan'),
         credit: CREDIT,
+        variants: variantsOf('cong-doan'),
       },
-      { url: 'https://cdn.test/tu-chup.webp', sha256: sha256Of('tu-chup'), credit: null },
+      {
+        url: 'https://cdn.test/tu-chup.webp',
+        sha256: sha256Of('tu-chup'),
+        credit: null,
+        variants: variantsOf('tu-chup'),
+      },
     ]);
 
     const detail = await t.request({ method: 'GET', url: '/products/binh-co-anh' });
@@ -315,5 +336,50 @@ describe('Public images from media_link', () => {
     await em.flush();
     const detail = await t.request({ method: 'GET', url: '/products/binh-co-anh' });
     expect(detail.body.coverCredit).toBeNull();
+  });
+
+  it('uploaded product photos and the catalog and household lists carry their sizes', async () => {
+    const photo = await asset('anh-san-pham', { credit: null });
+    const em = db.orm.em.fork();
+    const product = await em.findOneOrFail(Product, { slug: 'binh-co-anh' });
+    product.coverUrl = null;
+    product.images = [{ mediaId: photo, alt: 'Bình trên bàn gỗ' }];
+    const household = await em.findOneOrFail(Household, { slug: 'gom-anh' });
+    household.coverUrl = urlOf('bia-ho');
+    await em.flush();
+
+    const detail = await t.request({ method: 'GET', url: '/products/binh-co-anh' });
+    expect(detail.body.product.coverUrl).toBe(urlOf('anh-san-pham'));
+    expect(detail.body.product.coverVariants).toEqual(variantsOf('anh-san-pham'));
+    expect(detail.body.product.images).toEqual([
+      {
+        mediaId: photo,
+        url: urlOf('anh-san-pham'),
+        variants: variantsOf('anh-san-pham'),
+        alt: 'Bình trên bàn gỗ',
+      },
+    ]);
+
+    const list = await t.request({ method: 'GET', url: '/products' });
+    const card = list.body.data.find((p: { slug: string }) => p.slug === 'binh-co-anh');
+    expect(card.coverVariants).toEqual(variantsOf('anh-san-pham'));
+
+    const households = await t.request({ method: 'GET', url: '/households' });
+    const summary = households.body.data.find((h: { slug: string }) => h.slug === 'gom-anh');
+    expect(summary.coverUrl).toBe(urlOf('bia-ho'));
+    expect(summary.coverVariants).toEqual(variantsOf('bia-ho'));
+
+    const profile = await t.request({ method: 'GET', url: '/households/gom-anh' });
+    expect(profile.body.coverVariants).toEqual(variantsOf('bia-ho'));
+  });
+
+  it('a preset cover URL has no variants', async () => {
+    const em = db.orm.em.fork();
+    const product = await em.findOneOrFail(Product, { slug: 'binh-co-anh' });
+    product.coverUrl = '/images/demo/am-men-ngoc-ly-1280.webp';
+    await em.flush();
+    const detail = await t.request({ method: 'GET', url: '/products/binh-co-anh' });
+    expect(detail.body.product.coverUrl).toBe('/images/demo/am-men-ngoc-ly-1280.webp');
+    expect(detail.body.product.coverVariants).toEqual([]);
   });
 });

@@ -3,6 +3,7 @@ import type {
   HouseholdDto,
   MakerCreditDto,
   MapPinDto,
+  MediaVariantResponse,
   ProductDto,
   PublicHouseholdDto,
   WorkshopDto,
@@ -14,7 +15,7 @@ import {
   profileCompleteness,
   splitWorkshops,
 } from '@vcraft/domain';
-import type { LinkedImage, PublicLinkRole } from '../media/application/media.service';
+import type { LinkedImage, PublicLinkRole, PublicMedia } from '../media/application/media.service';
 
 const toNumber = (value: string | null | undefined): number | null =>
   value === null || value === undefined ? null : Number(value);
@@ -57,22 +58,26 @@ export function toMakerCreditDto(m: ProductMaker): MakerCreditDto {
 export const productMediaIds = (products: readonly Product[]): string[] =>
   products.flatMap((p) => (p.images ?? []).map((image) => image.mediaId));
 
-/** Bìa là bìa riêng (dữ liệu mẫu) hoặc ảnh đầu tiên đã xử lý xong. */
-export function productCover(p: Product, mediaUrls?: ReadonlyMap<string, string>) {
-  if (p.coverUrl) return { url: p.coverUrl, alt: p.coverAlt ?? null };
-  const ready = (p.images ?? []).find((image) => mediaUrls?.has(image.mediaId));
-  return ready
-    ? { url: mediaUrls?.get(ready.mediaId) ?? null, alt: ready.alt }
-    : { url: null, alt: null };
+/**
+ * Bìa là bìa riêng (dữ liệu mẫu) hoặc ảnh đầu tiên đã xử lý xong. A preset cover is a plain URL with
+ * no variants; an uploaded photo brings the sizes of its media file.
+ */
+export function productCover(p: Product, media?: ReadonlyMap<string, PublicMedia>) {
+  if (p.coverUrl) return { url: p.coverUrl, variants: [], alt: p.coverAlt ?? null };
+  const ready = (p.images ?? []).find((image) => media?.has(image.mediaId));
+  const file = ready && media?.get(ready.mediaId);
+  return ready && file
+    ? { url: file.url, variants: file.variants, alt: ready.alt }
+    : { url: null, variants: [], alt: null };
 }
 
 /** `makers` phải đã sắp theo `position` và nạp sẵn `artisan`. */
 export function toProductDto(
   p: Product,
   makers: readonly ProductMaker[] = [],
-  mediaUrls?: ReadonlyMap<string, string>,
+  media?: ReadonlyMap<string, PublicMedia>,
 ): ProductDto {
-  const cover = productCover(p, mediaUrls);
+  const cover = productCover(p, media);
   return {
     id: p.id,
     version: p.version,
@@ -90,10 +95,12 @@ export function toProductDto(
     weightGrams: p.weightGrams ?? null,
     artisanNote: p.artisanNote ?? null,
     coverUrl: cover.url,
+    coverVariants: cover.variants,
     coverAlt: cover.alt,
     images: (p.images ?? []).map((image) => ({
       mediaId: image.mediaId,
-      url: mediaUrls?.get(image.mediaId) ?? null,
+      url: media?.get(image.mediaId)?.url ?? null,
+      variants: media?.get(image.mediaId)?.variants ?? [],
       alt: image.alt,
     })),
     status: p.status,
@@ -130,8 +137,8 @@ export interface HouseholdParts {
   products: Product[];
   /** Ghi công theo `product.id`. */
   makers: ReadonlyMap<string, ProductMaker[]>;
-  /** URL công khai của ảnh đã xử lý xong, theo `mediaId`. */
-  mediaUrls?: ReadonlyMap<string, string>;
+  /** Ảnh công khai đã xử lý xong (URL và các cỡ), theo `mediaId`. */
+  media?: ReadonlyMap<string, PublicMedia>;
   /** Portrait, banner and gallery images linked through `media_link`. */
   linked?: readonly LinkedImage[];
   /** Masked citizen ID number for the owner and admin views (never the full number). */
@@ -145,16 +152,35 @@ const linkedOf = (parts: HouseholdParts, role: PublicLinkRole) =>
 function toGalleryDto(h: Household, parts: HouseholdParts) {
   return (h.gallery ?? []).map((item) => ({
     mediaId: item.mediaId ?? null,
-    url: item.url ?? (item.mediaId ? (parts.mediaUrls?.get(item.mediaId) ?? null) : null),
+    url: item.url ?? (item.mediaId ? (parts.media?.get(item.mediaId)?.url ?? null) : null),
+    variants: item.mediaId ? (parts.media?.get(item.mediaId)?.variants ?? []) : [],
     alt: item.alt,
     caption: item.caption ?? null,
     credit: null,
   }));
 }
 
+/** Sizes of the image served at `url`, looked up among the household's processed images. */
+export function variantsOfUrl(
+  url: string | null,
+  images: readonly { url: string | null; variants: readonly MediaVariantResponse[] }[],
+): MediaVariantResponse[] {
+  const match = url ? images.find((image) => image.url === url) : undefined;
+  return match ? [...match.variants] : [];
+}
+
 export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): PublicHouseholdDto {
-  const gallery = [...linkedOf(parts, 'GALLERY'), ...toGalleryDto(h, parts)];
+  const linkedGallery = linkedOf(parts, 'GALLERY').map((image) => ({
+    mediaId: image.mediaId,
+    url: image.url,
+    variants: image.variants,
+    alt: image.alt,
+    caption: image.caption,
+    credit: image.credit,
+  }));
+  const gallery = [...linkedGallery, ...toGalleryDto(h, parts)];
   const [banner] = linkedOf(parts, 'BANNER');
+  const coverUrl = h.coverUrl ?? banner?.url ?? gallery.find((item) => item.url)?.url ?? null;
   return {
     id: h.id,
     name: h.name,
@@ -163,7 +189,8 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
     village: h.village ?? null,
     craft: h.craft ?? null,
     // Chưa chọn bìa riêng thì dùng ảnh xưởng đầu tiên đã xử lý xong.
-    coverUrl: h.coverUrl ?? banner?.url ?? gallery.find((item) => item.url)?.url ?? null,
+    coverUrl,
+    coverVariants: variantsOfUrl(coverUrl, [...(banner ? [banner] : []), ...gallery]),
     portrait: linkedOf(parts, 'PORTRAIT')[0] ?? null,
     banner: banner ?? null,
     foundedYear: h.foundedYear ?? null,
@@ -178,7 +205,7 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
       showrooms: splitWorkshops(parts.workshops).showrooms.map(toWorkshopDto),
       productionWorkshops: splitWorkshops(parts.workshops).production.map(toWorkshopDto),
     },
-    products: parts.products.map((p) => toProductDto(p, parts.makers.get(p.id), parts.mediaUrls)),
+    products: parts.products.map((p) => toProductDto(p, parts.makers.get(p.id), parts.media)),
   };
 }
 

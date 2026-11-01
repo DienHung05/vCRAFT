@@ -1,6 +1,7 @@
 import type { JournalDto, JournalEntryDto, ProductCardDto, WorkshopDto } from '@vcraft/contracts';
 import type { ChainEntry, JournalStage } from '@vcraft/domain';
 import { PHOTO_BY_ID } from '@/lib/demo/photo-credits';
+import type { ImageVariant } from '@/lib/images';
 
 /** Tham chiếu ảnh có giấy phép trong `/images/demo` (kèm ghi công) hoặc ảnh tải lên qua kho media. */
 export interface PhotoView {
@@ -8,17 +9,23 @@ export interface PhotoView {
   photo?: { id: string; alt: string };
   /** Ảnh bất kỳ khác (URL công khai). */
   src?: string;
+  /** Sizes of `src` for `srcset`; empty or absent when the file exists at one size only. */
+  variants?: readonly ImageVariant[];
   alt: string;
 }
 
 const DEMO_PHOTO_URL = /^\/images\/demo\/(.+)-\d+\.(?:webp|avif)$/;
 
 /** Đọc `coverUrl` của API: đường dẫn ảnh có giấy phép được đổi lại thành tham chiếu để giữ ghi công. */
-export function photoFromUrl(url: string | null, alt: string): PhotoView | undefined {
+export function photoFromUrl(
+  url: string | null,
+  alt: string,
+  variants: readonly ImageVariant[] = [],
+): PhotoView | undefined {
   if (!url) return undefined;
   const id = DEMO_PHOTO_URL.exec(url)?.[1];
   if (id && PHOTO_BY_ID.has(id)) return { photo: { id, alt }, alt };
-  return { src: url, alt };
+  return variants.length > 0 ? { src: url, alt, variants } : { src: url, alt };
 }
 
 /** Thuộc tính ảnh truyền thẳng vào `<ImageSlot>`. */
@@ -26,6 +33,7 @@ export function slotPhoto(view: PhotoView | undefined) {
   return {
     ...(view?.photo && { photo: view.photo }),
     ...(view?.src && { src: view.src }),
+    ...(view?.variants?.length && { variants: view.variants }),
   };
 }
 
@@ -55,7 +63,7 @@ export function toProductCardView(dto: ProductCardDto): ProductCardView {
     tint: tintOf(dto.traceCode),
     price: dto.priceVnd,
     oneOfAKind: dto.kind === 'OBJECT',
-    image: photoFromUrl(dto.coverUrl, dto.coverAlt ?? dto.name),
+    image: photoFromUrl(dto.coverUrl, dto.coverAlt ?? dto.name, dto.coverVariants),
   };
 }
 

@@ -2,6 +2,7 @@ import { PRODUCT_CATEGORIES } from '@vcraft/domain';
 import { z } from 'zod';
 import { CursorPageQuerySchema, cursorPageSchema, IsoDateTimeSchema, SlugSchema } from '../common';
 import { OpeningIntervalSchema, ProductKindSchema } from '../households';
+import { PublicImageVariantsSchema } from '../media';
 
 /** Danh mục công khai (FR-CAT-01 … 04): lọc, sắp xếp, phân trang con trỏ, tìm không dấu. */
 
@@ -38,6 +39,7 @@ export const ProductCardSchema = z.object({
   priceVnd: z.int().nonnegative(),
   stock: z.int().nonnegative(),
   coverUrl: z.string().nullable(),
+  coverVariants: PublicImageVariantsSchema,
   coverAlt: z.string().nullable(),
   publishedAt: IsoDateTimeSchema.nullable(),
   household: z.object({ name: z.string(), slug: z.string() }),
@@ -55,6 +57,7 @@ export const HouseholdSummarySchema = z.object({
   village: z.string().nullable(),
   craft: z.string().nullable(),
   coverUrl: z.string().nullable(),
+  coverVariants: PublicImageVariantsSchema,
   representative: z.string().nullable(),
   productCount: z.int().nonnegative(),
   /** Giờ của nơi đón khách đầu tiên; `null` là hộ không có nơi đón khách. */
