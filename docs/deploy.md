@@ -111,6 +111,7 @@ Dashboard → Authentication:
 
 ## 7. Giữ API thức vào ngày thi
 
+- Production currently runs on the free plans with a keep-alive job; see §11 (and §10 for the wizard that moves it to `starter`).
 - **Khuyến nghị: gói trả phí `starter`** (đã đặt trong `render.yaml`). Service luôn chạy, không ngủ, nên request đầu tiên không bị cold start. Gói `free` ngủ sau 15 phút, lần gọi đầu mất vài chục giây và vượt hạn 30 giây của proxy Vercel, nên lúc đó trang tin tức hiện "không khả dụng" và thao tác bị lỗi.
 - Gói `free` cũng không có `preDeployCommand`, tức mất migration tự động. Không dùng `free` cho production.
 - **Phương án thêm, rẻ: keep-alive.** Dùng dịch vụ giám sát bên ngoài (vd. UptimeRobot, cron-job.org) gọi `GET https://<URL Render>/api/v1/health` mỗi 5 phút. Chỉ bổ sung cho `starter` (phát hiện sự cố sớm), không thay thế nếu để `free`.
@@ -139,3 +140,78 @@ Mở `https://<domain>/vi/tin-tuc`: phải có bài (API gọi được từ ser
 - API không khởi động, log nói *Không đọc được DB_SSL_CA_FILE*: thiếu file CA trên `main` hoặc sai đường dẫn (§2).
 - Trang đăng nhập về `localhost` hoặc báo URL không hợp lệ: Site URL / Redirect URLs trong Supabase (§6).
 - Sự cố trước mặt giám khảo: không sửa tại chỗ, chuyển sang phương án dự phòng (demo README §8).
+
+## 10. Release wizard (steps only a human can do)
+
+`scripts/release-wizard.sh` walks the owner through the release steps that need a person: linking Vercel to GitHub, the optional Render paid plan and custom domain, Supabase Auth URLs, SMTP, the field-encryption key backup, rotating the Storage S3 key, the privacy mailbox, and the release verification checklist (GH#39, GH#40). Each step opens the right page, says what to click, and verifies the result with a real check where one is possible.
+
+```bash
+scripts/release-wizard.sh              # run; finished steps are skipped on re-run
+scripts/release-wizard.sh --status     # which steps are done
+scripts/release-wizard.sh --reset s7   # run step s7 again (--reset all clears everything)
+```
+
+Requirements: `curl`, `jq`, `git`, `node`, the repo's `.env` (override with `ENV_FILE=...`), the Vercel CLI login (`npx vercel login`, or `VERCEL_TOKEN`) and the Render CLI login (`render login`, or `RENDER_API_KEY`). Optional: `gh` (reads the CI result), `pg_dump` and `aws` (backup helper).
+
+| Step | What it does | Automated checks |
+| --- | --- | --- |
+| s1 Vercel ↔ GitHub | You connect GitHub to Vercel and grant the Vercel app access to the repo; the script links the project through the API and sets the production branch to `main` | Vercel account has a GitHub connection; `link.repo` is this repo; production branch is `main` |
+| s2 Render paid plan (optional) | You add a card; the script moves `vcraft-api` to `starter`, restores the `render.yaml` build/start/pre-deploy commands and creates the `vcraft-worker` background worker | Plan is `starter`; worker exists and its deploy is live; API `/health` |
+| s3 Custom domain (optional) | Adds the domain to Vercel, shows the DNS records (TTL 60), then switches `NEXT_PUBLIC_SITE_URL` and `APP_URL` and redeploys both | Vercel domain config is not misconfigured; HTTPS and the API rewrite answer on the domain |
+| s4 Supabase Auth URLs | You set Site URL and Redirect URLs in the dashboard | Reads `mailer_autoconfirm` from the public Auth settings; the URLs themselves need your confirmation (no public API) |
+| s5 SMTP | You verify a sender and enter the credentials (password hidden); the script builds `SMTP_URL`, sets it and `MAIL_FROM` on Render and redeploys | Real SMTP login with nodemailer (no mail sent); Render value fingerprint matches |
+| s6 Field encryption key | Confirms Render has the same `FIELD_ENCRYPTION_KEYS` as `.env`, helps you copy it to a password manager without printing it | Format check and SHA-256 fingerprint (first 8 hex chars) of both copies |
+| s7 Rotate the S3 key | New key → test it → update `.env` (backup first, mode 600) and Render → redeploy → test → you revoke the old key → re-test | Real `ListObjectsV2` on both buckets with the new key; the old key must be rejected afterwards |
+| s8 Privacy mailbox | Sets `NEXT_PUBLIC_PRIVACY_EMAIL` on Vercel (production + preview) and redeploys the web from `origin/main` | The privacy page contains the `mailto:` link |
+| s9 Release verification | Runs the GH#40 checks and asks you to confirm the physical ones | Health through the rewrite and direct, 308 for `/q/DF6P3WZE`, HSTS and CSP via GET, news list, no cold start, CI integration matrix (PostgreSQL + MySQL); optional `demo:verify`, `demo:auth -- --check`, `demo:e2e:preexam`. Never runs `demo:reset` |
+
+Progress is kept in `~/.vcraft-release-wizard.state` (override with `WIZARD_STATE_FILE`): step ids and non-secret values only. Secrets are read with `read -s`, sent to the APIs through stdin and never printed or stored in the state file.
+
+## 11. Production on the free plans (current setup)
+
+Render's free web service has no background workers, no pre-deploy command, and 750 instance-hours per month for the whole workspace. Production therefore currently runs like this (service `vcraft-api`, workspace without a payment card):
+
+- **Worker inside the API container.** The start command runs the BullMQ worker in a restart loop in the background and the API in the foreground:
+
+  ```bash
+  sh -c '(while true; do node --max-old-space-size=192 apps/worker/dist/main.js; echo "vcraft-worker exited, restarting in 5s" >&2; sleep 5; done) & exec node --max-old-space-size=256 apps/api/dist/main.js'
+  ```
+
+  The API is `exec`'d so it replaces the shell and receives Render's SIGTERM directly; the heap caps keep both processes inside the 512 MB limit. There is no separate `vcraft-worker` service, so the worker's log lines are in the `vcraft-api` log.
+- **Migrations in the build command.** With no pre-deploy command, `pnpm --filter @vcraft/database db:migrate` is appended to the build command (after `turbo run build --filter=@vcraft/api... --filter=@vcraft/worker...`). A failing migration fails the build and the previous version keeps running, the same guarantee as pre-deploy.
+- **Shared database.** `FIELD_ENCRYPTION_KEYS` on Render is the same key as the root `.env`, because production uses the Supabase database whose demo households were encrypted with it (wizard step s6 compares them).
+- **No mail yet.** `SMTP_URL` and `MAIL_FROM` are unset until wizard step s5; mail jobs fail until then.
+- **Keep-alive with `pg_cron`.** A free web service sleeps after 15 minutes; a Supabase job pings it every 10 minutes. It also keeps the Supabase Free project from pausing. Enable the `pg_cron` and `pg_net` extensions (Dashboard → Database → Extensions), then in the SQL editor:
+
+  ```sql
+  -- create
+  select cron.schedule(
+    'vcraft-keep-alive',
+    '*/10 * * * *',
+    $$select net.http_get('https://vcraft-api.onrender.com/api/v1/products?limit=1')$$
+  );
+
+  -- inspect: job, last runs, last HTTP responses
+  select jobid, jobname, schedule, active from cron.job where jobname = 'vcraft-keep-alive';
+  select status, return_message, start_time from cron.job_run_details
+    where jobid = (select jobid from cron.job where jobname = 'vcraft-keep-alive')
+    order by start_time desc limit 5;
+  select id, status_code, created from net._http_response order by created desc limit 5;
+
+  -- remove
+  select cron.unschedule('vcraft-keep-alive');
+  ```
+
+  A 200 every 10 minutes in `net._http_response` means it works. If the Render URL changes (service renamed or recreated), unschedule and create the job again with the new URL.
+- **750-hour budget.** One always-on free service uses about 744 hours in a 31-day month, so it fits, but only one free web service fits. Do not add a second free web service to the same workspace, and do not leave a preview or test service running; the free instance suspends for the rest of the month when the budget runs out. Check usage under Render → Account → Billing.
+- **Limits you accept.** 512 MB RAM shared by API and worker, cold start of tens of seconds if the keep-alive misses a beat, the Redis free Key Value is not durable (the outbox in the database remains the source of truth).
+
+### Moving back to the starter Blueprint
+
+Do this after adding a payment card. Wizard step s2 does it through the API; by hand:
+
+1. Render → `vcraft-api` → Settings → Instance Type → **Starter**.
+2. Same page, set the commands to match `render.yaml`: Build `corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm exec turbo run build --filter=@vcraft/api...` (no `db:migrate`, no worker filter), Pre-Deploy `corepack enable && pnpm --filter @vcraft/database db:migrate`, Start `node apps/api/dist/main.js`.
+3. New → **Background Worker** named `vcraft-worker`: same repo and branch, Frankfurt, **Starter**, Build `corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm exec turbo run build --filter=@vcraft/worker...`, Start `node apps/worker/dist/main.js`. Link the `vcraft-shared` env group and copy the worker variables listed in `render.yaml` from `vcraft-api` (same `FIELD_ENCRYPTION_KEYS`, `SMTP_URL`, `MAIL_FROM`, `REDIS_URL`).
+4. Deploy `vcraft-api`; check the worker log for `queues ready: media, mail, outbox`.
+5. Remove the keep-alive job (SQL above) or keep it: it is harmless, and still stops the Supabase project from pausing.
