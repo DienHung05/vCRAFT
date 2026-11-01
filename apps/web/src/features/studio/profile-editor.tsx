@@ -10,20 +10,23 @@ import { prepareImage, sendMedia } from '@/features/media/prepare-image';
 import { UploadList } from '@/features/media/upload-list';
 import { type UploadItem, UploadQueue } from '@/features/media/upload-queue';
 import { browserAccessToken } from '@/lib/api/live-session';
+import { notify } from '@/lib/notify';
 import { HouseholdGate } from './household-gate';
 import { inputClass, WorkshopEditor } from './workshop-editor';
 
-type SaveState = 'idle' | 'saving' | 'saved' | 'stale' | 'failed';
+type SaveState = 'idle' | 'saving' | 'stale' | 'failed';
 
 /** Một khối sửa có nút lưu riêng; bản cũ (409) tự tải lại để không ghi đè người khác. */
 function useSection(household: HouseholdDto, client: StudioClient, reload: () => Promise<void>) {
+  const common = useTranslations('studio');
   const [state, setState] = useState<SaveState>('idle');
   const save = async (body: UpdateHouseholdProfileRequest) => {
     setState('saving');
     try {
       await client.updateProfile(household.version, body);
       await reload();
-      setState('saved');
+      setState('idle');
+      notify.success(common('saved'));
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         await reload();
@@ -51,11 +54,6 @@ function SaveBar({
       <Button type="button" disabled={state === 'saving' || disabled} onClick={onSave}>
         {t('save')}
       </Button>
-      {state === 'saved' ? (
-        <p role="status" className="text-small text-glaze">
-          {t('saved')}
-        </p>
-      ) : null}
       {state === 'stale' ? (
         <p role="alert" className="text-small text-seal">
           {t('stale')}

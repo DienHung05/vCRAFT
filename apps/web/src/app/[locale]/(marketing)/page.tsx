@@ -4,6 +4,7 @@ import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
 import { PhotoCreditsNote } from '@/components/photo-credits-note';
+import { EmptyState } from '@/components/states/empty-state';
 import {
   fetchHouseholds,
   fetchProducts,
@@ -22,6 +23,7 @@ import { resolveLocale } from '@/lib/locale';
 const HERO_PHOTO: DemoPhotoRef | undefined = {
   id: 'hero-binh-chu-dau',
   alt: 'Chiếc bình gốm men ngà vẽ lam hoa mẫu đơn, cổ cao thon, bụng tròn, đặt trong một cửa hàng gốm',
+  altKey: 'hero-binh-chu-dau',
 };
 
 const DAY_STAGES: readonly { stage: LogStage; tint: string }[] = [
@@ -176,6 +178,18 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
         </div>
         {householdsResult.status !== 'ok' ? (
           <DataUnavailable className="mt-10 flex flex-col items-start gap-3" />
+        ) : featured.length === 0 ? (
+          <EmptyState
+            className="mt-6"
+            illustration="vase"
+            headingLevel="h3"
+            title={t('artisans.empty')}
+            action={
+              <Link href="/san-pham" className={buttonVariants({ variant: 'secondary' })}>
+                {t('hero.ctaExplore')}
+              </Link>
+            }
+          />
         ) : (
           <ul className="mt-10 grid gap-8 md:grid-cols-3">
             {featured.map((h, i) => (
@@ -214,7 +228,9 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
               {t('map.title')}
             </h2>
             <p className="mt-3 text-paper/75">{t('map.lead')}</p>
-            {pinsResult.status === 'ok' ? (
+            {pinsResult.status === 'ok' && visitable.length === 0 ? (
+              <p className="mt-8 text-paper/75">{t('map.empty')}</p>
+            ) : pinsResult.status === 'ok' ? (
               <ul className="mt-8 space-y-3">
                 {visitable.map((pin) => {
                   const state = pinOpenState(pin, now);
@@ -291,7 +307,19 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
         <div className="flex items-end justify-between gap-4">
           <h2 id="news-title">{t('news.title')}</h2>
         </div>
-        {newsResult.status === 'ok' ? (
+        {newsResult.status === 'ok' && newsResult.page.data.length === 0 ? (
+          <EmptyState
+            className="mt-6"
+            illustration="scroll"
+            headingLevel="h3"
+            title={t('news.empty')}
+            action={
+              <Link href="/tin-tuc" className={buttonVariants({ variant: 'secondary' })}>
+                {t('news.all')}
+              </Link>
+            }
+          />
+        ) : newsResult.status === 'ok' ? (
           <ul className="mt-8 grid gap-6 md:grid-cols-3">
             {newsResult.page.data.map((n) => (
               <li key={n.slug} className="flex flex-col gap-3">

@@ -2,10 +2,16 @@
 
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
 import type { CoordinationDto, RfqResponse } from '@vcraft/contracts';
-import { Badge, Button, Card } from '@vcraft/ui';
+import { Badge, Button, buttonVariants, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { EmptyState } from '@/components/states/empty-state';
+import { ErrorState } from '@/components/states/error-state';
+import { DashboardSkeleton } from '@/components/states/skeletons';
+import { Link } from '@/i18n/navigation';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
+import { notify } from '@/lib/notify';
 import { AllocationBoard, type BoardSubmitPayload } from './allocation-board';
 
 type LiveState =
@@ -29,9 +35,13 @@ export function LiveCoordination({
 }) {
   const t = useTranslations('admin.live');
   const { client, loading } = useQuotationClient(provided);
-  if (loading) return <p>{t('loading')}</p>;
+  if (loading) return <DetailSkeletonBlock label={t('loading')} />;
   if (!client) return <p>{t('signIn')}</p>;
   return <CoordinationWorkspace key={rfqId} rfqId={rfqId} client={client} />;
+}
+
+function DetailSkeletonBlock({ label }: { label: string }) {
+  return <DashboardSkeleton label={label} className="" withTitle />;
 }
 
 function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
@@ -40,6 +50,9 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
   const [state, setState] = useState<LiveState>({ kind: 'loading' });
   const [refresh, setRefresh] = useState(0);
   const [claiming, setClaiming] = useState(false);
+  const [dialog, setDialog] = useState<'start' | 'receive' | 'cancel' | null>(null);
+  const [reason, setReason] = useState('');
+  const [reasonMissing, setReasonMissing] = useState(false);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refresh explicitly reloads after claims, stale writes and retries.
   useEffect(() => {
@@ -93,19 +106,29 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
     };
   }, [client, rfqId, refresh]);
 
-  if (state.kind === 'loading') return <p>{t('loading')}</p>;
-  if (state.kind === 'unauthenticated' || state.kind === 'notFound')
+  if (state.kind === 'loading') return <DetailSkeletonBlock label={t('loading')} />;
+  if (state.kind === 'unauthenticated') return <p>{t('signIn')}</p>;
+  if (state.kind === 'notFound')
     return (
-      <Card className="p-6">
-        <p>{t(state.kind === 'unauthenticated' ? 'signIn' : 'notFound')}</p>
-      </Card>
+      <EmptyState
+        illustration="magnifier"
+        title={t('notFound')}
+        action={
+          <Link href="/admin/dieu-phoi" className={buttonVariants({ variant: 'secondary' })}>
+            {t('backToQueue')}
+          </Link>
+        }
+      />
     );
   if (state.kind === 'error')
     return (
-      <Card className="p-6">
-        <p role="alert">{t('loadFailed')}</p>
-        <Button onClick={() => setRefresh((value) => value + 1)}>{t('retry')}</Button>
-      </Card>
+      <ErrorState
+        message={t('loadFailed')}
+        onRetry={() => {
+          setState({ kind: 'loading' });
+          setRefresh((value) => value + 1);
+        }}
+      />
     );
 
   if (state.kind === 'claimable') {
@@ -115,6 +138,7 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
       try {
         await client.coordinate(rfqId, state.request.version);
         setRefresh((value) => value + 1);
+        notify.success(t('claimedToast'));
       } catch {
         setState({ kind: 'error' });
       } finally {
@@ -151,6 +175,7 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
     try {
       await client.startProduction(rfqId, request.version);
       setRefresh((value) => value + 1);
+      notify.success(t('productionStartedToast'));
     } catch {
       setState({ kind: 'error' });
     }
@@ -159,16 +184,27 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
     try {
       await client.confirmReceipt(rfqId, request.version);
       setRefresh((value) => value + 1);
+      notify.success(t('receivedToast'));
     } catch {
       setState({ kind: 'error' });
     }
   };
+  const closeDialog = () => {
+    setDialog(null);
+    setReason('');
+    setReasonMissing(false);
+  };
   const cancel = async () => {
-    const reason = window.prompt(t('cancelReason'));
-    if (reason === null || reason.trim() === '') return;
+    const text = reason.trim();
+    if (!text) {
+      setReasonMissing(true);
+      return;
+    }
+    closeDialog();
     try {
-      await client.cancelOrder(rfqId, request.version, { reason: reason.trim() });
+      await client.cancelOrder(rfqId, request.version, { reason: text });
       setRefresh((value) => value + 1);
+      notify.success(t('cancelledToast'));
     } catch {
       setState({ kind: 'error' });
     }
@@ -226,14 +262,70 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
         onSubmit={submit}
       />
       {request.status === 'ACCEPTED' ? (
-        <Button onClick={() => void startProduction()}>{t('startProduction')}</Button>
+        <Button className="self-start" onClick={() => setDialog('start')}>
+          {t('startProduction')}
+        </Button>
       ) : null}
       {request.status === 'IN_PRODUCTION' ? (
         <div className="flex gap-2">
-          <Button onClick={() => void receive()}>{t('receive')}</Button>
-          <Button onClick={() => void cancel()}>{t('cancelOrder')}</Button>
+          <Button onClick={() => setDialog('receive')}>{t('receive')}</Button>
+          <Button variant="secondary" onClick={() => setDialog('cancel')}>
+            {t('cancelOrder')}
+          </Button>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={dialog === 'start'}
+        title={t('startTitle')}
+        confirmLabel={t('startProduction')}
+        cancelLabel={t('back')}
+        onClose={closeDialog}
+        onConfirm={() => {
+          closeDialog();
+          void startProduction();
+        }}
+      >
+        <p className="text-ash">{t('startText')}</p>
+      </ConfirmDialog>
+      <ConfirmDialog
+        open={dialog === 'receive'}
+        title={t('receiveTitle')}
+        confirmLabel={t('receive')}
+        cancelLabel={t('back')}
+        onClose={closeDialog}
+        onConfirm={() => {
+          closeDialog();
+          void receive();
+        }}
+      >
+        <p className="text-ash">{t('receiveText')}</p>
+      </ConfirmDialog>
+      <ConfirmDialog
+        open={dialog === 'cancel'}
+        tone="seal"
+        title={t('cancelOrder')}
+        confirmLabel={t('cancelOrder')}
+        cancelLabel={t('back')}
+        onClose={closeDialog}
+        onConfirm={() => void cancel()}
+      >
+        <label className="flex flex-col gap-2 text-small">
+          <span className="text-ash">{t('cancelReason')}</span>
+          <textarea
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            rows={3}
+            maxLength={500}
+            className="rounded-input border border-ink/20 bg-paper p-3 text-body"
+          />
+        </label>
+        {reasonMissing ? (
+          <p role="alert" className="text-small text-seal">
+            {t('reasonRequired')}
+          </p>
+        ) : null}
+      </ConfirmDialog>
     </div>
   );
 }

@@ -6,8 +6,12 @@ import { PRODUCT_CATEGORIES } from '@vcraft/domain';
 import { Button } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Breadcrumbs } from '@/components/breadcrumbs';
+import { ConsentCheckbox } from '@/components/consent-checkbox';
+import { FormSkeleton } from '@/components/states/skeletons';
 import { useRouter } from '@/i18n/navigation';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
+import { notify } from '@/lib/notify';
 import {
   clearStoredDraft,
   EMPTY_RFQ_FORM,
@@ -35,7 +39,7 @@ export function RfqForm({
 }) {
   const t = useTranslations('rfq.form');
   const { client, loading } = useQuotationClient(provided);
-  if (loading) return <p className="px-gutter pt-8">{t('saving')}</p>;
+  if (loading) return <FormSkeleton label={t('saving')} />;
   if (!client) return <p className="px-gutter pt-8">{t('signIn')}</p>;
   return <Form client={client} draft={draft} />;
 }
@@ -43,10 +47,14 @@ export function RfqForm({
 function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse | undefined }) {
   const t = useTranslations('rfq.form');
   const categories = useTranslations('catalog.categories');
+  const rfq = useTranslations('rfq');
+  const common = useTranslations('common');
   const router = useRouter();
   const [values, setValues] = useState<RfqFormValues>(() =>
     draft ? rfqFormValues(draft) : EMPTY_RFQ_FORM,
   );
+  // A saved draft already went through consent when it was first created.
+  const [consent, setConsent] = useState(draft !== undefined);
   const [touched, setTouched] = useState(false);
   const [showProblems, setShowProblems] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>('idle');
@@ -98,7 +106,8 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
     if (!touched) return;
     const timer = window.setTimeout(() => {
       if (!draft) writeStoredDraft({ id: saved.current?.id ?? null, values });
-      if (Object.keys(rfqFormProblems(values)).length > 0) {
+      // Nothing personal (the delivery address) leaves this browser before the buyer consents.
+      if (!consent || Object.keys(rfqFormProblems(values)).length > 0) {
         setSaveState('local');
         return;
       }
@@ -115,7 +124,7 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
         });
     }, AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
-  }, [values, touched, draft, saveToServer]);
+  }, [values, touched, consent, draft, saveToServer]);
 
   useEffect(() => {
     if (values.coordinate || households !== null) return;
@@ -144,7 +153,7 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
 
   const send = async () => {
     setSendError(null);
-    if (Object.keys(problems).length > 0) {
+    if (Object.keys(problems).length > 0 || !consent) {
       setShowProblems(true);
       return;
     }
@@ -155,6 +164,7 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
       if (!target) throw new Error('draft was not saved');
       const sent = await client.submitRequest(target.id, target.version);
       clearStoredDraft();
+      notify.success(t('sentToast'));
       router.push({ pathname: '/yeu-cau-bao-gia/[code]', params: { code: sent.id } });
     } catch (error) {
       saving.current = Promise.resolve();
@@ -194,6 +204,14 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
     >
       {draft ? null : (
         <header className="flex flex-col gap-2">
+          <Breadcrumbs
+            className="mb-2"
+            items={[
+              { label: common('home'), href: '/' },
+              { label: rfq('allRequests'), href: '/yeu-cau-bao-gia' },
+              { label: t('title') },
+            ]}
+          />
           <h1 className="text-h1">{t('title')}</h1>
           <p className="text-ash">{t('lead')}</p>
         </header>
@@ -359,6 +377,16 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
           {problem('households')}
         </fieldset>
       )}
+      <ConsentCheckbox
+        id="rfq-consent"
+        purpose="quote"
+        checked={consent}
+        onChange={(event) => {
+          setTouched(true);
+          setConsent(event.target.checked);
+        }}
+        error={showProblems && !consent ? t('consentRequired') : undefined}
+      />
       <div className="flex flex-wrap items-center gap-4">
         <Button type="submit" disabled={sending}>
           {t(sending ? 'sending' : 'send')}

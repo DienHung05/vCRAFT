@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
+import { Breadcrumbs } from '@/components/breadcrumbs';
 import { LiveCoordination } from '@/features/admin/live-coordination';
-import { Link } from '@/i18n/navigation';
 import { isRfqUuid } from '@/lib/api/rfq-id';
 import { resolveLocale } from '@/lib/locale';
 
@@ -21,14 +21,19 @@ export default async function CoordinationPage({
   await resolveLocale(params);
   const { code } = await params;
   if (!isRfqUuid(code)) notFound();
-  const t = await getTranslations('admin.coordinationQueue');
+  const [t, nav] = await Promise.all([
+    getTranslations('admin.coordinationQueue'),
+    getTranslations('admin.nav'),
+  ]);
   return (
     <article className="mx-auto flex max-w-6xl flex-col gap-8">
-      <nav aria-label={t('breadcrumb')} className="text-small text-ash">
-        <Link href="/admin/dieu-phoi" className="hover:text-clay">
-          {t('title')}
-        </Link>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: nav('overview'), href: '/admin' },
+          { label: t('title'), href: '/admin/dieu-phoi' },
+          { label: t('detail') },
+        ]}
+      />
       <LiveCoordination rfqId={code} />
     </article>
   );

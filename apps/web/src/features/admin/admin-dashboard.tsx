@@ -2,9 +2,11 @@
 
 import { type AdminClient, ApiError, createAdminClient } from '@vcraft/api-client';
 import type { AdminDashboardDto } from '@vcraft/contracts';
-import { Button, Card } from '@vcraft/ui';
+import { Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
+import { ErrorState } from '@/components/states/error-state';
+import { DashboardSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
 import { useLiveClient } from '@/lib/api/live-session';
 
@@ -56,15 +58,12 @@ export function AdminDashboard({ client: provided }: { client?: AdminClient }) {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-h2">{t('title')}</h1>
-      {state === 'loading' ? <p role="status">{t('loading')}</p> : null}
+      {state === 'loading' ? (
+        <DashboardSkeleton label={t('loading')} className="" withTitle={false} />
+      ) : null}
       {state === 'signed-out' ? <p>{t('signIn')}</p> : null}
       {state === 'error' && !data ? (
-        <div role="alert" className="flex flex-col items-start gap-3">
-          <p>{t('failed')}</p>
-          <Button type="button" variant="secondary" onClick={() => void load()}>
-            {t('retry')}
-          </Button>
-        </div>
+        <ErrorState message={t('failed')} onRetry={() => void load()} />
       ) : null}
       {data ? (
         <>

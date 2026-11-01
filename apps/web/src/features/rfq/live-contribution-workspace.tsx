@@ -5,7 +5,11 @@ import type { ContributionDto, RfqResponse } from '@vcraft/contracts';
 import { Button } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { ErrorState } from '@/components/states/error-state';
+import { FormSkeleton } from '@/components/states/skeletons';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
+import { notify } from '@/lib/notify';
 import { ContributionForm, type ContributionFormValues } from './contribution-form';
 
 type State =
@@ -23,7 +27,7 @@ export function LiveContributionWorkspace({
 }) {
   const t = useTranslations('contribution');
   const { client, loading } = useQuotationClient(provided);
-  if (loading) return <p>{t('loading')}</p>;
+  if (loading) return <FormSkeleton label={t('loading')} className="" fields={3} />;
   if (!client) return <p>{t('signIn')}</p>;
   return <ContributionWorkspace key={rfqId} rfqId={rfqId} client={client} />;
 }
@@ -33,6 +37,7 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [refresh, setRefresh] = useState(0);
   const [declineFailed, setDeclineFailed] = useState(false);
+  const [confirmDecline, setConfirmDecline] = useState(false);
   // biome-ignore lint/correctness/useExhaustiveDependencies: refresh explicitly reloads the contribution after a saved edit or withdrawal.
   useEffect(() => {
     let active = true;
@@ -71,9 +76,19 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
     };
   }, [client, rfqId, refresh]);
 
-  if (state.kind === 'loading') return <p>{t('loading')}</p>;
+  if (state.kind === 'loading')
+    return <FormSkeleton label={t('loading')} className="" fields={3} />;
   if (state.kind === 'unauthenticated') return <p>{t('signIn')}</p>;
-  if (state.kind === 'error') return <p role="alert">{t('notFound')}</p>;
+  if (state.kind === 'error')
+    return (
+      <ErrorState
+        message={t('notFound')}
+        onRetry={() => {
+          setState({ kind: 'loading' });
+          setRefresh((value) => value + 1);
+        }}
+      />
+    );
   const { request, contribution } = state;
   const closed =
     !['SENT', 'BIDDING'].includes(request.status) ||
@@ -102,6 +117,7 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
     try {
       await client.declineInvitation(rfqId);
       setRefresh((value) => value + 1);
+      notify.success(t('declinedToast'));
     } catch {
       setDeclineFailed(true);
     }
@@ -117,12 +133,26 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
           type="button"
           variant="secondary"
           className="self-start"
-          onClick={() => void decline()}
+          onClick={() => setConfirmDecline(true)}
         >
           {t('decline')}
         </Button>
       ) : null}
       {declineFailed ? <p role="alert">{t('sendFailed')}</p> : null}
+      <ConfirmDialog
+        open={confirmDecline}
+        tone="seal"
+        title={t('declineTitle')}
+        confirmLabel={t('decline')}
+        cancelLabel={t('cancel')}
+        onClose={() => setConfirmDecline(false)}
+        onConfirm={() => {
+          setConfirmDecline(false);
+          void decline();
+        }}
+      >
+        <p className="text-ash">{t('declineText')}</p>
+      </ConfirmDialog>
       <ContributionForm
         key={contribution?.version ?? 'new'}
         rfqCode={request.id}

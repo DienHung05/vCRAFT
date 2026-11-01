@@ -21,6 +21,7 @@ export const VALIDATION_KEYS = [
   'locationRequired',
   'latInvalid',
   'lngInvalid',
+  'consentRequired',
 ] as const;
 export type ValidationKey = (typeof VALIDATION_KEYS)[number];
 
@@ -52,7 +53,14 @@ export const signInSchema = z.object({
 });
 export type SignInValues = z.infer<typeof signInSchema>;
 
-export const registerSchema = z.object({ email: emailSchema, password: newPasswordSchema });
+/** Consent to the privacy policy (NFR-SEC-07) is required to create an account; checked in the browser. */
+const consentSchema = z.boolean().refine((value) => value === true, key('consentRequired'));
+
+export const registerSchema = z.object({
+  email: emailSchema,
+  password: newPasswordSchema,
+  consent: consentSchema,
+});
 export type RegisterValues = z.infer<typeof registerSchema>;
 
 export const forgotPasswordSchema = z.object({ email: emailSchema });

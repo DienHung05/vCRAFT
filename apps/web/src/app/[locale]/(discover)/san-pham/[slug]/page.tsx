@@ -2,10 +2,12 @@ import { Badge, buttonVariants, Card, cn, SealMark, VaseFigure } from '@vcraft/u
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations } from 'next-intl/server';
+import { Breadcrumbs } from '@/components/breadcrumbs';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
 import { PhotoCreditsNote } from '@/components/photo-credits-note';
+import { UsdRateNote, UsdReference } from '@/components/usd-reference';
 import { fetchProduct, fetchProducts } from '@/features/catalog/exhibition-api';
 import { ProductCard } from '@/features/catalog/product-card';
 import {
@@ -60,15 +62,14 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
 
   return (
     <article className="mx-auto max-w-editorial px-gutter pt-8">
-      <nav aria-label={t('breadcrumb')} className="mb-8 text-small text-ash">
-        <Link href="/san-pham" className="hover:text-ink">
-          {t('allProducts')}
-        </Link>
-        <span aria-hidden="true"> / </span>
-        <span aria-current="page" className="text-ink">
-          {product.name}
-        </span>
-      </nav>
+      <Breadcrumbs
+        className="mb-8"
+        items={[
+          { label: common('home'), href: '/' },
+          { label: t('allProducts'), href: '/san-pham' },
+          { label: product.name },
+        ]}
+      />
 
       <div className="grid gap-10 md:grid-cols-12 md:gap-14">
         <div className="md:col-span-7">
@@ -139,7 +140,9 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
               {product.priceVnd > 0
                 ? format.number(product.priceVnd, 'vnd')
                 : common('priceOnRequest')}
+              <UsdReference vnd={product.priceVnd} className="ml-3 font-sans text-body text-ash" />
             </p>
+            <UsdRateNote />
             <p className="text-small text-ash">
               {product.stock > 0 ? t('stock', { count: product.stock }) : t('soldOut')}
             </p>

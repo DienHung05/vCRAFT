@@ -2,10 +2,14 @@
 
 import type { AdminClient } from '@vcraft/api-client';
 import type { CoordinationQueueItemDto } from '@vcraft/contracts';
-import { Badge, Button, Card } from '@vcraft/ui';
+import { Badge, Button, buttonVariants, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
+import { EmptyState } from '@/components/states/empty-state';
+import { ErrorState } from '@/components/states/error-state';
+import { ListSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
+import { notify } from '@/lib/notify';
 import { useAdminClient } from './admin-dashboard';
 
 const REFRESH_MS = 30_000;
@@ -47,6 +51,7 @@ export function CoordinationQueue({ client: provided }: { client?: AdminClient }
     setClaimFailed(false);
     try {
       await client.claimCoordination(row.id, row.version);
+      notify.success(t('claimedToast'));
     } catch {
       setClaimFailed(true);
     } finally {
@@ -63,16 +68,20 @@ export function CoordinationQueue({ client: provided }: { client?: AdminClient }
       </header>
       {claimFailed ? <p role="alert">{t('claimFailed')}</p> : null}
       {failed ? (
-        <div role="alert" className="flex flex-col items-start gap-3">
-          <p>{t('failed')}</p>
-          <Button type="button" variant="secondary" onClick={() => void load()}>
-            {t('retry')}
-          </Button>
-        </div>
+        <ErrorState message={t('failed')} onRetry={() => void load()} />
       ) : rows === null ? (
-        <p role="status">{t('loading')}</p>
+        <ListSkeleton label={t('loading')} className="" rows={3} withHeader={false} />
       ) : rows.length === 0 ? (
-        <p className="text-ash">{t('empty')}</p>
+        <EmptyState
+          illustration="scroll"
+          title={t('empty')}
+          description={t('emptyHint')}
+          action={
+            <Link href="/admin" className={buttonVariants({ variant: 'secondary' })}>
+              {t('emptyAction')}
+            </Link>
+          }
+        />
       ) : (
         <ul className="flex flex-col gap-3" data-testid="coordination-queue">
           {rows.map((row) => (

@@ -4,6 +4,7 @@ import { MEDIA_MAX_BYTES } from '@vcraft/domain';
 import { Button, buttonVariants, cn } from '@vcraft/ui';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
+import { ConsentCheckbox } from '@/components/consent-checkbox';
 import { getPathname } from '@/i18n/navigation';
 import { browserAccountClient } from '@/lib/auth/supabase-browser';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
@@ -46,6 +47,8 @@ export function DocumentUpload() {
   const locale = useLocale();
   const [items, setItems] = useState<readonly UploadItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  // Identity papers are only collected after the representative agrees to the privacy policy.
+  const [consent, setConsent] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
   const patch = (id: string, change: Partial<Omit<UploadItem, 'id' | 'file'>>) =>
@@ -99,11 +102,18 @@ export function DocumentUpload() {
 
   return (
     <div className="flex flex-col gap-5">
+      <ConsentCheckbox
+        id="documents-consent"
+        purpose="household"
+        checked={consent}
+        onChange={(event) => setConsent(event.target.checked)}
+      />
       <div className="flex flex-col items-start gap-2">
         <label
           className={cn(
             buttonVariants({ variant: 'secondary' }),
             'cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-glaze',
+            !consent && 'cursor-not-allowed opacity-50',
           )}
         >
           {t('pick')}
@@ -111,12 +121,13 @@ export function DocumentUpload() {
             ref={input}
             type="file"
             multiple
+            disabled={!consent}
             accept={ACCEPTED_TYPES.join(',')}
             className="sr-only"
             onChange={(event) => void add(event.currentTarget.files)}
           />
         </label>
-        <p className="text-small text-ash">{t('drop')}</p>
+        <p className="text-small text-ash">{consent ? t('drop') : t('consentFirst')}</p>
       </div>
 
       {items.length === 0 ? (

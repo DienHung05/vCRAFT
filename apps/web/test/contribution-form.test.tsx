@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ContributionForm, type ContributionFormProps } from '@/features/rfq/contribution-form';
+import { confirmDialog } from './confirm';
 import { renderVi } from './render';
 
 const CLOSING = '2026-11-10T10:00:00.000Z';
@@ -77,7 +78,7 @@ describe('ContributionForm (đề xuất tham gia, GH#10)', () => {
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2));
   });
 
-  it('sửa đề xuất hiện nút cập nhật, kèm rút; đã rút thì chỉ xem', () => {
+  it('sửa đề xuất hiện nút cập nhật, kèm rút; đã rút thì chỉ xem', async () => {
     const onWithdraw = vi.fn().mockResolvedValue(undefined);
     renderVi(
       <ContributionForm
@@ -95,7 +96,9 @@ describe('ContributionForm (đề xuất tham gia, GH#10)', () => {
     expect(screen.getByRole('button', { name: 'Cập nhật đề xuất' })).toBeTruthy();
     const withdraw = screen.getByRole('button', { name: 'Rút đề xuất' }) as HTMLButtonElement;
     fireEvent.click(withdraw);
-    expect(onWithdraw).toHaveBeenCalledTimes(1);
+    expect(onWithdraw).not.toHaveBeenCalled();
+    confirmDialog('Rút đề xuất');
+    await waitFor(() => expect(onWithdraw).toHaveBeenCalledTimes(1));
   });
 
   it('không có callback thì ghi nhãn demo rõ ràng: mô phỏng, chưa lưu', () => {

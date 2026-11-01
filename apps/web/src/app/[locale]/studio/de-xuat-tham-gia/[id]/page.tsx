@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
+import { Breadcrumbs } from '@/components/breadcrumbs';
 import { LiveAllocationWorkspace } from '@/features/orders/live-allocation-workspace';
 import { LiveContributionWorkspace } from '@/features/rfq/live-contribution-workspace';
-import { Link } from '@/i18n/navigation';
 import { isRfqUuid } from '@/lib/api/rfq-id';
 import { resolveLocale } from '@/lib/locale';
 
@@ -27,17 +27,20 @@ export default async function ContributionPage({
   await resolveLocale(params);
   const { id } = await params;
   if (!isRfqUuid(id)) notFound();
-  const t = await getTranslations('contribution');
+  const [t, nav] = await Promise.all([
+    getTranslations('contribution'),
+    getTranslations('studio.nav'),
+  ]);
 
   return (
     <article className="mx-auto flex max-w-3xl flex-col gap-8 px-gutter pt-8">
-      <header className="flex flex-col gap-2">
-        <nav aria-label={t('title', { code: id })} className="text-small text-ash">
-          <Link href="/studio/bao-gia" className="hover:text-ink">
-            {t('allInvitations')}
-          </Link>
-        </nav>
-      </header>
+      <Breadcrumbs
+        items={[
+          { label: nav('home'), href: '/studio' },
+          { label: t('allInvitations'), href: '/studio/bao-gia' },
+          { label: t('breadcrumb') },
+        ]}
+      />
       <LiveContributionWorkspace rfqId={id} />
       <LiveAllocationWorkspace rfqId={id} />
     </article>

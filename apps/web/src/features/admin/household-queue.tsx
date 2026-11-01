@@ -6,6 +6,9 @@ import { HOUSEHOLD_STATUSES, type HouseholdStatus } from '@vcraft/domain';
 import { Badge, Button } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
+import { EmptyState } from '@/components/states/empty-state';
+import { ErrorState } from '@/components/states/error-state';
+import { TableSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
 import { useAdminClient } from './admin-dashboard';
 
@@ -85,16 +88,30 @@ export function HouseholdQueue({ client: provided }: { client?: AdminClient }) {
         </label>
       </form>
       {failed ? (
-        <div role="alert" className="flex flex-col items-start gap-3">
-          <p>{t('failed')}</p>
-          <Button type="button" variant="secondary" onClick={() => void load()}>
-            {t('retry')}
-          </Button>
-        </div>
+        <ErrorState message={t('failed')} onRetry={() => void load()} />
       ) : rows === null ? (
-        <p role="status">{t('loading')}</p>
+        <TableSkeleton label={t('loading')} className="" withHeader={false} />
       ) : rows.length === 0 ? (
-        <p className="text-ash">{t('empty')}</p>
+        <EmptyState
+          illustration="scroll"
+          title={t('empty')}
+          description={t('emptyHint')}
+          action={
+            filters.status === 'PENDING_REVIEW' && !filters.from && !filters.to ? (
+              <Button type="button" variant="secondary" onClick={() => setFilters({})}>
+                {t('showAll')}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setFilters({ status: 'PENDING_REVIEW' })}
+              >
+                {t('showPending')}
+              </Button>
+            )
+          }
+        />
       ) : (
         <ul className="flex flex-col" data-testid="household-queue">
           {rows.map((row) => (

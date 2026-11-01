@@ -2,12 +2,16 @@
 
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
 import type { MyAllocationDto } from '@vcraft/contracts';
-import { Button } from '@vcraft/ui';
+import { buttonVariants } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
+import { EmptyState } from '@/components/states/empty-state';
+import { ErrorState } from '@/components/states/error-state';
+import { ListSkeleton } from '@/components/states/skeletons';
 import { AllocationCard } from '@/features/orders/allocation-card';
 import { Link } from '@/i18n/navigation';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
+import { notify } from '@/lib/notify';
 
 /** The household's shares across orders (FR-ORD-05 … 07). */
 export function StudioAllocations({
@@ -19,7 +23,15 @@ export function StudioAllocations({
 }) {
   const t = useTranslations('studio.allocations');
   const { client, loading } = useQuotationClient(provided);
-  if (loading) return <p className="mx-auto max-w-editorial px-gutter py-12">{t('loading')}</p>;
+  if (loading) {
+    return (
+      <ListSkeleton
+        label={t('loading')}
+        className="mx-auto max-w-editorial px-gutter py-8"
+        rows={3}
+      />
+    );
+  }
   if (!client) return <p className="mx-auto max-w-editorial px-gutter py-12">{t('signIn')}</p>;
   return <Allocations client={client} uploadPhoto={uploadPhoto} />;
 }
@@ -55,11 +67,12 @@ function Allocations({
     void load();
   }, [load]);
 
-  const run = async (action: () => Promise<unknown>) => {
+  const run = async (action: () => Promise<unknown>, success?: string) => {
     setBusy(true);
     setActionFailed(null);
     try {
       await action();
+      if (success) notify.success(success);
     } catch (error) {
       setActionFailed(
         error instanceof QuotationApiError && error.code === 'STALE_VERSION'
@@ -86,16 +99,20 @@ function Allocations({
       {state === 'signed-out' ? (
         <p>{t('signIn')}</p>
       ) : state === 'failed' ? (
-        <div role="alert" className="flex flex-col items-start gap-3">
-          <p>{t('failed')}</p>
-          <Button type="button" variant="secondary" onClick={() => void load()}>
-            {t('retry')}
-          </Button>
-        </div>
+        <ErrorState message={t('failed')} onRetry={() => void load()} />
       ) : rows === null ? (
-        <p role="status">{t('loading')}</p>
+        <ListSkeleton label={t('loading')} className="" rows={3} withHeader={false} />
       ) : rows.length === 0 ? (
-        <p className="text-ash">{t('empty')}</p>
+        <EmptyState
+          illustration="scroll"
+          title={t('empty')}
+          description={t('emptyHint')}
+          action={
+            <Link href="/studio/bao-gia" className={buttonVariants({ variant: 'secondary' })}>
+              {t('emptyAction')}
+            </Link>
+          }
+        />
       ) : (
         <ul className="flex flex-col gap-3" data-testid="studio-allocations">
           {rows.map((row) => (

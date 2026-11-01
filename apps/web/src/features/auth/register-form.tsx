@@ -5,6 +5,7 @@ import { Button } from '@vcraft/ui';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { ConsentCheckbox } from '@/components/consent-checkbox';
 import { Link } from '@/i18n/navigation';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
@@ -41,7 +42,7 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
   } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     mode: 'onTouched',
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: '', password: '', consent: false },
   });
 
   const onSubmit = handleSubmit(async ({ email, password }) => {
@@ -84,6 +85,12 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
         autoComplete="new-password"
         error={message(errors.password)}
         {...register('password')}
+      />
+      <ConsentCheckbox
+        id="register-consent"
+        purpose="account"
+        error={message(errors.consent)}
+        {...register('consent')}
       />
       <p className="text-small text-ash">{t('register.verifyNote')}</p>
       <Button type="submit" size="lg" disabled={isSubmitting}>

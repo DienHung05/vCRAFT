@@ -4,7 +4,9 @@ import type { StudioClient } from '@vcraft/api-client';
 import { Button, Card } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { Breadcrumbs } from '@/components/breadcrumbs';
 import { useRouter } from '@/i18n/navigation';
+import { notify } from '@/lib/notify';
 import { HouseholdGate } from './household-gate';
 import { EMPTY_PRODUCT, ProductFields, parseNewProduct } from './product-fields';
 
@@ -12,6 +14,7 @@ import { EMPTY_PRODUCT, ProductFields, parseNewProduct } from './product-fields'
 export function NewProductForm({ client: provided }: { client?: StudioClient }) {
   const t = useTranslations('studio.products');
   const common = useTranslations('studio');
+  const nav = useTranslations('studio.nav');
   const router = useRouter();
   const [draft, setDraft] = useState(EMPTY_PRODUCT);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +35,7 @@ export function NewProductForm({ client: provided }: { client?: StudioClient }) 
             setError(null);
             try {
               const product = await client.createProduct(parsed.data);
+              notify.success(t('createdToast'));
               router.push({ pathname: '/studio/san-pham/[id]', params: { id: product.id } });
             } catch {
               setError(common('saveFailed'));
@@ -39,6 +43,13 @@ export function NewProductForm({ client: provided }: { client?: StudioClient }) 
             }
           }}
         >
+          <Breadcrumbs
+            items={[
+              { label: nav('home'), href: '/studio' },
+              { label: t('title'), href: '/studio/san-pham' },
+              { label: t('newTitle') },
+            ]}
+          />
           <h1 className="text-h1">{t('newTitle')}</h1>
           <Card className="p-5">
             <ProductFields draft={draft} onChange={(change) => setDraft({ ...draft, ...change })} />
