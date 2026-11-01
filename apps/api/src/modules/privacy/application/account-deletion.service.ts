@@ -244,6 +244,7 @@ export class AccountDeletionService {
       product.artisanNote = null;
       product.coverUrl = null;
       product.coverAlt = null;
+      product.coverAltEn = null;
       product.images = null;
     }
 

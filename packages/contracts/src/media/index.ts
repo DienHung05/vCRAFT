@@ -79,6 +79,8 @@ export const PublicImageSchema = z.object({
   height: z.int().positive().nullable().default(null),
   variants: PublicImageVariantsSchema,
   alt: z.string(),
+  /** English description for `/en`; null falls back to `alt`. Defaults to null so older APIs still parse. */
+  altEn: z.string().nullable().default(null),
   caption: z.string().nullable(),
   credit: MediaCreditSchema.nullable(),
 });

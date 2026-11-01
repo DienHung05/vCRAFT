@@ -27,6 +27,7 @@ import {
   FieldCipher,
   Household,
   MediaAsset,
+  MediaLink,
   OutboxEvent,
   Product,
   ProductMaker,
@@ -309,6 +310,7 @@ export class HouseholdsService {
         if (input.images.length > 0) {
           product.coverUrl = null;
           product.coverAlt = null;
+          product.coverAltEn = null;
         }
       }
       if (input.name !== undefined) product.name = input.name;
@@ -457,10 +459,18 @@ export class HouseholdsService {
       { ownerId: household.representative.id, purpose: 'CERTIFICATE', visibility: 'PRIVATE' },
       { orderBy: { createdAt: 'asc' } },
     );
+    const links = await em.find(MediaLink, {
+      targetType: 'HOUSEHOLD',
+      targetId: householdId,
+      role: 'DOCUMENT',
+      media: { $in: assets.map((a) => a.id) },
+    });
+    const caption = new Map(links.map((l) => [l.media.id, l.caption ?? null]));
     return {
       data: assets.map((a) => ({
         id: a.id,
         mimeType: a.mimeType,
+        caption: caption.get(a.id) ?? null,
         sizeBytes: a.sizeBytes,
         createdAt: a.createdAt.toISOString(),
       })),

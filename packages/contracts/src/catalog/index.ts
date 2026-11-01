@@ -41,6 +41,8 @@ export const ProductCardSchema = z.object({
   coverUrl: z.string().nullable(),
   coverVariants: PublicImageVariantsSchema,
   coverAlt: z.string().nullable(),
+  /** English description of the cover for `/en`; null falls back to `coverAlt`. */
+  coverAltEn: z.string().nullable().default(null),
   publishedAt: IsoDateTimeSchema.nullable(),
   household: z.object({ name: z.string(), slug: z.string() }),
 });
@@ -58,6 +60,10 @@ export const HouseholdSummarySchema = z.object({
   craft: z.string().nullable(),
   coverUrl: z.string().nullable(),
   coverVariants: PublicImageVariantsSchema,
+  /** What the cover shows (the household banner's description); null when it has no linked description. */
+  coverAlt: z.string().nullable().default(null),
+  /** English description of the cover for `/en`; null falls back to `coverAlt`. */
+  coverAltEn: z.string().nullable().default(null),
   representative: z.string().nullable(),
   productCount: z.int().nonnegative(),
   /** Giờ của nơi đón khách đầu tiên; `null` là hộ không có nơi đón khách. */

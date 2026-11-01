@@ -190,6 +190,7 @@ export class MediaService {
           height: link.media.height ?? null,
           variants: this.publicVariants(link.media),
           alt: link.altText ?? link.media.altText ?? '',
+          altEn: link.altEn ?? null,
           caption: link.caption ?? null,
           credit: link.media.credit ?? null,
         },

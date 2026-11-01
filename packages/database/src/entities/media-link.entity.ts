@@ -43,6 +43,13 @@ export class MediaLink extends BaseEntity {
   @Property({ type: 'string', length: 500, nullable: true })
   altText?: string | null;
 
+  /**
+   * English description of this use. Empty for uploads that only have a Vietnamese description: pages
+   * on `/en` then fall back to `altText`.
+   */
+  @Property({ type: 'string', length: 500, nullable: true })
+  altEn?: string | null;
+
   /** Chú thích hiển thị dưới ảnh. */
   @Property({ type: 'string', length: 300, nullable: true })
   caption?: string | null;

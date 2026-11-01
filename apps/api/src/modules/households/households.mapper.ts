@@ -63,12 +63,14 @@ export const productMediaIds = (products: readonly Product[]): string[] =>
  * no variants; an uploaded photo brings the sizes of its media file.
  */
 export function productCover(p: Product, media?: ReadonlyMap<string, PublicMedia>) {
-  if (p.coverUrl) return { url: p.coverUrl, variants: [], alt: p.coverAlt ?? null };
+  if (p.coverUrl) {
+    return { url: p.coverUrl, variants: [], alt: p.coverAlt ?? null, altEn: p.coverAltEn ?? null };
+  }
   const ready = (p.images ?? []).find((image) => media?.has(image.mediaId));
   const file = ready && media?.get(ready.mediaId);
   return ready && file
-    ? { url: file.url, variants: file.variants, alt: ready.alt }
-    : { url: null, variants: [], alt: null };
+    ? { url: file.url, variants: file.variants, alt: ready.alt, altEn: null }
+    : { url: null, variants: [], alt: null, altEn: null };
 }
 
 /** `makers` phải đã sắp theo `position` và nạp sẵn `artisan`. */
@@ -97,6 +99,7 @@ export function toProductDto(
     coverUrl: cover.url,
     coverVariants: cover.variants,
     coverAlt: cover.alt,
+    coverAltEn: cover.altEn,
     images: (p.images ?? []).map((image) => ({
       mediaId: image.mediaId,
       url: media?.get(image.mediaId)?.url ?? null,
@@ -155,6 +158,7 @@ function toGalleryDto(h: Household, parts: HouseholdParts) {
     url: item.url ?? (item.mediaId ? (parts.media?.get(item.mediaId)?.url ?? null) : null),
     variants: item.mediaId ? (parts.media?.get(item.mediaId)?.variants ?? []) : [],
     alt: item.alt,
+    altEn: null,
     caption: item.caption ?? null,
     credit: null,
   }));
@@ -175,6 +179,7 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
     url: image.url,
     variants: image.variants,
     alt: image.alt,
+    altEn: image.altEn,
     caption: image.caption,
     credit: image.credit,
   }));

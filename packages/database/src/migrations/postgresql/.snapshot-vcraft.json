@@ -2339,6 +2339,23 @@
       "name": "media_link",
       "schema": "public",
       "columns": {
+        "alt_en": {
+          "name": "alt_en",
+          "type": "varchar(500)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 500,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
         "alt_text": {
           "name": "alt_text",
           "type": "varchar(500)",
@@ -3750,6 +3767,23 @@
         },
         "cover_alt": {
           "name": "cover_alt",
+          "type": "varchar(500)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 500,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
+        "cover_alt_en": {
+          "name": "cover_alt_en",
           "type": "varchar(500)",
           "unsigned": false,
           "autoincrement": false,

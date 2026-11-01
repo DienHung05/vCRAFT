@@ -88,6 +88,7 @@ function toCardDto(p: Product, media: ReadonlyMap<string, PublicMedia>): Product
     coverUrl: cover.url,
     coverVariants: cover.variants,
     coverAlt: cover.alt,
+    coverAltEn: cover.altEn,
     publishedAt: p.publishedAt?.toISOString() ?? null,
     household: { name: p.household.name, slug: p.household.slug },
   };
@@ -189,6 +190,7 @@ export class CatalogService {
     return {
       data: households.map((h) => {
         const hours = workshops.find((w) => w.household.id === h.id && isVisitable(w));
+        const banner = (banners.get(h.id) ?? []).find((item) => item.image.url === h.coverUrl);
         return {
           id: h.id,
           name: h.name,
@@ -200,6 +202,8 @@ export class CatalogService {
             h.coverUrl ?? null,
             (banners.get(h.id) ?? []).map((item) => item.image),
           ),
+          coverAlt: banner?.image.alt || null,
+          coverAltEn: banner?.image.altEn ?? null,
           representative: artisans.find((a) => a.household.id === h.id)?.name ?? null,
           productCount: products.filter((p) => p.household.id === h.id).length,
           openingHours: hours?.openingHours ?? null,
