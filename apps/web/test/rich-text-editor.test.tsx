@@ -19,4 +19,16 @@ describe('RichTextEditor', () => {
     expect(html).toContain('Xin chào');
     expect(isEmpty).toBe(false);
   });
+
+  it('survives the deferred focus scroll that tiptap runs in an animation frame', async () => {
+    renderVi(<RichTextEditor value="<p>Xin chào</p>" label="Nội dung" onChange={vi.fn()} />);
+    const bold = await screen.findByRole('button', { name: 'Đậm' });
+    await waitFor(() => expect((bold as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(bold);
+    // focus() calls scrollIntoView in a requestAnimationFrame; let it run inside the test so a
+    // failure there is attributed to this test rather than a random later one.
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    expect(screen.getByRole('textbox', { name: 'Nội dung' })).toBeTruthy();
+  });
 });
