@@ -1436,6 +1436,9 @@
       "title": "Chưa kiểm tra được phiên đăng nhập",
       "lead": "Máy chủ vCraft đang không phản hồi. Bạn thử lại sau ít phút nhé.",
       "retry": "Thử lại"
+    },
+    "kiln": {
+      "sealed": "Đã đóng ấn. Đang mở cửa lò…"
     }
   },
   "studio": {

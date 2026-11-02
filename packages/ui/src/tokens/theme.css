@@ -125,6 +125,9 @@
   color-scheme: light;
   --grain-opacity: 0.04;
   --grain-size: 160px;
+  /* Hoa lam brush ornaments: ink and wash strength (lighter on the dark kiln so the blue does not glare). */
+  --brush-ink-opacity: 0.82;
+  --brush-wash-opacity: 0.24;
   /*
    * The noise is an alpha mask painted in `--color-ink` (ink grain on light paper, light dust on the
    * dark kiln). A mask, not a background image, so the browser never picks a 160px data-URI tile as the
@@ -174,6 +177,36 @@
 }
 
 /*
+ * Hoa lam draw-on (BRAND §6.3): the mask centrelines of the brush ornaments (`ornaments/brush.tsx`,
+ * pathLength = 1) draw themselves in ease.clay over dur.story, staggered in 40ms steps via `--brush-i`
+ * (`--brush-delay` is the wait after first paint). The dash is `1 2` and starts at 1.05 so no round-cap
+ * dot shows before the stroke begins. Reduced motion: fully drawn, one fade (BRAND §6.4).
+ */
+.brush-draw {
+  stroke-dasharray: 1 2;
+  stroke-dashoffset: 1.05;
+  animation: brush-draw var(--duration-story) var(--ease-clay)
+    calc(var(--brush-delay, 120ms) + var(--brush-i, 0) * 40ms) both;
+}
+.brush-dots {
+  animation: brush-fade var(--duration-slow) var(--ease-clay)
+    calc(var(--brush-delay, 120ms) + 480ms) both;
+}
+@keyframes brush-draw {
+  from {
+    stroke-dashoffset: 1.05;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes brush-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/*
  * Chế độ tối "Lò đêm" (BRAND §3.2). Hai khối dưới phải giữ giống nhau:
  * một theo hệ điều hành (trừ khi người dùng ép sáng), một theo thuộc tính ép tối.
  */
@@ -192,6 +225,8 @@
     --color-lacquer: #c9a24d;
     /* Bóng trên nền tối: nâng viền sáng mảnh, đổ bóng sâu thay vì bóng nâu. */
     --shadow-warm: 0 1px 0 rgb(241 233 220 / 0.05), 0 12px 32px -12px rgb(0 0 0 / 0.55);
+    --brush-ink-opacity: 0.64;
+    --brush-wash-opacity: 0.17;
   }
 }
 :root[data-theme="dark"] {
@@ -206,6 +241,8 @@
   --color-celadon: #9cc7b8;
   --color-lacquer: #c9a24d;
   --shadow-warm: 0 1px 0 rgb(241 233 220 / 0.05), 0 12px 32px -12px rgb(0 0 0 / 0.55);
+  --brush-ink-opacity: 0.64;
+  --brush-wash-opacity: 0.17;
 }
 
 /*
@@ -233,5 +270,15 @@
   }
   html {
     scroll-behavior: auto;
+  }
+  .brush-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .brush-dots {
+    animation: none;
+  }
+  .brush-orn {
+    animation: brush-fade 150ms linear both;
   }
 }
