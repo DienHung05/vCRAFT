@@ -54,6 +54,12 @@ export function toMakerCreditDto(m: ProductMaker): MakerCreditDto {
   };
 }
 
+/** A processed image of a media link: the URL it is served at plus every generated size. */
+export interface CoverImage {
+  url: string | null;
+  variants: readonly MediaVariantResponse[];
+}
+
 /** Id ảnh tải lên của các sản phẩm, để tra URL một lần. */
 export const productMediaIds = (products: readonly Product[]): string[] =>
   products.flatMap((p) => (p.images ?? []).map((image) => image.mediaId));
@@ -62,9 +68,20 @@ export const productMediaIds = (products: readonly Product[]): string[] =>
  * Bìa là bìa riêng (dữ liệu mẫu) hoặc ảnh đầu tiên đã xử lý xong. A preset cover is a plain URL with
  * no variants; an uploaded photo brings the sizes of its media file.
  */
-export function productCover(p: Product, media?: ReadonlyMap<string, PublicMedia>) {
+export function productCover(
+  p: Product,
+  media?: ReadonlyMap<string, PublicMedia>,
+  linkedCovers: readonly CoverImage[] = [],
+) {
   if (p.coverUrl) {
-    return { url: p.coverUrl, variants: [], alt: p.coverAlt ?? null, altEn: p.coverAltEn ?? null };
+    // A cover that is a processed file of the product's `COVER` link brings that file's sizes; a preset
+    // URL (static demo illustration) matches none and stays a single file.
+    return {
+      url: p.coverUrl,
+      variants: variantsOfUrl(p.coverUrl, linkedCovers),
+      alt: p.coverAlt ?? null,
+      altEn: p.coverAltEn ?? null,
+    };
   }
   const ready = (p.images ?? []).find((image) => media?.has(image.mediaId));
   const file = ready && media?.get(ready.mediaId);
@@ -78,8 +95,9 @@ export function toProductDto(
   p: Product,
   makers: readonly ProductMaker[] = [],
   media?: ReadonlyMap<string, PublicMedia>,
+  linkedCovers: readonly CoverImage[] = [],
 ): ProductDto {
-  const cover = productCover(p, media);
+  const cover = productCover(p, media, linkedCovers);
   return {
     id: p.id,
     version: p.version,

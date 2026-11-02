@@ -15,6 +15,7 @@ import { isVisitable } from '@vcraft/domain';
 import { searchTerms } from '@vcraft/utils';
 import { AppError, notFound } from '../../../common/errors/app-error';
 import {
+  type CoverImage,
   productCover,
   productMediaIds,
   toProductDto,
@@ -74,8 +75,12 @@ const ORDER_BY = {
   price_desc: { priceVnd: 'desc', id: 'asc' },
 } as const;
 
-function toCardDto(p: Product, media: ReadonlyMap<string, PublicMedia>): ProductCardDto {
-  const cover = productCover(p, media);
+function toCardDto(
+  p: Product,
+  media: ReadonlyMap<string, PublicMedia>,
+  linkedCovers: readonly CoverImage[] = [],
+): ProductCardDto {
+  const cover = productCover(p, media, linkedCovers);
   return {
     id: p.id,
     name: p.name,
@@ -139,9 +144,12 @@ export class CatalogService {
     );
     const page = rows.slice(0, query.limit);
     const last = page.at(-1);
-    const media = await this.media.publicMedia(productMediaIds(page));
+    const [media, covers] = await Promise.all([
+      this.media.publicMedia(productMediaIds(page)),
+      this.media.productCoverImages(page),
+    ]);
     return {
-      data: page.map((product) => toCardDto(product, media)),
+      data: page.map((product) => toCardDto(product, media, covers.get(product.id))),
       nextCursor: rows.length > query.limit && last ? encodeCursor(last, query.sort) : null,
     };
   }
@@ -160,11 +168,13 @@ export class CatalogService {
       { product },
       { populate: ['artisan'], orderBy: { position: 'asc' } },
     );
+    const covers = await this.media.productCoverImages([product]);
     return {
       product: toProductDto(
         product,
         makers,
         await this.media.publicMedia(productMediaIds([product])),
+        covers.get(product.id),
       ),
       coverCredit: await this.media.productCoverCredit(product),
       household: { name: product.household.name, slug: product.household.slug },

@@ -578,12 +578,14 @@ export class HouseholdsService {
           product.household.status === 'SUSPENDED' ? 'HOUSEHOLD_SUSPENDED' : 'PRODUCT_WITHDRAWN',
       };
     }
+    const covers = await this.media.productCoverImages([product]);
     return {
       availability,
       product: toProductDto(
         product,
         (await this.makersOf(em, [product])).get(product.id),
         await this.media.publicMedia(productMediaIds([product])),
+        covers.get(product.id),
       ),
       coverCredit: await this.media.productCoverCredit(product),
       household: { name: product.household.name, slug: product.household.slug },

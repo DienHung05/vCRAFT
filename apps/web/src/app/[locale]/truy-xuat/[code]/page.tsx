@@ -30,6 +30,7 @@ import { ChainVerifier } from '@/features/traceability/chain-verifier';
 import { FireTimeline } from '@/features/traceability/fire-timeline';
 import { TraceQr } from '@/features/traceability/trace-qr';
 import { Link } from '@/i18n/navigation';
+import { frameRatioOf } from '@/lib/images';
 import { resolveLocale } from '@/lib/locale';
 import { isTraceCode, traceShortUrl } from '@/lib/site';
 
@@ -140,8 +141,10 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                   <ImageSlot
                     alt={image.alt}
                     tint={tintOf(visible.product.traceCode)}
-                    ratio="4/5"
+                    ratio={image.variants ? frameRatioOf(image.variants) : '4/5'}
+                    fit="contain"
                     {...slotPhoto(image)}
+                    priority
                     sizes="(min-width: 640px) 20rem, 80vw"
                   />
                   <PhotoCredit id={image.photo?.id} credit={visible.coverCredit} />

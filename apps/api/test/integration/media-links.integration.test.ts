@@ -333,6 +333,28 @@ describe('Public images from media_link', () => {
     expect(detail.body.journal.entries[0].images[0].credit).toEqual(CREDIT);
   });
 
+  it('a cover URL that is the linked cover file carries that file sizes; any other URL has none', async () => {
+    const em = db.orm.em.fork();
+    const product = await em.findOneOrFail(Product, { slug: 'binh-co-anh' });
+    product.coverUrl = urlOf('bia-sp');
+    await em.flush();
+
+    const detail = await t.request({ method: 'GET', url: '/products/binh-co-anh' });
+    expect(detail.body.product.coverUrl).toBe(urlOf('bia-sp'));
+    expect(detail.body.product.coverVariants).toEqual(variantsOf('bia-sp'));
+    const list = await t.request({ method: 'GET', url: '/products' });
+    const card = list.body.data.find((p: { slug: string }) => p.slug === 'binh-co-anh');
+    expect(card.coverVariants).toEqual(variantsOf('bia-sp'));
+    const trace = await t.request({ method: 'GET', url: '/trace/BT7K2QXA' });
+    expect(trace.body.product.coverVariants).toEqual(variantsOf('bia-sp'));
+
+    // The fixture's original cover URL is not a file of the cover link: a single file, no sizes.
+    product.coverUrl = 'https://cdn.test/bia.webp';
+    await em.flush();
+    const other = await t.request({ method: 'GET', url: '/products/binh-co-anh' });
+    expect(other.body.product.coverVariants).toEqual([]);
+  });
+
   it('replacing the cover with an uploaded photo drops the old cover credit', async () => {
     const em = db.orm.em.fork();
     const product = await em.findOneOrFail(Product, { slug: 'binh-co-anh' });
