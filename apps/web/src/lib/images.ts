@@ -66,3 +66,20 @@ export function buildResponsiveImage(
 export function aboveTheFoldUrl(url: string): string {
   return sameOriginMediaUrl(url, process.env.NEXT_PUBLIC_SUPABASE_URL);
 }
+
+/** Frame ratio bounds for a photo shown whole: a very tall or very wide file is letterboxed instead. */
+const MIN_FRAME_RATIO = 3 / 5;
+const MAX_FRAME_RATIO = 3 / 2;
+
+/**
+ * CSS `aspect-ratio` (`w/h`) of a frame that follows the image, from the API's variants, so the picture shows
+ * uncropped without layout shift. Falls back to `fallback` when there are no sizes; stays within sensible bounds.
+ */
+export function frameRatioOf(variants: readonly ImageVariant[] | undefined, fallback = '4/5') {
+  const { width, height } = buildResponsiveImage(variants);
+  if (!width || !height) return fallback;
+  const ratio = width / height;
+  if (ratio < MIN_FRAME_RATIO) return '3/5';
+  if (ratio > MAX_FRAME_RATIO) return '3/2';
+  return `${width}/${height}`;
+}

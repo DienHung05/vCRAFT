@@ -301,6 +301,20 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
     },
     widths: [640, 1280],
   },
+  {
+    id: 'ong-gom-lam-may',
+    alt: 'Chiếc ống gốm Bát Tràng hình trụ cao, thân màu ngà vẽ lam hình mây cuộn, quanh miệng có một dải hoa văn hình học',
+    credit: {
+      title:
+        'File:Tube for papers, Bat Trang ceramic - Nguyen dynasty, 19th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05329.JPG',
+      author: 'Daderot',
+      license: 'CC0',
+      licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:Tube_for_papers,_Bat_Trang_ceramic_-_Nguyen_dynasty,_19th_century_AD_-_Vietnam_National_Museum_of_Fine_Arts_-_Hanoi,_Vietnam_-_DSC05329.JPG',
+    },
+    widths: [640, 1280],
+  },
 ];
 
 export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
@@ -508,6 +522,16 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
     alt: 'Bình cổ cao, bụng tròn, men xám lam, đắp nổi cành cây và một người cầm cần câu nhuốm vàng',
     altEn:
       'A tall-necked, round-bellied vase in grey-blue glaze with a relief branch and a gilded figure holding a fishing rod',
+  },
+  {
+    photo: 'ong-gom-lam-may',
+    target: 'PRODUCT',
+    key: '84PZKVJU',
+    role: 'COVER',
+    position: 0,
+    alt: 'Chiếc ống gốm Bát Tràng hình trụ cao, thân màu ngà vẽ lam hình mây cuộn, quanh miệng có một dải hoa văn hình học',
+    altEn:
+      'A tall cylindrical Bat Trang ceramic vessel with a cobalt-blue cloud pattern on a cream body and a geometric band around the rim',
   },
   {
     photo: 'ban-xoay-xuong',

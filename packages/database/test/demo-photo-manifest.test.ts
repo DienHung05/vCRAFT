@@ -16,10 +16,13 @@ import { DEMO_VERIFICATION_DOCS } from '../src/seeders/demo/verification-docs.js
 
 const repoPath = (relative: string) =>
   fileURLToPath(new URL(`../../../${relative}`, import.meta.url));
-/** Mã truy xuất cố định của seed (seed-demo.ts `fixedProducts`). */
-const SEEDED_TRACE_CODES = new Set(['BT7K2QXM', 'HX2M9KQD', 'DF6P3WZE']);
-/** Photos with no cover link: no Commons photo shows that exact object made in Bát Tràng. */
-const COVERED_TRACE_CODES = new Set(['BT7K2QXM']);
+/**
+ * Fixed trace codes of the seed (seed-demo.ts `fixedProducts`), plus '84PZKVJU': a generated code (an "Ống đựng
+ * bút vẽ lam" of Gốm Đại Phong) that is stable because the seed's random generator has a fixed seed.
+ */
+const SEEDED_TRACE_CODES = new Set(['BT7K2QXM', 'HX2M9KQD', 'DF6P3WZE', '84PZKVJU']);
+/** Products that carry a photo of their own; every other product shows a preset illustration. */
+const COVERED_TRACE_CODES = new Set(['BT7K2QXM', '84PZKVJU']);
 
 describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
   const photos = new Map(DEMO_PHOTOS.map((p) => [p.id, p]));
@@ -59,6 +62,7 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
     const covered = DEMO_PHOTO_LINKS.filter((l) => l.target === 'PRODUCT' && l.role === 'COVER');
     expect(new Set(covered.map((l) => l.key))).toEqual(COVERED_TRACE_CODES);
     expect(covered.find((l) => l.key === 'BT7K2QXM')?.photo).toBe('binh-men-lam-xam');
+    expect(covered.find((l) => l.key === '84PZKVJU')?.photo).toBe('ong-gom-lam-may');
     for (const code of NO_COVER_DEMO_PRODUCTS) {
       expect(SEEDED_TRACE_CODES.has(code), code).toBe(true);
       expect(COVERED_TRACE_CODES.has(code), code).toBe(false);

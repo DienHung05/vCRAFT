@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ImageSlot } from '@/components/image-slot';
 import { photoFromUrl, slotPhoto } from '@/features/catalog/view-models';
-import { buildResponsiveImage, type ImageVariant } from '@/lib/images';
+import { buildResponsiveImage, frameRatioOf, type ImageVariant } from '@/lib/images';
 import { renderVi } from './render';
 
 const variant = (format: 'avif' | 'webp', width: number): ImageVariant => ({
@@ -130,5 +130,35 @@ describe('<ImageSlot> priority image from Storage', () => {
       <ImageSlot alt="Alt" tint="#888" priority {...slotPhoto(view)} />,
     );
     expect(container.querySelector('img')?.getAttribute('src')).toBe(`${storage}/640.webp`);
+  });
+});
+
+describe('frameRatioOf', () => {
+  const sized = (width: number, height: number): ImageVariant[] => [
+    { format: 'webp', width, height, url: 'https://cdn.test/v/a.webp' },
+  ];
+
+  it('follows the image so it shows whole', () => {
+    expect(frameRatioOf(sized(1280, 1707))).toBe('1280/1707');
+    expect(frameRatioOf(sized(1280, 1600))).toBe('1280/1600');
+  });
+
+  it('falls back when there are no sizes, and clamps very tall or very wide files', () => {
+    expect(frameRatioOf([])).toBe('4/5');
+    expect(frameRatioOf(undefined, '1/1')).toBe('1/1');
+    expect(frameRatioOf(sized(400, 1600))).toBe('3/5');
+    expect(frameRatioOf(sized(3000, 600))).toBe('3/2');
+  });
+});
+
+describe('<ImageSlot> fit', () => {
+  it('fills the frame by default and shows the whole photo with fit="contain"', () => {
+    const view = photoFromUrl('https://cdn.test/v/1280.webp', 'Alt', VARIANTS);
+    const filled = renderVi(<ImageSlot alt="Alt" tint="#888" {...slotPhoto(view)} />).container;
+    expect(filled.querySelector('img')?.className).toContain('object-cover');
+    const whole = renderVi(
+      <ImageSlot alt="Alt" tint="#888" fit="contain" {...slotPhoto(view)} />,
+    ).container;
+    expect(whole.querySelector('img')?.className).toContain('object-contain');
   });
 });

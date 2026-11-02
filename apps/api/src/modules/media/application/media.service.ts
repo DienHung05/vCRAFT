@@ -201,6 +201,19 @@ export class MediaService {
   }
 
   /**
+   * Processed `COVER` images linked to the products that show a `coverUrl`, keyed by product id: the source of the
+   * cover's sizes (`coverVariants`). Preset covers match none of them.
+   */
+  async productCoverImages(products: readonly Product[]): Promise<Map<string, PublicImageDto[]>> {
+    const linked = await this.linkedImages(
+      'PRODUCT',
+      products.filter((p) => p.coverUrl).map((p) => p.id),
+      ['COVER'],
+    );
+    return new Map([...linked].map(([id, items]) => [id, items.map((item) => item.image)]));
+  }
+
+  /**
    * Credit for the product cover. Applies only while the cover is still the preset `coverUrl`: uploading
    * photos clears `coverUrl`, but the old `media_link` stays and no longer describes the displayed image.
    */

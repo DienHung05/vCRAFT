@@ -20,6 +20,7 @@ import {
   toProductCardView,
 } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
+import { frameRatioOf } from '@/lib/images';
 import { resolveLocale } from '@/lib/locale';
 
 // Dữ liệu lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
@@ -88,7 +89,8 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
             <ImageSlot
               alt={image?.alt ?? preset(presetKind)}
               tint={tint}
-              ratio="4/5"
+              ratio={image?.variants ? frameRatioOf(image.variants) : '4/5'}
+              fit="contain"
               {...slotPhoto(image)}
               priority
               sizes="(min-width: 768px) 58vw, 100vw"

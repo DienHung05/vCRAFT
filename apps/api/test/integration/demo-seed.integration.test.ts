@@ -226,6 +226,11 @@ describe('Demo seed and guarded reset', () => {
     expect(vase.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\/.+\.webp$/);
     expect(vase.coverAlt).toBeTruthy();
     expect(vase.coverAltEn).toMatch(/^[\x20-\x7e]+$/);
+    // A generated product with its own photo: the cobalt-blue cylindrical vessel of Gốm Đại Phong.
+    const vessel = await db.orm.em.fork().findOneOrFail(Product, { traceCode: '84PZKVJU' });
+    expect(vessel.name).toBe('Ống đựng bút vẽ lam');
+    expect(vessel.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\/.+\.webp$/);
+    expect(vessel.coverAltEn).toMatch(/^[\x20-\x7e]+$/);
     const cup = await db.orm.em.fork().findOneOrFail(Product, { traceCode: DEMO_QR_TRACE_CODE });
     expect(cup.coverUrl).toBeNull();
     expect(cup.coverAlt).toBeNull();

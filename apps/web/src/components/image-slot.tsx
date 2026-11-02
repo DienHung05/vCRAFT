@@ -24,6 +24,8 @@ export interface ImageSlotProps {
   sizes?: string;
   /** Ảnh trên màn đầu (LCP): nạp ngay thay vì lười. */
   priority?: boolean;
+  /** `contain` shows the whole photo inside the frame (letterboxed on the tint); `cover` (default) fills and may crop. */
+  fit?: 'cover' | 'contain';
   className?: string;
   children?: ReactNode;
 }
@@ -45,6 +47,7 @@ export function ImageSlot({
   variants,
   sizes = DEFAULT_SIZES,
   priority = false,
+  fit = 'cover',
   className,
   children,
 }: ImageSlotProps) {
@@ -59,6 +62,7 @@ export function ImageSlot({
   const smallest = credit ? Math.min(...credit.widths) : 0;
   const [rw = 1, rh = 1] = (ratio ?? credit?.ratio ?? '1/1').split('/').map(Number);
   const responsive = buildResponsiveImage(variants, priority ? aboveTheFoldUrl : undefined);
+  const fitClass = fit === 'contain' ? 'object-contain' : 'object-cover';
 
   return (
     <div
@@ -87,7 +91,7 @@ export function ImageSlot({
             loading={priority ? 'eager' : 'lazy'}
             fetchPriority={priority ? 'high' : undefined}
             decoding="async"
-            className="absolute inset-0 size-full object-cover"
+            className={cn('absolute inset-0 size-full', fitClass)}
           />
         </picture>
       ) : null}
@@ -106,7 +110,7 @@ export function ImageSlot({
             loading={priority ? 'eager' : 'lazy'}
             fetchPriority={priority ? 'high' : undefined}
             decoding="async"
-            className="absolute inset-0 size-full object-cover"
+            className={cn('absolute inset-0 size-full', fitClass)}
           />
         </picture>
       ) : null}
