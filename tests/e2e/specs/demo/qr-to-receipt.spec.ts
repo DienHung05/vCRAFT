@@ -15,10 +15,21 @@ import {
  * Dữ liệu: PHÁ dữ liệu đóng băng (duyệt hộ, chốt chào giá...). Chạy `pnpm demo:reset` TRƯỚC mỗi lần chạy.
  * Bỏ qua tự động khi thiếu E2E_BASE_URL hoặc thông tin đăng nhập, nên CI không có bản triển khai vẫn xanh.
  *
- * Bước chưa có màn hình ở web hiện tại (duyệt hộ của Admin, xuất bản của hộ, nút chốt chào giá của Buyer, tin tức)
+ * Bước chưa có màn hình ở web hiện tại (duyệt hộ của Admin, xuất bản của hộ)
  * gọi thẳng API bằng đúng phiên đã đăng nhập, ghi chú ngay tại bước; khi màn hình có, đổi sang thao tác UI.
+ *
+ * Every irreversible UI action (accept a quotation, start production, confirm receipt) opens a native
+ * `<dialog>` (`ConfirmDialog`). A closed `<dialog>` is hidden from the accessibility tree, so
+ * `getByRole('dialog')` only matches the open one; confirm inside it so the dialog's own button, which
+ * shares its label with the page button, is never confused with the page button.
  */
 const skipReason = demoSkipReason();
+
+/** The step that the request journey stepper (`rfq.stepperLabel`) currently marks as `aria-current="step"`. */
+const currentJourneyStep = (page: Page) =>
+  page
+    .getByRole('navigation', { name: 'Tiến trình của yêu cầu báo giá' })
+    .locator('[aria-current="step"]');
 test.skip(skipReason !== undefined, skipReason ?? '');
 
 test.describe.configure({ mode: 'serial' });
@@ -31,7 +42,6 @@ test.describe('Demo: QR → biên nhận', () => {
   let buyerPage: Page;
   let phonePage: Page;
   let adminPage: Page;
-  let buyerSession: SupabaseSession;
   let householdSession: SupabaseSession;
   let adminSession: SupabaseSession;
 
@@ -41,7 +51,7 @@ test.describe('Demo: QR → biên nhận', () => {
     buyerCtx = await browser.newContext({ ...devices['Desktop Chrome'], ...common });
     phoneCtx = await browser.newContext({ ...devices['Pixel 7'], ...common });
     adminCtx = await browser.newContext({ ...devices['Desktop Chrome'], ...common });
-    buyerSession = await loginContext(buyerCtx, 'buyer', baseUrl);
+    await loginContext(buyerCtx, 'buyer', baseUrl);
     householdSession = await loginContext(phoneCtx, 'household', baseUrl);
     adminSession = await loginContext(adminCtx, 'admin', baseUrl);
     [buyerPage, phonePage, adminPage] = await Promise.all([
@@ -120,37 +130,23 @@ test.describe('Demo: QR → biên nhận', () => {
     expect(await items.count()).toBeGreaterThanOrEqual(15);
   });
 
-  test('6. Buyer xem các chào giá rồi chốt (UI xem, API chốt: chưa có nút chốt)', async () => {
+  test('6. Buyer xem các chào giá rồi chốt (UI)', async () => {
     await buyerPage.goto(`/vi/yeu-cau-bao-gia/${DEMO.requests.biddingToAccept}`);
     await expect(buyerPage.getByRole('heading', { name: 'Chào giá nhận được' })).toBeVisible();
     await expect(buyerPage.getByText('Tổng cho bên mua').first()).toBeVisible();
+    await expect(currentJourneyStep(buyerPage)).toContainText('Đang chào giá');
 
-    const quotations = await callApi<Array<{ id: string; status: string }>>(
-      buyerSession,
-      baseUrl,
-      'GET',
-      `/rfqs/${DEMO.requests.biddingToAccept}/quotations`,
-    );
-    const submitted = quotations.body.find((quotation) => quotation.status === 'SUBMITTED');
-    expect(submitted).toBeTruthy();
-    const request = await callApi(
-      buyerSession,
-      baseUrl,
-      'GET',
-      `/rfqs/${DEMO.requests.biddingToAccept}`,
-    );
-    const version = Number(request.etag?.replaceAll('"', ''));
-    const accepted = await callApi<{ status: string }>(
-      buyerSession,
-      baseUrl,
-      'POST',
-      `/rfqs/${DEMO.requests.biddingToAccept}/accept`,
-      { version, body: { quotationId: submitted?.id } },
-    );
-    expect(accepted.status).toBe(200);
-    expect(accepted.body.status).toBe('ACCEPTED');
-    await buyerPage.reload();
-    await expect(buyerPage.getByText('Đã chốt').first()).toBeVisible();
+    // buyer-rfq-detail.tsx: the accept button on a quotation card opens a ConfirmDialog.
+    await buyerPage
+      .getByTestId('quotation-comparison')
+      .getByRole('button', { name: 'Chốt chào giá này', exact: true })
+      .first()
+      .click();
+    const dialog = buyerPage.getByRole('dialog', { name: 'Chốt chào giá này?' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Chốt chào giá này', exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(currentJourneyStep(buyerPage)).toContainText('Đã chốt');
   });
 
   test('7. Admin nhận điều phối yêu cầu nhờ BQL (UI)', async () => {
@@ -161,29 +157,54 @@ test.describe('Demo: QR → biên nhận', () => {
 
   test('8. Hộ (điện thoại) xác nhận phân bổ (UI)', async () => {
     await phonePage.goto(`/vi/studio/de-xuat-tham-gia/${DEMO.requests.acceptedConfirm}`);
-    await expect(phonePage.getByText('Chờ xác nhận').first()).toBeVisible();
-    await phonePage.getByRole('button', { name: 'Xác nhận', exact: true }).click();
-    await expect(phonePage.getByText('Đã xác nhận').first()).toBeVisible();
+    const card = phonePage.getByTestId('allocation-card');
+    await expect(card.getByText('Chờ xác nhận', { exact: true })).toBeVisible();
+    // Confirming has no dialog (only "Từ chối" does).
+    await card.getByRole('button', { name: 'Xác nhận', exact: true }).click();
+    await expect(card.getByText('Đã xác nhận', { exact: true })).toBeVisible();
   });
 
   test('9. Admin bắt đầu sản xuất đơn đã được các hộ xác nhận (UI)', async () => {
     await adminPage.goto(`/vi/admin/dieu-phoi/${DEMO.requests.acceptedConfirm}`);
-    await adminPage.getByRole('button', { name: 'Bắt đầu sản xuất' }).click();
+    // live-coordination.tsx: the page button opens a ConfirmDialog whose confirm button has the same label.
+    await adminPage.getByRole('button', { name: 'Bắt đầu sản xuất', exact: true }).click();
+    const dialog = adminPage.getByRole('dialog', { name: 'Bắt đầu sản xuất?' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Bắt đầu sản xuất', exact: true }).click();
+    await expect(dialog).toBeHidden();
     await expect(adminPage.getByRole('button', { name: 'Bắt đầu sản xuất' })).toHaveCount(0);
+    // The IN_PRODUCTION actions replace the ACCEPTED one.
+    await expect(
+      adminPage.getByRole('button', { name: 'Xác nhận đã nhận hàng', exact: true }),
+    ).toBeVisible();
+    await expect(adminPage.getByRole('button', { name: 'Hủy đơn', exact: true })).toBeVisible();
   });
 
   test('10. Hộ báo cáo tiến độ đến hết số lượng (UI)', async () => {
     await phonePage.goto(`/vi/studio/de-xuat-tham-gia/${DEMO.requests.inProduction}`);
-    await expect(phonePage.getByText('350 / 500')).toBeVisible();
-    await phonePage.getByLabel('Số lượng đã xong').fill('500');
-    await phonePage.getByRole('button', { name: 'Báo cáo' }).click();
-    await expect(phonePage.getByText('500 / 500')).toBeVisible();
-    await expect(phonePage.getByText('Đã xong').first()).toBeVisible();
+    const card = phonePage.getByTestId('allocation-card');
+    // Exact text: the history list repeats "<date> · 500 / 500" in a separate paragraph.
+    await expect(card.getByText('350 / 500', { exact: true })).toBeVisible();
+    await card.getByLabel('Số lượng đã xong').fill('500');
+    await card.getByRole('button', { name: 'Báo cáo', exact: true }).click();
+    await expect(card.getByText('500 / 500', { exact: true })).toBeVisible();
+    // Exact text: the "Số lượng đã xong" label also contains "đã xong".
+    await expect(card.getByText('Đã xong', { exact: true })).toBeVisible();
   });
 
   test('11. Buyer xác nhận đã nhận hàng → biên nhận (UI)', async () => {
     await buyerPage.goto(`/vi/yeu-cau-bao-gia/${DEMO.requests.inProduction}`);
-    await buyerPage.getByRole('button', { name: 'Xác nhận đã nhận hàng' }).click();
-    await expect(buyerPage.getByText('Đã giao').first()).toBeVisible();
+    await expect(currentJourneyStep(buyerPage)).toContainText('Đang sản xuất');
+    // buyer-rfq-detail.tsx: the receive button opens a ConfirmDialog with the same label on its confirm button.
+    await buyerPage.getByRole('button', { name: 'Xác nhận đã nhận hàng', exact: true }).click();
+    const dialog = buyerPage.getByRole('dialog', { name: 'Xác nhận đã nhận hàng?' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Xác nhận đã nhận hàng', exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(
+      buyerPage.getByRole('button', { name: 'Xác nhận đã nhận hàng', exact: true }),
+    ).toHaveCount(0);
+    // The stepper lists "Đã giao" at all times, so check the current step, not the text.
+    await expect(currentJourneyStep(buyerPage)).toContainText('Đã giao');
   });
 });
