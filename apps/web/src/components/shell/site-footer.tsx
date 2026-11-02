@@ -171,20 +171,20 @@ function ContactRow({
   label: string;
   children: ReactNode;
 }) {
+  // A <dl> may only contain <dt>/<dd> groups (or <div> wrappers holding only those), so the icon chip
+  // lives inside the <dt> and is pulled into the left gutter instead of being a sibling of the group.
   return (
-    <div className="grid grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-x-3">
-      <span
-        aria-hidden="true"
-        className="grid size-9 place-items-center rounded-chip bg-clay/10 text-clay-ink [&>svg]:size-[1.125rem]"
-      >
-        {icon}
-      </span>
-      <div>
-        <dt className="text-[0.75rem] leading-tight font-medium tracking-wide text-ash uppercase">
-          {label}
-        </dt>
-        <dd className="mt-1 text-small text-ink">{children}</dd>
-      </div>
+    <div className="pl-12">
+      <dt className="relative text-[0.75rem] leading-tight font-medium tracking-wide text-ash uppercase">
+        <span
+          aria-hidden="true"
+          className="absolute top-0 right-full mr-3 grid size-9 place-items-center rounded-chip bg-clay/10 text-clay-ink [&>svg]:size-[1.125rem]"
+        >
+          {icon}
+        </span>
+        {label}
+      </dt>
+      <dd className="mt-1 text-small text-ink">{children}</dd>
     </div>
   );
 }

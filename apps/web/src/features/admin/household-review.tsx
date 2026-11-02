@@ -78,10 +78,10 @@ function IdNumberRow({ household, client }: { household: HouseholdDto; client: A
             {t('idNumberFailed')}
           </span>
         ) : null}
+        {household.idNumberMasked ? (
+          <span className="w-full text-ash text-xs">{t('revealAudited')}</span>
+        ) : null}
       </dd>
-      {household.idNumberMasked ? (
-        <p className="col-span-2 text-ash text-xs">{t('revealAudited')}</p>
-      ) : null}
     </>
   );
 }
