@@ -321,6 +321,19 @@ export const PHOTO_CREDITS: readonly PhotoCredit[] = [
     tint: '#7f5e4e',
     widths: [640, 1280],
   },
+  {
+    id: 'ong-gom-lam-may',
+    title:
+      'File:Tube for papers, Bat Trang ceramic - Nguyen dynasty, 19th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05329.JPG',
+    author: 'Daderot',
+    license: 'CC0',
+    licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+    sourceUrl:
+      'https://commons.wikimedia.org/wiki/File:Tube_for_papers,_Bat_Trang_ceramic_-_Nguyen_dynasty,_19th_century_AD_-_Vietnam_National_Museum_of_Fine_Arts_-_Hanoi,_Vietnam_-_DSC05329.JPG',
+    ratio: '3/4',
+    tint: '#9b958e',
+    widths: [640, 1280],
+  },
 ];
 
 export const PHOTO_BY_ID: ReadonlyMap<string, PhotoCredit> = new Map(
