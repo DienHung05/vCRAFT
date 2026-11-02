@@ -1436,6 +1436,9 @@
       "title": "Cannot check your session right now",
       "lead": "The vCraft server is not responding. Please try again in a few minutes.",
       "retry": "Try again"
+    },
+    "kiln": {
+      "sealed": "Sealed. Opening the kiln…"
     }
   },
   "studio": {

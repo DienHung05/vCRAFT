@@ -2,7 +2,7 @@
 
 import { Button } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
@@ -27,6 +27,12 @@ export function CheckEmailPanel({
   const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_SECONDS);
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [error, setError] = useState<AuthErrorKey | null>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+
+  // The panel replaces the form: move focus to its heading so it is announced.
+  useEffect(() => {
+    heading.current?.focus();
+  }, []);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -54,8 +60,10 @@ export function CheckEmailPanel({
   };
 
   return (
-    <div className="flex flex-col gap-4" aria-live="polite">
-      <h2 className="font-display text-h3 text-glaze">{t('title')}</h2>
+    <div className="flex flex-col gap-4">
+      <h2 ref={heading} tabIndex={-1} className="font-display text-h3 text-glaze outline-none">
+        {t('title')}
+      </h2>
       <p>{t('lead', { email })}</p>
       <p className="text-small text-ash">{t('spam')}</p>
       {error ? <FormAlert tone="error">{errors(error)}</FormAlert> : null}

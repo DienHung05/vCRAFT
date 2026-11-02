@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { type KilnFeedback, KilnFeedbackContext } from '@/features/auth/kiln/kiln-feedback';
 import { SignInForm } from '@/features/auth/sign-in-form';
 import { renderVi } from './render';
 
@@ -104,5 +105,112 @@ describe('SignInForm', () => {
   it('báo cần đăng nhập khi bị guard chuyển tới', () => {
     renderVi(<SignInForm next="/vi/admin" needSignIn />);
     expect(screen.getByRole('status').textContent).toContain('cần đăng nhập');
+  });
+});
+
+describe('SignInForm in the kiln card', () => {
+  function feedbackSpy() {
+    let release: () => void = () => {};
+    const feedback: KilnFeedback = {
+      fire: vi.fn(),
+      fail: vi.fn(),
+      reset: vi.fn(),
+      seal: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            release = resolve;
+          }),
+      ),
+    };
+    return { feedback, release: () => release() };
+  }
+
+  function renderInCard(feedback: KilnFeedback) {
+    return renderVi(
+      <KilnFeedbackContext value={feedback}>
+        <SignInForm next={null} />
+      </KilnFeedbackContext>,
+    );
+  }
+
+  it('fires on submit, seals on success, and only navigates once the seal has landed', async () => {
+    signInWithPassword.mockResolvedValue({ error: null });
+    const { feedback, release } = feedbackSpy();
+    renderInCard(feedback);
+    await fill('buyer@vidu.vn', 'matkhau2026');
+
+    await waitFor(() => expect(feedback.seal).toHaveBeenCalledTimes(1));
+    // The destination goes to seal() so the browser can prerender it while the stamp plays.
+    expect(feedback.seal).toHaveBeenCalledWith('/auth/continue?locale=vi');
+    expect(feedback.fire).toHaveBeenCalledTimes(1);
+    expect(feedback.fail).not.toHaveBeenCalled();
+    expect(assign).not.toHaveBeenCalled();
+
+    release();
+    await waitFor(() => expect(assign).toHaveBeenCalledWith('/auth/continue?locale=vi'));
+  });
+
+  it('wrong credentials: the card fails, no stamp, no navigation', async () => {
+    signInWithPassword.mockResolvedValue({
+      error: Object.assign(new Error('Invalid login credentials'), {
+        code: 'invalid_credentials',
+        status: 400,
+      }),
+    });
+    const { feedback } = feedbackSpy();
+    renderInCard(feedback);
+    await fill('buyer@vidu.vn', 'sai-mat-khau-1');
+
+    await screen.findByRole('alert');
+    expect(feedback.fire).toHaveBeenCalledTimes(1);
+    expect(feedback.fail).toHaveBeenCalledTimes(1);
+    expect(feedback.fail).toHaveBeenCalledWith();
+    expect(feedback.seal).not.toHaveBeenCalled();
+    expect(assign).not.toHaveBeenCalled();
+  });
+
+  it('client validation failure: fail only, nothing is fired or sent', async () => {
+    const { feedback } = feedbackSpy();
+    renderInCard(feedback);
+    fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }));
+    await screen.findByText('Nhập email của bạn.');
+    expect(feedback.fail).toHaveBeenCalledTimes(1);
+    expect(feedback.fail).toHaveBeenCalledWith('invalid');
+    expect(feedback.fire).not.toHaveBeenCalled();
+    expect(signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it('a thrown error also fails the card', async () => {
+    signInWithPassword.mockRejectedValue(new Error('network'));
+    const { feedback } = feedbackSpy();
+    renderInCard(feedback);
+    await fill('buyer@vidu.vn', 'matkhau2026');
+    await screen.findByRole('alert');
+    expect(feedback.fail).toHaveBeenCalledTimes(1);
+    expect(assign).not.toHaveBeenCalled();
+  });
+});
+
+describe('SignInForm accessibility after an error', () => {
+  it('puts the focus back on the submit button once the form is idle again', async () => {
+    signInWithPassword.mockResolvedValue({
+      error: Object.assign(new Error('Invalid login credentials'), {
+        code: 'invalid_credentials',
+        status: 400,
+      }),
+    });
+    renderVi(<SignInForm next={null} />);
+    await fill('buyer@vidu.vn', 'sai-mat-khau-1');
+    await screen.findByRole('alert');
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Đăng nhập' })),
+    );
+  });
+
+  it('gives the standalone links a 44px target', () => {
+    renderVi(<SignInForm next={null} />);
+    for (const name of ['Quên mật khẩu?', 'Hộ làng nghề? Đăng ký tham gia triển lãm']) {
+      expect(screen.getByRole('link', { name }).className).toContain('min-h-11');
+    }
   });
 });

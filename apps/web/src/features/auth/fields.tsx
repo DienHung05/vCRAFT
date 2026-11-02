@@ -9,8 +9,15 @@ import { type ComponentProps, type ReactNode, type Ref, useId, useState } from '
  * `aria-describedby`, viền và chữ lỗi chuyển sang son triện (DESIGN: Inputs / Fields).
  * `ref` là prop thường (React 19) nên nhận thẳng kết quả `register()` của react-hook-form.
  */
+/**
+ * A link on a line of its own in an account form: a 44px-tall target (the underlined text keeps its size).
+ * Links inside a sentence are exempt from the target size and keep their text styling.
+ */
+export const STANDALONE_LINK =
+  'inline-flex min-h-11 items-center self-start text-clay underline underline-offset-4';
+
 const controlClass =
-  'h-11 w-full rounded-input border bg-surface px-3 text-body text-ink placeholder:text-ash/70 ' +
+  'h-11 w-full rounded-input border bg-surface px-3 text-body text-ink placeholder:text-ash ' +
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glaze ' +
   'disabled:opacity-45';
 
@@ -29,14 +36,17 @@ function FieldFrame({ label, hint, error, optionalLabel, children, className }: 
   const errorId = `${id}-error`;
   const describedBy = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ');
   return (
-    <div className={cn('flex flex-col gap-1.5', className)}>
+    <div className={cn('kiln-field flex flex-col gap-1.5', className)}>
       <label htmlFor={id} className="text-small font-medium text-ink">
         {label}
         {optionalLabel ? (
           <span className="ml-1 font-normal text-ash">({optionalLabel})</span>
         ) : null}
       </label>
-      {children({ id, describedBy: describedBy || undefined, invalid: Boolean(error) })}
+      {/* `kiln-control` anchors the ember underline of the auth card (kiln/kiln.css); it adds no semantics. */}
+      <div className="kiln-control">
+        {children({ id, describedBy: describedBy || undefined, invalid: Boolean(error) })}
+      </div>
       {hint ? (
         <p id={hintId} className="text-small text-ash">
           {hint}

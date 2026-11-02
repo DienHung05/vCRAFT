@@ -11,8 +11,10 @@ import { Link } from '@/i18n/navigation';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
 import { CheckEmailPanel } from './check-email-panel';
-import { FormAlert, PasswordField, TextField } from './fields';
+import { FormAlert, PasswordField, STANDALONE_LINK, TextField } from './fields';
+import { useKilnFeedback } from './kiln/kiln-feedback';
 import { type RegisterValues, registerSchema } from './schemas';
+import { useFocusSubmitOnError } from './use-focus-submit-on-error';
 import { useValidationMessage } from './use-validation-message';
 
 export interface RegisterFormProps {
@@ -34,6 +36,7 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
   const t = useTranslations('auth');
   const locale = useLocale();
   const message = useValidationMessage();
+  const kiln = useKilnFeedback();
   const [error, setError] = useState<AuthErrorKey | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const {
@@ -46,37 +49,51 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
     defaultValues: { email: '', password: '', consent: false },
   });
 
-  const onSubmit = handleSubmit(async ({ email, password }) => {
-    setError(null);
-    const supabase = browserSupabase();
-    if (!supabase) return setError('unconfigured');
-    try {
-      const { error: failure } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            locale,
-            // The API records the sign-up consent from this when the account is first created.
-            privacy_policy_version: PRIVACY_POLICY_VERSION,
-            ...(household && wizardPath ? { next: wizardPath } : {}),
+  // The kiln card reacts to the outcome: a failure crackles and shakes the card.
+  const failWith = (key: AuthErrorKey) => {
+    kiln.fail();
+    setError(key);
+  };
+
+  const formRef = useFocusSubmitOnError(error, isSubmitting);
+
+  const onSubmit = handleSubmit(
+    async ({ email, password }) => {
+      kiln.fire();
+      setError(null);
+      const supabase = browserSupabase();
+      if (!supabase) return failWith('unconfigured');
+      try {
+        const { error: failure } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              locale,
+              // The API records the sign-up consent from this when the account is first created.
+              privacy_policy_version: PRIVACY_POLICY_VERSION,
+              ...(household && wizardPath ? { next: wizardPath } : {}),
+            },
           },
-        },
-      });
-      if (failure) return setError(authErrorKey(failure));
-      // Email đã có tài khoản cũng ra màn này (Supabase che), nên không lộ email nào đã đăng ký.
-      setSentTo(email);
-    } catch (failure) {
-      setError(authErrorKey(failure));
-    }
-  });
+        });
+        if (failure) return failWith(authErrorKey(failure));
+        // Email đã có tài khoản cũng ra màn này (Supabase che), nên không lộ email nào đã đăng ký.
+        // The form swaps to the check-email panel, so there is no stamp: just clear the card.
+        kiln.reset();
+        setSentTo(email);
+      } catch (failure) {
+        failWith(authErrorKey(failure));
+      }
+    },
+    () => kiln.fail('invalid'),
+  );
 
   if (sentTo) {
     return <CheckEmailPanel email={sentTo} {...(wizardPath ? { signInNext: wizardPath } : {})} />;
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {error ? <FormAlert tone="error">{t(`errors.${error}`)}</FormAlert> : null}
       <TextField
         label={t('fields.email')}
@@ -108,8 +125,8 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
             ? t('wizard.account.submit')
             : t('register.submit')}
       </Button>
-      <div className="flex flex-col gap-2 text-small">
-        <p className="text-ash">
+      <div className="flex flex-col text-small">
+        <p className="py-2.5 text-ash">
           {household ? t('wizard.account.haveAccount') : t('register.haveAccount')}{' '}
           <Link
             href={{
@@ -122,7 +139,7 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
           </Link>
         </p>
         {household ? null : (
-          <Link href="/dang-ky-nghe-nhan" className="text-clay underline underline-offset-4">
+          <Link href="/dang-ky-nghe-nhan" className={STANDALONE_LINK}>
             {t('register.householdLink')}
           </Link>
         )}

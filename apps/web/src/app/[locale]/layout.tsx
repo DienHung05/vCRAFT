@@ -10,6 +10,7 @@ import { routing } from '@/i18n/routing';
 import { FALLBACK_USD_RATE, showsUsdReference } from '@/lib/currency';
 import { siteOrigin } from '@/lib/site';
 import { getUsdRate } from '@/lib/usd-rate';
+import { VIEW_TRANSITION_GUARD_SCRIPT } from '@/lib/view-transition';
 import { FONTS_FLAG_SCRIPT, webFontVars } from '@/lib/web-fonts';
 import '../../styles/globals.css';
 
@@ -86,6 +87,8 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
       <head>
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a constant script; as a JSX child React would escape its quotes. */}
         <script dangerouslySetInnerHTML={{ __html: FONTS_FLAG_SCRIPT }} />
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a constant script, see lib/view-transition.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: VIEW_TRANSITION_GUARD_SCRIPT }} />
         <noscript>
           {/* Without JS nothing flips data-fonts, so the web fonts are switched on by CSS alone. */}
           <style>
