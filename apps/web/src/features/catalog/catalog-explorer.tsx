@@ -9,7 +9,7 @@ import {
 } from '@vcraft/contracts';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
 import { Button, buttonVariants } from '@vcraft/ui';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
@@ -55,6 +55,7 @@ export function CatalogExplorer({
   households,
   fetchProducts = browserFetch,
 }: CatalogExplorerProps) {
+  const locale = useLocale();
   const t = useTranslations('catalog');
   const nav = useTranslations('nav');
   const [filters, setFilters] = useState(initialFilters);
@@ -264,7 +265,7 @@ export function CatalogExplorer({
         >
           {items.map((product) => (
             <li key={product.id}>
-              <ProductCard product={toProductCardView(product)} heading="h2" />
+              <ProductCard product={toProductCardView(product, locale)} heading="h2" />
             </li>
           ))}
           <li ref={sentinel} aria-hidden="true" className="col-span-full h-px" />

@@ -83,6 +83,10 @@ export class Product extends BaseEntity {
   @Property({ type: 'string', length: 500, nullable: true })
   coverAlt?: string | null;
 
+  /** English description of the preset cover; empty means pages on `/en` fall back to `coverAlt`. */
+  @Property({ type: 'string', length: 500, nullable: true })
+  coverAltEn?: string | null;
+
   @Property({ type: 'json', nullable: true })
   images?: ProductImage[] | null;
 

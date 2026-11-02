@@ -6,7 +6,7 @@ import { ImageSlot } from '@/components/image-slot';
 import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { EmptyState } from '@/components/states/empty-state';
 import { fetchHouseholds } from '@/features/catalog/exhibition-api';
-import { photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
+import { altFor, photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
 import { resolveLocale } from '@/lib/locale';
 
@@ -23,10 +23,10 @@ export async function generateMetadata({
 
 /** Danh sách hộ nghệ nhân (FR-CAT-06): mỗi hộ đã duyệt một thẻ, lấy từ `GET /households`. */
 export default async function ArtisansIndexPage({ params }: PageProps<'/[locale]/nghe-nhan'>) {
-  await resolveLocale(params);
-  const [t, artisan, nav, result] = await Promise.all([
+  const locale = await resolveLocale(params);
+  const [t, preset, nav, result] = await Promise.all([
     getTranslations('indexPages.artisans'),
-    getTranslations('artisan'),
+    getTranslations('presetFigure'),
     getTranslations('nav'),
     fetchHouseholds(),
   ]);
@@ -42,36 +42,36 @@ export default async function ArtisansIndexPage({ params }: PageProps<'/[locale]
       </header>
       {households.length > 0 ? (
         <ul className="mt-10 grid gap-8 sm:grid-cols-2 md:grid-cols-3">
-          {households.map((h) => (
-            <li key={h.slug}>
-              <Link
-                href={{ pathname: '/nghe-nhan/[slug]', params: { slug: h.slug } }}
-                className="group block"
-              >
-                <ImageSlot
-                  alt={artisan('coverAlt', { household: h.name })}
-                  tint={tintOf(h.slug)}
-                  ratio="3/4"
-                  {...slotPhoto(
-                    photoFromUrl(
-                      h.coverUrl,
-                      artisan('coverAlt', { household: h.name }),
-                      h.coverVariants,
-                    ),
-                  )}
-                  sizes="(min-width: 768px) 30vw, (min-width: 640px) 50vw, 100vw"
-                  className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
-                />
-                <h2 className="mt-4 text-h3 transition-colors group-hover:text-clay">{h.name}</h2>
-                <p className="text-small text-ash">
-                  {[h.representative, h.craft].filter(Boolean).join(' · ')}
-                </p>
-                <p className="mt-1 text-small text-ash">
-                  {t('productCount', { count: h.productCount })}
-                </p>
-              </Link>
-            </li>
-          ))}
+          {households.map((h) => {
+            // What the cover really shows; a household without a photo gets an illustration label.
+            const coverAlt = h.coverUrl
+              ? altFor(locale, h.coverAlt ?? '', h.coverAltEn) || preset('household')
+              : preset('household');
+            return (
+              <li key={h.slug}>
+                <Link
+                  href={{ pathname: '/nghe-nhan/[slug]', params: { slug: h.slug } }}
+                  className="group block"
+                >
+                  <ImageSlot
+                    alt={coverAlt}
+                    tint={tintOf(h.slug)}
+                    ratio="3/4"
+                    {...slotPhoto(photoFromUrl(h.coverUrl, coverAlt, h.coverVariants))}
+                    sizes="(min-width: 768px) 30vw, (min-width: 640px) 50vw, 100vw"
+                    className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
+                  />
+                  <h2 className="mt-4 text-h3 transition-colors group-hover:text-clay">{h.name}</h2>
+                  <p className="text-small text-ash">
+                    {[h.representative, h.craft].filter(Boolean).join(' · ')}
+                  </p>
+                  <p className="mt-1 text-small text-ash">
+                    {t('productCount', { count: h.productCount })}
+                  </p>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <EmptyState

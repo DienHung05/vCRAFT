@@ -1,7 +1,7 @@
 'use client';
 
 import type { MapPinDto } from '@vcraft/contracts';
-import { VaseFigure } from '@vcraft/ui';
+import { ProductFigure } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { pinOpenState } from './map-model';
@@ -38,7 +38,12 @@ export function PinPopup({ pin, now }: { pin: MapPinDto; now: Date }) {
         />
       ) : (
         <div className="grid aspect-[3/2] place-items-center rounded-input bg-paper">
-          <VaseFigure className="h-3/4 opacity-80" />
+          <ProductFigure
+            kind="generic"
+            className="h-3/4 opacity-80"
+            body="var(--color-glaze)"
+            band="var(--color-paper)"
+          />
         </div>
       )}
       <p className="font-medium text-body">{pin.household.name}</p>

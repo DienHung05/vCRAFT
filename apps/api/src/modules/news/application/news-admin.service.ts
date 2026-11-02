@@ -247,7 +247,11 @@ export class NewsAdminService {
           targetId: newsId,
           role: 'COVER',
         });
-        if (link) link.altText = input.coverAlt || null;
+        if (link) {
+          const next = input.coverAlt || null;
+          if (next !== (link.altText ?? null)) link.altEn = null;
+          link.altText = next;
+        }
       }
       return;
     }
@@ -265,6 +269,7 @@ export class NewsAdminService {
     if (link) {
       link.media = media;
       link.altText = input.coverAlt || null;
+      link.altEn = null;
     } else
       em.create(MediaLink, {
         media,

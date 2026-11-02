@@ -8,6 +8,8 @@ export interface DemoVerificationDoc {
   /** Tên loại giấy tờ hiển thị cho Ban quản lý trong màn duyệt hộ (FR-ADM-02). */
   caption: string;
   altText: string;
+  /** English description of the same file. */
+  altTextEn: string;
 }
 
 export const DEMO_VERIFICATION_DOCS: readonly DemoVerificationDoc[] = [
@@ -15,16 +17,22 @@ export const DEMO_VERIFICATION_DOCS: readonly DemoVerificationDoc[] = [
     id: 'cccd-mau',
     caption: 'Căn cước công dân (bản mẫu)',
     altText: 'Bản mẫu căn cước công dân với số giả, đóng dấu chéo "MẪU – KHÔNG CÓ GIÁ TRỊ"',
+    altTextEn:
+      'Specimen citizen ID card with a fake number, stamped diagonally "MẪU – KHÔNG CÓ GIÁ TRỊ" (specimen, not valid)',
   },
   {
     id: 'cu-tru-mau',
     caption: 'Xác nhận cư trú (bản mẫu)',
     altText:
       'Bản mẫu giấy xác nhận cư trú với nội dung giả, đóng dấu chéo "MẪU – KHÔNG CÓ GIÁ TRỊ"',
+    altTextEn:
+      'Specimen residence certificate with fake content, stamped diagonally "MẪU – KHÔNG CÓ GIÁ TRỊ" (specimen, not valid)',
   },
   {
     id: 'xuong-mau',
     caption: 'Ảnh xưởng (bản mẫu)',
     altText: 'Hình vẽ minh họa ảnh xưởng gốm, đóng dấu chéo "MẪU – KHÔNG CÓ GIÁ TRỊ"',
+    altTextEn:
+      'Drawing standing in for a photo of the pottery workshop, stamped diagonally "MẪU – KHÔNG CÓ GIÁ TRỊ" (specimen, not valid)',
   },
 ];

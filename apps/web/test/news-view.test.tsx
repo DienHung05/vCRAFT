@@ -47,6 +47,7 @@ const page: NewsListDto = {
         height: null,
         variants: [],
         alt: 'Quầy gốm dưới ánh đèn',
+        altEn: null,
         caption: null,
         credit: {
           title: 'File:Cho-gom.jpg',

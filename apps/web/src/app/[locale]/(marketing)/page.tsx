@@ -10,7 +10,13 @@ import {
   fetchProducts,
   fetchVillageStats,
 } from '@/features/catalog/exhibition-api';
-import { photoFromUrl, projectPins, slotPhoto, tintOf } from '@/features/catalog/view-models';
+import {
+  altFor,
+  photoFromUrl,
+  projectPins,
+  slotPhoto,
+  tintOf,
+} from '@/features/catalog/view-models';
 import { fetchNews } from '@/features/news/news-api';
 import { fetchMapPins, pinOpenState } from '@/features/village-map/map-model';
 import { VillageMiniMap } from '@/features/village-map/village-mini-map';
@@ -19,11 +25,14 @@ import type { DemoPhotoRef, LogStage } from '@/lib/demo/data';
 import { dayPhoto } from '@/lib/demo/stage-photos';
 import { resolveLocale } from '@/lib/locale';
 
-/** Ảnh hero thật (có giấy phép); bỏ đi thì quay về hình bình vẽ tay. */
+/**
+ * Hero photo: a Commons-confirmed Bát Tràng vase (the file name states "Bat Trang ceramic"), the same file as the cover of
+ * BT7K2QXM. Drop it and the hand-drawn vase figure takes its place.
+ */
 const HERO_PHOTO: DemoPhotoRef | undefined = {
-  id: 'hero-binh-chu-dau',
-  alt: 'Chiếc bình gốm men ngà vẽ lam hoa mẫu đơn, cổ cao thon, bụng tròn, đặt trong một cửa hàng gốm',
-  altKey: 'hero-binh-chu-dau',
+  id: 'binh-men-lam-xam',
+  alt: 'Bình cổ cao, bụng tròn, men xám lam, đắp nổi cành cây và một người cầm cần câu nhuốm vàng',
+  altKey: 'binh-men-lam-xam',
 };
 
 const DAY_STAGES: readonly { stage: LogStage; tint: string }[] = [
@@ -42,11 +51,12 @@ export const dynamic = 'force-dynamic';
 const VILLAGE_YEARS = 700;
 
 export default async function HomePage({ params }: PageProps<'/[locale]'>) {
-  await resolveLocale(params);
+  const locale = await resolveLocale(params);
   const [
     t,
     stages,
     common,
+    preset,
     format,
     householdsResult,
     productsResult,
@@ -57,6 +67,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
     getTranslations('home'),
     getTranslations('stages'),
     getTranslations('common'),
+    getTranslations('presetFigure'),
     getFormatter(),
     fetchHouseholds(),
     fetchProducts({ limit: 1 }),
@@ -196,33 +207,31 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
           />
         ) : (
           <ul className="mt-10 grid gap-8 md:grid-cols-3">
-            {featured.map((h, i) => (
-              <li key={h.slug} className={cn(i === 1 && 'md:mt-16')}>
-                <Link
-                  href={{ pathname: '/nghe-nhan/[slug]', params: { slug: h.slug } }}
-                  className="group block"
-                >
-                  <ImageSlot
-                    alt={common('householdCoverAlt', { household: h.name })}
-                    tint={tintOf(h.slug)}
-                    ratio="3/4"
-                    {...slotPhoto(
-                      photoFromUrl(
-                        h.coverUrl,
-                        common('householdCoverAlt', { household: h.name }),
-                        h.coverVariants,
-                      ),
-                    )}
-                    sizes="(min-width: 768px) 30vw, 100vw"
-                    className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
-                  />
-                  <h3 className="mt-4 transition-colors group-hover:text-clay">{h.name}</h3>
-                  <p className="text-small text-ash">
-                    {[h.representative, h.craft].filter(Boolean).join(' · ')}
-                  </p>
-                </Link>
-              </li>
-            ))}
+            {featured.map((h, i) => {
+              const coverAlt =
+                altFor(locale, h.coverAlt ?? '', h.coverAltEn) || preset('household');
+              return (
+                <li key={h.slug} className={cn(i === 1 && 'md:mt-16')}>
+                  <Link
+                    href={{ pathname: '/nghe-nhan/[slug]', params: { slug: h.slug } }}
+                    className="group block"
+                  >
+                    <ImageSlot
+                      alt={coverAlt}
+                      tint={tintOf(h.slug)}
+                      ratio="3/4"
+                      {...slotPhoto(photoFromUrl(h.coverUrl, coverAlt, h.coverVariants))}
+                      sizes="(min-width: 768px) 30vw, 100vw"
+                      className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
+                    />
+                    <h3 className="mt-4 transition-colors group-hover:text-clay">{h.name}</h3>
+                    <p className="text-small text-ash">
+                      {[h.representative, h.craft].filter(Boolean).join(' · ')}
+                    </p>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
         <PhotoCreditsNote />
@@ -333,13 +342,13 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
               <li key={n.slug} className="flex flex-col gap-3">
                 <div>
                   <ImageSlot
-                    alt={n.cover?.alt || n.title}
+                    alt={altFor(locale, n.cover?.alt || n.title, n.cover?.altEn)}
                     tint={tintOf(n.slug)}
                     ratio="3/2"
                     {...slotPhoto(
                       photoFromUrl(
                         n.cover?.url ?? null,
-                        n.cover?.alt || n.title,
+                        altFor(locale, n.cover?.alt || n.title, n.cover?.altEn),
                         n.cover?.variants,
                       ),
                     )}

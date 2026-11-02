@@ -84,6 +84,8 @@ export const AdminHouseholdListSchema = z.array(AdminHouseholdSchema);
 export const HouseholdDocumentSchema = z.object({
   id: IdSchema,
   mimeType: z.string(),
+  /** What the document is (for example "Căn cước công dân"); null when the file has no caption. */
+  caption: z.string().nullable().default(null),
   sizeBytes: z.int().nonnegative(),
   createdAt: IsoDateTimeSchema,
 });
@@ -271,6 +273,8 @@ export const ProductResponseSchema = z.object({
   /** Sizes of the cover when it is an uploaded photo; empty for a preset cover. */
   coverVariants: PublicImageVariantsSchema,
   coverAlt: z.string().nullable(),
+  /** English description of the cover for `/en`; null falls back to `coverAlt`. */
+  coverAltEn: z.string().nullable().default(null),
   /** `url` trống khi ảnh còn chờ xử lý; trang công khai bỏ qua các ảnh đó. */
   images: z.array(
     z.object({
@@ -318,6 +322,8 @@ export const PublicHouseholdResponseSchema = z.object({
       /** Empty for static demo photos, which exist at one size. */
       variants: PublicImageVariantsSchema,
       alt: z.string(),
+      /** English description for `/en`; null falls back to `alt`. */
+      altEn: z.string().nullable().default(null),
       caption: z.string().nullable(),
       credit: MediaCreditSchema.nullable(),
     }),

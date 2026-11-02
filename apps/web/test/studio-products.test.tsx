@@ -45,6 +45,7 @@ function product(n: number, overrides: Partial<ProductDto> = {}): ProductDto {
     coverUrl: null,
     coverVariants: [],
     coverAlt: null,
+    coverAltEn: null,
     images: [],
     status: 'DRAFT',
     publishedAt: null,

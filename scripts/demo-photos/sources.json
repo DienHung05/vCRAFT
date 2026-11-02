@@ -3,31 +3,6 @@
   "widths": [640, 1280],
   "photos": [
     {
-      "id": "am-men-ngoc-ly",
-      "file": "Teapot, celadon glaze ceramic - Lý dynasty, 11th-12th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05386.JPG",
-      "ratio": "4/5",
-      "author": "Daderot",
-      "license": "CC0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
-    },
-    {
-      "id": "bat-ve-sen-men-trong",
-      "file": "Bol, M.C. 2019-90 (3 of 4).jpg",
-      "ratio": "4/5",
-      "author": "Musée Cernuschi, Paris (Paris Musées)",
-      "license": "CC0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
-    },
-    {
-      "id": "coc-men-trang-quai-tron",
-      "file": "Mug (AM 2014.19.55-2).jpg",
-      "ratio": "4/5",
-      "author": "Crown Lynn Potteries Ltd (ảnh: Auckland Museum)",
-      "license": "CC BY 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
-      "region": [0, 0.1, 1, 0.83]
-    },
-    {
       "id": "binh-men-lam-xam",
       "position": "centre",
       "file": "Vase, Bat Trang ceramic with blue glaze - Nguyen dynasty, 19th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05325.JPG",
@@ -118,15 +93,6 @@
       "position": "right"
     },
     {
-      "id": "bia-minh-hai",
-      "file": "DSC0252 (22946631901).jpg",
-      "ratio": "16/9",
-      "author": "Tran Anh Khoa (zorrotran)",
-      "license": "CC BY-SA 2.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
-      "region": [0, 0, 0.88, 0.88]
-    },
-    {
       "id": "bia-lam-ngoc",
       "file": "Bình vôi (lime container) 3.JPG",
       "ratio": "16/9",
@@ -175,22 +141,6 @@
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
     },
     {
-      "id": "ln-cua-lo-vom",
-      "file": "Kiln in Vietnam in Chau Thanh District, 07.jpg",
-      "ratio": "3/4",
-      "author": "Karel Bilek",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
-    },
-    {
-      "id": "dp-bat-xep-rom",
-      "file": "Porcelana vendejo en vilaĝo Bát Tràng (Vjetnamio) 02.jpg",
-      "ratio": "3/2",
-      "author": "RG72",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
-    },
-    {
       "id": "dp-chau-nau",
       "file": "Porcelana vendejo en vilaĝo Bát Tràng (Vjetnamio) 03.jpg",
       "ratio": "3/2",
@@ -213,141 +163,6 @@
       "author": "松岡明芳 (Akiyoshi Matsuoka)",
       "license": "CC BY-SA 3.0",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
-      "id": "ht-binh-hoa-lam-vo",
-      "file": "Vase by Chu Dau ceramic 3.JPG",
-      "ratio": "3/4",
-      "author": "Hungda",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
-      "id": "ht-den-dau-su",
-      "file": "Kerosene lamps in Vietnam (đèn dầu bằng sứ).JPG",
-      "ratio": "1/1",
-      "author": "Hungda",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
-      "id": "ht-de-lu-chu-dau",
-      "file": "Jar support by Chu Dau ceramic.JPG",
-      "ratio": "3/2",
-      "author": "Hungda",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
-      "id": "ht-binh-ngoc-ho-xuan",
-      "file": "Yuhuchun vase, Chu Dau kiln, Hai Duong, Early Le dynasty, 15th century AD, blue & white glazed ceramic with polychrome - National Museum of Vietnamese History - Hanoi, Vietnam - DSC05693.JPG",
-      "ratio": "3/4",
-      "author": "Daderot",
-      "license": "CC0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
-    },
-    {
-      "id": "tl-clay",
-      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2711.JPG",
-      "ratio": "3/2",
-      "author": "松岡明芳 (Akiyoshi Matsuoka)",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
-      "id": "tl-throw",
-      "file": "Bat-Trang-Ceramic-Village8.jpg",
-      "ratio": "3/2",
-      "author": "Steven C. Price",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
-    },
-    {
-      "id": "tl-dry",
-      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2722.JPG",
-      "ratio": "3/2",
-      "author": "松岡明芳 (Akiyoshi Matsuoka)",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
-      "id": "tl-paint",
-      "file": "Bat-Trang-Ceramic-Village10.jpg",
-      "ratio": "3/2",
-      "author": "Steven C. Price",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
-    },
-    {
-      "id": "tl-glaze",
-      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2676.JPG",
-      "ratio": "3/2",
-      "author": "松岡明芳 (Akiyoshi Matsuoka)",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
-      "id": "tl-fire",
-      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2741.JPG",
-      "ratio": "3/2",
-      "author": "松岡明芳 (Akiyoshi Matsuoka)",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
-      "id": "tl-fire-2",
-      "file": "Kiln in Vietnam in Chau Thanh District, 04.jpg",
-      "ratio": "3/2",
-      "author": "Karel Bilek",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
-      "region": [0, 0.4, 1, 0.5]
-    },
-    {
-      "id": "tl-finish",
-      "file": "Vase by Chu Dau ceramic.JPG",
-      "ratio": "3/2",
-      "author": "Hungda",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
-      "id": "sq-throw",
-      "file": "Bat-Trang-Ceramic-Village8.jpg",
-      "ratio": "1/1",
-      "author": "Steven C. Price",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
-      "position": "right",
-      "widths": [640]
-    },
-    {
-      "id": "sq-dry",
-      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2734.JPG",
-      "ratio": "1/1",
-      "author": "松岡明芳 (Akiyoshi Matsuoka)",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
-      "widths": [640]
-    },
-    {
-      "id": "sq-paint",
-      "file": "Bat-Trang-Ceramic-Village10.jpg",
-      "ratio": "1/1",
-      "author": "Steven C. Price",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
-      "widths": [640],
-      "position": "right"
-    },
-    {
-      "id": "sq-glaze",
-      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2676.JPG",
-      "ratio": "1/1",
-      "author": "松岡明芳 (Akiyoshi Matsuoka)",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
-      "widths": [640]
     },
     {
       "id": "day-clay",
@@ -376,11 +191,11 @@
     },
     {
       "id": "day-fire",
-      "file": "Kiln in Vietnam in Chau Thanh District, 04.jpg",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2741.JPG",
       "ratio": "3/4",
-      "author": "Karel Bilek",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
     },
     {
       "id": "day-finish",
@@ -391,24 +206,8 @@
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
     },
     {
-      "id": "hero-binh-chu-dau",
-      "file": "Vase by Chu Dau ceramic 2.JPG",
-      "ratio": "4/5",
-      "author": "Hungda",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
       "id": "news-dat-set",
       "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2699.JPG",
-      "ratio": "3/2",
-      "author": "松岡明芳 (Akiyoshi Matsuoka)",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
-      "id": "news-cho-gom",
-      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2615.JPG",
       "ratio": "3/2",
       "author": "松岡明芳 (Akiyoshi Matsuoka)",
       "license": "CC BY-SA 3.0",

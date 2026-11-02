@@ -1,4 +1,4 @@
-import { Badge, VaseFigure } from '@vcraft/ui';
+import { Badge, ProductFigure } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { ImageSlot } from '@/components/image-slot';
 import { UsdReference } from '@/components/usd-reference';
@@ -18,6 +18,7 @@ export function ProductCard({
   heading?: 'h2' | 'h3';
 }) {
   const t = useTranslations('common');
+  const preset = useTranslations('presetFigure');
   const format = useFormatter();
   return (
     <Link
@@ -25,7 +26,7 @@ export function ProductCard({
       className="group block"
     >
       <ImageSlot
-        alt={product.image?.alt ?? product.name}
+        alt={product.image?.alt ?? preset(product.presetKind)}
         tint={product.tint}
         ratio="4/5"
         {...slotPhoto(product.image)}
@@ -33,7 +34,12 @@ export function ProductCard({
         className="grid place-items-center transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
       >
         {product.image ? null : (
-          <VaseFigure className="h-1/2 opacity-90" body="var(--color-paper)" band={product.tint} />
+          <ProductFigure
+            kind={product.presetKind}
+            className="h-1/2 opacity-90"
+            body="var(--color-paper)"
+            band={product.tint}
+          />
         )}
         {product.oneOfAKind ? (
           <Badge tone="seal" className="absolute top-3 left-3 bg-paper">

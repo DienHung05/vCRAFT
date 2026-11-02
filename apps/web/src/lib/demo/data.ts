@@ -198,10 +198,6 @@ const artisans: Artisan[] = [
       id: 'chan-dung-minh-hai',
       alt: 'Bàn tay đang chuốt thành một chiếc bát gốm trắng trên bàn xoay, ngón tay bọc da mỏng',
     },
-    banner: {
-      id: 'bia-minh-hai',
-      alt: 'Hai lò nung gạch cao hình chóp, vách gạch cũ nhiều lỗ thông hơi, cỏ mọc quanh chân lò dưới trời trong',
-    },
     openNow: true,
     hours: '7:30 – 17:30',
     capacityPerMonth: 1200,
@@ -373,10 +369,6 @@ const artisans: Artisan[] = [
         caption: 'Cửa lò xây vòm',
         ratio: '3/4',
         tint: '#80776d',
-        photo: {
-          id: 'ln-cua-lo-vom',
-          alt: 'Cửa lò nung xây bằng gạch đỏ, vòm nhọn, bên trong tối',
-        },
       },
     ],
   },
@@ -413,10 +405,6 @@ const artisans: Artisan[] = [
         caption: 'Bát chậu xếp rơm',
         ratio: '3/2',
         tint: '#7d7865',
-        photo: {
-          id: 'dp-bat-xep-rom',
-          alt: 'Chồng bát và chậu men trắng vẽ lam xếp cùng rơm lót trong một gian kho nhỏ',
-        },
       },
       {
         caption: 'Chậu men nâu',
@@ -482,37 +470,21 @@ const artisans: Artisan[] = [
         caption: 'Bình vẽ tre trúc',
         ratio: '3/4',
         tint: '#8a8174',
-        photo: {
-          id: 'ht-binh-hoa-lam-vo',
-          alt: 'Chiếc bình men ngà vẽ cây trúc và chim bằng nét xanh đen, miệng loe, đặt cạnh những bình khác',
-        },
       },
       {
         caption: 'Đèn dầu sứ',
         ratio: '1/1',
         tint: '#7d8793',
-        photo: {
-          id: 'ht-den-dau-su',
-          alt: 'Chiếc đèn dầu bằng sứ trắng vẽ rồng lam, bên cạnh những bình sứ vẽ mây',
-        },
       },
       {
         caption: 'Đế lư men ngà vẽ chàm',
         ratio: '3/2',
         tint: '#8b8f90',
-        photo: {
-          id: 'ht-de-lu-chu-dau',
-          alt: 'Đế lư tròn men ngà có chân cuộn, vẽ chàm đậm hình đầu thú và rồng',
-        },
       },
       {
         caption: 'Bình lê men trắng xanh',
         ratio: '3/4',
         tint: '#8a8d77',
-        photo: {
-          id: 'ht-binh-ngoc-ho-xuan',
-          alt: 'Bình dáng quả lê thon, thân vẽ chim bằng lam trên nền men trắng xanh nhạt',
-        },
       },
     ],
   },
@@ -612,10 +584,6 @@ const rawProducts: (Omit<Product, 'log'> & { log: RawLogEntry[] })[] = [
     oneOfAKind: false,
     stock: 12,
     tint: '#6f9a8b',
-    photo: {
-      id: 'am-men-ngoc-ly',
-      alt: 'Chiếc ấm gốm men ngọc xanh nhạt ngả vàng, thân múi dưa phủ men rạn mảnh và một đường nứt đã gắn lại, nắp hình cánh sen, vòi đầu thú và quai vòng',
-    },
     description:
       'Ấm trà men ngọc xanh nhạt, thân múi dưa, nắp hình cánh sen, quai vòng; men rạn mảnh toàn thân.',
     artisanNote: '',
@@ -635,10 +603,6 @@ const rawProducts: (Omit<Product, 'log'> & { log: RawLogEntry[] })[] = [
     oneOfAKind: false,
     stock: 40,
     tint: '#b4895a',
-    photo: {
-      id: 'bat-ve-sen-men-trong',
-      alt: 'Lòng chiếc bát gốm men trong ngả ngà, giữa vẽ lam một đoá sen cách điệu có lá, viền miệng vẽ dải hoa văn nhỏ',
-    },
     description: 'Bát vẽ tay hoa sen xanh lam trong lòng bát, men trong.',
     artisanNote: '',
     scans: 31,
@@ -657,10 +621,6 @@ const rawProducts: (Omit<Product, 'log'> & { log: RawLogEntry[] })[] = [
     oneOfAKind: false,
     stock: 300,
     tint: '#9a8064',
-    photo: {
-      id: 'coc-men-trang-quai-tron',
-      alt: 'Chiếc cốc sứ trắng thân thẳng, men bóng, quai tròn bên trái, đặt trên nền trắng',
-    },
     description: 'Cốc thân thẳng men trắng bóng, quai tròn, có thể in logo theo đơn.',
     artisanNote: '',
     scans: 12,
@@ -688,10 +648,6 @@ const news: NewsItem[] = [
     date: '2026-10-25',
     tag: 'Sự kiện',
     tint: '#a8482a',
-    photo: {
-      id: 'news-cho-gom',
-      alt: 'Dãy gian hàng gốm men lam trắng dưới mái xanh ở chợ gốm, bàn ghế che bạt phía trước',
-    },
   },
   {
     slug: 'lop-vuot-gom-cuoi-tuan',

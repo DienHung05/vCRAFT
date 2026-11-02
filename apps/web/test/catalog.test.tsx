@@ -10,6 +10,7 @@ import {
   toProductFilters,
 } from '@/features/catalog/catalog-filters';
 import { productsQueryString } from '@/features/catalog/exhibition-query';
+import { ProductCard } from '@/features/catalog/product-card';
 import {
   photoFromUrl,
   projectPins,
@@ -40,6 +41,7 @@ function card(id: string, overrides: Partial<ProductCardDto> = {}): ProductCardD
     coverUrl: null,
     coverVariants: [],
     coverAlt: null,
+    coverAltEn: null,
     publishedAt: null,
     household: { name: 'Hộ A', slug: 'ho-a' },
     ...overrides,
@@ -83,6 +85,27 @@ describe('view models', () => {
       alt: 'X',
     });
     expect(photoFromUrl(null, 'X')).toBeUndefined();
+  });
+
+  it('a product without a photo shows a labelled illustration of its own kind, never a stand-in photo', () => {
+    const bowl = toProductCardView(card('1', { name: 'Bát ăn cơm vẽ sen', category: 'TABLEWARE' }));
+    expect(bowl.presetKind).toBe('bowl');
+    const { container } = renderVi(<ProductCard product={bowl} />);
+    expect(
+      screen.getByRole('img', { name: /Hình minh hoạ chiếc bát.*chưa có ảnh thật/ }),
+    ).toBeTruthy();
+    expect(container.querySelector('img')).toBeNull();
+  });
+
+  it('shows the English description of a cover on /en and the Vietnamese one on /vi', () => {
+    const dto = card('2', {
+      coverUrl: 'https://cdn.test/a.webp',
+      coverAlt: 'Cái bình',
+      coverAltEn: 'A vase',
+    });
+    expect(toProductCardView(dto, 'en').image?.alt).toBe('A vase');
+    expect(toProductCardView(dto, 'vi').image?.alt).toBe('Cái bình');
+    expect(toProductCardView({ ...dto, coverAltEn: null }, 'en').image?.alt).toBe('Cái bình');
   });
 
   it('độc bản theo loại, màu ổn định theo mã', () => {

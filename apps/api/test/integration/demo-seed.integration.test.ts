@@ -13,6 +13,7 @@ import {
   DEMO_REQUEST_IDS,
   DEMO_VERIFICATION_DOCS,
   demoDocumentAssetId,
+  demoPhotoAssetId,
   FIELD_CONTEXTS,
   FieldCipher,
   Household,
@@ -24,13 +25,17 @@ import {
   OrderAllocation,
   Product,
   QuotationRequest,
+  RETIRED_DEMO_PHOTO_IDS,
   seedDemoData,
   verifyDemoData,
 } from '@vcraft/database';
 import { type ChainEntry, verifyChain } from '@vcraft/domain';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { publishDemoMedia } from '../../../worker/src/demo/publish-demo-media.js';
+import {
+  pruneRetiredDemoMedia,
+  publishDemoMedia,
+} from '../../../worker/src/demo/publish-demo-media.js';
 import { startTestApp, TEST_FIELD_KEYS, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
 
@@ -152,7 +157,7 @@ describe('Demo seed and guarded reset', () => {
   });
 
   it('ảnh có giấy phép và giấy tờ mẫu: tải lên, gắn vào seed, verify xanh, chạy lại được sau reset', async () => {
-    // CI chậm: dùng bản thu nhỏ 160px của đúng 38 tệp (cùng tên, cùng đường xử lý ảnh) để bước mã hóa AVIF/WebP không
+    // CI chậm: dùng bản thu nhỏ 160px của đúng các tệp ảnh trong bảng ánh xạ (cùng tên, cùng đường xử lý ảnh) để bước mã hóa AVIF/WebP không
     // chiếm thời gian; ảnh thật đầy đủ được kiểm bằng `demo:verify` trên project Supabase.
     const realImagesDir = fileURLToPath(
       new URL('../../../web/public/images/demo', import.meta.url),
@@ -181,7 +186,9 @@ describe('Demo seed and guarded reset', () => {
 
     const first = await publish();
     expect(first.uploaded.documentsUploaded).toBe(DEMO_VERIFICATION_DOCS.length);
-    expect(first.linked.journalEntriesWithImage).toBe(1295);
+    // A fresh seed never carried stage photos on journal entries, so nothing needs re-sealing.
+    expect(first.linked.journalEntriesChanged).toBe(0);
+    expect(first.linked.linksCreated).toBe(first.linked.links);
     const report = await verifyDemoData(db.orm.em.fork(), now);
     expect(report.checks.filter((c) => !c.ok)).toEqual([]);
 
@@ -189,7 +196,8 @@ describe('Demo seed and guarded reset', () => {
     const hashesBefore = (await db.orm.em.fork().find(JournalEntry, {})).map((e) => e.hash).sort();
     const again = await publish();
     expect(again.uploaded.photosUploaded).toBe(0);
-    expect(again.linked).toEqual(first.linked);
+    expect(again.uploaded.photosMetadataUpdated).toBe(0);
+    expect(again.linked.changes).toBe(0);
     const hashesAfter = (await db.orm.em.fork().find(JournalEntry, {})).map((e) => e.hash).sort();
     expect(hashesAfter).toEqual(hashesBefore);
     expect(await db.orm.em.fork().count(MediaLink)).toBe(first.linked.links);
@@ -213,36 +221,102 @@ describe('Demo seed and guarded reset', () => {
     expect([403, 404]).toContain(buyerRead.status);
 
     // Ảnh bìa mà API công khai trả (`coverUrl`) đã trỏ về bucket, không còn đường dẫn tĩnh của web.
+    // Chỉ chiếc bình có ảnh đúng món đồ; chiếc cốc QR (ảnh gốc là cốc New Zealand) dùng hình minh hoạ.
+    const vase = await db.orm.em.fork().findOneOrFail(Product, { traceCode: 'BT7K2QXM' });
+    expect(vase.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\/.+\.webp$/);
+    expect(vase.coverAlt).toBeTruthy();
+    expect(vase.coverAltEn).toMatch(/^[\x20-\x7e]+$/);
     const cup = await db.orm.em.fork().findOneOrFail(Product, { traceCode: DEMO_QR_TRACE_CODE });
-    expect(cup.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\/.+\.webp$/);
+    expect(cup.coverUrl).toBeNull();
+    expect(cup.coverAlt).toBeNull();
+    const lamNgoc = await db.orm.em.fork().findOneOrFail(Household, { slug: 'gom-lam-ngoc' });
+    expect(lamNgoc.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
+    // Gốm Minh Hải's banner was retired (Commons does not confirm the kilns are in Bát Tràng): no cover, no banner.
     const minhHai = await db.orm.em.fork().findOneOrFail(Household, { slug: 'gom-minh-hai' });
-    expect(minhHai.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
+    expect(minhHai.coverUrl).toBeNull();
 
-    // Trang truy xuất công khai nhận được ảnh của từng mốc, kèm sha256 nằm trong chuỗi băm.
+    // The public trace page has no photo for the cup and no stage photo on any entry: a generic stage photo is not
+    // this cup. The chain still verifies (checked below for every product).
     const trace = await t.request({ method: 'GET', url: `/trace/${DEMO_QR_TRACE_CODE}` });
     expect(trace.status).toBe(200);
-    expect(trace.body.coverCredit.author).toBeTruthy();
-    for (const entry of trace.body.journal.entries) {
-      expect(entry.images).toHaveLength(1);
-      expect(entry.images[0].url).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
-      expect(entry.images[0].credit.license).toBeTruthy();
-    }
+    expect(trace.body.coverCredit).toBeNull();
+    expect(trace.body.journal.entries.length).toBeGreaterThan(0);
+    for (const entry of trace.body.journal.entries) expect(entry.images).toEqual([]);
+    const vaseTrace = await t.request({ method: 'GET', url: '/trace/BT7K2QXM' });
+    expect(vaseTrace.body.coverCredit.author).toBeTruthy();
 
     // Public household profiles and news read real images and credits from `media_link` (GH#54).
-    const profile = await t.request({ method: 'GET', url: '/households/gom-minh-hai' });
+    const minhHaiProfile = await t.request({ method: 'GET', url: '/households/gom-minh-hai' });
+    expect(minhHaiProfile.body.banner).toBeNull();
+    const profile = await t.request({ method: 'GET', url: '/households/gom-lam-ngoc' });
     expect(profile.body.portrait.credit.author).toBeTruthy();
-    expect(profile.body.banner.url).toBe(minhHai.coverUrl);
+    expect(profile.body.banner.url).toBe(lamNgoc.coverUrl);
     expect(profile.body.gallery.length).toBeGreaterThan(0);
+    expect(profile.body.banner.altEn).toMatch(/^[\x20-\x7e]+$/);
+    expect(profile.body.portrait.altEn).toMatch(/^[\x20-\x7e]+$/);
     for (const item of profile.body.gallery) {
       expect(item.url).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
       expect(item.alt).toBeTruthy();
+      expect(item.altEn).toMatch(/^[\x20-\x7e]+$/);
       expect(item.credit.licenseUrl).toMatch(/^https:\/\//);
     }
     const allNews = await t.request({ method: 'GET', url: '/news?limit=100' });
     const covers = allNews.body.data.flatMap((n: { cover: { credit: unknown } | null }) =>
       n.cover ? [n.cover] : [],
     );
-    expect(covers).toHaveLength(3);
+    // The night-market story has no photo that shows a night market, so only two stories keep a cover.
+    expect(covers).toHaveLength(2);
+    expect(covers.every((c: { altEn: string | null }) => c.altEn)).toBe(true);
+
+    // The household list gives each cover its own description (vi and en), not a template.
+    const households = await t.request({ method: 'GET', url: '/households' });
+    const listed = households.body.data.find((h: { slug: string }) => h.slug === 'gom-lam-ngoc');
+    expect(listed.coverAlt).toBeTruthy();
+    expect(listed.coverAltEn).toMatch(/^[\x20-\x7e]+$/);
+    const noCover = households.body.data.find((h: { slug: string }) => h.slug === 'gom-minh-hai');
+    expect(noCover.coverUrl).toBeNull();
+
+    // Admin sees what each verification document is, not just its MIME type.
+    const docs = await t.request({
+      method: 'GET',
+      url: `/admin/households/${DEMO_HOUSEHOLD_IDS.pending}/documents`,
+      auth: as('admin'),
+    });
+    expect(docs.body.data.map((d: { caption: string }) => d.caption).sort()).toEqual(
+      DEMO_VERIFICATION_DOCS.map((d) => d.caption).sort(),
+    );
+
+    // Retired photos are removed completely (rows, links and stored files) and a second run finds nothing.
+    const retired = demoPhotoAssetId(RETIRED_DEMO_PHOTO_IDS[0] as string);
+    const key = `originals/${DEMO_ACCOUNTS.admin.id}/${retired}`;
+    const em = db.orm.em.fork();
+    em.create(MediaAsset, {
+      id: retired,
+      ownerId: DEMO_ACCOUNTS.admin.id,
+      purpose: 'PRODUCT',
+      visibility: 'PUBLIC',
+      status: 'READY',
+      mimeType: 'image/webp',
+      sizeBytes: 3,
+      sha256: 'a'.repeat(64),
+      originalKey: key,
+      variants: [
+        { key: `v/${retired}/640-x.webp`, bytes: 3, width: 640, height: 640, format: 'webp' },
+      ],
+    });
+    await em.flush();
+    await t.storage.put({
+      bucket: 'private',
+      key,
+      body: new Uint8Array([1, 2, 3]),
+      contentType: 'image/webp',
+    });
+    const pruned = await pruneRetiredDemoMedia({ orm: db.orm, storage: t.storage });
+    expect(pruned).toMatchObject({ assetsDeleted: 1, linksDeleted: 0, failed: [] });
+    expect(await db.orm.em.fork().count(MediaAsset, { id: retired })).toBe(0);
+    expect((await pruneRetiredDemoMedia({ orm: db.orm, storage: t.storage })).assetsDeleted).toBe(
+      0,
+    );
     expect(covers.every((c: { credit: unknown }) => c.credit)).toBe(true);
 
     // Reset xóa media_asset nhưng không động tới bucket; chạy lại bước ảnh dựng lại đúng như cũ.

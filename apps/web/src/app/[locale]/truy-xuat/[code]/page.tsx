@@ -1,4 +1,12 @@
-import { Badge, buttonVariants, Crackle, Logo, TraceSealFrame, VaseFigure } from '@vcraft/ui';
+import {
+  Badge,
+  buttonVariants,
+  Crackle,
+  Logo,
+  ProductFigure,
+  TraceSealFrame,
+  VaseFigure,
+} from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
@@ -8,6 +16,8 @@ import { PhotoCredit } from '@/components/photo-credit';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
 import { fetchHousehold, fetchTrace } from '@/features/catalog/exhibition-api';
 import {
+  altFor,
+  householdCover,
   photoFromUrl,
   slotPhoto,
   tintOf,
@@ -44,12 +54,16 @@ export async function generateMetadata({
  * kèm danh sách) → chứng nhận → tem QR, kèm liên kết về trang chủ.
  */
 export default async function TracePage({ params }: PageProps<'/[locale]/truy-xuat/[code]'>) {
-  await resolveLocale(params);
+  const locale = await resolveLocale(params);
   const { code } = await params;
   // Mã sai định dạng (BR-04) là đường dẫn sai ⇒ 404; mã đúng định dạng mà không có trong hệ thống
   // thì hiện cảnh báo hàng không xác thực bên dưới (FR-TRC-08).
   if (!isTraceCode(code)) notFound();
-  const [t, ex] = await Promise.all([getTranslations('trace'), getTranslations('exhibition')]);
+  const [t, ex, preset] = await Promise.all([
+    getTranslations('trace'),
+    getTranslations('exhibition'),
+    getTranslations('presetFigure'),
+  ]);
   const result = await fetchTrace(code);
   if (result.status === 'unavailable') return <DataUnavailable />;
   const trace = result.status === 'ok' ? result.data : null;
@@ -58,13 +72,23 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
   const locked = trace?.availability === 'UNAVAILABLE' && trace.reason === 'HOUSEHOLD_SUSPENDED';
   const visible = trace?.availability === 'VISIBLE' ? trace : null;
   const profile = visible ? await fetchHousehold(visible.household.slug) : null;
+  // The product's own photo, only when it has one; there is no stand-in picture for a product.
   const image = visible
     ? photoFromUrl(
         visible.product.coverUrl,
-        visible.product.coverAlt ?? visible.product.name,
+        altFor(
+          locale,
+          visible.product.coverAlt ?? visible.product.name,
+          visible.product.coverAltEn,
+        ),
         visible.product.coverVariants,
       )
     : undefined;
+  // The household slot shows the household's own banner when it has one, else a workshop illustration.
+  const household = profile?.status === 'ok' ? profile.data : null;
+  const householdPhoto = household ? householdCover(locale, household) : undefined;
+  const householdAlt = householdPhoto?.alt || preset('household');
+  const householdImage = householdPhoto?.view && { ...householdPhoto.view, alt: householdAlt };
 
   return (
     <div className="mx-auto min-h-svh max-w-xl bg-paper">
@@ -111,6 +135,18 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
               <p className="text-small text-ash">{t('scanned')}</p>
               <h1 className="mt-1 text-h1">{visible.product.name}</h1>
               <p className="mt-2 text-ash">{visible.household.name}</p>
+              {image ? (
+                <figure className="mt-5 max-w-xs">
+                  <ImageSlot
+                    alt={image.alt}
+                    tint={tintOf(visible.product.traceCode)}
+                    ratio="4/5"
+                    {...slotPhoto(image)}
+                    sizes="(min-width: 640px) 20rem, 80vw"
+                  />
+                  <PhotoCredit id={image.photo?.id} credit={visible.coverCredit} />
+                </figure>
+              ) : null}
             </section>
 
             {/* Biến thể C: mở ngay bằng ấn và nhật ký. Ấn chỉ đóng khi trình duyệt tự kiểm chuỗi băm khớp. */}
@@ -143,22 +179,23 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
             <section aria-labelledby="household-title" className="px-5 pt-12">
               <h2 id="household-title">{ex('householdTitle')}</h2>
               <ImageSlot
-                alt={image?.alt ?? visible.product.name}
-                tint={tintOf(visible.product.traceCode)}
-                ratio="4/5"
-                {...slotPhoto(image)}
+                alt={householdAlt}
+                tint={tintOf(visible.household.slug)}
+                ratio="3/2"
+                {...slotPhoto(householdImage)}
                 sizes="(min-width: 640px) 32rem, 100vw"
                 className="mt-6 grid place-items-center"
               >
-                {image ? null : (
-                  <VaseFigure
-                    className="h-3/5"
+                {householdImage ? null : (
+                  <ProductFigure
+                    kind="generic"
+                    className="h-1/2"
                     body="var(--color-paper)"
-                    band={tintOf(visible.product.traceCode)}
+                    band={tintOf(visible.household.slug)}
                   />
                 )}
               </ImageSlot>
-              <PhotoCredit id={image?.photo?.id} credit={visible.coverCredit} />
+              <PhotoCredit id={householdImage?.photo?.id} credit={householdPhoto?.credit} />
               {visible.product.artisanNote ? (
                 <blockquote className="mt-6 font-display text-h3 leading-snug text-ink type-soft">
                   “{visible.product.artisanNote}”

@@ -1,10 +1,10 @@
 import { Badge, buttonVariants, Card } from '@vcraft/ui';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
 import { EmptyState } from '@/components/states/empty-state';
-import { photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
+import { altFor, photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
 import type { NewsResult } from './news-api';
 
@@ -20,6 +20,7 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
   const category = useTranslations('indexPages.news.categories');
   const nav = useTranslations('nav');
   const format = useFormatter();
+  const locale = useLocale();
   const items = result.status === 'ok' ? result.page.data : [];
   const nextCursor = result.status === 'ok' ? result.page.nextCursor : null;
   const householdName = items.find((n) => n.householdSlug === householdSlug)?.householdName;
@@ -72,11 +73,15 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
                   {n.cover ? (
                     <div className="mb-2">
                       <ImageSlot
-                        alt={n.cover.alt || n.title}
+                        alt={altFor(locale, n.cover.alt || n.title, n.cover.altEn)}
                         tint={tintOf(n.slug)}
                         ratio="3/2"
                         {...slotPhoto(
-                          photoFromUrl(n.cover.url, n.cover.alt || n.title, n.cover.variants),
+                          photoFromUrl(
+                            n.cover.url,
+                            altFor(locale, n.cover.alt || n.title, n.cover.altEn),
+                            n.cover.variants,
+                          ),
                         )}
                         sizes="(min-width: 768px) 40rem, 100vw"
                       />

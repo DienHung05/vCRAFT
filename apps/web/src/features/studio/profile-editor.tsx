@@ -365,7 +365,15 @@ function GallerySection({ household, client, reload }: SectionProps) {
             ? current
             : [
                 ...current,
-                { mediaId, url: null, variants: [], alt: '', caption: null, credit: null },
+                {
+                  mediaId,
+                  url: null,
+                  variants: [],
+                  alt: '',
+                  altEn: null,
+                  caption: null,
+                  credit: null,
+                },
               ],
         );
       }

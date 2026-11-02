@@ -62,7 +62,11 @@ export function ImageSlot({
 
   return (
     <div
-      {...(credit ? {} : { role: 'img', 'aria-label': alt })}
+      {...(credit || src
+        ? {}
+        : children
+          ? { role: 'img', 'aria-label': alt }
+          : { 'aria-hidden': true })}
       className={cn('grain relative isolate overflow-hidden rounded-card', className)}
       style={{
         aspectRatio: ratio,
@@ -97,7 +101,7 @@ export function ImageSlot({
           ) : null}
           <img
             src={priority ? aboveTheFoldUrl(src) : src}
-            alt=""
+            alt={alt}
             {...(responsive.width && { width: responsive.width, height: responsive.height })}
             loading={priority ? 'eager' : 'lazy'}
             fetchPriority={priority ? 'high' : undefined}
