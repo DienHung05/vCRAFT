@@ -38,8 +38,13 @@ export default async function AdminLayout({ children, params }: LayoutProps<'/[l
           </div>
         </div>
         <div className="flex items-center gap-1 px-4 pb-2 lg:pb-3">
-          <AccountMenu align="start" />
-          <NotificationBell align="start" />
+          {/* The account takes the remaining width and truncates its email; the bell keeps its own column. */}
+          <div className="min-w-0 flex-1">
+            <AccountMenu align="start" />
+          </div>
+          <div className="shrink-0">
+            <NotificationBell align="start" />
+          </div>
         </div>
         <div className="px-2 pb-2 lg:px-3">
           <AdminNav />
