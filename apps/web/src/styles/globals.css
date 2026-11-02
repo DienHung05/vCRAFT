@@ -61,6 +61,41 @@ html[data-fonts="ready"] {
 }
 
 /*
+ * Cross-document view transitions (Chrome and Safari; elsewhere ignored). Both the old and the new document
+ * must opt in, so the opt-in is global, but it is scoped twice: it is off under reduced motion (it is not
+ * declared at all), and the `pageswap` guard in the root layout (lib/view-transition.ts) skips the transition
+ * for every hard navigation except the one that follows a sealed sign-in (`data-kiln-vt`, set by
+ * kiln-feedback.ts). So the only animated navigation is the sealed sign-in carrying on to its destination.
+ *
+ * The transition is a plain cross-fade in the kiln grammar (ease.clay over dur.base), opacity only: a scale on
+ * the root would move the sticky header. It affects full-document navigations only; Next.js soft navigations
+ * (`<Link>`, `router.push`) never reload the document, so no cross-document transition runs for them, and
+ * nothing in the app calls `document.startViewTransition` or sets the experimental `viewTransition` flag, so
+ * this is the only view-transition rule on the site.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+}
+::view-transition-old(root) {
+  animation: kiln-vt-out var(--duration-base) var(--ease-clay) both;
+}
+::view-transition-new(root) {
+  animation: kiln-vt-in var(--duration-base) var(--ease-clay) both;
+}
+@keyframes kiln-vt-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes kiln-vt-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/*
  * Sections far below the fold skip layout and paint (and their lazy images stay unfetched) until the
  * reader scrolls near them. `auto` in contain-intrinsic-size remembers the rendered height afterwards.
  */

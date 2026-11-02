@@ -8,8 +8,10 @@ import { useForm } from 'react-hook-form';
 import { Link } from '@/i18n/navigation';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
-import { FormAlert, PasswordField } from './fields';
+import { FormAlert, PasswordField, STANDALONE_LINK } from './fields';
+import { useKilnFeedback } from './kiln/kiln-feedback';
 import { type SetPasswordValues, setPasswordSchema } from './schemas';
+import { useFocusSubmitOnError } from './use-focus-submit-on-error';
 import { useValidationMessage } from './use-validation-message';
 
 export type SetPasswordMode = 'recovery' | 'invite';
@@ -32,6 +34,7 @@ export function SetPasswordForm({ mode, tokenHash, hasSession }: SetPasswordForm
   const t = useTranslations('auth');
   const locale = useLocale();
   const message = useValidationMessage();
+  const kiln = useKilnFeedback();
   const [error, setError] = useState<AuthErrorKey | null>(null);
   const [linkInvalid, setLinkInvalid] = useState(false);
   // Mã dùng một lần: đã xác minh thành công thì lần gửi lại (vd. mật khẩu bị từ chối) không xác minh lại.
@@ -46,37 +49,55 @@ export function SetPasswordForm({ mode, tokenHash, hasSession }: SetPasswordForm
     defaultValues: { password: '', confirm: '' },
   });
   const copy = mode === 'invite' ? 'invitation' : 'reset';
+  const formRef = useFocusSubmitOnError(error, isSubmitting);
 
   if (linkInvalid || (!tokenHash && !hasSession)) return <InvalidLink mode={mode} />;
 
-  const onSubmit = handleSubmit(async ({ password }) => {
-    setError(null);
-    const supabase = browserSupabase();
-    if (!supabase) return setError('unconfigured');
-    try {
-      if (tokenHash && !verified.current) {
-        const { error: failure } = await supabase.auth.verifyOtp({
-          type: mode === 'invite' ? 'invite' : 'recovery',
-          token_hash: tokenHash,
-        });
-        if (failure) {
-          const key = authErrorKey(failure);
-          return key === 'link_invalid' ? setLinkInvalid(true) : setError(key);
+  // The kiln card reacts to the outcome: a failure crackles and shakes the card.
+  const failWith = (key: AuthErrorKey) => {
+    kiln.fail();
+    setError(key);
+  };
+
+  const onSubmit = handleSubmit(
+    async ({ password }) => {
+      kiln.fire();
+      setError(null);
+      const supabase = browserSupabase();
+      if (!supabase) return failWith('unconfigured');
+      try {
+        if (tokenHash && !verified.current) {
+          const { error: failure } = await supabase.auth.verifyOtp({
+            type: mode === 'invite' ? 'invite' : 'recovery',
+            token_hash: tokenHash,
+          });
+          if (failure) {
+            const key = authErrorKey(failure);
+            if (key !== 'link_invalid') return failWith(key);
+            // The form is replaced by the invalid-link panel: no crackle, just clear the card.
+            kiln.reset();
+            return setLinkInvalid(true);
+          }
+          verified.current = true;
         }
-        verified.current = true;
+        const { error: failure } = await supabase.auth.updateUser({ password });
+        if (failure) return failWith(authErrorKey(failure));
+        // FR-AUTH-06: đổi mật khẩu thì đăng xuất các thiết bị khác, giữ thiết bị này.
+        if (mode === 'recovery') await supabase.auth.signOut({ scope: 'others' });
+        const destination = `/auth/continue?locale=${locale}`;
+        // The seal stamps first (the destination is prerendered meanwhile), then the navigation
+        // (a cross-document view transition) follows.
+        await kiln.seal(destination);
+        window.location.assign(destination);
+      } catch (failure) {
+        failWith(authErrorKey(failure));
       }
-      const { error: failure } = await supabase.auth.updateUser({ password });
-      if (failure) return setError(authErrorKey(failure));
-      // FR-AUTH-06: đổi mật khẩu thì đăng xuất các thiết bị khác, giữ thiết bị này.
-      if (mode === 'recovery') await supabase.auth.signOut({ scope: 'others' });
-      window.location.assign(`/auth/continue?locale=${locale}`);
-    } catch (failure) {
-      setError(authErrorKey(failure));
-    }
-  });
+    },
+    () => kiln.fail('invalid'),
+  );
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {error ? <FormAlert tone="error">{t(`errors.${error}`)}</FormAlert> : null}
       <PasswordField
         label={t('fields.newPassword')}
@@ -107,11 +128,11 @@ function InvalidLink({ mode }: { mode: SetPasswordMode }) {
       <h2 className="font-display text-h3 text-glaze">{t(`${copy}.invalidTitle`)}</h2>
       <p>{t(`${copy}.invalid`)}</p>
       {mode === 'recovery' ? (
-        <Link href="/quen-mat-khau" className="text-small text-clay underline underline-offset-4">
+        <Link href="/quen-mat-khau" className={`${STANDALONE_LINK} text-small`}>
           {t('reset.requestNew')}
         </Link>
       ) : (
-        <Link href="/dang-nhap" className="text-small text-clay underline underline-offset-4">
+        <Link href="/dang-nhap" className={`${STANDALONE_LINK} text-small`}>
           {t('invitation.signInLink')}
         </Link>
       )}

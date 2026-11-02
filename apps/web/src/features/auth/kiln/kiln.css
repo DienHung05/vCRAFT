@@ -1,0 +1,793 @@
+/*
+ * Kiln auth scene: the sign-in family of pages stands in front of a kiln mouth.
+ * Dark = "Lò đêm" (charcoal with an ember glow), light = "Giấy dó lúc nung" (dó paper with a faint clay glow).
+ * Everything here is static CSS or compositor-only motion (transform, opacity). The only scripts are the
+ * pointer sheen (kiln-surface.tsx), the feedback calls (kiln-feedback.ts) and the lazy WebGL island.
+ *
+ * Theme tokens follow the system exactly like packages/ui/src/tokens/theme.css does: a prefers-color-scheme
+ * block for the OS and a data-theme block for the forced theme. Keep the two dark blocks identical.
+ */
+
+:root {
+  --kiln-glaze-rgb: 30 58 110;
+  --kiln-seal-rgb: 194 38 28;
+  /* Fired clay (= --color-clay) and the white-hot core of the fire. */
+  --kiln-ember-rgb: 168 72 42;
+  --kiln-hot-rgb: 232 146 82;
+  --kiln-seal-panel: rgb(251 248 242 / 0.74);
+  --kiln-rim-o1: 0.6;
+  --kiln-rim-o2: 0.5;
+  --kiln-edge-hi: 0.62;
+  --kiln-edge-lo: 0.14;
+  --kiln-sheen-1: rgb(255 255 255 / 0.85);
+  --kiln-sheen-2: rgb(30 58 110 / 0.045);
+  --kiln-shimmer-o: 0.09;
+  --kiln-shimmer-core: rgb(var(--kiln-hot-rgb) / 0.9);
+  --kiln-shimmer-edge: rgb(var(--kiln-hot-rgb) / 0.35);
+  --kiln-scene-glow:
+    radial-gradient(40% 9% at 26% 100%, rgb(var(--kiln-hot-rgb) / 0.55), transparent 80%),
+    radial-gradient(
+      66% 46% at 26% 108%,
+      rgb(var(--kiln-hot-rgb) / 0.46),
+      rgb(var(--kiln-ember-rgb) / 0.2) 42%,
+      transparent 76%
+    ),
+    radial-gradient(86% 60% at 54% 116%, rgb(var(--kiln-ember-rgb) / 0.34), transparent 70%),
+    radial-gradient(42% 34% at 84% 108%, rgb(var(--kiln-ember-rgb) / 0.26), transparent 72%),
+    radial-gradient(120% 70% at 50% -12%, rgb(255 250 238 / 0.6), transparent 62%);
+  --kiln-vignette: inset 0 0 150px rgb(130 84 40 / 0.16);
+  --kiln-halo: radial-gradient(
+    circle,
+    rgb(255 238 205 / 0.85) 0,
+    rgb(var(--kiln-hot-rgb) / 0.26) 30%,
+    rgb(var(--kiln-ember-rgb) / 0.08) 48%,
+    transparent 62%
+  );
+  --kiln-halo-under: radial-gradient(
+    ellipse 50% 100% at 50% 40%,
+    rgb(var(--kiln-ember-rgb) / 0.55),
+    rgb(var(--kiln-ember-rgb) / 0.2) 55%,
+    transparent 80%
+  );
+  /* Ember dot colours by slot (embers.ts). */
+  --kiln-e0: #a8482a;
+  --kiln-e1: #a8482a;
+  --kiln-e2: #8c6a24;
+  --kiln-e3: #c2261c;
+  --kiln-e4: #b8683f;
+  /* Primary button at rest and "firing" (data-kiln="firing"). The light core stays low so the text keeps 4.5:1. */
+  --kiln-btn-rest: radial-gradient(
+    120% 150% at 50% 140%,
+    rgb(var(--kiln-hot-rgb) / 0.4),
+    transparent 60%
+  );
+  --kiln-fire-bg: radial-gradient(
+    90% 62% at 50% 140%,
+    rgb(var(--kiln-hot-rgb) / 0.8) 0,
+    rgb(var(--kiln-hot-rgb) / 0.4) 40%,
+    transparent 72%
+  );
+  --kiln-fire-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18), 0 0 0 1px rgb(var(--kiln-hot-rgb) / 0.45),
+    0 4px 16px 0 rgb(var(--kiln-ember-rgb) / 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --kiln-glaze-rgb: 143 176 230;
+    --kiln-seal-rgb: 240 106 85;
+    --kiln-ember-rgb: 226 112 58;
+    --kiln-hot-rgb: 255 176 112;
+    --kiln-seal-panel: rgb(31 26 22 / 0.8);
+    --kiln-rim-o1: 0.8;
+    --kiln-rim-o2: 0.62;
+    --kiln-edge-hi: 0.85;
+    --kiln-edge-lo: 0.16;
+    --kiln-sheen-1: rgb(143 176 230 / 0.1);
+    --kiln-sheen-2: rgb(143 176 230 / 0.045);
+    --kiln-shimmer-o: 0.1;
+    --kiln-scene-glow:
+      radial-gradient(40% 9% at 26% 100%, rgb(var(--kiln-hot-rgb) / 0.4), transparent 80%),
+      radial-gradient(
+        66% 46% at 26% 106%,
+        rgb(var(--kiln-hot-rgb) / 0.32),
+        rgb(var(--kiln-ember-rgb) / 0.26) 40%,
+        transparent 76%
+      ),
+      radial-gradient(86% 62% at 54% 114%, rgb(var(--kiln-ember-rgb) / 0.4), transparent 70%),
+      radial-gradient(42% 34% at 84% 108%, rgb(var(--kiln-ember-rgb) / 0.32), transparent 72%),
+      radial-gradient(130% 80% at 50% 124%, rgb(168 72 42 / 0.42), transparent 70%);
+    --kiln-vignette: inset 0 0 160px rgb(0 0 0 / 0.5);
+    --kiln-halo: radial-gradient(
+      circle,
+      rgb(var(--kiln-hot-rgb) / 0.34) 0,
+      rgb(var(--kiln-ember-rgb) / 0.17) 32%,
+      transparent 60%
+    );
+    --kiln-halo-under: radial-gradient(
+      ellipse 50% 100% at 50% 40%,
+      rgb(var(--kiln-hot-rgb) / 0.7),
+      rgb(var(--kiln-ember-rgb) / 0.35) 55%,
+      transparent 80%
+    );
+    --kiln-e0: #ffd8a6;
+    --kiln-e1: #ffb070;
+    --kiln-e2: #ff9a55;
+    --kiln-e3: #e2703a;
+    --kiln-e4: #c75a2c;
+    --kiln-fire-bg: radial-gradient(
+      95% 170% at 50% 135%,
+      #ffd9a0 0,
+      rgb(var(--kiln-hot-rgb) / 0.85) 28%,
+      transparent 70%
+    );
+    --kiln-fire-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.22), 0 0 0 1px rgb(var(--kiln-hot-rgb) / 0.5),
+      0 4px 18px 0 rgb(var(--kiln-ember-rgb) / 0.6),
+      0 8px 24px -10px rgb(var(--kiln-hot-rgb) / 0.45);
+  }
+}
+:root[data-theme="dark"] {
+  --kiln-glaze-rgb: 143 176 230;
+  --kiln-seal-rgb: 240 106 85;
+  --kiln-ember-rgb: 226 112 58;
+  --kiln-hot-rgb: 255 176 112;
+  --kiln-seal-panel: rgb(31 26 22 / 0.8);
+  --kiln-rim-o1: 0.8;
+  --kiln-rim-o2: 0.62;
+  --kiln-edge-hi: 0.85;
+  --kiln-edge-lo: 0.16;
+  --kiln-sheen-1: rgb(143 176 230 / 0.1);
+  --kiln-sheen-2: rgb(143 176 230 / 0.045);
+  --kiln-shimmer-o: 0.1;
+  --kiln-scene-glow:
+    radial-gradient(40% 9% at 26% 100%, rgb(var(--kiln-hot-rgb) / 0.4), transparent 80%),
+    radial-gradient(
+      66% 46% at 26% 106%,
+      rgb(var(--kiln-hot-rgb) / 0.32),
+      rgb(var(--kiln-ember-rgb) / 0.26) 40%,
+      transparent 76%
+    ),
+    radial-gradient(86% 62% at 54% 114%, rgb(var(--kiln-ember-rgb) / 0.4), transparent 70%),
+    radial-gradient(42% 34% at 84% 108%, rgb(var(--kiln-ember-rgb) / 0.32), transparent 72%),
+    radial-gradient(130% 80% at 50% 124%, rgb(168 72 42 / 0.42), transparent 70%);
+  --kiln-vignette: inset 0 0 160px rgb(0 0 0 / 0.5);
+  --kiln-halo: radial-gradient(
+    circle,
+    rgb(var(--kiln-hot-rgb) / 0.34) 0,
+    rgb(var(--kiln-ember-rgb) / 0.17) 32%,
+    transparent 60%
+  );
+  --kiln-halo-under: radial-gradient(
+    ellipse 50% 100% at 50% 40%,
+    rgb(var(--kiln-hot-rgb) / 0.7),
+    rgb(var(--kiln-ember-rgb) / 0.35) 55%,
+    transparent 80%
+  );
+  --kiln-e0: #ffd8a6;
+  --kiln-e1: #ffb070;
+  --kiln-e2: #ff9a55;
+  --kiln-e3: #e2703a;
+  --kiln-e4: #c75a2c;
+  --kiln-fire-bg: radial-gradient(
+    95% 170% at 50% 135%,
+    #ffd9a0 0,
+    rgb(var(--kiln-hot-rgb) / 0.85) 28%,
+    transparent 70%
+  );
+  --kiln-fire-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22), 0 0 0 1px rgb(var(--kiln-hot-rgb) / 0.5),
+    0 4px 18px 0 rgb(var(--kiln-ember-rgb) / 0.6), 0 8px 24px -10px rgb(var(--kiln-hot-rgb) / 0.45);
+}
+
+/* ───────────────────────── Scene ───────────────────────── */
+
+/*
+ * Full-bleed between the sticky header (4rem + 1px border) and the footer. It stops 2.5rem short of the
+ * fold so the footer's wave peeks in, and its bottom margin cancels the footer's `mt-section` so the scene
+ * runs straight into the wave.
+ */
+.kiln-scene {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: calc(100svh - 65px - 2.5rem);
+  margin-bottom: calc(-1 * var(--spacing-section));
+  background: var(--kiln-scene-glow), var(--color-paper);
+}
+/* Vignette: a static inset shadow. */
+.kiln-scene::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: var(--kiln-vignette);
+}
+/* Grain over the art, under the content (BRAND §5). */
+.kiln-scene::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-color: var(--color-ink);
+  mask-image: var(--grain-image);
+  mask-size: var(--grain-size);
+  opacity: var(--grain-opacity);
+}
+/*
+ * Heat shimmer: six soft pools of hot air above the fire. Each is an ellipse that fades out on every side
+ * (not a full-width stripe), so together they read as drift, as in the comp.
+ */
+.kiln-shimmer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--kiln-shimmer-o);
+  background:
+    radial-gradient(
+      46% 64px at 20% 36%,
+      var(--kiln-shimmer-core),
+      var(--kiln-shimmer-edge) 55%,
+      transparent
+    ),
+    radial-gradient(
+      56% 90px at 70% 47%,
+      var(--kiln-shimmer-core),
+      var(--kiln-shimmer-edge) 55%,
+      transparent
+    ),
+    radial-gradient(
+      40% 56px at 38% 57%,
+      var(--kiln-shimmer-core),
+      var(--kiln-shimmer-edge) 55%,
+      transparent
+    ),
+    radial-gradient(
+      62% 110px at 62% 66%,
+      var(--kiln-shimmer-core),
+      var(--kiln-shimmer-edge) 55%,
+      transparent
+    ),
+    radial-gradient(
+      44% 70px at 18% 76%,
+      var(--kiln-shimmer-core),
+      var(--kiln-shimmer-edge) 55%,
+      transparent
+    ),
+    radial-gradient(
+      58% 120px at 54% 86%,
+      var(--kiln-shimmer-core),
+      var(--kiln-shimmer-edge) 55%,
+      transparent
+    );
+}
+
+/*
+ * Ember dots. Each layer is its own <svg>, so its drift is a compositor transform on a whole element.
+ * The layer is 40px taller than the scene and drifts up by 40px, so it always covers the scene.
+ */
+.kiln-embers {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: calc(100% + 40px);
+  pointer-events: none;
+  /* Linear: an endless drift has no start or end to ease. */
+  animation: kiln-drift 46s linear infinite alternate;
+}
+.kiln-embers[data-layer="mid"] {
+  animation-duration: 34s;
+  animation-delay: -9s;
+}
+.kiln-embers[data-layer="near"] {
+  animation-duration: 26s;
+  animation-delay: -15s;
+}
+@keyframes kiln-drift {
+  to {
+    transform: translate3d(0, -40px, 0);
+  }
+}
+.kiln-embers .e0 {
+  fill: var(--kiln-e0);
+}
+.kiln-embers .e1 {
+  fill: var(--kiln-e1);
+}
+.kiln-embers .e2 {
+  fill: var(--kiln-e2);
+}
+.kiln-embers .e3 {
+  fill: var(--kiln-e3);
+}
+.kiln-embers .e4 {
+  fill: var(--kiln-e4);
+}
+.kiln-stop-hot {
+  stop-color: rgb(var(--kiln-hot-rgb));
+}
+.kiln-stop-ember {
+  stop-color: rgb(var(--kiln-ember-rgb));
+}
+
+/* Tagline column (lg and up). The small line uses a mix of ash toward ink: it sits on the kiln glow. */
+.kiln-sub {
+  color: color-mix(in oklch, var(--color-ash) 62%, var(--color-ink));
+}
+
+/* ───────────────────────── Trace seal ───────────────────────── */
+
+.kiln-seal {
+  position: relative;
+  flex: none;
+  transform: rotate(-2deg);
+}
+.kiln-seal-halo {
+  position: absolute;
+  inset: -60%;
+  pointer-events: none;
+  background: var(--kiln-halo);
+  transition: opacity var(--duration-base) var(--ease-clay);
+}
+/* The hot halo is a second layer that cross-fades in (opacity), instead of swapping the background. */
+.kiln-seal-halo-hot {
+  background: radial-gradient(
+    circle,
+    rgb(var(--kiln-hot-rgb) / 0.62) 0,
+    rgb(var(--kiln-ember-rgb) / 0.3) 32%,
+    transparent 62%
+  );
+  opacity: 0;
+}
+@media (min-width: 64rem) {
+  .kiln-seal[data-large] .kiln-seal-halo {
+    inset: -42%;
+  }
+}
+.kiln-seal-mark {
+  filter: drop-shadow(0 0 5px rgb(var(--kiln-hot-rgb) / 0.5));
+}
+/* Hot and cool states of the seal, set by kiln-feedback.ts. */
+.kiln-seal[data-kiln="hot"] .kiln-seal-halo-hot {
+  opacity: 1;
+}
+.kiln-seal[data-kiln="cool"] .kiln-seal-halo:not(.kiln-seal-halo-hot) {
+  opacity: 0.35;
+}
+
+/* ───────────────────────── Glazed card ───────────────────────── */
+
+.kiln-card {
+  position: relative;
+  z-index: 1;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-warm);
+}
+/* Glaze rim: a 1px gradient line along the edge, brightest at the top left where the light falls. */
+.kiln-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    152deg,
+    rgb(var(--kiln-glaze-rgb) / var(--kiln-edge-hi)) 0,
+    rgb(var(--kiln-glaze-rgb) / 0.36) 20%,
+    rgb(var(--kiln-glaze-rgb) / var(--kiln-edge-lo)) 52%,
+    rgb(var(--kiln-glaze-rgb) / 0.22) 100%
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+/*
+ * Sheen highlight. A clipped box holds one fixed-size radial layer; kiln-surface.tsx moves the layer with
+ * `transform: translate3d` on hover-capable fine pointers (compositor only). It rests at 15% / 9%.
+ */
+.kiln-sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.kiln-sheen-glow {
+  position: absolute;
+  left: 15%;
+  top: 9%;
+  width: 420px;
+  height: 360px;
+  margin: -180px 0 0 -210px;
+  background:
+    radial-gradient(240px 200px at 50% 50%, var(--kiln-sheen-1), transparent 72%),
+    radial-gradient(420px 360px at 50% 50%, var(--kiln-sheen-2), transparent 70%);
+  transition: transform var(--duration-base) var(--ease-clay);
+}
+.kiln-card-in {
+  position: relative;
+  z-index: 2;
+}
+/* The form region fades back in at once when a state ends; it hides only after it has faded out (below). */
+.kiln-card-body {
+  transition: opacity var(--duration-base) var(--ease-clay);
+}
+
+/* Layers that sit over the card but only show in a state; clipped to the card's radius. */
+.kiln-card-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ── State: error. Crackle along the card edge fades in and out, and the card shakes once. ── */
+.kiln-crackle-fade {
+  opacity: 0;
+  /* An interrupted error (kiln-feedback.ts holds the opacity inline) fades out instead of being cut. */
+  transition: opacity var(--duration-base) var(--ease-clay);
+  color: rgb(var(--kiln-seal-rgb));
+  mask-image: linear-gradient(
+    100deg,
+    #000 0,
+    #000 40%,
+    rgb(0 0 0 / 0.35) 80%,
+    rgb(0 0 0 / 0.6) 100%
+  );
+}
+.kiln-crackle {
+  position: absolute;
+  inset: 0;
+  mask-image:
+    linear-gradient(90deg, #000, transparent 24px), linear-gradient(270deg, #000, transparent 24px),
+    linear-gradient(180deg, #000, transparent 24px), linear-gradient(0deg, #000, transparent 24px);
+  mask-composite: add;
+}
+/* Client validation (nothing was sent) gets only the shake. */
+.kiln-card[data-kiln-state="error"],
+.kiln-card[data-kiln-state="invalid"] {
+  animation: kiln-shake var(--duration-base) linear both;
+}
+.kiln-card[data-kiln-state="error"] {
+  box-shadow:
+    0 0 0 1px rgb(var(--kiln-seal-rgb) / 0.5),
+    0 8px 30px -4px rgb(var(--kiln-seal-rgb) / 0.3),
+    var(--shadow-warm);
+}
+.kiln-card[data-kiln-state="error"] .kiln-crackle-fade {
+  animation: kiln-crackle-flash var(--duration-story) var(--ease-clay) both;
+}
+/* A decaying shake (at most 6px, 280ms), linear between the peaks. */
+@keyframes kiln-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  14% {
+    transform: translateX(-6px);
+  }
+  32% {
+    transform: translateX(5px);
+  }
+  50% {
+    transform: translateX(-3.5px);
+  }
+  68% {
+    transform: translateX(2.5px);
+  }
+  84% {
+    transform: translateX(-1px);
+  }
+}
+@keyframes kiln-crackle-flash {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/*
+ * ── State: sealed. The trace seal stamps over the card with an ink-bleed ring, all inside the 520ms hold:
+ * the stamp and ring run 520ms, the ghost outline ends at 380ms and the success line at 440ms.
+ * The layer fades out (opacity) when the state ends, so the children keep their own opacity at rest and
+ * only animate in; the parent carries the visibility.
+ */
+.kiln-stamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* Below the heading, as in the comp, so the title stays readable while the seal lands. */
+  padding: 7.5rem 1.5rem 0;
+  text-align: center;
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-clay);
+}
+.kiln-stamp-line {
+  position: relative;
+  margin: 1.25rem 0 0;
+  max-width: 17rem;
+  min-height: 1.25em;
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  line-height: 1.25;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+  font-variation-settings:
+    "SOFT" 100,
+    "WONK" 0;
+  color: var(--color-glaze);
+  text-wrap: balance;
+}
+.kiln-stamp-stage {
+  position: relative;
+  width: 104px;
+  height: 104px;
+}
+.kiln-bleed {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin: -95px 0 0 -95px;
+}
+.kiln-stamp-seal {
+  position: relative;
+  z-index: 1;
+  transform: rotate(-5deg);
+  filter: drop-shadow(0 0 10px rgb(var(--kiln-seal-rgb) / 0.45));
+}
+.kiln-stamp-ghost {
+  position: absolute;
+  left: -18px;
+  top: -18px;
+  opacity: 0.55;
+}
+.kiln-card[data-kiln-state="sealed"] .kiln-card-body {
+  opacity: 0;
+  visibility: hidden;
+  /* Hide only after the fade; on the way back the base rule makes it visible at once. */
+  transition:
+    opacity var(--duration-base) var(--ease-clay),
+    visibility 0s linear var(--duration-base);
+}
+.kiln-card[data-kiln-state="sealed"] .kiln-stamp {
+  opacity: 1;
+  /* No fade-in of the layer: its children animate in themselves. */
+  transition-duration: 0s;
+}
+.kiln-card[data-kiln-state="sealed"] .kiln-stamp-line {
+  animation: kiln-fade-in var(--duration-base) var(--ease-clay) 160ms both;
+}
+.kiln-card[data-kiln-state="sealed"] .kiln-stamp-seal {
+  animation: var(--animate-stamp);
+}
+.kiln-card[data-kiln-state="sealed"] .kiln-bleed {
+  animation: kiln-bleed var(--duration-slow) var(--ease-clay) both;
+}
+.kiln-card[data-kiln-state="sealed"] .kiln-stamp-ghost {
+  animation: kiln-fade-in var(--duration-base) var(--ease-clay) 100ms both;
+  --kiln-fade-to: 0.55;
+}
+@keyframes kiln-bleed {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes kiln-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: var(--kiln-fade-to, 1);
+  }
+}
+
+/* ───────────────────────── Form fields ───────────────────────── */
+
+/* The control wrapper (FieldFrame) anchors the ember underline and its glow. */
+.kiln-control {
+  position: relative;
+  isolation: isolate;
+}
+.kiln-card .kiln-control :is(input, select, textarea) {
+  background: color-mix(in srgb, var(--color-paper) 64%, var(--color-surface));
+  transition: border-color var(--duration-quick) var(--ease-clay);
+}
+.kiln-card .kiln-control :is(input, select, textarea):not([aria-invalid="true"]) {
+  border-color: color-mix(in srgb, var(--color-ink) 24%, transparent);
+}
+@media (hover: hover) {
+  .kiln-card
+    .kiln-field:hover
+    .kiln-control
+    :is(input, select, textarea):not([aria-invalid="true"]) {
+    border-color: color-mix(in srgb, var(--color-ink) 38%, transparent);
+  }
+}
+.kiln-card .kiln-control::before,
+.kiln-card .kiln-control::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-quick) var(--ease-clay);
+}
+/* Glow under the field, behind the input. */
+.kiln-card .kiln-control::before {
+  z-index: -1;
+  left: 6%;
+  right: 6%;
+  bottom: -7px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--kiln-halo-under);
+  filter: blur(3px);
+}
+/* The ember line: clay to ember, brightest in the middle, growing from the centre. */
+.kiln-card .kiln-control::after {
+  z-index: 2;
+  left: 3px;
+  right: 3px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0,
+    rgb(var(--kiln-ember-rgb)) 26%,
+    rgb(var(--kiln-hot-rgb)) 50%,
+    rgb(var(--kiln-ember-rgb)) 74%,
+    transparent 100%
+  );
+  transform: scaleX(0.25);
+  transform-origin: 50% 100%;
+  transition:
+    opacity var(--duration-quick) var(--ease-clay),
+    transform var(--duration-quick) var(--ease-clay);
+}
+.kiln-card .kiln-field:focus-within .kiln-control::before {
+  opacity: 1;
+}
+.kiln-card .kiln-field:focus-within .kiln-control::after {
+  opacity: 1;
+  transform: none;
+}
+
+/* ───────────────────────── Primary button ───────────────────────── */
+
+/*
+ * A faint ember glow at the bottom edge at rest; the clay colour and hover come from the Button utilities.
+ * The firing glow is a stacked layer (::before, under the label) that cross-fades by opacity, so no
+ * background or shadow is swapped. Set data-kiln="firing" on the button, or data-kiln-state="firing" on the card.
+ */
+.kiln-card button[type="submit"] {
+  position: relative;
+  isolation: isolate;
+  background-image: var(--kiln-btn-rest);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    inset 0 -1px 0 rgb(0 0 0 / 0.14);
+}
+.kiln-card button[type="submit"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: var(--kiln-fire-bg);
+  box-shadow: var(--kiln-fire-shadow);
+  opacity: 0;
+  transition: opacity var(--duration-quick) var(--ease-clay);
+}
+.kiln-card button[type="submit"][data-kiln="firing"],
+.kiln-card[data-kiln-state="firing"] button[type="submit"] {
+  opacity: 1;
+}
+.kiln-card button[type="submit"][data-kiln="firing"]::before,
+.kiln-card[data-kiln-state="firing"] button[type="submit"]::before {
+  opacity: 1;
+}
+
+/* ───────────────────────── Reduced motion ───────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Static art: no drift. */
+  .kiln-embers {
+    animation: none;
+  }
+  .kiln-card .kiln-control::before,
+  .kiln-card .kiln-control::after,
+  .kiln-card .kiln-control :is(input, select, textarea) {
+    transition:
+      opacity 150ms linear,
+      border-color 150ms linear;
+  }
+  .kiln-card .kiln-control::after {
+    transform: none;
+  }
+  .kiln-sheen-glow {
+    transition: none;
+  }
+  .kiln-card[data-kiln-state="error"],
+  .kiln-card[data-kiln-state="invalid"] {
+    animation: none;
+  }
+  .kiln-card button[type="submit"]::before,
+  .kiln-seal-halo,
+  .kiln-stamp,
+  .kiln-crackle-fade {
+    transition-duration: 150ms;
+    transition-timing-function: linear;
+  }
+  .kiln-card[data-kiln-state="error"] .kiln-crackle-fade {
+    animation: kiln-fade-in 150ms linear both;
+    --kiln-fade-to: 0.6;
+  }
+  .kiln-card[data-kiln-state="sealed"] .kiln-bleed,
+  .kiln-card[data-kiln-state="sealed"] .kiln-stamp-line {
+    animation: kiln-fade-in 150ms linear both;
+  }
+  .kiln-card[data-kiln-state="sealed"] .kiln-stamp-ghost {
+    animation: kiln-fade-in 150ms linear both;
+    --kiln-fade-to: 0.55;
+  }
+  .kiln-card-body,
+  .kiln-card[data-kiln-state="sealed"] .kiln-card-body {
+    transition-duration: 150ms, 150ms;
+    transition-timing-function: linear;
+  }
+  .kiln-card[data-kiln-state="sealed"] .kiln-card-body {
+    transition-delay: 0s, 150ms;
+  }
+}
+
+/* ───────────────────────── WebGL ember island ───────────────────────── */
+
+/*
+ * kiln-effects.tsx mounts this host after idle; kiln-canvas.tsx creates the canvas inside it. The static
+ * embers and shimmer give way once the canvas shows.
+ */
+.kiln-gl-host {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.kiln-gl {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-slow) var(--ease-clay);
+}
+.kiln-gl[data-on="true"] {
+  opacity: 1;
+}
+.kiln-scene[data-kiln-gl="on"] :is(.kiln-embers, .kiln-shimmer) {
+  opacity: 0;
+  visibility: hidden;
+  animation-play-state: paused;
+  transition:
+    opacity var(--duration-slow) var(--ease-clay),
+    visibility 0s linear var(--duration-slow);
+}

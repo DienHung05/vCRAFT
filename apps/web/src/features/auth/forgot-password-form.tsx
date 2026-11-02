@@ -3,13 +3,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link } from '@/i18n/navigation';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
-import { FormAlert, TextField } from './fields';
+import { FormAlert, STANDALONE_LINK, TextField } from './fields';
+import { useKilnFeedback } from './kiln/kiln-feedback';
 import { type ForgotPasswordValues, forgotPasswordSchema } from './schemas';
+import { useFocusSubmitOnError } from './use-focus-submit-on-error';
 import { useValidationMessage } from './use-validation-message';
 
 /**
@@ -19,6 +21,7 @@ import { useValidationMessage } from './use-validation-message';
 export function ForgotPasswordForm() {
   const t = useTranslations('auth');
   const message = useValidationMessage();
+  const kiln = useKilnFeedback();
   const [error, setError] = useState<AuthErrorKey | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const {
@@ -31,33 +34,39 @@ export function ForgotPasswordForm() {
     defaultValues: { email: '' },
   });
 
-  const onSubmit = handleSubmit(async ({ email }) => {
-    setError(null);
-    const supabase = browserSupabase();
-    if (!supabase) return setError('unconfigured');
-    try {
-      const { error: failure } = await supabase.auth.resetPasswordForEmail(email);
-      if (failure) return setError(authErrorKey(failure));
-      setSentTo(email);
-    } catch (failure) {
-      setError(authErrorKey(failure));
-    }
-  });
+  // The kiln card reacts to the outcome: a failure crackles and shakes the card.
+  const failWith = (key: AuthErrorKey) => {
+    kiln.fail();
+    setError(key);
+  };
+
+  const formRef = useFocusSubmitOnError(error, isSubmitting);
+
+  const onSubmit = handleSubmit(
+    async ({ email }) => {
+      kiln.fire();
+      setError(null);
+      const supabase = browserSupabase();
+      if (!supabase) return failWith('unconfigured');
+      try {
+        const { error: failure } = await supabase.auth.resetPasswordForEmail(email);
+        if (failure) return failWith(authErrorKey(failure));
+        // The form swaps to the "sent" panel, so there is no stamp: just clear the card.
+        kiln.reset();
+        setSentTo(email);
+      } catch (failure) {
+        failWith(authErrorKey(failure));
+      }
+    },
+    () => kiln.fail('invalid'),
+  );
 
   if (sentTo) {
-    return (
-      <div className="flex flex-col gap-4" aria-live="polite">
-        <h2 className="font-display text-h3 text-glaze">{t('forgot.sentTitle')}</h2>
-        <p>{t('forgot.sent', { email: sentTo })}</p>
-        <Link href="/dang-nhap" className="text-small text-clay underline underline-offset-4">
-          {t('forgot.back')}
-        </Link>
-      </div>
-    );
+    return <SentPanel email={sentTo} />;
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {error ? <FormAlert tone="error">{t(`errors.${error}`)}</FormAlert> : null}
       <TextField
         label={t('fields.email')}
@@ -71,9 +80,32 @@ export function ForgotPasswordForm() {
       <Button type="submit" size="lg" disabled={isSubmitting}>
         {isSubmitting ? t('forgot.submitting') : t('forgot.submit')}
       </Button>
-      <Link href="/dang-nhap" className="text-small text-clay underline underline-offset-4">
+      <Link href="/dang-nhap" className={`${STANDALONE_LINK} text-small`}>
         {t('forgot.back')}
       </Link>
     </form>
+  );
+}
+
+/**
+ * The "check your inbox" panel that replaces the form. Focus moves to its heading (and is announced there), so
+ * the panel is not a live region mounted already filled in, which most screen readers would not announce.
+ */
+function SentPanel({ email }: { email: string }) {
+  const t = useTranslations('auth');
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    heading.current?.focus();
+  }, []);
+  return (
+    <div className="flex flex-col gap-4">
+      <h2 ref={heading} tabIndex={-1} className="font-display text-h3 text-glaze outline-none">
+        {t('forgot.sentTitle')}
+      </h2>
+      <p>{t('forgot.sent', { email })}</p>
+      <Link href="/dang-nhap" className={`${STANDALONE_LINK} text-small`}>
+        {t('forgot.back')}
+      </Link>
+    </div>
   );
 }

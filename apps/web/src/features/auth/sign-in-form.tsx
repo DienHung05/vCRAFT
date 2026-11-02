@@ -8,8 +8,10 @@ import { useForm } from 'react-hook-form';
 import { Link } from '@/i18n/navigation';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
-import { FormAlert, PasswordField, TextField } from './fields';
+import { FormAlert, PasswordField, STANDALONE_LINK, TextField } from './fields';
+import { useKilnFeedback } from './kiln/kiln-feedback';
 import { type SignInValues, signInSchema } from './schemas';
+import { useFocusSubmitOnError } from './use-focus-submit-on-error';
 import { useValidationMessage } from './use-validation-message';
 
 export interface SignInFormProps {
@@ -29,6 +31,7 @@ export function SignInForm({ next, needSignIn = false, linkInvalid = false }: Si
   const t = useTranslations('auth');
   const locale = useLocale();
   const message = useValidationMessage();
+  const kiln = useKilnFeedback();
   const [error, setError] = useState<AuthErrorKey | null>(null);
   const [resend, setResend] = useState<'idle' | 'sending' | 'sent'>('idle');
   const {
@@ -42,20 +45,37 @@ export function SignInForm({ next, needSignIn = false, linkInvalid = false }: Si
     defaultValues: { email: '', password: '' },
   });
 
-  const onSubmit = handleSubmit(async ({ email, password }) => {
-    setError(null);
-    setResend('idle');
-    const supabase = browserSupabase();
-    if (!supabase) return setError('unconfigured');
-    try {
-      const { error: failure } = await supabase.auth.signInWithPassword({ email, password });
-      if (failure) return setError(authErrorKey(failure));
-      // Tải lại toàn trang để Server Component đọc cookie phiên mới.
-      window.location.assign(next ?? `/auth/continue?locale=${locale}`);
-    } catch (failure) {
-      setError(authErrorKey(failure));
-    }
-  });
+  // The kiln card reacts to the outcome: a failure crackles and shakes the card.
+  const failWith = (key: AuthErrorKey) => {
+    kiln.fail();
+    setError(key);
+  };
+
+  const formRef = useFocusSubmitOnError(error, isSubmitting);
+
+  const onSubmit = handleSubmit(
+    async ({ email, password }) => {
+      kiln.fire();
+      setError(null);
+      setResend('idle');
+      const supabase = browserSupabase();
+      if (!supabase) return failWith('unconfigured');
+      try {
+        const { error: failure } = await supabase.auth.signInWithPassword({ email, password });
+        if (failure) return failWith(authErrorKey(failure));
+        const destination = next ?? `/auth/continue?locale=${locale}`;
+        // The seal stamps first (the destination is prerendered meanwhile), then the navigation
+        // (a cross-document view transition) follows.
+        await kiln.seal(destination);
+        // Tải lại toàn trang để Server Component đọc cookie phiên mới.
+        window.location.assign(destination);
+      } catch (failure) {
+        failWith(authErrorKey(failure));
+      }
+    },
+    // Client validation failed: nothing was sent, but the card still reacts.
+    () => kiln.fail('invalid'),
+  );
 
   const resendVerification = async () => {
     const supabase = browserSupabase();
@@ -73,7 +93,7 @@ export function SignInForm({ next, needSignIn = false, linkInvalid = false }: Si
   };
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {linkInvalid ? <FormAlert tone="error">{t('signIn.notice.linkInvalid')}</FormAlert> : null}
       {needSignIn && !error ? <FormAlert tone="info">{t('signIn.needSignIn')}</FormAlert> : null}
       {error ? <FormAlert tone="error">{t(`errors.${error}`)}</FormAlert> : null}
@@ -83,6 +103,7 @@ export function SignInForm({ next, needSignIn = false, linkInvalid = false }: Si
             type="button"
             variant="secondary"
             size="sm"
+            className="min-h-11"
             onClick={resendVerification}
             disabled={resend === 'sending'}
           >
@@ -116,17 +137,17 @@ export function SignInForm({ next, needSignIn = false, linkInvalid = false }: Si
         {isSubmitting ? t('signIn.submitting') : t('signIn.submit')}
       </Button>
 
-      <div className="flex flex-col gap-2 text-small">
-        <Link href="/quen-mat-khau" className="text-clay underline underline-offset-4">
+      <div className="flex flex-col text-small">
+        <Link href="/quen-mat-khau" className={STANDALONE_LINK}>
           {t('signIn.forgot')}
         </Link>
-        <p className="text-ash">
+        <p className="py-2.5 text-ash">
           {t('signIn.noAccount')}{' '}
           <Link href="/dang-ky" className="text-clay underline underline-offset-4">
             {t('signIn.registerLink')}
           </Link>
         </p>
-        <Link href="/dang-ky-nghe-nhan" className="text-clay underline underline-offset-4">
+        <Link href="/dang-ky-nghe-nhan" className={STANDALONE_LINK}>
           {t('signIn.householdLink')}
         </Link>
       </div>
