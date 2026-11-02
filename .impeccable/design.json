@@ -77,6 +77,22 @@
       "kind": "custom",
       "name": "Trace Seal Frame",
       "refersTo": "trace-seal"
+    },
+    {
+      "name": "Glazed Card",
+      "kind": "card",
+      "refersTo": "card-glazed",
+      "description": "Opaque tile with a glaze rim, for the sign-in family only.",
+      "html": "<div class=\"ds-card-glazed\"><h3>Sign in</h3><p>Enter your email and password.</p></div>",
+      "css": ".ds-card-glazed { position: relative; background: #fbf8f2; color: #1c1814; border-radius: 12px; padding: 20px; box-shadow: 0 1px 0 rgba(28,24,20,0.04), 0 12px 32px -12px rgba(120,60,30,0.18); } .ds-card-glazed::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; background: linear-gradient(152deg, rgba(30,58,110,0.62) 0, rgba(30,58,110,0.36) 20%, rgba(30,58,110,0.14) 52%, rgba(30,58,110,0.22) 100%); mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); } .ds-card-glazed h3 { margin: 0 0 8px; font-family: Fraunces, Georgia, serif; font-size: 1.5rem; color: #1e3a6e; } .ds-card-glazed p { margin: 0; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 0.875rem; color: #6b635a; }"
+    },
+    {
+      "name": "Ember Field",
+      "kind": "input",
+      "refersTo": "input-ember",
+      "description": "Text field on the kiln tile; an ember underline grows on focus.",
+      "html": "<span class=\"ds-field\"><input class=\"ds-field-input\" type=\"email\" aria-label=\"Email\" /></span>",
+      "css": ".ds-field { position: relative; isolation: isolate; display: inline-block; } .ds-field-input { height: 40px; width: 240px; padding: 0 12px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; font-size: 0.875rem; color: #1c1814; background: color-mix(in srgb, #f5efe4 64%, #fbf8f2); border: 1px solid rgba(28,24,20,0.24); border-radius: 4px; transition: border-color 160ms cubic-bezier(0.22,1,0.36,1); } .ds-field-input:focus-visible { outline: 2px solid #1e3a6e; outline-offset: 2px; } .ds-field::before, .ds-field::after { content: ''; position: absolute; pointer-events: none; opacity: 0; transition: opacity 160ms cubic-bezier(0.22,1,0.36,1); } .ds-field::before { z-index: -1; left: 6%; right: 6%; bottom: -7px; height: 12px; border-radius: 50%; background: radial-gradient(ellipse 50% 100% at 50% 40%, rgba(168,72,42,0.55), rgba(168,72,42,0.2) 55%, transparent 80%); filter: blur(3px); } .ds-field::after { z-index: 2; left: 3px; right: 3px; bottom: 0; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent 0, #a8482a 26%, #e89252 50%, #a8482a 74%, transparent 100%); transform: scaleX(0.25); transform-origin: 50% 100%; transition: opacity 160ms cubic-bezier(0.22,1,0.36,1), transform 160ms cubic-bezier(0.22,1,0.36,1); } .ds-field:focus-within::before, .ds-field:focus-within::after { opacity: 1; } .ds-field:focus-within::after { transform: none; }"
     }
   ],
   "extensions": {
@@ -229,6 +245,21 @@
           "oklch(94% 0.016 85)",
           "oklch(98% 0.008 87)"
         ]
+      },
+      "kiln-hot": {
+        "role": "secondary",
+        "displayName": "Kiln Hot",
+        "canonical": "#e89252",
+        "tonalRamp": [
+          "oklch(22% 0.076 56)",
+          "oklch(32% 0.091 56)",
+          "oklch(43% 0.107 56)",
+          "oklch(55% 0.124 56)",
+          "oklch(67% 0.121 56)",
+          "oklch(78% 0.105 56)",
+          "oklch(88% 0.091 56)",
+          "oklch(95% 0.081 56)"
+        ]
       }
     },
     "motion": [
@@ -271,6 +302,16 @@
         "name": "dur-story",
         "purpose": "Scroll stories and hero sequences.",
         "value": "900ms"
+      },
+      {
+        "name": "dur-reduced-fade",
+        "value": "150ms",
+        "purpose": "Reduced-motion fade that replaces every transition and the stamp (BRAND 6.4); also the reduced seal hold."
+      },
+      {
+        "name": "stagger-list",
+        "value": "40ms",
+        "purpose": "Step between list items and between brush press draw-ons; capped at 12 items."
       }
     ],
     "shadows": [
@@ -278,6 +319,21 @@
         "name": "warm-lift",
         "purpose": "Resting lift for cards, menus, and dialogs.",
         "value": "0 1px 0 rgb(28 24 20 / 0.04), 0 12px 32px -12px rgb(120 60 30 / 0.18)"
+      },
+      {
+        "name": "kiln-fire-glow",
+        "value": "inset 0 1px 0 rgb(255 255 255 / 0.18), 0 0 0 1px rgb(232 146 82 / 0.45), 0 4px 16px 0 rgb(168 72 42 / 0.4)",
+        "purpose": "Firing glow under the primary button on the kiln auth surface (light; dark is a hotter variant)."
+      },
+      {
+        "name": "kiln-error-ring",
+        "value": "0 0 0 1px rgb(194 38 28 / 0.5), 0 8px 30px -4px rgb(194 38 28 / 0.3)",
+        "purpose": "Seal ring added to the warm lift while a kiln tile is in its error state."
+      },
+      {
+        "name": "kiln-seal-glow",
+        "value": "drop-shadow(0 0 5px rgb(232 146 82 / 0.5))",
+        "purpose": "Filter glow on the kiln seal mark. A filter, not a box shadow."
       }
     ],
     "typographyMeta": {
@@ -309,21 +365,39 @@
         "displayName": "Label",
         "purpose": "Buttons, nav, badges, and table cells."
       }
-    }
+    },
+    "opacity": [
+      {
+        "name": "brush-ink",
+        "value": "0.82",
+        "purpose": "Ink strength of hoa lam brush ornaments on paper. 0.64 in dark mode."
+      },
+      {
+        "name": "brush-wash",
+        "value": "0.24",
+        "purpose": "Thin wash under the brush presses. 0.17 in dark mode."
+      }
+    ]
   },
-  "generatedAt": "2026-10-29T08:45:00+07:00",
+  "generatedAt": "2026-11-03T09:00:00+07:00",
   "narrative": {
     "dos": [
       "Do keep paper as the page ground and reserve pure white for no permanent surface.",
       "Do set headlines in Fraunces with SOFT 100 and glaze blue.",
-      "Do save seal red for stamps, verification, halted states, and final confirmation.",
+      "Do save seal red for stamps, verification, halted states, final confirmation, and the error ring of a kiln tile.",
       "Do pair photos with grain, crackle, or wave ornaments at section breaks.",
-      "Do collapse motion to a 150ms fade when reduced motion is requested."
+      "Do collapse motion to a 150ms fade when reduced motion is requested.",
+      "Do draw hoa lam brush ornaments on with the draw-on rule (900ms, 40ms stagger), and leave them out of the loading shell so they are not replayed.",
+      "Do keep the kiln state vocabulary to its four states (firing, error, invalid, sealed) and its durations, and announce the sealed line through its live region.",
+      "Do keep the sealed line copy in the message catalogue: \"Sealed. Opening the kiln…\" (en) and \"Đã đóng ấn. Đang mở cửa lò…\" (vi)."
     ],
     "donts": [
       "Don't use seal red for ordinary buttons, links, or decoration.",
       "Don't set body copy or tables in Fraunces.",
-      "Don't add shadows beyond the single warm lift token.",
+      "Don't add shadows beyond the warm lift token and the kiln state glows named above.",
+      "Don't put the kiln glow, ember dots or the glazed tile on any page outside the sign-in family.",
+      "Don't swap a button's background for its firing state; cross-fade the glow layer.",
+      "Don't replay the brush draw-on on the loading shell, or draw it for reduced motion.",
       "Don't invent households, makers, prices, reviews, or certifications in visual examples.",
       "Don't use loud marketplace patterns such as discount banners or flashing badges."
     ],
@@ -331,14 +405,21 @@
       "Paper first, never pure white",
       "Soft serif headlines paired with a Vietnamese-first sans body",
       "The seal mark and trace frame as the recurring signature",
-      "Warm, restrained motion shaped by clay, kiln, and spread"
+      "Warm, restrained motion shaped by clay, kiln, and spread",
+      "Kiln auth surface: glow, glazed tile and a stamped confirmation, only on the sign-in family",
+      "Hoa lam brush ornaments (cobalt, drawn on) as the one ornament that frames a tile"
     ],
     "northStar": "The Warm Little Museum",
-    "overview": "vCraft looks like a small museum, not a store. Paper backgrounds carry grain, ink text stays quiet, and large soft serif headlines leave room for hands and clay. The interface steps back so workshop photos, artisan portraits, and kiln stories lead.\n\nDensity shifts by role. Public pages use an editorial rhythm with wide gutters and deep section spacing. Workshop and admin tools tighten up, keep paper surfaces, and keep motion to short state feedback. Vietnamese is the default voice throughout.",
+    "overview": "vCraft looks like a small museum, not a store. Paper backgrounds carry grain, ink text stays quiet, and large soft serif headlines leave room for hands and clay. The interface steps back so workshop photos, artisan portraits, and kiln stories lead.\n\nDensity shifts by role. Public pages use an editorial rhythm with wide gutters and deep section spacing. Workshop and admin tools tighten up, keep paper surfaces, and keep motion to short state feedback. Vietnamese is the default voice throughout.\n\nThe sign-in family (sign in, sign up, forgot and reset password, invitation, household wizard) is the one place the museum opens its kiln. Each of these pages stands a glazed tile in front of a kiln mouth: the scene glows from below, the seal sits beside the tile, and a successful sign-in stamps the trace seal before the browser moves on. This is the kiln auth surface. It is a state-driven scene, not a new visual world, and it follows the same paper, ink, clay and glaze roles as every other page.",
     "rules": [
       {
         "body": "Seal red covers no more than 5 percent of a screen. Its scarcity gives weight to stamps, verification, and final acceptance.",
         "name": "The Rare Seal Rule",
+        "section": "colors"
+      },
+      {
+        "body": "Kiln glow, ember dots, heat shimmer and the hot core belong to the kiln auth surface and its firing, error and sealed states. They are never decoration on any other page.",
+        "name": "The Firing Light Rule",
         "section": "colors"
       },
       {
@@ -347,7 +428,7 @@
         "section": "typography"
       },
       {
-        "body": "Surfaces stay flat at rest. Shadow appears only on cards, menus, and dialogs, never as decoration on plain content.",
+        "body": "Surfaces stay flat at rest. Shadow appears only on cards, menus, and dialogs, never as decoration on plain content. The kiln state glows are the one exception, and they appear only as a response to a firing, error or sealed state on the kiln surface.",
         "name": "The Flat-By-Default Rule",
         "section": "elevation"
       }
