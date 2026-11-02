@@ -25,11 +25,14 @@ import type { DemoPhotoRef, LogStage } from '@/lib/demo/data';
 import { dayPhoto } from '@/lib/demo/stage-photos';
 import { resolveLocale } from '@/lib/locale';
 
-/** Ảnh hero thật (có giấy phép); bỏ đi thì quay về hình bình vẽ tay. */
+/**
+ * Hero photo: a Commons-confirmed Bát Tràng vase (the file name states "Bat Trang ceramic"), the same file as the cover of
+ * BT7K2QXM. Drop it and the hand-drawn vase figure takes its place.
+ */
 const HERO_PHOTO: DemoPhotoRef | undefined = {
-  id: 'hero-binh-chu-dau',
-  alt: 'Chiếc bình gốm men ngà vẽ lam hoa mẫu đơn, cổ cao thon, bụng tròn, đặt trong một cửa hàng gốm',
-  altKey: 'hero-binh-chu-dau',
+  id: 'binh-men-lam-xam',
+  alt: 'Bình cổ cao, bụng tròn, men xám lam, đắp nổi cành cây và một người cầm cần câu nhuốm vàng',
+  altKey: 'binh-men-lam-xam',
 };
 
 const DAY_STAGES: readonly { stage: LogStage; tint: string }[] = [

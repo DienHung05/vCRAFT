@@ -26,7 +26,7 @@ const DAY: Partial<Record<LogStage, DemoPhotoRef>> = {
   },
   fire: {
     id: 'day-fire',
-    alt: 'Cửa lò gạch vòm với lửa đỏ cháy bên dưới và chiếc xe đẩy dựng bên cạnh',
+    alt: 'Ô lửa sáng rực trên một cột hộp nung tròn, phía sau là những cột hộp nung khác xếp trong lò',
   },
   finish: {
     id: 'day-finish',

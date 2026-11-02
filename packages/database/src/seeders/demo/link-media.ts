@@ -13,6 +13,7 @@ import { DEMO_ACCOUNTS, DEMO_HOUSEHOLD_IDS } from './accounts.js';
 import {
   DEMO_PHOTO_LINKS,
   DEMO_PHOTOS,
+  NO_COVER_DEMO_HOUSEHOLDS,
   NO_COVER_DEMO_PRODUCTS,
   RETIRED_DEMO_PHOTO_IDS,
 } from './photo-manifest.js';
@@ -285,6 +286,14 @@ export async function linkDemoMedia(
           product.coverUrl = null;
           product.coverAlt = null;
           product.coverAltEn = null;
+          coversChanged++;
+        }
+      }
+
+      for (const slug of runs('covers') ? NO_COVER_DEMO_HOUSEHOLDS : []) {
+        const household = await tx.findOne(Household, { slug });
+        if (household?.coverUrl) {
+          household.coverUrl = null;
           coversChanged++;
         }
       }

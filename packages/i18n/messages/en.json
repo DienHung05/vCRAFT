@@ -1702,13 +1702,13 @@
     "tooMany": "Skipped {count} photos over the limit."
   },
   "photoAlt": {
-    "hero-binh-chu-dau": "An ivory-glazed ceramic vase painted with blue peonies, with a slender neck and round belly, standing in a pottery shop",
     "day-clay": "Pale yellow clay lumps heaped in a storeroom, a hand cart behind",
     "ban-tay-vuot-gom": "Two hands in leather finger guards shaping a white ceramic bowl on a potter's wheel",
     "day-dry": "Nested unglazed pottery basins in the workshop, with more pottery stacked high behind them, waiting to dry",
     "day-paint": "A craftsman crouching and bending over, painting white pottery with a brush, next to a bucket of glaze",
-    "day-fire": "An arched brick kiln door with red flames burning below and a hand cart standing beside it",
-    "day-finish": "A row of large glazed jars with spouts, painted in blue with flowers and leaves, lined up straight"
+    "day-fire": "A bright fire opening on a round sagger column, with more sagger columns standing behind it in the kiln",
+    "day-finish": "A row of large glazed jars with spouts, painted in blue with flowers and leaves, lined up straight",
+    "binh-men-lam-xam": "A tall-necked, round-bellied vase in grey-blue glaze with a relief branch and a gilded figure holding a fishing rod"
   },
   "presetFigure": {
     "bowl": "Illustration of a bowl; this product has no photo yet",

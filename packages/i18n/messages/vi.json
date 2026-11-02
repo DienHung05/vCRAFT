@@ -1702,13 +1702,13 @@
     "tooMany": "Đã bỏ {count} ảnh vượt giới hạn."
   },
   "photoAlt": {
-    "hero-binh-chu-dau": "Chiếc bình gốm men ngà vẽ lam hoa mẫu đơn, cổ cao thon, bụng tròn, đặt trong một cửa hàng gốm",
     "day-clay": "Những tảng đất sét vàng nhạt chất thành đống trong kho, xe đẩy tay phía sau",
     "ban-tay-vuot-gom": "Hai bàn tay đeo ngón bọc da, đang chuốt thành một chiếc bát gốm trắng trên bàn xoay",
     "day-dry": "Chậu gốm mộc lồng nhau trong xưởng, phía sau là cột gốm khác xếp cao chờ khô",
     "day-paint": "Người thợ ngồi xổm cúi đầu, dùng bút vẽ lên gốm trắng, cạnh xô nước men",
-    "day-fire": "Cửa lò gạch vòm với lửa đỏ cháy bên dưới và chiếc xe đẩy dựng bên cạnh",
-    "day-finish": "Dãy chum sứ lớn có vòi, tráng men vẽ lam và hoa lá, xếp thẳng hàng"
+    "day-fire": "Ô lửa sáng rực trên một cột hộp nung tròn, phía sau là những cột hộp nung khác xếp trong lò",
+    "day-finish": "Dãy chum sứ lớn có vòi, tráng men vẽ lam và hoa lá, xếp thẳng hàng",
+    "binh-men-lam-xam": "Bình cổ cao, bụng tròn, men xám lam, đắp nổi cành cây và một người cầm cần câu nhuốm vàng"
   },
   "presetFigure": {
     "bowl": "Hình minh hoạ chiếc bát, chưa có ảnh thật của sản phẩm này",

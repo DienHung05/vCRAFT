@@ -229,8 +229,11 @@ describe('Demo seed and guarded reset', () => {
     const cup = await db.orm.em.fork().findOneOrFail(Product, { traceCode: DEMO_QR_TRACE_CODE });
     expect(cup.coverUrl).toBeNull();
     expect(cup.coverAlt).toBeNull();
+    const lamNgoc = await db.orm.em.fork().findOneOrFail(Household, { slug: 'gom-lam-ngoc' });
+    expect(lamNgoc.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
+    // Gốm Minh Hải's banner was retired (Commons does not confirm the kilns are in Bát Tràng): no cover, no banner.
     const minhHai = await db.orm.em.fork().findOneOrFail(Household, { slug: 'gom-minh-hai' });
-    expect(minhHai.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
+    expect(minhHai.coverUrl).toBeNull();
 
     // The public trace page has no photo for the cup and no stage photo on any entry: a generic stage photo is not
     // this cup. The chain still verifies (checked below for every product).
@@ -243,9 +246,11 @@ describe('Demo seed and guarded reset', () => {
     expect(vaseTrace.body.coverCredit.author).toBeTruthy();
 
     // Public household profiles and news read real images and credits from `media_link` (GH#54).
-    const profile = await t.request({ method: 'GET', url: '/households/gom-minh-hai' });
+    const minhHaiProfile = await t.request({ method: 'GET', url: '/households/gom-minh-hai' });
+    expect(minhHaiProfile.body.banner).toBeNull();
+    const profile = await t.request({ method: 'GET', url: '/households/gom-lam-ngoc' });
     expect(profile.body.portrait.credit.author).toBeTruthy();
-    expect(profile.body.banner.url).toBe(minhHai.coverUrl);
+    expect(profile.body.banner.url).toBe(lamNgoc.coverUrl);
     expect(profile.body.gallery.length).toBeGreaterThan(0);
     expect(profile.body.banner.altEn).toMatch(/^[\x20-\x7e]+$/);
     expect(profile.body.portrait.altEn).toMatch(/^[\x20-\x7e]+$/);
@@ -265,9 +270,11 @@ describe('Demo seed and guarded reset', () => {
 
     // The household list gives each cover its own description (vi and en), not a template.
     const households = await t.request({ method: 'GET', url: '/households' });
-    const listed = households.body.data.find((h: { slug: string }) => h.slug === 'gom-minh-hai');
+    const listed = households.body.data.find((h: { slug: string }) => h.slug === 'gom-lam-ngoc');
     expect(listed.coverAlt).toBeTruthy();
     expect(listed.coverAltEn).toMatch(/^[\x20-\x7e]+$/);
+    const noCover = households.body.data.find((h: { slug: string }) => h.slug === 'gom-minh-hai');
+    expect(noCover.coverUrl).toBeNull();
 
     // Admin sees what each verification document is, not just its MIME type.
     const docs = await t.request({

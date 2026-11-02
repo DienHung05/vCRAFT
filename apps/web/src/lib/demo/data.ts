@@ -198,10 +198,6 @@ const artisans: Artisan[] = [
       id: 'chan-dung-minh-hai',
       alt: 'Bàn tay đang chuốt thành một chiếc bát gốm trắng trên bàn xoay, ngón tay bọc da mỏng',
     },
-    banner: {
-      id: 'bia-minh-hai',
-      alt: 'Hai lò nung gạch cao hình chóp, vách gạch cũ nhiều lỗ thông hơi, cỏ mọc quanh chân lò dưới trời trong',
-    },
     openNow: true,
     hours: '7:30 – 17:30',
     capacityPerMonth: 1200,

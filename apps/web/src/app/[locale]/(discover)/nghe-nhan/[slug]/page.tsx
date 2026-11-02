@@ -11,6 +11,7 @@ import { fetchHousehold } from '@/features/catalog/exhibition-api';
 import { ProductCard } from '@/features/catalog/product-card';
 import {
   altFor,
+  householdCover,
   photoFromUrl,
   slotPhoto,
   tintOf,
@@ -57,13 +58,10 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
 
   const household = result.data;
   const representative = household.artisans[0];
-  // The description of what the banner really shows; without a photo the frame is only an illustration.
-  const coverAlt = household.banner
-    ? altFor(locale, household.banner.alt, household.banner.altEn) || preset('household')
-    : preset('household');
-  const cover = household.banner
-    ? photoFromUrl(household.banner.url, coverAlt, household.banner.variants)
-    : photoFromUrl(household.coverUrl, coverAlt, household.coverVariants);
+  // What the cover really shows (its own description); without a photo the frame is only an illustration.
+  const householdPhoto = householdCover(locale, household);
+  const coverAlt = householdPhoto.alt || preset('household');
+  const cover = householdPhoto.view && { ...householdPhoto.view, alt: coverAlt };
   const portrait = household.portrait;
   const portraitAlt = portrait ? altFor(locale, portrait.alt, portrait.altEn) : '';
   const portraitPhoto = portrait
@@ -129,7 +127,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
         <div className="mx-auto max-w-editorial px-gutter">
           <PhotoCredit
             id={cover.photo?.id}
-            credit={household.banner?.credit}
+            credit={householdPhoto.credit}
             className="mt-2 text-right text-[0.75rem] text-ash"
           />
         </div>

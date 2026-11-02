@@ -7,6 +7,7 @@ import { pickDisplayVariant } from '../src/seeders/demo/link-media.js';
 import {
   DEMO_PHOTO_LINKS,
   DEMO_PHOTOS,
+  NO_COVER_DEMO_HOUSEHOLDS,
   NO_COVER_DEMO_PRODUCTS,
   RETIRED_DEMO_PHOTO_IDS,
 } from '../src/seeders/demo/photo-manifest.js';
@@ -61,6 +62,19 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
     for (const code of NO_COVER_DEMO_PRODUCTS) {
       expect(SEEDED_TRACE_CODES.has(code), code).toBe(true);
       expect(COVERED_TRACE_CODES.has(code), code).toBe(false);
+    }
+  });
+
+  it('hộ không còn ảnh bìa thì không có liên kết BANNER và vẫn có trong seed', () => {
+    const householdSlugs = new Set(HOUSEHOLDS.map((h) => slugify(h.name)));
+    for (const slug of NO_COVER_DEMO_HOUSEHOLDS) {
+      expect(householdSlugs.has(slug), slug).toBe(true);
+      expect(
+        DEMO_PHOTO_LINKS.some(
+          (l) => l.target === 'HOUSEHOLD' && l.key === slug && l.role === 'BANNER',
+        ),
+        slug,
+      ).toBe(false);
     }
   });
 

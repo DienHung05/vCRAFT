@@ -47,18 +47,6 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
     widths: [640, 1280],
   },
   {
-    id: 'bia-minh-hai',
-    alt: 'Hai lò nung gạch cao hình chóp, vách gạch cũ nhiều lỗ thông hơi, cỏ mọc quanh chân lò dưới trời trong',
-    credit: {
-      title: 'File:DSC0252 (22946631901).jpg',
-      author: 'Tran Anh Khoa (zorrotran)',
-      license: 'CC BY-SA 2.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/2.0/',
-      sourceUrl: 'https://commons.wikimedia.org/wiki/File:DSC0252_(22946631901).jpg',
-    },
-    widths: [640, 1280],
-  },
-  {
     id: 'ban-xoay-xuong',
     alt: 'Những bàn xoay gỗ thấp đặt rải rác trên nền gạch đỏ trong một xưởng gốm',
     credit: {
@@ -327,16 +315,6 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
       "Close-up of two hands in leather finger caps trimming the foot of a white bowl on a potter's wheel",
   },
   {
-    photo: 'bia-minh-hai',
-    target: 'HOUSEHOLD',
-    key: 'gom-minh-hai',
-    role: 'BANNER',
-    position: 0,
-    alt: 'Hai lò nung gạch cao hình chóp, vách gạch cũ nhiều lỗ thông hơi, cỏ mọc quanh chân lò dưới trời trong',
-    altEn:
-      'Two tall conical old brick kilns with many vent holes, grass at their base, under a clear sky',
-  },
-  {
     photo: 'ban-xoay-xuong',
     target: 'HOUSEHOLD',
     key: 'gom-minh-hai',
@@ -564,6 +542,8 @@ export const NO_COVER_DEMO_PRODUCTS: readonly string[] = ['HX2M9KQD', 'DF6P3WZE'
  * `pnpm demo:media` deletes their `media_asset` rows and storage objects. Never attach one again.
  */
 export const RETIRED_DEMO_PHOTO_IDS: readonly string[] = [
+  // Origin not confirmed as Bát Tràng by Commons (only filed under "Kilns in Vietnam"):
+  'bia-minh-hai',
   // Shot or made outside Bát Tràng according to Commons (Châu Thành in Đồng Tháp; Chu Đậu ware of Hải Dương):
   'ln-cua-lo-vom',
   'ht-binh-hoa-lam-vo',
@@ -582,3 +562,9 @@ export const RETIRED_DEMO_PHOTO_IDS: readonly string[] = [
   'tl-fire',
   'tl-finish',
 ];
+
+/**
+ * Demo households whose banner photo was retired: `demo:media` clears their `cover_url` so cards and the map
+ * show a workshop illustration instead (slugs).
+ */
+export const NO_COVER_DEMO_HOUSEHOLDS: readonly string[] = ['gom-minh-hai'];

@@ -3,7 +3,7 @@
  * Tải ảnh minh hoạ trình diễn từ Wikimedia Commons, cắt theo tỉ lệ khung, mã hoá AVIF + WebP
  * (640w, 1280w) vào apps/web/public/images/demo và sinh apps/web/src/lib/demo/photo-credits.ts.
  *
- * Dùng: node scripts/demo-photos/build.mjs [thư-mục-ảnh-gốc]
+ * Dùng: node scripts/demo-photos/build.mjs [thư-mục-ảnh-gốc] [--only=id1,id2]
  * Ảnh gốc tải về thư mục đối số (mặc định thư mục tạm của hệ điều hành, ngoài repo). Cùng thiết lập với bộ chuyển
  * ảnh của worker (xoay theo EXIF, bỏ metadata, AVIF q50, WebP q75), không phóng to ảnh.
  */
@@ -12,14 +12,22 @@ import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
 const require = createRequire(path.join(root, 'apps/worker/package.json'));
 const sharp = require('sharp');
 
-const srcDir = process.argv[2] ?? path.join(os.tmpdir(), 'vcraft-demo-photos-src');
+const args = process.argv.slice(2);
+// `--only=id1,id2` processes just those photos and keeps the other credits as they are, so adding one photo
+// does not re-encode (and re-upload) the whole set.
+const only = args
+  .find((a) => a.startsWith('--only='))
+  ?.slice(7)
+  .split(',');
+const srcDir =
+  args.find((a) => !a.startsWith('--')) ?? path.join(os.tmpdir(), 'vcraft-demo-photos-src');
 const outDir = path.join(root, 'apps/web/public/images/demo');
 const creditsFile = path.join(root, 'apps/web/src/lib/demo/photo-credits.ts');
 const UA = 'vCraftDemo/1.0 (https://github.com/DienHung05/vCRAFT)';
@@ -65,6 +73,7 @@ const credits = [];
 let total = 0;
 
 for (const p of photos) {
+  if (only && !only.includes(p.id)) continue;
   const buf = await download(p);
   if (!isRealImage(buf)) throw new Error(`${p.id}: byte không hợp lệ`);
   const [rw, rh] = p.ratio.split('/').map(Number);
@@ -133,6 +142,17 @@ for (const p of photos) {
   console.log(p.id, `${ow}x${oh} -> ${cropW}x${cropH}`, credits.at(-1).tint, outWidths.join('/'));
 }
 
+if (only) {
+  // Keep the credit of every photo that was not rebuilt, in the order of sources.json.
+  const existing = (await import(pathToFileURL(creditsFile).href)).PHOTO_CREDITS;
+  const rebuilt = new Map(credits.map((c) => [c.id, c]));
+  const prior = new Map(existing.map((c) => [c.id, c]));
+  credits.length = 0;
+  for (const p of photos) {
+    const c = rebuilt.get(p.id) ?? prior.get(p.id);
+    if (c) credits.push(c);
+  }
+}
 const body = `// Sinh tự động bởi scripts/demo-photos/build.mjs. Không sửa tay; sửa sources.json rồi chạy lại.
 // Ảnh minh hoạ trình diễn lấy từ Wikimedia Commons, chỉ dùng giấy phép CC0 / CC BY / CC BY-SA.
 

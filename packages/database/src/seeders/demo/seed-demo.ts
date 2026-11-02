@@ -106,7 +106,6 @@ const HOUSEHOLD_SHOWCASE: Record<string, Partial<Household>> = {
 
 /** Ảnh bìa có giấy phép đã nằm trong `apps/web/public/images/demo` (xem `photo-credits.ts` của web). */
 const HOUSEHOLD_COVERS: Record<string, string> = {
-  'Gốm Minh Hải': '/images/demo/bia-minh-hai-1280.webp',
   'Gốm Lam Ngọc': '/images/demo/bia-lam-ngoc-1280.webp',
   'Lò Đức Phát': '/images/demo/bia-duc-phat-1280.webp',
   'Gốm Hạnh Thủy': '/images/demo/bia-hanh-thuy-1280.webp',

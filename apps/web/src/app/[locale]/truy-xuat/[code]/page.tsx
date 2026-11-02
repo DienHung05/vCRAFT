@@ -17,6 +17,7 @@ import { LocaleSwitcher } from '@/components/shell/locale-switcher';
 import { fetchHousehold, fetchTrace } from '@/features/catalog/exhibition-api';
 import {
   altFor,
+  householdCover,
   photoFromUrl,
   slotPhoto,
   tintOf,
@@ -85,14 +86,9 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
     : undefined;
   // The household slot shows the household's own banner when it has one, else a workshop illustration.
   const household = profile?.status === 'ok' ? profile.data : null;
-  const householdAlt = household?.banner
-    ? altFor(locale, household.banner.alt, household.banner.altEn) || preset('household')
-    : preset('household');
-  const householdImage = household?.banner
-    ? photoFromUrl(household.banner.url, householdAlt, household.banner.variants)
-    : household
-      ? photoFromUrl(household.coverUrl, householdAlt, household.coverVariants)
-      : undefined;
+  const householdPhoto = household ? householdCover(locale, household) : undefined;
+  const householdAlt = householdPhoto?.alt || preset('household');
+  const householdImage = householdPhoto?.view && { ...householdPhoto.view, alt: householdAlt };
 
   return (
     <div className="mx-auto min-h-svh max-w-xl bg-paper">
@@ -199,7 +195,7 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                   />
                 )}
               </ImageSlot>
-              <PhotoCredit id={householdImage?.photo?.id} credit={household?.banner?.credit} />
+              <PhotoCredit id={householdImage?.photo?.id} credit={householdPhoto?.credit} />
               {visible.product.artisanNote ? (
                 <blockquote className="mt-6 font-display text-h3 leading-snug text-ink type-soft">
                   “{visible.product.artisanNote}”

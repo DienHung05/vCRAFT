@@ -93,15 +93,6 @@
       "position": "right"
     },
     {
-      "id": "bia-minh-hai",
-      "file": "DSC0252 (22946631901).jpg",
-      "ratio": "16/9",
-      "author": "Tran Anh Khoa (zorrotran)",
-      "license": "CC BY-SA 2.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
-      "region": [0, 0, 0.88, 0.88]
-    },
-    {
       "id": "bia-lam-ngoc",
       "file": "Bình vôi (lime container) 3.JPG",
       "ratio": "16/9",
@@ -200,25 +191,17 @@
     },
     {
       "id": "day-fire",
-      "file": "Kiln in Vietnam in Chau Thanh District, 04.jpg",
-      "ratio": "3/4",
-      "author": "Karel Bilek",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
-    },
-    {
-      "id": "day-finish",
-      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2676.JPG",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2741.JPG",
       "ratio": "3/4",
       "author": "松岡明芳 (Akiyoshi Matsuoka)",
       "license": "CC BY-SA 3.0",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
     },
     {
-      "id": "hero-binh-chu-dau",
-      "file": "Vase by Chu Dau ceramic 2.JPG",
-      "ratio": "4/5",
-      "author": "Hungda",
+      "id": "day-finish",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2676.JPG",
+      "ratio": "3/4",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
       "license": "CC BY-SA 3.0",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
     },
