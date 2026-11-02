@@ -99,14 +99,17 @@ export function AccountMenu({
           {initial}
         </span>
         {/* The name comes from the content, so the visible email is always part of it (WCAG 2.5.3). */}
+        {/* `not-sr-only` resets overflow and white-space, so the truncation lives on the inner span. */}
         <span
           className={cn(
-            'max-w-36 truncate',
+            'min-w-0 max-w-36',
             compact ? 'sr-only 2xl:not-sr-only' : 'sr-only md:not-sr-only',
           )}
         >
-          <span className="sr-only">{t('nav.account')}: </span>
-          {email}
+          <span className="block truncate" title={email}>
+            <span className="sr-only">{t('nav.account')}: </span>
+            {email}
+          </span>
         </span>
       </summary>
       <div
