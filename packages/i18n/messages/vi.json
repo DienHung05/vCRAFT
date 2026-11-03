@@ -513,7 +513,8 @@
       "news": "Tin tức",
       "audit": "Nhật ký",
       "overview": "Tổng quan",
-      "pending": "{count} hồ sơ đang chờ duyệt"
+      "pending": "{count} hồ sơ đang chờ duyệt",
+      "progress": "Tiến độ đơn"
     },
     "board": {
       "barTitle": "Chia {quantity} {unit} cho các hộ",
@@ -785,6 +786,9 @@
         },
         "account": {
           "delete": "Xóa tài khoản"
+        },
+        "allocation": {
+          "reallocate": "Chia lại phần còn lại"
         }
       },
       "emptyHint": "Mọi thao tác của quản trị viên sẽ được ghi lại ở đây.",
@@ -891,6 +895,32 @@
         "area": "Khu vực",
         "outageHint": "Studio hiện banner vào đúng ngày cắt điện.{more, plural, =0 {} other { Thông báo còn # đợt cắt khác được giữ nguyên.}}"
       }
+    },
+    "progress": {
+      "title": "Tiến độ đơn hàng",
+      "lead": "Mỗi thanh là phần của một hộ, từ lúc nhận tới ngày hộ hẹn xong; phần tô đậm là số đã làm, vạch xanh là hôm nay.",
+      "loading": "Đang tải tiến độ…",
+      "loadFailed": "Chưa tải được tiến độ đơn hàng.",
+      "empty": "Chưa có đơn nào đang sản xuất.",
+      "requiredBy": "Hạn giao {date}",
+      "counts": "{done}/{total} {unit} · dự kiến {expected} · hẹn {due}",
+      "lateness": {
+        "DONE": "Xong",
+        "ON_TRACK": "Đúng tiến độ",
+        "BEHIND": "Chậm",
+        "OVERDUE": "Quá hạn"
+      },
+      "reallocate": "Chia lại phần còn lại",
+      "reallocateLegend": "Chia {remaining} {unit} còn lại cho hộ khác",
+      "targetHousehold": "Hộ nhận",
+      "chooseHousehold": "Chọn hộ",
+      "targetQuantity": "Số lượng",
+      "moved": "Đã chia {moved}/{remaining} {unit}",
+      "addTarget": "Thêm hộ",
+      "confirmReallocate": "Xác nhận chia lại",
+      "cancel": "Hủy",
+      "reallocated": "Đã chia lại. Các hộ nhận được thông báo.",
+      "reallocateFailed": "Chưa chia lại được. Bạn tải lại trang rồi thử lại."
     }
   },
   "exhibition": {

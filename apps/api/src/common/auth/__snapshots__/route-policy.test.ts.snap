@@ -1,7 +1,9 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`API route policy > matches the reviewed inventory 1`] = `
-"GET /api/v1/admin/audit-log ROLES(ADMIN)
+"GET /api/v1/admin/allocations ROLES(ADMIN)
+POST /api/v1/admin/allocations/:id/reallocate ROLES(ADMIN)
+GET /api/v1/admin/audit-log ROLES(ADMIN)
 GET /api/v1/admin/audit-log/actors ROLES(ADMIN)
 GET /api/v1/admin/coordination ROLES(ADMIN)
 GET /api/v1/admin/dashboard ROLES(ADMIN)
