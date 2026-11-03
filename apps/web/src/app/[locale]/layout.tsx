@@ -9,6 +9,7 @@ import { WebFonts } from '@/components/web-fonts';
 import { routing } from '@/i18n/routing';
 import { FALLBACK_USD_RATE, showsUsdReference } from '@/lib/currency';
 import { siteOrigin } from '@/lib/site';
+import { THEME_SCRIPT } from '@/lib/theme';
 import { getUsdRate } from '@/lib/usd-rate';
 import { VIEW_TRANSITION_GUARD_SCRIPT } from '@/lib/view-transition';
 import { FONTS_FLAG_SCRIPT, webFontVars } from '@/lib/web-fonts';
@@ -81,12 +82,14 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
         'font-be-vietnam': beVietnamPro.style.fontFamily,
         'font-jetbrains-mono': jetBrainsMono.style.fontFamily,
       })}
-      // The head script below may set data-fonts before React hydrates.
+      // The head scripts below may set data-fonts and data-theme before React hydrates.
       suppressHydrationWarning
     >
       <head>
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a constant script; as a JSX child React would escape its quotes. */}
         <script dangerouslySetInnerHTML={{ __html: FONTS_FLAG_SCRIPT }} />
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a constant script, see lib/theme.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a constant script, see lib/view-transition.ts. */}
         <script dangerouslySetInnerHTML={{ __html: VIEW_TRANSITION_GUARD_SCRIPT }} />
         <noscript>
