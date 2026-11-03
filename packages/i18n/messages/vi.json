@@ -1629,6 +1629,14 @@
       "qr": "Mã QR",
       "qrLead": "In mã này lên tem dán đáy sản phẩm. Mã không đổi khi đổi tên.",
       "qrDownload": "Tải PNG",
+      "labels": {
+        "oneSheet": "Tải nhãn QR để in (PDF)",
+        "allPublished": "Nhãn QR cho {count, plural, other {# sản phẩm}} đang trưng bày (PDF)",
+        "preparing": "Đang dựng tờ nhãn…",
+        "hint": "Khổ A4, mã QR in 20 mm, cắt theo đường kẻ mờ.",
+        "failed": "Chưa dựng được tờ nhãn. Bạn thử lại.",
+        "timeout": "Tờ nhãn đang lâu hơn thường lệ. Bạn thử lại sau ít phút."
+      },
       "journalLink": "Nhật ký sản xuất",
       "emptyHint": "Thêm món đầu tiên, rồi ghi nhật ký sản xuất và xuất bản để khách thấy.",
       "createdToast": "Đã tạo sản phẩm nháp.",

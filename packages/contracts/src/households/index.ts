@@ -439,3 +439,26 @@ export type MapPinDto = z.infer<typeof MapPinSchema>;
 
 export const MapPinsResponseSchema = z.object({ data: z.array(MapPinSchema) });
 export type MapPinsDto = z.infer<typeof MapPinsResponseSchema>;
+
+/** At most 10 A4 sheets of 45 labels per request (PLAN E6). */
+export const MAX_QR_LABELS = 450;
+
+/** `POST /me/household/qr-labels`: print `copies` labels for each of the household's products. */
+export const CreateQrLabelsRequestSchema = z
+  .object({
+    productIds: z.array(IdSchema).min(1).max(MAX_QR_LABELS),
+    copies: z.int().min(1).max(45).default(1),
+  })
+  .refine((v) => v.productIds.length * v.copies <= MAX_QR_LABELS, {
+    message: `Tối đa ${MAX_QR_LABELS} nhãn mỗi lần`,
+    path: ['copies'],
+  });
+export type CreateQrLabelsRequest = z.input<typeof CreateQrLabelsRequestSchema>;
+
+/** A label sheet being rendered by the worker; `url` (short-lived) once the PDF is ready. */
+export const QrLabelsResponseSchema = z.object({
+  requestId: IdSchema,
+  status: z.enum(['PENDING', 'READY']),
+  url: z.string().nullable(),
+});
+export type QrLabelsDto = z.infer<typeof QrLabelsResponseSchema>;

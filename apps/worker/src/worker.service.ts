@@ -16,6 +16,7 @@ import { sendNoticeMail } from './processors/mail/send-notice-mail';
 import { processMediaAsset } from './processors/media/process-media';
 import { createOutboxDispatcher } from './processors/outbox/dispatch';
 import { relayOutbox } from './processors/outbox/relay-outbox';
+import { generateQrLabels, type QrLabelsJob } from './processors/qr-labels/generate-qr-labels';
 import {
   MAIL_QUEUE,
   type MailJob,
@@ -23,6 +24,7 @@ import {
   type MediaJob,
   OUTBOX_QUEUE,
   OUTBOX_RELAY_EVERY_MS,
+  QR_LABELS_QUEUE,
 } from './queues';
 
 export const OBJECT_STORAGE = Symbol('OBJECT_STORAGE');
@@ -66,8 +68,12 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       connection,
       defaultJobOptions: DEFAULT_JOB_OPTIONS,
     });
+    const qrLabels = new Queue<QrLabelsJob>(QR_LABELS_QUEUE, {
+      connection,
+      defaultJobOptions: DEFAULT_JOB_OPTIONS,
+    });
     const outbox = new Queue(OUTBOX_QUEUE, { connection });
-    const dispatch = createOutboxDispatcher({ media, mail });
+    const dispatch = createOutboxDispatcher({ media, mail, qrLabels });
     const mailDeps = {
       loadNotice: createNoticeLoader(this.orm),
       transport: createTransport(process.env.SMTP_URL ?? 'smtp://localhost:1025'),
@@ -100,6 +106,19 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
           concurrency: 2,
         },
       ),
+      new Worker<QrLabelsJob>(
+        QR_LABELS_QUEUE,
+        (job) =>
+          generateQrLabels(
+            {
+              storage: this.storage,
+              // The labels must encode the public site, as the web's own QR does (`traceShortUrl`).
+              origin: process.env.NEXT_PUBLIC_SITE_URL ?? mailDeps.appUrl,
+            },
+            job.data,
+          ),
+        { connection, concurrency: 1 },
+      ),
       new Worker(
         OUTBOX_QUEUE,
         async () => {
@@ -114,10 +133,10 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
         this.logger.warn(`${worker.name} job ${job?.id} failed: ${error.message}`),
       );
     await outbox.upsertJobScheduler('relay', { every: OUTBOX_RELAY_EVERY_MS });
-    this.closables.push(...workers, media, mail, outbox, {
+    this.closables.push(...workers, media, mail, qrLabels, outbox, {
       close: async () => mailDeps.transport.close(),
     });
-    this.logger.log('queues ready: media, mail, outbox');
+    this.logger.log('queues ready: media, mail, qr-labels, outbox');
   }
 
   async onApplicationShutdown(): Promise<void> {

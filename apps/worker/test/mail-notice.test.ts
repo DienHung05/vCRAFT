@@ -10,7 +10,7 @@ describe('outbox dispatcher: quotation.notice', () => {
   it('adds one mail job per notice with a deterministic jobId', async () => {
     const mail = { add: vi.fn(async () => undefined) };
     const media = { add: vi.fn(async () => undefined) };
-    const dispatch = createOutboxDispatcher({ media, mail });
+    const dispatch = createOutboxDispatcher({ media, mail, qrLabels: media });
     await dispatch({ id: 'e1', type: 'quotation.notice', payload: { noticeIds: ['n1', 'n2'] } });
     expect(mail.add.mock.calls).toEqual([
       ['send', { noticeId: 'n1' }, { jobId: 'mail-n1' }],
@@ -22,14 +22,14 @@ describe('outbox dispatcher: quotation.notice', () => {
   it('routes notification.created to the same mail queue', async () => {
     const mail = { add: vi.fn(async () => undefined) };
     const media = { add: vi.fn(async () => undefined) };
-    const dispatch = createOutboxDispatcher({ media, mail });
+    const dispatch = createOutboxDispatcher({ media, mail, qrLabels: media });
     await dispatch({ id: 'e3', type: 'notification.created', payload: { noticeIds: ['n9'] } });
     expect(mail.add.mock.calls).toEqual([['send', { noticeId: 'n9' }, { jobId: 'mail-n9' }]]);
   });
 
   it('ignores a payload without notice ids', async () => {
     const mail = { add: vi.fn(async () => undefined) };
-    const dispatch = createOutboxDispatcher({ media: mail, mail });
+    const dispatch = createOutboxDispatcher({ media: mail, mail, qrLabels: mail });
     await dispatch({ id: 'e2', type: 'quotation.notice', payload: {} });
     expect(mail.add).not.toHaveBeenCalled();
   });

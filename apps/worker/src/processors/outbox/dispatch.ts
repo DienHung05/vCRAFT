@@ -12,6 +12,7 @@ export interface JobSink {
 export function createOutboxDispatcher(queues: {
   media: JobSink;
   mail: JobSink;
+  qrLabels: JobSink;
 }): OutboxDispatcher {
   return async (event) => {
     switch (event.type) {
@@ -25,6 +26,11 @@ export function createOutboxDispatcher(queues: {
         const noticeIds = Array.isArray(event.payload.noticeIds) ? event.payload.noticeIds : [];
         for (const noticeId of noticeIds.map(String))
           await queues.mail.add('send', { noticeId }, { jobId: `mail-${noticeId}` });
+        return;
+      }
+      case 'qr.labels.requested': {
+        const requestId = String(event.payload.requestId);
+        await queues.qrLabels.add('qr.labels', event.payload, { jobId: `qr-labels-${requestId}` });
         return;
       }
       case 'household.decision': {
