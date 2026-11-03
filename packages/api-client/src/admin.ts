@@ -3,6 +3,7 @@ import {
   AdminHouseholdListSchema,
   AdminNewsListSchema,
   AdminNewsSchema,
+  AllocationScheduleSchema,
   AuditActorListSchema,
   AuditLogPageSchema,
   type AuditLogQuery,
@@ -13,6 +14,7 @@ import {
   type ListAdminNewsQuery,
   MediaAssetResponseSchema,
   MediaReadUrlResponseSchema,
+  type ReallocateRequest,
   RevealedIdNumberResponseSchema,
   RfqResponseSchema,
   type SaveNewsRequest,
@@ -44,6 +46,14 @@ export function createAdminClient(options: AuthedClientOptions) {
     revealIdNumber: (id: string) =>
       request(`/admin/households/${id}/id-number`, RevealedIdNumberResponseSchema),
     coordinationQueue: () => request('/admin/coordination', CoordinationQueueSchema),
+    /** Running orders with each household's share on a timeline (PLAN E10). */
+    allocationSchedule: () => request('/admin/allocations', AllocationScheduleSchema),
+    reallocate: (id: string, version: number, body: ReallocateRequest) =>
+      request(`/admin/allocations/${id}/reallocate`, AllocationScheduleSchema, {
+        method: 'POST',
+        version,
+        body,
+      }),
     claimCoordination: (id: string, version: number) =>
       request(`/rfqs/${id}/coordinate`, RfqResponseSchema, { method: 'POST', version }),
     auditLog: (filters: Partial<AuditLogQuery> = {}) => {

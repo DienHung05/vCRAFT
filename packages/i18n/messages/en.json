@@ -513,7 +513,8 @@
       "news": "News",
       "audit": "Audit log",
       "overview": "Overview",
-      "pending": "{count} applications waiting"
+      "pending": "{count} applications waiting",
+      "progress": "Order progress"
     },
     "board": {
       "barTitle": "Splitting {quantity} {unit} across households",
@@ -785,6 +786,9 @@
         },
         "account": {
           "delete": "Account deleted by its owner"
+        },
+        "allocation": {
+          "reallocate": "Reallocate remaining pieces"
         }
       },
       "emptyHint": "Every administrator action will be recorded here.",
@@ -891,6 +895,32 @@
         "area": "Area",
         "outageHint": "Studio shows a banner on the day of the cut.{more, plural, =0 {} one { One more cut in this notice is kept as is.} other { # more cuts in this notice are kept as is.}}"
       }
+    },
+    "progress": {
+      "title": "Order progress",
+      "lead": "Each bar is one household's share, from when it started to the date the household promised; the filled part is what it has made, the blue line is today.",
+      "loading": "Loading progress…",
+      "loadFailed": "Order progress could not be loaded.",
+      "empty": "No order is in production.",
+      "requiredBy": "Due {date}",
+      "counts": "{done}/{total} {unit} · expected {expected} · promised {due}",
+      "lateness": {
+        "DONE": "Done",
+        "ON_TRACK": "On track",
+        "BEHIND": "Behind",
+        "OVERDUE": "Overdue"
+      },
+      "reallocate": "Reallocate the rest",
+      "reallocateLegend": "Give the remaining {remaining} {unit} to other households",
+      "targetHousehold": "Household",
+      "chooseHousehold": "Choose a household",
+      "targetQuantity": "Quantity",
+      "moved": "{moved}/{remaining} {unit} assigned",
+      "addTarget": "Add household",
+      "confirmReallocate": "Confirm reallocation",
+      "cancel": "Cancel",
+      "reallocated": "Reallocated. The households were notified.",
+      "reallocateFailed": "The reallocation did not go through. Reload the page and try again."
     }
   },
   "exhibition": {
