@@ -1,5 +1,6 @@
 export * from './app-user.entity.js';
 export * from './artisan.entity.js';
+export * from './assistant-message-log.entity.js';
 export * from './audit-log.entity.js';
 export * from './base.entity.js';
 export * from './consent-record.entity.js';
