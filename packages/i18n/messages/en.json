@@ -1925,5 +1925,104 @@
         "GAS": "Gas"
       }
     }
+  },
+  "assistant": {
+    "open": "Ask the Fox",
+    "close": "Close the assistant",
+    "title": "The vCraft Fox",
+    "subtitle": "Ask about Bát Tràng pottery and using vCraft",
+    "mascotLabel": "The Fox, vCraft's assistant",
+    "welcome": "Hi! I'm the Fox. Looking for pottery, a bulk order, or the story of Bát Tràng village?",
+    "hello": "Hi there 👋 Ask the Fox anything about the pottery village!",
+    "dismissHello": "Hide the greeting",
+    "log": "Conversation with the Fox",
+    "inputLabel": "Your question for the Fox",
+    "placeholder": "Ask the Fox something…",
+    "send": "Send",
+    "stop": "Stop answering",
+    "stopped": "Stopped.",
+    "retry": "Try again",
+    "copy": "Copy the answer",
+    "copied": "Copied",
+    "helpful": "Helpful answer",
+    "notHelpful": "Not helpful",
+    "newChat": "New conversation",
+    "thinking": "The Fox is thinking…",
+    "error": "The Fox tripped up. Please try again.",
+    "sources": "Sources",
+    "quickLabel": "Suggested questions",
+    "source": {
+      "FAQ": "FAQ",
+      "PRODUCT": "Product",
+      "HOUSEHOLD": "Household",
+      "NEWS": "News",
+      "VILLAGE": "Village",
+      "PAGE": "Page"
+    },
+    "blocked": {
+      "INJECTION": "I can't do that. Shall we talk about pottery?",
+      "ABUSE": "Let's keep it friendly. I'm still happy to help with Bát Tràng pottery.",
+      "PRIVATE_DATA": "I can't see other people's private details. Try asking something else.",
+      "RATE_LIMITED": "That's a lot of questions! The Fox needs a short break. Try again in a few minutes.",
+      "RATE_LIMITED_WAIT": "That's a lot of questions! The Fox needs a short break. Ask again in {seconds} s.",
+      "BUDGET_EXHAUSTED": "The Fox is asleep. See you tomorrow 💤",
+      "DISABLED": "The Fox is resting. Try the FAQ or send a quote request."
+    },
+    "quick": {
+      "home": [
+        "What makes Bát Tràng special?",
+        "How do bulk orders work?",
+        "Which workshops are open now?"
+      ],
+      "catalog": ["Pottery gift ideas", "Blue glaze vs crackle glaze?", "Do you have money jars?"],
+      "map": [
+        "Which workshops are open now?",
+        "How do I get to Bát Tràng?",
+        "Weather in Bát Tràng today?"
+      ],
+      "trace": [
+        "What does this QR code tell me?",
+        "Who made this piece?",
+        "How do I know it's genuine?"
+      ],
+      "quote": [
+        "What goes into a quote request?",
+        "How soon will I get quotes?",
+        "Can you print a logo on pottery?"
+      ],
+      "other": ["What is vCraft?", "How do bulk orders work?", "What makes Bát Tràng special?"]
+    },
+    "thoughts": [
+      "Bát Tràng has made pottery since the 1300s…",
+      "Blue glaze is painted with cobalt oxide…",
+      "Old kilns burned pine wood…",
+      "Crackle glaze cracks as it cools…",
+      "Bát Tràng white clay is very fine…",
+      "Porcelain fires at about 1,300 °C…",
+      "One vase passes through many hands…",
+      "Ash glaze is made from wood ash…",
+      "The pottery market opens every day…",
+      "Throwing on the wheel needs steady hands…",
+      "Pieces dry before they are fired…",
+      "Brown glaze is the village's oldest…",
+      "Lotus and chrysanthemum motifs are common…",
+      "Gas kilns keep the heat even…",
+      "Relief decoration is shaped by hand…",
+      "Bát Tràng sits on the Red River…",
+      "Clay is soaked and sieved many times…",
+      "Hand painting a vase takes hours…",
+      "The craft passes down generations…",
+      "Ivory glaze looks soft as jade…",
+      "Stacking a kiln is an art…",
+      "Bisque ware has no glaze yet…",
+      "Plaster moulds make batches possible…",
+      "The fire decides the final glaze colour…",
+      "Each vCraft piece has its own QR code…",
+      "Money jars are a Tết favourite…",
+      "Teapots and cups are a classic…",
+      "Pieces that crack in the kiln are discarded…",
+      "Masters can throw vases a metre tall…",
+      "The Fox is rummaging through the shelves…"
+    ]
   }
 }
