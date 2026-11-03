@@ -8,10 +8,10 @@ import type { ChatMessage } from '../infrastructure/llm-client';
  * A canary token in the system prompt reveals a leak if it ever shows up in an answer.
  */
 
-const escape = (text: string) => text.replace(/<\/?untrusted_data[^>]*>/gi, '');
+const stripDataTags = (text: string) => text.replace(/<\/?untrusted_data[^>]*>/gi, '');
 
 export function untrusted(label: string, body: string): string {
-  return `<untrusted_data source="${label}">\n${escape(body)}\n</untrusted_data>`;
+  return `<untrusted_data source="${label}">\n${stripDataTags(body)}\n</untrusted_data>`;
 }
 
 export function systemPrompt(locale: 'vi' | 'en', canary: string): string {

@@ -78,4 +78,11 @@ export class RedisKeyValueStore implements KeyValueStore {
   async ttl(key: string): Promise<number> {
     return Math.max(0, await this.redis.ttl(key));
   }
+
+  async close(): Promise<void> {
+    await this.redis.quit().catch(() => undefined);
+  }
 }
+
+/** DI token of the assistant's `KeyValueStore`. */
+export const ASSISTANT_KV = Symbol('ASSISTANT_KV');

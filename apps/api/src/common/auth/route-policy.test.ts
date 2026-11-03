@@ -11,6 +11,9 @@ const line = (r: RouteEntry) =>
 const PUBLIC_WRITES = new Set([
   // A QR scan is counted anonymously (FR-ADM-06); it stores only the product and the time.
   'POST /api/v1/trace/:code/scan',
+  // The Fox assistant answers guests (PLAN E15): rate limited per hashed IP, logged anonymously.
+  'POST /api/v1/assistant/messages',
+  'POST /api/v1/assistant/messages/:id/feedback',
 ]);
 
 /**

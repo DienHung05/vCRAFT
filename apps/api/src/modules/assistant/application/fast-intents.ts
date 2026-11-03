@@ -17,7 +17,13 @@ const GREETING =
 const THANKS =
   /^(cam on|cam ơn|camon|cmon|tks|thanks?|thank you|thx|ty|cam on nhieu|cam on ban|cam on cao)( (ban|cao|nhieu|nhe|nha|a|ah|lam|nhe ban))*$/;
 const BYE = /^(tam biet|bye|bai|bye bye|goodbye|see you|hen gap lai|pp)( (ban|cao|nhe|nha|a))*$/;
-const EMOJI_ONLY = /^[\p{Extended_Pictographic}\s‍️]+$/u;
+// Emoji, skin tones, joiners (U+200D) and variation selectors (U+FE0F) only. An alternation, not a class,
+// so a joined emoji is not misread; built from escapes so no invisible character sits in the source.
+// biome-ignore lint/complexity/useRegexLiterals: a literal would let the formatter write the joiner as a raw character.
+const EMOJI_ONLY = new RegExp(
+  '^(?:\\p{Extended_Pictographic}|\\p{Emoji_Modifier}|\\s|\\u200d|\\ufe0f)+$',
+  'u',
+);
 const DATETIME =
   /\b(may gio|bay gio la|hom nay (la )?(ngay|thu)|ngay (bao nhieu|may)|thu may|am lich|ngay am|lich am|what time|what day|today s date|lunar date|date today)\b/;
 const WEATHER =
