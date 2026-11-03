@@ -64,7 +64,15 @@ test.describe('on a 360 px phone with reduced motion', () => {
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(overflow).toBeLessThanOrEqual(0);
-    const box = await input.boundingBox();
-    expect(box && box.y + box.height).toBeLessThanOrEqual(740);
+    // The sheet slides up; once it settles the input sits inside the viewport.
+    await expect
+      .poll(
+        async () => {
+          const box = await input.boundingBox();
+          return box ? box.y + box.height : Number.POSITIVE_INFINITY;
+        },
+        { timeout: 5_000 },
+      )
+      .toBeLessThanOrEqual(740);
   });
 });
