@@ -1288,7 +1288,8 @@
       "mediaTooLarge": "The file is larger than 10 MB. Retake it at a lower resolution or compress it.",
       "mediaUnsupported": "Only JPG, PNG, WebP, AVIF images or PDF files are accepted.",
       "apiDown": "Cannot reach the vCraft server. Please try again in a few minutes.",
-      "consentRequired": "You need to agree to the Privacy policy before doing this. Tick the consent box and try again."
+      "consentRequired": "You need to agree to the Privacy policy before doing this. Tick the consent box and try again.",
+      "captcha": "Please complete the \"I am not a robot\" check above, then try again."
     },
     "signIn": {
       "title": "Sign in",

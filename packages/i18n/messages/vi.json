@@ -1288,7 +1288,8 @@
       "mediaTooLarge": "Tệp lớn hơn 10 MB. Hãy chụp lại ở độ phân giải thấp hơn hoặc nén tệp.",
       "mediaUnsupported": "Chỉ nhận ảnh JPG, PNG, WebP, AVIF hoặc tệp PDF.",
       "apiDown": "Không gọi được máy chủ vCraft. Bạn thử lại sau ít phút nhé.",
-      "consentRequired": "Cần đồng ý với Chính sách quyền riêng tư trước khi thực hiện thao tác này. Hãy tích ô đồng ý rồi thử lại."
+      "consentRequired": "Cần đồng ý với Chính sách quyền riêng tư trước khi thực hiện thao tác này. Hãy tích ô đồng ý rồi thử lại.",
+      "captcha": "Hãy hoàn tất bước xác minh \"Tôi không phải robot\" phía trên rồi thử lại."
     },
     "signIn": {
       "title": "Đăng nhập",
