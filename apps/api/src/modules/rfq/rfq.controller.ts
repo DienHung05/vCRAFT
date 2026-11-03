@@ -141,6 +141,13 @@ export class RfqController {
     return this.rfqs.createContribution(actor, id, body);
   }
 
+  @Get(':id/price-hint')
+  @Header('Cache-Control', 'private, no-store')
+  @Roles('HOUSEHOLD')
+  priceHint(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
+    return this.rfqs.priceHint(actor, id);
+  }
+
   @Get(':id/contributions')
   @Header('Cache-Control', 'private, no-store')
   @Roles('HOUSEHOLD', 'ADMIN')

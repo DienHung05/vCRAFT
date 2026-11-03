@@ -26,6 +26,7 @@ import {
   MediaAssetResponseSchema,
   MyAllocationListSchema,
   MyInvitationListSchema,
+  PriceHintResponseSchema,
   ProblemDetailsSchema,
   QuotationNoticeResponseSchema,
   type ReportProgressRequest,
@@ -177,6 +178,10 @@ export function createQuotationClient(options: QuotationClientOptions) {
         `/rfqs/${IdSchema.parse(id)}/quotations`,
         BuyerQuotationResponseSchema.array(),
       );
+    },
+    /** Suggested unit price range for the signed-in household's offer (PLAN E9). */
+    priceHint(id: string) {
+      return request(`/rfqs/${IdSchema.parse(id)}/price-hint`, PriceHintResponseSchema);
     },
     listOwnContributions(id: string) {
       return request(
