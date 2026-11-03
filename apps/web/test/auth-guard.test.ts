@@ -42,6 +42,7 @@ const me = (overrides: Partial<MeDto>): MeDto => ({
   role: 'BUYER',
   status: 'ACTIVE',
   emailVerified: true,
+  mfaRequired: false,
   household: null,
   ...overrides,
 });

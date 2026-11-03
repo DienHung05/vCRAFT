@@ -21,19 +21,33 @@ import type { TestDatabase } from './test-database.js';
 /**
  * Thay Supabase bằng token giả `Bearer test:<sub>` để test không cần project thật.
  * Tài khoản phải có sẵn trong `app_user` (xem {@link TestApp.createUser}) hoặc sẽ được tạo lười vai trò BUYER.
+ * Options follow as `|key=value`: `consent=<version>` mimics the sign-up form's metadata; `aal=aal1` a
+ * session without the second factor (the default is `aal2`, so admin tests pass MFA); `session=<id>` and
+ * `method=<amr>` the Supabase session claims behind sign-in history (GH#83).
  */
 class FakeIdentityVerifier extends IdentityVerifier {
   async verify(headers: Readonly<Record<string, string | string[] | undefined>>) {
     const auth = headers.authorization;
     if (typeof auth !== 'string') return null;
-    const match = /^Bearer test:([0-9a-f-]{36})(?:\|consent=(\S+))?$/.exec(auth);
+    const match = /^Bearer test:([0-9a-f-]{36})((?:\|[a-z]+=\S+?)*)$/.exec(auth);
     if (!match?.[1]) throw new InvalidTokenError('bad test token');
+    const options = new Map(
+      (match[2] ?? '')
+        .split('|')
+        .filter(Boolean)
+        .map((pair) => pair.split('=') as [string, string]),
+    );
+    const consent = options.get('consent');
+    const session = options.get('session');
+    const method = options.get('method');
     return {
       sub: match[1],
       email: `${match[1]}@test.local`,
       emailVerified: true,
-      // `Bearer test:<id>|consent=<version>` mimics the sign-up form's metadata.
-      ...(match[2] && { consentPolicyVersion: match[2] }),
+      aal: options.get('aal') === 'aal1' ? 'aal1' : 'aal2',
+      ...(consent && { consentPolicyVersion: consent }),
+      ...(session && { sessionId: session }),
+      ...(method && { method }),
     } satisfies VerifiedIdentity;
   }
 }

@@ -37,6 +37,14 @@ enabled = false
 provider = "turnstile"
 secret = "env(SUPABASE_AUTH_CAPTCHA_SECRET)"
 
+# GH#83: admins need a TOTP second factor (aal2) for the admin area and every admin API route.
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
 [auth.email]
 enable_signup = true
 # FR-AUTH-01: chưa xác minh email thì chưa đăng nhập được.
