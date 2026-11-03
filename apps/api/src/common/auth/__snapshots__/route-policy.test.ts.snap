@@ -38,6 +38,7 @@ GET /api/v1/me/allocations ROLES(HOUSEHOLD)
 GET /api/v1/me/consents AUTHENTICATED
 POST /api/v1/me/consents AUTHENTICATED
 GET /api/v1/me/data-export AUTHENTICATED
+GET /api/v1/me/events ROLES(ADMIN,BUYER,HOUSEHOLD)
 GET /api/v1/me/household ROLES(HOUSEHOLD)
 PATCH /api/v1/me/household ROLES(HOUSEHOLD)
 POST /api/v1/me/household AUTHENTICATED
