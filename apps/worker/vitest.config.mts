@@ -5,7 +5,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   resolve: {
     alias: Object.fromEntries(
-      ['domain', 'storage'].map((name) => [
+      ['database', 'domain', 'knowledge', 'storage', 'utils'].map((name) => [
         `@vcraft/${name}`,
         fileURLToPath(new URL(`../../packages/${name}/src/index.ts`, import.meta.url)),
       ]),

@@ -15,6 +15,7 @@ export function createOutboxDispatcher(
     mail: JobSink;
     qrLabels: JobSink;
     scheduler: JobSink;
+    assistant: JobSink;
   },
   now: () => number = Date.now,
 ): OutboxDispatcher {
@@ -43,6 +44,13 @@ export function createOutboxDispatcher(
           { requestId },
           { jobId: `rfq-expire-${requestId}-${closesAt}`, delay: Math.max(0, closesAt - now()) },
         );
+        return;
+      }
+      case 'knowledge.changed': {
+        // One job per event: a later change re-indexes again (GH#79).
+        await queues.assistant.add('assistant.ingest', event.payload, {
+          jobId: `assistant-ingest-${event.id}`,
+        });
         return;
       }
       case 'qr.labels.requested': {

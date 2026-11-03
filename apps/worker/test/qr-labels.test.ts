@@ -51,7 +51,13 @@ describe('qr.labels job', () => {
 
   it('is routed from the outbox with a request-scoped job id', async () => {
     const sink = () => ({ add: vi.fn(async () => undefined) });
-    const queues = { media: sink(), mail: sink(), qrLabels: sink(), scheduler: sink() };
+    const queues = {
+      media: sink(),
+      mail: sink(),
+      qrLabels: sink(),
+      scheduler: sink(),
+      assistant: sink(),
+    };
     const payload = { requestId: 'r1', householdId: 'h1', codes: ['AB23CD45'] };
     await createOutboxDispatcher(queues)({ id: 'e1', type: 'qr.labels.requested', payload });
     expect(queues.qrLabels.add).toHaveBeenCalledWith('qr.labels', payload, {
@@ -63,7 +69,13 @@ describe('qr.labels job', () => {
 describe('rfq.submitted', () => {
   it('schedules rfq.expire at the bidding deadline, keyed by request and deadline', async () => {
     const sink = () => ({ add: vi.fn(async () => undefined) });
-    const queues = { media: sink(), mail: sink(), qrLabels: sink(), scheduler: sink() };
+    const queues = {
+      media: sink(),
+      mail: sink(),
+      qrLabels: sink(),
+      scheduler: sink(),
+      assistant: sink(),
+    };
     const closesAt = '2026-11-10T10:00:00.000Z';
     const now = Date.parse(closesAt) - 60_000;
     await createOutboxDispatcher(

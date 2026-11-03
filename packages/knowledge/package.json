@@ -1,0 +1,32 @@
+{
+  "name": "@vcraft/knowledge",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Fox assistant knowledge index (ADR-13, ADR-19): VectorStore port (Supabase pgvector, in-memory), OpenAI embeddings, chunking.",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@vcraft/tsconfig": "workspace:*",
+    "tsdown": "^0.23.2",
+    "vitest": "^5.0.5"
+  },
+  "files": [
+    "dist",
+    "src"
+  ]
+}

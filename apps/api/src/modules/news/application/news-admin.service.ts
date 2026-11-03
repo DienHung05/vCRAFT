@@ -7,7 +7,14 @@ import type {
   ListAdminNewsQuery,
   SaveNewsRequest,
 } from '@vcraft/contracts';
-import { AuditLog, MediaAsset, MediaLink, News, notifyHouseholdsOfNews } from '@vcraft/database';
+import {
+  AuditLog,
+  MediaAsset,
+  MediaLink,
+  News,
+  notifyHouseholdsOfNews,
+  queueKnowledgeChange,
+} from '@vcraft/database';
 import { slugify } from '@vcraft/utils';
 import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion } from '../../../common/domain/unwrap';
@@ -126,6 +133,7 @@ export class NewsAdminService {
       await this.saveCover(em, news.id, input);
       await this.notifyIfLive(em, news, now);
       this.audit(em, actor, 'news.create', news.id, null, auditValues(news));
+      queueKnowledgeChange(em, 'NEWS', news.id);
       await em.flush();
       return news.id;
     });
@@ -168,6 +176,7 @@ export class NewsAdminService {
             ? 'news.unpublish'
             : 'news.update';
       this.audit(em, actor, action, news.id, before, auditValues(news));
+      queueKnowledgeChange(em, 'NEWS', news.id);
       await em.flush();
     });
     return this.get(id);
@@ -182,6 +191,7 @@ export class NewsAdminService {
       this.audit(em, actor, 'news.delete', news.id, auditValues(news), null);
       await em.nativeDelete(MediaLink, { targetType: 'NEWS', targetId: news.id });
       em.remove(news);
+      queueKnowledgeChange(em, 'NEWS', news.id);
       await em.flush();
     });
   }
