@@ -3,6 +3,7 @@
 import { Button, Card, cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
+import { AmountInWords } from '@/components/amount-in-words';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { notify } from '@/lib/notify';
 
@@ -189,26 +190,31 @@ export function ContributionForm({
             )}
           />
         </label>
-        <label className="flex flex-col gap-1 text-small">
-          <span className="text-ash">{t('unitPrice')}</span>
-          <input
-            type="number"
-            min={1}
-            step={1000}
-            inputMode="numeric"
-            value={unitPrice}
-            disabled={locked}
-            aria-invalid={!ready && problems.some((p) => p === t('problem.price'))}
-            onChange={(e) => {
-              setUnitPrice(e.currentTarget.value);
-              setSubmit({ kind: 'idle' });
-            }}
-            className={cn(
-              'h-10 rounded-input border bg-paper px-2 text-right tabular-nums',
-              'border-ink/20',
-            )}
-          />
-        </label>
+        {/* The words sit outside the label so they do not join the input's accessible name. */}
+        <div className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1 text-small">
+            <span className="text-ash">{t('unitPrice')}</span>
+            <input
+              type="number"
+              min={1}
+              step={1000}
+              inputMode="numeric"
+              value={unitPrice}
+              disabled={locked}
+              aria-invalid={!ready && problems.some((p) => p === t('problem.price'))}
+              aria-describedby={`${formId}-price-words`}
+              onChange={(e) => {
+                setUnitPrice(e.currentTarget.value);
+                setSubmit({ kind: 'idle' });
+              }}
+              className={cn(
+                'h-10 rounded-input border bg-paper px-2 text-right tabular-nums',
+                'border-ink/20',
+              )}
+            />
+          </label>
+          <AmountInWords id={`${formId}-price-words`} value={unitPrice} />
+        </div>
         <label className="flex flex-col gap-1 text-small">
           <span className="text-ash">{t('completionDate')}</span>
           <input
