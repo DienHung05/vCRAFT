@@ -1497,6 +1497,13 @@
     },
     "kiln": {
       "sealed": "Sealed. Opening the kiln…"
+    },
+    "google": {
+      "or": "or",
+      "continue": "Continue with Google",
+      "redirecting": "Taking you to Google…",
+      "notice": "Continuing with Google for the first time creates a buyer account and means you agree to the privacy policy.",
+      "failed": "Signing in with Google did not complete. Try again, or use your email and password."
     }
   },
   "studio": {

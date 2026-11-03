@@ -1497,6 +1497,13 @@
     },
     "kiln": {
       "sealed": "Đã đóng ấn. Đang mở cửa lò…"
+    },
+    "google": {
+      "or": "hoặc",
+      "continue": "Tiếp tục với Google",
+      "redirecting": "Đang chuyển sang Google…",
+      "notice": "Lần đầu tiếp tục với Google sẽ tạo tài khoản khách mua và nghĩa là bạn đồng ý Chính sách quyền riêng tư.",
+      "failed": "Chưa đăng nhập được bằng Google. Bạn thử lại, hoặc dùng email và mật khẩu."
     }
   },
   "studio": {
