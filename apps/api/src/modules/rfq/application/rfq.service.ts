@@ -25,6 +25,7 @@ import {
   CooperativeQuotation as CooperativeQuotationEntity,
   Household,
   OrderAllocation as OrderAllocationEntity,
+  OutboxEvent,
   Product,
   QuotationRequest,
 } from '@vcraft/database';
@@ -256,6 +257,11 @@ export class RfqService {
         requestId: request.id,
         actorId: actor.id,
         recipientIds: await this.notifier.representativeIds(em, request.invitedHouseholdIds),
+      });
+      // The worker schedules `rfq.expire` at the deadline from this event (PLAN E9).
+      em.create(OutboxEvent, {
+        type: 'rfq.submitted',
+        payload: { requestId: request.id, biddingClosesAt: request.biddingClosesAt.toISOString() },
       });
       await em.flush();
       return toRfqResponse(request);

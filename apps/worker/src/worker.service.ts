@@ -18,6 +18,13 @@ import { createOutboxDispatcher } from './processors/outbox/dispatch';
 import { relayOutbox } from './processors/outbox/relay-outbox';
 import { generateQrLabels, type QrLabelsJob } from './processors/qr-labels/generate-qr-labels';
 import {
+  COORDINATION_CHECK_EVERY_MS,
+  RFQ_COORDINATION_CHECK_JOB,
+  RFQ_EXPIRE_SWEEP_JOB,
+  RFQ_SWEEP_EVERY_MS,
+  runSchedulerJob,
+} from './processors/scheduler/rfq-jobs';
+import {
   MAIL_QUEUE,
   type MailJob,
   MEDIA_QUEUE,
@@ -25,6 +32,7 @@ import {
   OUTBOX_QUEUE,
   OUTBOX_RELAY_EVERY_MS,
   QR_LABELS_QUEUE,
+  SCHEDULER_QUEUE,
 } from './queues';
 
 export const OBJECT_STORAGE = Symbol('OBJECT_STORAGE');
@@ -72,8 +80,12 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       connection,
       defaultJobOptions: DEFAULT_JOB_OPTIONS,
     });
+    const scheduler = new Queue(SCHEDULER_QUEUE, {
+      connection,
+      defaultJobOptions: DEFAULT_JOB_OPTIONS,
+    });
     const outbox = new Queue(OUTBOX_QUEUE, { connection });
-    const dispatch = createOutboxDispatcher({ media, mail, qrLabels });
+    const dispatch = createOutboxDispatcher({ media, mail, qrLabels, scheduler });
     const mailDeps = {
       loadNotice: createNoticeLoader(this.orm),
       transport: createTransport(process.env.SMTP_URL ?? 'smtp://localhost:1025'),
@@ -119,6 +131,10 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
           ),
         { connection, concurrency: 1 },
       ),
+      new Worker(SCHEDULER_QUEUE, (job) => runSchedulerJob(this.orm, job.name, job.data), {
+        connection,
+        concurrency: 1,
+      }),
       new Worker(
         OUTBOX_QUEUE,
         async () => {
@@ -133,10 +149,20 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
         this.logger.warn(`${worker.name} job ${job?.id} failed: ${error.message}`),
       );
     await outbox.upsertJobScheduler('relay', { every: OUTBOX_RELAY_EVERY_MS });
-    this.closables.push(...workers, media, mail, qrLabels, outbox, {
+    await scheduler.upsertJobScheduler(
+      RFQ_EXPIRE_SWEEP_JOB,
+      { every: RFQ_SWEEP_EVERY_MS },
+      { name: RFQ_EXPIRE_SWEEP_JOB },
+    );
+    await scheduler.upsertJobScheduler(
+      RFQ_COORDINATION_CHECK_JOB,
+      { every: COORDINATION_CHECK_EVERY_MS },
+      { name: RFQ_COORDINATION_CHECK_JOB },
+    );
+    this.closables.push(...workers, media, mail, qrLabels, scheduler, outbox, {
       close: async () => mailDeps.transport.close(),
     });
-    this.logger.log('queues ready: media, mail, qr-labels, outbox');
+    this.logger.log('queues ready: media, mail, qr-labels, scheduler, outbox');
   }
 
   async onApplicationShutdown(): Promise<void> {

@@ -31,7 +31,7 @@ describe('thư quyết định duyệt hộ', () => {
   it('sự kiện outbox thành đúng một job mail theo id sự kiện', async () => {
     const mail = { add: vi.fn(async () => undefined) };
     const media = { add: vi.fn(async () => undefined) };
-    const dispatch = createOutboxDispatcher({ media, mail, qrLabels: media });
+    const dispatch = createOutboxDispatcher({ media, mail, qrLabels: media, scheduler: media });
     await dispatch({
       id: 'e9',
       type: 'household.decision',
