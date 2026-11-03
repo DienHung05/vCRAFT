@@ -169,6 +169,26 @@ export interface HouseholdParts {
 const linkedOf = (parts: HouseholdParts, role: PublicLinkRole) =>
   (parts.linked ?? []).filter((item) => item.role === role).map((item) => item.image);
 
+/** Family milestones with their photo resolved to its processed URL, if any (FR-ART-02). */
+function toTimelineDto(h: Household, parts: HouseholdParts) {
+  return (h.timeline ?? []).map((event) => {
+    const media = event.photo ? parts.media?.get(event.photo.mediaId) : undefined;
+    return {
+      year: event.year,
+      title: event.title,
+      text: event.text,
+      photo: event.photo
+        ? {
+            mediaId: event.photo.mediaId,
+            url: media?.url ?? null,
+            variants: media?.variants ?? [],
+            alt: event.photo.alt,
+          }
+        : null,
+    };
+  });
+}
+
 /** Images the household attached itself in Studio. */
 function toGalleryDto(h: Household, parts: HouseholdParts) {
   return (h.gallery ?? []).map((item) => ({
@@ -218,7 +238,7 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
     banner: banner ?? null,
     foundedYear: h.foundedYear ?? null,
     generations: h.generations ?? null,
-    timeline: h.timeline ?? [],
+    timeline: toTimelineDto(h, parts),
     certifications: h.certifications ?? [],
     gallery,
     capacityByCategory: h.capacityByCategory ?? {},
