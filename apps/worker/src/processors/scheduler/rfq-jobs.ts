@@ -1,0 +1,38 @@
+import type { MikroORM } from '@mikro-orm/core';
+import { dueRequestIds, expireRequest, flagRequestsNeedingCoordination } from '@vcraft/database';
+
+/** Job names on the scheduler queue (PLAN E9). */
+export const RFQ_EXPIRE_JOB = 'rfq.expire';
+export const RFQ_EXPIRE_SWEEP_JOB = 'rfq.expire-sweep';
+export const RFQ_COORDINATION_CHECK_JOB = 'rfq.coordination-check';
+
+/** How often the safety sweep and the coordination check run. */
+export const RFQ_SWEEP_EVERY_MS = 60_000;
+export const COORDINATION_CHECK_EVERY_MS = 15 * 60_000;
+
+export interface RfqExpireJob {
+  requestId: string;
+}
+
+/** Runs one scheduler job; every handler is idempotent, so BullMQ retries are safe. */
+export async function runSchedulerJob(
+  orm: MikroORM,
+  name: string,
+  data: unknown,
+  now = new Date(),
+): Promise<unknown> {
+  switch (name) {
+    case RFQ_EXPIRE_JOB:
+      return expireRequest(orm, (data as RfqExpireJob).requestId, now);
+    case RFQ_EXPIRE_SWEEP_JOB: {
+      const outcomes = [];
+      for (const id of await dueRequestIds(orm, now))
+        outcomes.push(await expireRequest(orm, id, now));
+      return outcomes;
+    }
+    case RFQ_COORDINATION_CHECK_JOB:
+      return flagRequestsNeedingCoordination(orm, now);
+    default:
+      throw new Error(`unknown scheduler job: ${name}`);
+  }
+}
