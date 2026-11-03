@@ -120,8 +120,8 @@ describe('Assistant SSE endpoint', () => {
     expect(missing.status).toBe(404);
   });
 
-  it('rejects an empty message or an external page path with a 400', async () => {
-    expect((await ask('   ')).res.statusCode).toBe(400);
-    expect((await ask('chào', { pagePath: 'https://evil.test' })).res.statusCode).toBe(400);
+  it('rejects an empty message or an external page path as invalid', async () => {
+    expect((await ask('   ')).res.statusCode).toBe(422);
+    expect((await ask('chào', { pagePath: 'https://evil.test' })).res.statusCode).toBe(422);
   });
 });

@@ -48,7 +48,9 @@ export class AssistantController {
         for await (const event of events) yield `data: ${JSON.stringify(event)}\n\n`;
       })(),
     );
+    // 200, not the 201 Nest gives a POST: nothing is created, an answer is streamed.
     return reply
+      .status(200)
       .header('Content-Type', 'text/event-stream; charset=utf-8')
       .header('Cache-Control', 'no-cache, no-transform')
       .header('X-Accel-Buffering', 'no')
