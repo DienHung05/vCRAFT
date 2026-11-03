@@ -5,6 +5,13 @@ import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
 import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { EmptyState } from '@/components/states/empty-state';
+import { CountUp } from '@/experience/motion/count-up';
+import { DayStory } from '@/experience/motion/day-story';
+import { HandUnderline } from '@/experience/motion/hand-underline';
+import { InkCursor } from '@/experience/motion/ink-cursor';
+import { InkReveal } from '@/experience/motion/ink-reveal';
+import { Magnetic } from '@/experience/motion/magnetic';
+import { PressedHeadline } from '@/experience/motion/pressed-headline';
 import {
   fetchHouseholds,
   fetchProducts,
@@ -87,18 +94,23 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
 
   return (
     <>
+      <InkCursor />
       {/* Hero: ảnh tĩnh bình đã ra lò; bản 3D (BRAND §6.3 #1) nạp lười ở experience/hero-vase. */}
       <section className="mx-auto grid max-w-editorial items-center gap-10 px-gutter pt-12 pb-section md:grid-cols-12 md:pt-20">
         <div className="flex flex-col gap-7 md:col-span-7">
           <p className="text-small font-medium tracking-[0.18em] text-clay uppercase">
             {t('hero.eyebrow')}
           </p>
-          <h1 className="text-display leading-[1.02] type-soft">{t('hero.title')}</h1>
+          <PressedHeadline className="text-display leading-[1.02] type-soft">
+            {t('hero.title')}
+          </PressedHeadline>
           <p className="max-w-prose-vn text-ash">{t('hero.lead')}</p>
           <div className="flex flex-wrap gap-3">
-            <Link href="/san-pham" className={buttonVariants({ size: 'lg' })}>
-              {t('hero.ctaExplore')}
-            </Link>
+            <Magnetic>
+              <Link href="/san-pham" className={buttonVariants({ size: 'lg' })}>
+                {t('hero.ctaExplore')}
+              </Link>
+            </Magnetic>
             {showcase ? (
               <Link
                 href={{ pathname: '/truy-xuat/[code]', params: { code: showcase.traceCode } }}
@@ -142,15 +154,14 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
       {/* Một ngày ở Bát Tràng: kể theo cuộn ngang, sáu chặng khớp nhật ký sản xuất. */}
       <section className="py-section" aria-labelledby="day-title">
         <div className="mx-auto max-w-editorial px-gutter">
-          <h2 id="day-title">{t('day.title')}</h2>
+          <h2 id="day-title">
+            <HandUnderline>{t('day.title')}</HandUnderline>
+          </h2>
           <p className="mt-3 max-w-prose-vn text-ash">{t('day.lead')}</p>
         </div>
-        {/* biome-ignore lint/a11y/useSemanticElements: a named group around a scroller, not a form fieldset; a second `section` would repeat the landmark name. */}
-        <div
-          role="group"
-          aria-labelledby="day-title"
-          // biome-ignore lint/a11y/noNoninteractiveTabindex: vùng cuộn ngang phải nhận focus để cuộn bằng phím mũi tên (WCAG 2.1.1, axe scrollable-region-focusable).
-          tabIndex={0}
+        {/* GH#95: on wide screens with motion allowed the strip becomes a pinned horizontal scroll story. */}
+        <DayStory
+          labelledBy="day-title"
           // No `scroll-smooth` here: with mandatory snap it makes Chrome report no LCP at all (NO_LCP in Lighthouse).
           className="mt-10 snap-x snap-mandatory overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glaze"
         >
@@ -173,7 +184,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
               </li>
             ))}
           </ol>
-        </div>
+        </DayStory>
         <PhotoCreditsNote className="mx-auto mt-4 max-w-editorial px-gutter text-[0.75rem] leading-snug text-ash" />
       </section>
 
@@ -216,14 +227,16 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
                     href={{ pathname: '/nghe-nhan/[slug]', params: { slug: h.slug } }}
                     className="group block"
                   >
-                    <ImageSlot
-                      alt={coverAlt}
-                      tint={tintOf(h.slug)}
-                      ratio="3/4"
-                      {...slotPhoto(photoFromUrl(h.coverUrl, coverAlt, h.coverVariants))}
-                      sizes="(min-width: 768px) 30vw, 100vw"
-                      className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
-                    />
+                    <InkReveal>
+                      <ImageSlot
+                        alt={coverAlt}
+                        tint={tintOf(h.slug)}
+                        ratio="3/4"
+                        {...slotPhoto(photoFromUrl(h.coverUrl, coverAlt, h.coverVariants))}
+                        sizes="(min-width: 768px) 30vw, 100vw"
+                        className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
+                      />
+                    </InkReveal>
                     <h3 className="mt-4 transition-colors group-hover:text-clay">{h.name}</h3>
                     <p className="text-small text-ash">
                       {[h.representative, h.craft].filter(Boolean).join(' · ')}
@@ -313,7 +326,9 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             return (
               <div key={key} className="border-clay/40 border-t pt-4">
                 <dt className="text-small text-ash">{t(`stats.${key}`)}</dt>
-                <dd className="mt-1 font-display text-h1 text-glaze type-soft">{value}</dd>
+                <dd className="mt-1 font-display text-h1 text-glaze type-soft">
+                  <CountUp text={value} locale={locale} />
+                </dd>
               </div>
             );
           })}

@@ -139,3 +139,40 @@ html[data-fonts="ready"] {
     animation: none;
   }
 }
+
+/*
+ * Ink-bleed image reveal (GH#95, experience/motion/ink-reveal.tsx): a soft-edged mask grows from the
+ * lower left like ink soaking into paper. Only images that start below the fold are armed, and the mask
+ * never changes the box, so nothing shifts. Reduced motion: no mask at all.
+ */
+@property --ink {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+.ink-reveal {
+  -webkit-mask-image: radial-gradient(
+    circle at 12% 88%,
+    #000 var(--ink),
+    transparent calc(var(--ink) + 14%)
+  );
+  mask-image: radial-gradient(
+    circle at 12% 88%,
+    #000 var(--ink),
+    transparent calc(var(--ink) + 14%)
+  );
+}
+.ink-reveal-in {
+  animation: ink-bleed 1.2s var(--ease-clay) forwards;
+}
+@keyframes ink-bleed {
+  to {
+    --ink: 160%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ink-reveal {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
