@@ -24,8 +24,8 @@ export interface Actor {
 
 type RequestWithActor = HttpRequest & { actor?: Actor | null };
 
-const PUBLIC_KEY = 'vcraft:public';
-const ROLES_KEY = 'vcraft:roles';
+export const PUBLIC_KEY = 'vcraft:public';
+export const ROLES_KEY = 'vcraft:roles';
 
 /** Route công khai: không bắt buộc đăng nhập (nếu có token hợp lệ thì vẫn gắn `actor`). */
 export const Public = () => SetMetadata(PUBLIC_KEY, true);
