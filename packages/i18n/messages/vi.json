@@ -123,15 +123,15 @@
     "photoBy": "Ảnh: {author}",
     "source": "Nguồn",
     "title": "Ghi nhận ảnh",
-    "lead": "Ảnh minh hoạ trong bản trình diễn lấy từ Wikimedia Commons theo giấy phép cho phép tái sử dụng. Chúng tôi cảm ơn các tác giả dưới đây. Ảnh đã được cắt và nén cho web; không có chỉnh sửa nào khác.",
+    "lead": "Ảnh minh hoạ trong bản trình diễn lấy từ Wikimedia Commons, kho ảnh mở của các bảo tàng và Pixabay theo giấy phép cho phép dùng công khai kèm ghi nguồn. Chúng tôi cảm ơn các tác giả dưới đây. Ảnh đã được cắt và nén cho web; không có chỉnh sửa nào khác.",
     "demoNote": "Ảnh chỉ để minh hoạ: đồ gốm trong ảnh không phải sản phẩm của các hộ mẫu.",
     "table": "Danh sách ảnh và giấy phép",
     "colPhoto": "Ảnh",
     "colAuthor": "Tác giả",
     "colLicense": "Giấy phép",
     "colSource": "Nguồn",
-    "viewSource": "Xem trên Wikimedia Commons",
-    "note": "Ảnh minh hoạ lấy từ Wikimedia Commons theo giấy phép CC, đã cắt và nén cho web.",
+    "viewSource": "Xem nguồn",
+    "note": "Ảnh minh hoạ lấy từ Wikimedia Commons, kho ảnh mở của bảo tàng và Pixabay theo giấy phép cho phép tái sử dụng, đã cắt và nén cho web.",
     "noteLink": "Ghi nhận ảnh"
   },
   "notFound": {
