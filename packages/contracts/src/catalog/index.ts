@@ -76,6 +76,10 @@ export type HouseholdListDto = z.infer<typeof HouseholdListResponseSchema>;
 
 export const SearchQuerySchema = z.object({ q: z.string().trim().min(1).max(120) });
 
+/** `GET /redirects/{products|households}/{slug}`: the current slug a retired one now points to. */
+export const SlugRedirectResponseSchema = z.object({ slug: z.string() });
+export type SlugRedirectDto = z.infer<typeof SlugRedirectResponseSchema>;
+
 /** Gợi ý tức thời (FR-CAT-04), mỗi nhóm tối đa 5 mục. */
 export const SearchSuggestionsSchema = z.object({
   products: z.array(z.object({ name: z.string(), slug: z.string(), household: z.string() })),

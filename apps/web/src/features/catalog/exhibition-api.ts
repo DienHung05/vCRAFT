@@ -3,6 +3,7 @@ import {
   ProductDetailResponseSchema,
   ProductListResponseSchema,
   PublicHouseholdResponseSchema,
+  SlugRedirectResponseSchema,
   TraceAvailabilityResponseSchema,
   VillageStatsSchema,
 } from '@vcraft/contracts';
@@ -44,6 +45,10 @@ export const fetchHouseholds = () => getJson('/households', HouseholdListRespons
 
 export const fetchHousehold = (slug: string) =>
   getJson(`/households/${encodeURIComponent(slug)}`, PublicHouseholdResponseSchema);
+
+/** The current slug behind a retired product or household slug (PLAN E5); `not-found` if none. */
+export const fetchSlugRedirect = (kind: 'products' | 'households', slug: string) =>
+  getJson(`/redirects/${kind}/${encodeURIComponent(slug)}`, SlugRedirectResponseSchema);
 
 export const fetchTrace = (code: string) =>
   getJson(`/trace/${encodeURIComponent(code)}`, TraceAvailabilityResponseSchema);
