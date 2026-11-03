@@ -1,17 +1,31 @@
 import { createHmac, randomBytes } from 'node:crypto';
 import { Readable } from 'node:stream';
-import { Body, Controller, HttpCode, Param, Post, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+} from '@nestjs/common';
 import {
   type AssistantFeedbackRequest,
   AssistantFeedbackRequestSchema,
   type AssistantMessageRequest,
   AssistantMessageRequestSchema,
+  type AssistantStatsQuery,
+  AssistantStatsQuerySchema,
 } from '@vcraft/contracts';
-import { Public } from '../../common/auth/auth.guard';
+import { Public, Roles } from '../../common/auth/auth.guard';
 import type { HttpReply, HttpRequest } from '../../common/http/http-types';
 import { UuidPipe } from '../../common/pipes/uuid.pipe';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { AskAssistantService } from './application/ask-assistant.service';
+import { AssistantStatsService } from './application/assistant-stats.service';
 
 /** The parts of a Fastify request the stream needs: the client IP and the socket's close event. */
 interface StreamRequest extends HttpRequest {
@@ -64,5 +78,18 @@ export class AssistantController {
     @Body(new ZodValidationPipe(AssistantFeedbackRequestSchema)) body: AssistantFeedbackRequest,
   ): Promise<void> {
     await this.assistant.feedback(id, body);
+  }
+}
+
+/** The admin dashboard's Assistant card (FR-AST-08, GH#82). */
+@Controller('admin/assistant')
+@Roles('ADMIN')
+export class AssistantStatsController {
+  constructor(private readonly stats: AssistantStatsService) {}
+
+  @Get('stats')
+  @Header('Cache-Control', 'private, no-store')
+  get(@Query(new ZodValidationPipe(AssistantStatsQuerySchema)) query: AssistantStatsQuery) {
+    return this.stats.stats(query.days);
   }
 }

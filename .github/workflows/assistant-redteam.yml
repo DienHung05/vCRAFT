@@ -1,0 +1,44 @@
+name: Assistant red-team (live)
+# GH#82: the Fox red-team suite against the real OpenAI model, nightly and on demand. The mock run of the
+# same suite is part of `pnpm test` on every pull request. Needs the OPENAI_API_KEY repository secret;
+# without it the job says so and stops green.
+on:
+  schedule:
+    - cron: "0 19 * * *" # 02:00 in Vietnam
+  workflow_dispatch:
+
+concurrency:
+  group: assistant-redteam
+  cancel-in-progress: true
+
+jobs:
+  redteam:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_CHAT_MODEL: ${{ vars.OPENAI_CHAT_MODEL || 'gpt-6-luna' }}
+      REDTEAM_LIVE: "1"
+    steps:
+      - name: Check the OpenAI key
+        id: key
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "::notice::OPENAI_API_KEY is not set; skipping the live red-team run."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v7
+        if: steps.key.outputs.present == 'true'
+      - uses: pnpm/action-setup@v6
+        if: steps.key.outputs.present == 'true'
+      - uses: actions/setup-node@v7
+        if: steps.key.outputs.present == 'true'
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+        if: steps.key.outputs.present == 'true'
+      - run: pnpm exec turbo run build --filter=@vcraft/api^...
+        if: steps.key.outputs.present == 'true'
+      - run: pnpm --filter @vcraft/api redteam
+        if: steps.key.outputs.present == 'true'
