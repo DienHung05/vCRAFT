@@ -8,7 +8,7 @@ import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
 import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { UsdRateNote, UsdReference } from '@/components/usd-reference';
-import { fetchProduct, fetchProducts } from '@/features/catalog/exhibition-api';
+import { fetchProduct, fetchProducts, fetchSlugRedirect } from '@/features/catalog/exhibition-api';
 import { presetKindOf } from '@/features/catalog/preset-figure';
 import { ProductCard } from '@/features/catalog/product-card';
 import {
@@ -19,7 +19,7 @@ import {
   toLogEntries,
   toProductCardView,
 } from '@/features/catalog/view-models';
-import { Link } from '@/i18n/navigation';
+import { Link, permanentRedirect } from '@/i18n/navigation';
 import { frameRatioOf } from '@/lib/images';
 import { resolveLocale } from '@/lib/locale';
 
@@ -41,7 +41,17 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
   const locale = await resolveLocale(params);
   const { slug } = await params;
   const result = await fetchProduct(slug);
-  if (result.status === 'not-found') notFound();
+  if (result.status === 'not-found') {
+    // A product renamed since the link was shared: send the visitor to its current URL (PLAN E5).
+    const moved = await fetchSlugRedirect('products', slug);
+    if (moved.status === 'ok') {
+      permanentRedirect({
+        href: { pathname: '/san-pham/[slug]', params: { slug: moved.data.slug } },
+        locale,
+      });
+    }
+    notFound();
+  }
   if (result.status === 'unavailable') return <DataUnavailable />;
   const { product, coverCredit, household, journal } = result.data;
   const [t, common, stages, categories, preset, format, siblings] = await Promise.all([

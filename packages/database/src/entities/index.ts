@@ -18,5 +18,6 @@ export * from './product.entity.js';
 export * from './product-maker.entity.js';
 export * from './quotation-notice.entity.js';
 export * from './quotation-request.entity.js';
+export * from './slug-redirect.entity.js';
 export * from './trace-scan.entity.js';
 export * from './workshop.entity.js';

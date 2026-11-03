@@ -33,6 +33,7 @@ import {
   ProductMaker,
   QuotationNotice,
   QuotationRequest,
+  SlugRedirect,
   TraceScan,
   Workshop,
 } from './entities/index.js';
@@ -152,6 +153,7 @@ export function createMikroOrmOptions(
       Notification,
       NotificationPreference,
       ConsentRecord,
+      SlugRedirect,
     ],
     metadataProvider: ReflectMetadataProvider,
     extensions: [Migrator, SeedManager],

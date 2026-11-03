@@ -133,6 +133,8 @@ const CapacitySchema = z.partialRecord(z.enum(PRODUCT_CATEGORIES), z.int().min(0
 
 /** Sửa hồ sơ hộ (FR-ART-01 … 06): chỉ gửi phần đổi; `If-Match` bắt buộc. */
 export const UpdateHouseholdProfileRequestSchema = z.object({
+  /** A new public URL slug; the old one keeps answering with a permanent redirect (PLAN E5). */
+  slug: SlugSchema.optional(),
   history: z.string().trim().max(10_000).optional(),
   craft: z.string().trim().max(160).optional(),
   village: z.string().trim().max(160).optional(),

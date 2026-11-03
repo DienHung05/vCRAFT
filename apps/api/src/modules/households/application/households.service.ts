@@ -65,7 +65,13 @@ import {
   toPublicHouseholdDto,
   toWorkshopDto,
 } from '../households.mapper';
+import { retireSlug, slugRetiredByOther } from './slug-redirects';
 import { generateTraceCode } from './trace-code';
+
+/** `<name>-<trace code>`: readable, and unique because the trace code is. */
+function productSlug(name: string, traceCode: string): string {
+  return `${slugify(name) || 'san-pham'}-${traceCode.toLowerCase()}`;
+}
 
 /**
  * Use case duyệt hộ và xuất bản (vCRAFT-9hg.3):
@@ -183,6 +189,14 @@ export class HouseholdsService {
           verified: verified.has(`${c.name}|${c.issuer}|${c.year}`),
         }));
       }
+      if (input.slug !== undefined && input.slug !== household.slug) {
+        const taken =
+          (await em.count(Household, { slug: input.slug, id: { $ne: household.id } })) > 0 ||
+          (await slugRetiredByOther(em, 'HOUSEHOLD', input.slug, household.id));
+        if (taken) throw new AppError('CONFLICT_DUPLICATE', 'this slug is already in use');
+        await retireSlug(em, 'HOUSEHOLD', household.id, household.slug, input.slug);
+        household.slug = input.slug;
+      }
       if (input.history !== undefined) household.history = input.history;
       if (input.craft !== undefined) household.craft = input.craft || null;
       if (input.village !== undefined) household.village = input.village || null;
@@ -265,11 +279,10 @@ export class HouseholdsService {
     return this.orm.em.fork().transactional(async (em) => {
       const household = await this.ownWritableHousehold(em, actor);
       const traceCode = await this.uniqueTraceCode(em);
-      const base = slugify(input.name) || 'san-pham';
       const product = em.create(Product, {
         household,
         name: input.name,
-        slug: `${base}-${traceCode.toLowerCase()}`,
+        slug: productSlug(input.name, traceCode),
         traceCode,
         description: input.description,
         kind: input.kind,
@@ -313,7 +326,13 @@ export class HouseholdsService {
           product.coverAltEn = null;
         }
       }
-      if (input.name !== undefined) product.name = input.name;
+      if (input.name !== undefined && input.name !== product.name) {
+        product.name = input.name;
+        // The slug follows the name; the old one keeps answering with a redirect (PLAN E5).
+        const slug = productSlug(input.name, product.traceCode);
+        await retireSlug(em, 'PRODUCT', product.id, product.slug, slug);
+        product.slug = slug;
+      }
       if (input.description !== undefined) product.description = input.description;
       if (input.category !== undefined) product.category = input.category;
       if (input.priceVnd !== undefined) product.priceVnd = input.priceVnd;

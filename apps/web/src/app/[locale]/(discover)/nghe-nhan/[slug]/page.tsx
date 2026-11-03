@@ -7,7 +7,7 @@ import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
 import { EmptyState } from '@/components/states/empty-state';
-import { fetchHousehold } from '@/features/catalog/exhibition-api';
+import { fetchHousehold, fetchSlugRedirect } from '@/features/catalog/exhibition-api';
 import { ProductCard } from '@/features/catalog/product-card';
 import {
   altFor,
@@ -20,7 +20,7 @@ import {
 } from '@/features/catalog/view-models';
 import { MakerCredits } from '@/features/exhibition/maker-credits';
 import { VisitSection } from '@/features/exhibition/visit-section';
-import { Link } from '@/i18n/navigation';
+import { Link, permanentRedirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/lib/locale';
 
 // Hồ sơ lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
@@ -53,7 +53,17 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
     getTranslations('presetFigure'),
     fetchHousehold(slug),
   ]);
-  if (result.status === 'not-found') notFound();
+  if (result.status === 'not-found') {
+    // A household that changed its slug since the link was shared (PLAN E5).
+    const moved = await fetchSlugRedirect('households', slug);
+    if (moved.status === 'ok') {
+      permanentRedirect({
+        href: { pathname: '/nghe-nhan/[slug]', params: { slug: moved.data.slug } },
+        locale,
+      });
+    }
+    notFound();
+  }
   if (result.status === 'unavailable') return <DataUnavailable />;
 
   const household = result.data;
