@@ -15,6 +15,22 @@ export interface ToolResult {
 
 const LIMIT = 5;
 
+// Public paths are localized (`@vcraft/i18n` pathnames): /vi/san-pham/x is /en/products/x.
+const PATHS = {
+  vi: {
+    product: '/vi/san-pham',
+    household: '/vi/nghe-nhan',
+    catalog: '/vi/san-pham',
+    map: '/vi/ban-do',
+  },
+  en: {
+    product: '/en/products',
+    household: '/en/artisans',
+    catalog: '/en/products',
+    map: '/en/map',
+  },
+} as const;
+
 // A price of 0 means the household quotes on request.
 const price = (vnd: number, locale: 'vi' | 'en') =>
   vnd > 0
@@ -48,7 +64,7 @@ export class CatalogToolsService {
       );
       const citations = products.map((p) => ({
         title: p.name,
-        url: `/${locale}/san-pham/${p.slug}`,
+        url: `${PATHS[locale].product}/${p.slug}`,
         type: 'PRODUCT' as const,
       }));
       const lines = products.map(
@@ -59,7 +75,7 @@ export class CatalogToolsService {
         name: 'search_catalog',
         result: lines.length
           ? lines.join('\n')
-          : `No published product matches "${query}". Suggest /${locale}/san-pham or a quote request.`,
+          : `No published product matches "${query}". Suggest ${PATHS[locale].catalog} or a quote request.`,
         citations,
       };
     });
@@ -81,7 +97,7 @@ export class CatalogToolsService {
       const shown = open.slice(0, LIMIT);
       const citations = shown.map((w) => ({
         title: w.household.name,
-        url: `/${locale}/nghe-nhan/${w.household.slug}`,
+        url: `${PATHS[locale].household}/${w.household.slug}`,
         type: 'HOUSEHOLD' as const,
       }));
       const lines = shown.map((w, i) => {
@@ -93,7 +109,7 @@ export class CatalogToolsService {
         name: 'get_open_workshops',
         result: lines.length
           ? `${open.length} showroom(s) open now:\n${lines.join('\n')}`
-          : `No showroom with published opening hours is open right now. Suggest /${locale}/ban-do to see visiting hours.`,
+          : `No showroom with published opening hours is open right now. Suggest ${PATHS[locale].map} to see visiting hours.`,
         citations,
       };
     });
