@@ -116,6 +116,18 @@ Dashboard → Authentication:
 4. Gửi thử: đăng ký một tài khoản bằng email thật trên domain production, nhận email xác nhận, bấm liên kết và về đúng domain.
 5. Worker: tạo một thông báo (vd. mời hộ chào giá) và kiểm tra email thông báo đến nơi; lỗi gửi hiện ở log `vcraft-worker`.
 
+### 6.1 Sign in with Google (GH#122)
+
+Owner steps; the code is already in place (`apps/web/src/features/auth/google-sign-in.tsx`, `apps/web/src/app/auth/callback/route.ts`).
+
+1. Google Cloud Console → APIs & Services → Credentials → *Create OAuth client ID* (Web application).
+   - Authorised JavaScript origins: `https://<domain>` and `http://localhost:3000`.
+   - Authorised redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback` (Supabase handles the Google leg).
+2. Supabase Dashboard → Authentication → Sign In / Providers → Google: enable, paste the client ID and secret.
+3. Supabase Dashboard → Authentication → URL Configuration → Redirect URLs: add `https://<domain>/auth/callback` and `http://localhost:3000/auth/callback` (the wildcard entries `https://<domain>/**` already cover it if present).
+4. Local Supabase CLI: set `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` (read by `supabase/config.toml`).
+5. Check: on `/vi/dang-nhap`, "Tiếp tục với Google" goes to Google and back to the site signed in; a first sign-in lands as a buyer, with the SIGN_UP consent recorded.
+
 ## 7. Giữ API thức vào ngày thi
 
 - Production currently runs on the free plans with a keep-alive job; see §11 (and §10 for the wizard that moves it to `starter`).

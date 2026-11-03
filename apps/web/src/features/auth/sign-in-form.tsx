@@ -9,6 +9,7 @@ import { Link } from '@/i18n/navigation';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
 import { FormAlert, PasswordField, STANDALONE_LINK, TextField } from './fields';
+import { GoogleSignIn } from './google-sign-in';
 import { useKilnFeedback } from './kiln/kiln-feedback';
 import { type SignInValues, signInSchema } from './schemas';
 import { useFocusSubmitOnError } from './use-focus-submit-on-error';
@@ -21,13 +22,20 @@ export interface SignInFormProps {
   needSignIn?: boolean;
   /** Liên kết xác minh/đặt mật khẩu trước đó đã hỏng. */
   linkInvalid?: boolean;
+  /** The Google sign-in did not complete (GH#122). */
+  oauthFailed?: boolean;
 }
 
 /**
  * Đăng nhập email + mật khẩu qua Supabase Auth (FR-AUTH-04). Giữ nguyên mọi ô đã nhập khi lỗi
  * (NFR-UX-05). Thành công thì tải lại toàn trang để server render thấy cookie phiên mới.
  */
-export function SignInForm({ next, needSignIn = false, linkInvalid = false }: SignInFormProps) {
+export function SignInForm({
+  next,
+  needSignIn = false,
+  linkInvalid = false,
+  oauthFailed = false,
+}: SignInFormProps) {
   const t = useTranslations('auth');
   const locale = useLocale();
   const message = useValidationMessage();
@@ -95,6 +103,7 @@ export function SignInForm({ next, needSignIn = false, linkInvalid = false }: Si
   return (
     <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {linkInvalid ? <FormAlert tone="error">{t('signIn.notice.linkInvalid')}</FormAlert> : null}
+      {oauthFailed ? <FormAlert tone="error">{t('google.failed')}</FormAlert> : null}
       {needSignIn && !error ? <FormAlert tone="info">{t('signIn.needSignIn')}</FormAlert> : null}
       {error ? <FormAlert tone="error">{t(`errors.${error}`)}</FormAlert> : null}
       {error === 'email_not_confirmed' ? (
@@ -136,6 +145,8 @@ export function SignInForm({ next, needSignIn = false, linkInvalid = false }: Si
       <Button type="submit" size="lg" disabled={isSubmitting}>
         {isSubmitting ? t('signIn.submitting') : t('signIn.submit')}
       </Button>
+      <p className="text-center text-small text-ash">{t('google.or')}</p>
+      <GoogleSignIn next={next} />
 
       <div className="flex flex-col text-small">
         <Link href="/quen-mat-khau" className={STANDALONE_LINK}>

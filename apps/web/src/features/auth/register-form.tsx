@@ -5,13 +5,14 @@ import { PRIVACY_POLICY_VERSION } from '@vcraft/domain';
 import { Button } from '@vcraft/ui';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { ConsentCheckbox } from '@/components/consent-checkbox';
 import { Link } from '@/i18n/navigation';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
 import { CheckEmailPanel } from './check-email-panel';
 import { FormAlert, PasswordField, STANDALONE_LINK, TextField } from './fields';
+import { GoogleSignIn } from './google-sign-in';
 import { useKilnFeedback } from './kiln/kiln-feedback';
 import { type RegisterValues, registerSchema } from './schemas';
 import { useFocusSubmitOnError } from './use-focus-submit-on-error';
@@ -42,12 +43,15 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     mode: 'onTouched',
     defaultValues: { email: '', password: '', consent: false },
   });
+  // Google sign-up needs the same consent box ticked first (GH#122).
+  const consented = useWatch({ control, name: 'consent' });
 
   // The kiln card reacts to the outcome: a failure crackles and shakes the card.
   const failWith = (key: AuthErrorKey) => {
@@ -125,6 +129,8 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
             ? t('wizard.account.submit')
             : t('register.submit')}
       </Button>
+      <p className="text-center text-small text-ash">{t('google.or')}</p>
+      <GoogleSignIn next={wizardPath ?? null} disabled={!consented} />
       <div className="flex flex-col text-small">
         <p className="py-2.5 text-ash">
           {household ? t('wizard.account.haveAccount') : t('register.haveAccount')}{' '}
