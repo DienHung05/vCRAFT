@@ -36,7 +36,10 @@
     "artisans": "Artisans",
     "map": "Map",
     "news": "News",
-    "quotes": "Quote requests"
+    "quotes": "Quote requests",
+    "theme": "Switch light/dark theme",
+    "themeToDark": "Switch to dark theme",
+    "themeToLight": "Switch to light theme"
   },
   "indexPages": {
     "demoNote": "Demo: this list comes from sample data, not real households and products.",

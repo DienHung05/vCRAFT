@@ -6,6 +6,7 @@ import { LazyNotificationBell } from '@/features/notifications/notification-bell
 import { Link } from '@/i18n/navigation';
 import { Disclosure } from './disclosure';
 import { LocaleSwitcher } from './locale-switcher';
+import { ThemeToggle } from './theme-toggle';
 
 const NAV = [
   { href: '/san-pham', key: 'products' },
@@ -58,6 +59,7 @@ export async function SiteHeader() {
           <div className="hidden sm:block">
             <LocaleSwitcher />
           </div>
+          <ThemeToggle />
           <LazyNotificationBell />
           <LazyAccountMenu compact />
           <Disclosure className="lg:hidden" summary={t('menu')}>

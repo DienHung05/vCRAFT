@@ -36,7 +36,10 @@
     "artisans": "Nghệ nhân",
     "map": "Bản đồ",
     "news": "Tin tức",
-    "quotes": "Yêu cầu báo giá"
+    "quotes": "Yêu cầu báo giá",
+    "theme": "Đổi giao diện sáng/tối",
+    "themeToDark": "Chuyển sang giao diện tối",
+    "themeToLight": "Chuyển sang giao diện sáng"
   },
   "indexPages": {
     "demoNote": "Bản trình diễn: danh sách này lấy từ dữ liệu mẫu, không phải hộ và sản phẩm thật.",
