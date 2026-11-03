@@ -587,6 +587,8 @@ Nguyên tắc:
 
 ### 8.2 Bảng OWASP Top 10 (2021) → biện pháp
 
+Evidence per item (code and tests), with the known gaps: [`docs/security/owasp-top10.md`](security/owasp-top10.md). The route walker that checks every API route's auth policy is `apps/api/src/common/auth/route-policy.test.ts` plus `apps/api/test/integration/route-policy.integration.test.ts`.
+
 A01 Broken Access Control → CASL + kiểm sở hữu + test 403 · A02 Cryptographic Failures → JWT bất đối xứng + JWKS, AES-GCM, TLS · A03 Injection → ORM + Zod + sanitize · A04 Insecure Design → máy trạng thái + khóa + idempotency · A05 Misconfiguration → header bảo mật, config kiểm bằng Zod · A06 Vulnerable Components → audit/Renovate · A07 Auth Failures → Supabase Auth (MFA, CAPTCHA, rate limit, rotation) · A08 Integrity Failures → chuỗi băm nhật ký, lockfile · A09 Logging Failures → pino + audit, không log bí mật · A10 SSRF → không fetch URL do người dùng nhập (geocode qua danh sách endpoint cố định).
 
 **OWASP LLM Top 10 (trợ lý Cáo):** LLM01 Prompt Injection → phân loại trước + tài liệu đánh dấu không tin cậy + canary · LLM02 Sensitive Info Disclosure → chỉ mục chỉ có dữ liệu công khai + che PII đầu ra · LLM05 Improper Output Handling → markdown đã sanitize, allowlist link, không ảnh ngoài · LLM06 Excessive Agency → chỉ tool đọc, quyền Guest · LLM07 System Prompt Leakage → không để bí mật trong prompt + canary · LLM08 Vector Weaknesses → RLS chặn `anon`/`authenticated`, lọc `visibility` · LLM10 Unbounded Consumption → rate limit, `max_tokens`, trần token/ngày.

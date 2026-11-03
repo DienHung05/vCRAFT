@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
     '@vcraft/utils',
   ],
   reactCompiler: true,
+  // No `X-Powered-By: Next.js`: it only tells an attacker which framework to probe (OWASP A05).
+  poweredByHeader: false,
   // `forbidden()` + `forbidden.tsx` cho trang 403 của khu vực theo vai trò (lib/auth/guard.ts)
   experimental: { authInterrupts: true },
   // Dùng một AGENTS.md duy nhất ở gốc repo, không để `next dev` sinh thêm bản riêng
