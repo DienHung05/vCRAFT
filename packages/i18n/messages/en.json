@@ -652,6 +652,7 @@
       "workshops": "Workshops on the map",
       "noWorkshops": "No workshops declared.",
       "noLocation": "Workshop location not declared.",
+      "outsideVillage": "Pinned outside Bát Tràng commune",
       "decision": "Decision",
       "reason": "Reason",
       "sealed": "Approved and sealed.",
@@ -1366,7 +1367,8 @@
         "unavailable": "The map could not load on this device. You can still type the coordinates below.",
         "loading": "Loading the map…",
         "attribution": "Map data © OpenStreetMap",
-        "marker": "Workshop location"
+        "marker": "Workshop location",
+        "outsideVillage": "This pin is outside Bát Tràng commune. Check the spot; the village board will see this note when reviewing your application."
       },
       "documents": {
         "title": "Verification documents",

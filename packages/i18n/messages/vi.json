@@ -652,6 +652,7 @@
       "workshops": "Xưởng trên bản đồ",
       "noWorkshops": "Hộ chưa khai xưởng.",
       "noLocation": "Xưởng chưa khai vị trí.",
+      "outsideVillage": "Ghim ngoài ranh giới xã Bát Tràng",
       "decision": "Quyết định",
       "reason": "Lý do",
       "sealed": "Đã duyệt và đóng ấn.",
@@ -1366,7 +1367,8 @@
         "unavailable": "Bản đồ không tải được trên thiết bị này. Bạn vẫn có thể nhập tọa độ ở dưới.",
         "loading": "Đang tải bản đồ…",
         "attribution": "Dữ liệu bản đồ © OpenStreetMap",
-        "marker": "Vị trí xưởng"
+        "marker": "Vị trí xưởng",
+        "outsideVillage": "Ghim này nằm ngoài ranh giới xã Bát Tràng. Bạn kiểm tra lại vị trí; Ban quản lý làng sẽ thấy ghi chú này khi duyệt hồ sơ."
       },
       "documents": {
         "title": "Giấy tờ xác minh",
