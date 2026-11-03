@@ -30,13 +30,13 @@ export function normalizeUserText(input: string): string {
     .trim();
 }
 
+// biome-ignore lint/complexity/useRegexLiterals: a literal would let the formatter write the marks as raw characters.
+const COMBINING_MARKS = new RegExp('[\u0300-\u036f]', 'g');
+
 /**
  * Lower-case ASCII form for intent matching: diacritics folded, `đ` → `d`, so "Chào Cáo", "chao cao" and
  * "CHÀO CÁO" match the same rule. Punctuation and spaces are kept.
  */
-// biome-ignore lint/complexity/useRegexLiterals: a literal would let the formatter write the marks as raw characters.
-const COMBINING_MARKS = new RegExp('[\u0300-\u036f]', 'g');
-
 export function foldVietnamese(input: string): string {
   return input.normalize('NFD').replace(COMBINING_MARKS, '').replace(/[đĐ]/g, 'd').toLowerCase();
 }
