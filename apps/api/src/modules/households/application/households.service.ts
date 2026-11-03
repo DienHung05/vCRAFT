@@ -32,6 +32,7 @@ import {
   Product,
   ProductMaker,
   QuotationRequest,
+  queueKnowledgeChange,
   TraceScan,
   Workshop,
 } from '@vcraft/database';
@@ -214,6 +215,7 @@ export class HouseholdsService {
       if (input.capacityByCategory !== undefined) {
         household.capacityByCategory = input.capacityByCategory;
       }
+      queueKnowledgeChange(em, 'HOUSEHOLD', household.id);
       await em.flush();
       return household.id;
     });
@@ -347,6 +349,7 @@ export class HouseholdsService {
       if (input.dimensions !== undefined) product.dimensions = input.dimensions || null;
       if (input.weightGrams !== undefined) product.weightGrams = input.weightGrams;
       if (input.artisanNote !== undefined) product.artisanNote = input.artisanNote || null;
+      queueKnowledgeChange(em, 'PRODUCT', product.id);
       await em.flush();
       return product.id;
     });
@@ -403,6 +406,7 @@ export class HouseholdsService {
           after: { status: product.status, reason: reason ?? null },
         });
       }
+      queueKnowledgeChange(em, 'PRODUCT', product.id);
       await em.flush();
       return toProductDto(product, (await this.makersOf(em, [product])).get(product.id));
     });
@@ -569,6 +573,8 @@ export class HouseholdsService {
         recipientIds: [household.representative.id],
         email: false,
       });
+      // Approval, suspension and reinstatement change what is public, products included.
+      queueKnowledgeChange(em, 'HOUSEHOLD', household.id);
       await em.flush();
       return toHouseholdDto(household, await this.parts(em, household, false));
     });

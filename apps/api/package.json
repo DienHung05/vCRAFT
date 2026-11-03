@@ -34,6 +34,7 @@
     "@vcraft/contracts": "workspace:*",
     "@vcraft/database": "workspace:*",
     "@vcraft/domain": "workspace:*",
+    "@vcraft/knowledge": "workspace:*",
     "@vcraft/storage": "workspace:*",
     "@vcraft/utils": "workspace:*",
     "bullmq": "^6.4.2",

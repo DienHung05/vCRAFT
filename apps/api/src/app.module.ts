@@ -5,6 +5,7 @@ import { ProblemDetailsFilter } from './common/filters/problem-details.filter';
 import { CryptoModule } from './infrastructure/crypto/crypto.module';
 import { DatabaseModule } from './infrastructure/database/database.module';
 import { StorageModule } from './infrastructure/storage/storage.module';
+import { VectorModule } from './infrastructure/vector/vector.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { HealthModule } from './modules/health/health.module';
@@ -23,6 +24,7 @@ import { UsersModule } from './modules/users/users.module';
     DatabaseModule,
     CryptoModule,
     StorageModule,
+    VectorModule,
     AuthModule,
     HealthModule,
     AdminModule,

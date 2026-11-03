@@ -10,6 +10,11 @@ import { notifyDueImportantNews } from '@vcraft/database';
 import type { ObjectStorage } from '@vcraft/storage';
 import { type ConnectionOptions, Queue, Worker } from 'bullmq';
 import { createTransport } from 'nodemailer';
+import {
+  type AssistantIngestJob,
+  ingestSource,
+  knowledgeFromEnv,
+} from './processors/assistant/ingest';
 import { createNoticeLoader } from './processors/mail/load-notice';
 import { type HouseholdMailJob, sendHouseholdMail } from './processors/mail/send-household-mail';
 import { sendNoticeMail } from './processors/mail/send-notice-mail';
@@ -25,6 +30,7 @@ import {
   runSchedulerJob,
 } from './processors/scheduler/rfq-jobs';
 import {
+  ASSISTANT_QUEUE,
   MAIL_QUEUE,
   type MailJob,
   MEDIA_QUEUE,
@@ -84,8 +90,13 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       connection,
       defaultJobOptions: DEFAULT_JOB_OPTIONS,
     });
+    const assistant = new Queue<AssistantIngestJob>(ASSISTANT_QUEUE, {
+      connection,
+      defaultJobOptions: DEFAULT_JOB_OPTIONS,
+    });
+    const knowledge = { orm: this.orm, ...knowledgeFromEnv() };
     const outbox = new Queue(OUTBOX_QUEUE, { connection });
-    const dispatch = createOutboxDispatcher({ media, mail, qrLabels, scheduler });
+    const dispatch = createOutboxDispatcher({ media, mail, qrLabels, scheduler, assistant });
     const mailDeps = {
       loadNotice: createNoticeLoader(this.orm),
       transport: createTransport(process.env.SMTP_URL ?? 'smtp://localhost:1025'),
@@ -131,6 +142,10 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
           ),
         { connection, concurrency: 1 },
       ),
+      new Worker<AssistantIngestJob>(ASSISTANT_QUEUE, (job) => ingestSource(knowledge, job.data), {
+        connection,
+        concurrency: 1,
+      }),
       new Worker(SCHEDULER_QUEUE, (job) => runSchedulerJob(this.orm, job.name, job.data), {
         connection,
         concurrency: 1,
@@ -159,10 +174,10 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       { every: COORDINATION_CHECK_EVERY_MS },
       { name: RFQ_COORDINATION_CHECK_JOB },
     );
-    this.closables.push(...workers, media, mail, qrLabels, scheduler, outbox, {
+    this.closables.push(...workers, media, mail, qrLabels, scheduler, assistant, outbox, {
       close: async () => mailDeps.transport.close(),
     });
-    this.logger.log('queues ready: media, mail, qr-labels, scheduler, outbox');
+    this.logger.log('queues ready: media, mail, qr-labels, scheduler, assistant, outbox');
   }
 
   async onApplicationShutdown(): Promise<void> {

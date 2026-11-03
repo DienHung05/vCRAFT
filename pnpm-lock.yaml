@@ -307,6 +307,9 @@ importers:
       '@vcraft/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@vcraft/knowledge':
+        specifier: workspace:*
+        version: link:../../packages/knowledge
       '@vcraft/storage':
         specifier: workspace:*
         version: link:../../packages/storage
@@ -627,6 +630,9 @@ importers:
       '@vcraft/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@vcraft/knowledge':
+        specifier: workspace:*
+        version: link:../../packages/knowledge
       '@vcraft/storage':
         specifier: workspace:*
         version: link:../../packages/storage
@@ -820,6 +826,25 @@ importers:
       '@vcraft/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+
+  packages/knowledge:
+    dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.118.0
+        version: 2.118.0
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.5
+        version: 26.6.5
+      '@vcraft/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      tsdown:
+        specifier: ^0.23.2
+        version: 0.23.2(oxc-resolver@11.24.2)(typescript@6.0.3)
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@26.6.5)(jsdom@30.1.3(@noble/hashes@1.8.0))(vite@8.3.5(@types/node@26.6.5)(jiti@2.7.0)(yaml@2.9.1))
 
   packages/storage:
     dependencies:

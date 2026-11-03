@@ -7,6 +7,7 @@ export const MAIL_QUEUE = 'mail';
 export const OUTBOX_QUEUE = 'outbox';
 export const QR_LABELS_QUEUE = 'qr-labels';
 export const SCHEDULER_QUEUE = 'scheduler';
+export const ASSISTANT_QUEUE = 'assistant';
 
 /** Nhịp chuyển tiếp outbox: client hỏi lại mỗi 10–15s nên 2s là đủ nhanh. */
 export const OUTBOX_RELAY_EVERY_MS = 2_000;
