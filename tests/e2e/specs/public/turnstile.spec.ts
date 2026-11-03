@@ -16,13 +16,11 @@ test('sign-in passes the Turnstile check in test mode before calling Supabase', 
   page,
 }) => {
   await page.goto('/vi/dang-nhap');
-  await expect(page.locator('iframe[src*="challenges.cloudflare.com"]')).toBeAttached({
-    timeout: 20_000,
-  });
-  // The test key solves itself and drops the token into the widget's hidden field.
-  await expect(page.locator('input[name="cf-turnstile-response"]')).not.toHaveValue('', {
-    timeout: 20_000,
-  });
+  // The challenge iframe sits in a closed shadow root, so check the widget's hidden field instead: the test
+  // key solves itself and drops a dummy token there.
+  const token = page.locator('input[name="cf-turnstile-response"]');
+  await expect(token).toBeAttached({ timeout: 20_000 });
+  await expect(token).toHaveValue(/\S/, { timeout: 20_000 });
 
   const password = process.env[DEMO.accounts.buyer.passwordEnv];
   const live = Boolean(process.env.E2E_BASE_URL && password);
