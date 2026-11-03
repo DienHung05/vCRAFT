@@ -23,6 +23,8 @@ import { createOutboxDispatcher } from './processors/outbox/dispatch';
 import { relayOutbox } from './processors/outbox/relay-outbox';
 import { generateQrLabels, type QrLabelsJob } from './processors/qr-labels/generate-qr-labels';
 import {
+  ASSISTANT_LOG_PURGE_EVERY_MS,
+  ASSISTANT_LOG_PURGE_JOB,
   COORDINATION_CHECK_EVERY_MS,
   RFQ_COORDINATION_CHECK_JOB,
   RFQ_EXPIRE_SWEEP_JOB,
@@ -173,6 +175,11 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       RFQ_COORDINATION_CHECK_JOB,
       { every: COORDINATION_CHECK_EVERY_MS },
       { name: RFQ_COORDINATION_CHECK_JOB },
+    );
+    await scheduler.upsertJobScheduler(
+      ASSISTANT_LOG_PURGE_JOB,
+      { every: ASSISTANT_LOG_PURGE_EVERY_MS },
+      { name: ASSISTANT_LOG_PURGE_JOB },
     );
     this.closables.push(...workers, media, mail, qrLabels, scheduler, assistant, outbox, {
       close: async () => mailDeps.transport.close(),
