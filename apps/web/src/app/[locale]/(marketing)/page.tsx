@@ -5,6 +5,7 @@ import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
 import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { EmptyState } from '@/components/states/empty-state';
+import { HeroVase } from '@/experience/hero-vase/hero-vase';
 import { CountUp } from '@/experience/motion/count-up';
 import { DayStory } from '@/experience/motion/day-story';
 import { HandUnderline } from '@/experience/motion/hand-underline';
@@ -96,7 +97,10 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
     <>
       <InkCursor />
       {/* Hero: ảnh tĩnh bình đã ra lò; bản 3D (BRAND §6.3 #1) nạp lười ở experience/hero-vase. */}
-      <section className="mx-auto grid max-w-editorial items-center gap-10 px-gutter pt-12 pb-section md:grid-cols-12 md:pt-20">
+      <section
+        id="home-hero"
+        className="mx-auto grid max-w-editorial items-center gap-10 px-gutter pt-12 pb-section md:grid-cols-12 md:pt-20"
+      >
         <div className="flex flex-col gap-7 md:col-span-7">
           <p className="text-small font-medium tracking-[0.18em] text-clay uppercase">
             {t('hero.eyebrow')}
@@ -135,6 +139,8 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             {HERO_PHOTO ? null : (
               <VaseFigure className="h-[72%] drop-shadow-[0_24px_40px_rgb(30_58_110/0.35)]" />
             )}
+            {/* GH#94: the WebGL vase fades in over the photo on capable desktops; the photo stays the poster. */}
+            <HeroVase sectionId="home-hero" />
           </ImageSlot>
           {HERO_PHOTO ? (
             <PhotoCredit id={HERO_PHOTO.id} className="mt-1.5 text-right text-[0.75rem] text-ash" />

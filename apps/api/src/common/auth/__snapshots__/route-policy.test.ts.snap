@@ -3,6 +3,7 @@
 exports[`API route policy > matches the reviewed inventory 1`] = `
 "GET /api/v1/admin/allocations ROLES(ADMIN)
 POST /api/v1/admin/allocations/:id/reallocate ROLES(ADMIN)
+GET /api/v1/admin/assistant/stats ROLES(ADMIN)
 GET /api/v1/admin/audit-log ROLES(ADMIN)
 GET /api/v1/admin/audit-log/actors ROLES(ADMIN)
 GET /api/v1/admin/coordination ROLES(ADMIN)
@@ -38,6 +39,7 @@ GET /api/v1/me/allocations ROLES(HOUSEHOLD)
 GET /api/v1/me/consents AUTHENTICATED
 POST /api/v1/me/consents AUTHENTICATED
 GET /api/v1/me/data-export AUTHENTICATED
+GET /api/v1/me/events ROLES(ADMIN,BUYER,HOUSEHOLD)
 GET /api/v1/me/household ROLES(HOUSEHOLD)
 PATCH /api/v1/me/household ROLES(HOUSEHOLD)
 POST /api/v1/me/household AUTHENTICATED
@@ -53,6 +55,7 @@ GET /api/v1/me/household/qr-labels/:requestId ROLES(HOUSEHOLD)
 POST /api/v1/me/household/workshops ROLES(HOUSEHOLD)
 PUT /api/v1/me/household/workshops/:id ROLES(HOUSEHOLD)
 GET /api/v1/me/invitations ROLES(HOUSEHOLD)
+GET /api/v1/me/login-events AUTHENTICATED
 GET /api/v1/me/notification-preferences ROLES(ADMIN,BUYER,HOUSEHOLD)
 PUT /api/v1/me/notification-preferences ROLES(ADMIN,BUYER,HOUSEHOLD)
 GET /api/v1/me/notifications ROLES(ADMIN,BUYER,HOUSEHOLD)

@@ -612,7 +612,23 @@
       "openRfqs": "Yêu cầu báo giá đang mở",
       "ordersInProduction": "Đơn đang sản xuất",
       "qrScans30Days": "Lượt quét QR 30 ngày",
-      "reviewCta": "Duyệt {count} hồ sơ đang chờ"
+      "reviewCta": "Duyệt {count} hồ sơ đang chờ",
+      "assistant": {
+        "title": "Trợ lý Cáo",
+        "period": "{days} ngày qua",
+        "loading": "Đang tải…",
+        "failed": "Chưa tải được số liệu của trợ lý.",
+        "turns": "Lượt hỏi",
+        "blockRate": "Tỉ lệ bị chặn",
+        "feedback": "Đánh giá",
+        "feedbackValue": "👍 {up} · 👎 {down}",
+        "latency": "Chữ đầu tiên (p50 / p95)",
+        "latencyValue": "{p50} / {p95}",
+        "ms": "{value} ms",
+        "unansweredTitle": "Câu Cáo chưa trả lời được",
+        "unansweredEmpty": "Chưa có câu nào bị bỏ lửng.",
+        "times": "{count} lần"
+      }
     },
     "queue": {
       "title": "Duyệt hộ",
@@ -1142,6 +1158,27 @@
         "order": "Phân bổ và đơn hàng",
         "news": "Tin tức"
       }
+    },
+    "security": {
+      "title": "Bảo mật",
+      "lead": "Các lần đăng nhập gần đây vào tài khoản này. Thấy lần nào lạ thì đổi mật khẩu và đăng xuất khỏi mọi thiết bị.",
+      "historyTitle": "Lịch sử đăng nhập",
+      "loading": "Đang tải…",
+      "unavailable": "Chưa tải được lịch sử đăng nhập. Thử lại sau ít phút.",
+      "empty": "Chưa có lần đăng nhập nào được ghi lại.",
+      "twoFactor": "đã xác thực hai lớp",
+      "method": {
+        "password": "Mật khẩu",
+        "oauth": "Google",
+        "otp": "Liên kết email",
+        "recovery": "Liên kết đặt lại mật khẩu",
+        "invite": "Lời mời"
+      },
+      "signOutLead": "Đăng xuất tài khoản khỏi mọi trình duyệt và điện thoại, kể cả thiết bị này.",
+      "signOutAll": "Đăng xuất khỏi mọi thiết bị",
+      "confirmTitle": "Đăng xuất khỏi mọi thiết bị?",
+      "confirmText": "Mọi phiên đăng nhập của tài khoản sẽ kết thúc ngay, kể cả phiên này. Bạn sẽ cần đăng nhập lại.",
+      "cancel": "Hủy"
     }
   },
   "villageMap": {
@@ -1506,6 +1543,20 @@
       "redirecting": "Đang chuyển sang Google…",
       "notice": "Lần đầu tiếp tục với Google sẽ tạo tài khoản khách mua và nghĩa là bạn đồng ý Chính sách quyền riêng tư.",
       "failed": "Chưa đăng nhập được bằng Google. Bạn thử lại, hoặc dùng email và mật khẩu."
+    },
+    "mfa": {
+      "enrollTitle": "Bật xác thực hai lớp",
+      "enrollLead": "Khu quản trị cần thêm một lớp bảo vệ. Quét mã QR bằng ứng dụng xác thực (Google Authenticator, Microsoft Authenticator, 1Password…) rồi nhập mã 6 số.",
+      "verifyTitle": "Nhập mã xác thực",
+      "verifyLead": "Mở ứng dụng xác thực trên điện thoại và nhập mã 6 số cho vCraft.",
+      "loading": "Đang chuẩn bị…",
+      "failed": "Không bật được xác thực hai lớp lúc này. Tải lại trang hoặc thử lại sau ít phút.",
+      "qrAlt": "Mã QR để thêm vCraft vào ứng dụng xác thực",
+      "secretLabel": "Không quét được? Nhập khóa này:",
+      "codeLabel": "Mã 6 số",
+      "submit": "Xác nhận",
+      "verifying": "Đang kiểm tra…",
+      "invalid": "Mã chưa đúng hoặc đã hết hạn. Nhập mã mới nhất trong ứng dụng."
     }
   },
   "studio": {

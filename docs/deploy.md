@@ -150,6 +150,17 @@ The sign-in, sign-up, password recovery and change-password forms show Turnstile
 5. Check: `/vi/dang-nhap` shows the widget; signing in works; with the widget not done, the form says to complete the check.
 6. Local or CI: Cloudflare's test pair (site key `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`) always passes.
 
+### 6.3 Admin two-factor authentication (GH#83)
+
+Every admin route of the API needs an `aal2` session, meaning the admin has passed a TOTP code. With only a password (`aal1`) the API answers `403 AUTH_MFA_REQUIRED`. Instead of the admin pages, the web shows a screen to scan a QR code on first use, or to enter the 6-digit code on later sign-ins.
+
+1. Supabase Dashboard → Authentication → Multi-Factor: check that TOTP is enabled (it is by default).
+2. Each admin signs in and opens `/vi/admin`, scans the QR code with an authenticator app, and enters the code.
+3. Lost phone: in Supabase Dashboard → Authentication → Users → the admin → delete the TOTP factor. The next sign-in enrols a new one.
+4. `AUTH_ADMIN_MFA=off` on the API lifts the rule. Use it only for a local demo without Supabase MFA, never in production.
+
+The account page (`/vi/tai-khoan`) lists the last 20 sign-ins. The API records one row per Supabase session (method and assurance level, no IP address). The page also has a button that signs the account out of every device.
+
 ## 7. Giữ API thức vào ngày thi
 
 - Production currently runs on the free plans with a keep-alive job; see §11 (and §10 for the wizard that moves it to `starter`).
