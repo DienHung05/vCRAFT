@@ -1,4 +1,5 @@
 import { PublicShell } from '@/components/shell/public-shell';
+import { OutageBanner } from '@/features/studio/outage-banner';
 import { StudioNav } from '@/features/studio/studio-nav';
 import { requireArea } from '@/lib/auth/guard';
 import { resolveLocale } from '@/lib/locale';
@@ -13,6 +14,7 @@ export default async function StudioLayout({ children, params }: LayoutProps<'/[
     <div className="pb-16 md:pb-0">
       <PublicShell>
         <StudioNav />
+        <OutageBanner />
         {children}
       </PublicShell>
     </div>

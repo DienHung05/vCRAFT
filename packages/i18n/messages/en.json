@@ -878,7 +878,19 @@
         "linkPrompt": "Enter the link address:"
       },
       "emptyHint": "Write the first article to announce an event, raw-material prices or a support policy.",
-      "deletedToast": "Article deleted."
+      "deletedToast": "Article deleted.",
+      "structured": {
+        "pricesLegend": "Material prices",
+        "effectiveOn": "In force from",
+        "priceOf": "{material} (VND/{unit})",
+        "pricesHint": "Leave a material empty to keep the previous notice's price on the chart.",
+        "outageLegend": "Power cut",
+        "date": "Date",
+        "from": "From",
+        "to": "To",
+        "area": "Area",
+        "outageHint": "Studio shows a banner on the day of the cut.{more, plural, =0 {} one { One more cut in this notice is kept as is.} other { # more cuts in this notice are kept as is.}}"
+      }
     }
   },
   "exhibition": {
@@ -1724,7 +1736,12 @@
       "emptyAction": "See quotation invitations"
     },
     "registerHousehold": "Register as an artisan household",
-    "cancel": "Go back"
+    "cancel": "Go back",
+    "outage": {
+      "title": "Power cut today",
+      "slot": "{from}–{to} ({area})",
+      "details": "Read the notice"
+    }
   },
   "media": {
     "uploads": "Photos uploading",
@@ -1855,6 +1872,20 @@
         "blockedOrders": "You have an order in progress, so the account cannot be deleted yet. Finish or cancel the order, or ask the Management Board to cancel it, then try again.",
         "blockedAdmin": "Administrator accounts cannot delete themselves here. Ask another administrator.",
         "failed": "The account could not be deleted and nothing was changed. Try again in a few minutes."
+      }
+    }
+  },
+  "news": {
+    "materialPrices": {
+      "title": "Material prices, last 6 months",
+      "lead": "Clay, glaze and gas from the village board's monthly price notices. The chart is indexed to the first month (= 100); real prices are in the tooltip.",
+      "tableCaption": "Material prices by month",
+      "month": "Month",
+      "latest": "{material}: {price}/{unit}",
+      "materials": {
+        "CLAY": "Clay",
+        "GLAZE": "Glaze",
+        "GAS": "Gas"
       }
     }
   }

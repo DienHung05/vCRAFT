@@ -55,6 +55,8 @@ const NEWS: AdminNewsDto = {
   cover: null,
   householdName: null,
   updatedAt: '2026-10-01T00:00:00.000Z',
+  materialPrices: null,
+  powerSchedule: null,
 };
 const ARTICLE: NewsDetailDto = {
   slug: 'gia-men',
@@ -78,6 +80,8 @@ const ARTICLE: NewsDetailDto = {
   },
   body: 'Nội dung',
   bodyHtml: '<h2>Tiêu đề phụ</h2><p>Nội dung chính</p>',
+  materialPrices: null,
+  powerSchedule: null,
   visibility: 'PUBLIC',
   related: [
     {

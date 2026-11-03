@@ -1,9 +1,18 @@
 import { type Opt } from '@mikro-orm/core';
 import { Entity, Index, ManyToOne, Property, Unique } from '@mikro-orm/decorators/legacy';
-import type { NewsCategory, NewsStatus, NewsVisibility } from '@vcraft/domain';
+import type {
+  MaterialPriceData,
+  NewsCategory,
+  NewsStatus,
+  NewsVisibility,
+  PowerScheduleData,
+} from '@vcraft/domain';
 import { normalizeSearchText } from '@vcraft/utils';
 import { BaseEntity } from './base.entity.js';
 import { Household } from './household.entity.js';
+
+/** One of the two structured payloads, keyed by kind so the column stays self-describing. */
+export type NewsData = { materialPrices: MaterialPriceData } | { powerSchedule: PowerScheduleData };
 
 /**
  * Tin tức làng nghề (vCRAFT-83g): tin chung của làng hoặc tin của một hộ (`household` có giá trị).
@@ -69,4 +78,8 @@ export class News extends BaseEntity {
 
   @Property({ type: 'boolean' })
   pinned: Opt<boolean> = false;
+
+  /** Structured content of `MATERIAL_PRICES` and `POWER_SCHEDULE` items (PLAN E11). */
+  @Property({ type: 'json', nullable: true })
+  data?: NewsData | null;
 }

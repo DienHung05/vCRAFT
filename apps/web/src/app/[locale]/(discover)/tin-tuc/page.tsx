@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { fetchNews } from '@/features/news/news-api';
+import { MaterialPriceChart } from '@/features/news/material-price-chart';
+import { fetchMaterialPrices, fetchNews } from '@/features/news/news-api';
 import { NewsView } from '@/features/news/news-view';
 import { VillageNews } from '@/features/news/village-news';
 import { resolveLocale } from '@/lib/locale';
@@ -27,10 +28,19 @@ export default async function NewsIndexPage({
   await resolveLocale(params);
   const query = await searchParams;
   const householdSlug = first(query.household);
-  const result = await fetchNews({ householdSlug, cursor: first(query.cursor) });
+  const [result, prices] = await Promise.all([
+    fetchNews({ householdSlug, cursor: first(query.cursor) }),
+    // The village-wide price chart belongs on the main list, not on a household's own news.
+    householdSlug ? null : fetchMaterialPrices(),
+  ]);
   return (
     <>
       <VillageNews />
+      {prices && prices.series.length > 0 ? (
+        <div className="mx-auto max-w-editorial px-gutter pt-8">
+          <MaterialPriceChart series={prices.series} />
+        </div>
+      ) : null}
       <NewsView result={result} householdSlug={householdSlug} />
     </>
   );

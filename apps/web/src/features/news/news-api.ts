@@ -1,4 +1,6 @@
 import {
+  type MaterialPriceSeriesDto,
+  MaterialPriceSeriesResponseSchema,
   type NewsDetailDto,
   NewsDetailResponseSchema,
   type NewsListDto,
@@ -60,5 +62,21 @@ export async function fetchNewsArticle(slug: string): Promise<NewsArticleResult>
     return parsed.success ? { status: 'ok', article: parsed.data } : { status: 'unavailable' };
   } catch {
     return { status: 'unavailable' };
+  }
+}
+
+/** Six months of material prices for the news page chart (PLAN E11); `null` when the API is down. */
+export async function fetchMaterialPrices(): Promise<MaterialPriceSeriesDto | null> {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/news/material-prices`, {
+      headers: { accept: 'application/json' },
+      next: { revalidate: 300 },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!res.ok) return null;
+    const parsed = MaterialPriceSeriesResponseSchema.safeParse(await res.json());
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
   }
 }

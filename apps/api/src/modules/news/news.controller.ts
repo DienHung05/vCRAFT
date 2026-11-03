@@ -40,6 +40,13 @@ export class VillageNewsController {
     return this.news.listVillage(actor, 24);
   }
 
+  /** Today's planned power cuts, for the Studio banner (PLAN E11). Declared before `:slug`. */
+  @Get('outages')
+  @Header('Cache-Control', 'private, no-store')
+  outages(@CurrentActor() actor: Actor) {
+    return this.news.todayOutages(actor);
+  }
+
   @Get(':slug')
   @Header('Cache-Control', 'private, no-store')
   get(@CurrentActor() actor: Actor, @Param('slug') slug: string) {
@@ -62,6 +69,12 @@ export class NewsController {
     @Res({ passthrough: true }) reply: HttpReply,
   ) {
     return withPublicCache(request, reply, await this.news.list(query));
+  }
+
+  /** Six months of clay, glaze and gas prices for the chart (PLAN E11). Declared before `:slug`. */
+  @Get('material-prices')
+  async materialPrices(@Req() request: HttpRequest, @Res({ passthrough: true }) reply: HttpReply) {
+    return withPublicCache(request, reply, await this.news.materialPrices());
   }
 
   @Get(':slug')
