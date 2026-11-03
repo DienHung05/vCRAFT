@@ -15,6 +15,7 @@ import { buildPoolDriverOptions, resolveDbPoolSettings } from './db-pool.js';
 import {
   AppUser,
   Artisan,
+  AssistantMessageLog,
   AuditLog,
   BaseEntity,
   ConsentRecord,
@@ -156,6 +157,7 @@ export function createMikroOrmOptions(
       ConsentRecord,
       LoginEvent,
       SlugRedirect,
+      AssistantMessageLog,
     ],
     metadataProvider: ReflectMetadataProvider,
     extensions: [Migrator, SeedManager],

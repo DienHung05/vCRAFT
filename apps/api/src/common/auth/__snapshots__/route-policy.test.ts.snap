@@ -20,6 +20,8 @@ PUT /api/v1/admin/news/:id ROLES(ADMIN)
 POST /api/v1/allocations/:id/confirm ROLES(HOUSEHOLD)
 POST /api/v1/allocations/:id/decline ROLES(HOUSEHOLD)
 POST /api/v1/allocations/:id/progress ROLES(HOUSEHOLD)
+POST /api/v1/assistant/messages PUBLIC
+POST /api/v1/assistant/messages/:id/feedback PUBLIC
 PUT /api/v1/contributions/:id ROLES(HOUSEHOLD)
 GET /api/v1/contributions/:id/history ROLES(ADMIN,HOUSEHOLD)
 POST /api/v1/contributions/:id/withdraw ROLES(HOUSEHOLD)

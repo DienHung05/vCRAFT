@@ -30,6 +30,13 @@ client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
 skip_nonce_check = false
 
+# GH#84 (FR-AUTH-07): Cloudflare Turnstile on sign-in, sign-up, password recovery and resend. Off locally;
+# turn it on with the secret matching NEXT_PUBLIC_TURNSTILE_SITE_KEY (Cloudflare's test pair always passes).
+[auth.captcha]
+enabled = false
+provider = "turnstile"
+secret = "env(SUPABASE_AUTH_CAPTCHA_SECRET)"
+
 # GH#83: admins need a TOTP second factor (aal2) for the admin area and every admin API route.
 [auth.mfa]
 max_enrolled_factors = 10

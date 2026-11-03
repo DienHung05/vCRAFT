@@ -106,6 +106,17 @@ Preview deployment dùng chung API và CSDL production (không có staging); đ�
 5. `vcraft-api` giữ URL `onrender.com`; không cần domain riêng vì người dùng không gọi thẳng API. Nếu muốn domain riêng (`api.<domain>`), thêm ở Render → Settings → Custom Domains rồi sửa `API_INTERNAL_URL` và Redeploy web.
 6. Cloudflare Turnstile: thêm `<domain>` vào danh sách hostname của widget.
 
+### 5.1 Offline map fallback (GH#100)
+
+The village map loads OpenFreeMap. If that style does not answer within 2.5 s, or its tiles start failing, the map switches to a PMTiles extract of Bát Tràng stored in Supabase Storage. It draws that extract with a small brand style and shows a "backup map" badge.
+
+1. Install the [`pmtiles` CLI](https://github.com/protomaps/go-pmtiles/releases).
+2. From the repository root, with `SUPABASE_URL` and `SUPABASE_SECRET_KEY` exported, run `scripts/map/extract-bat-trang.sh`. It extracts the area from the latest Protomaps daily build, uploads it to the public bucket as `map/bat-trang.pmtiles`, and prints the public URL.
+3. Vercel: set `NEXT_PUBLIC_MAP_PMTILES_URL` to that URL and redeploy.
+4. Check: block `tiles.openfreemap.org` in the browser's DevTools (Network → Block request domain), reload `/vi/ban-do`. The map should appear in brand colours with the badge, and the workshop pins should still work.
+
+Without `NEXT_PUBLIC_MAP_PMTILES_URL`, the map behaves as before and there is no probe.
+
 ## 6. Supabase Auth và SMTP
 
 Dashboard → Authentication:
@@ -127,6 +138,17 @@ Owner steps; the code is already in place (`apps/web/src/features/auth/google-si
 3. Supabase Dashboard → Authentication → URL Configuration → Redirect URLs: add `https://<domain>/auth/callback` and `http://localhost:3000/auth/callback` (the wildcard entries `https://<domain>/**` already cover it if present).
 4. Local Supabase CLI: set `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` (read by `supabase/config.toml`).
 5. Check: on `/vi/dang-nhap`, "Tiếp tục với Google" goes to Google and back to the site signed in; a first sign-in lands as a buyer, with the SIGN_UP consent recorded.
+
+### 6.2 Cloudflare Turnstile (GH#84)
+
+The sign-in, sign-up, password recovery and change-password forms show Turnstile when `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is set, and pass the token to Supabase, which verifies it server-side. Google sign-in is not covered: Supabase does not apply CAPTCHA to OAuth.
+
+1. Cloudflare Dashboard → Turnstile → *Add widget*: hostnames `<domain>` and `localhost`, mode *Managed*. Copy the site key and the secret.
+2. Vercel: set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` to the site key and redeploy (it is fixed at build time).
+3. Supabase Dashboard → Authentication → Attack Protection → *Enable Captcha protection*: provider Turnstile, paste the secret.
+4. Order matters: deploy the web build with the site key first, then turn captcha on in Supabase. Done the other way round, every sign-in fails until the new build is live.
+5. Check: `/vi/dang-nhap` shows the widget; signing in works; with the widget not done, the form says to complete the check.
+6. Local or CI: Cloudflare's test pair (site key `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`) always passes.
 
 ### 6.3 Admin two-factor authentication (GH#83)
 

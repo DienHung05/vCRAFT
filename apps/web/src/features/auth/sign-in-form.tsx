@@ -12,6 +12,7 @@ import { FormAlert, PasswordField, STANDALONE_LINK, TextField } from './fields';
 import { GoogleSignIn } from './google-sign-in';
 import { useKilnFeedback } from './kiln/kiln-feedback';
 import { type SignInValues, signInSchema } from './schemas';
+import { useCaptcha } from './turnstile';
 import { useFocusSubmitOnError } from './use-focus-submit-on-error';
 import { useValidationMessage } from './use-validation-message';
 
@@ -42,6 +43,7 @@ export function SignInForm({
   const kiln = useKilnFeedback();
   const [error, setError] = useState<AuthErrorKey | null>(null);
   const [resend, setResend] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const captcha = useCaptcha();
   const {
     register,
     handleSubmit,
@@ -68,9 +70,17 @@ export function SignInForm({
       setResend('idle');
       const supabase = browserSupabase();
       if (!supabase) return failWith('unconfigured');
+      if (captcha.missing) return failWith('captcha');
       try {
-        const { error: failure } = await supabase.auth.signInWithPassword({ email, password });
-        if (failure) return failWith(authErrorKey(failure));
+        const { error: failure } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+          options: captcha.options,
+        });
+        if (failure) {
+          captcha.reset();
+          return failWith(authErrorKey(failure));
+        }
         const destination = next ?? `/auth/continue?locale=${locale}`;
         // The seal stamps first (the destination is prerendered meanwhile), then the navigation
         // (a cross-document view transition) follows.
@@ -78,6 +88,7 @@ export function SignInForm({
         // Tải lại toàn trang để Server Component đọc cookie phiên mới.
         window.location.assign(destination);
       } catch (failure) {
+        captcha.reset();
         failWith(authErrorKey(failure));
       }
     },
@@ -92,7 +103,9 @@ export function SignInForm({
     const { error: failure } = await supabase.auth.resend({
       type: 'signup',
       email: getValues('email').trim(),
+      options: captcha.options,
     });
+    captcha.reset();
     if (failure) {
       setResend('idle');
       return setError(authErrorKey(failure));
@@ -142,6 +155,7 @@ export function SignInForm({
         {...register('password')}
       />
 
+      {captcha.widget}
       <Button type="submit" size="lg" disabled={isSubmitting}>
         {isSubmitting ? t('signIn.submitting') : t('signIn.submit')}
       </Button>

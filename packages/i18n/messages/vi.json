@@ -1197,7 +1197,8 @@
       "5": "Thứ sáu",
       "6": "Thứ bảy"
     },
-    "clearFilters": "Bỏ bộ lọc"
+    "clearFilters": "Bỏ bộ lọc",
+    "offline": "Bản đồ dự phòng ngoại tuyến"
   },
   "catalog": {
     "filtersLabel": "Lọc sản phẩm",
@@ -1309,7 +1310,8 @@
       "mediaTooLarge": "Tệp lớn hơn 10 MB. Hãy chụp lại ở độ phân giải thấp hơn hoặc nén tệp.",
       "mediaUnsupported": "Chỉ nhận ảnh JPG, PNG, WebP, AVIF hoặc tệp PDF.",
       "apiDown": "Không gọi được máy chủ vCraft. Bạn thử lại sau ít phút nhé.",
-      "consentRequired": "Cần đồng ý với Chính sách quyền riêng tư trước khi thực hiện thao tác này. Hãy tích ô đồng ý rồi thử lại."
+      "consentRequired": "Cần đồng ý với Chính sách quyền riêng tư trước khi thực hiện thao tác này. Hãy tích ô đồng ý rồi thử lại.",
+      "captcha": "Hãy hoàn tất bước xác minh \"Tôi không phải robot\" phía trên rồi thử lại."
     },
     "signIn": {
       "title": "Đăng nhập",
@@ -1960,5 +1962,96 @@
         "GAS": "Gas"
       }
     }
+  },
+  "assistant": {
+    "open": "Hỏi Cáo",
+    "close": "Đóng trợ lý",
+    "title": "Cáo của vCraft",
+    "subtitle": "Hỏi về gốm Bát Tràng và cách dùng vCraft",
+    "mascotLabel": "Cáo, trợ lý của vCraft",
+    "welcome": "Chào bạn! Tớ là Cáo. Bạn muốn tìm gốm, đặt hàng số lượng lớn hay tìm hiểu làng Bát Tràng?",
+    "hello": "Chào bạn 👋 Cần tìm gì ở làng gốm cứ hỏi Cáo nhé!",
+    "dismissHello": "Ẩn lời chào",
+    "log": "Cuộc trò chuyện với Cáo",
+    "inputLabel": "Câu hỏi cho Cáo",
+    "placeholder": "Hỏi Cáo điều gì đó…",
+    "send": "Gửi",
+    "stop": "Dừng trả lời",
+    "stopped": "Đã dừng.",
+    "retry": "Thử lại",
+    "copy": "Sao chép câu trả lời",
+    "copied": "Đã sao chép",
+    "helpful": "Câu trả lời hữu ích",
+    "notHelpful": "Câu trả lời chưa hữu ích",
+    "newChat": "Cuộc trò chuyện mới",
+    "thinking": "Cáo đang nghĩ…",
+    "error": "Cáo vấp một chút rồi. Bạn thử lại nhé.",
+    "sources": "Nguồn",
+    "quickLabel": "Câu hỏi gợi ý",
+    "source": {
+      "FAQ": "Hỏi đáp",
+      "PRODUCT": "Sản phẩm",
+      "HOUSEHOLD": "Hộ sản xuất",
+      "NEWS": "Tin tức",
+      "VILLAGE": "Làng gốm",
+      "PAGE": "Trang"
+    },
+    "blocked": {
+      "INJECTION": "Tớ không làm theo yêu cầu đó được. Mình nói chuyện về gốm nhé?",
+      "ABUSE": "Mình giữ lời lẽ nhẹ nhàng nhé. Tớ vẫn sẵn lòng giúp về gốm Bát Tràng.",
+      "PRIVATE_DATA": "Tớ không xem được thông tin riêng tư của người khác. Bạn hỏi điều khác nhé.",
+      "RATE_LIMITED": "Bạn hỏi nhanh quá, Cáo cần nghỉ một chút. Thử lại sau ít phút nhé.",
+      "RATE_LIMITED_WAIT": "Bạn hỏi nhanh quá, Cáo cần nghỉ một chút. Hỏi lại sau {seconds} giây nhé.",
+      "BUDGET_EXHAUSTED": "Cáo đi ngủ rồi, hẹn bạn ngày mai nhé 💤",
+      "DISABLED": "Cáo đang nghỉ. Bạn xem trang Hỏi đáp hoặc gửi yêu cầu báo giá nhé."
+    },
+    "quick": {
+      "home": [
+        "Bát Tràng có gì đặc biệt?",
+        "Đặt hàng số lượng lớn thế nào?",
+        "Xưởng nào đang mở cửa?"
+      ],
+      "catalog": ["Gợi ý quà tặng gốm", "Men lam khác men rạn thế nào?", "Có bình hút lộc không?"],
+      "map": ["Xưởng nào đang mở cửa?", "Đi Bát Tràng bằng gì?", "Thời tiết Bát Tràng hôm nay?"],
+      "trace": ["Mã QR này cho biết gì?", "Món này do ai làm?", "Làm sao biết hàng thật?"],
+      "quote": [
+        "Yêu cầu báo giá gồm những gì?",
+        "Bao lâu thì có báo giá?",
+        "Có in logo lên gốm không?"
+      ],
+      "other": ["vCraft là gì?", "Đặt hàng số lượng lớn thế nào?", "Bát Tràng có gì đặc biệt?"]
+    },
+    "thoughts": [
+      "Bát Tràng làm gốm từ thế kỷ 14…",
+      "Men lam được vẽ bằng ô-xít coban…",
+      "Lò bầu xưa đốt bằng củi thông…",
+      "Men rạn nứt vì co ngót khi nguội…",
+      "Đất sét trắng Bát Tràng rất mịn…",
+      "Nung gốm sứ tới khoảng 1.300 °C…",
+      "Mỗi chiếc bình qua tay nhiều người thợ…",
+      "Men gio làm từ tro cây và đất…",
+      "Làng có chợ gốm họp mỗi ngày…",
+      "Chuốt gốm trên bàn xoay cần đôi tay vững…",
+      "Gốm phải phơi khô trước khi nung…",
+      "Men nâu là sắc men cổ của làng…",
+      "Họa tiết sen, cúc rất hay gặp…",
+      "Lò gas giúp nhiệt độ đều hơn…",
+      "Gốm đắp nổi làm bằng tay từng nét…",
+      "Bát Tràng nằm bên bờ sông Hồng…",
+      "Đất được ngâm, lọc nhiều lần…",
+      "Vẽ tay mỗi bình mất cả buổi…",
+      "Nghề gốm truyền qua nhiều đời…",
+      "Men trắng ngà mềm như ngọc…",
+      "Xếp lò là cả một nghệ thuật…",
+      "Gốm mộc là gốm chưa tráng men…",
+      "Khuôn thạch cao giúp làm hàng loạt…",
+      "Lửa lò quyết định màu men cuối cùng…",
+      "Mỗi món gốm có mã QR riêng trên vCraft…",
+      "Bình hút lộc là quà Tết được ưa chuộng…",
+      "Ấm chén là mặt hàng truyền thống…",
+      "Gốm vỡ trong lò được loại bỏ ngay…",
+      "Thợ giỏi chuốt được bình cao cả mét…",
+      "Cáo đang lục tìm trong kho gốm…"
+    ]
   }
 }

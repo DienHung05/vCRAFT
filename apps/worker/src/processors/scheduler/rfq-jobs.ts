@@ -1,14 +1,22 @@
 import type { MikroORM } from '@mikro-orm/core';
-import { dueRequestIds, expireRequest, flagRequestsNeedingCoordination } from '@vcraft/database';
+import {
+  dueRequestIds,
+  expireRequest,
+  flagRequestsNeedingCoordination,
+  purgeAssistantLogs,
+} from '@vcraft/database';
 
 /** Job names on the scheduler queue (PLAN E9). */
 export const RFQ_EXPIRE_JOB = 'rfq.expire';
 export const RFQ_EXPIRE_SWEEP_JOB = 'rfq.expire-sweep';
 export const RFQ_COORDINATION_CHECK_JOB = 'rfq.coordination-check';
+/** Deletes assistant logs older than 30 days (PLAN E15). */
+export const ASSISTANT_LOG_PURGE_JOB = 'assistant.purge-logs';
 
 /** How often the safety sweep and the coordination check run. */
 export const RFQ_SWEEP_EVERY_MS = 60_000;
 export const COORDINATION_CHECK_EVERY_MS = 15 * 60_000;
+export const ASSISTANT_LOG_PURGE_EVERY_MS = 24 * 60 * 60_000;
 
 export interface RfqExpireJob {
   requestId: string;
@@ -32,6 +40,8 @@ export async function runSchedulerJob(
     }
     case RFQ_COORDINATION_CHECK_JOB:
       return flagRequestsNeedingCoordination(orm, now);
+    case ASSISTANT_LOG_PURGE_JOB:
+      return purgeAssistantLogs(orm, now);
     default:
       throw new Error(`unknown scheduler job: ${name}`);
   }

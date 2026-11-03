@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { MikroORM } from '@mikro-orm/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import { AppUser, ConsentRecord, FieldCipher } from '@vcraft/database';
 import { type AccountRole, CONSENT_PURPOSES, PRIVACY_POLICY_VERSION } from '@vcraft/domain';
 import { LocalObjectStorage } from '@vcraft/storage';
@@ -93,7 +93,11 @@ export interface TestApp {
   close: () => Promise<void>;
 }
 
-export async function startTestApp(db: TestDatabase): Promise<TestApp> {
+/** `configure` adds overrides of its own, e.g. a fake chat model for the assistant tests. */
+export async function startTestApp(
+  db: TestDatabase,
+  configure: (builder: TestingModuleBuilder) => TestingModuleBuilder = (builder) => builder,
+): Promise<TestApp> {
   const storageDir = await mkdtemp(join(tmpdir(), 'vcraft-api-storage-'));
   const storage = new LocalObjectStorage({
     publicDir: join(storageDir, 'public'),
@@ -104,7 +108,7 @@ export async function startTestApp(db: TestDatabase): Promise<TestApp> {
   });
   const authAdmin = new FakeAuthAdmin();
   const cipher = new FieldCipher(TEST_FIELD_KEYS);
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+  const moduleRef = await configure(Test.createTestingModule({ imports: [AppModule] }))
     .overrideProvider(OBJECT_STORAGE)
     .useValue(storage)
     .overrideProvider(MikroORM)

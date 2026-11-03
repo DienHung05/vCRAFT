@@ -1,3 +1,4 @@
+export * from './assistant-logs.js';
 export * from './knowledge-documents.js';
 export * from './knowledge-events.js';
 export * from './news-notifications.js';
