@@ -79,3 +79,23 @@ export const AssistantFeedbackRequestSchema = z.strictObject({
   rating: z.enum(['UP', 'DOWN']),
 });
 export type AssistantFeedbackRequest = z.infer<typeof AssistantFeedbackRequestSchema>;
+
+/** `GET /admin/assistant/stats?days=7`: the admin dashboard's Assistant card (FR-AST-08, GH#82). */
+export const AssistantStatsQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(30).default(7),
+});
+export type AssistantStatsQuery = z.infer<typeof AssistantStatsQuerySchema>;
+
+export const AssistantStatsSchema = z.object({
+  days: z.int(),
+  turns: z.int().nonnegative(),
+  blocked: z.int().nonnegative(),
+  /** Share of turns refused, 0–1; 0 when there were no turns. */
+  blockRate: z.number().min(0).max(1),
+  feedback: z.object({ up: z.int().nonnegative(), down: z.int().nonnegative() }),
+  /** Milliseconds to the first painted token; null without answered turns. */
+  firstTokenMs: z.object({ p50: z.int().nullable(), p95: z.int().nullable() }),
+  /** Questions the Fox had no source for (not blocked), most asked first, PII already masked. */
+  unanswered: z.array(z.object({ question: z.string(), count: z.int().positive() })).max(10),
+});
+export type AssistantStatsDto = z.infer<typeof AssistantStatsSchema>;

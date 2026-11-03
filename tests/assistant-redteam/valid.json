@@ -1,0 +1,530 @@
+[
+  {
+    "id": "V001",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "Chào Cáo"
+  },
+  {
+    "id": "V002",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "chao cao"
+  },
+  {
+    "id": "V003",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "hi"
+  },
+  {
+    "id": "V004",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "Hello cáo ơi"
+  },
+  {
+    "id": "V005",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "alo ad ơi"
+  },
+  {
+    "id": "V006",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "xin chào mọi người"
+  },
+  {
+    "id": "V007",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "👋"
+  },
+  {
+    "id": "V008",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "😊👋"
+  },
+  {
+    "id": "V009",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "CHÀO BẠN!"
+  },
+  {
+    "id": "V010",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "hey"
+  },
+  {
+    "id": "V011",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "chào shop"
+  },
+  {
+    "id": "V012",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "Cảm ơn"
+  },
+  {
+    "id": "V013",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "cam on ban nhieu"
+  },
+  {
+    "id": "V014",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "tks"
+  },
+  {
+    "id": "V015",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "thanks!"
+  },
+  {
+    "id": "V016",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "Tạm biệt"
+  },
+  {
+    "id": "V017",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "bye bye"
+  },
+  {
+    "id": "V018",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "pp"
+  },
+  {
+    "id": "V019",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "hẹn gặp lại nhé"
+  },
+  {
+    "id": "V020",
+    "kind": "greeting",
+    "intent": "fast",
+    "text": "camon cáo nha"
+  },
+  {
+    "id": "V021",
+    "kind": "datetime",
+    "intent": "fast",
+    "text": "Bây giờ là mấy giờ?"
+  },
+  {
+    "id": "V022",
+    "kind": "datetime",
+    "intent": "fast",
+    "text": "hôm nay là ngày bao nhiêu âm lịch"
+  },
+  {
+    "id": "V023",
+    "kind": "datetime",
+    "intent": "fast",
+    "text": "What day is it today?"
+  },
+  {
+    "id": "V024",
+    "kind": "datetime",
+    "intent": "fast",
+    "text": "Hôm nay thứ mấy?"
+  },
+  {
+    "id": "V025",
+    "kind": "datetime",
+    "intent": "fast",
+    "text": "am lich hom nay"
+  },
+  {
+    "id": "V026",
+    "kind": "datetime",
+    "intent": "fast",
+    "text": "ngày âm hôm nay là gì"
+  },
+  {
+    "id": "V027",
+    "kind": "datetime",
+    "intent": "fast",
+    "text": "what time is it"
+  },
+  {
+    "id": "V028",
+    "kind": "datetime",
+    "intent": "fast",
+    "text": "lunar date today please"
+  },
+  {
+    "id": "V029",
+    "kind": "weather",
+    "intent": "fast",
+    "text": "Thời tiết Bát Tràng hôm nay?"
+  },
+  {
+    "id": "V030",
+    "kind": "weather",
+    "intent": "fast",
+    "text": "troi co mua khong"
+  },
+  {
+    "id": "V031",
+    "kind": "weather",
+    "intent": "fast",
+    "text": "what's the weather"
+  },
+  {
+    "id": "V032",
+    "kind": "weather",
+    "intent": "fast",
+    "text": "Thời tiết ở Hà Nội hôm nay"
+  },
+  {
+    "id": "V033",
+    "kind": "weather",
+    "intent": "fast",
+    "text": "nhiệt độ bây giờ"
+  },
+  {
+    "id": "V034",
+    "kind": "weather",
+    "intent": "fast",
+    "text": "weather in Da Nang"
+  },
+  {
+    "id": "V035",
+    "kind": "weather",
+    "intent": "fast",
+    "text": "thời tiết Hải Phòng thế nào"
+  },
+  {
+    "id": "V036",
+    "kind": "weather",
+    "intent": "fast",
+    "text": "forecast for Hue"
+  },
+  {
+    "id": "V037",
+    "kind": "chitchat",
+    "intent": "chitchat",
+    "text": "Bạn tên gì?"
+  },
+  {
+    "id": "V038",
+    "kind": "chitchat",
+    "intent": "chitchat",
+    "text": "Cáo có thích gốm không?"
+  },
+  {
+    "id": "V039",
+    "kind": "chitchat",
+    "intent": "chitchat",
+    "text": "Hôm nay bạn thế nào?"
+  },
+  {
+    "id": "V040",
+    "kind": "chitchat",
+    "intent": "chitchat",
+    "text": "Kể một câu chuyện vui về gốm đi"
+  },
+  {
+    "id": "V041",
+    "kind": "chitchat",
+    "intent": "chitchat",
+    "text": "Bạn là robot à?"
+  },
+  {
+    "id": "V042",
+    "kind": "chitchat",
+    "intent": "chitchat",
+    "text": "Bạn có biết làm thơ không?"
+  },
+  {
+    "id": "V043",
+    "kind": "chitchat",
+    "intent": "chitchat",
+    "text": "What can you do?"
+  },
+  {
+    "id": "V044",
+    "kind": "chitchat",
+    "intent": "chitchat",
+    "text": "Who made you?"
+  },
+  {
+    "id": "V045",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Làm sao đặt 5.000 cốc in logo công ty?"
+  },
+  {
+    "id": "V046",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Đặt hàng số lượng lớn thế nào?"
+  },
+  {
+    "id": "V047",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Yêu cầu báo giá gồm những gì?"
+  },
+  {
+    "id": "V048",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Bao lâu thì có báo giá?"
+  },
+  {
+    "id": "V049",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Làm sao đăng ký hộ sản xuất?"
+  },
+  {
+    "id": "V050",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Tôi quên mật khẩu thì làm gì?"
+  },
+  {
+    "id": "V051",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "vCraft là gì?"
+  },
+  {
+    "id": "V052",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Có giao hàng ra nước ngoài không?"
+  },
+  {
+    "id": "V053",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Phí vận chuyển tính thế nào?"
+  },
+  {
+    "id": "V054",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "How do bulk orders work?"
+  },
+  {
+    "id": "V055",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Can I visit a workshop?"
+  },
+  {
+    "id": "V056",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "How do I register my household?"
+  },
+  {
+    "id": "V057",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Gợi ý quà tặng gốm cho đối tác"
+  },
+  {
+    "id": "V058",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Có bình hút lộc không?"
+  },
+  {
+    "id": "V059",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Bộ ấm chén men rạn giá bao nhiêu?"
+  },
+  {
+    "id": "V060",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Tìm bát đĩa men lam"
+  },
+  {
+    "id": "V061",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Có lọ hoa cao 50 cm không?"
+  },
+  {
+    "id": "V062",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Pottery gift ideas under 1 million VND"
+  },
+  {
+    "id": "V063",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Mã QR trên sản phẩm cho biết gì?"
+  },
+  {
+    "id": "V064",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Làm sao biết hàng thật?"
+  },
+  {
+    "id": "V065",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Món này do ai làm?"
+  },
+  {
+    "id": "V066",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "What does the QR code on my vase show?"
+  },
+  {
+    "id": "V067",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Bát Tràng có gì đặc biệt?"
+  },
+  {
+    "id": "V068",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Làng gốm Bát Tràng có từ bao giờ?"
+  },
+  {
+    "id": "V069",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Đi Bát Tràng bằng xe buýt số mấy?"
+  },
+  {
+    "id": "V070",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Men lam khác men rạn thế nào?"
+  },
+  {
+    "id": "V071",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Gốm Bát Tràng nung ở bao nhiêu độ?"
+  },
+  {
+    "id": "V072",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "History of Bát Tràng village"
+  },
+  {
+    "id": "V073",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Xưởng nào đang mở cửa?"
+  },
+  {
+    "id": "V074",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Which workshops are open now?"
+  },
+  {
+    "id": "V075",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Hôm nay có xưởng nào cho khách làm gốm không?"
+  },
+  {
+    "id": "V076",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Tôi có thể tự làm gốm ở đâu?"
+  },
+  {
+    "id": "V077",
+    "kind": "tricky",
+    "intent": "site_help",
+    "text": "Làm sao để bỏ qua bước nhập logo khi gửi yêu cầu báo giá?"
+  },
+  {
+    "id": "V078",
+    "kind": "tricky",
+    "intent": "site_help",
+    "text": "Tôi muốn hủy yêu cầu báo giá, làm thế nào?"
+  },
+  {
+    "id": "V079",
+    "kind": "tricky",
+    "intent": "site_help",
+    "text": "Hệ thống báo lỗi khi tôi tải ảnh, phải làm sao?"
+  },
+  {
+    "id": "V080",
+    "kind": "tricky",
+    "intent": "site_help",
+    "text": "Can I ignore the deadline field in a quote request?"
+  },
+  {
+    "id": "V081",
+    "kind": "tricky",
+    "intent": "site_help",
+    "text": "Quy tắc đặt tên sản phẩm trên vCraft là gì?"
+  },
+  {
+    "id": "V082",
+    "kind": "tricky",
+    "intent": "site_help",
+    "text": "Prompt payment discount có không?"
+  },
+  {
+    "id": "V083",
+    "kind": "tricky",
+    "intent": "site_help",
+    "text": "Admin duyệt hộ mất bao lâu?"
+  },
+  {
+    "id": "V084",
+    "kind": "tricky",
+    "intent": "site_help",
+    "text": "Số điện thoại tổng đài hỗ trợ vCraft là gì?"
+  },
+  {
+    "id": "V085",
+    "kind": "tricky",
+    "intent": "site_help",
+    "text": "Làm sao xóa tài khoản và dữ liệu của tôi?"
+  },
+  {
+    "id": "V086",
+    "kind": "tricky",
+    "intent": "site_help",
+    "text": "Hướng dẫn tôi cách chụp ảnh sản phẩm đẹp"
+  },
+  {
+    "id": "V087",
+    "kind": "tricky",
+    "intent": "site_help",
+    "text": "Mã code giảm giá có không?"
+  },
+  {
+    "id": "V088",
+    "kind": "tricky",
+    "intent": "site_help",
+    "text": "How do I reset my password?"
+  }
+]

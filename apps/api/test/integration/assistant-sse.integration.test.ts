@@ -120,6 +120,26 @@ describe('Assistant SSE endpoint', () => {
     expect(missing.status).toBe(404);
   });
 
+  it('summarises the logged turns for the admin dashboard (GH#82)', async () => {
+    const admin = await t.createUser('ADMIN');
+    const res = await t.request({
+      method: 'GET',
+      url: '/admin/assistant/stats?days=7',
+      auth: admin.auth,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.turns).toBeGreaterThanOrEqual(4);
+    expect(res.body.blocked).toBeGreaterThanOrEqual(1);
+    expect(res.body.feedback.up).toBeGreaterThanOrEqual(1);
+    const buyer = await t.createUser('BUYER');
+    const denied = await t.request({
+      method: 'GET',
+      url: '/admin/assistant/stats',
+      auth: buyer.auth,
+    });
+    expect(denied.status).toBe(403);
+  });
+
   it('rejects an empty message or an external page path as invalid', async () => {
     expect((await ask('   ')).res.statusCode).toBe(422);
     expect((await ask('chào', { pagePath: 'https://evil.test' })).res.statusCode).toBe(422);

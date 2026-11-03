@@ -612,7 +612,23 @@
       "openRfqs": "Yêu cầu báo giá đang mở",
       "ordersInProduction": "Đơn đang sản xuất",
       "qrScans30Days": "Lượt quét QR 30 ngày",
-      "reviewCta": "Duyệt {count} hồ sơ đang chờ"
+      "reviewCta": "Duyệt {count} hồ sơ đang chờ",
+      "assistant": {
+        "title": "Trợ lý Cáo",
+        "period": "{days} ngày qua",
+        "loading": "Đang tải…",
+        "failed": "Chưa tải được số liệu của trợ lý.",
+        "turns": "Lượt hỏi",
+        "blockRate": "Tỉ lệ bị chặn",
+        "feedback": "Đánh giá",
+        "feedbackValue": "👍 {up} · 👎 {down}",
+        "latency": "Chữ đầu tiên (p50 / p95)",
+        "latencyValue": "{p50} / {p95}",
+        "ms": "{value} ms",
+        "unansweredTitle": "Câu Cáo chưa trả lời được",
+        "unansweredEmpty": "Chưa có câu nào bị bỏ lửng.",
+        "times": "{count} lần"
+      }
     },
     "queue": {
       "title": "Duyệt hộ",

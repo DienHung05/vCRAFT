@@ -4,6 +4,7 @@ import {
   AdminNewsListSchema,
   AdminNewsSchema,
   AllocationScheduleSchema,
+  AssistantStatsSchema,
   AuditActorListSchema,
   AuditLogPageSchema,
   type AuditLogQuery,
@@ -35,6 +36,9 @@ export function createAdminClient(options: AuthedClientOptions) {
   const request = createAuthedRequest(options);
   return {
     dashboard: () => request('/admin/dashboard', AdminDashboardSchema),
+    /** The Fox assistant's card on the dashboard (GH#82). */
+    assistantStats: (days = 7) =>
+      request(`/admin/assistant/stats?days=${days}`, AssistantStatsSchema),
     listHouseholds: (filters: AdminHouseholdFilters = {}) => {
       const query = new URLSearchParams();
       for (const [key, value] of Object.entries(filters)) if (value) query.set(key, value);

@@ -612,7 +612,23 @@
       "openRfqs": "Open quotation requests",
       "ordersInProduction": "Orders in production",
       "qrScans30Days": "QR scans, last 30 days",
-      "reviewCta": "Review {count} waiting applications"
+      "reviewCta": "Review {count} waiting applications",
+      "assistant": {
+        "title": "Fox assistant",
+        "period": "Last {days} days",
+        "loading": "Loading…",
+        "failed": "The assistant figures could not be loaded.",
+        "turns": "Questions",
+        "blockRate": "Blocked",
+        "feedback": "Ratings",
+        "feedbackValue": "👍 {up} · 👎 {down}",
+        "latency": "First token (p50 / p95)",
+        "latencyValue": "{p50} / {p95}",
+        "ms": "{value} ms",
+        "unansweredTitle": "Questions the Fox could not answer",
+        "unansweredEmpty": "No unanswered questions yet.",
+        "times": "{count, plural, one {# time} other {# times}}"
+      }
     },
     "queue": {
       "title": "Household approval",
