@@ -64,8 +64,10 @@ GET /api/v1/media/:id/read-url ROLES(ADMIN,HOUSEHOLD)
 GET /api/v1/media/files/originals/:owner/:asset PUBLIC
 GET /api/v1/news PUBLIC
 GET /api/v1/news/:slug PUBLIC
+GET /api/v1/news/material-prices PUBLIC
 GET /api/v1/news/village ROLES(ADMIN,HOUSEHOLD)
 GET /api/v1/news/village/:slug ROLES(ADMIN,HOUSEHOLD)
+GET /api/v1/news/village/outages ROLES(ADMIN,HOUSEHOLD)
 GET /api/v1/products PUBLIC
 POST /api/v1/products/:id/publish ROLES(ADMIN,HOUSEHOLD)
 POST /api/v1/products/:id/republish ROLES(ADMIN,HOUSEHOLD)

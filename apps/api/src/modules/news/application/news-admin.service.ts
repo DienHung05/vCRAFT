@@ -13,6 +13,7 @@ import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
 import { MediaService } from '../../media/application/media.service';
+import { newsDataOf } from '../news.mapper';
 import { newsTextOf, paragraphsOf, sanitizeNewsHtml } from './sanitize-news';
 
 /** `village` is a route under `/news`, and an id-shaped slug would be read as an id. */
@@ -189,7 +190,14 @@ export class NewsAdminService {
     const bodyHtml = sanitizeNewsHtml(input.bodyHtml);
     const body = newsTextOf(bodyHtml);
     if (!body) throw new AppError('VALIDATION_FAILED', 'bodyHtml has no content');
-    return { title: input.title, summary: input.summary, body, bodyHtml };
+    const data = dataOf(input);
+    return {
+      title: input.title,
+      summary: input.summary,
+      body,
+      bodyHtml,
+      ...(data === undefined ? {} : { data }),
+    };
   }
 
   /** A future time schedules. Otherwise an item keeps the date it first went live. */
@@ -299,6 +307,24 @@ export class NewsAdminService {
   }
 }
 
+/**
+ * Structured content must match the category (PLAN E11): prices only on `MATERIAL_PRICES`, outages only
+ * on `POWER_SCHEDULE`. `undefined` keeps what is stored (a client that does not send the fields), except
+ * that moving to another category clears it.
+ */
+function dataOf(input: SaveNewsRequest): News['data'] | undefined {
+  if (input.materialPrices && input.category !== 'MATERIAL_PRICES')
+    throw new AppError('VALIDATION_FAILED', 'materialPrices needs category MATERIAL_PRICES');
+  if (input.powerSchedule && input.category !== 'POWER_SCHEDULE')
+    throw new AppError('VALIDATION_FAILED', 'powerSchedule needs category POWER_SCHEDULE');
+  if (input.materialPrices) return { materialPrices: input.materialPrices };
+  if (input.powerSchedule) return { powerSchedule: input.powerSchedule };
+  if (input.materialPrices === null || input.powerSchedule === null) return null;
+  return input.category === 'MATERIAL_PRICES' || input.category === 'POWER_SCHEDULE'
+    ? undefined
+    : null;
+}
+
 function toAdminDto(news: News, cover: AdminNewsDto['cover'], now: Date): AdminNewsDto {
   return {
     id: news.id,
@@ -316,5 +342,6 @@ function toAdminDto(news: News, cover: AdminNewsDto['cover'], now: Date): AdminN
     cover,
     householdName: news.household?.name ?? null,
     updatedAt: news.updatedAt.toISOString(),
+    ...newsDataOf(news),
   };
 }

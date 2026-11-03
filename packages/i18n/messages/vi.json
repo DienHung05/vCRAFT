@@ -878,7 +878,19 @@
         "linkPrompt": "Nhập địa chỉ liên kết:"
       },
       "emptyHint": "Viết tin đầu tiên để báo sự kiện, giá nguyên vật liệu hay chính sách hỗ trợ.",
-      "deletedToast": "Đã xóa tin."
+      "deletedToast": "Đã xóa tin.",
+      "structured": {
+        "pricesLegend": "Bảng giá nguyên liệu",
+        "effectiveOn": "Áp dụng từ ngày",
+        "priceOf": "{material} (VND/{unit})",
+        "pricesHint": "Bỏ trống loại nào thì loại đó giữ giá của bảng trước trên biểu đồ.",
+        "outageLegend": "Lịch cắt điện",
+        "date": "Ngày",
+        "from": "Từ",
+        "to": "Đến",
+        "area": "Khu vực",
+        "outageHint": "Studio hiện banner vào đúng ngày cắt điện.{more, plural, =0 {} other { Thông báo còn # đợt cắt khác được giữ nguyên.}}"
+      }
     }
   },
   "exhibition": {
@@ -1724,7 +1736,12 @@
       "emptyAction": "Xem lời mời báo giá"
     },
     "registerHousehold": "Đăng ký hộ nghệ nhân",
-    "cancel": "Quay lại"
+    "cancel": "Quay lại",
+    "outage": {
+      "title": "Hôm nay cắt điện",
+      "slot": "{from}–{to} ({area})",
+      "details": "Xem thông báo"
+    }
   },
   "media": {
     "uploads": "Ảnh đang tải lên",
@@ -1855,6 +1872,20 @@
         "blockedOrders": "Bạn còn đơn hàng đang thực hiện nên chưa xóa được. Hãy hoàn tất hoặc hủy đơn, hoặc nhờ Ban quản lý hủy đơn, rồi thử lại.",
         "blockedAdmin": "Tài khoản quản trị không tự xóa ở đây. Hãy nhờ một quản trị viên khác.",
         "failed": "Chưa xóa được tài khoản và chưa có gì bị thay đổi. Bạn thử lại sau ít phút."
+      }
+    }
+  },
+  "news": {
+    "materialPrices": {
+      "title": "Giá nguyên liệu 6 tháng",
+      "lead": "Đất sét, men và gas theo bảng giá Ban quản lý đăng hằng tháng. Biểu đồ so với tháng đầu (= 100); giá thật trong chú thích.",
+      "tableCaption": "Giá nguyên liệu theo tháng",
+      "month": "Tháng",
+      "latest": "{material}: {price}/{unit}",
+      "materials": {
+        "CLAY": "Đất sét",
+        "GLAZE": "Men",
+        "GAS": "Gas"
       }
     }
   }
