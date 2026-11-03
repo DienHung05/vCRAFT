@@ -28,8 +28,9 @@ export const MeResponseSchema = z.object({
   /**
    * GH#83: an admin whose session has not passed the second factor yet (`aal1`). The web shows the TOTP
    * enrolment or code screen instead of the admin area; the API answers admin routes with `AUTH_MFA_REQUIRED`.
+   * Defaults to false so a web build that ships before the API still reads an older `/me`.
    */
-  mfaRequired: z.boolean(),
+  mfaRequired: z.boolean().default(false),
   /** Có khi tài khoản đã nộp hồ sơ hộ; `statusReason` là lý do từ chối / tạm ngừng (chỉ chủ hồ sơ thấy). */
   household: z
     .object({
