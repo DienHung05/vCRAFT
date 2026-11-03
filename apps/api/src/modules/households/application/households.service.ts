@@ -203,7 +203,13 @@ export class HouseholdsService {
       if (input.foundedYear !== undefined) household.foundedYear = input.foundedYear;
       if (input.generations !== undefined) household.generations = input.generations;
       if (input.timeline !== undefined) {
-        household.timeline = [...input.timeline].sort((a, b) => a.year - b.year);
+        const ids = input.timeline.flatMap((e) => (e.photo ? [e.photo.mediaId] : []));
+        const owned = await this.media.ownedBy(actor.id, ids);
+        if (ids.some((id) => !owned.has(id))) throw forbidden('timeline media is not yours');
+        // Stable sort: within a year the household's own order is kept.
+        household.timeline = [...input.timeline]
+          .sort((a, b) => a.year - b.year)
+          .map((e) => ({ year: e.year, title: e.title, text: e.text, photo: e.photo ?? null }));
       }
       if (input.capacityByCategory !== undefined) {
         household.capacityByCategory = input.capacityByCategory;
@@ -666,6 +672,7 @@ export class HouseholdsService {
     );
     const mediaIds = [
       ...(household.gallery ?? []).flatMap((item) => (item.mediaId ? [item.mediaId] : [])),
+      ...(household.timeline ?? []).flatMap((e) => (e.photo ? [e.photo.mediaId] : [])),
       ...productMediaIds(products),
     ];
     return {

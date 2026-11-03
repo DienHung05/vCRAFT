@@ -241,6 +241,17 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
                 <p className="mt-5 font-display text-h2 text-clay type-soft">{e.year}</p>
                 <h3 className="mt-1 font-sans text-body font-semibold text-ink">{e.title}</h3>
                 <p className="mt-1 text-small text-ash">{e.text}</p>
+                {e.photo?.url ? (
+                  <div className="mt-4">
+                    <ImageSlot
+                      alt={e.photo.alt}
+                      tint={tintOf(e.title)}
+                      ratio="3/2"
+                      {...slotPhoto(photoFromUrl(e.photo.url, e.photo.alt, e.photo.variants))}
+                      sizes="16rem"
+                    />
+                  </div>
+                ) : null}
               </li>
             ))}
           </ol>

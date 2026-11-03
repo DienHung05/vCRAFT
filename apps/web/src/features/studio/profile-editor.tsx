@@ -207,47 +207,163 @@ function StorySection({ household, client, reload }: SectionProps) {
   );
 }
 
+type TimelineRow = HouseholdDto['timeline'][number] & { uploading?: boolean; failed?: boolean };
+
+/** The request shape of a milestone: the photo is sent as its media id and description only. */
+function toTimelineInput(row: TimelineRow) {
+  return {
+    year: row.year,
+    title: row.title,
+    text: row.text,
+    photo: row.photo ? { mediaId: row.photo.mediaId, alt: row.photo.alt } : null,
+  };
+}
+
+/** Family milestones (FR-ART-02): add, edit, move up or down, delete, and an optional photo each. */
 function TimelineSection({ household, client, reload }: SectionProps) {
   const t = useTranslations('studio.profile');
   const { state, save } = useSection(household, client, reload);
-  const [events, setEvents] = useState(household.timeline);
-  const patch = (index: number, change: Partial<(typeof events)[number]>) =>
-    setEvents(events.map((e, i) => (i === index ? { ...e, ...change } : e)));
+  const [events, setEvents] = useState<TimelineRow[]>(household.timeline);
+  const patch = (index: number, change: Partial<TimelineRow>) =>
+    setEvents((current) => current.map((e, i) => (i === index ? { ...e, ...change } : e)));
+  const move = (index: number, by: -1 | 1) =>
+    setEvents((current) => {
+      const next = [...current];
+      const [row] = next.splice(index, 1);
+      if (row) next.splice(index + by, 0, row);
+      return next;
+    });
+  const attach = async (index: number, file: File) => {
+    patch(index, { uploading: true, failed: false });
+    try {
+      const signal = new AbortController().signal;
+      const prepared = await prepareImage(file, signal);
+      const getToken = browserAccessToken() ?? (async () => null);
+      const asset = await sendMedia(prepared.file, 'PRODUCT', getToken, () => undefined, signal);
+      patch(index, {
+        uploading: false,
+        photo: { mediaId: asset.id, url: null, variants: [], alt: '' },
+      });
+    } catch {
+      patch(index, { uploading: false, failed: true });
+    }
+  };
+  const valid = events.every((e) => !e.uploading && (!e.photo || e.photo.alt.trim().length >= 3));
   return (
     <Card className="flex flex-col gap-4 p-5">
       <h2 className="text-h3">{t('timeline')}</h2>
-      <ol className="flex flex-col gap-3">
+      <ol className="flex flex-col gap-4">
         {events.map((event, index) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: dòng đang sửa chưa có khóa riêng, chỉ thêm và xóa.
-          <li key={index} className="grid gap-2 md:grid-cols-[6rem_1fr_2fr_auto]">
-            <input
-              type="number"
-              aria-label={t('year')}
-              value={event.year}
-              onChange={(e) => patch(index, { year: Number(e.target.value) })}
-              className={inputClass}
-            />
-            <input
-              aria-label={t('eventTitle')}
-              placeholder={t('eventTitle')}
-              value={event.title}
-              onChange={(e) => patch(index, { title: e.target.value })}
-              className={inputClass}
-            />
-            <input
-              aria-label={t('eventText')}
-              placeholder={t('eventText')}
-              value={event.text}
-              onChange={(e) => patch(index, { text: e.target.value })}
-              className={inputClass}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setEvents(events.filter((_, i) => i !== index))}
-            >
-              {t('remove')}
-            </Button>
+          // biome-ignore lint/suspicious/noArrayIndexKey: dòng đang sửa chưa có khóa riêng.
+          <li key={index} className="flex flex-col gap-2 border-ink/8 border-b pb-4">
+            <div className="grid gap-2 md:grid-cols-[6rem_1fr_2fr]">
+              <input
+                type="number"
+                aria-label={t('year')}
+                value={event.year}
+                onChange={(e) => patch(index, { year: Number(e.target.value) })}
+                className={inputClass}
+              />
+              <input
+                aria-label={t('eventTitle')}
+                placeholder={t('eventTitle')}
+                value={event.title}
+                onChange={(e) => patch(index, { title: e.target.value })}
+                className={inputClass}
+              />
+              <input
+                aria-label={t('eventText')}
+                placeholder={t('eventText')}
+                value={event.text}
+                onChange={(e) => patch(index, { text: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {event.photo ? (
+                <>
+                  {event.photo.url ? (
+                    // biome-ignore lint/performance/noImgElement: URL của kho media đã là bản tối ưu.
+                    <img
+                      src={event.photo.url}
+                      alt=""
+                      className="aspect-square w-16 rounded-input object-cover"
+                    />
+                  ) : (
+                    <span className="grid aspect-square w-16 place-items-center rounded-input bg-ink/8 p-1 text-center text-[0.65rem] text-ash">
+                      {t('processing')}
+                    </span>
+                  )}
+                  <input
+                    aria-label={t('alt')}
+                    placeholder={t('alt')}
+                    value={event.photo.alt}
+                    onChange={(e) => {
+                      const photo = event.photo;
+                      if (photo) patch(index, { photo: { ...photo, alt: e.target.value } });
+                    }}
+                    className={`${inputClass} min-w-48 flex-1`}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => patch(index, { photo: null })}
+                  >
+                    {t('removePhoto')}
+                  </Button>
+                </>
+              ) : (
+                <label className="w-fit cursor-pointer rounded-input border border-ink/20 px-3 py-1.5 text-small hover:bg-ink/6">
+                  {event.uploading ? t('uploadingPhoto') : t('addEventPhoto')}
+                  <input
+                    type="file"
+                    accept="image/*,.heic,.heif"
+                    className="sr-only"
+                    disabled={event.uploading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = '';
+                      if (file) void attach(index, file);
+                    }}
+                  />
+                </label>
+              )}
+              {event.failed ? (
+                <span role="alert" className="text-small text-seal">
+                  {t('photoFailed')}
+                </span>
+              ) : null}
+              <span className="ml-auto flex gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={index === 0}
+                  aria-label={t('moveUp', { title: event.title || String(event.year) })}
+                  onClick={() => move(index, -1)}
+                >
+                  ↑
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={index === events.length - 1}
+                  aria-label={t('moveDown', { title: event.title || String(event.year) })}
+                  onClick={() => move(index, 1)}
+                >
+                  ↓
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEvents(events.filter((_, i) => i !== index))}
+                >
+                  {t('remove')}
+                </Button>
+              </span>
+            </div>
           </li>
         ))}
       </ol>
@@ -256,13 +372,27 @@ function TimelineSection({ household, client, reload }: SectionProps) {
           type="button"
           variant="secondary"
           onClick={() =>
-            setEvents([...events, { year: new Date().getFullYear(), title: '', text: '' }])
+            setEvents([
+              ...events,
+              { year: new Date().getFullYear(), title: '', text: '', photo: null },
+            ])
           }
         >
           {t('addEvent')}
         </Button>
       </div>
-      <SaveBar state={state} onSave={() => void save({ timeline: events })} />
+      <p className="text-small text-ash">{t('timelineOrderHint')}</p>
+      {!valid ? (
+        <p role="status" className="text-small text-seal">
+          {t('altRequired')}
+        </p>
+      ) : null}
+      <SaveBar
+        state={state}
+        onSave={() => {
+          if (valid) void save({ timeline: events.map(toTimelineInput) });
+        }}
+      />
     </Card>
   );
 }
