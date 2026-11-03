@@ -912,6 +912,14 @@
     "lead": "The request needs {quantity} {unit}. Declare the maximum quantity, unit price and completion date your household can commit to.",
     "maxQuantity": "Maximum ({unit})",
     "unitPrice": "Unit price (VND)",
+    "priceHint": {
+      "range": "Suggested: {range} per unit.",
+      "basis": {
+        "OWN": "Based on {own, plural, one {# earlier offer} other {# earlier offers}} from your household.",
+        "CATALOG": "Based on the listed prices of {catalog, plural, one {# similar product} other {# similar products}} on vCraft.",
+        "MIXED": "Based on {own, plural, one {# earlier offer} other {# earlier offers}} from your household and {catalog, plural, one {# similar listed product} other {# similar listed products}}."
+      }
+    },
     "completionDate": "Completion date",
     "dateWindow": "The completion date must fall after the bidding deadline {closing} and no later than the required delivery date {required}.",
     "problem": {

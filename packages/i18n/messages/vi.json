@@ -912,6 +912,14 @@
     "lead": "Yêu cầu cần {quantity} {unit}. Bạn khai mức tối đa, đơn giá và ngày hoàn thành mà hộ mình nhận được.",
     "maxQuantity": "Mức tối đa ({unit})",
     "unitPrice": "Đơn giá (VND)",
+    "priceHint": {
+      "range": "Gợi ý: {range} mỗi đơn vị.",
+      "basis": {
+        "OWN": "Dựa trên {own, plural, other {# đề xuất}} trước đây của hộ bạn.",
+        "CATALOG": "Dựa trên giá niêm yết của {catalog, plural, other {# sản phẩm}} cùng loại trên vCraft.",
+        "MIXED": "Dựa trên {own, plural, other {# đề xuất}} trước của hộ bạn và {catalog, plural, other {# sản phẩm}} cùng loại đang niêm yết."
+      }
+    },
     "completionDate": "Ngày hoàn thành",
     "dateWindow": "Ngày hoàn thành phải sau hạn chào giá {closing} và không muộn hơn hạn giao {required}.",
     "problem": {

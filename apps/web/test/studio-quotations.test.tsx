@@ -125,6 +125,7 @@ describe('Decline in the contribution workspace', () => {
     asClient({
       getRequest: vi.fn().mockResolvedValue(REQUEST),
       listOwnContributions: vi.fn().mockResolvedValue([]),
+      priceHint: vi.fn().mockResolvedValue({ hint: null }),
       ...overrides,
     });
 
