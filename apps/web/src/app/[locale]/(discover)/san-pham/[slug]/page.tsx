@@ -2,6 +2,7 @@ import { Badge, buttonVariants, Card, cn, ProductFigure, SealMark } from '@vcraf
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations } from 'next-intl/server';
+import { ViewTransition } from 'react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
@@ -10,7 +11,7 @@ import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { UsdRateNote, UsdReference } from '@/components/usd-reference';
 import { fetchProduct, fetchProducts, fetchSlugRedirect } from '@/features/catalog/exhibition-api';
 import { presetKindOf } from '@/features/catalog/preset-figure';
-import { ProductCard } from '@/features/catalog/product-card';
+import { ProductCard, productImageTransition } from '@/features/catalog/product-card';
 import {
   altFor,
   photoFromUrl,
@@ -96,25 +97,31 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
       <div className="grid gap-10 md:grid-cols-12 md:gap-14">
         <div className="md:col-span-7">
           <div className="md:sticky md:top-24">
-            <ImageSlot
-              alt={image?.alt ?? preset(presetKind)}
-              tint={tint}
-              ratio={image?.variants ? frameRatioOf(image.variants) : '4/5'}
-              fit="contain"
-              {...slotPhoto(image)}
-              priority
-              sizes="(min-width: 768px) 58vw, 100vw"
-              className="grid place-items-center"
+            <ViewTransition
+              name={productImageTransition(product.slug)}
+              share="product-morph"
+              default="none"
             >
-              {image ? null : (
-                <ProductFigure
-                  kind={presetKind}
-                  className="h-3/5"
-                  body="var(--color-paper)"
-                  band={tint}
-                />
-              )}
-            </ImageSlot>
+              <ImageSlot
+                alt={image?.alt ?? preset(presetKind)}
+                tint={tint}
+                ratio={image?.variants ? frameRatioOf(image.variants) : '4/5'}
+                fit="contain"
+                {...slotPhoto(image)}
+                priority
+                sizes="(min-width: 768px) 58vw, 100vw"
+                className="grid place-items-center"
+              >
+                {image ? null : (
+                  <ProductFigure
+                    kind={presetKind}
+                    className="h-3/5"
+                    body="var(--color-paper)"
+                    band={tint}
+                  />
+                )}
+              </ImageSlot>
+            </ViewTransition>
             <PhotoCredit id={image?.photo?.id} credit={coverCredit} />
             {entryPhotos.length > 0 ? (
               <ul className="mt-4 grid grid-cols-4 gap-3" aria-label={t('gallery')}>
