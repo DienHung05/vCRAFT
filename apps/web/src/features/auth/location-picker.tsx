@@ -1,5 +1,6 @@
 'use client';
 
+import { isInBatTrang } from '@vcraft/domain';
 import { Button } from '@vcraft/ui';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
@@ -136,6 +137,11 @@ export function LocationPicker({ value, onChange, error }: LocationPickerProps) 
           </span>
         ) : null}
       </div>
+      {value && !isInBatTrang(value) ? (
+        <p role="status" className="text-small text-clay">
+          {t('outsideVillage')}
+        </p>
+      ) : null}
       {error ? (
         <p role="alert" className="text-small text-seal">
           {error}
