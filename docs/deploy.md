@@ -128,6 +128,17 @@ Owner steps; the code is already in place (`apps/web/src/features/auth/google-si
 4. Local Supabase CLI: set `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` (read by `supabase/config.toml`).
 5. Check: on `/vi/dang-nhap`, "Tiếp tục với Google" goes to Google and back to the site signed in; a first sign-in lands as a buyer, with the SIGN_UP consent recorded.
 
+### 6.2 Cloudflare Turnstile (GH#84)
+
+The sign-in, sign-up, password recovery and change-password forms show Turnstile when `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is set, and pass the token to Supabase, which verifies it server-side. Google sign-in is not covered: Supabase does not apply CAPTCHA to OAuth.
+
+1. Cloudflare Dashboard → Turnstile → *Add widget*: hostnames `<domain>` and `localhost`, mode *Managed*. Copy the site key and the secret.
+2. Vercel: set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` to the site key and redeploy (it is fixed at build time).
+3. Supabase Dashboard → Authentication → Attack Protection → *Enable Captcha protection*: provider Turnstile, paste the secret.
+4. Order matters: deploy the web build with the site key first, then turn captcha on in Supabase. Done the other way round, every sign-in fails until the new build is live.
+5. Check: `/vi/dang-nhap` shows the widget; signing in works; with the widget not done, the form says to complete the check.
+6. Local or CI: Cloudflare's test pair (site key `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`) always passes.
+
 ## 7. Giữ API thức vào ngày thi
 
 - Production currently runs on the free plans with a keep-alive job; see §11 (and §10 for the wizard that moves it to `starter`).

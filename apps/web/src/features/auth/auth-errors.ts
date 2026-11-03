@@ -22,7 +22,8 @@ export type AuthErrorKey =
   | 'forbidden'
   | 'mediaTooLarge'
   | 'mediaUnsupported'
-  | 'apiDown';
+  | 'apiDown'
+  | 'captcha';
 
 const SUPABASE_CODES: Readonly<Record<string, AuthErrorKey>> = {
   invalid_credentials: 'invalid_credentials',
@@ -45,6 +46,7 @@ const SUPABASE_CODES: Readonly<Record<string, AuthErrorKey>> = {
   session_not_found: 'sessionExpired',
   refresh_token_not_found: 'sessionExpired',
   refresh_token_already_used: 'sessionExpired',
+  captcha_failed: 'captcha',
 };
 
 const API_CODES: Readonly<Record<string, AuthErrorKey>> = {

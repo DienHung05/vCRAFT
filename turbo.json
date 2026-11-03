@@ -23,7 +23,8 @@
     },
     "test:e2e": {
       "dependsOn": ["^build"],
-      "cache": false
+      "cache": false,
+      "passThroughEnv": ["NEXT_PUBLIC_TURNSTILE_SITE_KEY"]
     },
     "db:migrate": {
       "dependsOn": ["^build"],
