@@ -1142,6 +1142,27 @@
         "order": "Allocations and orders",
         "news": "News"
       }
+    },
+    "security": {
+      "title": "Security",
+      "lead": "Recent sign-ins to this account. If one looks unfamiliar, change your password and sign out of every device.",
+      "historyTitle": "Sign-in history",
+      "loading": "Loading…",
+      "unavailable": "The sign-in history could not be loaded. Try again in a few minutes.",
+      "empty": "No sign-ins recorded yet.",
+      "twoFactor": "two-factor verified",
+      "method": {
+        "password": "Password",
+        "oauth": "Google",
+        "otp": "Email link",
+        "recovery": "Password reset link",
+        "invite": "Invitation"
+      },
+      "signOutLead": "Sign this account out of every browser and phone, this device included.",
+      "signOutAll": "Sign out of every device",
+      "confirmTitle": "Sign out of every device?",
+      "confirmText": "Every session of this account ends at once, this one included. You will need to sign in again.",
+      "cancel": "Cancel"
     }
   },
   "villageMap": {
@@ -1504,6 +1525,20 @@
       "redirecting": "Taking you to Google…",
       "notice": "Continuing with Google for the first time creates a buyer account and means you agree to the privacy policy.",
       "failed": "Signing in with Google did not complete. Try again, or use your email and password."
+    },
+    "mfa": {
+      "enrollTitle": "Turn on two-factor authentication",
+      "enrollLead": "The admin area needs a second layer of protection. Scan the QR code with an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password…), then enter the 6-digit code.",
+      "verifyTitle": "Enter your authentication code",
+      "verifyLead": "Open the authenticator app on your phone and enter the 6-digit code for vCraft.",
+      "loading": "Getting ready…",
+      "failed": "Two-factor authentication could not be set up right now. Reload the page or try again in a few minutes.",
+      "qrAlt": "QR code to add vCraft to an authenticator app",
+      "secretLabel": "Can't scan it? Enter this key:",
+      "codeLabel": "6-digit code",
+      "submit": "Confirm",
+      "verifying": "Checking…",
+      "invalid": "That code is wrong or has expired. Enter the latest code from the app."
     }
   },
   "studio": {

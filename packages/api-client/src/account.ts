@@ -11,6 +11,7 @@ import {
   type FieldError,
   HouseholdResponseSchema,
   IdSchema,
+  LoginEventListSchema,
   MarkAllNotificationsReadResponseSchema,
   MediaAssetResponseSchema,
   MeResponseSchema,
@@ -109,6 +110,10 @@ export function createAccountClient(options: AccountClientOptions) {
     /** Người đang đăng nhập, theo CSDL vCraft: nguồn cho guard vai trò. */
     me() {
       return request('/me', MeResponseSchema);
+    },
+    /** Recent sign-ins of this account, newest first (GH#83). */
+    loginEvents() {
+      return request('/me/login-events', LoginEventListSchema);
     },
     getMyHousehold() {
       return request('/me/household', HouseholdResponseSchema);
