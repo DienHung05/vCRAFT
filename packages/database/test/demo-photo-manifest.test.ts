@@ -17,12 +17,15 @@ import { DEMO_VERIFICATION_DOCS } from '../src/seeders/demo/verification-docs.js
 const repoPath = (relative: string) =>
   fileURLToPath(new URL(`../../../${relative}`, import.meta.url));
 /**
- * Fixed trace codes of the seed (seed-demo.ts `fixedProducts`), plus '84PZKVJU': a generated code (an "Ống đựng
- * bút vẽ lam" of Gốm Đại Phong) that is stable because the seed's random generator has a fixed seed.
+ * Trace codes of the seed use the API's alphabet. The generated ones are stable across resets because the seed's
+ * random generator has a fixed seed; `demo:media` fails on a code that is not in the database
+ * (`findOneOrFail`) and the demo-seed integration test links every photo against a fresh seed.
  */
-const SEEDED_TRACE_CODES = new Set(['BT7K2QXM', 'HX2M9KQD', 'DF6P3WZE', '84PZKVJU']);
-/** Products that carry a photo of their own; every other product shows a preset illustration. */
-const COVERED_TRACE_CODES = new Set(['BT7K2QXM', '84PZKVJU']);
+const TRACE_CODE = /^[2-9A-HJKMNP-Z]{8}$/;
+/** Products with a photo from before the product-photo round (they keep their Commons photos). */
+const EARLIER_COVERED_TRACE_CODES = ['BT7K2QXM', '84PZKVJU'];
+/** Product photos of vCRAFT-83g.48: one `pp-<trace code>` photo per product. */
+const PRODUCT_PHOTO_COUNT = 74;
 
 describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
   const photos = new Map(DEMO_PHOTOS.map((p) => [p.id, p]));
@@ -32,9 +35,13 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
     for (const photo of DEMO_PHOTOS) {
       expect(photo.alt.trim().length, photo.id).toBeGreaterThan(10);
       expect(photo.credit.author.trim(), photo.id).not.toBe('');
-      expect(photo.credit.license, photo.id).toMatch(/^CC/);
-      expect(photo.credit.licenseUrl, photo.id).toMatch(/^https:\/\/creativecommons\.org\//);
-      expect(photo.credit.sourceUrl, photo.id).toMatch(/^https:\/\/commons\.wikimedia\.org\//);
+      expect(photo.credit.license, photo.id).toMatch(/^(CC|Public domain|Pixabay Content License)/);
+      expect(photo.credit.licenseUrl, photo.id).toMatch(
+        /^https:\/\/(creativecommons\.org|pixabay\.com)\//,
+      );
+      expect(photo.credit.sourceUrl, photo.id).toMatch(
+        /^https:\/\/(commons\.wikimedia\.org|clevelandart\.org|pixabay\.com)\//,
+      );
       const widest = Math.max(...photo.widths);
       expect(
         existsSync(repoPath(`apps/web/public/images/demo/${photo.id}-${widest}.webp`)),
@@ -50,7 +57,7 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
     for (const link of DEMO_PHOTO_LINKS) {
       expect(photos.has(link.photo), link.photo).toBe(true);
       if (link.target === 'HOUSEHOLD') expect(householdSlugs.has(link.key), link.key).toBe(true);
-      if (link.target === 'PRODUCT') expect(SEEDED_TRACE_CODES.has(link.key), link.key).toBe(true);
+      if (link.target === 'PRODUCT') expect(link.key, link.key).toMatch(TRACE_CODE);
       if (link.target === 'NEWS') expect(newsKeys.has(link.key), link.key).toBe(true);
       const slot = `${link.target}|${link.key}|${link.role}|${link.position}`;
       expect(slots.has(slot), slot).toBe(false);
@@ -58,15 +65,25 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
     }
   });
 
-  it('chỉ sản phẩm có ảnh đúng món đồ mới có ảnh bìa; các sản phẩm còn lại dùng hình minh hoạ', () => {
+  it('chỉ sản phẩm có ảnh đúng món đồ mới có ảnh bìa, mỗi sản phẩm một ảnh, mỗi ảnh một sản phẩm', () => {
     const covered = DEMO_PHOTO_LINKS.filter((l) => l.target === 'PRODUCT' && l.role === 'COVER');
-    expect(new Set(covered.map((l) => l.key))).toEqual(COVERED_TRACE_CODES);
+    const keys = covered.map((l) => l.key);
+    expect(new Set(keys).size, 'one cover per product').toBe(keys.length);
+    expect(new Set(covered.map((l) => l.photo)).size, 'one product per photo').toBe(covered.length);
+    expect(DEMO_PHOTO_LINKS.filter((l) => l.target === 'PRODUCT')).toHaveLength(covered.length);
     expect(covered.find((l) => l.key === 'BT7K2QXM')?.photo).toBe('binh-men-lam-xam');
     expect(covered.find((l) => l.key === '84PZKVJU')?.photo).toBe('ong-gom-lam-may');
-    for (const code of NO_COVER_DEMO_PRODUCTS) {
-      expect(SEEDED_TRACE_CODES.has(code), code).toBe(true);
-      expect(COVERED_TRACE_CODES.has(code), code).toBe(false);
+    const own = covered.filter((l) => l.photo.startsWith('pp-'));
+    expect(own).toHaveLength(PRODUCT_PHOTO_COUNT);
+    for (const link of own) expect(link.photo, link.key).toBe(`pp-${link.key.toLowerCase()}`);
+    expect(new Set(keys)).toEqual(
+      new Set([...EARLIER_COVERED_TRACE_CODES, ...own.map((l) => l.key)]),
+    );
+    // Product photos need not come from Bát Tràng, so their descriptions must not claim it.
+    for (const link of own) {
+      expect(`${link.alt} ${link.altEn}`, link.key).not.toMatch(/b[aá]t\s*tr[aà]ng/i);
     }
+    for (const code of NO_COVER_DEMO_PRODUCTS) expect(keys.includes(code), code).toBe(false);
   });
 
   it('hộ không còn ảnh bìa thì không có liên kết BANNER và vẫn có trong seed', () => {

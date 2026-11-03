@@ -8,6 +8,7 @@ import {
   clearBusinessData,
   DEMO_ACCOUNTS,
   DEMO_HOUSEHOLD_IDS,
+  DEMO_PHOTO_LINKS,
   DEMO_PHOTOS,
   DEMO_QR_TRACE_CODE,
   DEMO_REQUEST_IDS,
@@ -221,7 +222,7 @@ describe('Demo seed and guarded reset', () => {
     expect([403, 404]).toContain(buyerRead.status);
 
     // Ảnh bìa mà API công khai trả (`coverUrl`) đã trỏ về bucket, không còn đường dẫn tĩnh của web.
-    // Chỉ chiếc bình có ảnh đúng món đồ; chiếc cốc QR (ảnh gốc là cốc New Zealand) dùng hình minh hoạ.
+    // Every product with a photo of its own (the vase, the vessel and the vCRAFT-83g.48 product photos) points at the bucket.
     const vase = await db.orm.em.fork().findOneOrFail(Product, { traceCode: 'BT7K2QXM' });
     expect(vase.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\/.+\.webp$/);
     expect(vase.coverAlt).toBeTruthy();
@@ -232,19 +233,36 @@ describe('Demo seed and guarded reset', () => {
     expect(vessel.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\/.+\.webp$/);
     expect(vessel.coverAltEn).toMatch(/^[\x20-\x7e]+$/);
     const cup = await db.orm.em.fork().findOneOrFail(Product, { traceCode: DEMO_QR_TRACE_CODE });
-    expect(cup.coverUrl).toBeNull();
-    expect(cup.coverAlt).toBeNull();
+    expect(cup.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\/.+\.webp$/);
+    expect(cup.coverAltEn).toMatch(/^[\x20-\x7e]+$/);
+    const productCovers = DEMO_PHOTO_LINKS.filter(
+      (l) => l.target === 'PRODUCT' && l.role === 'COVER',
+    );
+    expect(productCovers.length).toBeGreaterThanOrEqual(76);
+    const covered = await db.orm.em
+      .fork()
+      .find(Product, { traceCode: { $in: productCovers.map((l) => l.key) } });
+    expect(covered).toHaveLength(productCovers.length);
+    for (const product of covered) {
+      expect(product.coverUrl, product.traceCode).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
+      expect(product.coverAlt, product.traceCode).toBeTruthy();
+      expect(product.coverAltEn, product.traceCode).toMatch(/^[\x20-\x7e]+$/);
+    }
+    // The product HX2M9KQD has no matching photo and keeps its preset illustration.
+    const bowl = await db.orm.em.fork().findOneOrFail(Product, { traceCode: 'HX2M9KQD' });
+    expect(bowl.coverUrl).toBeNull();
     const lamNgoc = await db.orm.em.fork().findOneOrFail(Household, { slug: 'gom-lam-ngoc' });
     expect(lamNgoc.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
     // Gốm Minh Hải's banner was retired (Commons does not confirm the kilns are in Bát Tràng): no cover, no banner.
     const minhHai = await db.orm.em.fork().findOneOrFail(Household, { slug: 'gom-minh-hai' });
     expect(minhHai.coverUrl).toBeNull();
 
-    // The public trace page has no photo for the cup and no stage photo on any entry: a generic stage photo is not
-    // this cup. The chain still verifies (checked below for every product).
+    // The public trace page of the cup carries the credit of its own photo and no stage photo on any entry: a generic
+    // stage photo is not this cup. The chain still verifies (checked below for every product).
     const trace = await t.request({ method: 'GET', url: `/trace/${DEMO_QR_TRACE_CODE}` });
     expect(trace.status).toBe(200);
-    expect(trace.body.coverCredit).toBeNull();
+    expect(trace.body.coverCredit.author).toBe('Nenad Stojković (Shixart1985)');
+    expect(trace.body.coverCredit.license).toBe('CC BY 2.0');
     expect(trace.body.journal.entries.length).toBeGreaterThan(0);
     for (const entry of trace.body.journal.entries) expect(entry.images).toEqual([]);
     const vaseTrace = await t.request({ method: 'GET', url: '/trace/BT7K2QXM' });

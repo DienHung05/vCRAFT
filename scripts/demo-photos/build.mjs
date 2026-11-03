@@ -4,6 +4,11 @@
  * (640w, 1280w) vào apps/web/public/images/demo và sinh apps/web/src/lib/demo/photo-credits.ts.
  *
  * Dùng: node scripts/demo-photos/build.mjs [thư-mục-ảnh-gốc] [--only=id1,id2]
+ *
+ * Mỗi ảnh trong sources.json có `file` (tên tệp trên Commons) hoặc `url` (tệp ảnh trực tiếp, vd. kho mở của bảo tàng,
+ * Pixabay) kèm `title` và `sourceUrl` của trang nguồn. `ratio: "auto"` (hoặc bỏ trống) giữ nguyên tỉ lệ ảnh sau khi cắt
+ * `region`, để ảnh sản phẩm hiện nguyên vẹn; `bucketOnly: true` chỉ sinh bản WebP 1280 làm ảnh gốc tải lên kho media
+ * (`pnpm demo:media`), không sinh AVIF và bản 640 vì web không dùng chúng.
  * Ảnh gốc tải về thư mục đối số (mặc định thư mục tạm của hệ điều hành, ngoài repo). Cùng thiết lập với bộ chuyển
  * ảnh của worker (xoay theo EXIF, bỏ metadata, AVIF q50, WebP q75), không phóng to ảnh.
  */
@@ -50,10 +55,18 @@ function isRealImage(buf) {
 }
 
 async function download(p) {
-  // Cache theo tên file nguồn: nhiều id có thể cắt khác nhau từ cùng một ảnh gốc.
-  const dest = path.join(srcDir, `${crypto.createHash('md5').update(p.file).digest('hex')}.src`);
+  // Cache theo nguồn: nhiều id có thể cắt khác nhau từ cùng một ảnh gốc.
+  const dest = path.join(
+    srcDir,
+    `${crypto
+      .createHash('md5')
+      .update(p.url ?? p.file)
+      .digest('hex')}.src`,
+  );
   if (fs.existsSync(dest)) return fs.readFileSync(dest);
-  const url = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(p.file.replaceAll(' ', '_'))}?width=2000`;
+  const url =
+    p.url ??
+    `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(p.file.replaceAll(' ', '_'))}?width=2000`;
   for (let attempt = 1; attempt <= 5; attempt++) {
     const res = await fetch(url, { headers: { 'User-Agent': UA }, redirect: 'follow' });
     if (res.ok) {
@@ -76,7 +89,8 @@ for (const p of photos) {
   if (only && !only.includes(p.id)) continue;
   const buf = await download(p);
   if (!isRealImage(buf)) throw new Error(`${p.id}: byte không hợp lệ`);
-  const [rw, rh] = p.ratio.split('/').map(Number);
+  const auto = !p.ratio || p.ratio === 'auto';
+  const [rw, rh] = auto ? [1, 1] : p.ratio.split('/').map(Number);
   const { data } = await sharp(buf, { limitInputPixels: 80_000_000, failOn: 'error' })
     .rotate()
     .toBuffer({ resolveWithObject: true });
@@ -96,16 +110,20 @@ for (const p of photos) {
     oh = height;
   }
   // Cắt lớn nhất có thể theo tỉ lệ khung, rồi thu nhỏ.
-  const cropW = Math.min(ow, Math.floor((oh * rw) / rh));
-  const cropH = Math.round((cropW * rh) / rw);
-  const cover = oriented.clone().resize({
-    width: cropW,
-    height: cropH,
-    fit: 'cover',
-    position: p.position ?? sharp.strategy.attention,
-  });
-  const cropped = await cover.toBuffer();
-  const wanted = p.widths ?? widths;
+  const cropW = auto ? ow : Math.min(ow, Math.floor((oh * rw) / rh));
+  const cropH = auto ? oh : Math.round((cropW * rh) / rw);
+  const cropped = auto
+    ? await oriented.clone().toBuffer()
+    : await oriented
+        .clone()
+        .resize({
+          width: cropW,
+          height: cropH,
+          fit: 'cover',
+          position: p.position ?? sharp.strategy.attention,
+        })
+        .toBuffer();
+  const wanted = p.bucketOnly ? [1280] : (p.widths ?? widths);
   const { channels } = await sharp(cropped).stats();
   // Màu trung bình (ổn định hơn mốc histogram `dominant`, vốn có thể ra gần đen/trắng).
   const dominant = { r: channels[0].mean, g: channels[1].mean, b: channels[2].mean };
@@ -113,29 +131,33 @@ for (const p of photos) {
     if (w > cropW && w !== wanted[0]) continue; // không phóng to
     const target = Math.min(w, cropW);
     const resized = sharp(cropped).resize({ width: target, withoutEnlargement: true });
-    const avif = await resized.clone().avif({ quality: 50, effort: 4 }).toBuffer();
     const webp = await resized.clone().webp({ quality: 75 }).toBuffer();
     // Tên theo chiều rộng danh nghĩa; nếu ảnh nhỏ hơn 640 thì file 640 vẫn là kích thước gốc.
-    fs.writeFileSync(path.join(outDir, `${p.id}-${w}.avif`), avif);
     fs.writeFileSync(path.join(outDir, `${p.id}-${w}.webp`), webp);
-    total += avif.length + webp.length;
+    total += webp.length;
+    if (p.bucketOnly) continue;
+    const avif = await resized.clone().avif({ quality: 50, effort: 4 }).toBuffer();
+    fs.writeFileSync(path.join(outDir, `${p.id}-${w}.avif`), avif);
+    total += avif.length;
   }
-  const has1280 = cropW >= 1280;
+  const has1280 = cropW >= 1280 || p.bucketOnly;
   const outWidths = wanted.filter((w) => w <= cropW || w === wanted[0]);
   // Tên 1280 chỉ ghi khi đủ điểm ảnh; dọn file thừa từ lần chạy trước.
   if (!has1280) {
     for (const ext of ['avif', 'webp'])
       fs.rmSync(path.join(outDir, `${p.id}-1280.${ext}`), { force: true });
   }
-  const page = `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(p.file.replaceAll(' ', '_')).replaceAll('%2C', ',').replaceAll('%3A', ':')}`;
+  const page =
+    p.sourceUrl ??
+    `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(p.file.replaceAll(' ', '_')).replaceAll('%2C', ',').replaceAll('%3A', ':')}`;
   credits.push({
     id: p.id,
-    title: `File:${p.file}`,
+    title: p.title ?? `File:${p.file}`,
     author: p.author,
     license: p.license,
     licenseUrl: p.licenseUrl,
     sourceUrl: page,
-    ratio: p.ratio,
+    ratio: auto ? `${cropW}/${cropH}` : p.ratio,
     tint: `#${hex(dominant.r)}${hex(dominant.g)}${hex(dominant.b)}`,
     widths: outWidths,
   });
@@ -154,7 +176,8 @@ if (only) {
   }
 }
 const body = `// Sinh tự động bởi scripts/demo-photos/build.mjs. Không sửa tay; sửa sources.json rồi chạy lại.
-// Ảnh minh hoạ trình diễn lấy từ Wikimedia Commons, chỉ dùng giấy phép CC0 / CC BY / CC BY-SA.
+// Ảnh minh hoạ trình diễn lấy từ Wikimedia Commons, kho mở của bảo tàng và Pixabay, chỉ dùng giấy phép cho phép dùng công khai
+// kèm ghi nguồn (CC0 / công cộng / CC BY / CC BY-SA / giấy phép nội dung Pixabay).
 
 export interface PhotoCredit {
   /** Tên file trong /images/demo: \`<id>-<width>.<avif|webp>\`. */
@@ -166,8 +189,8 @@ export interface PhotoCredit {
   licenseUrl: string;
   /** Trang mô tả file (nguồn và lịch sử). */
   sourceUrl: string;
-  /** Tỉ lệ khung đã cắt, dạng CSS (\`4/5\`). */
-  ratio: '3/2' | '3/4' | '1/1' | '4/5' | '16/9';
+  /** Tỉ lệ khung đã cắt, dạng CSS (\`4/5\`); ảnh giữ nguyên tỉ lệ ghi kích thước (\`1280/1707\`). */
+  ratio: string;
   /** Màu chủ đạo, dùng làm nền trong lúc ảnh tải. */
   tint: string;
   /** Các chiều rộng đã sinh. */
