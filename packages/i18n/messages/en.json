@@ -1629,6 +1629,14 @@
       "qr": "QR code",
       "qrLead": "Print this on the label under the piece. The code stays the same if the name changes.",
       "qrDownload": "Download PNG",
+      "labels": {
+        "oneSheet": "Download QR labels to print (PDF)",
+        "allPublished": "QR labels for {count, plural, one {# listed product} other {# listed products}} (PDF)",
+        "preparing": "Preparing the label sheet…",
+        "hint": "A4, QR printed at 20 mm, cut along the light guides.",
+        "failed": "The label sheet could not be made. Try again.",
+        "timeout": "The label sheet is taking longer than usual. Try again in a few minutes."
+      },
       "journalLink": "Production journal",
       "emptyHint": "Add your first piece, then log its production journal and publish it so visitors can see it.",
       "createdToast": "Draft product created.",
