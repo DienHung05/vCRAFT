@@ -1176,7 +1176,8 @@
       "5": "Thứ sáu",
       "6": "Thứ bảy"
     },
-    "clearFilters": "Bỏ bộ lọc"
+    "clearFilters": "Bỏ bộ lọc",
+    "offline": "Bản đồ dự phòng ngoại tuyến"
   },
   "catalog": {
     "filtersLabel": "Lọc sản phẩm",

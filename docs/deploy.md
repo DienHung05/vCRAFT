@@ -106,6 +106,17 @@ Preview deployment dùng chung API và CSDL production (không có staging); đ�
 5. `vcraft-api` giữ URL `onrender.com`; không cần domain riêng vì người dùng không gọi thẳng API. Nếu muốn domain riêng (`api.<domain>`), thêm ở Render → Settings → Custom Domains rồi sửa `API_INTERNAL_URL` và Redeploy web.
 6. Cloudflare Turnstile: thêm `<domain>` vào danh sách hostname của widget.
 
+### 5.1 Offline map fallback (GH#100)
+
+The village map loads OpenFreeMap. If that style does not answer within 2.5 s, or its tiles start failing, the map switches to a PMTiles extract of Bát Tràng stored in Supabase Storage. It draws that extract with a small brand style and shows a "backup map" badge.
+
+1. Install the [`pmtiles` CLI](https://github.com/protomaps/go-pmtiles/releases).
+2. From the repository root, with `SUPABASE_URL` and `SUPABASE_SECRET_KEY` exported, run `scripts/map/extract-bat-trang.sh`. It extracts the area from the latest Protomaps daily build, uploads it to the public bucket as `map/bat-trang.pmtiles`, and prints the public URL.
+3. Vercel: set `NEXT_PUBLIC_MAP_PMTILES_URL` to that URL and redeploy.
+4. Check: block `tiles.openfreemap.org` in the browser's DevTools (Network → Block request domain), reload `/vi/ban-do`. The map should appear in brand colours with the badge, and the workshop pins should still work.
+
+Without `NEXT_PUBLIC_MAP_PMTILES_URL`, the map behaves as before and there is no probe.
+
 ## 6. Supabase Auth và SMTP
 
 Dashboard → Authentication:

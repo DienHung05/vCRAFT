@@ -1176,7 +1176,8 @@
       "5": "Friday",
       "6": "Saturday"
     },
-    "clearFilters": "Clear filters"
+    "clearFilters": "Clear filters",
+    "offline": "Offline backup map"
   },
   "catalog": {
     "filtersLabel": "Filter products",
