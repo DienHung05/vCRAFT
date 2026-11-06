@@ -23,6 +23,7 @@ jobs:
       - run: pnpm deps:check
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm test:scripts
       - run: pnpm build
 
   # Chứng minh "độc lập CSDL": cùng bộ integration test chạy trên 2 hệ quản trị.
