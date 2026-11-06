@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
 import { DashboardSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
+import { useLiveEvents } from '@/lib/api/live-events';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { notify } from '@/lib/notify';
 import { AllocationBoard, type BoardSubmitPayload } from './allocation-board';
@@ -53,6 +54,10 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
   const [dialog, setDialog] = useState<'start' | 'receive' | 'cancel' | null>(null);
   const [reason, setReason] = useState('');
   const [reasonMissing, setReasonMissing] = useState(false);
+  // A new offer, claim or allocation notice: reload now rather than at the next 10 s poll (GH#93).
+  useLiveEvents((event) => {
+    if (event.type === 'activity' && !document.hidden) setRefresh((n) => n + 1);
+  });
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: refresh explicitly reloads after claims, stale writes and retries.
   useEffect(() => {

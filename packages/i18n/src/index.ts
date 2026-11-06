@@ -56,6 +56,7 @@ export const pathnames = {
   '/admin/tin-tuc/[id]': { vi: '/admin/tin-tuc/[id]', en: '/admin/news/[id]' },
   '/admin/nhat-ky': { vi: '/admin/nhat-ky', en: '/admin/audit-log' },
   '/admin/dieu-phoi': { vi: '/admin/dieu-phoi', en: '/admin/coordination' },
+  '/admin/tien-do': { vi: '/admin/tien-do', en: '/admin/progress' },
   '/admin/dieu-phoi/[code]': { vi: '/admin/dieu-phoi/[code]', en: '/admin/coordination/[code]' },
 } as const;
 

@@ -1,12 +1,19 @@
 import { type EntityManager, type FilterQuery, MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
-import type { ListNewsQuery, NewsDetailDto, NewsListDto, PublicImageDto } from '@vcraft/contracts';
+import type {
+  ListNewsQuery,
+  MaterialPriceSeriesDto,
+  NewsDetailDto,
+  NewsListDto,
+  PublicImageDto,
+  TodayOutagesDto,
+} from '@vcraft/contracts';
 import { Household, News } from '@vcraft/database';
-import type { NewsVisibility } from '@vcraft/domain';
+import { materialPriceSeries, type NewsVisibility, outagesOn, villageToday } from '@vcraft/domain';
 import type { Actor } from '../../../common/auth/auth.guard';
 import { AppError, notFound } from '../../../common/errors/app-error';
 import { MediaService } from '../../media/application/media.service';
-import { toNewsDetailDto, toNewsSummaryDto } from '../news.mapper';
+import { newsDataOf, toNewsDetailDto, toNewsSummaryDto } from '../news.mapper';
 
 /** Khóa con trỏ: vị trí của dòng cuối trang theo thứ tự (ghim, ngày xuất bản, id) giảm dần. */
 interface NewsCursor {
@@ -115,6 +122,55 @@ export class NewsService {
     );
     if (!news) throw notFound();
     return this.detail(em, news);
+  }
+
+  /**
+   * Six months of material prices for the news page chart (PLAN E11), from published public
+   * `MATERIAL_PRICES` items with structured prices.
+   */
+  async materialPrices(now = new Date()): Promise<MaterialPriceSeriesDto> {
+    const rows = await this.orm.em
+      .fork()
+      .find(
+        News,
+        { $and: [...liveNews('PUBLIC'), { category: 'MATERIAL_PRICES' }] },
+        { orderBy: { publishedAt: 'desc' }, limit: 60 },
+      );
+    const notices = rows.flatMap((news) => {
+      const prices = newsDataOf(news).materialPrices;
+      return prices ? [prices] : [];
+    });
+    return { series: materialPriceSeries(notices, villageToday(now)) };
+  }
+
+  /**
+   * Today's planned power cuts (village time) for the Studio banner (PLAN E11): published
+   * `POWER_SCHEDULE` items of either visibility, read by approved households and administrators.
+   */
+  async todayOutages(actor: Actor, now = new Date()): Promise<TodayOutagesDto> {
+    const em = this.orm.em.fork();
+    await this.assertVillageMember(em, actor);
+    const date = villageToday(now);
+    const rows = await em.find(
+      News,
+      {
+        status: 'PUBLISHED',
+        publishedAt: { $lte: now },
+        category: 'POWER_SCHEDULE',
+      },
+      { orderBy: { publishedAt: 'desc' }, limit: 30 },
+    );
+    const outages = rows.flatMap((news) => {
+      const schedule = newsDataOf(news).powerSchedule;
+      return schedule
+        ? outagesOn([schedule], date).map((outage) => ({ ...outage, newsSlug: news.slug }))
+        : [];
+    });
+    outages.sort((a, b) => a.from.localeCompare(b.from));
+    return {
+      date,
+      outages: outages.map(({ from, to, area, newsSlug }) => ({ from, to, area, newsSlug })),
+    };
   }
 
   /** Village-only news, for approved households and administrators (FR-NEWS-02). */

@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/states/empty-state';
 import { UsdReference } from '@/components/usd-reference';
 import { Link } from '@/i18n/navigation';
 import { HouseholdGate } from './household-gate';
+import { QrLabelsButton } from './qr-labels-button';
 
 /** Danh sách sản phẩm của hộ, lọc nháp / đang trưng bày / đã rút (FR-PRD-01). */
 export function ProductList({ client }: { client?: StudioClient }) {
@@ -18,15 +19,25 @@ export function ProductList({ client }: { client?: StudioClient }) {
   const [filter, setFilter] = useState<ProductStatus | 'ALL'>('ALL');
   return (
     <HouseholdGate client={client}>
-      {({ household }) => {
+      {({ household, client: live }) => {
         const products = household.products.filter((p) => filter === 'ALL' || p.status === filter);
+        const published = household.products.filter((p) => p.status === 'PUBLISHED');
         return (
           <div className="mx-auto flex max-w-editorial flex-col gap-6 px-gutter py-8 pb-24 md:pb-12">
             <header className="flex flex-wrap items-center justify-between gap-4">
               <h1 className="text-h1">{t('title')}</h1>
-              <Link href="/studio/san-pham/moi" className={buttonVariants({})}>
-                {t('add')}
-              </Link>
+              <span className="flex flex-wrap items-start gap-3">
+                {published.length > 0 ? (
+                  <QrLabelsButton
+                    client={live}
+                    productIds={published.map((p) => p.id)}
+                    label={t('labels.allPublished', { count: published.length })}
+                  />
+                ) : null}
+                <Link href="/studio/san-pham/moi" className={buttonVariants({})}>
+                  {t('add')}
+                </Link>
+              </span>
             </header>
             <fieldset className="flex flex-wrap gap-2">
               <legend className="sr-only">{t('filterLabel')}</legend>

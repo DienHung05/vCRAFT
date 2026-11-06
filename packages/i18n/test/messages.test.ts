@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { messages } from '../src';
 
-type Tree = { [key: string]: string | Tree };
+// A list (the assistant's thought lines, quick questions) flattens to `key.0`, `key.1`, ….
+type Tree = { [key: string]: string | Tree | readonly string[] };
 
 /** Duỗi cây từ điển thành `đường.dẫn → chuỗi`. */
 function flatten(tree: Tree, prefix = ''): Map<string, string> {
@@ -9,7 +10,7 @@ function flatten(tree: Tree, prefix = ''): Map<string, string> {
   for (const [key, value] of Object.entries(tree)) {
     const path = prefix ? `${prefix}.${key}` : key;
     if (typeof value === 'string') out.set(path, value);
-    else for (const [p, v] of flatten(value, path)) out.set(p, v);
+    else for (const [p, v] of flatten(value as Tree, path)) out.set(p, v);
   }
   return out;
 }

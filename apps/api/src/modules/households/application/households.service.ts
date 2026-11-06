@@ -32,6 +32,7 @@ import {
   Product,
   ProductMaker,
   QuotationRequest,
+  queueKnowledgeChange,
   TraceScan,
   Workshop,
 } from '@vcraft/database';
@@ -65,7 +66,13 @@ import {
   toPublicHouseholdDto,
   toWorkshopDto,
 } from '../households.mapper';
+import { retireSlug, slugRetiredByOther } from './slug-redirects';
 import { generateTraceCode } from './trace-code';
+
+/** `<name>-<trace code>`: readable, and unique because the trace code is. */
+function productSlug(name: string, traceCode: string): string {
+  return `${slugify(name) || 'san-pham'}-${traceCode.toLowerCase()}`;
+}
 
 /**
  * Use case duyệt hộ và xuất bản (vCRAFT-9hg.3):
@@ -183,17 +190,32 @@ export class HouseholdsService {
           verified: verified.has(`${c.name}|${c.issuer}|${c.year}`),
         }));
       }
+      if (input.slug !== undefined && input.slug !== household.slug) {
+        const taken =
+          (await em.count(Household, { slug: input.slug, id: { $ne: household.id } })) > 0 ||
+          (await slugRetiredByOther(em, 'HOUSEHOLD', input.slug, household.id));
+        if (taken) throw new AppError('CONFLICT_DUPLICATE', 'this slug is already in use');
+        await retireSlug(em, 'HOUSEHOLD', household.id, household.slug, input.slug);
+        household.slug = input.slug;
+      }
       if (input.history !== undefined) household.history = input.history;
       if (input.craft !== undefined) household.craft = input.craft || null;
       if (input.village !== undefined) household.village = input.village || null;
       if (input.foundedYear !== undefined) household.foundedYear = input.foundedYear;
       if (input.generations !== undefined) household.generations = input.generations;
       if (input.timeline !== undefined) {
-        household.timeline = [...input.timeline].sort((a, b) => a.year - b.year);
+        const ids = input.timeline.flatMap((e) => (e.photo ? [e.photo.mediaId] : []));
+        const owned = await this.media.ownedBy(actor.id, ids);
+        if (ids.some((id) => !owned.has(id))) throw forbidden('timeline media is not yours');
+        // Stable sort: within a year the household's own order is kept.
+        household.timeline = [...input.timeline]
+          .sort((a, b) => a.year - b.year)
+          .map((e) => ({ year: e.year, title: e.title, text: e.text, photo: e.photo ?? null }));
       }
       if (input.capacityByCategory !== undefined) {
         household.capacityByCategory = input.capacityByCategory;
       }
+      queueKnowledgeChange(em, 'HOUSEHOLD', household.id);
       await em.flush();
       return household.id;
     });
@@ -265,11 +287,10 @@ export class HouseholdsService {
     return this.orm.em.fork().transactional(async (em) => {
       const household = await this.ownWritableHousehold(em, actor);
       const traceCode = await this.uniqueTraceCode(em);
-      const base = slugify(input.name) || 'san-pham';
       const product = em.create(Product, {
         household,
         name: input.name,
-        slug: `${base}-${traceCode.toLowerCase()}`,
+        slug: productSlug(input.name, traceCode),
         traceCode,
         description: input.description,
         kind: input.kind,
@@ -313,7 +334,13 @@ export class HouseholdsService {
           product.coverAltEn = null;
         }
       }
-      if (input.name !== undefined) product.name = input.name;
+      if (input.name !== undefined && input.name !== product.name) {
+        product.name = input.name;
+        // The slug follows the name; the old one keeps answering with a redirect (PLAN E5).
+        const slug = productSlug(input.name, product.traceCode);
+        await retireSlug(em, 'PRODUCT', product.id, product.slug, slug);
+        product.slug = slug;
+      }
       if (input.description !== undefined) product.description = input.description;
       if (input.category !== undefined) product.category = input.category;
       if (input.priceVnd !== undefined) product.priceVnd = input.priceVnd;
@@ -322,6 +349,7 @@ export class HouseholdsService {
       if (input.dimensions !== undefined) product.dimensions = input.dimensions || null;
       if (input.weightGrams !== undefined) product.weightGrams = input.weightGrams;
       if (input.artisanNote !== undefined) product.artisanNote = input.artisanNote || null;
+      queueKnowledgeChange(em, 'PRODUCT', product.id);
       await em.flush();
       return product.id;
     });
@@ -378,6 +406,7 @@ export class HouseholdsService {
           after: { status: product.status, reason: reason ?? null },
         });
       }
+      queueKnowledgeChange(em, 'PRODUCT', product.id);
       await em.flush();
       return toProductDto(product, (await this.makersOf(em, [product])).get(product.id));
     });
@@ -544,6 +573,8 @@ export class HouseholdsService {
         recipientIds: [household.representative.id],
         email: false,
       });
+      // Approval, suspension and reinstatement change what is public, products included.
+      queueKnowledgeChange(em, 'HOUSEHOLD', household.id);
       await em.flush();
       return toHouseholdDto(household, await this.parts(em, household, false));
     });
@@ -647,6 +678,7 @@ export class HouseholdsService {
     );
     const mediaIds = [
       ...(household.gallery ?? []).flatMap((item) => (item.mediaId ? [item.mediaId] : [])),
+      ...(household.timeline ?? []).flatMap((e) => (e.photo ? [e.photo.mediaId] : [])),
       ...productMediaIds(products),
     ];
     return {

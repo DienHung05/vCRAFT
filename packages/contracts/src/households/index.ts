@@ -105,19 +105,41 @@ export type AdminDashboardDto = z.infer<typeof AdminDashboardSchema>;
 const CURRENT_YEAR_LIMIT = 2100;
 const YearSchema = z.int().min(1000, 'Năm không hợp lệ').max(CURRENT_YEAR_LIMIT);
 
+const AltSchema = z.string().trim().min(3, 'Hãy mô tả điều nhìn thấy trong ảnh').max(300);
+
+/**
+ * A family history milestone as the household sends it (FR-ART-02). The list is shown in the order
+ * sent after a stable sort by year, so the order of milestones within a year is the household's.
+ */
 export const TimelineEventSchema = z.object({
   year: YearSchema,
   title: z.string().trim().min(2, 'Hãy đặt tiêu đề').max(160),
   text: z.string().trim().max(1_000).default(''),
+  /** Optional photo the household uploaded itself. */
+  photo: z.object({ mediaId: IdSchema, alt: AltSchema }).nullable().optional(),
 });
+
+/** A milestone as read back: the photo with its processed URL (null while still processing). */
+export const TimelineEventResponseSchema = z.object({
+  year: z.int(),
+  title: z.string(),
+  text: z.string(),
+  photo: z
+    .object({
+      mediaId: IdSchema,
+      url: z.string().nullable(),
+      variants: PublicImageVariantsSchema,
+      alt: z.string(),
+    })
+    .nullable(),
+});
+export type TimelineEventDto = z.infer<typeof TimelineEventResponseSchema>;
 
 const CertificationInputSchema = z.object({
   name: z.string().trim().min(2, 'Hãy ghi tên chứng nhận').max(160),
   issuer: z.string().trim().min(2, 'Hãy ghi đơn vị cấp').max(160),
   year: YearSchema,
 });
-
-const AltSchema = z.string().trim().min(3, 'Hãy mô tả điều nhìn thấy trong ảnh').max(300);
 
 /** Hộ chỉ gắn ảnh mình đã tải lên, hoặc giữ lại ảnh có sẵn trong bộ ảnh mẫu. */
 const GalleryInputSchema = z.union([
@@ -133,6 +155,8 @@ const CapacitySchema = z.partialRecord(z.enum(PRODUCT_CATEGORIES), z.int().min(0
 
 /** Sửa hồ sơ hộ (FR-ART-01 … 06): chỉ gửi phần đổi; `If-Match` bắt buộc. */
 export const UpdateHouseholdProfileRequestSchema = z.object({
+  /** A new public URL slug; the old one keeps answering with a permanent redirect (PLAN E5). */
+  slug: SlugSchema.optional(),
   history: z.string().trim().max(10_000).optional(),
   craft: z.string().trim().max(160).optional(),
   village: z.string().trim().max(160).optional(),
@@ -308,7 +332,7 @@ export const PublicHouseholdResponseSchema = z.object({
   banner: PublicImageSchema.nullable(),
   foundedYear: z.int().nullable(),
   generations: z.int().nullable(),
-  timeline: z.array(TimelineEventSchema),
+  timeline: z.array(TimelineEventResponseSchema),
   certifications: z.array(CertificationInputSchema.extend({ verified: z.boolean() })),
   /**
    * Public: `media_link` images (by `position`), then the household's own. The private profile has only
@@ -415,3 +439,26 @@ export type MapPinDto = z.infer<typeof MapPinSchema>;
 
 export const MapPinsResponseSchema = z.object({ data: z.array(MapPinSchema) });
 export type MapPinsDto = z.infer<typeof MapPinsResponseSchema>;
+
+/** At most 10 A4 sheets of 45 labels per request (PLAN E6). */
+export const MAX_QR_LABELS = 450;
+
+/** `POST /me/household/qr-labels`: print `copies` labels for each of the household's products. */
+export const CreateQrLabelsRequestSchema = z
+  .object({
+    productIds: z.array(IdSchema).min(1).max(MAX_QR_LABELS),
+    copies: z.int().min(1).max(45).default(1),
+  })
+  .refine((v) => v.productIds.length * v.copies <= MAX_QR_LABELS, {
+    message: `Tối đa ${MAX_QR_LABELS} nhãn mỗi lần`,
+    path: ['copies'],
+  });
+export type CreateQrLabelsRequest = z.input<typeof CreateQrLabelsRequestSchema>;
+
+/** A label sheet being rendered by the worker; `url` (short-lived) once the PDF is ready. */
+export const QrLabelsResponseSchema = z.object({
+  requestId: IdSchema,
+  status: z.enum(['PENDING', 'READY']),
+  url: z.string().nullable(),
+});
+export type QrLabelsDto = z.infer<typeof QrLabelsResponseSchema>;

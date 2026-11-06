@@ -26,6 +26,8 @@ import {
   InviteHouseholdsRequestSchema,
   type ListRfqsQuery,
   ListRfqsQuerySchema,
+  type ReallocateRequest,
+  ReallocateRequestSchema,
   type ReportProgressRequest,
   ReportProgressRequestSchema,
 } from '@vcraft/contracts';
@@ -34,6 +36,7 @@ import type { HttpReply } from '../../common/http/http-types';
 import { IfMatchVersion } from '../../common/http/if-match';
 import { UuidPipe } from '../../common/pipes/uuid.pipe';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
+import { AllocationScheduleService } from './application/allocation-schedule.service';
 import { RfqService } from './application/rfq.service';
 
 @Controller('rfqs')
@@ -139,6 +142,13 @@ export class RfqController {
     @Body(new ZodValidationPipe(CreateContributionRequestSchema)) body: CreateContributionRequest,
   ) {
     return this.rfqs.createContribution(actor, id, body);
+  }
+
+  @Get(':id/price-hint')
+  @Header('Cache-Control', 'private, no-store')
+  @Roles('HOUSEHOLD')
+  priceHint(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
+    return this.rfqs.priceHint(actor, id);
   }
 
   @Get(':id/contributions')
@@ -253,6 +263,30 @@ export class AdminCoordinationController {
   @Header('Cache-Control', 'private, no-store')
   queue(@CurrentActor() actor: Actor) {
     return this.rfqs.coordinationQueue(actor);
+  }
+}
+
+/** Allocation timeline and reallocation for the village board (PLAN E10, FR-ORD-09). */
+@Controller('admin/allocations')
+@Roles('ADMIN')
+export class AdminAllocationsController {
+  constructor(private readonly schedule: AllocationScheduleService) {}
+
+  @Get()
+  @Header('Cache-Control', 'private, no-store')
+  list() {
+    return this.schedule.schedule();
+  }
+
+  @Post(':id/reallocate')
+  @HttpCode(200)
+  reallocate(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+    @Body(new ZodValidationPipe(ReallocateRequestSchema)) body: ReallocateRequest,
+  ) {
+    return this.schedule.reallocate(actor, id, version, body);
   }
 }
 

@@ -17,6 +17,13 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { browserAccessToken } from '@/lib/api/live-session';
 import { notify } from '@/lib/notify';
 import { useAdminClient } from './admin-dashboard';
+import {
+  EMPTY_STRUCTURED,
+  StructuredNewsFields,
+  type StructuredValues,
+  structuredRequest,
+  structuredValuesOf,
+} from './structured-news-fields';
 
 // The editor is heavy and only works in the browser.
 const RichTextEditor = dynamic(
@@ -132,6 +139,7 @@ export function AdminNewsForm({
   const router = useRouter();
   const { client, loading } = useAdminClient(provided);
   const [values, setValues] = useState<Values>(EMPTY);
+  const [structured, setStructured] = useState<StructuredValues>(EMPTY_STRUCTURED);
   const [existing, setExisting] = useState<AdminNewsDto | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'failed'>(newsId ? 'loading' : 'ready');
   const [cover, setCover] = useState<File | null>(null);
@@ -152,6 +160,7 @@ export function AdminNewsForm({
       .then((news) => {
         setExisting(news);
         setValues(valuesOf(news));
+        setStructured(structuredValuesOf(news));
         setState('ready');
       })
       .catch(() => setState('failed'));
@@ -216,6 +225,7 @@ export function AdminNewsForm({
         : {}),
       ...(coverMediaId !== undefined ? { coverMediaId } : {}),
       ...(values.coverAlt.trim() ? { coverAlt: values.coverAlt.trim() } : {}),
+      ...structuredRequest(values.category, structured),
     };
     try {
       if (existing) await client.updateNews(existing.id, existing.version, body);
@@ -339,6 +349,11 @@ export function AdminNewsForm({
           </select>
         </label>
       </div>
+      <StructuredNewsFields
+        category={values.category}
+        values={structured}
+        onChange={setStructured}
+      />
       <label className="flex flex-col gap-1">
         {form('cover')}
         {existing?.cover && !removeCover && !cover ? (

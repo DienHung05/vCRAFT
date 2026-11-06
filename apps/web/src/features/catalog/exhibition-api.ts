@@ -2,7 +2,9 @@ import {
   HouseholdListResponseSchema,
   ProductDetailResponseSchema,
   ProductListResponseSchema,
+  ProductPageResponseSchema,
   PublicHouseholdResponseSchema,
+  SlugRedirectResponseSchema,
   TraceAvailabilityResponseSchema,
   VillageStatsSchema,
 } from '@vcraft/contracts';
@@ -37,6 +39,10 @@ async function getJson<T>(
 export const fetchProducts = (filters: ProductFilters = {}) =>
   getJson(`/products?${productsQueryString(filters)}`, ProductListResponseSchema);
 
+/** One numbered page of the catalog (`?page=N`), with the totals the page bar needs (ADR-0020). */
+export const fetchProductPage = (filters: ProductFilters & { page: number }) =>
+  getJson(`/products?${productsQueryString(filters)}`, ProductPageResponseSchema);
+
 export const fetchProduct = (slug: string) =>
   getJson(`/products/${encodeURIComponent(slug)}`, ProductDetailResponseSchema);
 
@@ -44,6 +50,10 @@ export const fetchHouseholds = () => getJson('/households', HouseholdListRespons
 
 export const fetchHousehold = (slug: string) =>
   getJson(`/households/${encodeURIComponent(slug)}`, PublicHouseholdResponseSchema);
+
+/** The current slug behind a retired product or household slug (PLAN E5); `not-found` if none. */
+export const fetchSlugRedirect = (kind: 'products' | 'households', slug: string) =>
+  getJson(`/redirects/${kind}/${encodeURIComponent(slug)}`, SlugRedirectResponseSchema);
 
 export const fetchTrace = (code: string) =>
   getJson(`/trace/${encodeURIComponent(code)}`, TraceAvailabilityResponseSchema);

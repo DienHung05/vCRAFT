@@ -25,6 +25,8 @@ export const ListProductsQuerySchema = CursorPageQuerySchema.extend({
   oneOfAKind: FlagSchema.optional(),
   inStock: FlagSchema.optional(),
   sort: ProductSortSchema.default('newest'),
+  /** Page mode (catalog exception to cursor-only paging, see ADR-0020); cannot be combined with `cursor`. */
+  page: z.coerce.number().int().min(1).max(10_000).optional(),
 });
 export type ListProductsQuery = z.infer<typeof ListProductsQuerySchema>;
 
@@ -51,6 +53,15 @@ export type ProductCardDto = z.infer<typeof ProductCardSchema>;
 export const ProductListResponseSchema = cursorPageSchema(ProductCardSchema);
 export type ProductListDto = z.infer<typeof ProductListResponseSchema>;
 
+/** Response of `GET /products?page=N`: the cursor envelope plus page counters (ADR-0020). */
+export const ProductPageResponseSchema = ProductListResponseSchema.extend({
+  page: z.int().min(1),
+  pageSize: z.int().min(1),
+  total: z.int().nonnegative(),
+  totalPages: z.int().nonnegative(),
+});
+export type ProductPageDto = z.infer<typeof ProductPageResponseSchema>;
+
 /** Một dòng trong danh sách hộ công khai. */
 export const HouseholdSummarySchema = z.object({
   id: z.string(),
@@ -75,6 +86,10 @@ export const HouseholdListResponseSchema = z.object({ data: z.array(HouseholdSum
 export type HouseholdListDto = z.infer<typeof HouseholdListResponseSchema>;
 
 export const SearchQuerySchema = z.object({ q: z.string().trim().min(1).max(120) });
+
+/** `GET /redirects/{products|households}/{slug}`: the current slug a retired one now points to. */
+export const SlugRedirectResponseSchema = z.object({ slug: z.string() });
+export type SlugRedirectDto = z.infer<typeof SlugRedirectResponseSchema>;
 
 /** Gợi ý tức thời (FR-CAT-04), mỗi nhóm tối đa 5 mục. */
 export const SearchSuggestionsSchema = z.object({

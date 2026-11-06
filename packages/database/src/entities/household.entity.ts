@@ -9,6 +9,8 @@ export interface HouseholdTimelineEvent {
   year: number;
   title: string;
   text: string;
+  /** Photo the household uploaded itself (`media_asset` id). */
+  photo?: { mediaId: string; alt: string } | null;
 }
 
 /** Chứng nhận do hộ khai; chỉ Ban quản lý mới đánh dấu `verified` (FR-ART-03). */

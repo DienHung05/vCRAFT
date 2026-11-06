@@ -19,6 +19,7 @@ export const AUDIT_ACTIONS = [
   'rfq.start_production',
   'rfq.confirm_receipt',
   'rfq.cancel',
+  'allocation.reallocate',
   'news.create',
   'news.update',
   'news.publish',

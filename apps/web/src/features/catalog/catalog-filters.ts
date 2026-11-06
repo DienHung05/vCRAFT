@@ -12,6 +12,8 @@ export interface CatalogFilters {
   oneOfAKind: boolean;
   inStock: boolean;
   sort: ProductSort;
+  /** Current page (1-based). Omitted from URL when 1. */
+  page: number;
 }
 
 export const EMPTY_FILTERS: CatalogFilters = {
@@ -23,6 +25,7 @@ export const EMPTY_FILTERS: CatalogFilters = {
   oneOfAKind: false,
   inStock: false,
   sort: 'newest',
+  page: 1,
 };
 
 const first = (value: string | string[] | undefined) =>
@@ -36,6 +39,9 @@ export function parseCatalogParams(
 ): CatalogFilters {
   const category = first(params.category);
   const sort = first(params.sort);
+  const pageStr = first(params.page);
+  const pageNum = /^\d{1,5}$/.test(pageStr) ? parseInt(pageStr, 10) : 1;
+  const page = pageNum >= 1 && pageNum <= 10_000 ? pageNum : 1;
   return {
     q: first(params.q).slice(0, 120),
     category: PRODUCT_CATEGORIES.includes(category as ProductCategory)
@@ -47,6 +53,7 @@ export function parseCatalogParams(
     oneOfAKind: first(params.oneOfAKind) === '1',
     inStock: first(params.inStock) === '1',
     sort: PRODUCT_SORTS.includes(sort as ProductSort) ? (sort as ProductSort) : 'newest',
+    page,
   };
 }
 
@@ -61,6 +68,7 @@ export function catalogSearchParams(filters: CatalogFilters): URLSearchParams {
   if (filters.oneOfAKind) query.set('oneOfAKind', '1');
   if (filters.inStock) query.set('inStock', '1');
   if (filters.sort !== 'newest') query.set('sort', filters.sort);
+  if (filters.page > 1) query.set('page', String(filters.page));
   return query;
 }
 
@@ -68,6 +76,7 @@ export function catalogSearchParams(filters: CatalogFilters): URLSearchParams {
 export function toProductFilters(filters: CatalogFilters): ProductFilters {
   return {
     sort: filters.sort,
+    page: filters.page,
     ...(filters.q.trim() && { q: filters.q.trim() }),
     ...(filters.category && { category: filters.category }),
     ...(filters.household && { household: filters.household }),

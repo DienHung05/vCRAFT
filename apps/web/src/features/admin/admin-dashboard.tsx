@@ -9,6 +9,7 @@ import { ErrorState } from '@/components/states/error-state';
 import { DashboardSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
 import { useLiveClient } from '@/lib/api/live-session';
+import { AssistantStatsCard } from './assistant-stats-card';
 
 const REFRESH_MS = 30_000;
 
@@ -83,6 +84,7 @@ export function AdminDashboard({ client: provided }: { client?: AdminClient }) {
               {t('reviewCta', { count: data.pendingApplications })}
             </Link>
           ) : null}
+          {client ? <AssistantStatsCard client={client} /> : null}
         </>
       ) : null}
     </div>

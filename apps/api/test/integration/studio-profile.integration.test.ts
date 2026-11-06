@@ -150,6 +150,46 @@ describe('Studio household profile', () => {
     expect(res.body.coverUrl).toBe('/images/demo/bia-duc-phat-1280.webp');
   });
 
+  it('timeline: same-year order kept, photo needs a description and must be the household’s own', async () => {
+    const foreign = await patch({
+      timeline: [
+        {
+          year: 1970,
+          title: 'Mẻ men lam đầu',
+          text: '',
+          photo: { mediaId: '00000000-0000-4000-8000-000000000099', alt: 'Chiếc bình đầu tiên' },
+        },
+      ],
+    });
+    expect(foreign.status).toBe(403);
+    const noAlt = await patch({
+      timeline: [
+        {
+          year: 1970,
+          title: 'Mẻ men lam đầu',
+          text: '',
+          photo: { mediaId: '00000000-0000-4000-8000-000000000099', alt: '' },
+        },
+      ],
+    });
+    expect(noAlt.status).toBe(422);
+    const res = await patch({
+      timeline: [
+        { year: 1985, title: 'Mở phòng trưng bày', text: '' },
+        { year: 1970, title: 'Mẻ men lam đầu', text: '' },
+        { year: 1970, title: 'Dựng lò', text: '' },
+      ],
+    });
+    expect(res.status).toBe(200);
+    version = res.body.version;
+    expect(res.body.timeline.map((e: { title: string }) => e.title)).toEqual([
+      'Mẻ men lam đầu',
+      'Dựng lò',
+      'Mở phòng trưng bày',
+    ]);
+    expect(res.body.timeline[0].photo).toBeNull();
+  });
+
   it('xưởng: thêm rồi sửa địa chỉ, tọa độ, giờ mở cửa; chỉ chủ hộ; đầy đủ thì 100%', async () => {
     const created = await t.request({
       method: 'POST',

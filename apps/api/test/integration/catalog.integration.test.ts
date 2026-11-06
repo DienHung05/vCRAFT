@@ -144,6 +144,37 @@ describe('Public catalog', () => {
     expect(res.status).toBeLessThan(500);
   });
 
+  it('page + cursor cùng lúc là lỗi kiểm dữ liệu', async () => {
+    const first = await t.request({ method: 'GET', url: '/products?limit=1' });
+    const res = await t.request({
+      method: 'GET',
+      url: `/products?page=1&cursor=${first.body.nextCursor}`,
+    });
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(res.status).toBeLessThan(500);
+  });
+
+  it('chế độ trang (page): trả về total, totalPages, offset đúng, chỉ dùng cho catalog', async () => {
+    const p1 = await t.request({ method: 'GET', url: '/products?page=1&limit=2&sort=price_asc' });
+    expect(p1.status).toBe(200);
+    expect(p1.body).toMatchObject({ page: 1, pageSize: 2, total: 3, totalPages: 2 });
+    expect(names(p1)).toEqual(['Bát ăn cơm', 'Tách trà men ngọc']);
+    const p2 = await t.request({ method: 'GET', url: '/products?page=2&limit=2&sort=price_asc' });
+    expect(names(p2)).toEqual(['Bình hút lộc men lam']);
+    expect(p2.body.totalPages).toBe(2);
+    expect(p2.body.nextCursor).toBeNull();
+  });
+
+  it('trang quá xa: trả về trang cuối thay vì danh sách rỗng', async () => {
+    const res = await t.request({
+      method: 'GET',
+      url: '/products?page=999&limit=2&sort=price_asc',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.page).toBe(2);
+    expect(names(res)).toEqual(['Bình hút lộc men lam']);
+  });
+
   it('tìm không dấu: "bat trang" khớp "Bát Tràng" trên sản phẩm, hộ và tin', async () => {
     const list = await t.request({ method: 'GET', url: '/products?q=men%20NGOC' });
     expect(names(list)).toEqual(['Tách trà men ngọc']);

@@ -6,11 +6,22 @@ import type {
   ProductCardDto,
   ProductDetailDto,
   ProductListDto,
+  ProductPageDto,
   ProductSort,
   SearchSuggestionsDto,
+  SlugRedirectDto,
   VillageStatsDto,
 } from '@vcraft/contracts';
-import { Artisan, Household, News, Product, ProductMaker, Workshop } from '@vcraft/database';
+import {
+  Artisan,
+  Household,
+  News,
+  Product,
+  ProductMaker,
+  SlugRedirect,
+  type SlugRedirectKind,
+  Workshop,
+} from '@vcraft/database';
 import { isVisitable } from '@vcraft/domain';
 import { searchTerms } from '@vcraft/utils';
 import { AppError, notFound } from '../../../common/errors/app-error';
@@ -110,7 +121,12 @@ export class CatalogService {
     private readonly media: MediaService,
   ) {}
 
-  async listProducts(query: ListProductsQuery): Promise<ProductListDto> {
+  async listProducts(query: ListProductsQuery): Promise<ProductListDto | ProductPageDto> {
+    // Reject page + cursor together
+    if (query.page !== undefined && query.cursor !== undefined) {
+      throw new AppError('VALIDATION_MALFORMED_REQUEST', 'Cannot use both page and cursor');
+    }
+
     const em = this.orm.em.fork();
     const and: FilterQuery<Product>[] = [
       {
@@ -131,6 +147,44 @@ export class CatalogService {
     if (query.inStock !== undefined) {
       and.push({ stock: query.inStock ? { $gt: 0 } : 0 });
     }
+
+    // Page-based mode (catalog exception, see ADR-0020)
+    if (query.page !== undefined) {
+      const limit = query.limit;
+      const findPage = (pageNumber: number) =>
+        em.findAndCount(
+          Product,
+          { $and: and },
+          {
+            populate: ['household'],
+            orderBy: ORDER_BY[query.sort],
+            offset: (pageNumber - 1) * limit,
+            limit,
+          },
+        );
+      let pg = query.page;
+      let [rows, total] = await findPage(pg);
+      const totalPages = Math.ceil(total / limit);
+      // A page past the end answers with the last page instead of an empty list.
+      if (rows.length === 0 && total > 0) {
+        pg = totalPages;
+        [rows, total] = await findPage(pg);
+      }
+      const [media, covers] = await Promise.all([
+        this.media.publicMedia(productMediaIds(rows)),
+        this.media.productCoverImages(rows),
+      ]);
+      return {
+        data: rows.map((product) => toCardDto(product, media, covers.get(product.id))),
+        nextCursor: null,
+        page: pg,
+        pageSize: limit,
+        total,
+        totalPages,
+      };
+    }
+
+    // Cursor-based mode (default, backward compatible)
     if (query.cursor) and.push(afterCursor(decodeCursor(query.cursor, query.sort), query.sort));
 
     const rows = await em.find(
@@ -155,6 +209,26 @@ export class CatalogService {
   }
 
   /** Sản phẩm rút, nháp hoặc của hộ không còn duyệt đều là 404 trên trang chi tiết. */
+  /**
+   * The current slug behind a retired one, only when the target is publicly visible (a published product
+   * of an approved household, or an approved household); otherwise 404 like the page itself.
+   */
+  async resolveRedirect(kind: SlugRedirectKind, slug: string): Promise<SlugRedirectDto> {
+    const em = this.orm.em.fork();
+    const row = await em.findOne(SlugRedirect, { kind, oldSlug: slug });
+    if (!row) throw notFound();
+    const target =
+      kind === 'PRODUCT'
+        ? await em.findOne(Product, {
+            id: row.targetId,
+            status: 'PUBLISHED',
+            household: { status: 'APPROVED' },
+          })
+        : await em.findOne(Household, { id: row.targetId, status: 'APPROVED' });
+    if (!target) throw notFound();
+    return { slug: target.slug };
+  }
+
   async getProduct(slug: string): Promise<ProductDetailDto> {
     const em = this.orm.em.fork();
     const product = await em.findOne(

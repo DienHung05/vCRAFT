@@ -10,6 +10,32 @@ export interface VerifiedIdentity {
    * (`privacy_policy_version`). Only used to record `SIGN_UP` consent when the account is first created.
    */
   readonly consentPolicyVersion?: string;
+  /** Authenticator assurance level of the session (`aal` claim): `aal2` after a second factor (GH#83). */
+  readonly aal?: 'aal1' | 'aal2';
+  /** Supabase session id (`session_id` claim), one per sign-in; used to record sign-in history. */
+  readonly sessionId?: string;
+  /** How the session started (first non-TOTP `amr` method): `password`, `oauth`, `otp`... */
+  readonly method?: string;
+}
+
+/** Reads the assurance level, session and sign-in method from raw Supabase JWT claims. */
+export function sessionFacts(claims: Readonly<Record<string, unknown>> | null | undefined): {
+  aal?: 'aal1' | 'aal2';
+  sessionId?: string;
+  method?: string;
+} {
+  if (!claims) return {};
+  const aal = claims.aal === 'aal2' ? 'aal2' : claims.aal === 'aal1' ? 'aal1' : undefined;
+  const sessionId = typeof claims.session_id === 'string' ? claims.session_id : undefined;
+  const amr = Array.isArray(claims.amr) ? (claims.amr as { method?: unknown }[]) : [];
+  const method = amr
+    .map((entry) => entry?.method)
+    .find((m): m is string => typeof m === 'string' && m !== 'totp');
+  return {
+    ...(aal && { aal }),
+    ...(sessionId && { sessionId: sessionId.slice(0, 64) }),
+    ...(method && { method: method.slice(0, 20) }),
+  };
 }
 
 /**
@@ -46,6 +72,7 @@ export class SupabaseIdentityVerifier extends IdentityVerifier {
       email: userResult.data.user.email ?? '',
       emailVerified: Boolean(userResult.data.user.email_confirmed_at),
       ...(typeof claimed === 'string' && { consentPolicyVersion: claimed }),
+      ...sessionFacts(data.jwtClaims as Record<string, unknown> | null),
     };
   }
 }

@@ -11,6 +11,7 @@ import { type AuthErrorKey, authErrorKey } from './auth-errors';
 import { FormAlert, STANDALONE_LINK, TextField } from './fields';
 import { useKilnFeedback } from './kiln/kiln-feedback';
 import { type ForgotPasswordValues, forgotPasswordSchema } from './schemas';
+import { useCaptcha } from './turnstile';
 import { useFocusSubmitOnError } from './use-focus-submit-on-error';
 import { useValidationMessage } from './use-validation-message';
 
@@ -24,6 +25,7 @@ export function ForgotPasswordForm() {
   const kiln = useKilnFeedback();
   const [error, setError] = useState<AuthErrorKey | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const captcha = useCaptcha();
   const {
     register,
     handleSubmit,
@@ -48,13 +50,21 @@ export function ForgotPasswordForm() {
       setError(null);
       const supabase = browserSupabase();
       if (!supabase) return failWith('unconfigured');
+      if (captcha.missing) return failWith('captcha');
       try {
-        const { error: failure } = await supabase.auth.resetPasswordForEmail(email);
-        if (failure) return failWith(authErrorKey(failure));
+        const { error: failure } = await supabase.auth.resetPasswordForEmail(
+          email,
+          captcha.options,
+        );
+        if (failure) {
+          captcha.reset();
+          return failWith(authErrorKey(failure));
+        }
         // The form swaps to the "sent" panel, so there is no stamp: just clear the card.
         kiln.reset();
         setSentTo(email);
       } catch (failure) {
+        captcha.reset();
         failWith(authErrorKey(failure));
       }
     },
@@ -77,6 +87,7 @@ export function ForgotPasswordForm() {
         error={message(errors.email)}
         {...register('email')}
       />
+      {captcha.widget}
       <Button type="submit" size="lg" disabled={isSubmitting}>
         {isSubmitting ? t('forgot.submitting') : t('forgot.submit')}
       </Button>
