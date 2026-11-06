@@ -4,7 +4,7 @@ import {
   type HouseholdSummaryDto,
   PRODUCT_SORTS,
   type ProductCardDto,
-  ProductListResponseSchema,
+  ProductPageResponseSchema,
   type ProductSort,
 } from '@vcraft/contracts';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
@@ -18,13 +18,15 @@ import {
   type CatalogFilters,
   catalogSearchParams,
   EMPTY_FILTERS,
+  parseCatalogParams,
   toProductFilters,
 } from './catalog-filters';
+import { CATALOG_PAGE_SIZE, CatalogPagination } from './catalog-pagination';
 import { productsQueryString } from './exhibition-query';
 import { ProductCard, ProductGridSkeleton } from './product-card';
 import { toProductCardView } from './view-models';
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = CATALOG_PAGE_SIZE;
 const TYPING_DEBOUNCE_MS = 250;
 
 type FetchProducts = (query: string, signal: AbortSignal) => Promise<Response>;
@@ -34,7 +36,8 @@ const browserFetch: FetchProducts = (query, signal) =>
 export interface CatalogExplorerProps {
   initialFilters: CatalogFilters;
   initialItems: readonly ProductCardDto[];
-  initialCursor: string | null;
+  initialTotal: number;
+  initialTotalPages: number;
   /** Lần tải phía server có lỗi: bắt đầu bằng trạng thái lỗi kèm thử lại. */
   initialError?: boolean;
   households: readonly HouseholdSummaryDto[];
@@ -43,14 +46,14 @@ export interface CatalogExplorerProps {
 }
 
 /**
- * Danh mục sản phẩm (FR-CAT-02, 03): bộ lọc nằm trên URL nên sao chép link ra đúng kết quả; đổi lọc
- * và tải thêm chỉ gọi JSON, không tải lại trang. Cuộn tới cuối tự tải 24 món tiếp theo, vẫn có nút
- * "Tải thêm" cho bàn phím.
+ * Danh mục sản phẩm (FR-CAT-02, 03): bộ lọc và trang nằm trên URL nên sao chép link ra đúng kết quả;
+ * đổi lọc và chuyển trang chỉ gọi JSON, không tải lại trang. Phân trang đánh số 12 món mỗi trang.
  */
 export function CatalogExplorer({
   initialFilters,
   initialItems,
-  initialCursor,
+  initialTotal,
+  initialTotalPages,
   initialError = false,
   households,
   fetchProducts = browserFetch,
@@ -60,71 +63,96 @@ export function CatalogExplorer({
   const nav = useTranslations('nav');
   const [filters, setFilters] = useState(initialFilters);
   const [items, setItems] = useState(initialItems);
-  const [cursor, setCursor] = useState(initialCursor);
-  const [loading, setLoading] = useState<'replace' | 'more' | null>(null);
+  const [total, setTotal] = useState(initialTotal);
+  const [totalPages, setTotalPages] = useState(initialTotalPages);
+  const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(initialError);
   const abort = useRef<AbortController | null>(null);
-  const sentinel = useRef<HTMLLIElement>(null);
   const typing = useRef<number | undefined>(undefined);
+  const regionRef = useRef<HTMLElement>(null);
 
   const load = useCallback(
-    async (next: CatalogFilters, after: string | null) => {
+    async (next: CatalogFilters) => {
       abort.current?.abort();
       const controller = new AbortController();
       abort.current = controller;
-      setLoading(after ? 'more' : 'replace');
+      setLoading(true);
       setFailed(false);
       try {
         const res = await fetchProducts(
           productsQueryString({
             ...toProductFilters(next),
             limit: PAGE_SIZE,
-            ...(after ? { cursor: after } : {}),
           }),
           controller.signal,
         );
         if (!res.ok) throw new Error(String(res.status));
-        const page = ProductListResponseSchema.parse(await res.json());
-        setItems((current) => (after ? [...current, ...page.data] : page.data));
-        setCursor(page.nextCursor);
-        setLoading(null);
+        const pageData = ProductPageResponseSchema.parse(await res.json());
+        setItems(pageData.data);
+        setTotal(pageData.total);
+        setTotalPages(pageData.totalPages);
+        // The API answers a page past the end with the last page: follow it so the bar and URL agree.
+        if (pageData.page !== next.page) {
+          setFilters((current) => ({ ...current, page: pageData.page }));
+          const query = catalogSearchParams({ ...next, page: pageData.page }).toString();
+          window.history.replaceState(null, '', query ? `?${query}` : window.location.pathname);
+        }
+        setLoading(false);
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') return;
         setFailed(true);
-        setLoading(null);
+        setLoading(false);
       }
     },
     [fetchProducts],
   );
 
   const apply = (patch: Partial<CatalogFilters>, typed = false) => {
-    const next = { ...filters, ...patch };
+    // Changing any filter resets to page 1
+    const resetPage = !('page' in patch);
+    const next = { ...filters, ...patch, ...(resetPage && { page: 1 }) };
     setFilters(next);
     const query = catalogSearchParams(next).toString();
     window.history.replaceState(null, '', query ? `?${query}` : window.location.pathname);
     window.clearTimeout(typing.current);
-    if (typed) typing.current = window.setTimeout(() => void load(next, null), TYPING_DEBOUNCE_MS);
-    else void load(next, null);
+    if (typed) typing.current = window.setTimeout(() => void load(next), TYPING_DEBOUNCE_MS);
+    else void load(next);
   };
 
-  // Cuộn gần cuối danh sách thì tải tiếp; `rootMargin` tải trước khi người dùng chạm đáy.
-  useEffect(() => {
-    const target = sentinel.current;
-    if (!target || !cursor || failed || typeof IntersectionObserver === 'undefined') return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting) && !loading) {
-          void load(filters, cursor);
-        }
-      },
-      { rootMargin: '600px' },
-    );
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [cursor, failed, filters, load, loading]);
+  const changePage = (page: number) => {
+    const next = { ...filters, page };
+    setFilters(next);
+    const query = catalogSearchParams(next).toString();
+    // pushState (unlike filter typing) so the Back button returns to the previous page.
+    window.history.pushState(null, '', query ? `?${query}` : window.location.pathname);
+    window.clearTimeout(typing.current);
+    void load(next);
+    const region = regionRef.current;
+    if (region) {
+      const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+      // scrollIntoView is absent in jsdom and some test environments; guard so the call is a no-op there.
+      region.scrollIntoView?.({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+      region.focus({ preventScroll: true });
+    }
+  };
 
-  const replacing = loading === 'replace';
-  const hasFilters = catalogSearchParams(filters).toString() !== '';
+  // Back/forward after pushState: rebuild the filters and the page from the URL.
+  useEffect(() => {
+    const onPopState = () => {
+      const next = parseCatalogParams(
+        Object.fromEntries(new URLSearchParams(window.location.search)),
+      );
+      window.clearTimeout(typing.current);
+      setFilters(next);
+      void load(next);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [load]);
+
+  const hasFilters =
+    catalogSearchParams({ ...filters, page: 1 }).toString() !==
+    catalogSearchParams({ ...EMPTY_FILTERS, page: 1 }).toString();
 
   return (
     <div className="mt-8 flex flex-col gap-8">
@@ -238,49 +266,55 @@ export function CatalogExplorer({
         ) : null}
       </form>
 
-      {replacing ? (
-        <ProductGridSkeleton label={t('loading')} />
-      ) : items.length === 0 && !failed ? (
-        <EmptyState
-          illustration="magnifier"
-          title={t('empty')}
-          description={hasFilters ? t('emptyHint') : undefined}
-          action={
-            hasFilters ? (
-              <Button type="button" variant="secondary" onClick={() => apply(EMPTY_FILTERS)}>
-                {t('clear')}
-              </Button>
-            ) : (
-              <Link href="/nghe-nhan" className={buttonVariants({ variant: 'secondary' })}>
-                {nav('artisans')}
-              </Link>
-            )
-          }
-        />
-      ) : (
-        <ul
-          aria-busy={loading === 'more'}
-          data-testid="product-grid"
-          className="grid grid-cols-2 gap-6 md:grid-cols-4"
-        >
-          {items.map((product) => (
-            <li key={product.id}>
-              <ProductCard product={toProductCardView(product, locale)} heading="h2" />
-            </li>
-          ))}
-          <li ref={sentinel} aria-hidden="true" className="col-span-full h-px" />
-        </ul>
-      )}
+      <section
+        ref={regionRef as React.Ref<HTMLElement>}
+        tabIndex={-1}
+        aria-label={t('results')}
+        aria-busy={loading}
+        className="flex scroll-mt-24 flex-col gap-8 outline-none"
+      >
+        {loading ? (
+          <ProductGridSkeleton label={t('loading')} count={PAGE_SIZE} />
+        ) : items.length === 0 && !failed ? (
+          <EmptyState
+            illustration="magnifier"
+            title={t('empty')}
+            description={hasFilters ? t('emptyHint') : undefined}
+            action={
+              hasFilters ? (
+                <Button type="button" variant="secondary" onClick={() => apply(EMPTY_FILTERS)}>
+                  {t('clear')}
+                </Button>
+              ) : (
+                <Link href="/nghe-nhan" className={buttonVariants({ variant: 'secondary' })}>
+                  {nav('artisans')}
+                </Link>
+              )
+            }
+          />
+        ) : (
+          <ul data-testid="product-grid" className="grid grid-cols-2 gap-6 md:grid-cols-4">
+            {items.map((product) => (
+              <li key={product.id}>
+                <ProductCard product={toProductCardView(product, locale)} heading="h2" />
+              </li>
+            ))}
+          </ul>
+        )}
 
-      {loading === 'more' ? <ProductGridSkeleton label={t('loading')} count={4} /> : null}
-
-      {failed ? (
-        <ErrorState message={t('unavailable')} onRetry={() => void load(filters, cursor)} />
-      ) : cursor && !loading ? (
-        <Button type="button" variant="secondary" onClick={() => void load(filters, cursor)}>
-          {t('loadMore')}
-        </Button>
-      ) : null}
+        {failed ? (
+          <ErrorState message={t('unavailable')} onRetry={() => void load(filters)} />
+        ) : loading ? null : (
+          <CatalogPagination
+            page={filters.page}
+            totalPages={totalPages}
+            total={total}
+            pageSize={PAGE_SIZE}
+            hrefFor={(p) => `?${catalogSearchParams({ ...filters, page: p }).toString()}`}
+            onNavigate={changePage}
+          />
+        )}
+      </section>
     </div>
   );
 }

@@ -1234,7 +1234,6 @@
     "empty": "No products match these filters.",
     "unavailable": "We could not load products. Please try again in a few minutes.",
     "retry": "Try again",
-    "loadMore": "Load more",
     "suggestEmpty": "No suggestions.",
     "suggestFailed": "We could not load suggestions.",
     "groupProducts": "Products",
@@ -1252,7 +1251,15 @@
       "price_asc": "Price: low to high",
       "price_desc": "Price: high to low"
     },
-    "emptyHint": "Try removing a filter or widening the price range to see more products."
+    "emptyHint": "Try removing a filter or widening the price range to see more products.",
+    "results": "Product results",
+    "pagination": {
+      "label": "Product pages",
+      "previous": "Previous page",
+      "next": "Next page",
+      "goTo": "Page {page}",
+      "showing": "Showing {from}–{to} of {total} products"
+    }
   },
   "auth": {
     "nav": {
