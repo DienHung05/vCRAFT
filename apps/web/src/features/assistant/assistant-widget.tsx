@@ -147,7 +147,7 @@ export function AssistantWidget() {
       mascot={
         <Mascot
           mood={mood}
-          size={44}
+          size={96}
           lookAt="pointer"
           label={t('mascotLabel')}
           thought={waiting ? thoughtIndices.map((i) => allThoughts[i] ?? '') : undefined}
@@ -190,7 +190,12 @@ export function AssistantWidget() {
         onClick={toggle}
         className={`fixed right-4 z-40 flex size-16 items-center justify-center rounded-full bg-surface shadow-warm ring-1 ring-ink/10 transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-clay ${lift} ${open && mobile ? 'hidden' : ''}`}
       >
-        <Mascot mood={open ? 'listen' : mood} size={52} lookAt="pointer" label={t('mascotLabel')} />
+        <Mascot
+          mood={open ? 'listen' : mood}
+          size={mobile ? 56 : 64}
+          lookAt="pointer"
+          label={t('mascotLabel')}
+        />
       </button>
 
       {mobile ? (
