@@ -12,6 +12,7 @@
     "lint:fix": "biome check --write .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:scripts": "node --test scripts/ci/",
     "test:e2e": "turbo run test:e2e --filter=@vcraft/e2e",
     "db:migrate": "turbo run db:migrate --filter=@vcraft/database",
     "db:seed": "turbo run db:seed --filter=@vcraft/database",
