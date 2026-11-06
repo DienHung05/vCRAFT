@@ -47,6 +47,7 @@
     "@types/nodemailer": "^8.0.2",
     "@types/qrcode": "^1.5.6",
     "@vcraft/tsconfig": "workspace:*",
+    "dotenv": "^18.0.9",
     "vitest": "^5.0.5"
   }
 }
