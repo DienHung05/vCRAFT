@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import 'reflect-metadata';
 import helmet from '@fastify/helmet';
 import { NestFactory } from '@nestjs/core';
