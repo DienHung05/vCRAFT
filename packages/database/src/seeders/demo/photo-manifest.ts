@@ -4033,38 +4033,6 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
     altEn:
       'A squat lidded jar in a green celadon glaze with a relief peony scroll and a bead band, on a dark background',
   },
-];
-
-/**
- * Demo products that used to carry a photo and now show a preset illustration, because no licensed photo shows
- * that exact object: HX2M9KQD (a blue lotus bowl that none of the licensed photos matches).
- */
-export const NO_COVER_DEMO_PRODUCTS: readonly string[] = ['HX2M9KQD'];
-
-/**
- * Photos that were published by earlier versions of this pipeline and must no longer exist anywhere:
- * `pnpm demo:media` deletes their `media_asset` rows and storage objects. Never attach one again.
- */
-export const RETIRED_DEMO_PHOTO_IDS: readonly string[] = [
-  // Origin not confirmed as Bát Tràng by Commons (only filed under "Kilns in Vietnam"):
-  'bia-minh-hai',
-  // Shot or made outside Bát Tràng according to Commons (Châu Thành in Đồng Tháp; Chu Đậu ware of Hải Dương):
-  'ln-cua-lo-vom',
-  'ht-binh-hoa-lam-vo',
-  'ht-den-dau-su',
-  'ht-de-lu-chu-dau',
-  'ht-binh-ngoc-ho-xuan',
-  'bat-ve-sen-men-trong',
-  'coc-men-trang-quai-tron',
-  'news-cho-gom',
-  'dp-bat-xep-rom',
-  'tl-clay',
-  'tl-throw',
-  'tl-dry',
-  'tl-paint',
-  'tl-glaze',
-  'tl-fire',
-  'tl-finish',
   {
     photo: 'pp-NMTBV2V8',
     target: 'PRODUCT',
@@ -5509,6 +5477,38 @@ export const RETIRED_DEMO_PHOTO_IDS: readonly string[] = [
     alt: 'Lư hương men kem trắng trên chân cao, nắp đục lỗ màu nâu đỏ.',
     altEn: 'Cream-white glazed incense burner on a tall foot with a pierced reddish-brown lid.',
   },
+];
+
+/**
+ * Demo products that used to carry a photo and now show a preset illustration, because no licensed photo shows
+ * that exact object: HX2M9KQD (a blue lotus bowl that none of the licensed photos matches).
+ */
+export const NO_COVER_DEMO_PRODUCTS: readonly string[] = ['HX2M9KQD'];
+
+/**
+ * Photos that were published by earlier versions of this pipeline and must no longer exist anywhere:
+ * `pnpm demo:media` deletes their `media_asset` rows and storage objects. Never attach one again.
+ */
+export const RETIRED_DEMO_PHOTO_IDS: readonly string[] = [
+  // Origin not confirmed as Bát Tràng by Commons (only filed under "Kilns in Vietnam"):
+  'bia-minh-hai',
+  // Shot or made outside Bát Tràng according to Commons (Châu Thành in Đồng Tháp; Chu Đậu ware of Hải Dương):
+  'ln-cua-lo-vom',
+  'ht-binh-hoa-lam-vo',
+  'ht-den-dau-su',
+  'ht-de-lu-chu-dau',
+  'ht-binh-ngoc-ho-xuan',
+  'bat-ve-sen-men-trong',
+  'coc-men-trang-quai-tron',
+  'news-cho-gom',
+  'dp-bat-xep-rom',
+  'tl-clay',
+  'tl-throw',
+  'tl-dry',
+  'tl-paint',
+  'tl-glaze',
+  'tl-fire',
+  'tl-finish',
 ];
 
 /**
