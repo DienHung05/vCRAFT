@@ -140,19 +140,21 @@ jobs:
           RENDER_WORKER_SERVICE_ID: ${{ vars.RENDER_WORKER_SERVICE_ID }}
           COMMIT_SHA: ${{ needs.guard.outputs.sha }}
 
+      # The Render free plan sleeps when idle: a cold start can take a minute or more, and the
+      # first requests may time out or return 502/503. Allow ~5 minutes (20 tries, 15 s apart).
       - name: Health check API
         env:
           API_ORIGIN: ${{ vars.API_ORIGIN }}
         run: |
-          for _ in $(seq 1 10); do
-            if curl -fsSL --max-time 10 "$API_ORIGIN/api/v1/health" | grep -q '"status":"ok"'; then
-              echo "API health check passed"
+          for attempt in $(seq 1 20); do
+            if curl -fsSL --max-time 30 "$API_ORIGIN/api/v1/health" | grep -q '"status":"ok"'; then
+              echo "API health check passed (attempt $attempt)"
               exit 0
             fi
-            echo "Retrying in 10s..."
-            sleep 10
+            echo "Attempt $attempt/20 failed, retrying in 15s..."
+            sleep 15
           done
-          echo "API health check failed after retries"
+          echo "API health check failed after 20 attempts (~5 min)"
           exit 1
 
   web:
