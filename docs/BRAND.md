@@ -182,7 +182,7 @@ Trợ lý hỏi đáp của vCraft (FR-AST, [SRS §3.13](SRS.md#313-trợ-lý-c�
 
 | | |
 |---|---|
-| **Ngoại hình** | Cáo chibi, lông màu **đất nung** (`--clay`), đuôi chóp kem như men rạn; quàng khăn **men lam** (`--glaze`) có viền sóng hoa lam; hai tay ôm một bình gốm nhỏ dáng tỏi (gợi logo ấn bình). Nét viền mực mảnh như vẽ tay, không bóng 3D. |
+| **Ngoại hình** | Cáo chibi theo bộ sprite gốc của skill `page-mascot` (nhân vật `fox`, https://koboyo.com/page-mascot/mascots/), giữ nguyên không chỉnh màu hay tạo hình theo brand. |
 | **Tính cách** | Tò mò, nhanh nhảu, tự hào về làng; xưng "tớ"; biết lúc nào đùa, lúc nào nói thẳng (giá, hạn, số lượng). |
 | **Asset** | Sinh bằng skill `page-mascot`: 2 sprite sheet WebP căn khớp nhau. **9 hướng đầu** (nhìn theo con trỏ) và **9 biểu cảm**: idle, chào (vẫy tay), nghe, nghĩ, nói, vui, bối rối, từ chối (lắc đầu, ôm bình chặt), lỗi/ngủ (Zzz). Bản gốc lưu ở `packages/ui/assets/mascot/`. |
 | **Kích thước** | Nút nổi 56px (mobile) / 64px (desktop); trong panel 96px ở đầu khung chat. Vùng an toàn quanh nút 16px, né safe-area. |
