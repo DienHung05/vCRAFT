@@ -5,7 +5,7 @@ import { addProtocol, type GeoJSONSource, setWorkerUrl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useTranslations } from 'next-intl';
 import { Protocol } from 'pmtiles';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import MapGL, {
   Layer,
   type MapLayerMouseEvent,
@@ -18,6 +18,7 @@ import MapGL, {
 import { type LatLng, type MapBounds, toFeatureCollection } from './map-model';
 import { PMTILES_URL } from './offline-style';
 import { PinPopup } from './pin-popup';
+import { pulseDue, pulsePaint, shouldPulse } from './pin-pulse';
 import { useMapStyle } from './use-map-style';
 
 // Tệp này do `scripts/copy-map-worker.mjs` chép vào `public/map` khi dev và build.
@@ -67,22 +68,39 @@ export default function MapCanvas({
     return { longitude: lng, latitude: lat };
   }, []);
 
-  // Nhịp thở của ghim đang mở (FR-MAP-03): tắt hẳn khi người dùng giảm chuyển động.
+  const hasOpenPin = useMemo(() => data.features.some((pin) => pin.properties.open), [data]);
+  const [container, setContainer] = useState<HTMLElement | null>(null);
+  const [inView, setInView] = useState(true);
+
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!container || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(([entry]) =>
+      setInView(entry?.isIntersecting ?? true),
+    );
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [container]);
+
+  // Nhịp thở của ghim đang mở (FR-MAP-03): tắt hẳn khi người dùng giảm chuyển động. Every update
+  // redraws the whole map, so it is throttled and paused while nobody can see it (GH#144).
+  useEffect(() => {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!shouldPulse({ reducedMotion, inView, hasOpenPin })) return;
     let frame = 0;
+    let lastDrawn: number | null = null;
     const tick = (time: number) => {
       const map = mapRef.current?.getMap();
-      if (map?.getLayer('workshop-pulse')) {
-        const phase = (time % 2000) / 2000;
-        map.setPaintProperty('workshop-pulse', 'circle-radius', 8 + phase * 14);
-        map.setPaintProperty('workshop-pulse', 'circle-opacity', 0.45 * (1 - phase));
+      if (map?.getLayer('workshop-pulse') && pulseDue(time, lastDrawn)) {
+        lastDrawn = time;
+        const { radius, opacity } = pulsePaint(time);
+        map.setPaintProperty('workshop-pulse', 'circle-radius', radius);
+        map.setPaintProperty('workshop-pulse', 'circle-opacity', opacity);
       }
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [inView, hasOpenPin]);
 
   const handleClick = async (event: MapLayerMouseEvent) => {
     const feature = event.features?.[0];
@@ -122,6 +140,7 @@ export default function MapCanvas({
       ref={mapRef}
       mapStyle={style}
       onError={onMapError}
+      onLoad={(event) => setContainer(event.target.getContainer())}
       initialViewState={{ ...initialCenter, zoom: 14 }}
       style={{ width: '100%', height: '100%' }}
       interactiveLayerIds={[CLUSTERS, PINS]}
@@ -162,7 +181,15 @@ export default function MapCanvas({
           id="workshop-pulse"
           type="circle"
           filter={['all', ['!', ['has', 'point_count']], ['==', ['get', 'open'], true]]}
-          paint={{ 'circle-color': GLAZE, 'circle-radius': 12, 'circle-opacity': 0.2 }}
+          paint={{
+            'circle-color': GLAZE,
+            'circle-radius': 12,
+            'circle-opacity': 0.2,
+            // The pulse loop sets these itself; MapLibre's default 300 ms transition would keep
+            // redrawing between its throttled updates (GH#144).
+            'circle-radius-transition': { duration: 0, delay: 0 },
+            'circle-opacity-transition': { duration: 0, delay: 0 },
+          }}
         />
         <Layer
           id={PINS}
