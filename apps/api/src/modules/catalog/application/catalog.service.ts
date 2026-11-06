@@ -6,6 +6,7 @@ import type {
   ProductCardDto,
   ProductDetailDto,
   ProductListDto,
+  ProductPageDto,
   ProductSort,
   SearchSuggestionsDto,
   VillageStatsDto,
@@ -110,7 +111,12 @@ export class CatalogService {
     private readonly media: MediaService,
   ) {}
 
-  async listProducts(query: ListProductsQuery): Promise<ProductListDto> {
+  async listProducts(query: ListProductsQuery): Promise<ProductListDto | ProductPageDto> {
+    // Reject page + cursor together
+    if (query.page !== undefined && query.cursor !== undefined) {
+      throw new AppError('VALIDATION_MALFORMED_REQUEST', 'Cannot use both page and cursor');
+    }
+
     const em = this.orm.em.fork();
     const and: FilterQuery<Product>[] = [
       {
@@ -131,6 +137,45 @@ export class CatalogService {
     if (query.inStock !== undefined) {
       and.push({ stock: query.inStock ? { $gt: 0 } : 0 });
     }
+
+    // Page-based mode (catalog exception, see ADR-0020)
+    if (query.page !== undefined) {
+      const limit = query.limit;
+      const findPage = (pageNumber: number) =>
+        em.findAndCount(
+          Product,
+          { $and: and },
+          {
+            populate: ['household'],
+            orderBy: ORDER_BY[query.sort],
+            offset: (pageNumber - 1) * limit,
+            limit,
+          },
+        );
+      let pg = query.page;
+      let [rows, total] = await findPage(pg);
+      const totalPages = Math.ceil(total / limit);
+      // A page past the end answers with the last page instead of an empty list.
+      if (rows.length === 0 && total > 0) {
+        pg = totalPages;
+        [rows, total] = await findPage(pg);
+      }
+      const last = rows.at(-1);
+      const [media, covers] = await Promise.all([
+        this.media.publicMedia(productMediaIds(rows)),
+        this.media.productCoverImages(rows),
+      ]);
+      return {
+        data: rows.map((product) => toCardDto(product, media, covers.get(product.id))),
+        nextCursor: last && pg < totalPages ? encodeCursor(last, query.sort) : null,
+        page: pg,
+        pageSize: limit,
+        total,
+        totalPages,
+      };
+    }
+
+    // Cursor-based mode (default, backward compatible)
     if (query.cursor) and.push(afterCursor(decodeCursor(query.cursor, query.sort), query.sort));
 
     const rows = await em.find(

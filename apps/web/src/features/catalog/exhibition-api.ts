@@ -2,6 +2,7 @@ import {
   HouseholdListResponseSchema,
   ProductDetailResponseSchema,
   ProductListResponseSchema,
+  ProductPageResponseSchema,
   PublicHouseholdResponseSchema,
   TraceAvailabilityResponseSchema,
   VillageStatsSchema,
@@ -36,6 +37,10 @@ async function getJson<T>(
 
 export const fetchProducts = (filters: ProductFilters = {}) =>
   getJson(`/products?${productsQueryString(filters)}`, ProductListResponseSchema);
+
+/** One numbered page of the catalog (`?page=N`), with the totals the page bar needs (ADR-0020). */
+export const fetchProductPage = (filters: ProductFilters & { page: number }) =>
+  getJson(`/products?${productsQueryString(filters)}`, ProductPageResponseSchema);
 
 export const fetchProduct = (slug: string) =>
   getJson(`/products/${encodeURIComponent(slug)}`, ProductDetailResponseSchema);
