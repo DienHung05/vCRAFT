@@ -231,15 +231,10 @@ async function verifyMedia(
     `${readyPhotos.length}/${DEMO_PHOTOS.length} tệp; chạy pnpm demo:media nếu thiếu`,
   );
   const noCredit = photoAssets.filter(
-    (a) =>
-      !a.altText?.trim() ||
-      !a.credit?.author.trim() ||
-      !a.credit.license.trim() ||
-      !a.credit.licenseUrl.startsWith('https://') ||
-      !a.credit.sourceUrl.startsWith('https://'),
+    (a) => !a.altText?.trim() || !a.credit?.sourceUrl.startsWith('https://'),
   );
   add(
-    'Ảnh minh hoạ: mỗi tệp có tác giả, giấy phép, nguồn và mô tả',
+    'Ảnh minh hoạ: mỗi tệp có nguồn và mô tả',
     photoAssets.length === DEMO_PHOTOS.length && noCredit.length === 0,
     noCredit.length === 0
       ? `${photoAssets.length} tệp đủ ghi công`

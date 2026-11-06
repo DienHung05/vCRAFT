@@ -248,9 +248,9 @@ describe('Demo seed and guarded reset', () => {
       expect(product.coverAlt, product.traceCode).toBeTruthy();
       expect(product.coverAltEn, product.traceCode).toMatch(/^[\x20-\x7e]+$/);
     }
-    // The product HX2M9KQD has no matching photo and keeps its preset illustration.
+    // The product HX2M9KQD now has a matching photo.
     const bowl = await db.orm.em.fork().findOneOrFail(Product, { traceCode: 'HX2M9KQD' });
-    expect(bowl.coverUrl).toBeNull();
+    expect(bowl.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
     const lamNgoc = await db.orm.em.fork().findOneOrFail(Household, { slug: 'gom-lam-ngoc' });
     expect(lamNgoc.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
     // Gốm Minh Hải's banner was retired (Commons does not confirm the kilns are in Bát Tràng): no cover, no banner.
