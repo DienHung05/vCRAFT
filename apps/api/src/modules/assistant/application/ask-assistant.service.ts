@@ -149,7 +149,13 @@ export class AskAssistantService {
     if (fast === 'datetime')
       return yield* reply(getCurrentDatetime(new Date(), input.locale), 'datetime');
     if (fast === 'weather') {
-      const weather = await getWeather({ place: weatherPlace(message) }, input.locale, this.kv);
+      const weather = await getWeather(
+        { place: weatherPlace(message) },
+        input.locale,
+        this.kv,
+        fetch,
+        this.logger,
+      );
       return yield* reply(weather ?? weatherFallback(input.locale), 'weather');
     }
 

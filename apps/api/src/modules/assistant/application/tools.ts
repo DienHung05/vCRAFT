@@ -40,6 +40,7 @@ export function getCurrentDatetime(now: Date, locale: 'vi' | 'en'): string {
 
 const BAT_TRANG = { name: 'Bát Tràng', latitude: 20.9758, longitude: 105.9139 };
 const WEATHER_CACHE_SECONDS = 15 * 60;
+const WEATHER_STALE_SECONDS = 6 * 60 * 60;
 
 export const WeatherArgsSchema = z.object({ place: z.string().trim().max(60).nullable() });
 
@@ -64,50 +65,233 @@ function describe(code: number, locale: 'vi' | 'en'): string {
       : 'mixed weather';
 }
 
+/** The minimal logger the weather lookup needs; Nest's `Logger` satisfies it. */
+export interface WeatherLogger {
+  warn(message: string): void;
+}
+
+const NO_LOGGER: WeatherLogger = { warn: () => undefined };
+
+/** A provider answered, but not with a usable forecast. `status` is the HTTP status of its response. */
+class WeatherProviderError extends Error {
+  constructor(
+    readonly status: number,
+    readonly reason: string,
+  ) {
+    super(reason);
+  }
+}
+
+interface Place {
+  name: string;
+  latitude: number;
+  longitude: number;
+}
+
+/** A current reading in provider-neutral form; `code` is a WMO weather code (-1 when unknown). */
+interface WeatherReading {
+  temperature: number;
+  humidity: number;
+  code: number;
+}
+
+/** Open-Meteo errors look like `{"error":true,"reason":"..."}`; other bodies (e.g. HTML) fall back to the status text. */
+async function failureReason(res: Response): Promise<string> {
+  try {
+    const body = (await res.json()) as { reason?: unknown };
+    if (typeof body.reason === 'string' && body.reason) return body.reason.slice(0, 200);
+  } catch {
+    // Not JSON: use the status text below.
+  }
+  return res.statusText || 'no reason given';
+}
+
+async function fetchOpenMeteo(
+  target: Place,
+  fetchImpl: typeof fetch,
+  signal: AbortSignal,
+): Promise<WeatherReading> {
+  const res = await fetchImpl(
+    `https://api.open-meteo.com/v1/forecast?${new URLSearchParams({
+      latitude: String(target.latitude),
+      longitude: String(target.longitude),
+      current: 'temperature_2m,weather_code,relative_humidity_2m',
+      timezone: 'Asia/Ho_Chi_Minh',
+    })}`,
+    { signal },
+  );
+  if (!res.ok) throw new WeatherProviderError(res.status, await failureReason(res));
+  const body = (await res.json()) as {
+    current?: { temperature_2m: number; weather_code: number; relative_humidity_2m: number };
+  };
+  if (!body.current) throw new WeatherProviderError(res.status, 'response has no current block');
+  return {
+    temperature: body.current.temperature_2m,
+    humidity: body.current.relative_humidity_2m,
+    code: body.current.weather_code,
+  };
+}
+
+// MET Norway symbol codes (https://github.com/metno/weathericons) mapped to the WMO codes `describe` knows.
+// Day/night variants (`_day`, `_night`, `_polartwilight`) are stripped before matching.
+function metSymbolToWmo(symbolCode: string | undefined): number {
+  const symbol = (symbolCode ?? '').replace(/_(day|night|polartwilight)$/, '');
+  if (symbol.includes('thunder')) return 95;
+  if (symbol === 'clearsky') return 0;
+  if (symbol === 'fair' || symbol === 'partlycloudy') return 1;
+  if (symbol === 'cloudy') return 3;
+  if (symbol === 'fog') return 45;
+  if (symbol.includes('rain') || symbol.includes('sleet')) return 61;
+  return -1;
+}
+
+/** MET Norway's terms require an identifying User-Agent, and coordinates with at most 4 decimals. */
+const MET_USER_AGENT = 'vCraft/1.0 https://vcraft-vn.vercel.app';
+
+interface MetSummary {
+  summary?: { symbol_code?: string };
+}
+
+async function fetchMetNorway(
+  target: Place,
+  fetchImpl: typeof fetch,
+  signal: AbortSignal,
+): Promise<WeatherReading> {
+  const res = await fetchImpl(
+    `https://api.met.no/weatherapi/locationforecast/2.0/compact?${new URLSearchParams({
+      lat: target.latitude.toFixed(4),
+      lon: target.longitude.toFixed(4),
+    })}`,
+    { signal, headers: { 'User-Agent': MET_USER_AGENT } },
+  );
+  if (!res.ok) throw new WeatherProviderError(res.status, await failureReason(res));
+  const body = (await res.json()) as {
+    properties?: {
+      timeseries?: {
+        data?: {
+          instant?: { details?: { air_temperature?: number; relative_humidity?: number } };
+          next_1_hours?: MetSummary;
+          next_6_hours?: MetSummary;
+        };
+      }[];
+    };
+  };
+  const data = body.properties?.timeseries?.[0]?.data;
+  const details = data?.instant?.details;
+  if (
+    typeof details?.air_temperature !== 'number' ||
+    typeof details.relative_humidity !== 'number'
+  ) {
+    throw new WeatherProviderError(
+      res.status,
+      'response has no air_temperature or relative_humidity',
+    );
+  }
+  return {
+    temperature: details.air_temperature,
+    humidity: details.relative_humidity,
+    code: metSymbolToWmo((data?.next_1_hours ?? data?.next_6_hours)?.summary?.symbol_code),
+  };
+}
+
+/** One log line: provider, HTTP status and the provider's reason, or the error name and message. */
+function describeFailure(provider: string, place: string, error: unknown): string {
+  const head = `weather lookup failed: provider=${provider} place=${JSON.stringify(place)}`;
+  if (error instanceof WeatherProviderError) {
+    return `${head} status=${error.status} reason=${JSON.stringify(error.reason)}`;
+  }
+  if (error instanceof Error) {
+    // `fetch failed` hides the real cause (DNS, connection reset...) in `cause`.
+    const cause = (error as { cause?: { code?: unknown; message?: unknown } }).cause;
+    const detail = cause?.code ?? cause?.message;
+    const causeText = detail ? ` cause=${JSON.stringify(String(detail))}` : '';
+    return `${head} error=${error.name} message=${JSON.stringify(error.message)}${causeText}`;
+  }
+  return `${head} error=${JSON.stringify(String(error))}`;
+}
+
+/** Runs one provider call with its own timeout; a failure is logged once and turns into `null`. */
+async function attempt<T>(
+  provider: string,
+  place: string,
+  logger: WeatherLogger,
+  work: (signal: AbortSignal) => Promise<T>,
+): Promise<T | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TOOL_TIMEOUT_MS);
+  try {
+    return await work(controller.signal);
+  } catch (error) {
+    logger.warn(describeFailure(provider, place, error));
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function weatherSentence(target: Place, reading: WeatherReading, locale: 'vi' | 'en'): string {
+  const { temperature, humidity, code } = reading;
+  return locale === 'vi'
+    ? `Thời tiết ở ${target.name} bây giờ: ${Math.round(temperature)}°C, ${describe(code, locale)}, độ ẩm ${Math.round(humidity)}%.`
+    : `Weather in ${target.name} now: ${Math.round(temperature)}°C, ${describe(code, locale)}, humidity ${Math.round(humidity)}%.`;
+}
+
 /**
- * `get_weather`: current weather from Open-Meteo (no key), Bát Tràng by default. Places are geocoded
- * within Vietnam only. Results are cached for 15 minutes per place.
+ * `get_weather`: current weather, Bát Tràng by default. Places are geocoded within Vietnam only (Open-Meteo).
+ * The forecast comes from Open-Meteo, then from MET Norway if that fails (both need no key; shared cloud
+ * egress IPs are sometimes rate-limited). Each provider call has its own 3 s timeout and every failure is
+ * logged. A fresh answer is cached for 15 minutes per place; the last good answer is kept for 6 hours and
+ * served, marked as old, when every provider fails.
  */
 export async function getWeather(
   args: z.infer<typeof WeatherArgsSchema>,
   locale: 'vi' | 'en',
   kv: KeyValueStore,
   fetchImpl: typeof fetch = fetch,
+  logger: WeatherLogger = NO_LOGGER,
 ): Promise<string | null> {
   const { place } = WeatherArgsSchema.parse(args);
-  const cacheKey = `assistant:weather:${locale}:${(place ?? 'bat trang').toLowerCase()}`;
+  const placeKey = `${locale}:${(place ?? 'bat trang').toLowerCase()}`;
+  const cacheKey = `assistant:weather:${placeKey}`;
+  const staleKey = `assistant:weather-stale:${placeKey}`;
   const cached = await kv.get(cacheKey);
   if (cached) return cached;
-  const answer = await withTimeout(async (signal) => {
-    let target = BAT_TRANG;
-    if (place) {
+  const label = place ?? BAT_TRANG.name;
+
+  const staleAnswer = async () => {
+    const stale = await kv.get(staleKey);
+    if (!stale) return null;
+    return locale === 'vi'
+      ? `${stale} (số liệu lần cập nhật gần nhất, chưa làm mới được)`
+      : `${stale} (last known reading, could not refresh)`;
+  };
+
+  let target: Place = BAT_TRANG;
+  if (place) {
+    const found = await attempt('open-meteo-geocoding', label, logger, async (signal) => {
       const geo = await fetchImpl(
         `https://geocoding-api.open-meteo.com/v1/search?${new URLSearchParams({ name: place, count: '1', language: 'vi', countryCode: 'VN' })}`,
         { signal },
       );
-      const found = ((await geo.json()) as { results?: (typeof BAT_TRANG)[] }).results?.[0];
-      if (!found) return null;
-      target = found;
-    }
-    const res = await fetchImpl(
-      `https://api.open-meteo.com/v1/forecast?${new URLSearchParams({
-        latitude: String(target.latitude),
-        longitude: String(target.longitude),
-        current: 'temperature_2m,weather_code,relative_humidity_2m',
-        timezone: 'Asia/Ho_Chi_Minh',
-      })}`,
-      { signal },
-    );
-    const body = (await res.json()) as {
-      current?: { temperature_2m: number; weather_code: number; relative_humidity_2m: number };
-    };
-    if (!body.current) return null;
-    const { temperature_2m: t, weather_code: code, relative_humidity_2m: humidity } = body.current;
-    return locale === 'vi'
-      ? `Thời tiết ở ${target.name} bây giờ: ${Math.round(t)}°C, ${describe(code, locale)}, độ ẩm ${humidity}%.`
-      : `Weather in ${target.name} now: ${Math.round(t)}°C, ${describe(code, locale)}, humidity ${humidity}%.`;
-  });
-  if (answer) await kv.set(cacheKey, answer, WEATHER_CACHE_SECONDS);
+      if (!geo.ok) throw new WeatherProviderError(geo.status, await failureReason(geo));
+      return ((await geo.json()) as { results?: Place[] }).results?.[0] ?? null;
+    });
+    // `null` is an unknown place or a failure that was already logged; a stale answer covers the latter.
+    if (!found) return await staleAnswer();
+    target = found;
+  }
+
+  const reading =
+    (await attempt('open-meteo', label, logger, (signal) =>
+      fetchOpenMeteo(target, fetchImpl, signal),
+    )) ??
+    (await attempt('met-norway', label, logger, (signal) =>
+      fetchMetNorway(target, fetchImpl, signal),
+    ));
+  if (!reading) return await staleAnswer();
+  const answer = weatherSentence(target, reading, locale);
+  await kv.set(cacheKey, answer, WEATHER_CACHE_SECONDS);
+  await kv.set(staleKey, answer, WEATHER_STALE_SECONDS);
   return answer;
 }
 
