@@ -42,3 +42,18 @@ test.describe('Triển lãm công khai', () => {
     await expect(page.getByTestId('place-list')).toBeVisible();
   });
 });
+
+test.describe('artisan page on a 360 px phone (GH#149)', () => {
+  test.use({ viewport: { width: 360, height: 780 } });
+
+  test('a long featured product name wraps instead of scrolling the page sideways', async ({
+    page,
+  }) => {
+    await page.goto('/en/artisans/gom-hanh-thuy');
+    await expect(page.getByRole('link', { name: /Read the journal of/ })).toBeVisible();
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBe(0);
+  });
+});
