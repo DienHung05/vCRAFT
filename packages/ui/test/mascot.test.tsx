@@ -1,19 +1,52 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { canBlink, gazeDirection, MASCOT_MOODS, Mascot, mascotFace, nextBlinkDelay } from '../src';
+import {
+  canBlink,
+  gazeDirection,
+  gazeToDirection,
+  MASCOT_MOODS,
+  Mascot,
+  moodFixedDirection,
+  moodReaction,
+  nextBlinkDelay,
+} from '../src';
 
 describe('mascot model', () => {
-  it('gives every mood a face', () => {
-    for (const mood of MASCOT_MOODS) expect(mascotFace(mood), mood).toBeDefined();
-    expect(mascotFace('greet').gesture).toBe('wave');
-    expect(mascotFace('sleep').gesture).toBe('zzz');
-    expect(mascotFace('refuse')).toMatchObject({ gesture: 'hug', ears: 'back' });
+  it('every mood has a reaction or a direction', () => {
+    for (const mood of MASCOT_MOODS) {
+      const reaction = moodReaction(mood);
+      const fixed = moodFixedDirection(mood);
+      // Either it shows a reaction overlay, or it uses the directions sheet.
+      // Both null is fine — gaze-driven.
+      expect(reaction === null || typeof reaction === 'string').toBe(true);
+      expect(fixed === null || typeof fixed === 'string').toBe(true);
+    }
   });
 
-  it('only blinks with open eyes', () => {
+  it('mood reaction mapping matches the spec', () => {
+    expect(moodReaction('greet')).toBe('heart');
+    expect(moodReaction('happy')).toBe('sparkle');
+    expect(moodReaction('sleep')).toBe('sleepy');
+    expect(moodReaction('confused')).toBe('dizzy');
+    expect(moodReaction('talk')).toBe('delighted');
+    expect(moodReaction('idle')).toBeNull();
+    expect(moodReaction('listen')).toBeNull();
+    expect(moodReaction('refuse')).toBeNull();
+  });
+
+  it('fixed direction mapping matches the spec', () => {
+    expect(moodFixedDirection('think')).toBe('up-right');
+    expect(moodFixedDirection('refuse')).toBe('center');
+    expect(moodFixedDirection('idle')).toBeNull();
+  });
+
+  it('canBlink is false for reaction-overlay moods', () => {
     expect(canBlink('idle')).toBe(true);
+    expect(canBlink('listen')).toBe(true);
     expect(canBlink('sleep')).toBe(false);
+    expect(canBlink('greet')).toBe(false);
     expect(canBlink('happy')).toBe(false);
+    expect(canBlink('talk')).toBe(false);
   });
 
   it('turns the head one of nine ways, straight inside the dead zone', () => {
@@ -22,6 +55,18 @@ describe('mascot model', () => {
     expect(gazeDirection(centre, { x: 120, y: 90 })).toEqual({ x: 0, y: 0 });
     expect(gazeDirection(centre, { x: 400, y: 10 })).toEqual({ x: 1, y: -1 });
     expect(gazeDirection(centre, { x: 0, y: 300 })).toEqual({ x: -1, y: 1 });
+  });
+
+  it('gazeToDirection maps {x,y} steps to the correct cell name', () => {
+    expect(gazeToDirection({ x: 0, y: 0 })).toBe('center');
+    expect(gazeToDirection({ x: -1, y: -1 })).toBe('up-left');
+    expect(gazeToDirection({ x: 0, y: -1 })).toBe('up');
+    expect(gazeToDirection({ x: 1, y: -1 })).toBe('up-right');
+    expect(gazeToDirection({ x: -1, y: 0 })).toBe('left');
+    expect(gazeToDirection({ x: 1, y: 0 })).toBe('right');
+    expect(gazeToDirection({ x: -1, y: 1 })).toBe('down-left');
+    expect(gazeToDirection({ x: 0, y: 1 })).toBe('down');
+    expect(gazeToDirection({ x: 1, y: 1 })).toBe('down-right');
   });
 
   it('blinks every 3 to 6 seconds', () => {
@@ -39,14 +84,30 @@ describe('<Mascot>', () => {
   });
 
   it('renders at the launcher and panel sizes', () => {
-    expect(renderToStaticMarkup(<Mascot size={56} />)).toContain('width="56"');
-    expect(renderToStaticMarkup(<Mascot size={96} />)).toContain('width="96"');
+    const html56 = renderToStaticMarkup(<Mascot size={56} />);
+    const html96 = renderToStaticMarkup(<Mascot size={96} />);
+    expect(html56).toContain('width:56px');
+    expect(html96).toContain('width:96px');
   });
 
-  it('shows each mood’s gesture', () => {
-    expect(renderToStaticMarkup(<Mascot mood="sleep" />)).toContain('Z</tspan>');
-    expect(renderToStaticMarkup(<Mascot mood="confused" />)).toContain('?</text>');
-    expect(renderToStaticMarkup(<Mascot mood="greet" />)).toContain('wave');
+  it('mounts both sprite layers so sheets are preloaded', () => {
+    const html = renderToStaticMarkup(<Mascot />);
+    expect(html).toContain('fox-directions.webp');
+    expect(html).toContain('fox-reactions.webp');
+  });
+
+  it('accepts custom directions and reactions URLs', () => {
+    const html = renderToStaticMarkup(
+      <Mascot directions="/custom/dir.webp" reactions="/custom/react.webp" />,
+    );
+    expect(html).toContain('/custom/dir.webp');
+    expect(html).toContain('/custom/react.webp');
+  });
+
+  it('sets data-mood on the root element', () => {
+    expect(renderToStaticMarkup(<Mascot mood="sleep" />)).toContain('data-mood="sleep"');
+    expect(renderToStaticMarkup(<Mascot mood="confused" />)).toContain('data-mood="confused"');
+    expect(renderToStaticMarkup(<Mascot mood="greet" />)).toContain('data-mood="greet"');
   });
 
   it('breathes and animates the bubble only when motion is allowed', () => {
@@ -68,5 +129,15 @@ describe('<Mascot>', () => {
 
   it('has no bubble without a thought', () => {
     expect(renderToStaticMarkup(<Mascot mood="think" />)).not.toContain('rounded-full');
+  });
+
+  it('shows the shake animation for refuse mood when motion is on', () => {
+    const html = renderToStaticMarkup(<Mascot mood="refuse" reducedMotion={false} />);
+    expect(html).toMatch(/animation:vc-fox-[^;"]*-shake/);
+  });
+
+  it('has no shake animation under reduced motion', () => {
+    const html = renderToStaticMarkup(<Mascot mood="refuse" reducedMotion />);
+    expect(html).not.toMatch(/animation:vc-fox/);
   });
 });

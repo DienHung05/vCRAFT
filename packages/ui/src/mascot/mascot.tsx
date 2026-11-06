@@ -1,18 +1,21 @@
 'use client';
 
+import type { CSSProperties } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useReducedMotion } from '../hooks/use-reduced-motion';
 import { cn } from '../lib/cn';
 import {
   BLINK_MS,
   canBlink,
-  type EyeShape,
+  directionIndex,
   gazeDirection,
+  gazeToDirection,
   isDoubleBlink,
   type MascotMood,
-  type MouthShape,
-  mascotFace,
+  moodFixedDirection,
+  moodReaction,
   nextBlinkDelay,
+  reactionIndex,
   THOUGHT_MS,
 } from './mascot-model';
 
@@ -24,72 +27,36 @@ export interface MascotProps {
   lookAt?: 'pointer' | { x: number; y: number } | null;
   /** Rendered size in px: 56 (phone launcher), 64 (desktop launcher), 96 (panel header). */
   size?: number;
-  /** Idle this long, the Fox dozes off (Zzz). */
+  /** Idle this long, the Fox dozes off (sleepy). */
   dozeAfterMs?: number;
   /** Accessible name; without it the mascot is decorative. */
   label?: string;
   /** Overrides `prefers-reduced-motion` (tests, previews). */
   reducedMotion?: boolean;
   className?: string;
+  /** URL for the 3×3 directions sprite sheet. Defaults to '/mascots/fox-directions.webp'. */
+  directions?: string;
+  /** URL for the 3×3 reactions sprite sheet. Defaults to '/mascots/fox-reactions.webp'. */
+  reactions?: string;
 }
 
-const INK = 'var(--color-ink)';
-const CLAY = 'var(--color-clay)';
-const GLAZE = 'var(--color-glaze)';
-// Cream of the muzzle, chest and tail tip: paper, so it follows the light/dark palette like the rest.
-const CREAM = 'var(--color-paper)';
-
-function Eye({ cx, shape, blinking }: { cx: number; shape: EyeShape; blinking: boolean }) {
-  const cy = 46;
-  if (blinking || shape === 'closed')
-    return (
-      <path
-        d={`M${cx - 3.5} ${cy} q3.5 2.5 7 0`}
-        fill="none"
-        stroke={INK}
-        strokeWidth={1.6}
-        strokeLinecap="round"
-      />
-    );
-  if (shape === 'happy')
-    return (
-      <path
-        d={`M${cx - 3.5} ${cy + 1} q3.5 -4 7 0`}
-        fill="none"
-        stroke={INK}
-        strokeWidth={1.6}
-        strokeLinecap="round"
-      />
-    );
-  const r = shape === 'wide' ? 4.2 : 3.3;
-  const dy = shape === 'up' ? -1.6 : 0;
-  return (
-    <g>
-      <ellipse cx={cx} cy={cy + dy} rx={r} ry={r * 1.15} fill={INK} />
-      <circle cx={cx + 1.1} cy={cy + dy - 1.3} r={1} fill={CREAM} />
-    </g>
-  );
+// background-size 300% 300% makes each 1/3 cell a clean 0/50/100% step on both axes.
+function cellStyle(index: number): CSSProperties {
+  const col = index % 3;
+  const row = Math.floor(index / 3);
+  return { backgroundPosition: `${col * 50}% ${row * 50}%` };
 }
 
-function Mouth({ shape }: { shape: MouthShape }) {
-  const stroke = { fill: 'none', stroke: INK, strokeWidth: 1.4, strokeLinecap: 'round' } as const;
-  switch (shape) {
-    case 'open':
-      return <path d="M56 57.5 q4 6 8 0 z" fill={INK} />;
-    case 'flat':
-      return <path d="M56.5 58.5 h7" {...stroke} />;
-    case 'o':
-      return <circle cx={60} cy={59} r={1.8} fill={INK} />;
-    case 'wobble':
-      return <path d="M55 58.5 q2.5 -2 5 0 t5 0" {...stroke} />;
-    default:
-      return <path d="M55.5 57.5 q4.5 4 9 0" {...stroke} />;
-  }
-}
+const LAYER_BASE: CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  backgroundSize: '300% 300%',
+  backgroundRepeat: 'no-repeat',
+};
 
 /** Nine-direction gaze toward the pointer or a fixed point, with the mascot's own box as the centre. */
 function useGaze(
-  ref: React.RefObject<SVGSVGElement | null>,
+  ref: React.RefObject<HTMLDivElement | null>,
   lookAt: MascotProps['lookAt'],
   off: boolean,
 ) {
@@ -123,7 +90,7 @@ function useGaze(
   return gaze;
 }
 
-/** Random blinks every 3–6 s, sometimes double; none under reduced motion or with eyes closed. */
+/** Random blinks every 3–6 s, sometimes double; none under reduced motion. */
 function useBlink(enabled: boolean) {
   const [blinking, setBlinking] = useState(false);
   useEffect(() => {
@@ -191,12 +158,13 @@ function useThought(lines: readonly string[], reduced: boolean) {
 }
 
 /**
- * The Fox, vCraft's assistant mascot (BRAND §10): a chibi fox cub in fired-clay fur with a glaze-blue
- * scarf, holding a small garlic-neck vase, drawn with a thin ink outline and no 3D shading. Pure UI:
- * the widget decides the mood. It blinks at random, breathes 2 px on a 3 s cycle, turns its head toward
- * the pointer or a point with a slight lag, dozes off when left idle, and shows a thought bubble whose
- * three small clouds rise in turn before the line appears. Under `prefers-reduced-motion` it neither
- * blinks, breathes nor turns, and the bubble is static.
+ * The Fox, vCraft's assistant mascot (BRAND §10): uses the original page-mascot fox sprite sheets
+ * (fox-directions.webp and fox-reactions.webp) unchanged, rendered via two stacked CSS background layers.
+ *
+ * The component blinks at random, breathes 2 px on a 3 s cycle, turns its head toward the pointer or a
+ * point with a slight lag, dozes off when left idle, and shows a thought bubble whose three small clouds
+ * rise in turn before the line appears. Under `prefers-reduced-motion` it neither blinks, breathes nor
+ * turns, and the bubble is static.
  */
 export function Mascot({
   mood = 'idle',
@@ -207,180 +175,92 @@ export function Mascot({
   label,
   reducedMotion,
   className,
+  directions = '/mascots/fox-directions.webp',
+  reactions = '/mascots/fox-reactions.webp',
 }: MascotProps) {
   const systemReduced = useReducedMotion();
   const reduced = reducedMotion ?? systemReduced;
-  const svg = useRef<SVGSVGElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const id = useId().replace(/:/g, '');
   const dozing = useDozing(mood === 'idle', dozeAfterMs);
   const shown: MascotMood = dozing ? 'sleep' : mood;
-  const face = mascotFace(shown);
+
+  const gaze = useGaze(wrapperRef, lookAt, reduced || shown === 'sleep' || shown === 'refuse');
   const blinking = useBlink(!reduced && canBlink(shown));
-  const gaze = useGaze(svg, lookAt, reduced || shown === 'sleep');
   const lines = thought === undefined ? [] : typeof thought === 'string' ? [thought] : [...thought];
   const bubble = useThought(lines, reduced);
   const motion = !reduced;
 
-  const earTilt = face.ears === 'forward' ? -6 : face.ears === 'back' ? 10 : 0;
+  // Determine which sprite to show on each layer.
+  // Reactions layer is shown for reaction-based moods, or during a blink.
+  const reactionMood = moodReaction(shown);
+  const showReaction = reactionMood !== null || blinking;
+
+  // Directions layer: use a fixed direction for think/refuse, otherwise gaze-driven.
+  const fixedDir = moodFixedDirection(shown);
+  const currentDirection = fixedDir ?? gazeToDirection(gaze);
+  const dirIdx = directionIndex(currentDirection);
+
+  // Reactions layer: blink cell when blinking (regardless of mood), otherwise the mood cell.
+  const currentReaction = blinking ? 'blink' : (reactionMood ?? 'blink');
+  const reactIdx = reactionIndex(currentReaction);
+
   return (
-    <span
+    <div
+      ref={wrapperRef}
       className={cn('relative inline-block align-middle', className)}
       style={{ width: size, height: size }}
+      {...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': true })}
       data-mood={shown}
       data-motion={motion ? 'on' : 'off'}
     >
       <style>{`
         @keyframes vc-fox-${id}-breathe { 50% { transform: translateY(-2px); } }
-        @keyframes vc-fox-${id}-wave { 50% { transform: rotate(-18deg); } }
         @keyframes vc-fox-${id}-shake { 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
         @keyframes vc-fox-${id}-rise { from { opacity: 0; transform: translateY(4px) scale(.6); } }
         @keyframes vc-fox-${id}-fade { from { opacity: 0; } }
       `}</style>
-      <svg
-        ref={svg}
-        viewBox="0 0 120 120"
-        width={size}
-        height={size}
-        role={label ? 'img' : undefined}
-        aria-label={label}
-        aria-hidden={label ? undefined : true}
-        className="overflow-visible"
+
+      {/* Breathing wrapper */}
+      <span
+        style={{
+          position: 'relative',
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          animation: motion
+            ? `vc-fox-${id}-breathe 3s var(--ease-clay, ease-in-out) infinite`
+            : undefined,
+          // Head shake for 'refuse' mood
+          ...(motion && shown === 'refuse'
+            ? { animation: `vc-fox-${id}-shake 0.5s ease-in-out 2` }
+            : {}),
+        }}
       >
-        <g
-          style={
-            motion
-              ? { animation: `vc-fox-${id}-breathe 3s var(--ease-clay, ease-in-out) infinite` }
-              : undefined
-          }
-        >
-          {/* Tail with a cream tip, like crackle glaze */}
-          <path
-            d="M84 96 C100 94 110 80 106 62 C104 74 96 82 82 86 Z"
-            fill={CLAY}
-            stroke={INK}
-            strokeWidth={1.3}
-            strokeLinejoin="round"
-          />
-          <path d="M106 62 C108 70 106 76 101 80 C104 72 104 67 106 62 Z" fill={CREAM} />
-          {/* Body and chest */}
-          <ellipse cx={60} cy={94} rx={25} ry={19} fill={CLAY} stroke={INK} strokeWidth={1.3} />
-          <ellipse cx={60} cy={98} rx={14} ry={12} fill={CREAM} />
-          {/* Glaze-blue scarf with a wave edge */}
-          <path
-            d="M37 72 Q60 82 83 72 L84 79 Q60 89 36 79 Z"
-            fill={GLAZE}
-            stroke={INK}
-            strokeWidth={1.2}
-          />
-          <path
-            d="M40 79 q3 2 6 0 t6 0 t6 0 t6 0 t6 0 t6 0 t6 0"
-            fill="none"
-            stroke={CREAM}
-            strokeWidth={0.9}
-            opacity={0.8}
-          />
-          <path d="M76 80 l6 14 l-7 -2 Z" fill={GLAZE} stroke={INK} strokeWidth={1.1} />
-          {/* The small garlic-neck vase, held in both paws (hugged tight when refusing) */}
-          <g transform={face.gesture === 'hug' ? 'translate(0 -2)' : undefined}>
-            <path
-              d="M56.5 82 h7 c0 3 -1 4 0 6 c6 3 8.5 7 8.5 11 c0 6 -5 9 -12 9 s-12 -3 -12 -9 c0 -4 2.5 -8 8.5 -11 c1 -2 0 -3 0 -6 z"
-              fill={CREAM}
-              stroke={INK}
-              strokeWidth={1.2}
-            />
-            <path d="M51 99 q3 -2 6 0 t6 0 t6 0" fill="none" stroke={GLAZE} strokeWidth={1.4} />
-            <ellipse
-              cx={face.gesture === 'hug' ? 51 : 48}
-              cy={99}
-              rx={4.5}
-              ry={4}
-              fill={CLAY}
-              stroke={INK}
-              strokeWidth={1.1}
-            />
-            {face.gesture === 'wave' ? null : (
-              <ellipse
-                cx={face.gesture === 'hug' ? 69 : 72}
-                cy={99}
-                rx={4.5}
-                ry={4}
-                fill={CLAY}
-                stroke={INK}
-                strokeWidth={1.1}
-              />
-            )}
-          </g>
-          {face.gesture === 'wave' ? (
-            <g
-              style={{
-                transformOrigin: '88px 74px',
-                animation: motion
-                  ? `vc-fox-${id}-wave 0.6s var(--ease-press, ease-out) 3`
-                  : undefined,
-              }}
-            >
-              <ellipse cx={97} cy={62} rx={4.5} ry={5} fill={CLAY} stroke={INK} strokeWidth={1.1} />
-            </g>
-          ) : null}
-          {/* Head: turns one step toward the gaze, a little after it moves */}
-          <g
-            style={{
-              transform: `translate(${gaze.x * 2.5}px, ${gaze.y * 1.5}px)`,
-              transition: motion ? 'transform 240ms var(--ease-clay, ease-out) 60ms' : undefined,
-              transformOrigin: '60px 50px',
-              animation:
-                motion && shown === 'refuse' ? `vc-fox-${id}-shake 0.5s ease-in-out 2` : undefined,
-            }}
-          >
-            <g transform={`rotate(${-earTilt} 40 30)`}>
-              <path
-                d="M36 36 L30 10 L52 27 Z"
-                fill={CLAY}
-                stroke={INK}
-                strokeWidth={1.3}
-                strokeLinejoin="round"
-              />
-              <path d="M37 31 L34 16 L46 26 Z" fill={INK} opacity={0.75} />
-            </g>
-            <g transform={`rotate(${earTilt} 80 30)`}>
-              <path
-                d="M84 36 L90 10 L68 27 Z"
-                fill={CLAY}
-                stroke={INK}
-                strokeWidth={1.3}
-                strokeLinejoin="round"
-              />
-              <path d="M83 31 L86 16 L74 26 Z" fill={INK} opacity={0.75} />
-            </g>
-            <path
-              d="M29 47 Q29 25 60 24 Q91 25 91 47 Q90 69 60 70 Q30 69 29 47 Z"
-              fill={CLAY}
-              stroke={INK}
-              strokeWidth={1.3}
-            />
-            <path d="M40 58 Q60 74 80 58 Q76 66 60 67 Q44 66 40 58 Z" fill={CREAM} />
-            <g transform={`translate(${gaze.x * 1.5} ${gaze.y * 1})`}>
-              <Eye cx={48} shape={face.eyes} blinking={blinking} />
-              <Eye cx={72} shape={face.eyes} blinking={blinking} />
-              <ellipse cx={60} cy={53} rx={2.6} ry={2} fill={INK} />
-              <Mouth shape={face.mouth} />
-            </g>
-          </g>
-          {face.gesture === 'zzz' ? (
-            <text x={88} y={26} fontSize={12} fontWeight={600} fill={INK} opacity={0.7}>
-              z
-              <tspan dx={1} dy={-6} fontSize={15}>
-                Z
-              </tspan>
-            </text>
-          ) : null}
-          {face.gesture === 'question' ? (
-            <text x={92} y={28} fontSize={18} fontWeight={700} fill={GLAZE}>
-              ?
-            </text>
-          ) : null}
-        </g>
-      </svg>
+        {/* Directions layer — always mounted so the sheet is preloaded; hidden when reaction is active */}
+        <span
+          style={{
+            ...LAYER_BASE,
+            backgroundImage: `url(${directions})`,
+            ...cellStyle(dirIdx),
+            opacity: showReaction ? 0 : 1,
+            // Slight lag on the gaze change for a natural feel
+            transition:
+              motion && !showReaction ? 'background-position 0ms, opacity 60ms' : undefined,
+          }}
+        />
+        {/* Reactions layer — always mounted so the sheet is preloaded; shown for blinks and mood reactions */}
+        <span
+          style={{
+            ...LAYER_BASE,
+            backgroundImage: `url(${reactions})`,
+            ...cellStyle(reactIdx),
+            opacity: showReaction ? 1 : 0,
+            transition: motion ? 'opacity 60ms' : undefined,
+          }}
+        />
+      </span>
+
       {bubble.line ? (
         <span aria-hidden="true" className="pointer-events-none absolute bottom-[78%] left-[62%]">
           {[0, 1, 2].map((i) => (
@@ -420,6 +300,6 @@ export function Mascot({
           </span>
         </span>
       ) : null}
-    </span>
+    </div>
   );
 }
