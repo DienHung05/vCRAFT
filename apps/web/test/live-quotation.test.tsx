@@ -102,6 +102,7 @@ describe('live quotation workspaces', () => {
     const client = {
       getRequest: vi.fn().mockResolvedValue(request),
       listOwnContributions: vi.fn().mockResolvedValue([offer]),
+      priceHint: vi.fn().mockResolvedValue({ hint: null }),
       updateContribution: vi.fn().mockResolvedValue({ ...offer, version: 8, status: 'ACTIVE' }),
       createContribution: vi.fn(),
     } as unknown as QuotationClient;

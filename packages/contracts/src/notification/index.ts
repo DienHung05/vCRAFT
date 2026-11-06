@@ -67,3 +67,15 @@ export const UpdateNotificationPreferencesRequestSchema = z.strictObject({
 export type UpdateNotificationPreferencesRequest = z.infer<
   typeof UpdateNotificationPreferencesRequestSchema
 >;
+
+/**
+ * `GET /me/events`: Server-Sent Events for the bell and live quotation screens (GH#93, ADR-07). Each
+ * `data:` line is one `LiveEvent`. `notifications` carries the new unread count; `activity` says a notice
+ * concerning the account arrived, so open live views should refetch. Clients keep polling as a fallback.
+ */
+export const LiveEventSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('ready'), retryMs: z.int().positive() }),
+  z.object({ type: z.literal('notifications'), unreadCount: z.int().min(0) }),
+  z.object({ type: z.literal('activity'), at: z.string() }),
+]);
+export type LiveEvent = z.infer<typeof LiveEventSchema>;

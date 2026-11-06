@@ -23,7 +23,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: Object.fromEntries(
-      ['contracts', 'database', 'domain', 'storage', 'utils'].map((name) => [
+      ['contracts', 'database', 'domain', 'knowledge', 'storage', 'utils'].map((name) => [
         `@vcraft/${name}`,
         fileURLToPath(new URL(`../../packages/${name}/src/index.ts`, import.meta.url)),
       ]),

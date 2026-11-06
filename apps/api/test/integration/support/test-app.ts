@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { MikroORM } from '@mikro-orm/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import { AppUser, ConsentRecord, FieldCipher } from '@vcraft/database';
 import { type AccountRole, CONSENT_PURPOSES, PRIVACY_POLICY_VERSION } from '@vcraft/domain';
 import { LocalObjectStorage } from '@vcraft/storage';
@@ -21,19 +21,33 @@ import type { TestDatabase } from './test-database.js';
 /**
  * Thay Supabase bằng token giả `Bearer test:<sub>` để test không cần project thật.
  * Tài khoản phải có sẵn trong `app_user` (xem {@link TestApp.createUser}) hoặc sẽ được tạo lười vai trò BUYER.
+ * Options follow as `|key=value`: `consent=<version>` mimics the sign-up form's metadata; `aal=aal1` a
+ * session without the second factor (the default is `aal2`, so admin tests pass MFA); `session=<id>` and
+ * `method=<amr>` the Supabase session claims behind sign-in history (GH#83).
  */
 class FakeIdentityVerifier extends IdentityVerifier {
   async verify(headers: Readonly<Record<string, string | string[] | undefined>>) {
     const auth = headers.authorization;
     if (typeof auth !== 'string') return null;
-    const match = /^Bearer test:([0-9a-f-]{36})(?:\|consent=(\S+))?$/.exec(auth);
+    const match = /^Bearer test:([0-9a-f-]{36})((?:\|[a-z]+=\S+?)*)$/.exec(auth);
     if (!match?.[1]) throw new InvalidTokenError('bad test token');
+    const options = new Map(
+      (match[2] ?? '')
+        .split('|')
+        .filter(Boolean)
+        .map((pair) => pair.split('=') as [string, string]),
+    );
+    const consent = options.get('consent');
+    const session = options.get('session');
+    const method = options.get('method');
     return {
       sub: match[1],
       email: `${match[1]}@test.local`,
       emailVerified: true,
-      // `Bearer test:<id>|consent=<version>` mimics the sign-up form's metadata.
-      ...(match[2] && { consentPolicyVersion: match[2] }),
+      aal: options.get('aal') === 'aal1' ? 'aal1' : 'aal2',
+      ...(consent && { consentPolicyVersion: consent }),
+      ...(session && { sessionId: session }),
+      ...(method && { method }),
     } satisfies VerifiedIdentity;
   }
 }
@@ -79,7 +93,11 @@ export interface TestApp {
   close: () => Promise<void>;
 }
 
-export async function startTestApp(db: TestDatabase): Promise<TestApp> {
+/** `configure` adds overrides of its own, e.g. a fake chat model for the assistant tests. */
+export async function startTestApp(
+  db: TestDatabase,
+  configure: (builder: TestingModuleBuilder) => TestingModuleBuilder = (builder) => builder,
+): Promise<TestApp> {
   const storageDir = await mkdtemp(join(tmpdir(), 'vcraft-api-storage-'));
   const storage = new LocalObjectStorage({
     publicDir: join(storageDir, 'public'),
@@ -90,7 +108,7 @@ export async function startTestApp(db: TestDatabase): Promise<TestApp> {
   });
   const authAdmin = new FakeAuthAdmin();
   const cipher = new FieldCipher(TEST_FIELD_KEYS);
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+  const moduleRef = await configure(Test.createTestingModule({ imports: [AppModule] }))
     .overrideProvider(OBJECT_STORAGE)
     .useValue(storage)
     .overrideProvider(MikroORM)

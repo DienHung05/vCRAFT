@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { type AuthErrorKey, authErrorKey } from '@/features/auth/auth-errors';
 import { FormAlert, PasswordField } from '@/features/auth/fields';
 import { type ChangePasswordValues, changePasswordSchema } from '@/features/auth/schemas';
+import { useCaptcha } from '@/features/auth/turnstile';
 import { useValidationMessage } from '@/features/auth/use-validation-message';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { notify } from '@/lib/notify';
@@ -24,6 +25,8 @@ export function ChangePasswordForm({ email }: { email: string }) {
   const tAuth = useTranslations('auth');
   const message = useValidationMessage();
   const [error, setError] = useState<FailureKey | null>(null);
+  // Checking the current password is a sign-in, which Supabase guards with Turnstile when it is on.
+  const captcha = useCaptcha();
   const {
     register,
     handleSubmit,
@@ -39,8 +42,14 @@ export function ChangePasswordForm({ email }: { email: string }) {
     setError(null);
     const supabase = browserSupabase();
     if (!supabase) return setError('unconfigured');
+    if (captcha.missing) return setError('captcha');
     try {
-      const verified = await supabase.auth.signInWithPassword({ email, password: current });
+      const verified = await supabase.auth.signInWithPassword({
+        email,
+        password: current,
+        options: captcha.options,
+      });
+      captcha.reset();
       if (verified.error) {
         const key = authErrorKey(verified.error);
         return setError(key === 'invalid_credentials' ? 'currentWrong' : key);
@@ -52,6 +61,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
       reset();
       notify.success(t('success'));
     } catch (failure) {
+      captcha.reset();
       setError(authErrorKey(failure));
     }
   });
@@ -82,6 +92,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
         error={message(errors.confirm)}
         {...register('confirm')}
       />
+      {captcha.widget}
       <Button type="submit" size="lg" disabled={isSubmitting}>
         {isSubmitting ? t('submitting') : t('submit')}
       </Button>

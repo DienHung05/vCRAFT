@@ -62,4 +62,12 @@ export class QuotationRequest extends BaseEntity {
 
   @Property({ type: 'string', length: 20 })
   status: Opt<RfqStatus> = 'DRAFT';
+
+  /** When the `rfq.expire` job handled the bidding deadline (closed or expired it and told everyone). */
+  @Property({ type: 'datetime', length: 3, nullable: true })
+  biddingClosedAt?: Date | null;
+
+  /** When `rfq.coordination-check` flagged the request for the village board (PLAN E9). */
+  @Property({ type: 'datetime', length: 3, nullable: true })
+  coordinationFlaggedAt?: Date | null;
 }

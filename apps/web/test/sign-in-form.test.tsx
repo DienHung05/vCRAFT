@@ -75,7 +75,7 @@ describe('SignInForm', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Gửi lại thư xác minh' }));
     await waitFor(() =>
-      expect(resend).toHaveBeenCalledWith({ type: 'signup', email: 'moi@vidu.vn' }),
+      expect(resend).toHaveBeenCalledWith({ type: 'signup', email: 'moi@vidu.vn', options: {} }),
     );
     expect(await screen.findByText(/Đã gửi lại thư xác minh tới moi@vidu\.vn/)).toBeTruthy();
   });

@@ -18,3 +18,4 @@ export type NewsStatus = (typeof NEWS_STATUSES)[number];
 /** `VILLAGE` is only readable by approved households and administrators (FR-NEWS-02). */
 export const NEWS_VISIBILITIES = ['PUBLIC', 'VILLAGE'] as const;
 export type NewsVisibility = (typeof NEWS_VISIBILITIES)[number];
+export * from './structured';

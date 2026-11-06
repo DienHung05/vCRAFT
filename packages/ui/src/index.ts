@@ -15,6 +15,19 @@ export {
 export { useReducedMotion } from './hooks';
 export { cn } from './lib/cn';
 export {
+  BLINK_MS,
+  canBlink,
+  gazeDirection,
+  MASCOT_MOODS,
+  Mascot,
+  type MascotFace,
+  type MascotMood,
+  type MascotProps,
+  mascotFace,
+  nextBlinkDelay,
+  THOUGHT_MS,
+} from './mascot';
+export {
   dur,
   durMs,
   ease,

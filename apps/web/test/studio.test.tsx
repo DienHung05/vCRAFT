@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { ApiError, type StudioClient } from '@vcraft/api-client';
 import type { HouseholdDto } from '@vcraft/contracts';
 import { describe, expect, it, vi } from 'vitest';
@@ -182,6 +182,41 @@ describe('ProfileEditor', () => {
       target: { value: 'Lò nung gạch trong xưởng' },
     });
     expect(screen.queryByText(/cần có mô tả ít nhất 3 ký tự/)).toBeNull();
+  });
+
+  it('reorders family milestones and saves each photo as its media id and description', async () => {
+    const photoId = '00000000-0000-4000-8000-0000000000aa';
+    const client = fakeClient({
+      getHousehold: vi.fn(async () => ({
+        ...HOUSEHOLD,
+        timeline: [
+          { year: 1960, title: 'Dựng lò', text: '', photo: null },
+          {
+            year: 1960,
+            title: 'Mẻ men lam đầu',
+            text: 'Ông nội nung thử.',
+            photo: { mediaId: photoId, url: null, variants: [], alt: 'Chiếc bình đầu tiên' },
+          },
+        ],
+      })),
+    });
+    renderVi(<ProfileEditor client={client} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Đưa “Mẻ men lam đầu” lên trước' }));
+    const card = screen.getByRole('heading', { name: 'Dòng thời gian gia đình' }).closest('div');
+    fireEvent.click(within(card as HTMLElement).getByRole('button', { name: 'Lưu' }));
+    await waitFor(() =>
+      expect(client.updateProfile).toHaveBeenCalledWith(3, {
+        timeline: [
+          {
+            year: 1960,
+            title: 'Mẻ men lam đầu',
+            text: 'Ông nội nung thử.',
+            photo: { mediaId: photoId, alt: 'Chiếc bình đầu tiên' },
+          },
+          { year: 1960, title: 'Dựng lò', text: '', photo: null },
+        ],
+      }),
+    );
   });
 });
 

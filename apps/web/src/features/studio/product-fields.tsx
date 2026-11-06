@@ -4,6 +4,8 @@ import type { ProductDto } from '@vcraft/contracts';
 import { CreateProductRequestSchema } from '@vcraft/contracts';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
 import { useTranslations } from 'next-intl';
+import { useId } from 'react';
+import { AmountInWords } from '@/components/amount-in-words';
 import { inputClass } from './workshop-editor';
 
 export interface ProductDraft {
@@ -83,6 +85,7 @@ export function ProductFields({
 }) {
   const t = useTranslations('studio.products');
   const categories = useTranslations('catalog.categories');
+  const priceWordsId = useId();
   const field = (key: keyof ProductDraft, label: string, type = 'text') => (
     <label className="flex flex-col gap-1 text-small">
       {label}
@@ -149,7 +152,20 @@ export function ProductFields({
         ) : null}
       </div>
       <div className="grid gap-4 md:grid-cols-3">
-        {field('priceVnd', t('price'), 'number')}
+        <div className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1 text-small">
+            {t('price')}
+            <input
+              type="number"
+              min={0}
+              value={draft.priceVnd}
+              aria-describedby={priceWordsId}
+              onChange={(event) => onChange({ priceVnd: event.target.value })}
+              className={inputClass}
+            />
+          </label>
+          <AmountInWords id={priceWordsId} value={draft.priceVnd} />
+        </div>
         {field('stock', t('stock'), 'number')}
         {field('weightGrams', t('weight'), 'number')}
       </div>

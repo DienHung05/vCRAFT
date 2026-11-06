@@ -6,7 +6,7 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # Pipeline mặc định bật; đặt repo variable CI_ENABLED=false để tắt.
@@ -68,6 +68,8 @@ jobs:
       API_INTERNAL_URL: http://localhost:4000/api/v1
       # Throwaway key for CI only (NFR-SEC-03): the demo seed encrypts sample ID numbers and the API refuses to start without one.
       FIELD_ENCRYPTION_KEYS: v1:Y2ktb25seS1maWVsZC1rZXktMDEyMzQ1Njc4OWFiY2Q=
+      # GH#84: Cloudflare's always-pass Turnstile test key, built into the web app for the CAPTCHA e2e.
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -86,7 +88,7 @@ jobs:
       - name: Chạy API nền
         run: |
           node apps/api/dist/main.js &
-          for i in $(seq 1 30); do curl -sf localhost:4000/api/v1/village/stats && break; sleep 1; done
+          for _ in $(seq 1 30); do curl -sf localhost:4000/api/v1/village/stats && break; sleep 1; done
         env:
           APP_URL: http://localhost:4000
           STORAGE_DRIVER: local
@@ -94,6 +96,8 @@ jobs:
           STORAGE_LOCAL_PRIVATE_DIR: /tmp/vcraft/private
           STORAGE_SIGNING_KEY: ci-only-signing-key-0123456789abcdef0123456789
           MEDIA_PUBLIC_BASE_URL: http://localhost:4000/media
+          # GH#82: the Fox answers with the offline scripted model, so the widget e2e needs no OpenAI key.
+          ASSISTANT_LLM: scripted
       # E2E chạy trên bản build production (`next start`); turbo build các gói workspace mà web phụ thuộc trước
       - run: pnpm exec turbo run build --filter=@vcraft/web
       - run: pnpm test:e2e

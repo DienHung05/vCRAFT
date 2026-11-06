@@ -1,6 +1,7 @@
 import { Badge, Card } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { AccountSecurity } from '@/features/account/account-security';
 import { ChangePasswordForm } from '@/features/account/change-password-form';
 import { EmailPreferencesForm } from '@/features/account/email-preferences-form';
 import { PersonalDataCard } from '@/features/account/personal-data';
@@ -93,6 +94,12 @@ export default async function AccountPage({ params }: PageProps<'/[locale]/tai-k
         <h2 className="font-display text-h3 text-glaze">{t('password.title')}</h2>
         <p className="mt-1 mb-5 text-ash text-small">{t('password.lead')}</p>
         <ChangePasswordForm email={viewer.email} />
+      </Card>
+
+      <Card className="p-5 md:p-8">
+        <h2 className="font-display text-h3 text-glaze">{t('security.title')}</h2>
+        <p className="mt-1 mb-5 text-ash text-small">{t('security.lead')}</p>
+        <AccountSecurity />
       </Card>
 
       <Card className="p-5 md:p-8">

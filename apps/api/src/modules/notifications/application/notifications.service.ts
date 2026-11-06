@@ -119,6 +119,25 @@ export class NotificationsService {
     return this.preferences(actor);
   }
 
+  /**
+   * What the live stream watches for this account (GH#93): the unread count, and the time of the newest
+   * notice, which moves whenever a quotation, offer or allocation concerning them changes.
+   */
+  async pulse(actor: Actor): Promise<{ unread: number; latest: string | null }> {
+    const em = this.orm.em.fork();
+    const where = { recipientId: actor.id };
+    const newest = { orderBy: { createdAt: 'desc' }, fields: ['createdAt'] } as const;
+    const [unread, notice, other] = await Promise.all([
+      this.unread(actor),
+      em.findOne(QuotationNotice, where, newest),
+      em.findOne(Notification, where, newest),
+    ]);
+    const times = [notice?.createdAt, other?.createdAt]
+      .filter((d): d is Date => d instanceof Date)
+      .map((d) => d.getTime());
+    return { unread, latest: times.length ? new Date(Math.max(...times)).toISOString() : null };
+  }
+
   private async unread(actor: Actor): Promise<number> {
     const em = this.orm.em.fork();
     const where = { recipientId: actor.id, readAt: null };

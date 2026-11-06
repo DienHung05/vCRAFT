@@ -106,6 +106,17 @@ Preview deployment dùng chung API và CSDL production (không có staging); đ�
 5. `vcraft-api` giữ URL `onrender.com`; không cần domain riêng vì người dùng không gọi thẳng API. Nếu muốn domain riêng (`api.<domain>`), thêm ở Render → Settings → Custom Domains rồi sửa `API_INTERNAL_URL` và Redeploy web.
 6. Cloudflare Turnstile: thêm `<domain>` vào danh sách hostname của widget.
 
+### 5.1 Offline map fallback (GH#100)
+
+The village map loads OpenFreeMap. If that style does not answer within 2.5 s, or its tiles start failing, the map switches to a PMTiles extract of Bát Tràng stored in Supabase Storage. It draws that extract with a small brand style and shows a "backup map" badge.
+
+1. Install the [`pmtiles` CLI](https://github.com/protomaps/go-pmtiles/releases).
+2. From the repository root, with `SUPABASE_URL` and `SUPABASE_SECRET_KEY` exported, run `scripts/map/extract-bat-trang.sh`. It extracts the area from the latest Protomaps daily build, uploads it to the public bucket as `map/bat-trang.pmtiles`, and prints the public URL.
+3. Vercel: set `NEXT_PUBLIC_MAP_PMTILES_URL` to that URL and redeploy.
+4. Check: block `tiles.openfreemap.org` in the browser's DevTools (Network → Block request domain), reload `/vi/ban-do`. The map should appear in brand colours with the badge, and the workshop pins should still work.
+
+Without `NEXT_PUBLIC_MAP_PMTILES_URL`, the map behaves as before and there is no probe.
+
 ## 6. Supabase Auth và SMTP
 
 Dashboard → Authentication:
@@ -115,6 +126,40 @@ Dashboard → Authentication:
 3. **SMTP Settings** (Authentication → Emails → SMTP): bật custom SMTP với cùng nhà cung cấp, `Sender` thuộc domain đã xác minh. SMTP mặc định của Supabase giới hạn rất thấp và chỉ gửi cho thành viên nhóm, không đủ cho ngày thi.
 4. Gửi thử: đăng ký một tài khoản bằng email thật trên domain production, nhận email xác nhận, bấm liên kết và về đúng domain.
 5. Worker: tạo một thông báo (vd. mời hộ chào giá) và kiểm tra email thông báo đến nơi; lỗi gửi hiện ở log `vcraft-worker`.
+
+### 6.1 Sign in with Google (GH#122)
+
+Owner steps; the code is already in place (`apps/web/src/features/auth/google-sign-in.tsx`, `apps/web/src/app/auth/callback/route.ts`).
+
+1. Google Cloud Console → APIs & Services → Credentials → *Create OAuth client ID* (Web application).
+   - Authorised JavaScript origins: `https://<domain>` and `http://localhost:3000`.
+   - Authorised redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback` (Supabase handles the Google leg).
+2. Supabase Dashboard → Authentication → Sign In / Providers → Google: enable, paste the client ID and secret.
+3. Supabase Dashboard → Authentication → URL Configuration → Redirect URLs: add `https://<domain>/auth/callback` and `http://localhost:3000/auth/callback` (the wildcard entries `https://<domain>/**` already cover it if present).
+4. Local Supabase CLI: set `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` and `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` (read by `supabase/config.toml`).
+5. Check: on `/vi/dang-nhap`, "Tiếp tục với Google" goes to Google and back to the site signed in; a first sign-in lands as a buyer, with the SIGN_UP consent recorded.
+
+### 6.2 Cloudflare Turnstile (GH#84)
+
+The sign-in, sign-up, password recovery and change-password forms show Turnstile when `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is set, and pass the token to Supabase, which verifies it server-side. Google sign-in is not covered: Supabase does not apply CAPTCHA to OAuth.
+
+1. Cloudflare Dashboard → Turnstile → *Add widget*: hostnames `<domain>` and `localhost`, mode *Managed*. Copy the site key and the secret.
+2. Vercel: set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` to the site key and redeploy (it is fixed at build time).
+3. Supabase Dashboard → Authentication → Attack Protection → *Enable Captcha protection*: provider Turnstile, paste the secret.
+4. Order matters: deploy the web build with the site key first, then turn captcha on in Supabase. Done the other way round, every sign-in fails until the new build is live.
+5. Check: `/vi/dang-nhap` shows the widget; signing in works; with the widget not done, the form says to complete the check.
+6. Local or CI: Cloudflare's test pair (site key `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`) always passes.
+
+### 6.3 Admin two-factor authentication (GH#83)
+
+Every admin route of the API needs an `aal2` session, meaning the admin has passed a TOTP code. With only a password (`aal1`) the API answers `403 AUTH_MFA_REQUIRED`. Instead of the admin pages, the web shows a screen to scan a QR code on first use, or to enter the 6-digit code on later sign-ins.
+
+1. Supabase Dashboard → Authentication → Multi-Factor: check that TOTP is enabled (it is by default).
+2. Each admin signs in and opens `/vi/admin`, scans the QR code with an authenticator app, and enters the code.
+3. Lost phone: in Supabase Dashboard → Authentication → Users → the admin → delete the TOTP factor. The next sign-in enrols a new one.
+4. `AUTH_ADMIN_MFA=off` on the API lifts the rule. Use it only for a local demo without Supabase MFA, never in production.
+
+The account page (`/vi/tai-khoan`) lists the last 20 sign-ins. The API records one row per Supabase session (method and assurance level, no IP address). The page also has a button that signs the account out of every device.
 
 ## 7. Giữ API thức vào ngày thi
 
@@ -140,7 +185,8 @@ Mở `https://<domain>/vi/tin-tuc`: phải có bài (API gọi được từ ser
 
 ## 9. Triển khai tiếp theo, rollback, sự cố
 
-- **Triển khai:** merge vào `main`. Vercel build web; Render đợi CI xanh rồi build, chạy migration, khởi động API và worker. Migration luôn chạy trước khi bản API mới nhận traffic; viết migration tương thích ngược (thêm cột trước, bỏ cột sau).
+- **Deploy:** merging to `main` runs CI; when it is green, `.github/workflows/deploy.yml` deploys the API to Render (migrations included), then the web to Vercel, then runs smoke checks (§12). Neither platform deploys `main` on its own once the setup in §12 is done.
+
 - **Rollback web:** Vercel → Deployments → chọn bản cũ → *Promote to Production*. **Rollback API:** Render → *Deploys* → *Rollback*. Rollback **không** hoàn tác migration.
 - Đổi biến môi trường Render tự khởi động lại service; đổi biến Vercel cần Redeploy (biến chốt lúc build).
 - `/api/*` trả 404 trên domain: `API_INTERNAL_URL` chưa đặt (hoặc đặt sau khi build). Đặt rồi Redeploy.
@@ -222,3 +268,71 @@ Do this after adding a payment card. Wizard step s2 does it through the API; by 
 3. New → **Background Worker** named `vcraft-worker`: same repo and branch, Frankfurt, **Starter**, Build `corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm exec turbo run build --filter=@vcraft/worker...`, Start `node apps/worker/dist/main.js`. Link the `vcraft-shared` env group and copy the worker variables listed in `render.yaml` from `vcraft-api` (same `FIELD_ENCRYPTION_KEYS`, `SMTP_URL`, `MAIL_FROM`, `REDIS_URL`).
 4. Deploy `vcraft-api`; check the worker log for `queues ready: media, mail, outbox`.
 5. Remove the keep-alive job (SQL above) or keep it: it is harmless, and still stops the Supabase project from pausing.
+
+## 12. Continuous deployment (GitHub Actions)
+
+`.github/workflows/deploy.yml` is the only production deployer for both the API and the web app. It deploys a commit only after the full CI run (`quality`, `integration`, `e2e`) passed on `main`. Merging the file changes nothing until `CD_ENABLED` is `true`.
+
+### Flow
+
+1. CI finishes green for a push to `main` (`workflow_run`), or someone starts the workflow by hand (`workflow_dispatch`).
+2. `guard` resolves the SHA. For `workflow_run` it skips the run when the SHA is no longer the tip of `origin/main` (a newer merge will deploy itself). For `workflow_dispatch` it fails unless the SHA is an ancestor of `origin/main`.
+3. `api` calls the Render API (`scripts/ci/render-deploy.sh`): deploy that exact commit, poll every 15 s up to 25 min until `live`, then check `$API_ORIGIN/api/v1/health`. If `RENDER_WORKER_SERVICE_ID` is set, that service is deployed the same way afterwards.
+4. `web` runs only after `api` succeeded, so migrations (which run in the Render build, §11, or in the pre-deploy command on `starter`) are live before the new web code. It runs the Vercel CLI `pull`, `build --prod` and `deploy --prebuilt --prod`, then `scripts/ci/smoke.sh "$PROD_ORIGIN"`.
+5. `summary` writes the SHA, Render deploy id, Vercel URL and result to the job summary.
+
+Runs are serialized (`concurrency: deploy-production`, never cancelled). Both deploy jobs use the GitHub environment `production`, so the owner can add required reviewers there.
+
+All Vercel CLI commands run from the **repository root**, not from `apps/web`: the CLI reads the project's Root Directory (`apps/web`) from the pulled project settings, and running from `apps/web` fails with "Could not retrieve Project Settings". `vercel build` honours `installCommand` and `buildCommand` in `apps/web/vercel.json` (both `cd ../..`). `deploy --prebuilt` uploads `.vercel/output` produced by `vercel build`. The CLI is fetched with `npx --yes vercel@latest`. The `.vercel/` directory is git-ignored.
+
+Vercel's own Git deployments are disabled for the project (Settings → Git, `createDeployments` off), so there are no automatic PR previews and the workflow is the only web deployer. `apps/web/vercel.json` also sets `git.deploymentEnabled.main: false` so that `main` stays off even if the project setting is relaxed later.
+
+### Secrets and variables
+
+Secrets live in the `production` environment (Settings → Environments → production).
+
+| Secret | How to create |
+| --- | --- |
+| `RENDER_API_KEY` | Render → Account Settings → API Keys → Create API Key |
+| `VERCEL_TOKEN` | Vercel → Account Settings → Tokens → Create, scope limited to the team that owns the project |
+
+Variables (Settings → Secrets and variables → Actions → Variables):
+
+| Variable | Value |
+| --- | --- |
+| `CD_ENABLED` | `true` to turn the pipeline on; anything else (or unset) turns it off |
+| `RENDER_SERVICE_ID` | `vcraft-api` service id, e.g. `srv-dbjfrvetlv9c73d3rs0g` |
+| `RENDER_WORKER_SERVICE_ID` | Optional. Id of a separate `vcraft-worker` service (starter Blueprint). Empty skips it |
+| `API_ORIGIN` | `https://vcraft-api.onrender.com` |
+| `PROD_ORIGIN` | `https://vcraft-vn.vercel.app` (or the custom domain) |
+| `VERCEL_ORG_ID` | Vercel team id (Team Settings → General, or `.vercel/project.json` after `vercel link`) |
+| `VERCEL_PROJECT_ID` | e.g. `prj_SCqbRhbbXBnJO4mAZI2vFhDdO2uX` |
+
+### One-time setup order
+
+1. Create the two secrets and the variables above. Leave `CD_ENABLED` unset.
+2. Merge the PR that adds `deploy.yml`. Nothing deploys yet.
+3. Set `CD_ENABLED=true`, then start the workflow once (`gh workflow run deploy.yml`) or merge to `main`.
+4. Confirm the first Deploy run is green (Render live, Vercel deployed, smoke checks passed).
+5. Only then turn off Render's own auto-deploy: Render → `vcraft-api` → Settings → Build & Deploy → Auto-Deploy → *Off*. `render.yaml` already sets `autoDeployTrigger: "off"`, but the live service was not created from the Blueprint sync, so its setting does not change by itself. Until this step, a push to `main` deploys on Render twice.
+
+### Manual redeploy and rollback
+
+```bash
+gh workflow run deploy.yml                  # redeploy the current tip of main
+gh workflow run deploy.yml -f ref=<sha>     # deploy a specific commit that is on main
+scripts/ci/smoke.sh https://vcraft-vn.vercel.app   # the same read-only checks, from your machine
+```
+
+Rolling back is unchanged: Vercel → Deployments → *Promote to Production*, Render → *Deploys* → *Rollback* (§9). To roll forward to an older commit, dispatch it with `ref`. The workflow never undoes a migration, so keep migrations backward compatible.
+
+### Branch protection
+
+PR #96 merged with red CI because the branches were unprotected. Protect `main` and `develop` with these required status checks; the names must match exactly:
+
+- `quality`
+- `integration (postgresql)`
+- `integration (mysql)`
+- `e2e`
+
+If a job is added to or renamed in `ci.yml`, update the required checks to match, otherwise merges block on a check that never reports (or the new job is not enforced).

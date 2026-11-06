@@ -2,15 +2,16 @@ import { Badge, buttonVariants, Card, cn, ProductFigure, SealMark } from '@vcraf
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations } from 'next-intl/server';
+import { ViewTransition } from 'react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
 import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { UsdRateNote, UsdReference } from '@/components/usd-reference';
-import { fetchProduct, fetchProducts } from '@/features/catalog/exhibition-api';
+import { fetchProduct, fetchProducts, fetchSlugRedirect } from '@/features/catalog/exhibition-api';
 import { presetKindOf } from '@/features/catalog/preset-figure';
-import { ProductCard } from '@/features/catalog/product-card';
+import { ProductCard, productImageTransition } from '@/features/catalog/product-card';
 import {
   altFor,
   photoFromUrl,
@@ -19,7 +20,7 @@ import {
   toLogEntries,
   toProductCardView,
 } from '@/features/catalog/view-models';
-import { Link } from '@/i18n/navigation';
+import { Link, permanentRedirect } from '@/i18n/navigation';
 import { frameRatioOf } from '@/lib/images';
 import { resolveLocale } from '@/lib/locale';
 
@@ -41,7 +42,17 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
   const locale = await resolveLocale(params);
   const { slug } = await params;
   const result = await fetchProduct(slug);
-  if (result.status === 'not-found') notFound();
+  if (result.status === 'not-found') {
+    // A product renamed since the link was shared: send the visitor to its current URL (PLAN E5).
+    const moved = await fetchSlugRedirect('products', slug);
+    if (moved.status === 'ok') {
+      permanentRedirect({
+        href: { pathname: '/san-pham/[slug]', params: { slug: moved.data.slug } },
+        locale,
+      });
+    }
+    notFound();
+  }
   if (result.status === 'unavailable') return <DataUnavailable />;
   const { product, coverCredit, household, journal } = result.data;
   const [t, common, stages, categories, preset, format, siblings] = await Promise.all([
@@ -86,25 +97,31 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
       <div className="grid gap-10 md:grid-cols-12 md:gap-14">
         <div className="md:col-span-7">
           <div className="md:sticky md:top-24">
-            <ImageSlot
-              alt={image?.alt ?? preset(presetKind)}
-              tint={tint}
-              ratio={image?.variants ? frameRatioOf(image.variants) : '4/5'}
-              fit="contain"
-              {...slotPhoto(image)}
-              priority
-              sizes="(min-width: 768px) 58vw, 100vw"
-              className="grid place-items-center"
+            <ViewTransition
+              name={productImageTransition(product.slug)}
+              share="product-morph"
+              default="none"
             >
-              {image ? null : (
-                <ProductFigure
-                  kind={presetKind}
-                  className="h-3/5"
-                  body="var(--color-paper)"
-                  band={tint}
-                />
-              )}
-            </ImageSlot>
+              <ImageSlot
+                alt={image?.alt ?? preset(presetKind)}
+                tint={tint}
+                ratio={image?.variants ? frameRatioOf(image.variants) : '4/5'}
+                fit="contain"
+                {...slotPhoto(image)}
+                priority
+                sizes="(min-width: 768px) 58vw, 100vw"
+                className="grid place-items-center"
+              >
+                {image ? null : (
+                  <ProductFigure
+                    kind={presetKind}
+                    className="h-3/5"
+                    body="var(--color-paper)"
+                    band={tint}
+                  />
+                )}
+              </ImageSlot>
+            </ViewTransition>
             <PhotoCredit id={image?.photo?.id} credit={coverCredit} />
             {entryPhotos.length > 0 ? (
               <ul className="mt-4 grid grid-cols-4 gap-3" aria-label={t('gallery')}>

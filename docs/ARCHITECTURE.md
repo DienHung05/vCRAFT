@@ -56,7 +56,7 @@ flowchart LR
     tiles[(Vector tiles<br/>OpenFreeMap / PMTiles)]
     mail[(SMTP)]
     s3[(Supabase Storage<br/>giao thức S3)]
-    llm[(Claude API · Voyage AI<br/>trợ lý Cáo, gợi ý câu chuyện)]
+    llm[(OpenAI<br/>trợ lý Cáo · Claude API: gợi ý câu chuyện)]
     idp[(Supabase Auth<br/>danh tính, phiên, MFA)]
     vec[(Supabase pgvector<br/>chỉ mục tri thức)]
     wx[(Open-Meteo<br/>thời tiết)]
@@ -90,7 +90,7 @@ flowchart TB
     s3[("Supabase Storage (S3)<br/>vcraft-media + vcraft-private")]
     supa[["Supabase Auth<br/>đăng nhập · refresh · MFA · OAuth"]]
     vec[("Supabase Postgres + pgvector<br/>knowledge_chunks (dẫn xuất)")]
-    ai[["Claude API · Voyage AI"]]
+    ai[["OpenAI (trợ lý) · Claude API (gợi ý)"]]
 
     browser -->|HTTPS| caddy
     browser -->|supabase-js: sign in/up, refresh| supa
@@ -331,7 +331,7 @@ Quy tắc: Controller **mỏng** → Application service **điều phối** → 
 | **Repository + Unit of Work + Data Mapper**         | `packages/database` (MikroORM)                                                     | Thao tác CSDL hướng đối tượng, độc lập CSDL              |
 | **Specification**                                   | `catalog/specs/*.ts` (lọc giá, danh mục, mở cửa)                                   | Kết hợp điều kiện lọc có thể tái dùng                    |
 | **Observer / Domain Events + Transactional Outbox** | `*.events.ts`, `OutboxEvent`, worker                                               | Tách tác dụng phụ (thông báo, mail) khỏi giao dịch chính |
-| **Adapter / Port**                                  | `infrastructure/storage` (S3/Local), `mail` (SMTP/Console), `search`, `vector` (Supabase/InMemory), `llm` (Claude/Fake) | Hoán đổi hạ tầng, test bằng fake                         |
+| **Adapter / Port**                                  | `infrastructure/storage` (S3/Local), `mail` (SMTP/Console), `search`, `vector` (Supabase/InMemory), `llm` (OpenAI/Fake) | Hoán đổi hạ tầng, test bằng fake                         |
 | **Factory**                                         | `MediaVariantFactory`, `TraceCodeFactory`, `QrFactory`                             | Đóng gói quy tắc tạo đối tượng                           |
 | **Value Object**                                    | `Money`, `GeoPoint`, `OpeningHours`, `TraceCode`                                   | Bất biến, tự kiểm tra hợp lệ                             |
 | **Policy (ABAC)**                                   | `*.policy.ts` + CASL                                                               | Ủy quyền theo vai trò + sở hữu ở một chỗ                 |
@@ -526,13 +526,15 @@ Nguyên tắc:
 
 ### 7.6 Trợ lý Cáo (RAG + guardrail)
 
+Model and embeddings: OpenAI, set by `OPENAI_CHAT_MODEL` and `OPENAI_EMBEDDING_MODEL` at 1024 dimensions ([ADR-19](adr/0019-assistant-on-openai.md)); the vector store stays on Supabase pgvector (ADR-13).
+
 ```mermaid
 sequenceDiagram
     participant W as Widget (features/assistant)
     participant A as API (modules/assistant)
     participant G as GuardrailPipeline
     participant V as VectorStore (Supabase pgvector)
-    participant L as Claude (Haiku 5.5)
+    participant L as OpenAI (OPENAI_CHAT_MODEL)
     W->>W: < 100 ms: hiện tin, cáo "thinking" + bong bóng câu thú vị
     W->>A: POST /assistant/messages {message, history, locale, pagePath} (SSE)
     A->>G: chuẩn hóa · Zod · rate limit · ngân sách token
@@ -586,6 +588,8 @@ Nguyên tắc:
 | Dữ liệu cá nhân | NFR-SEC-07 ([ADR-17](adr/0017-personal-data-export-and-deletion.md)): recorded consent per purpose and policy version (`consent_record`, enforced by the API), `GET /me/data-export`, `DELETE /me` (anonymizes and keeps orders and the hash-chained journal valid) |
 
 ### 8.2 Bảng OWASP Top 10 (2021) → biện pháp
+
+Evidence per item (code and tests), with the known gaps: [`docs/security/owasp-top10.md`](security/owasp-top10.md). The route walker that checks every API route's auth policy is `apps/api/src/common/auth/route-policy.test.ts` plus `apps/api/test/integration/route-policy.integration.test.ts`.
 
 A01 Broken Access Control → CASL + kiểm sở hữu + test 403 · A02 Cryptographic Failures → JWT bất đối xứng + JWKS, AES-GCM, TLS · A03 Injection → ORM + Zod + sanitize · A04 Insecure Design → máy trạng thái + khóa + idempotency · A05 Misconfiguration → header bảo mật, config kiểm bằng Zod · A06 Vulnerable Components → audit/Renovate · A07 Auth Failures → Supabase Auth (MFA, CAPTCHA, rate limit, rotation) · A08 Integrity Failures → chuỗi băm nhật ký, lockfile · A09 Logging Failures → pino + audit, không log bí mật · A10 SSRF → không fetch URL do người dùng nhập (geocode qua danh sách endpoint cố định).
 
@@ -741,5 +745,6 @@ Log JSON (pino) có `requestId` xuyên suốt web → api → worker; `/api/v1/h
 | ADR-16 | [Web trên **Vercel**, API + worker trên **Render**, giữ Supabase](adr/0016-deploy-vercel-render.md) | 1 VPS + Docker Compose + Caddy; web và API cùng Render; gọi chéo origin có CORS | Không phải tự vận hành máy chủ; HTTPS, preview theo PR, rollback có sẵn; rewrite `/api/*` giữ một origin nên không cần CORS. Thay thế kế hoạch VPS ở §13 và ý "Redis cục bộ" của ADR-15 |
 | ADR-17 | [Recorded consent, personal data export and self-service deletion](adr/0017-personal-data-export-and-deletion.md) | Request-and-approve through the Management Board; hard delete; consent only in the browser | Consent is evidence and is enforced; people export and delete without waiting; orders and the hash-chained journal stay valid |
 | ADR-18 | [Field-level AES-256-GCM encryption of the citizen ID number](adr/0018-field-level-encryption.md) | MikroORM type that decrypts on load; pgcrypto / AES_ENCRYPT in SQL; plaintext last four digits | Plaintext never on an entity or in a public path; same code on PostgreSQL and MySQL; rotation by key id; audited admin reveal |
+| ADR-19 | [The Fox assistant runs on OpenAI and is back in scope](adr/0019-assistant-on-openai.md) | Keep Claude Haiku + Voyage AI; mixed providers; self-hosted model | One provider and key for chat and 1024-dimension embeddings; vector store unchanged (ADR-13); reverses the 9hg.1/9hg.7 deferral |
 
 Rủi ro kỹ thuật cần kiểm chứng ở Sprint 0: (0) project Supabase gói Free tự tạm dừng sau 7 ngày không hoạt động ⇒ giữ hoạt động trước buổi thi và cấu hình SMTP riêng cho email xác thực; (1) adapter NestJS của `@supabase/server` chỉ hỗ trợ Nest 10/11 ⇒ tự viết guard bọc `verifyAuth()`. (Đã xử lý 27/10: package dùng ở backend được build bằng tsdown — xem §3.2.)

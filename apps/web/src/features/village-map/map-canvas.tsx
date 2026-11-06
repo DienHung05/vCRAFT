@@ -1,8 +1,10 @@
 'use client';
 
 import type { MapPinDto } from '@vcraft/contracts';
-import { type GeoJSONSource, setWorkerUrl } from 'maplibre-gl';
+import { addProtocol, type GeoJSONSource, setWorkerUrl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { useTranslations } from 'next-intl';
+import { Protocol } from 'pmtiles';
 import { useEffect, useMemo, useRef } from 'react';
 import MapGL, {
   Layer,
@@ -14,16 +16,18 @@ import MapGL, {
   type ViewStateChangeEvent,
 } from 'react-map-gl/maplibre';
 import { type LatLng, type MapBounds, toFeatureCollection } from './map-model';
+import { PMTILES_URL } from './offline-style';
 import { PinPopup } from './pin-popup';
+import { useMapStyle } from './use-map-style';
 
 // Tệp này do `scripts/copy-map-worker.mjs` chép vào `public/map` khi dev và build.
 setWorkerUrl('/map/maplibre-gl-worker.mjs');
+// `pmtiles://` URLs of the offline Bát Tràng extract (GH#100), registered once per page.
+if (PMTILES_URL) addProtocol('pmtiles', new Protocol().tile);
 
 const SOURCE = 'workshops';
 const CLUSTERS = 'workshop-clusters';
 const PINS = 'workshop-pins';
-const STYLE_URL =
-  process.env.NEXT_PUBLIC_MAP_STYLE_URL || 'https://tiles.openfreemap.org/styles/liberty';
 const CLAY = '#a4532a';
 const GLAZE = '#2f6f6a';
 const INK = '#2a2622';
@@ -51,7 +55,9 @@ export default function MapCanvas({
   onSelect,
   onUserMove,
 }: MapCanvasProps) {
+  const t = useTranslations('villageMap');
   const mapRef = useRef<MapRef>(null);
+  const { style, offline, onMapError } = useMapStyle();
   const data = useMemo(() => toFeatureCollection(pins, now), [pins, now]);
   const initialCenter = useMemo(() => {
     const [lng = 105.9139, lat = 20.9758] = (process.env.NEXT_PUBLIC_MAP_CENTER ?? '')
@@ -108,10 +114,14 @@ export default function MapCanvas({
     });
   };
 
+  // While the online style is being probed, keep the map's box empty rather than flash an error.
+  if (!style) return null;
+
   return (
     <MapGL
       ref={mapRef}
-      mapStyle={STYLE_URL}
+      mapStyle={style}
+      onError={onMapError}
       initialViewState={{ ...initialCenter, zoom: 14 }}
       style={{ width: '100%', height: '100%' }}
       interactiveLayerIds={[CLUSTERS, PINS]}
@@ -181,6 +191,11 @@ export default function MapCanvas({
         >
           <PinPopup pin={selected} now={now} />
         </Popup>
+      ) : null}
+      {offline ? (
+        <p className="absolute top-2 left-2 rounded-chip bg-surface/90 px-2 py-1 text-small text-ash shadow-warm">
+          {t('offline')}
+        </p>
       ) : null}
     </MapGL>
   );

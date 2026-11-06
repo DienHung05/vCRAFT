@@ -1,0 +1,234 @@
+# Production deployment workflow
+#
+# Deploys ONLY commits whose full CI passed on `main`, in a fixed order (API first, then web),
+# verified with smoke tests afterwards. Triggered automatically when CI completes on main, or
+# manually via workflow_dispatch for redeploys and rollback-forward.
+#
+# All three Vercel CLI commands (pull/build/deploy) run from the REPO ROOT; the CLI applies
+# the project rootDirectory (apps/web) automatically from the pulled project config.
+# .vercel/ is git-ignored; the workflow regenerates it fresh each run with `vercel pull`.
+#
+# Requirements (set in GitHub → Settings → Secrets and variables → Actions):
+#
+# Secrets (environment: production):
+#   - RENDER_API_KEY: Render Account Settings → API Keys → Create new key
+#   - VERCEL_TOKEN: Vercel Account Settings → Tokens → scope to team chilling4
+#
+# Variables (repository or environment level):
+#   - CD_ENABLED: set to 'true' to enable; leave unset or 'false' to disable safely
+#   - RENDER_SERVICE_ID: Render service ID for vcraft-api
+#   - RENDER_WORKER_SERVICE_ID: (optional) Render service ID for vcraft-worker; empty = skip
+#   - API_ORIGIN: public API origin (e.g., https://vcraft-api.onrender.com)
+#   - PROD_ORIGIN: production web origin (e.g., https://vcraft-vn.vercel.app)
+#   - VERCEL_ORG_ID: Vercel org/team ID
+#   - VERCEL_PROJECT_ID: Vercel project ID
+#
+# One-time setup order (see docs/deploy.md §12 for details):
+#   1. Set secrets and variables in GitHub; start with CD_ENABLED unset/false
+#   2. Merge this workflow to main
+#   3. Set CD_ENABLED=true
+#   4. Confirm first Deploy workflow run is green
+#   5. Turn off Render live-service auto-deploy in Render Dashboard (manual one-time step)
+
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Commit SHA to deploy (must be on main; leave empty for current main tip)"
+        required: false
+        type: string
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Guard: resolve and validate the deploy SHA, gate on CD_ENABLED and CI result.
+  # For workflow_run: skip if the triggered SHA is no longer the main tip (a newer merge landed;
+  # its own workflow_run will deploy it). For workflow_dispatch: refuse if SHA is not on main.
+  guard:
+    name: Resolve and validate SHA
+    if: >
+      vars.CD_ENABLED == 'true' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push'
+        )
+      )
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+    steps:
+      - name: Resolve deploy SHA
+        id: sha
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SHA="${{ inputs.ref }}"
+            if [ -z "$SHA" ]; then
+              SHA="${{ github.sha }}"
+            fi
+          else
+            SHA="${{ github.event.workflow_run.head_sha }}"
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Resolved SHA: $SHA"
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.sha.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Validate SHA is on main (workflow_dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          DEPLOY_SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$DEPLOY_SHA" origin/main; then
+            echo "Error: $DEPLOY_SHA is not an ancestor of origin/main — refusing dispatch deploy"
+            exit 1
+          fi
+          echo "Validated: $DEPLOY_SHA is on main"
+
+      - name: Check SHA is current main tip (workflow_run only)
+        id: check
+        env:
+          DEPLOY_SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          git fetch origin main
+          MAIN_TIP=$(git rev-parse origin/main)
+          if [ "${{ github.event_name }}" = "workflow_run" ] && [ "$DEPLOY_SHA" != "$MAIN_TIP" ]; then
+            echo "Notice: $DEPLOY_SHA is not the current main tip ($MAIN_TIP)."
+            echo "A later workflow_run for the tip will deploy it. Skipping."
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  api:
+    name: Deploy API to Render
+    needs: guard
+    if: needs.guard.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    outputs:
+      render_deploy_id: ${{ steps.deploy.outputs.deploy_id }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.guard.outputs.sha }}
+
+      - name: Deploy API (and optional worker) to Render
+        id: deploy
+        run: bash scripts/ci/render-deploy.sh
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
+          RENDER_WORKER_SERVICE_ID: ${{ vars.RENDER_WORKER_SERVICE_ID }}
+          COMMIT_SHA: ${{ needs.guard.outputs.sha }}
+
+      - name: Health check API
+        env:
+          API_ORIGIN: ${{ vars.API_ORIGIN }}
+        run: |
+          for _ in $(seq 1 10); do
+            if curl -fsSL --max-time 10 "$API_ORIGIN/api/v1/health" | grep -q '"status":"ok"'; then
+              echo "API health check passed"
+              exit 0
+            fi
+            echo "Retrying in 10s..."
+            sleep 10
+          done
+          echo "API health check failed after retries"
+          exit 1
+
+  web:
+    name: Deploy Web to Vercel
+    # API deploys first: migrations must land before the new web code that relies on them.
+    needs: [guard, api]
+    if: needs.guard.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    outputs:
+      deployment_url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.guard.outputs.sha }}
+
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # All three Vercel CLI commands run from the repo root.
+      # vercel pull applies the project rootDirectory (apps/web) automatically from project config.
+      # vercel build honours apps/web/vercel.json installCommand/buildCommand (which cd ../.. first).
+      # vercel deploy --prebuilt uploads .vercel/output produced by vercel build.
+      - name: Deploy to Vercel
+        id: deploy
+        run: |
+          npx --yes vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npx --yes vercel@latest build --prod --token="$VERCEL_TOKEN"
+          DEPLOYMENT_URL=$(npx --yes vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          echo "url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+          echo "Deployed to: $DEPLOYMENT_URL"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+
+      - name: Smoke tests
+        run: bash scripts/ci/smoke.sh "${{ vars.PROD_ORIGIN }}"
+
+  summary:
+    name: Deployment Summary
+    needs: [guard, api, web]
+    if: always() && needs.guard.result != 'skipped'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write job summary
+        env:
+          DEPLOY_SHA: ${{ needs.guard.outputs.sha }}
+          SHOULD_DEPLOY: ${{ needs.guard.outputs.should_deploy }}
+          RENDER_DEPLOY_ID: ${{ needs.api.outputs.render_deploy_id }}
+          DEPLOYMENT_URL: ${{ needs.web.outputs.deployment_url }}
+          PROD_ORIGIN: ${{ vars.PROD_ORIGIN }}
+          API_RESULT: ${{ needs.api.result }}
+          WEB_RESULT: ${{ needs.web.result }}
+        run: |
+          {
+            echo "## Deployment Summary"
+            echo ""
+            echo "**SHA:** $DEPLOY_SHA"
+            if [ "$SHOULD_DEPLOY" != "true" ]; then
+              echo "**Status:** Skipped — SHA is not the current main tip; a later run will deploy it"
+            else
+              echo "**Render deploy ID:** $RENDER_DEPLOY_ID"
+              echo "**Vercel deployment URL:** $DEPLOYMENT_URL"
+              echo "**Production origin:** $PROD_ORIGIN"
+              echo ""
+              if [ "$API_RESULT" = "success" ] && [ "$WEB_RESULT" = "success" ]; then
+                echo "**Status:** Deployment successful"
+              else
+                echo "**Status:** Deployment failed — API: $API_RESULT  Web: $WEB_RESULT"
+              fi
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

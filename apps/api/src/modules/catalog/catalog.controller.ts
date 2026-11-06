@@ -24,6 +24,17 @@ export class CatalogController {
     return this.catalog.getProduct(slug);
   }
 
+  /** A retired product slug → the current one (PLAN E5); the web answers the old URL with a redirect. */
+  @Get('redirects/products/:slug')
+  productRedirect(@Param('slug') slug: string) {
+    return this.catalog.resolveRedirect('PRODUCT', slug);
+  }
+
+  @Get('redirects/households/:slug')
+  householdRedirect(@Param('slug') slug: string) {
+    return this.catalog.resolveRedirect('HOUSEHOLD', slug);
+  }
+
   @Get('households')
   listHouseholds() {
     return this.catalog.listHouseholds();
