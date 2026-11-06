@@ -341,7 +341,11 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
             </div>
             <Link
               href={{ pathname: '/truy-xuat/[code]', params: { code: featured.traceCode } }}
-              className={buttonVariants({ variant: 'secondary' })}
+              // Long product names wrap instead of pushing the page sideways on phones (GH#149).
+              className={cn(
+                buttonVariants({ variant: 'secondary' }),
+                'h-auto min-h-11 max-w-full whitespace-normal py-2 text-center',
+              )}
             >
               {ex('evidenceCta', { product: featured.name })}
             </Link>
