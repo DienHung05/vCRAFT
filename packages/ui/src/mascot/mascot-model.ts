@@ -1,6 +1,9 @@
 /**
- * Pure state behind the Fox mascot (BRAND §10, FR-AST-06): what the face shows for each mood, where the
- * head turns, and when it blinks. No React, so it is unit-tested on its own.
+ * Pure state behind the Fox mascot (BRAND §10, FR-AST-06): mood-to-sprite mapping, gaze direction,
+ * and blink timing. No React, so it is unit-tested on its own.
+ *
+ * The Fox uses the original page-mascot fox sprite sheets (character "fox",
+ * https://koboyo.com/page-mascot/mascots/) unchanged — two 3×3 WebP atlases.
  */
 
 export const MASCOT_MOODS = [
@@ -16,40 +19,104 @@ export const MASCOT_MOODS = [
 ] as const;
 export type MascotMood = (typeof MASCOT_MOODS)[number];
 
-export type EyeShape = 'open' | 'closed' | 'happy' | 'wide' | 'up';
-export type MouthShape = 'smile' | 'open' | 'flat' | 'o' | 'wobble';
-/** Something the Fox does besides its face. */
-export type MascotGesture = 'wave' | 'zzz' | 'question' | 'shake' | 'hug' | null;
+// ---------------------------------------------------------------------------
+// Directions sheet (fox-directions.webp) — 3×3, row-major
+// ---------------------------------------------------------------------------
+const DIRECTIONS = [
+  'up-left',
+  'up',
+  'up-right',
+  'left',
+  'center',
+  'right',
+  'down-left',
+  'down',
+  'down-right',
+] as const;
+export type SpriteDirection = (typeof DIRECTIONS)[number];
 
-export interface MascotFace {
-  eyes: EyeShape;
-  mouth: MouthShape;
-  gesture: MascotGesture;
-  /** Ears pricked forward (listening) or folded back (refusing). */
-  ears: 'up' | 'forward' | 'back';
+// ---------------------------------------------------------------------------
+// Reactions sheet (fox-reactions.webp) — 3×3, row-major
+// ---------------------------------------------------------------------------
+const REACTIONS = [
+  'blink',
+  'heart',
+  'sparkle',
+  'surprised',
+  'star-eyes',
+  'bashful',
+  'sleepy',
+  'dizzy',
+  'delighted',
+] as const;
+export type SpriteReaction = (typeof REACTIONS)[number];
+
+export function directionIndex(d: SpriteDirection): number {
+  return DIRECTIONS.indexOf(d);
 }
 
-const FACES: Record<MascotMood, MascotFace> = {
-  idle: { eyes: 'open', mouth: 'smile', gesture: null, ears: 'up' },
-  greet: { eyes: 'happy', mouth: 'open', gesture: 'wave', ears: 'up' },
-  listen: { eyes: 'wide', mouth: 'flat', gesture: null, ears: 'forward' },
-  think: { eyes: 'up', mouth: 'flat', gesture: null, ears: 'up' },
-  talk: { eyes: 'open', mouth: 'open', gesture: null, ears: 'up' },
-  happy: { eyes: 'happy', mouth: 'smile', gesture: null, ears: 'up' },
-  confused: { eyes: 'wide', mouth: 'wobble', gesture: 'question', ears: 'up' },
-  // Shakes its head and holds the vase tight.
-  refuse: { eyes: 'closed', mouth: 'flat', gesture: 'hug', ears: 'back' },
-  sleep: { eyes: 'closed', mouth: 'o', gesture: 'zzz', ears: 'back' },
+export function reactionIndex(r: SpriteReaction): number {
+  return REACTIONS.indexOf(r);
+}
+
+// ---------------------------------------------------------------------------
+// Mood -> sprite mapping
+// ---------------------------------------------------------------------------
+
+/**
+ * When a mood shows a reaction overlay, this is which one.
+ * `null` means "use the directions sheet with the current gaze".
+ */
+const MOOD_REACTION: Record<MascotMood, SpriteReaction | null> = {
+  idle: null, // directions (gaze)
+  listen: null, // directions (gaze)
+  think: null, // directions, but always up-right (overridden in component)
+  talk: 'delighted',
+  greet: 'heart',
+  happy: 'sparkle',
+  confused: 'dizzy',
+  refuse: null, // directions center + head-shake animation
+  sleep: 'sleepy',
 };
 
-export function mascotFace(mood: MascotMood): MascotFace {
-  return FACES[mood];
+export function moodReaction(mood: MascotMood): SpriteReaction | null {
+  return MOOD_REACTION[mood];
 }
 
-/** Whether a mood's eyes are open, so a blink means something. */
-export function canBlink(mood: MascotMood): boolean {
-  const { eyes } = FACES[mood];
-  return eyes !== 'closed' && eyes !== 'happy';
+/** Fixed direction to use for moods that lock the gaze regardless of pointer. */
+const MOOD_FIXED_DIRECTION: Partial<Record<MascotMood, SpriteDirection>> = {
+  think: 'up-right',
+  refuse: 'center',
+};
+
+export function moodFixedDirection(mood: MascotMood): SpriteDirection | null {
+  return MOOD_FIXED_DIRECTION[mood] ?? null;
+}
+
+/** Whether a mood uses the reactions overlay (vs the directions sheet). */
+export function usesReactionOverlay(mood: MascotMood): boolean {
+  return MOOD_REACTION[mood] !== null;
+}
+
+// ---------------------------------------------------------------------------
+// Gaze helpers (used for the nine-direction directions sheet)
+// ---------------------------------------------------------------------------
+
+/**
+ * Maps a {x,y} gaze step (-1, 0, 1) to the matching SpriteDirection cell.
+ * x: -1 = left, 0 = center, 1 = right
+ * y: -1 = up,   0 = center, 1 = down
+ */
+export function gazeToDirection(gaze: { x: -1 | 0 | 1; y: -1 | 0 | 1 }): SpriteDirection {
+  if (gaze.y === -1 && gaze.x === -1) return 'up-left';
+  if (gaze.y === -1 && gaze.x === 0) return 'up';
+  if (gaze.y === -1 && gaze.x === 1) return 'up-right';
+  if (gaze.y === 0 && gaze.x === -1) return 'left';
+  if (gaze.y === 0 && gaze.x === 1) return 'right';
+  if (gaze.y === 1 && gaze.x === -1) return 'down-left';
+  if (gaze.y === 1 && gaze.x === 0) return 'down';
+  if (gaze.y === 1 && gaze.x === 1) return 'down-right';
+  return 'center';
 }
 
 /**
@@ -67,6 +134,16 @@ export function gazeDirection(
   return { x: step(target.x - centre.x), y: step(target.y - centre.y) };
 }
 
+// ---------------------------------------------------------------------------
+// Blink helpers
+// ---------------------------------------------------------------------------
+
+/** Whether a mood can blink (eyes are neither always closed nor reacting). */
+export function canBlink(mood: MascotMood): boolean {
+  // Sleep and greet use overlays where blinking makes no sense.
+  return !usesReactionOverlay(mood) && mood !== 'sleep';
+}
+
 /** Milliseconds until the next blink: 3–6 s apart (BRAND §10). `random` is injectable for tests. */
 export function nextBlinkDelay(random: () => number = Math.random): number {
   return 3_000 + Math.floor(random() * 3_000);
@@ -77,7 +154,7 @@ export function isDoubleBlink(random: () => number = Math.random): boolean {
   return random() < 0.2;
 }
 
-/** How long a blink keeps the eyes shut. */
+/** How long a blink keeps the eyes shut (blink reaction cell is shown). */
 export const BLINK_MS = 120;
 /** How long each thought stays before the next one cross-fades in. */
 export const THOUGHT_MS = 2_500;
