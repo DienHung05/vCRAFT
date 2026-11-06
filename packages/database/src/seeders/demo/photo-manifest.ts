@@ -2951,7 +2951,7 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
       author: 'unknown',
       license: 'unknown',
       licenseUrl: '',
-      sourceUrl: 'http://gomhailong.vn/lu-hoa-vang/lu-hoa-vang-co-lon-cao-60-cm-men-nau-co',
+      sourceUrl: 'https://gomhailong.vn/lu-hoa-vang/lu-hoa-vang-co-lon-cao-60-cm-men-nau-co',
     },
     widths: [1280],
   },
