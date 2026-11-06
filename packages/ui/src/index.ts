@@ -17,15 +17,21 @@ export { cn } from './lib/cn';
 export {
   BLINK_MS,
   canBlink,
+  directionIndex,
   gazeDirection,
+  gazeToDirection,
   MASCOT_MOODS,
   Mascot,
-  type MascotFace,
   type MascotMood,
   type MascotProps,
-  mascotFace,
+  moodFixedDirection,
+  moodReaction,
   nextBlinkDelay,
+  reactionIndex,
+  type SpriteDirection,
+  type SpriteReaction,
   THOUGHT_MS,
+  usesReactionOverlay,
 } from './mascot';
 export {
   dur,
