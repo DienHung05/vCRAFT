@@ -47,6 +47,7 @@ describe('ChangePasswordForm', () => {
     expect(signInWithPassword).toHaveBeenCalledWith({
       email: 'ban@vidu.vn',
       password: 'mat-khau-cu-1',
+      options: {},
     });
     expect(updateUser).toHaveBeenCalledWith({ password: 'mat-khau-moi-2' });
     expect(signOut).toHaveBeenCalledWith({ scope: 'others' });

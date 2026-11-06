@@ -5,11 +5,13 @@ import {
   type CreateArtisanRequest,
   type CreateJournalEntryRequest,
   type CreateProductRequest,
+  type CreateQrLabelsRequest,
   type CreateWorkshopRequest,
   HouseholdResponseSchema,
   JournalResponseSchema,
   MediaAssetResponseSchema,
   ProductResponseSchema,
+  QrLabelsResponseSchema,
   type SetIdNumberRequest,
   type SetProductMakersRequest,
   type UpdateHouseholdProfileRequest,
@@ -69,6 +71,11 @@ export function createStudioClient(options: AuthedClientOptions) {
         version,
         body: { reason },
       }),
+    /** Queue an A4 QR label sheet (PLAN E6); poll `qrLabelsStatus` until it is READY. */
+    requestQrLabels: (body: CreateQrLabelsRequest) =>
+      request('/me/household/qr-labels', QrLabelsResponseSchema, { method: 'POST', body }),
+    qrLabelsStatus: (requestId: string) =>
+      request(`/me/household/qr-labels/${requestId}`, QrLabelsResponseSchema),
     getJournal: (productId: string) =>
       request(`/me/household/products/${productId}/journal`, JournalResponseSchema),
     appendJournalEntry: (productId: string, body: CreateJournalEntryRequest) =>

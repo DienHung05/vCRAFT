@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
 import { ListSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
+import { useLiveEvents } from '@/lib/api/live-events';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { notify } from '@/lib/notify';
 import { useMoney } from '@/lib/use-money';
@@ -123,6 +124,11 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // A new offer or allocation notice for this buyer: refetch at once instead of waiting for the poll (GH#93).
+  useLiveEvents((event) => {
+    if (event.type === 'activity' && !isDraft && !document.hidden) void load();
+  });
 
   // A draft is being edited, so it is not polled: a refresh would reset the form's version.
   useEffect(() => {

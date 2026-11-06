@@ -1,8 +1,10 @@
 'use client';
 
+import type { PriceHintDto } from '@vcraft/contracts';
 import { Button, Card, cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
+import { AmountInWords } from '@/components/amount-in-words';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { notify } from '@/lib/notify';
 
@@ -27,6 +29,8 @@ export interface ContributionFormProps {
   version?: number;
   /** Đã rút: giữ lại dữ liệu và cho gửi lại trước hạn. */
   withdrawn?: boolean;
+  /** Suggested unit price range (PLAN E9); not shown when absent or null. */
+  priceHint?: PriceHintDto['hint'] | undefined;
   disabled?: boolean;
   /**
    * Gửi đề xuất tham gia. API caller truyền mutation ở đây (kèm token của phiên);
@@ -62,6 +66,7 @@ export function ContributionForm({
   initial,
   version,
   withdrawn,
+  priceHint,
   disabled = false,
   onSubmit,
   onWithdraw,
@@ -189,26 +194,32 @@ export function ContributionForm({
             )}
           />
         </label>
-        <label className="flex flex-col gap-1 text-small">
-          <span className="text-ash">{t('unitPrice')}</span>
-          <input
-            type="number"
-            min={1}
-            step={1000}
-            inputMode="numeric"
-            value={unitPrice}
-            disabled={locked}
-            aria-invalid={!ready && problems.some((p) => p === t('problem.price'))}
-            onChange={(e) => {
-              setUnitPrice(e.currentTarget.value);
-              setSubmit({ kind: 'idle' });
-            }}
-            className={cn(
-              'h-10 rounded-input border bg-paper px-2 text-right tabular-nums',
-              'border-ink/20',
-            )}
-          />
-        </label>
+        {/* The words sit outside the label so they do not join the input's accessible name. */}
+        <div className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1 text-small">
+            <span className="text-ash">{t('unitPrice')}</span>
+            <input
+              type="number"
+              min={1}
+              step={1000}
+              inputMode="numeric"
+              value={unitPrice}
+              disabled={locked}
+              aria-invalid={!ready && problems.some((p) => p === t('problem.price'))}
+              aria-describedby={`${formId}-price-words`}
+              onChange={(e) => {
+                setUnitPrice(e.currentTarget.value);
+                setSubmit({ kind: 'idle' });
+              }}
+              className={cn(
+                'h-10 rounded-input border bg-paper px-2 text-right tabular-nums',
+                'border-ink/20',
+              )}
+            />
+          </label>
+          <AmountInWords id={`${formId}-price-words`} value={unitPrice} />
+          {priceHint ? <PriceHintNote hint={priceHint} /> : null}
+        </div>
         <label className="flex flex-col gap-1 text-small">
           <span className="text-ash">{t('completionDate')}</span>
           <input
@@ -298,5 +309,21 @@ export function ContributionForm({
         <p className="text-ash">{t('withdrawText')}</p>
       </ConfirmDialog>
     </Card>
+  );
+}
+
+/** The price range hint and, in one line, what it is based on (never other households' offers). */
+function PriceHintNote({ hint }: { hint: NonNullable<PriceHintDto['hint']> }) {
+  const t = useTranslations('contribution.priceHint');
+  const format = useFormatter();
+  const range =
+    hint.minVnd === hint.maxVnd
+      ? format.number(hint.minVnd, 'vnd')
+      : `${format.number(hint.minVnd, 'vnd')} – ${format.number(hint.maxVnd, 'vnd')}`;
+  return (
+    <p className="text-small text-ash">
+      <span className="font-medium text-ink">{t('range', { range })}</span>{' '}
+      {t(`basis.${hint.basis}`, { own: hint.ownSamples, catalog: hint.catalogSamples })}
+    </p>
   );
 }

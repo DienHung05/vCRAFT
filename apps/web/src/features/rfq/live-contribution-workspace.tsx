@@ -1,7 +1,7 @@
 'use client';
 
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
-import type { ContributionDto, RfqResponse } from '@vcraft/contracts';
+import type { ContributionDto, PriceHintDto, RfqResponse } from '@vcraft/contracts';
 import { Button } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -38,6 +38,20 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
   const [refresh, setRefresh] = useState(0);
   const [declineFailed, setDeclineFailed] = useState(false);
   const [confirmDecline, setConfirmDecline] = useState(false);
+  const [priceHint, setPriceHint] = useState<PriceHintDto['hint']>(null);
+  // The hint is a nicety: loaded once, and a failure just leaves it out.
+  useEffect(() => {
+    let active = true;
+    client.priceHint(rfqId).then(
+      (result) => {
+        if (active) setPriceHint(result.hint);
+      },
+      () => undefined,
+    );
+    return () => {
+      active = false;
+    };
+  }, [client, rfqId]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: refresh explicitly reloads the contribution after a saved edit or withdrawal.
   useEffect(() => {
     let active = true;
@@ -160,6 +174,7 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
         unit={request.unit}
         biddingClosesAt={request.biddingClosesAt}
         requiredBy={request.requiredBy}
+        priceHint={closed ? null : priceHint}
         disabled={closed}
         onSubmit={submit}
         {...(contribution

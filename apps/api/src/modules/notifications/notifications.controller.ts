@@ -9,7 +9,8 @@ import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { NotificationsService } from './application/notifications.service';
 
 /**
- * Chuông thông báo (GH#37): client hỏi lại theo chu kỳ, không có SSE. Mọi vai trò đã đăng nhập đều
+ * Chuông thông báo (GH#37). Live updates arrive over `GET /me/events` (GH#93); these routes stay for the
+ * first load and as the polling fallback. Mọi vai trò đã đăng nhập đều
  * dùng được, kể cả hộ chưa được duyệt (để nhận kết quả duyệt hồ sơ).
  */
 @Controller('me/notifications')

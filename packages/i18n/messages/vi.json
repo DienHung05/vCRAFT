@@ -36,7 +36,10 @@
     "artisans": "Nghệ nhân",
     "map": "Bản đồ",
     "news": "Tin tức",
-    "quotes": "Yêu cầu báo giá"
+    "quotes": "Yêu cầu báo giá",
+    "theme": "Đổi giao diện sáng/tối",
+    "themeToDark": "Chuyển sang giao diện tối",
+    "themeToLight": "Chuyển sang giao diện sáng"
   },
   "indexPages": {
     "demoNote": "Bản trình diễn: danh sách này lấy từ dữ liệu mẫu, không phải hộ và sản phẩm thật.",
@@ -510,7 +513,8 @@
       "news": "Tin tức",
       "audit": "Nhật ký",
       "overview": "Tổng quan",
-      "pending": "{count} hồ sơ đang chờ duyệt"
+      "pending": "{count} hồ sơ đang chờ duyệt",
+      "progress": "Tiến độ đơn"
     },
     "board": {
       "barTitle": "Chia {quantity} {unit} cho các hộ",
@@ -608,7 +612,23 @@
       "openRfqs": "Yêu cầu báo giá đang mở",
       "ordersInProduction": "Đơn đang sản xuất",
       "qrScans30Days": "Lượt quét QR 30 ngày",
-      "reviewCta": "Duyệt {count} hồ sơ đang chờ"
+      "reviewCta": "Duyệt {count} hồ sơ đang chờ",
+      "assistant": {
+        "title": "Trợ lý Cáo",
+        "period": "{days} ngày qua",
+        "loading": "Đang tải…",
+        "failed": "Chưa tải được số liệu của trợ lý.",
+        "turns": "Lượt hỏi",
+        "blockRate": "Tỉ lệ bị chặn",
+        "feedback": "Đánh giá",
+        "feedbackValue": "👍 {up} · 👎 {down}",
+        "latency": "Chữ đầu tiên (p50 / p95)",
+        "latencyValue": "{p50} / {p95}",
+        "ms": "{value} ms",
+        "unansweredTitle": "Câu Cáo chưa trả lời được",
+        "unansweredEmpty": "Chưa có câu nào bị bỏ lửng.",
+        "times": "{count} lần"
+      }
     },
     "queue": {
       "title": "Duyệt hộ",
@@ -649,6 +669,7 @@
       "workshops": "Xưởng trên bản đồ",
       "noWorkshops": "Hộ chưa khai xưởng.",
       "noLocation": "Xưởng chưa khai vị trí.",
+      "outsideVillage": "Ghim ngoài ranh giới xã Bát Tràng",
       "decision": "Quyết định",
       "reason": "Lý do",
       "sealed": "Đã duyệt và đóng ấn.",
@@ -781,6 +802,9 @@
         },
         "account": {
           "delete": "Xóa tài khoản"
+        },
+        "allocation": {
+          "reallocate": "Chia lại phần còn lại"
         }
       },
       "emptyHint": "Mọi thao tác của quản trị viên sẽ được ghi lại ở đây.",
@@ -874,7 +898,45 @@
         "linkPrompt": "Nhập địa chỉ liên kết:"
       },
       "emptyHint": "Viết tin đầu tiên để báo sự kiện, giá nguyên vật liệu hay chính sách hỗ trợ.",
-      "deletedToast": "Đã xóa tin."
+      "deletedToast": "Đã xóa tin.",
+      "structured": {
+        "pricesLegend": "Bảng giá nguyên liệu",
+        "effectiveOn": "Áp dụng từ ngày",
+        "priceOf": "{material} (VND/{unit})",
+        "pricesHint": "Bỏ trống loại nào thì loại đó giữ giá của bảng trước trên biểu đồ.",
+        "outageLegend": "Lịch cắt điện",
+        "date": "Ngày",
+        "from": "Từ",
+        "to": "Đến",
+        "area": "Khu vực",
+        "outageHint": "Studio hiện banner vào đúng ngày cắt điện.{more, plural, =0 {} other { Thông báo còn # đợt cắt khác được giữ nguyên.}}"
+      }
+    },
+    "progress": {
+      "title": "Tiến độ đơn hàng",
+      "lead": "Mỗi thanh là phần của một hộ, từ lúc nhận tới ngày hộ hẹn xong; phần tô đậm là số đã làm, vạch xanh là hôm nay.",
+      "loading": "Đang tải tiến độ…",
+      "loadFailed": "Chưa tải được tiến độ đơn hàng.",
+      "empty": "Chưa có đơn nào đang sản xuất.",
+      "requiredBy": "Hạn giao {date}",
+      "counts": "{done}/{total} {unit} · dự kiến {expected} · hẹn {due}",
+      "lateness": {
+        "DONE": "Xong",
+        "ON_TRACK": "Đúng tiến độ",
+        "BEHIND": "Chậm",
+        "OVERDUE": "Quá hạn"
+      },
+      "reallocate": "Chia lại phần còn lại",
+      "reallocateLegend": "Chia {remaining} {unit} còn lại cho hộ khác",
+      "targetHousehold": "Hộ nhận",
+      "chooseHousehold": "Chọn hộ",
+      "targetQuantity": "Số lượng",
+      "moved": "Đã chia {moved}/{remaining} {unit}",
+      "addTarget": "Thêm hộ",
+      "confirmReallocate": "Xác nhận chia lại",
+      "cancel": "Hủy",
+      "reallocated": "Đã chia lại. Các hộ nhận được thông báo.",
+      "reallocateFailed": "Chưa chia lại được. Bạn tải lại trang rồi thử lại."
     }
   },
   "exhibition": {
@@ -908,6 +970,14 @@
     "lead": "Yêu cầu cần {quantity} {unit}. Bạn khai mức tối đa, đơn giá và ngày hoàn thành mà hộ mình nhận được.",
     "maxQuantity": "Mức tối đa ({unit})",
     "unitPrice": "Đơn giá (VND)",
+    "priceHint": {
+      "range": "Gợi ý: {range} mỗi đơn vị.",
+      "basis": {
+        "OWN": "Dựa trên {own, plural, other {# đề xuất}} trước đây của hộ bạn.",
+        "CATALOG": "Dựa trên giá niêm yết của {catalog, plural, other {# sản phẩm}} cùng loại trên vCraft.",
+        "MIXED": "Dựa trên {own, plural, other {# đề xuất}} trước của hộ bạn và {catalog, plural, other {# sản phẩm}} cùng loại đang niêm yết."
+      }
+    },
     "completionDate": "Ngày hoàn thành",
     "dateWindow": "Ngày hoàn thành phải sau hạn chào giá {closing} và không muộn hơn hạn giao {required}.",
     "problem": {
@@ -1038,6 +1108,9 @@
       "PRODUCTION_STARTED": "Đơn hàng đã bắt đầu sản xuất.",
       "PROGRESS_REPORTED": "Có cập nhật tiến độ sản xuất.",
       "ORDER_RECEIVED": "Đơn hàng đã được xác nhận nhận hàng.",
+      "BIDDING_CLOSED": "Yêu cầu báo giá đã hết hạn chào giá.",
+      "RFQ_EXPIRED": "Yêu cầu báo giá đã hết hạn mà chưa chốt.",
+      "COORDINATION_NEEDED": "Một yêu cầu báo giá cần điều phối.",
       "HOUSEHOLD_APPROVED": "Hồ sơ hộ của bạn đã được chấp nhận.",
       "HOUSEHOLD_REJECTED": "Hồ sơ hộ của bạn chưa được chấp nhận.",
       "HOUSEHOLD_INFO_REQUESTED": "Hồ sơ hộ của bạn cần bổ sung thông tin.",
@@ -1085,6 +1158,27 @@
         "order": "Phân bổ và đơn hàng",
         "news": "Tin tức"
       }
+    },
+    "security": {
+      "title": "Bảo mật",
+      "lead": "Các lần đăng nhập gần đây vào tài khoản này. Thấy lần nào lạ thì đổi mật khẩu và đăng xuất khỏi mọi thiết bị.",
+      "historyTitle": "Lịch sử đăng nhập",
+      "loading": "Đang tải…",
+      "unavailable": "Chưa tải được lịch sử đăng nhập. Thử lại sau ít phút.",
+      "empty": "Chưa có lần đăng nhập nào được ghi lại.",
+      "twoFactor": "đã xác thực hai lớp",
+      "method": {
+        "password": "Mật khẩu",
+        "oauth": "Google",
+        "otp": "Liên kết email",
+        "recovery": "Liên kết đặt lại mật khẩu",
+        "invite": "Lời mời"
+      },
+      "signOutLead": "Đăng xuất tài khoản khỏi mọi trình duyệt và điện thoại, kể cả thiết bị này.",
+      "signOutAll": "Đăng xuất khỏi mọi thiết bị",
+      "confirmTitle": "Đăng xuất khỏi mọi thiết bị?",
+      "confirmText": "Mọi phiên đăng nhập của tài khoản sẽ kết thúc ngay, kể cả phiên này. Bạn sẽ cần đăng nhập lại.",
+      "cancel": "Hủy"
     }
   },
   "villageMap": {
@@ -1119,7 +1213,8 @@
       "5": "Thứ sáu",
       "6": "Thứ bảy"
     },
-    "clearFilters": "Bỏ bộ lọc"
+    "clearFilters": "Bỏ bộ lọc",
+    "offline": "Bản đồ dự phòng ngoại tuyến"
   },
   "catalog": {
     "filtersLabel": "Lọc sản phẩm",
@@ -1231,7 +1326,8 @@
       "mediaTooLarge": "Tệp lớn hơn 10 MB. Hãy chụp lại ở độ phân giải thấp hơn hoặc nén tệp.",
       "mediaUnsupported": "Chỉ nhận ảnh JPG, PNG, WebP, AVIF hoặc tệp PDF.",
       "apiDown": "Không gọi được máy chủ vCraft. Bạn thử lại sau ít phút nhé.",
-      "consentRequired": "Cần đồng ý với Chính sách quyền riêng tư trước khi thực hiện thao tác này. Hãy tích ô đồng ý rồi thử lại."
+      "consentRequired": "Cần đồng ý với Chính sách quyền riêng tư trước khi thực hiện thao tác này. Hãy tích ô đồng ý rồi thử lại.",
+      "captcha": "Hãy hoàn tất bước xác minh \"Tôi không phải robot\" phía trên rồi thử lại."
     },
     "signIn": {
       "title": "Đăng nhập",
@@ -1363,7 +1459,8 @@
         "unavailable": "Bản đồ không tải được trên thiết bị này. Bạn vẫn có thể nhập tọa độ ở dưới.",
         "loading": "Đang tải bản đồ…",
         "attribution": "Dữ liệu bản đồ © OpenStreetMap",
-        "marker": "Vị trí xưởng"
+        "marker": "Vị trí xưởng",
+        "outsideVillage": "Ghim này nằm ngoài ranh giới xã Bát Tràng. Bạn kiểm tra lại vị trí; Ban quản lý làng sẽ thấy ghi chú này khi duyệt hồ sơ."
       },
       "documents": {
         "title": "Giấy tờ xác minh",
@@ -1439,6 +1536,27 @@
     },
     "kiln": {
       "sealed": "Đã đóng ấn. Đang mở cửa lò…"
+    },
+    "google": {
+      "or": "hoặc",
+      "continue": "Tiếp tục với Google",
+      "redirecting": "Đang chuyển sang Google…",
+      "notice": "Lần đầu tiếp tục với Google sẽ tạo tài khoản khách mua và nghĩa là bạn đồng ý Chính sách quyền riêng tư.",
+      "failed": "Chưa đăng nhập được bằng Google. Bạn thử lại, hoặc dùng email và mật khẩu."
+    },
+    "mfa": {
+      "enrollTitle": "Bật xác thực hai lớp",
+      "enrollLead": "Khu quản trị cần thêm một lớp bảo vệ. Quét mã QR bằng ứng dụng xác thực (Google Authenticator, Microsoft Authenticator, 1Password…) rồi nhập mã 6 số.",
+      "verifyTitle": "Nhập mã xác thực",
+      "verifyLead": "Mở ứng dụng xác thực trên điện thoại và nhập mã 6 số cho vCraft.",
+      "loading": "Đang chuẩn bị…",
+      "failed": "Không bật được xác thực hai lớp lúc này. Tải lại trang hoặc thử lại sau ít phút.",
+      "qrAlt": "Mã QR để thêm vCraft vào ứng dụng xác thực",
+      "secretLabel": "Không quét được? Nhập khóa này:",
+      "codeLabel": "Mã 6 số",
+      "submit": "Xác nhận",
+      "verifying": "Đang kiểm tra…",
+      "invalid": "Mã chưa đúng hoặc đã hết hạn. Nhập mã mới nhất trong ứng dụng."
     }
   },
   "studio": {
@@ -1502,6 +1620,13 @@
       "generations": "Số đời làm nghề",
       "timeline": "Dòng thời gian gia đình",
       "addEvent": "Thêm sự kiện",
+      "addEventPhoto": "Thêm ảnh (tùy chọn)",
+      "uploadingPhoto": "Đang tải ảnh…",
+      "removePhoto": "Bỏ ảnh",
+      "photoFailed": "Chưa tải được ảnh. Bạn thử lại.",
+      "moveUp": "Đưa “{title}” lên trước",
+      "moveDown": "Đưa “{title}” xuống sau",
+      "timelineOrderHint": "Trang công khai xếp theo năm; các mốc cùng năm giữ đúng thứ tự bạn sắp ở đây.",
       "year": "Năm",
       "eventTitle": "Tiêu đề",
       "eventText": "Nội dung",
@@ -1609,6 +1734,14 @@
       "qr": "Mã QR",
       "qrLead": "In mã này lên tem dán đáy sản phẩm. Mã không đổi khi đổi tên.",
       "qrDownload": "Tải PNG",
+      "labels": {
+        "oneSheet": "Tải nhãn QR để in (PDF)",
+        "allPublished": "Nhãn QR cho {count, plural, other {# sản phẩm}} đang trưng bày (PDF)",
+        "preparing": "Đang dựng tờ nhãn…",
+        "hint": "Khổ A4, mã QR in 20 mm, cắt theo đường kẻ mờ.",
+        "failed": "Chưa dựng được tờ nhãn. Bạn thử lại.",
+        "timeout": "Tờ nhãn đang lâu hơn thường lệ. Bạn thử lại sau ít phút."
+      },
       "journalLink": "Nhật ký sản xuất",
       "emptyHint": "Thêm món đầu tiên, rồi ghi nhật ký sản xuất và xuất bản để khách thấy.",
       "createdToast": "Đã tạo sản phẩm nháp.",
@@ -1693,7 +1826,12 @@
       "emptyAction": "Xem lời mời báo giá"
     },
     "registerHousehold": "Đăng ký hộ nghệ nhân",
-    "cancel": "Quay lại"
+    "cancel": "Quay lại",
+    "outage": {
+      "title": "Hôm nay cắt điện",
+      "slot": "{from}–{to} ({area})",
+      "details": "Xem thông báo"
+    }
   },
   "media": {
     "uploads": "Ảnh đang tải lên",
@@ -1826,5 +1964,110 @@
         "failed": "Chưa xóa được tài khoản và chưa có gì bị thay đổi. Bạn thử lại sau ít phút."
       }
     }
+  },
+  "news": {
+    "materialPrices": {
+      "title": "Giá nguyên liệu 6 tháng",
+      "lead": "Đất sét, men và gas theo bảng giá Ban quản lý đăng hằng tháng. Biểu đồ so với tháng đầu (= 100); giá thật trong chú thích.",
+      "tableCaption": "Giá nguyên liệu theo tháng",
+      "month": "Tháng",
+      "latest": "{material}: {price}/{unit}",
+      "materials": {
+        "CLAY": "Đất sét",
+        "GLAZE": "Men",
+        "GAS": "Gas"
+      }
+    }
+  },
+  "assistant": {
+    "open": "Hỏi Cáo",
+    "close": "Đóng trợ lý",
+    "title": "Cáo của vCraft",
+    "subtitle": "Hỏi về gốm Bát Tràng và cách dùng vCraft",
+    "mascotLabel": "Cáo, trợ lý của vCraft",
+    "welcome": "Chào bạn! Tớ là Cáo. Bạn muốn tìm gốm, đặt hàng số lượng lớn hay tìm hiểu làng Bát Tràng?",
+    "hello": "Chào bạn 👋 Cần tìm gì ở làng gốm cứ hỏi Cáo nhé!",
+    "dismissHello": "Ẩn lời chào",
+    "log": "Cuộc trò chuyện với Cáo",
+    "inputLabel": "Câu hỏi cho Cáo",
+    "placeholder": "Hỏi Cáo điều gì đó…",
+    "send": "Gửi",
+    "stop": "Dừng trả lời",
+    "stopped": "Đã dừng.",
+    "retry": "Thử lại",
+    "copy": "Sao chép câu trả lời",
+    "copied": "Đã sao chép",
+    "helpful": "Câu trả lời hữu ích",
+    "notHelpful": "Câu trả lời chưa hữu ích",
+    "newChat": "Cuộc trò chuyện mới",
+    "thinking": "Cáo đang nghĩ…",
+    "error": "Cáo vấp một chút rồi. Bạn thử lại nhé.",
+    "sources": "Nguồn",
+    "quickLabel": "Câu hỏi gợi ý",
+    "source": {
+      "FAQ": "Hỏi đáp",
+      "PRODUCT": "Sản phẩm",
+      "HOUSEHOLD": "Hộ sản xuất",
+      "NEWS": "Tin tức",
+      "VILLAGE": "Làng gốm",
+      "PAGE": "Trang"
+    },
+    "blocked": {
+      "INJECTION": "Tớ không làm theo yêu cầu đó được. Mình nói chuyện về gốm nhé?",
+      "ABUSE": "Mình giữ lời lẽ nhẹ nhàng nhé. Tớ vẫn sẵn lòng giúp về gốm Bát Tràng.",
+      "PRIVATE_DATA": "Tớ không xem được thông tin riêng tư của người khác. Bạn hỏi điều khác nhé.",
+      "RATE_LIMITED": "Bạn hỏi nhanh quá, Cáo cần nghỉ một chút. Thử lại sau ít phút nhé.",
+      "RATE_LIMITED_WAIT": "Bạn hỏi nhanh quá, Cáo cần nghỉ một chút. Hỏi lại sau {seconds} giây nhé.",
+      "BUDGET_EXHAUSTED": "Cáo đi ngủ rồi, hẹn bạn ngày mai nhé 💤",
+      "DISABLED": "Cáo đang nghỉ. Bạn xem trang Hỏi đáp hoặc gửi yêu cầu báo giá nhé."
+    },
+    "quick": {
+      "home": [
+        "Bát Tràng có gì đặc biệt?",
+        "Đặt hàng số lượng lớn thế nào?",
+        "Xưởng nào đang mở cửa?"
+      ],
+      "catalog": ["Gợi ý quà tặng gốm", "Men lam khác men rạn thế nào?", "Có bình hút lộc không?"],
+      "map": ["Xưởng nào đang mở cửa?", "Đi Bát Tràng bằng gì?", "Thời tiết Bát Tràng hôm nay?"],
+      "trace": ["Mã QR này cho biết gì?", "Món này do ai làm?", "Làm sao biết hàng thật?"],
+      "quote": [
+        "Yêu cầu báo giá gồm những gì?",
+        "Bao lâu thì có báo giá?",
+        "Có in logo lên gốm không?"
+      ],
+      "other": ["vCraft là gì?", "Đặt hàng số lượng lớn thế nào?", "Bát Tràng có gì đặc biệt?"]
+    },
+    "thoughts": [
+      "Bát Tràng làm gốm từ thế kỷ 14…",
+      "Men lam được vẽ bằng ô-xít coban…",
+      "Lò bầu xưa đốt bằng củi thông…",
+      "Men rạn nứt vì co ngót khi nguội…",
+      "Đất sét trắng Bát Tràng rất mịn…",
+      "Nung gốm sứ tới khoảng 1.300 °C…",
+      "Mỗi chiếc bình qua tay nhiều người thợ…",
+      "Men gio làm từ tro cây và đất…",
+      "Làng có chợ gốm họp mỗi ngày…",
+      "Chuốt gốm trên bàn xoay cần đôi tay vững…",
+      "Gốm phải phơi khô trước khi nung…",
+      "Men nâu là sắc men cổ của làng…",
+      "Họa tiết sen, cúc rất hay gặp…",
+      "Lò gas giúp nhiệt độ đều hơn…",
+      "Gốm đắp nổi làm bằng tay từng nét…",
+      "Bát Tràng nằm bên bờ sông Hồng…",
+      "Đất được ngâm, lọc nhiều lần…",
+      "Vẽ tay mỗi bình mất cả buổi…",
+      "Nghề gốm truyền qua nhiều đời…",
+      "Men trắng ngà mềm như ngọc…",
+      "Xếp lò là cả một nghệ thuật…",
+      "Gốm mộc là gốm chưa tráng men…",
+      "Khuôn thạch cao giúp làm hàng loạt…",
+      "Lửa lò quyết định màu men cuối cùng…",
+      "Mỗi món gốm có mã QR riêng trên vCraft…",
+      "Bình hút lộc là quà Tết được ưa chuộng…",
+      "Ấm chén là mặt hàng truyền thống…",
+      "Gốm vỡ trong lò được loại bỏ ngay…",
+      "Thợ giỏi chuốt được bình cao cả mét…",
+      "Cáo đang lục tìm trong kho gốm…"
+    ]
   }
 }

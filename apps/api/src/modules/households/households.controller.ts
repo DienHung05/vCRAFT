@@ -17,6 +17,7 @@ import {
   CreateArtisanRequestSchema,
   type CreateProductRequest,
   CreateProductRequestSchema,
+  CreateQrLabelsRequestSchema,
   type CreateWorkshopRequest,
   CreateWorkshopRequestSchema,
   HouseholdDecisionRequestSchema,
@@ -38,11 +39,37 @@ import { IfMatchVersion } from '../../common/http/if-match';
 import { UuidPipe } from '../../common/pipes/uuid.pipe';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { HouseholdsService } from './application/households.service';
+import { QrLabelsService } from './application/qr-labels.service';
 
 /** Hồ sơ hộ của chính người đại diện (`/me/household`). */
 @Controller('me/household')
 export class MyHouseholdController {
-  constructor(private readonly households: HouseholdsService) {}
+  constructor(
+    private readonly households: HouseholdsService,
+    private readonly qrLabels: QrLabelsService,
+  ) {}
+
+  /** Queue an A4 QR label sheet for some of the household's products (PLAN E6); poll the status. */
+  @Post('qr-labels')
+  @HttpCode(202)
+  @Roles('HOUSEHOLD')
+  requestQrLabels(
+    @CurrentActor() actor: Actor,
+    @Body(new ZodValidationPipe(CreateQrLabelsRequestSchema))
+    body: { productIds: string[]; copies: number },
+  ) {
+    return this.qrLabels.request(actor, body);
+  }
+
+  @Get('qr-labels/:requestId')
+  @Header('Cache-Control', 'private, no-store')
+  @Roles('HOUSEHOLD')
+  qrLabelsStatus(
+    @CurrentActor() actor: Actor,
+    @Param('requestId', new UuidPipe()) requestId: string,
+  ) {
+    return this.qrLabels.status(actor, requestId);
+  }
 
   @Post()
   apply(

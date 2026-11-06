@@ -134,6 +134,26 @@ describe('HouseholdReview', () => {
     expect(within(columns).getByText(/chưa khai vị trí/)).toBeTruthy();
   });
 
+  it('flags a workshop pinned outside Bát Tràng commune, not one inside', async () => {
+    const [workshop] = PENDING.workshops;
+    const household = {
+      ...PENDING,
+      workshops: [
+        { ...workshop, id: `${ID}b`, name: 'Xưởng trong làng', lat: 20.9765, lng: 105.9135 },
+        { ...workshop, id: `${ID}c`, name: 'Xưởng Hoàn Kiếm', lat: 21.0287, lng: 105.8524 },
+      ],
+    } as HouseholdDto;
+    renderVi(
+      <HouseholdReview
+        householdId={ID}
+        client={client({ getHousehold: vi.fn(async () => household) })}
+      />,
+    );
+    const flags = await screen.findAllByText('Ghim ngoài ranh giới xã Bát Tràng');
+    expect(flags).toHaveLength(1);
+    expect(flags[0]?.closest('li')?.textContent).toContain('Xưởng Hoàn Kiếm');
+  });
+
   it('shows the citizen ID masked and reveals the full number only on request', async () => {
     const api = client();
     renderVi(<HouseholdReview householdId={ID} client={api} />);

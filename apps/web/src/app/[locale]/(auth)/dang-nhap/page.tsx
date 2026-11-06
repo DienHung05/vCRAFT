@@ -31,6 +31,7 @@ export default async function SignInPage({
         next={next}
         needSignIn={next !== null}
         linkInvalid={firstParam(query.error) === 'link_invalid'}
+        oauthFailed={firstParam(query.error) === 'oauth_failed'}
       />
     </AuthShell>
   );

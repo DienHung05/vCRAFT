@@ -10,6 +10,7 @@
  * - news/         Phân loại và trạng thái tin tức làng nghề
  * - notification/ Loại thông báo in-app, người nhận theo vai trò và trang đích
  * - privacy/      Mục đích và phiên bản chính sách của sự đồng ý xử lý dữ liệu cá nhân (NFR-SEC-07)
+ * - village/      Ranh giới xã Bát Tràng (GeoJSON tĩnh) và kiểm tra điểm trong đa giác
  * - shared/     DomainError, Result, helper máy trạng thái; (sau này) Money, GeoPoint, OpeningHours
  */
 export * from './allocation';
@@ -22,3 +23,4 @@ export * from './notification';
 export * from './privacy';
 export * from './rfq';
 export * from './shared';
+export * from './village';

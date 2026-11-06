@@ -6,17 +6,21 @@ import { cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
+import { useLiveEvents } from '@/lib/api/live-events';
 import { browserAccountClient, browserSupabase } from '@/lib/auth/supabase-browser';
 import { notificationHref } from './target-href';
 
 /** Nhịp hỏi lại số chưa đọc (và danh sách khi đang mở); tạm dừng khi tab bị ẩn. */
 export const BELL_POLL_MS = 30_000;
+/** While the live stream is up (GH#93) polling only backs it up, so it slows right down. */
+export const BELL_POLL_LIVE_MS = 5 * 60_000;
 const LIST_LIMIT = 30;
 
 /**
- * Chuông thông báo trong header cho mọi vai trò đã đăng nhập (GH#37, FR-NOTI-01/03). Không dùng SSE:
- * hỏi lại `GET /me/notifications/unread-count` mỗi 30s khi tab đang hiện (và ngay khi tab hiện lại),
- * danh sách chỉ tải khi mở bảng. Khách chưa đăng nhập hoặc đang kiểm tra phiên thì không hiện gì.
+ * Chuông thông báo trong header cho mọi vai trò đã đăng nhập (GH#37, FR-NOTI-01/03). The unread count
+ * arrives over the live stream (`GET /me/events`, GH#93); polling `GET /me/notifications/unread-count`
+ * every 30 s while the tab is visible stays as the fallback and slows to 5 min while the stream is up.
+ * Danh sách chỉ tải khi mở bảng. Khách chưa đăng nhập hoặc đang kiểm tra phiên thì không hiện gì.
  * `client` chỉ để test truyền vào; mặc định lấy token từ phiên Supabase của trình duyệt.
  */
 export function NotificationBell({
@@ -77,11 +81,20 @@ function Bell({ client, align }: { client: AccountClient; align: 'start' | 'end'
     }
   }, [client]);
 
+  const live = useLiveEvents((event) => {
+    if (event.type === 'notifications') setUnread(event.unreadCount);
+    // Something new arrived: an open panel shows it at once.
+    if (event.type === 'activity' && openRef.current) void refresh();
+  });
+
   useEffect(() => {
     void refresh();
-    const timer = window.setInterval(() => {
-      if (!document.hidden) void refresh();
-    }, BELL_POLL_MS);
+    const timer = window.setInterval(
+      () => {
+        if (!document.hidden) void refresh();
+      },
+      live === 'live' ? BELL_POLL_LIVE_MS : BELL_POLL_MS,
+    );
     const visible = () => {
       if (!document.hidden) void refresh();
     };
@@ -90,7 +103,7 @@ function Bell({ client, align }: { client: AccountClient; align: 'start' | 'end'
       window.clearInterval(timer);
       document.removeEventListener('visibilitychange', visible);
     };
-  }, [refresh]);
+  }, [refresh, live]);
 
   // Mở bảng thì tải ngay danh sách.
   useEffect(() => {

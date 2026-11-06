@@ -57,6 +57,18 @@ const COPY: Record<NotificationType, { subject: string; body: string }> = {
     subject: 'Đơn hàng đã được xác nhận nhận hàng',
     body: 'Đơn hàng đã được xác nhận nhận hàng. Cảm ơn bạn đã tham gia.',
   },
+  BIDDING_CLOSED: {
+    subject: 'Yêu cầu báo giá đã hết hạn chào giá',
+    body: 'Hạn chào giá đã qua. Người mua có 7 ngày để chọn một chào giá; các đề xuất không sửa được nữa.',
+  },
+  RFQ_EXPIRED: {
+    subject: 'Yêu cầu báo giá đã hết hạn',
+    body: 'Yêu cầu báo giá đã hết hạn mà chưa chốt được chào giá nào. Bạn có thể tạo yêu cầu mới.',
+  },
+  COORDINATION_NEEDED: {
+    subject: 'Một yêu cầu báo giá cần điều phối',
+    body: 'Một yêu cầu báo giá sắp hết hạn chào giá nhưng chưa có người điều phối hoặc chưa đủ số lượng đề xuất.',
+  },
   HOUSEHOLD_APPROVED: {
     subject: 'Hồ sơ hộ của bạn đã được chấp nhận',
     body: 'Ban quản lý đã chấp nhận hộ của bạn. Trang của hộ nay hiện công khai và Studio đã mở.',

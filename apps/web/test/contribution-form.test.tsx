@@ -115,4 +115,29 @@ describe('ContributionForm (đề xuất tham gia, GH#10)', () => {
     const note = screen.getAllByText(/riêng giữa hộ và Ban quản lý/);
     expect(note.length).toBeGreaterThan(0);
   });
+
+  it('shows the suggested price range with what it is based on', () => {
+    renderVi(
+      <ContributionForm
+        {...props({
+          priceHint: {
+            minVnd: 45_000,
+            maxVnd: 75_000,
+            basis: 'MIXED',
+            ownSamples: 1,
+            catalogSamples: 3,
+          },
+        })}
+      />,
+    );
+    expect(screen.getByText(/^Gợi ý: 45\.000\s₫ – 75\.000\s₫ mỗi đơn vị\.$/)).toBeTruthy();
+    expect(
+      screen.getByText(/1 đề xuất trước của hộ bạn và 3 sản phẩm cùng loại đang niêm yết/),
+    ).toBeTruthy();
+  });
+
+  it('shows no hint without data', () => {
+    renderVi(<ContributionForm {...props({ priceHint: null })} />);
+    expect(screen.queryByText(/Gợi ý:/)).toBeNull();
+  });
 });

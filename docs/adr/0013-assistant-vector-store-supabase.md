@@ -1,6 +1,6 @@
 # ADR-13 — Vector store của trợ lý Cáo đặt trên Supabase pgvector, tách khỏi CSDL nghiệp vụ
 
-- Trạng thái: **Chấp nhận** (27/10/2026)
+- Trạng thái: **Chấp nhận** (27/10/2026). The model and embedding provider is amended by [ADR-19](0019-assistant-on-openai.md) (OpenAI, 1024-dimension embeddings); the vector store decision below stands.
 - Liên quan: FR-AST ([SRS §3.13](../SRS.md#313-trợ-lý-cáo-chatbot--fr-ast)), NFR-PORT-01, [ARCHITECTURE §7.6](../ARCHITECTURE.md#76-trợ-lý-cáo-rag--guardrail), epic E15 trong [PLAN](../PLAN.md)
 
 ## Bối cảnh

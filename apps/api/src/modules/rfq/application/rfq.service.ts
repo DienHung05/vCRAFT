@@ -13,6 +13,7 @@ import type {
   ListRfqsQuery,
   MyAllocationDto,
   MyInvitationDto,
+  PriceHintDto,
   ReportProgressRequest,
   RfqListDto,
   RfqResponse,
@@ -24,6 +25,8 @@ import {
   CooperativeQuotation as CooperativeQuotationEntity,
   Household,
   OrderAllocation as OrderAllocationEntity,
+  OutboxEvent,
+  Product,
   QuotationRequest,
 } from '@vcraft/database';
 import {
@@ -32,6 +35,7 @@ import {
   checkProgressReport,
   isCompletionDateValid,
   projectBuyerQuotation,
+  suggestPriceRange,
   transition,
 } from '@vcraft/domain';
 import type { Actor } from '../../../common/auth/auth.guard';
@@ -254,6 +258,11 @@ export class RfqService {
         actorId: actor.id,
         recipientIds: await this.notifier.representativeIds(em, request.invitedHouseholdIds),
       });
+      // The worker schedules `rfq.expire` at the deadline from this event (PLAN E9).
+      em.create(OutboxEvent, {
+        type: 'rfq.submitted',
+        payload: { requestId: request.id, biddingClosesAt: request.biddingClosesAt.toISOString() },
+      });
       await em.flush();
       return toRfqResponse(request);
     });
@@ -375,6 +384,45 @@ export class RfqService {
       await em.flush();
       return toContributionDto(offer);
     });
+  }
+
+  /**
+   * A unit price hint for an invited household writing its offer (PLAN E9): its own offers on other
+   * requests and published prices of comparable products, both in the request's category when it has
+   * one. Never reads another household's offer, so nothing sealed can leak through the range.
+   */
+  async priceHint(actor: Actor, requestId: string): Promise<PriceHintDto> {
+    const em = this.orm.em.fork();
+    const request = await this.request(em, requestId);
+    const household = await this.ownHousehold(em, actor, false);
+    if (!request.invitedHouseholdIds.includes(household.id)) throw notFound();
+    const category = request.category ?? undefined;
+    const [own, catalog] = await Promise.all([
+      em.find(
+        ContributionOfferEntity,
+        {
+          household,
+          request: { id: { $ne: request.id }, ...(category ? { category } : {}) },
+        },
+        { fields: ['unitPriceVnd'], orderBy: { createdAt: 'desc' }, limit: 50 },
+      ),
+      em.find(
+        Product,
+        {
+          status: 'PUBLISHED',
+          household: { status: 'APPROVED' },
+          priceVnd: { $gt: 0 },
+          ...(category ? { category } : {}),
+        },
+        { fields: ['priceVnd'], orderBy: { publishedAt: 'desc' }, limit: 200 },
+      ),
+    ]);
+    return {
+      hint: suggestPriceRange(
+        own.map((offer) => offer.unitPriceVnd),
+        catalog.map((product) => product.priceVnd),
+      ),
+    };
   }
 
   async listContributions(actor: Actor, requestId: string): Promise<ContributionDto[]> {

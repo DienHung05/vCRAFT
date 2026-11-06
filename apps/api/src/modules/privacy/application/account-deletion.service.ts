@@ -10,6 +10,7 @@ import {
   CooperativeQuotation,
   Household,
   JournalEntry,
+  LoginEvent,
   MediaAsset,
   MediaLink,
   News,
@@ -301,6 +302,7 @@ export class AccountDeletionService {
     }
     for (const row of await em.find(NotificationPreference, { userId })) em.remove(row);
     for (const row of await em.find(ConsentRecord, { userId })) em.remove(row);
+    for (const row of await em.find(LoginEvent, { userId })) em.remove(row);
 
     // Queued emails and image jobs for what was just deleted would only fail later.
     const assetIds = new Set(removedAssets.map((asset) => asset.id));

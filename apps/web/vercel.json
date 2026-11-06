@@ -4,5 +4,10 @@
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "buildCommand": "cd ../.. && pnpm exec turbo run build --filter=@vcraft/web",
   "outputDirectory": ".next",
-  "regions": ["fra1"]
+  "regions": ["fra1"],
+  "git": {
+    "deploymentEnabled": {
+      "main": false
+    }
+  }
 }
