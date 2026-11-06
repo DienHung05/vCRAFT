@@ -160,14 +160,13 @@ export class CatalogService {
         pg = totalPages;
         [rows, total] = await findPage(pg);
       }
-      const last = rows.at(-1);
       const [media, covers] = await Promise.all([
         this.media.publicMedia(productMediaIds(rows)),
         this.media.productCoverImages(rows),
       ]);
       return {
         data: rows.map((product) => toCardDto(product, media, covers.get(product.id))),
-        nextCursor: last && pg < totalPages ? encodeCursor(last, query.sort) : null,
+        nextCursor: null,
         page: pg,
         pageSize: limit,
         total,
