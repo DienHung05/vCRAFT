@@ -185,7 +185,8 @@ Mở `https://<domain>/vi/tin-tuc`: phải có bài (API gọi được từ ser
 
 ## 9. Triển khai tiếp theo, rollback, sự cố
 
-- **Triển khai:** merge vào `main`. Vercel build web; Render đợi CI xanh rồi build, chạy migration, khởi động API và worker. Migration luôn chạy trước khi bản API mới nhận traffic; viết migration tương thích ngược (thêm cột trước, bỏ cột sau).
+- **Deploy:** merging to `main` runs CI; when it is green, `.github/workflows/deploy.yml` deploys the API to Render (migrations included), then the web to Vercel, then runs smoke checks (§12). Neither platform deploys `main` on its own once the setup in §12 is done.
+
 - **Rollback web:** Vercel → Deployments → chọn bản cũ → *Promote to Production*. **Rollback API:** Render → *Deploys* → *Rollback*. Rollback **không** hoàn tác migration.
 - Đổi biến môi trường Render tự khởi động lại service; đổi biến Vercel cần Redeploy (biến chốt lúc build).
 - `/api/*` trả 404 trên domain: `API_INTERNAL_URL` chưa đặt (hoặc đặt sau khi build). Đặt rồi Redeploy.
@@ -267,3 +268,71 @@ Do this after adding a payment card. Wizard step s2 does it through the API; by 
 3. New → **Background Worker** named `vcraft-worker`: same repo and branch, Frankfurt, **Starter**, Build `corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm exec turbo run build --filter=@vcraft/worker...`, Start `node apps/worker/dist/main.js`. Link the `vcraft-shared` env group and copy the worker variables listed in `render.yaml` from `vcraft-api` (same `FIELD_ENCRYPTION_KEYS`, `SMTP_URL`, `MAIL_FROM`, `REDIS_URL`).
 4. Deploy `vcraft-api`; check the worker log for `queues ready: media, mail, outbox`.
 5. Remove the keep-alive job (SQL above) or keep it: it is harmless, and still stops the Supabase project from pausing.
+
+## 12. Continuous deployment (GitHub Actions)
+
+`.github/workflows/deploy.yml` is the only production deployer for both the API and the web app. It deploys a commit only after the full CI run (`quality`, `integration`, `e2e`) passed on `main`. Merging the file changes nothing until `CD_ENABLED` is `true`.
+
+### Flow
+
+1. CI finishes green for a push to `main` (`workflow_run`), or someone starts the workflow by hand (`workflow_dispatch`).
+2. `guard` resolves the SHA. For `workflow_run` it skips the run when the SHA is no longer the tip of `origin/main` (a newer merge will deploy itself). For `workflow_dispatch` it fails unless the SHA is an ancestor of `origin/main`.
+3. `api` calls the Render API (`scripts/ci/render-deploy.sh`): deploy that exact commit, poll every 15 s up to 25 min until `live`, then check `$API_ORIGIN/api/v1/health`. If `RENDER_WORKER_SERVICE_ID` is set, that service is deployed the same way afterwards.
+4. `web` runs only after `api` succeeded, so migrations (which run in the Render build, §11, or in the pre-deploy command on `starter`) are live before the new web code. It runs the Vercel CLI `pull`, `build --prod` and `deploy --prebuilt --prod`, then `scripts/ci/smoke.sh "$PROD_ORIGIN"`.
+5. `summary` writes the SHA, Render deploy id, Vercel URL and result to the job summary.
+
+Runs are serialized (`concurrency: deploy-production`, never cancelled). Both deploy jobs use the GitHub environment `production`, so the owner can add required reviewers there.
+
+All Vercel CLI commands run from the **repository root**, not from `apps/web`: the CLI reads the project's Root Directory (`apps/web`) from the pulled project settings, and running from `apps/web` fails with "Could not retrieve Project Settings". `vercel build` honours `installCommand` and `buildCommand` in `apps/web/vercel.json` (both `cd ../..`). `deploy --prebuilt` uploads `.vercel/output` produced by `vercel build`. The CLI is fetched with `npx --yes vercel@latest`. The `.vercel/` directory is git-ignored.
+
+Vercel's own Git deployments are disabled for the project (Settings → Git, `createDeployments` off), so there are no automatic PR previews and the workflow is the only web deployer. `apps/web/vercel.json` also sets `git.deploymentEnabled.main: false` so that `main` stays off even if the project setting is relaxed later.
+
+### Secrets and variables
+
+Secrets live in the `production` environment (Settings → Environments → production).
+
+| Secret | How to create |
+| --- | --- |
+| `RENDER_API_KEY` | Render → Account Settings → API Keys → Create API Key |
+| `VERCEL_TOKEN` | Vercel → Account Settings → Tokens → Create, scope limited to the team that owns the project |
+
+Variables (Settings → Secrets and variables → Actions → Variables):
+
+| Variable | Value |
+| --- | --- |
+| `CD_ENABLED` | `true` to turn the pipeline on; anything else (or unset) turns it off |
+| `RENDER_SERVICE_ID` | `vcraft-api` service id, e.g. `srv-dbjfrvetlv9c73d3rs0g` |
+| `RENDER_WORKER_SERVICE_ID` | Optional. Id of a separate `vcraft-worker` service (starter Blueprint). Empty skips it |
+| `API_ORIGIN` | `https://vcraft-api.onrender.com` |
+| `PROD_ORIGIN` | `https://vcraft-vn.vercel.app` (or the custom domain) |
+| `VERCEL_ORG_ID` | Vercel team id (Team Settings → General, or `.vercel/project.json` after `vercel link`) |
+| `VERCEL_PROJECT_ID` | e.g. `prj_SCqbRhbbXBnJO4mAZI2vFhDdO2uX` |
+
+### One-time setup order
+
+1. Create the two secrets and the variables above. Leave `CD_ENABLED` unset.
+2. Merge the PR that adds `deploy.yml`. Nothing deploys yet.
+3. Set `CD_ENABLED=true`, then start the workflow once (`gh workflow run deploy.yml`) or merge to `main`.
+4. Confirm the first Deploy run is green (Render live, Vercel deployed, smoke checks passed).
+5. Only then turn off Render's own auto-deploy: Render → `vcraft-api` → Settings → Build & Deploy → Auto-Deploy → *Off*. `render.yaml` already sets `autoDeployTrigger: "off"`, but the live service was not created from the Blueprint sync, so its setting does not change by itself. Until this step, a push to `main` deploys on Render twice.
+
+### Manual redeploy and rollback
+
+```bash
+gh workflow run deploy.yml                  # redeploy the current tip of main
+gh workflow run deploy.yml -f ref=<sha>     # deploy a specific commit that is on main
+scripts/ci/smoke.sh https://vcraft-vn.vercel.app   # the same read-only checks, from your machine
+```
+
+Rolling back is unchanged: Vercel → Deployments → *Promote to Production*, Render → *Deploys* → *Rollback* (§9). To roll forward to an older commit, dispatch it with `ref`. The workflow never undoes a migration, so keep migrations backward compatible.
+
+### Branch protection
+
+PR #96 merged with red CI because the branches were unprotected. Protect `main` and `develop` with these required status checks; the names must match exactly:
+
+- `quality`
+- `integration (postgresql)`
+- `integration (mysql)`
+- `e2e`
+
+If a job is added to or renamed in `ci.yml`, update the required checks to match, otherwise merges block on a check that never reports (or the new job is not enforced).
