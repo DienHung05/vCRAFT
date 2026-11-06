@@ -1234,7 +1234,6 @@
     "empty": "Không có sản phẩm nào khớp bộ lọc.",
     "unavailable": "Chưa tải được sản phẩm. Bạn thử lại sau ít phút.",
     "retry": "Thử lại",
-    "loadMore": "Tải thêm",
     "suggestEmpty": "Không có gợi ý nào.",
     "suggestFailed": "Chưa tải được gợi ý.",
     "groupProducts": "Sản phẩm",
@@ -1252,7 +1251,15 @@
       "price_asc": "Giá tăng dần",
       "price_desc": "Giá giảm dần"
     },
-    "emptyHint": "Thử bỏ bớt bộ lọc hoặc đổi khoảng giá để xem thêm sản phẩm."
+    "emptyHint": "Thử bỏ bớt bộ lọc hoặc đổi khoảng giá để xem thêm sản phẩm.",
+    "results": "Kết quả sản phẩm",
+    "pagination": {
+      "label": "Phân trang sản phẩm",
+      "previous": "Trang trước",
+      "next": "Trang sau",
+      "goTo": "Trang {page}",
+      "showing": "Hiển thị {from}–{to} trong {total} sản phẩm"
+    }
   },
   "auth": {
     "nav": {
