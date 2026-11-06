@@ -3,6 +3,13 @@ import { getTranslations } from 'next-intl/server';
 import { PublicShell } from '@/components/shell/public-shell';
 import { Link } from '@/i18n/navigation';
 
+export async function generateMetadata() {
+  const t = await getTranslations('notFound');
+  return {
+    title: t('title'),
+  };
+}
+
 export default async function NotFound() {
   const t = await getTranslations('notFound');
   return (
