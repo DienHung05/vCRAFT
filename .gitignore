@@ -40,8 +40,18 @@ next-env.d.ts
 *.db
 .beads-credential-key
 .beads/proxieddb/
+.beads/
 *.gate.lock*
 
 # AI
 # Worker MapLibre, chép từ node_modules khi dev/build
 apps/web/public/map/
+
+# Claude Code
+.claude/worktrees/
+
+# Supabase temp
+supabase/.temp/
+
+# Demo data
+scripts/demo-photos/photos-all/
