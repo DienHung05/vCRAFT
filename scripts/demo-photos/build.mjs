@@ -55,6 +55,14 @@ function isRealImage(buf) {
 }
 
 async function download(p) {
+  // localFile: đọc từ file cục bộ (ảnh đã tải sẵn)
+  if (p.localFile) {
+    const localPath = path.join(srcDir, p.localFile);
+    if (fs.existsSync(localPath)) {
+      return fs.readFileSync(localPath);
+    }
+    throw new Error(`${p.id}: localFile không tồn tại: ${localPath}`);
+  }
   // Cache theo nguồn: nhiều id có thể cắt khác nhau từ cùng một ảnh gốc.
   const dest = path.join(
     srcDir,
