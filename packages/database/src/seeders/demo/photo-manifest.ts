@@ -5481,9 +5481,9 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
 
 /**
  * Demo products that used to carry a photo and now show a preset illustration, because no licensed photo shows
- * that exact object: HX2M9KQD (a blue lotus bowl that none of the licensed photos matches).
+ * that exact object.
  */
-export const NO_COVER_DEMO_PRODUCTS: readonly string[] = ['HX2M9KQD'];
+export const NO_COVER_DEMO_PRODUCTS: readonly string[] = [];
 
 /**
  * Photos that were published by earlier versions of this pipeline and must no longer exist anywhere:
