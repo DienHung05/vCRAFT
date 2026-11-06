@@ -31,6 +31,7 @@ import {
   RFQ_SWEEP_EVERY_MS,
   runSchedulerJob,
 } from './processors/scheduler/rfq-jobs';
+import { DEFAULT_JOB_OPTIONS, OUTBOX_JOB_OPTIONS, trimFinishedJobs } from './queue-retention';
 import {
   ASSISTANT_QUEUE,
   MAIL_QUEUE,
@@ -44,13 +45,6 @@ import {
 } from './queues';
 
 export const OBJECT_STORAGE = Symbol('OBJECT_STORAGE');
-
-const DEFAULT_JOB_OPTIONS = {
-  attempts: 3,
-  backoff: { type: 'exponential', delay: 5_000 },
-  removeOnComplete: 1_000,
-  removeOnFail: 5_000,
-} as const;
 
 function redisConnection(): ConnectionOptions {
   const url = new URL(process.env.REDIS_URL ?? 'redis://localhost:6379');
@@ -97,7 +91,9 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       defaultJobOptions: DEFAULT_JOB_OPTIONS,
     });
     const knowledge = { orm: this.orm, ...knowledgeFromEnv() };
-    const outbox = new Queue(OUTBOX_QUEUE, { connection });
+    const outbox = new Queue(OUTBOX_QUEUE, { connection, defaultJobOptions: OUTBOX_JOB_OPTIONS });
+    // Free space first: a full Redis refuses the writes below (issue #153).
+    await trimFinishedJobs([media, mail, qrLabels, scheduler, assistant, outbox], this.logger);
     const dispatch = createOutboxDispatcher({ media, mail, qrLabels, scheduler, assistant });
     const mailDeps = {
       loadNotice: createNoticeLoader(this.orm),
