@@ -1,5 +1,5 @@
 // Tests for scripts/ci/render-deploy.sh against a tiny mock Render API.
-// Run: pnpm test:scripts   (node --test scripts/ci). Needs bash, curl and jq on PATH.
+// Run: pnpm test:scripts   (node --test scripts/ci/render-deploy.test.mjs). Needs bash, curl and jq on PATH.
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
