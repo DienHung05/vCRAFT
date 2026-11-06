@@ -48,8 +48,26 @@ function card(id: string, overrides: Partial<ProductCardDto> = {}): ProductCardD
   };
 }
 
-const page = (ids: string[], nextCursor: string | null) =>
+const cursorPage = (ids: string[], nextCursor: string | null) =>
   new Response(JSON.stringify({ data: ids.map((id) => card(id)), nextCursor }));
+
+const numberedPage = (
+  ids: string[],
+  nextCursor: string | null,
+  page: number,
+  pageSize: number,
+  total: number,
+) =>
+  new Response(
+    JSON.stringify({
+      data: ids.map((id) => card(id)),
+      nextCursor,
+      page,
+      pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+    }),
+  );
 
 describe('bộ lọc trên URL (FR-CAT-02)', () => {
   it('đọc rồi ghi lại đúng, bỏ giá trị lạ và mặc định', () => {
@@ -60,18 +78,26 @@ describe('bộ lọc trên URL (FR-CAT-02)', () => {
       maxPrice: 'abc',
       oneOfAKind: '1',
       sort: 'price_asc',
+      page: '2',
     });
-    expect(filters).toMatchObject({ category: 'TEA', minPrice: '100000', maxPrice: '' });
+    expect(filters).toMatchObject({
+      category: 'TEA',
+      minPrice: '100000',
+      maxPrice: '',
+      page: 2,
+    });
     expect(catalogSearchParams(filters).toString()).toBe(
-      'q=bat+trang&category=TEA&minPrice=100000&oneOfAKind=1&sort=price_asc',
+      'q=bat+trang&category=TEA&minPrice=100000&oneOfAKind=1&sort=price_asc&page=2',
     );
-    expect(parseCatalogParams({ category: 'KHONG', sort: 'x' })).toEqual(EMPTY_FILTERS);
+    expect(parseCatalogParams({ category: 'KHONG', sort: 'x', page: '999999' })).toEqual(
+      EMPTY_FILTERS,
+    );
     expect(catalogSearchParams(EMPTY_FILTERS).toString()).toBe('');
   });
 
   it('đổi sang tham số API', () => {
-    const query = toProductFilters({ ...EMPTY_FILTERS, inStock: true, maxPrice: '5' });
-    expect(productsQueryString(query)).toBe('sort=newest&maxPrice=5&inStock=true');
+    const query = toProductFilters({ ...EMPTY_FILTERS, inStock: true, maxPrice: '5', page: 3 });
+    expect(productsQueryString(query)).toBe('sort=newest&page=3&maxPrice=5&inStock=true');
   });
 });
 
@@ -199,13 +225,24 @@ describe('view models', () => {
 describe('CatalogExplorer', () => {
   const props = {
     initialFilters: EMPTY_FILTERS,
-    initialCursor: null,
+    initialTotal: 0,
+    initialTotalPages: 0,
     households: [],
   };
 
-  beforeEach(() => window.history.replaceState(null, '', '/vi/san-pham'));
+  beforeEach(() => {
+    window.history.replaceState(null, '', '/vi/san-pham');
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+  });
 
-  it('đổi bộ lọc: cập nhật URL, hiện skeleton, thay danh sách bằng JSON', async () => {
+  it('đổi bộ lọc: cập nhật URL, hiện skeleton, thay danh sách bằng JSON, reset về trang 1', async () => {
     let resolve: (value: Response) => void = () => {};
     const fetchProducts = vi.fn(
       () =>
@@ -214,40 +251,78 @@ describe('CatalogExplorer', () => {
         }),
     );
     renderVi(
-      <CatalogExplorer {...props} initialItems={[card('1')]} fetchProducts={fetchProducts} />,
+      <CatalogExplorer
+        {...props}
+        initialFilters={{ ...EMPTY_FILTERS, page: 2 }}
+        initialItems={[card('1')]}
+        initialTotal={50}
+        initialTotalPages={5}
+        fetchProducts={fetchProducts}
+      />,
     );
     fireEvent.click(screen.getByRole('checkbox', { name: 'Còn hàng' }));
     expect(window.location.search).toBe('?inStock=1');
     await waitFor(() => expect(fetchProducts).toHaveBeenCalled());
     expect(fetchProducts.mock.calls[0]?.[0 as never]).toContain('inStock=true');
+    expect(fetchProducts.mock.calls[0]?.[0 as never]).toContain('page=1');
     expect(screen.getByTestId('product-skeleton')).toBeTruthy();
-    await act(async () => resolve(page(['2'], null)));
+    await act(async () => resolve(numberedPage(['2'], null, 1, 12, 12)));
     expect(await screen.findByText('Món 2')).toBeTruthy();
     expect(screen.queryByText('Món 1')).toBeNull();
   });
 
-  it('tải thêm nối vào cuối bằng con trỏ, hết trang thì ẩn nút', async () => {
-    const fetchProducts = vi.fn(async () => page(['2'], null));
+  it('chuyển trang: URL có ?page=N, fetch page N, scroll lên, không reset các bộ lọc khác', async () => {
+    const fetchProducts = vi.fn(async () => numberedPage(['13', '14'], null, 2, 12, 24));
     renderVi(
       <CatalogExplorer
         {...props}
+        initialFilters={{ ...EMPTY_FILTERS, q: 'bat', page: 1 }}
         initialItems={[card('1')]}
-        initialCursor="c1"
+        initialTotal={24}
+        initialTotalPages={2}
         fetchProducts={fetchProducts}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Tải thêm' }));
-    expect(await screen.findByText('Món 2')).toBeTruthy();
-    expect(screen.getByText('Món 1')).toBeTruthy();
-    expect(fetchProducts.mock.calls[0]?.[0 as never]).toContain('cursor=c1');
-    expect(screen.queryByRole('button', { name: 'Tải thêm' })).toBeNull();
+    fireEvent.click(screen.getByRole('link', { name: /Trang 2/ }));
+    await waitFor(() => expect(fetchProducts).toHaveBeenCalled());
+    expect(fetchProducts.mock.calls[0]?.[0 as never]).toContain('q=bat');
+    expect(fetchProducts.mock.calls[0]?.[0 as never]).toContain('page=2');
+    expect(window.location.search).toBe('?q=bat&page=2');
+    expect(await screen.findByText('Món 13')).toBeTruthy();
+  });
+
+  it('trang đầu không hiện mũi tên trái, trang cuối không hiện mũi tên phải', () => {
+    renderVi(
+      <CatalogExplorer
+        {...props}
+        initialFilters={{ ...EMPTY_FILTERS, page: 1 }}
+        initialItems={[card('1')]}
+        initialTotal={24}
+        initialTotalPages={2}
+      />,
+    );
+    expect(screen.queryByRole('link', { name: 'Trang trước' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Trang sau' })).toBeTruthy();
+  });
+
+  it('ẩn toàn bộ phân trang khi chỉ có 1 trang', () => {
+    renderVi(
+      <CatalogExplorer
+        {...props}
+        initialFilters={EMPTY_FILTERS}
+        initialItems={[card('1'), card('2')]}
+        initialTotal={2}
+        initialTotalPages={1}
+      />,
+    );
+    expect(screen.queryByRole('navigation', { name: /Phân trang/ })).toBeNull();
   });
 
   it('lỗi có nút thử lại; thử lại thành công thì hết lỗi', async () => {
     const fetchProducts = vi
       .fn()
       .mockResolvedValueOnce(new Response('{}', { status: 500 }))
-      .mockResolvedValueOnce(page(['3'], null));
+      .mockResolvedValueOnce(numberedPage(['3'], null, 1, 12, 1));
     renderVi(<CatalogExplorer {...props} initialItems={[]} fetchProducts={fetchProducts} />);
     fireEvent.click(screen.getByRole('checkbox', { name: 'Độc bản' }));
     expect(await screen.findByRole('alert')).toBeTruthy();
@@ -256,8 +331,9 @@ describe('CatalogExplorer', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('không có kết quả thì hiện trạng thái trống', () => {
+  it('không có kết quả thì hiện trạng thái trống và ẩn phân trang', () => {
     renderVi(<CatalogExplorer {...props} initialItems={[]} />);
     expect(screen.getByText('Không có sản phẩm nào khớp bộ lọc.')).toBeTruthy();
+    expect(screen.queryByRole('navigation')).toBeNull();
   });
 });
