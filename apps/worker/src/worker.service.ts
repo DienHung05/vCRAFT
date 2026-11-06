@@ -10,19 +10,37 @@ import { notifyDueImportantNews } from '@vcraft/database';
 import type { ObjectStorage } from '@vcraft/storage';
 import { type ConnectionOptions, Queue, Worker } from 'bullmq';
 import { createTransport } from 'nodemailer';
+import {
+  type AssistantIngestJob,
+  ingestSource,
+  knowledgeFromEnv,
+} from './processors/assistant/ingest';
 import { createNoticeLoader } from './processors/mail/load-notice';
 import { type HouseholdMailJob, sendHouseholdMail } from './processors/mail/send-household-mail';
 import { sendNoticeMail } from './processors/mail/send-notice-mail';
 import { processMediaAsset } from './processors/media/process-media';
 import { createOutboxDispatcher } from './processors/outbox/dispatch';
 import { relayOutbox } from './processors/outbox/relay-outbox';
+import { generateQrLabels, type QrLabelsJob } from './processors/qr-labels/generate-qr-labels';
 import {
+  ASSISTANT_LOG_PURGE_EVERY_MS,
+  ASSISTANT_LOG_PURGE_JOB,
+  COORDINATION_CHECK_EVERY_MS,
+  RFQ_COORDINATION_CHECK_JOB,
+  RFQ_EXPIRE_SWEEP_JOB,
+  RFQ_SWEEP_EVERY_MS,
+  runSchedulerJob,
+} from './processors/scheduler/rfq-jobs';
+import {
+  ASSISTANT_QUEUE,
   MAIL_QUEUE,
   type MailJob,
   MEDIA_QUEUE,
   type MediaJob,
   OUTBOX_QUEUE,
   OUTBOX_RELAY_EVERY_MS,
+  QR_LABELS_QUEUE,
+  SCHEDULER_QUEUE,
 } from './queues';
 
 export const OBJECT_STORAGE = Symbol('OBJECT_STORAGE');
@@ -66,8 +84,21 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       connection,
       defaultJobOptions: DEFAULT_JOB_OPTIONS,
     });
+    const qrLabels = new Queue<QrLabelsJob>(QR_LABELS_QUEUE, {
+      connection,
+      defaultJobOptions: DEFAULT_JOB_OPTIONS,
+    });
+    const scheduler = new Queue(SCHEDULER_QUEUE, {
+      connection,
+      defaultJobOptions: DEFAULT_JOB_OPTIONS,
+    });
+    const assistant = new Queue<AssistantIngestJob>(ASSISTANT_QUEUE, {
+      connection,
+      defaultJobOptions: DEFAULT_JOB_OPTIONS,
+    });
+    const knowledge = { orm: this.orm, ...knowledgeFromEnv() };
     const outbox = new Queue(OUTBOX_QUEUE, { connection });
-    const dispatch = createOutboxDispatcher({ media, mail });
+    const dispatch = createOutboxDispatcher({ media, mail, qrLabels, scheduler, assistant });
     const mailDeps = {
       loadNotice: createNoticeLoader(this.orm),
       transport: createTransport(process.env.SMTP_URL ?? 'smtp://localhost:1025'),
@@ -100,6 +131,27 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
           concurrency: 2,
         },
       ),
+      new Worker<QrLabelsJob>(
+        QR_LABELS_QUEUE,
+        (job) =>
+          generateQrLabels(
+            {
+              storage: this.storage,
+              // The labels must encode the public site, as the web's own QR does (`traceShortUrl`).
+              origin: process.env.NEXT_PUBLIC_SITE_URL ?? mailDeps.appUrl,
+            },
+            job.data,
+          ),
+        { connection, concurrency: 1 },
+      ),
+      new Worker<AssistantIngestJob>(ASSISTANT_QUEUE, (job) => ingestSource(knowledge, job.data), {
+        connection,
+        concurrency: 1,
+      }),
+      new Worker(SCHEDULER_QUEUE, (job) => runSchedulerJob(this.orm, job.name, job.data), {
+        connection,
+        concurrency: 1,
+      }),
       new Worker(
         OUTBOX_QUEUE,
         async () => {
@@ -114,10 +166,25 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
         this.logger.warn(`${worker.name} job ${job?.id} failed: ${error.message}`),
       );
     await outbox.upsertJobScheduler('relay', { every: OUTBOX_RELAY_EVERY_MS });
-    this.closables.push(...workers, media, mail, outbox, {
+    await scheduler.upsertJobScheduler(
+      RFQ_EXPIRE_SWEEP_JOB,
+      { every: RFQ_SWEEP_EVERY_MS },
+      { name: RFQ_EXPIRE_SWEEP_JOB },
+    );
+    await scheduler.upsertJobScheduler(
+      RFQ_COORDINATION_CHECK_JOB,
+      { every: COORDINATION_CHECK_EVERY_MS },
+      { name: RFQ_COORDINATION_CHECK_JOB },
+    );
+    await scheduler.upsertJobScheduler(
+      ASSISTANT_LOG_PURGE_JOB,
+      { every: ASSISTANT_LOG_PURGE_EVERY_MS },
+      { name: ASSISTANT_LOG_PURGE_JOB },
+    );
+    this.closables.push(...workers, media, mail, qrLabels, scheduler, assistant, outbox, {
       close: async () => mailDeps.transport.close(),
     });
-    this.logger.log('queues ready: media, mail, outbox');
+    this.logger.log('queues ready: media, mail, qr-labels, scheduler, assistant, outbox');
   }
 
   async onApplicationShutdown(): Promise<void> {

@@ -15,6 +15,7 @@ import { buildPoolDriverOptions, resolveDbPoolSettings } from './db-pool.js';
 import {
   AppUser,
   Artisan,
+  AssistantMessageLog,
   AuditLog,
   BaseEntity,
   ConsentRecord,
@@ -22,6 +23,7 @@ import {
   CooperativeQuotation,
   Household,
   JournalEntry,
+  LoginEvent,
   MediaAsset,
   MediaLink,
   News,
@@ -33,6 +35,7 @@ import {
   ProductMaker,
   QuotationNotice,
   QuotationRequest,
+  SlugRedirect,
   TraceScan,
   Workshop,
 } from './entities/index.js';
@@ -152,6 +155,9 @@ export function createMikroOrmOptions(
       Notification,
       NotificationPreference,
       ConsentRecord,
+      LoginEvent,
+      SlugRedirect,
+      AssistantMessageLog,
     ],
     metadataProvider: ReflectMetadataProvider,
     extensions: [Migrator, SeedManager],

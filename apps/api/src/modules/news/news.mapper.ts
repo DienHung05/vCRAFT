@@ -1,5 +1,25 @@
-import type { NewsDetailDto, NewsSummaryDto, PublicImageDto } from '@vcraft/contracts';
+import type {
+  MaterialPriceDataDto,
+  NewsDetailDto,
+  NewsSummaryDto,
+  PowerScheduleDataDto,
+  PublicImageDto,
+} from '@vcraft/contracts';
 import type { News } from '@vcraft/database';
+
+/** The structured payload of a news item, split by kind (PLAN E11). */
+export function newsDataOf(news: News): {
+  materialPrices: MaterialPriceDataDto | null;
+  powerSchedule: PowerScheduleDataDto | null;
+} {
+  const data = news.data ?? null;
+  return {
+    materialPrices:
+      data && 'materialPrices' in data ? (data.materialPrices as MaterialPriceDataDto) : null,
+    powerSchedule:
+      data && 'powerSchedule' in data ? (data.powerSchedule as PowerScheduleDataDto) : null,
+  };
+}
 
 /** Chỉ gọi với tin đã xuất bản (`publishedAt` luôn có) và đã nạp `household`. */
 export function toNewsSummaryDto(news: News, cover: PublicImageDto | null): NewsSummaryDto {
@@ -26,6 +46,7 @@ export function toNewsDetailDto(
     body: news.body,
     bodyHtml: news.bodyHtml ?? null,
     visibility: news.visibility,
+    ...newsDataOf(news),
     related,
   };
 }

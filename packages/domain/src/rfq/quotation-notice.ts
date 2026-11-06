@@ -15,6 +15,9 @@
  * | `PRODUCTION_STARTED`    | Người mua, các hộ có phần                           |
  * | `PROGRESS_REPORTED`     | Người mua, admin điều phối                          |
  * | `ORDER_RECEIVED`        | Các hộ có phần, admin điều phối                     |
+ * | `BIDDING_CLOSED`        | Người mua, các hộ được mời (hạn chào giá đã qua)     |
+ * | `RFQ_EXPIRED`           | Người mua, các hộ được mời (hết hạn không chốt)      |
+ * | `COORDINATION_NEEDED`   | Admin điều phối, hoặc mọi admin khi chưa ai nhận     |
  *
  * Người gây ra sự kiện không tự nhận thông báo của chính mình.
  */
@@ -30,6 +33,9 @@ export const QUOTATION_NOTICE_KINDS = [
   'PRODUCTION_STARTED',
   'PROGRESS_REPORTED',
   'ORDER_RECEIVED',
+  'BIDDING_CLOSED',
+  'RFQ_EXPIRED',
+  'COORDINATION_NEEDED',
 ] as const;
 export type QuotationNoticeKind = (typeof QUOTATION_NOTICE_KINDS)[number];
 

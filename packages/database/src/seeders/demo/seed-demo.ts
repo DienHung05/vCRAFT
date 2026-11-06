@@ -13,6 +13,7 @@ import {
   type RfqStatus,
   sealChain,
   skippedStagesFor,
+  villageToday,
 } from '@vcraft/domain';
 import { slugify } from '@vcraft/utils';
 import { v5 as uuidv5 } from 'uuid';
@@ -67,6 +68,16 @@ import {
  * Nên reset ngay trước buổi thi (xem docs/demo/README.md).
  */
 export const FROZEN_ANCHOR = new Date('2026-09-01T03:00:00.000Z');
+/** Six monthly price notices, newest first (index = months ago). VND, sample figures. */
+const MATERIAL_PRICE_MONTHS = [
+  { clay: 1_250_000, glaze: 185_000, gas: 470_000 },
+  { clay: 1_220_000, glaze: 182_000, gas: 455_000 },
+  { clay: 1_220_000, glaze: 178_000, gas: 462_000 },
+  { clay: 1_180_000, glaze: 176_000, gas: 448_000 },
+  { clay: 1_150_000, glaze: 176_000, gas: 430_000 },
+  { clay: 1_150_000, glaze: 172_000, gas: 438_000 },
+] as const;
+
 const DAY = 24 * 60 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
 const NAMESPACE = '6f5c3d8e-2b1a-4c7d-9e0f-1a2b3c4d5e6f';
@@ -928,6 +939,67 @@ export async function seedDemoData(
       status: 'PUBLISHED',
       publishedAt,
       pinned: item.pinned ?? false,
+      createdAt: publishedAt,
+      updatedAt: publishedAt,
+    });
+    summary.news++;
+  }
+
+  // --- Giá nguyên liệu 6 tháng và lịch cắt điện hôm nay (PLAN E11), theo `now` để biểu đồ và banner luôn có số ---
+  const [thisYear, thisMonth] = villageToday(now).split('-').map(Number) as [number, number];
+  for (const [monthsAgo, prices] of MATERIAL_PRICE_MONTHS.entries()) {
+    // The 1st of each of the last six calendar months, published at 08:00 Hà Nội time (01:00 UTC).
+    const index = thisYear * 12 + thisMonth - 1 - monthsAgo;
+    const month = `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, '0')}`;
+    const effectiveOn = `${month}-01`;
+    const publishedAt = new Date(`${effectiveOn}T01:00:00.000Z`);
+    em.create(News, {
+      id: idOf('news', `material-prices-${monthsAgo}`),
+      slug: `gia-nguyen-lieu-${month}`,
+      title: `Giá nguyên liệu tháng ${Number(month.slice(5))}/${month.slice(0, 4)}`,
+      summary: 'Bảng giá đất sét, men và gas Ban quản lý tổng hợp từ các đại lý trong làng.',
+      body: '[Dữ liệu mẫu] Giá tham khảo tại các đại lý trong làng, áp dụng từ đầu tháng.',
+      category: 'MATERIAL_PRICES',
+      household: null,
+      status: 'PUBLISHED',
+      publishedAt,
+      data: {
+        materialPrices: {
+          effectiveOn,
+          prices: [
+            { material: 'CLAY', unit: 'tấn', priceVnd: prices.clay },
+            { material: 'GLAZE', unit: 'kg', priceVnd: prices.glaze },
+            { material: 'GAS', unit: 'bình 12 kg', priceVnd: prices.gas },
+          ],
+        },
+      },
+      createdAt: publishedAt,
+      updatedAt: publishedAt,
+    });
+    summary.news++;
+  }
+  {
+    const publishedAt = new Date(now.getTime() - 2 * DAY);
+    const today = villageToday(now);
+    em.create(News, {
+      id: idOf('news', 'power-schedule-today'),
+      slug: 'lich-cat-dien-hom-nay',
+      title: 'Lịch cắt điện trong làng',
+      summary: 'Điện lực báo cắt điện để bảo trì đường dây; các hộ đốt lò điện nên dời mẻ nung.',
+      body: '[Dữ liệu mẫu] Điện lực Gia Lâm báo cắt điện để bảo trì đường dây trung thế.',
+      category: 'POWER_SCHEDULE',
+      visibility: 'VILLAGE',
+      household: null,
+      status: 'PUBLISHED',
+      publishedAt,
+      data: {
+        powerSchedule: {
+          outages: [
+            { date: today, from: '08:00', to: '11:30', area: 'Xóm 2, Xóm 3' },
+            { date: today, from: '13:30', to: '16:00', area: 'Thôn Giang Cao' },
+          ],
+        },
+      },
       createdAt: publishedAt,
       updatedAt: publishedAt,
     });

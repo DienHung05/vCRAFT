@@ -9,8 +9,10 @@ import { Link } from '@/i18n/navigation';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
 import { FormAlert, PasswordField, STANDALONE_LINK, TextField } from './fields';
+import { GoogleSignIn } from './google-sign-in';
 import { useKilnFeedback } from './kiln/kiln-feedback';
 import { type SignInValues, signInSchema } from './schemas';
+import { useCaptcha } from './turnstile';
 import { useFocusSubmitOnError } from './use-focus-submit-on-error';
 import { useValidationMessage } from './use-validation-message';
 
@@ -21,19 +23,27 @@ export interface SignInFormProps {
   needSignIn?: boolean;
   /** Liên kết xác minh/đặt mật khẩu trước đó đã hỏng. */
   linkInvalid?: boolean;
+  /** The Google sign-in did not complete (GH#122). */
+  oauthFailed?: boolean;
 }
 
 /**
  * Đăng nhập email + mật khẩu qua Supabase Auth (FR-AUTH-04). Giữ nguyên mọi ô đã nhập khi lỗi
  * (NFR-UX-05). Thành công thì tải lại toàn trang để server render thấy cookie phiên mới.
  */
-export function SignInForm({ next, needSignIn = false, linkInvalid = false }: SignInFormProps) {
+export function SignInForm({
+  next,
+  needSignIn = false,
+  linkInvalid = false,
+  oauthFailed = false,
+}: SignInFormProps) {
   const t = useTranslations('auth');
   const locale = useLocale();
   const message = useValidationMessage();
   const kiln = useKilnFeedback();
   const [error, setError] = useState<AuthErrorKey | null>(null);
   const [resend, setResend] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const captcha = useCaptcha();
   const {
     register,
     handleSubmit,
@@ -60,9 +70,17 @@ export function SignInForm({ next, needSignIn = false, linkInvalid = false }: Si
       setResend('idle');
       const supabase = browserSupabase();
       if (!supabase) return failWith('unconfigured');
+      if (captcha.missing) return failWith('captcha');
       try {
-        const { error: failure } = await supabase.auth.signInWithPassword({ email, password });
-        if (failure) return failWith(authErrorKey(failure));
+        const { error: failure } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+          options: captcha.options,
+        });
+        if (failure) {
+          captcha.reset();
+          return failWith(authErrorKey(failure));
+        }
         const destination = next ?? `/auth/continue?locale=${locale}`;
         // The seal stamps first (the destination is prerendered meanwhile), then the navigation
         // (a cross-document view transition) follows.
@@ -70,6 +88,7 @@ export function SignInForm({ next, needSignIn = false, linkInvalid = false }: Si
         // Tải lại toàn trang để Server Component đọc cookie phiên mới.
         window.location.assign(destination);
       } catch (failure) {
+        captcha.reset();
         failWith(authErrorKey(failure));
       }
     },
@@ -84,7 +103,9 @@ export function SignInForm({ next, needSignIn = false, linkInvalid = false }: Si
     const { error: failure } = await supabase.auth.resend({
       type: 'signup',
       email: getValues('email').trim(),
+      options: captcha.options,
     });
+    captcha.reset();
     if (failure) {
       setResend('idle');
       return setError(authErrorKey(failure));
@@ -95,6 +116,7 @@ export function SignInForm({ next, needSignIn = false, linkInvalid = false }: Si
   return (
     <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {linkInvalid ? <FormAlert tone="error">{t('signIn.notice.linkInvalid')}</FormAlert> : null}
+      {oauthFailed ? <FormAlert tone="error">{t('google.failed')}</FormAlert> : null}
       {needSignIn && !error ? <FormAlert tone="info">{t('signIn.needSignIn')}</FormAlert> : null}
       {error ? <FormAlert tone="error">{t(`errors.${error}`)}</FormAlert> : null}
       {error === 'email_not_confirmed' ? (
@@ -133,9 +155,12 @@ export function SignInForm({ next, needSignIn = false, linkInvalid = false }: Si
         {...register('password')}
       />
 
+      {captcha.widget}
       <Button type="submit" size="lg" disabled={isSubmitting}>
         {isSubmitting ? t('signIn.submitting') : t('signIn.submit')}
       </Button>
+      <p className="text-center text-small text-ash">{t('google.or')}</p>
+      <GoogleSignIn next={next} />
 
       <div className="flex flex-col text-small">
         <Link href="/quen-mat-khau" className={STANDALONE_LINK}>

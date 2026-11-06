@@ -3,6 +3,7 @@ import { MediaModule } from '../media/media.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ConsentModule } from '../privacy/consent.module';
 import { HouseholdsService } from './application/households.service';
+import { QrLabelsService } from './application/qr-labels.service';
 import {
   AdminDashboardController,
   AdminHouseholdsController,
@@ -20,7 +21,7 @@ import {
     AdminHouseholdsController,
     PublicHouseholdsController,
   ],
-  providers: [HouseholdsService],
+  providers: [HouseholdsService, QrLabelsService],
   exports: [HouseholdsService],
 })
 export class HouseholdsModule {}

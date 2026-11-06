@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
 import { AdminNav } from '@/features/admin/admin-nav';
 import { AccountMenu } from '@/features/auth/account-menu';
+import { AdminMfaGate } from '@/features/auth/admin-mfa-gate';
 import { NotificationBell } from '@/features/notifications/notification-bell';
 import { Link } from '@/i18n/navigation';
 import { requireArea } from '@/lib/auth/guard';
@@ -11,8 +12,21 @@ import { resolveLocale } from '@/lib/locale';
 /** Khung Admin (BRAND §9): sạch, mật độ cao, nền giấy; sidebar bên trái, thu thành hàng ngang trên màn hẹp. */
 export default async function AdminLayout({ children, params }: LayoutProps<'/[locale]/admin'>) {
   const locale = await resolveLocale(params);
-  await requireArea('admin', locale);
+  const viewer = await requireArea('admin', locale);
   const t = await getTranslations('admin');
+
+  // GH#83: until this session passes TOTP the API refuses every admin route, so show the code screen
+  // instead of pages that would only fail.
+  if (viewer.mfaRequired) {
+    return (
+      <main id="main" className="min-h-svh px-4 py-6 md:px-8">
+        <Link href="/" aria-label={t('home')}>
+          <Logo size={26} />
+        </Link>
+        <AdminMfaGate />
+      </main>
+    );
+  }
 
   return (
     <div className="min-h-svh lg:grid lg:grid-cols-[14rem_1fr]">

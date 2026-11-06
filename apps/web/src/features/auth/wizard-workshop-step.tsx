@@ -4,8 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AccountApiError } from '@vcraft/api-client';
 import { Button } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
+import { useAddressSuggestions } from '@/lib/address/use-address-suggestions';
 import { browserAccountClient } from '@/lib/auth/supabase-browser';
 import { notify } from '@/lib/notify';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
@@ -40,10 +41,12 @@ export function WizardWorkshopStep({ onDone }: { onDone: () => void }) {
       visitingInfo: '',
     },
   });
-  const [lat, lng, acceptsVisitors] = useWatch({
+  const [lat, lng, acceptsVisitors, address] = useWatch({
     control,
-    name: ['lat', 'lng', 'acceptsVisitors'],
+    name: ['lat', 'lng', 'acceptsVisitors', 'address'],
   });
+  const addressListId = useId();
+  const addressSuggestions = useAddressSuggestions(address ?? '');
   const position = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : null;
 
   const onSubmit = handleSubmit(async (values) => {
@@ -87,10 +90,16 @@ export function WizardWorkshopStep({ onDone }: { onDone: () => void }) {
       <TextField
         label={t('wizard.workshop.address')}
         placeholder={t('wizard.workshop.addressPlaceholder')}
-        autoComplete="street-address"
+        autoComplete="off"
+        list={addressListId}
         error={message(errors.address)}
         {...register('address')}
       />
+      <datalist id={addressListId}>
+        {addressSuggestions.map((option) => (
+          <option key={option} value={option} />
+        ))}
+      </datalist>
       <SelectField label={t('wizard.workshop.purpose')} {...register('purpose')}>
         {WORKSHOP_PURPOSES.map((purpose) => (
           <option key={purpose} value={purpose}>

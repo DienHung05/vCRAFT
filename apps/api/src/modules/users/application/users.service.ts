@@ -1,8 +1,8 @@
 import { MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
-import type { MeDto } from '@vcraft/contracts';
-import { AppUser, Household } from '@vcraft/database';
-import type { Actor } from '../../../common/auth/auth.guard';
+import type { LoginEventListDto, MeDto } from '@vcraft/contracts';
+import { AppUser, Household, LoginEvent } from '@vcraft/database';
+import { type Actor, needsSecondFactor } from '../../../common/auth/auth.guard';
 import { notFound } from '../../../common/errors/app-error';
 
 /** Hồ sơ của chính người đang đăng nhập; đọc từ CSDL vCraft, không tin dữ liệu client gửi lên. */
@@ -23,6 +23,7 @@ export class UsersService {
       // The guard turns away deleted accounts before this runs.
       status: user.status === 'LOCKED' ? 'LOCKED' : 'ACTIVE',
       emailVerified: actor.emailVerified === true,
+      mfaRequired: needsSecondFactor(actor),
       household: household
         ? {
             id: household.id,
@@ -32,6 +33,25 @@ export class UsersService {
             statusReason: household.statusReason ?? null,
           }
         : null,
+    };
+  }
+
+  /** The account's last 20 sign-ins, newest first (GH#83). */
+  async loginEvents(actor: Actor): Promise<LoginEventListDto> {
+    const rows = await this.orm.em
+      .fork()
+      .find(
+        LoginEvent,
+        { userId: actor.id },
+        { orderBy: { createdAt: 'desc', id: 'desc' }, limit: 20 },
+      );
+    return {
+      items: rows.map((row) => ({
+        id: row.id,
+        method: row.method,
+        aal: row.aal === 'aal2' ? 'aal2' : 'aal1',
+        createdAt: row.createdAt.toISOString(),
+      })),
     };
   }
 }

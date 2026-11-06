@@ -66,3 +66,38 @@ export const MyAllocationSchema = AllocationResponseSchema.extend({
 });
 export type MyAllocationDto = z.infer<typeof MyAllocationSchema>;
 export const MyAllocationListSchema = z.array(MyAllocationSchema);
+
+/** `GET /admin/allocations`: running orders with each household's share on a timeline (PLAN E10). */
+export const AllocationScheduleSchema = z.array(
+  z.object({
+    requestId: IdSchema,
+    title: z.string(),
+    unit: z.string(),
+    requiredBy: IsoDateTimeSchema,
+    allocations: z.array(
+      z.object({
+        id: IdSchema,
+        version: VersionSchema,
+        householdId: IdSchema,
+        householdName: z.string(),
+        quantity: z.int(),
+        completedQty: z.int(),
+        status: AllocationStatusSchema,
+        startedAt: IsoDateTimeSchema,
+        dueAt: IsoDateTimeSchema,
+        lateness: z.enum(['DONE', 'ON_TRACK', 'BEHIND', 'OVERDUE']),
+        expectedQty: z.int(),
+      }),
+    ),
+  }),
+);
+export type AllocationScheduleDto = z.infer<typeof AllocationScheduleSchema>;
+
+/** `POST /admin/allocations/{id}/reallocate`: who takes the unfinished quantity of a late share. */
+export const ReallocateRequestSchema = z.strictObject({
+  targets: z
+    .array(z.strictObject({ householdId: IdSchema, quantity: AllocationQuantitySchema }))
+    .min(1)
+    .max(10),
+});
+export type ReallocateRequest = z.infer<typeof ReallocateRequestSchema>;

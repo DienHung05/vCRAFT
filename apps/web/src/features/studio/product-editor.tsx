@@ -17,6 +17,7 @@ import { traceShortUrl } from '@/lib/site';
 import { HouseholdGate } from './household-gate';
 import { type ProductDraft, ProductFields, toProductDraft } from './product-fields';
 import { ProductPhotos } from './product-photos';
+import { QrLabelsButton } from './qr-labels-button';
 import { inputClass } from './workshop-editor';
 
 export function toProductUpdate(draft: ProductDraft): UpdateProductRequest {
@@ -306,7 +307,7 @@ async function downloadQrPng(url: string, code: string) {
   await qr.download({ name: `vcraft-qr-${code}`, extension: 'png' });
 }
 
-function QrSection({ product }: { product: ProductDto }) {
+function QrSection({ product, client }: { product: ProductDto; client: StudioClient }) {
   const t = useTranslations('studio.products');
   const url = traceShortUrl(product.traceCode);
   return (
@@ -318,13 +319,22 @@ function QrSection({ product }: { product: ProductDto }) {
         <h2 className="text-h3">{t('qr')}</h2>
         <p className="text-small text-ash">{t('qrLead')}</p>
         <p className="font-mono text-small">{url.replace(/^https?:\/\//, '')}</p>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => void downloadQrPng(url, product.traceCode)}
-        >
-          {t('qrDownload')}
-        </Button>
+        <div className="flex flex-wrap items-start gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => void downloadQrPng(url, product.traceCode)}
+          >
+            {t('qrDownload')}
+          </Button>
+          <QrLabelsButton
+            client={client}
+            productIds={[product.id]}
+            // One label for a single piece; a batch gets one per piece, up to a full sheet.
+            copies={product.kind === 'BATCH' ? Math.min(product.batchSize ?? 45, 45) : 1}
+            label={t('labels.oneSheet')}
+          />
+        </div>
       </div>
     </Card>
   );
@@ -374,7 +384,7 @@ export function ProductEditor({ productId, client }: { productId: string; client
             <DetailsSection {...props} />
             <ProductPhotos product={product} client={live} onSaved={reload} />
             <MakersSection {...props} />
-            <QrSection product={product} />
+            <QrSection product={product} client={live} />
           </div>
         );
       }}

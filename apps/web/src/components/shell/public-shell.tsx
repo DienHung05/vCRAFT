@@ -1,9 +1,10 @@
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
+import { LazyAssistantWidget } from '@/features/assistant/assistant-widget-lazy';
 import { SiteFooter } from './site-footer';
 import { SiteHeader } from './site-header';
 
-/** Khung trang công khai: link bỏ qua, header, nội dung, footer. */
+/** Khung trang công khai: link bỏ qua, header, nội dung, footer, and the Fox assistant (FR-AST-01). */
 export async function PublicShell({ children }: { children: ReactNode }) {
   const t = await getTranslations('common');
   return (
@@ -17,6 +18,7 @@ export async function PublicShell({ children }: { children: ReactNode }) {
       <SiteHeader />
       <main id="main">{children}</main>
       <SiteFooter />
+      <LazyAssistantWidget />
     </>
   );
 }

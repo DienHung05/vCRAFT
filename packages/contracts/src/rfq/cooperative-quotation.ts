@@ -49,6 +49,23 @@ export const ContributionResponseSchema = z.strictObject({
 export type ContributionDto = z.infer<typeof ContributionResponseSchema>;
 
 /**
+ * `GET /rfqs/{id}/price-hint`: a suggested unit price range for the household writing an offer, from
+ * its own past offers and comparable public products only (PLAN E9). `hint` is null with no data.
+ */
+export const PriceHintResponseSchema = z.object({
+  hint: z
+    .object({
+      minVnd: VndSchema,
+      maxVnd: VndSchema,
+      basis: z.enum(['OWN', 'CATALOG', 'MIXED']),
+      ownSamples: z.int().nonnegative(),
+      catalogSamples: z.int().nonnegative(),
+    })
+    .nullable(),
+});
+export type PriceHintDto = z.infer<typeof PriceHintResponseSchema>;
+
+/**
  * `GET /me/invitations`: requests addressed to the household, with its own offer only.
  * Sealed bidding: nothing here reveals another household's offer or even who else was invited.
  */

@@ -5,11 +5,13 @@ import type { HouseholdSummaryDto, RfqResponse } from '@vcraft/contracts';
 import { PRIVACY_POLICY_VERSION, PRODUCT_CATEGORIES } from '@vcraft/domain';
 import { Button } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { AmountInWords } from '@/components/amount-in-words';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ConsentCheckbox } from '@/components/consent-checkbox';
 import { FormSkeleton } from '@/components/states/skeletons';
 import { useRouter } from '@/i18n/navigation';
+import { useAddressSuggestions } from '@/lib/address/use-address-suggestions';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { notify } from '@/lib/notify';
 import {
@@ -53,6 +55,8 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
   const [values, setValues] = useState<RfqFormValues>(() =>
     draft ? rfqFormValues(draft) : EMPTY_RFQ_FORM,
   );
+  const destinationListId = useId();
+  const destinationSuggestions = useAddressSuggestions(values.destination);
   // A saved draft already went through consent when it was first created.
   const [consent, setConsent] = useState(draft !== undefined);
   const [touched, setTouched] = useState(false);
@@ -281,26 +285,32 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
           />
           {problem('unit')}
         </label>
-        <label className="flex flex-col gap-1">
-          {t('budgetMin')}
-          <input
-            inputMode="numeric"
-            value={values.budgetMin}
-            onChange={(event) => set('budgetMin', event.target.value)}
-            className={inputClass}
-            {...invalid('budget')}
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          {t('budgetMax')}
-          <input
-            inputMode="numeric"
-            value={values.budgetMax}
-            onChange={(event) => set('budgetMax', event.target.value)}
-            className={inputClass}
-            {...invalid('budget')}
-          />
-        </label>
+        <div className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1">
+            {t('budgetMin')}
+            <input
+              inputMode="numeric"
+              value={values.budgetMin}
+              onChange={(event) => set('budgetMin', event.target.value)}
+              className={inputClass}
+              {...invalid('budget')}
+            />
+          </label>
+          <AmountInWords value={values.budgetMin} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1">
+            {t('budgetMax')}
+            <input
+              inputMode="numeric"
+              value={values.budgetMax}
+              onChange={(event) => set('budgetMax', event.target.value)}
+              className={inputClass}
+              {...invalid('budget')}
+            />
+          </label>
+          <AmountInWords value={values.budgetMax} />
+        </div>
       </div>
       {problem('budget')}
       <div className="grid gap-5 sm:grid-cols-2">
@@ -332,10 +342,17 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
         <input
           value={values.destination}
           maxLength={300}
+          list={destinationListId}
+          autoComplete="off"
           onChange={(event) => set('destination', event.target.value)}
           className={inputClass}
           {...invalid('destination')}
         />
+        <datalist id={destinationListId}>
+          {destinationSuggestions.map((option) => (
+            <option key={option} value={option} />
+          ))}
+        </datalist>
         {problem('destination')}
       </label>
       <label className="flex items-start gap-2">

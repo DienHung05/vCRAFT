@@ -21,6 +21,7 @@
     "@supabase/supabase-js": "^2.118.0",
     "@vcraft/database": "workspace:*",
     "@vcraft/domain": "workspace:*",
+    "@vcraft/knowledge": "workspace:*",
     "@vcraft/storage": "workspace:*",
     "@vcraft/utils": "workspace:*",
     "bullmq": "^6.4.2",

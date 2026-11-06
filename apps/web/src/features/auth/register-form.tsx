@@ -5,15 +5,17 @@ import { PRIVACY_POLICY_VERSION } from '@vcraft/domain';
 import { Button } from '@vcraft/ui';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { ConsentCheckbox } from '@/components/consent-checkbox';
 import { Link } from '@/i18n/navigation';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
 import { CheckEmailPanel } from './check-email-panel';
 import { FormAlert, PasswordField, STANDALONE_LINK, TextField } from './fields';
+import { GoogleSignIn } from './google-sign-in';
 import { useKilnFeedback } from './kiln/kiln-feedback';
 import { type RegisterValues, registerSchema } from './schemas';
+import { useCaptcha } from './turnstile';
 import { useFocusSubmitOnError } from './use-focus-submit-on-error';
 import { useValidationMessage } from './use-validation-message';
 
@@ -39,15 +41,19 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
   const kiln = useKilnFeedback();
   const [error, setError] = useState<AuthErrorKey | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const captcha = useCaptcha();
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     mode: 'onTouched',
     defaultValues: { email: '', password: '', consent: false },
   });
+  // Google sign-up needs the same consent box ticked first (GH#122).
+  const consented = useWatch({ control, name: 'consent' });
 
   // The kiln card reacts to the outcome: a failure crackles and shakes the card.
   const failWith = (key: AuthErrorKey) => {
@@ -63,11 +69,13 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
       setError(null);
       const supabase = browserSupabase();
       if (!supabase) return failWith('unconfigured');
+      if (captcha.missing) return failWith('captcha');
       try {
         const { error: failure } = await supabase.auth.signUp({
           email,
           password,
           options: {
+            ...captcha.options,
             data: {
               locale,
               // The API records the sign-up consent from this when the account is first created.
@@ -76,12 +84,16 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
             },
           },
         });
-        if (failure) return failWith(authErrorKey(failure));
+        if (failure) {
+          captcha.reset();
+          return failWith(authErrorKey(failure));
+        }
         // Email đã có tài khoản cũng ra màn này (Supabase che), nên không lộ email nào đã đăng ký.
         // The form swaps to the check-email panel, so there is no stamp: just clear the card.
         kiln.reset();
         setSentTo(email);
       } catch (failure) {
+        captcha.reset();
         failWith(authErrorKey(failure));
       }
     },
@@ -118,6 +130,7 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
         {...register('consent')}
       />
       <p className="text-small text-ash">{t('register.verifyNote')}</p>
+      {captcha.widget}
       <Button type="submit" size="lg" disabled={isSubmitting}>
         {isSubmitting
           ? t('register.submitting')
@@ -125,6 +138,8 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
             ? t('wizard.account.submit')
             : t('register.submit')}
       </Button>
+      <p className="text-center text-small text-ash">{t('google.or')}</p>
+      <GoogleSignIn next={wizardPath ?? null} disabled={!consented} />
       <div className="flex flex-col text-small">
         <p className="py-2.5 text-ash">
           {household ? t('wizard.account.haveAccount') : t('register.haveAccount')}{' '}

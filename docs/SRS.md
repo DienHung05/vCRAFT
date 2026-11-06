@@ -398,7 +398,7 @@ Yêu cầu chung UI: trạng thái loading (skeleton), rỗng (minh họa + lờ
 - Object storage: **Supabase Storage** qua giao thức S3 (cùng project với Auth, [ADR-14](adr/0014-object-storage-supabase.md)); ổ đĩa cục bộ khi test/offline. SMTP cho email.
 - Dữ liệu đơn vị hành chính Việt Nam 2 cấp (tệp JSON tĩnh đóng gói cùng app).
 - Tùy chọn: Claude API cho gợi ý/dịch câu chuyện (FR-ART-08).
-- Trợ lý Cáo (FR-AST): Claude API (Haiku 5.5) để trả lời và phân loại; Voyage AI để sinh embedding đa ngữ; **Supabase Postgres + pgvector** làm chỉ mục tri thức (tách khỏi CSDL nghiệp vụ, ADR-13); Open-Meteo (thời tiết, geocoding) không cần khóa API.
+- Trợ lý Cáo (FR-AST): OpenAI (`OPENAI_CHAT_MODEL`) để trả lời và phân loại; OpenAI `OPENAI_EMBEDDING_MODEL` (1024 chiều) để sinh embedding đa ngữ (ADR-19); **Supabase Postgres + pgvector** làm chỉ mục tri thức (tách khỏi CSDL nghiệp vụ, ADR-13); Open-Meteo (thời tiết, geocoding) không cần khóa API.
 - SSE `POST /api/v1/assistant/messages` trả stream câu trả lời.
 
 ### 5.3 Giao diện phần cứng

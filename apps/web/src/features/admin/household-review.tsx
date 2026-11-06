@@ -2,6 +2,7 @@
 
 import { type AdminClient, ApiError, type HouseholdAction } from '@vcraft/api-client';
 import type { HouseholdDocumentDto, HouseholdDto } from '@vcraft/contracts';
+import { isInBatTrang } from '@vcraft/domain';
 import { Badge, Button, buttonVariants, Card, SealMark } from '@vcraft/ui';
 import dynamic from 'next/dynamic';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -287,9 +288,16 @@ export function HouseholdReview({
                 <li key={w.id}>
                   <span className="font-medium">{w.name}</span> · {w.address}
                   {w.lat !== null && w.lng !== null ? (
-                    <span className="block font-mono text-[0.75rem] text-ash">
-                      {w.lat}, {w.lng}
-                    </span>
+                    <>
+                      <span className="block font-mono text-[0.75rem] text-ash">
+                        {w.lat}, {w.lng}
+                      </span>
+                      {isInBatTrang({ lat: w.lat, lng: w.lng }) ? null : (
+                        <Badge tone="clay" className="mt-1">
+                          {t('outsideVillage')}
+                        </Badge>
+                      )}
+                    </>
                   ) : (
                     <span className="block text-seal">{t('noLocation')}</span>
                   )}

@@ -1,5 +1,6 @@
 import { Badge, ProductFigure } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
+import { ViewTransition } from 'react';
 import { ImageSlot } from '@/components/image-slot';
 import { UsdReference } from '@/components/usd-reference';
 import { Link } from '@/i18n/navigation';
@@ -25,28 +26,35 @@ export function ProductCard({
       href={{ pathname: '/san-pham/[slug]', params: { slug: product.slug } }}
       className="group block"
     >
-      <ImageSlot
-        alt={product.image?.alt ?? preset(product.presetKind)}
-        tint={product.tint}
-        ratio="4/5"
-        {...slotPhoto(product.image)}
-        sizes="(min-width: 768px) 25vw, 50vw"
-        className="grid place-items-center transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
+      {/* Shares its name with the detail hero, so the picture morphs into it on navigation (PLAN E7). */}
+      <ViewTransition
+        name={productImageTransition(product.slug)}
+        share="product-morph"
+        default="none"
       >
-        {product.image ? null : (
-          <ProductFigure
-            kind={product.presetKind}
-            className="h-1/2 opacity-90"
-            body="var(--color-paper)"
-            band={product.tint}
-          />
-        )}
-        {product.oneOfAKind ? (
-          <Badge tone="seal" className="absolute top-3 left-3 bg-paper">
-            {t('oneOfAKind')}
-          </Badge>
-        ) : null}
-      </ImageSlot>
+        <ImageSlot
+          alt={product.image?.alt ?? preset(product.presetKind)}
+          tint={product.tint}
+          ratio="4/5"
+          {...slotPhoto(product.image)}
+          sizes="(min-width: 768px) 25vw, 50vw"
+          className="grid place-items-center transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
+        >
+          {product.image ? null : (
+            <ProductFigure
+              kind={product.presetKind}
+              className="h-1/2 opacity-90"
+              body="var(--color-paper)"
+              band={product.tint}
+            />
+          )}
+          {product.oneOfAKind ? (
+            <Badge tone="seal" className="absolute top-3 left-3 bg-paper">
+              {t('oneOfAKind')}
+            </Badge>
+          ) : null}
+        </ImageSlot>
+      </ViewTransition>
       <div className="mt-3 flex items-baseline justify-between gap-3">
         <Heading className="font-sans text-body font-medium text-ink transition-colors group-hover:text-clay">
           {product.name}
@@ -58,6 +66,11 @@ export function ProductCard({
       </div>
     </Link>
   );
+}
+
+/** View transition name shared by a product's card picture and its detail hero. */
+export function productImageTransition(slug: string): string {
+  return `product-image-${slug}`;
 }
 
 /** Khung chờ giữ đúng bố cục lưới thẻ, để lúc dữ liệu về trang không nhảy. */

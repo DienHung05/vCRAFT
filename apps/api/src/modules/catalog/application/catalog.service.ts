@@ -8,9 +8,19 @@ import type {
   ProductListDto,
   ProductSort,
   SearchSuggestionsDto,
+  SlugRedirectDto,
   VillageStatsDto,
 } from '@vcraft/contracts';
-import { Artisan, Household, News, Product, ProductMaker, Workshop } from '@vcraft/database';
+import {
+  Artisan,
+  Household,
+  News,
+  Product,
+  ProductMaker,
+  SlugRedirect,
+  type SlugRedirectKind,
+  Workshop,
+} from '@vcraft/database';
 import { isVisitable } from '@vcraft/domain';
 import { searchTerms } from '@vcraft/utils';
 import { AppError, notFound } from '../../../common/errors/app-error';
@@ -155,6 +165,26 @@ export class CatalogService {
   }
 
   /** Sản phẩm rút, nháp hoặc của hộ không còn duyệt đều là 404 trên trang chi tiết. */
+  /**
+   * The current slug behind a retired one, only when the target is publicly visible (a published product
+   * of an approved household, or an approved household); otherwise 404 like the page itself.
+   */
+  async resolveRedirect(kind: SlugRedirectKind, slug: string): Promise<SlugRedirectDto> {
+    const em = this.orm.em.fork();
+    const row = await em.findOne(SlugRedirect, { kind, oldSlug: slug });
+    if (!row) throw notFound();
+    const target =
+      kind === 'PRODUCT'
+        ? await em.findOne(Product, {
+            id: row.targetId,
+            status: 'PUBLISHED',
+            household: { status: 'APPROVED' },
+          })
+        : await em.findOne(Household, { id: row.targetId, status: 'APPROVED' });
+    if (!target) throw notFound();
+    return { slug: target.slug };
+  }
+
   async getProduct(slug: string): Promise<ProductDetailDto> {
     const em = this.orm.em.fork();
     const product = await em.findOne(
