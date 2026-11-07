@@ -864,7 +864,7 @@ export async function seedDemoData(
         name,
         slug: `${slugify(name) || 'san-pham'}-${code.toLowerCase()}`,
         traceCode: code,
-        description: `[Dữ liệu mẫu] ${name} do hộ ${row.seed.name} làm thủ công tại Bát Tràng.`,
+        description: `${name} do hộ ${row.seed.name} làm thủ công tại Bát Tràng.`,
         kind: batch === undefined ? 'OBJECT' : 'BATCH',
         batchSize: batch ?? null,
         category:
