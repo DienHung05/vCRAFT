@@ -18,6 +18,8 @@ export interface ChainVerifierProps {
   entries: readonly (ChainEntry & { stage: LogStage })[];
   /** Hộ làm ra sản phẩm, dùng cho câu "mã này khớp với…". */
   household: string;
+  /** The management board approved the household (FR-TRC-04); shown as a badge beside the seal. */
+  householdVerified?: boolean;
   /** `SubtleCrypto` thay thế, chỉ để kiểm thử. Mặc định là Web Crypto của trình duyệt. */
   subtle?: SubtleCrypto;
 }
@@ -28,7 +30,13 @@ export interface ChainVerifierProps {
  * Dữ liệu hiện là dữ liệu minh họa nên luôn kèm nhãn; và toàn vẹn chuỗi không chứng minh điều ghi
  * trong nhật ký là đúng ngoài đời.
  */
-export function ChainVerifier({ productId, entries, household, subtle }: ChainVerifierProps) {
+export function ChainVerifier({
+  productId,
+  entries,
+  household,
+  householdVerified = false,
+  subtle,
+}: ChainVerifierProps) {
   const t = useTranslations('trace.integrity');
   const stages = useTranslations('stages');
   const [state, setState] = useState<State>(
@@ -136,6 +144,7 @@ export function ChainVerifier({ productId, entries, household, subtle }: ChainVe
 
       <div className="relative mt-5 flex flex-wrap gap-2">
         <Badge tone="outline">{t('demoBadge')}</Badge>
+        {householdVerified ? <Badge tone="celadon">✓ {t('householdVerified')}</Badge> : null}
         {state.status === 'ok' ? (
           <Badge tone="celadon">✓ {t('okBadge', { count: state.count })}</Badge>
         ) : null}
