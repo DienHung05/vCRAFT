@@ -154,7 +154,9 @@
     },
     "day": {
       "title": "Một ngày ở Bát Tràng",
-      "lead": "Từ nhào đất tới ra lò là sáu chặng mà món gốm nào cũng đi qua. Ảnh chỉ minh hoạ chung cho từng chặng, không phải ảnh của một món cụ thể. Vuốt ngang để xem từng chặng."
+      "lead": "Từ nhào đất tới ra lò là sáu chặng mà món gốm nào cũng đi qua. Ảnh chỉ minh hoạ chung cho từng chặng, không phải ảnh của một món cụ thể. Vuốt ngang để xem từng chặng.",
+      "railLabel": "Các chặng trong ngày",
+      "current": "Chặng {index} trên {total}: {name}"
     },
     "artisans": {
       "title": "Những bàn tay giữ nghề",
@@ -1262,11 +1264,19 @@
     "emptyHint": "Thử bỏ bớt bộ lọc hoặc đổi khoảng giá để xem thêm sản phẩm.",
     "results": "Kết quả sản phẩm",
     "pagination": {
-      "label": "Phân trang sản phẩm",
+      "label": {
+        "products": "Phân trang sản phẩm",
+        "households": "Phân trang hộ nghệ nhân",
+        "news": "Phân trang tin tức"
+      },
       "previous": "Trang trước",
       "next": "Trang sau",
       "goTo": "Trang {page}",
-      "showing": "Hiển thị {from}–{to} trong {total} sản phẩm"
+      "showing": {
+        "products": "Hiển thị {from}–{to} trong {total} sản phẩm",
+        "households": "Hiển thị {from}–{to} trong {total} hộ",
+        "news": "Hiển thị {from}–{to} trong {total} tin"
+      }
     }
   },
   "auth": {

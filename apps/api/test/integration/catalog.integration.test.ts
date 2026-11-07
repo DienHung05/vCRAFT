@@ -193,6 +193,10 @@ describe('Public catalog', () => {
     expect(list.body.data).toEqual([
       expect.objectContaining({ slug: 'gom-bat-trang-xua', productCount: 3 }),
     ]);
+    const page = await t.request({ method: 'GET', url: '/households?page=5&limit=12' });
+    expect(page.status).toBe(200);
+    expect(page.body).toMatchObject({ page: 1, pageSize: 12, total: 1, totalPages: 1 });
+    expect(page.body.data).toEqual([expect.objectContaining({ slug: 'gom-bat-trang-xua' })]);
     const stats = await t.request({ method: 'GET', url: '/village/stats' });
     expect(stats.body).toEqual({ households: 1, products: 3, artisans: 0 });
   });

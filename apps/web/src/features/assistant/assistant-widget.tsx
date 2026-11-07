@@ -159,6 +159,7 @@ export function AssistantWidget() {
           lookAt="pointer"
           label={t('mascotLabel')}
           thought={waiting ? thoughtIndices.map((i) => allThoughts[i] ?? '') : undefined}
+          thoughtPortal
         />
       }
     />

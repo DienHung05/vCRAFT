@@ -4,6 +4,7 @@ import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCredit } from '@/components/photo-credit';
 import { EmptyState } from '@/components/states/empty-state';
+import { UrlPagination } from '@/components/url-pagination';
 import { altFor, photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
 import type { NewsResult } from './news-api';
@@ -23,6 +24,8 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
   const locale = useLocale();
   const items = result.status === 'ok' ? result.page.data : [];
   const nextCursor = result.status === 'ok' ? result.page.nextCursor : null;
+  // Numbered pages when the page came with totals (GH#202); the cursor link is the fallback.
+  const counters = result.status === 'ok' && 'totalPages' in result.page ? result.page : null;
   const householdName = items.find((n) => n.householdSlug === householdSlug)?.householdName;
 
   return (
@@ -31,7 +34,9 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
         <h1 className="text-h1">{t('title')}</h1>
         <p className="text-ash">{t('lead')}</p>
         {result.status === 'ok' && (
-          <p className="text-small text-ash">{t('count', { count: items.length })}</p>
+          <p className="text-small text-ash">
+            {t('count', { count: counters?.total ?? items.length })}
+          </p>
         )}
       </header>
 
@@ -123,7 +128,19 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
         </ul>
       )}
 
-      {nextCursor && (
+      {counters ? (
+        <div className="mt-10 max-w-prose-vn">
+          <UrlPagination
+            kind="news"
+            page={counters.page}
+            totalPages={counters.totalPages}
+            total={counters.total}
+            pageSize={counters.pageSize}
+          />
+        </div>
+      ) : null}
+
+      {!counters && nextCursor && (
         <p className="mt-8">
           <Link
             href={{

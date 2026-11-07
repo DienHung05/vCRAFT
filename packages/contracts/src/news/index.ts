@@ -5,6 +5,8 @@ import {
   cursorPageSchema,
   IdSchema,
   IsoDateTimeSchema,
+  PageCountersSchema,
+  PageNumberSchema,
   SlugSchema,
   VersionSchema,
 } from '../common';
@@ -18,10 +20,14 @@ import { PublicImageSchema } from '../media';
 export const NewsCategorySchema = z.enum(NEWS_CATEGORIES);
 export type NewsCategoryDto = z.infer<typeof NewsCategorySchema>;
 
-/** `?householdSlug=` lọc tin của một hộ; `?category=` lọc theo loại. */
+/**
+ * `?householdSlug=` lọc tin của một hộ; `?category=` lọc theo loại. `?page=N` asks for one numbered page
+ * with totals (GH#202, ADR-0020) and cannot be combined with `cursor`.
+ */
 export const ListNewsQuerySchema = CursorPageQuerySchema.extend({
   householdSlug: SlugSchema.optional(),
   category: NewsCategorySchema.optional(),
+  page: PageNumberSchema.optional(),
 });
 export type ListNewsQuery = z.infer<typeof ListNewsQuerySchema>;
 
@@ -128,6 +134,10 @@ export type NewsDetailDto = z.infer<typeof NewsDetailResponseSchema>;
 
 export const NewsListResponseSchema = cursorPageSchema(NewsSummaryResponseSchema);
 export type NewsListDto = z.infer<typeof NewsListResponseSchema>;
+
+/** Response of `GET /news?page=N`: the cursor envelope (`nextCursor` null) plus page counters. */
+export const NewsPageResponseSchema = NewsListResponseSchema.extend(PageCountersSchema.shape);
+export type NewsPageDto = z.infer<typeof NewsPageResponseSchema>;
 
 /** `POST /admin/news`, `PUT /admin/news/:id`. The version travels in `If-Match`. */
 export const SaveNewsRequestSchema = z.strictObject({

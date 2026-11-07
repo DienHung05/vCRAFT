@@ -39,6 +39,16 @@ export function magneticOffset(
   return { x: dx * scale, y: dy * scale };
 }
 
-/** How far the day story's strip moves sideways: its overflow beyond the viewport, never negative. */
-export const storyDistance = (stripWidth: number, viewportWidth: number) =>
-  Math.max(0, stripWidth - viewportWidth);
+/** The stage in focus at a scroll progress of 0…1 through the pinned day story (GH#210). */
+export function stageAt(progress: number, count: number): number {
+  if (count <= 1) return 0;
+  return Math.round(Math.min(1, Math.max(0, progress)) * (count - 1));
+}
+
+/** The scroll progress (0…1) at which a stage is in focus; the inverse of `stageAt`. */
+export const stageProgress = (index: number, count: number) =>
+  count <= 1 ? 0 : Math.min(1, Math.max(0, index / (count - 1)));
+
+/** Where a stage sits relative to the one in focus: already passed, in focus, or still ahead. */
+export const stageState = (index: number, active: number): 'before' | 'active' | 'after' =>
+  index < active ? 'before' : index === active ? 'active' : 'after';

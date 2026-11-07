@@ -6,7 +6,9 @@ import {
   countUpValue,
   magneticOffset,
   parseFigure,
-  storyDistance,
+  stageAt,
+  stageProgress,
+  stageState,
 } from '@/experience/motion/motion-math';
 
 vi.mock('@vcraft/ui', () => ({ useReducedMotion: () => true }));
@@ -32,9 +34,13 @@ describe('motion maths (GH#95)', () => {
     expect(Math.hypot(far.x, far.y)).toBeCloseTo(8, 5);
   });
 
-  it('slides the day story by its overflow only', () => {
-    expect(storyDistance(2400, 1200)).toBe(1200);
-    expect(storyDistance(800, 1200)).toBe(0);
+  it('puts exactly one day stage in focus for any scroll progress (GH#210)', () => {
+    expect([0, 0.09, 0.11, 0.5, 0.91, 1].map((p) => stageAt(p, 6))).toEqual([0, 0, 1, 3, 5, 5]);
+    expect(stageAt(-1, 6)).toBe(0);
+    expect(stageAt(2, 6)).toBe(5);
+    expect(stageAt(0.7, 1)).toBe(0);
+    for (let i = 0; i < 6; i++) expect(stageAt(stageProgress(i, 6), 6)).toBe(i);
+    expect([0, 1, 2].map((i) => stageState(i, 1))).toEqual(['before', 'active', 'after']);
   });
 });
 

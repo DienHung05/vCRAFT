@@ -29,6 +29,8 @@ const cellIdle = 'text-ink hover:bg-ink/6';
 const cellCurrent = 'bg-clay text-paper';
 
 export interface CatalogPaginationProps {
+  /** What is being paged; names the bar and the "showing" line. Defaults to products. */
+  kind?: 'products' | 'households' | 'news';
   page: number;
   totalPages: number;
   total: number;
@@ -45,6 +47,7 @@ export interface CatalogPaginationProps {
  * Hidden when there is a single page or no result.
  */
 export function CatalogPagination({
+  kind = 'products',
   page,
   totalPages,
   total,
@@ -118,7 +121,7 @@ export function CatalogPagination({
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <nav aria-label={t('label')}>
+      <nav aria-label={t(`label.${kind}`)}>
         <ul className="flex items-center gap-0.5 sm:gap-1">
           <li className="size-11">
             {page > 1 ? (
@@ -137,7 +140,7 @@ export function CatalogPagination({
           </li>
         </ul>
       </nav>
-      <p className="text-small text-ash">{t('showing', { from, to, total })}</p>
+      <p className="text-small text-ash">{t(`showing.${kind}`, { from, to, total })}</p>
     </div>
   );
 }

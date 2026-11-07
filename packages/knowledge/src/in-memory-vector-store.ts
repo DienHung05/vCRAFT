@@ -32,12 +32,13 @@ export class InMemoryVectorStore implements VectorStore {
 
   async search(
     embedding: readonly number[],
-    options: { locale?: 'vi' | 'en'; limit: number; minSimilarity?: number },
+    options: Parameters<VectorStore['search']>[1],
   ): Promise<KnowledgeMatch[]> {
     const min = options.minSimilarity ?? 0;
     return [...this.chunks.values()]
       .flat()
       .filter((chunk) => !options.locale || chunk.locale === options.locale)
+      .filter((chunk) => !options.sourceType || chunk.sourceType === options.sourceType)
       .map((chunk) => ({
         sourceType: chunk.sourceType,
         sourceId: chunk.sourceId,
