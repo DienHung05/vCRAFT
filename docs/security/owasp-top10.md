@@ -48,11 +48,11 @@ Last reviewed: 3 Nov 2026 (issue #97).
 
 | Control | Evidence |
 | --- | --- |
-| Security headers on every page: HSTS, `nosniff`, a strict referrer policy, a permissions policy, and a CSP with `frame-ancestors 'none'`, `base-uri 'self'`, `object-src 'none'`. Checked on the running web app. | `apps/web/src/lib/deploy-config.ts`, `apps/web/test/deploy-config.test.ts`, `tests/e2e/specs/public/security-headers.spec.ts` |
+| Security headers on every page: HSTS, `nosniff`, a strict referrer policy, a permissions policy, and a CSP with a per-request `script-src` nonce and `'strict-dynamic'` (no `'unsafe-inline'` for scripts), plus `frame-ancestors 'none'`, `base-uri 'self'`, `object-src 'none'`. Checked on the running web app. | `apps/web/src/lib/csp.ts`, `apps/web/src/proxy.ts`, `apps/web/test/csp.test.ts`, `apps/web/src/lib/deploy-config.ts`, `apps/web/test/deploy-config.test.ts`, `tests/e2e/specs/public/security-headers.spec.ts` |
 | No `X-Powered-By` header (turned off in #97). | `apps/web/next.config.ts`, `tests/e2e/specs/public/security-headers.spec.ts` |
 | Errors are returned as RFC 9457 problem details without stack traces. | `apps/api/src/common/filters/problem-details.filter.ts` and its test |
 | Signed-in and private responses are sent `Cache-Control: private, no-store`; public catalogue responses use a short public cache. | `apps/api/src/common/http/public-cache.ts`, `@Header('Cache-Control', 'private, no-store')` in the controllers |
-| **Gap:** the CSP sets no `script-src`/`style-src` (the app relies on inline bootstrap scripts). Moving to nonces is future work. | |
+| **Gap:** `style-src` still allows `'unsafe-inline'` because React and MapLibre write `style` attributes, which a nonce cannot cover. Scripts are nonce-only. | |
 
 ## A06 Vulnerable and outdated components
 
