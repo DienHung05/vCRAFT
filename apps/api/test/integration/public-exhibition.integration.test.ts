@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { addMilestone, createJournalPhoto } from './support/journal-photo.js';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
 
@@ -10,7 +11,7 @@ import { startTestDatabase, type TestDatabase } from './support/test-database.js
 describe('Public exhibition and QR trace', () => {
   let db: TestDatabase;
   let t: TestApp;
-  let rep: { auth: string };
+  let rep: { id: string; auth: string };
   let productId: string;
   let traceCode: string;
   const artisans: Record<string, string> = {};
@@ -152,6 +153,7 @@ describe('Public exhibition and QR trace', () => {
   });
 
   it('hồ sơ công khai tách phòng trưng bày đón khách khỏi xưởng sản xuất', async () => {
+    await addMilestone(t, rep, productId, await createJournalPhoto(db, t, rep));
     await t.request({
       method: 'POST',
       url: `/products/${productId}/publish`,

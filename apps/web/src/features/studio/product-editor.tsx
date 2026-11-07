@@ -206,12 +206,12 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
   const t = useTranslations('studio.products');
   const common = useTranslations('studio');
   const [reason, setReason] = useState('');
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<'generic' | 'journal-required' | null>(null);
   const [confirm, setConfirm] = useState<'publish' | 'withdraw' | null>(null);
   // BRAND §6.3 #2: publishing presses the seal once, right after it succeeds.
   const [stamped, setStamped] = useState(false);
   const run = async (action: () => Promise<unknown>, success: string, stamp = false) => {
-    setFailed(false);
+    setFailed(null);
     setStamped(false);
     try {
       await action();
@@ -219,8 +219,12 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
       setReason('');
       setStamped(stamp);
       notify.success(success);
-    } catch {
-      setFailed(true);
+    } catch (error) {
+      setFailed(
+        error instanceof ApiError && error.code === 'PRODUCT_JOURNAL_REQUIRED'
+          ? 'journal-required'
+          : 'generic',
+      );
     }
   };
   const approved = household.status === 'APPROVED';
@@ -271,7 +275,7 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
       )}
       {failed ? (
         <p role="alert" className="text-small text-seal">
-          {t('publishFailed')}
+          {t(failed === 'journal-required' ? 'publishJournalRequired' : 'publishFailed')}
         </p>
       ) : null}
       <ConfirmDialog

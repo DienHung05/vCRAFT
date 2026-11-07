@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { addMilestone, createJournalPhoto } from './support/journal-photo.js';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
 
@@ -12,7 +13,7 @@ describe('Household approval and publishing', () => {
   let db: TestDatabase;
   let t: TestApp;
   let admin: { auth: string };
-  let rep: { auth: string };
+  let rep: { id: string; auth: string };
   let householdId: string;
   let householdVersion: number;
   let productId: string;
@@ -133,7 +134,22 @@ describe('Household approval and publishing', () => {
     traceCode = product.body.traceCode;
   });
 
+  it('chưa có mốc nhật ký nào thì không xuất bản được (FR-PRD-03, GH#251)', async () => {
+    const refused = await t.request({
+      method: 'POST',
+      url: `/products/${productId}/publish`,
+      auth: rep.auth,
+      headers: { 'if-match': '1' },
+    });
+    expect(refused.status).toBe(409);
+    expect(refused.body.code).toBe('PRODUCT_JOURNAL_REQUIRED');
+    const mine = await t.request({ method: 'GET', url: '/me/household', auth: rep.auth });
+    expect(mine.body.products[0].status).toBe('DRAFT');
+  });
+
   it('hộ đã duyệt xuất bản sản phẩm ⇒ hồ sơ công khai có xưởng và sản phẩm, QR hiện đầy đủ', async () => {
+    const milestone = await addMilestone(t, rep, productId, await createJournalPhoto(db, t, rep));
+    expect(milestone.status).toBe(201);
     const published = await t.request({
       method: 'POST',
       url: `/products/${productId}/publish`,

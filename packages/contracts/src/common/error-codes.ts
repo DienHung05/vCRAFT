@@ -70,6 +70,11 @@ export const ERROR_CATALOG = {
   JOURNAL_PUBLISHED_IMMUTABLE: { status: 409, title: 'Published journal entries are immutable' },
   /** Chuỗi băm đang lưu không còn khớp: từ chối ghi thêm để không che dấu thay đổi. */
   JOURNAL_INTEGRITY_BROKEN: { status: 409, title: 'Journal hash chain is broken' },
+  /** FR-PRD-03: sản phẩm cần ít nhất một mốc nhật ký sản xuất trước khi xuất bản. */
+  PRODUCT_JOURNAL_REQUIRED: {
+    status: 409,
+    title: 'Add a production-log milestone before publishing',
+  },
 
   // --- RFQ: yêu cầu báo giá, chào giá, phân bổ (SRS §4) ---
   /** BR-L3: mỗi hộ tối đa một bid cho mỗi RFQ (sửa = tăng revision). */
