@@ -1,8 +1,19 @@
 'use client';
 
 import { SealMark } from '@vcraft/ui';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { type ComponentProps, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Link } from '@/i18n/navigation';
+import type { PinStatus } from './map-model';
 import { LABEL_GAP, layoutMiniMap, type PlacedPin } from './mini-map-layout';
+
+/** What a tapped pin shows (GH#216): a title, a few short lines, its status and one link. */
+export interface MiniMapCard {
+  title: string;
+  lines: readonly string[];
+  status?: PinStatus;
+  link?: { href: ComponentProps<typeof Link>['href']; label: string };
+}
 
 export interface MiniMapPin {
   id: string;
@@ -11,7 +22,15 @@ export interface MiniMapPin {
   y: number;
   open: boolean;
   label: string;
+  /** With a card the pin is a button that opens it; without one the pin is only a mark. */
+  card?: MiniMapCard;
 }
+
+const STATUS_KEY = {
+  open: 'legendOpen',
+  closed: 'legendClosed',
+  production: 'legendProduction',
+} as const;
 
 const PIN_SIZE = 26;
 const HIGHLIGHT_SIZE = 34;
@@ -32,7 +51,26 @@ export interface VillageMiniMapProps {
  * không đè lên ghim hay nhãn khác (vCRAFT-83g.46); trước đó (SSR) nhãn nằm dưới ghim.
  */
 export function VillageMiniMap({ label, pins, highlight, className }: VillageMiniMapProps) {
+  const t = useTranslations('villageMap');
   const figure = useRef<HTMLElement>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  // Esc closes the open card; a tap outside the map does too.
+  useEffect(() => {
+    if (!openId) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpenId(null);
+    };
+    const onPointer = (event: PointerEvent) => {
+      if (!figure.current?.contains(event.target as Node)) setOpenId(null);
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('pointerdown', onPointer);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('pointerdown', onPointer);
+    };
+  }, [openId]);
   const [placement, setPlacement] = useState<{
     key: string;
     pins: Map<string, PlacedPin>;
@@ -78,13 +116,14 @@ export function VillageMiniMap({ label, pins, highlight, className }: VillageMin
     <figure
       ref={figure}
       aria-label={label}
-      className={`grain relative m-0 aspect-[4/3] overflow-hidden rounded-card bg-paper text-ink shadow-warm ${className ?? ''}`}
+      className={`grain relative m-0 aspect-[4/3] rounded-card bg-paper text-ink shadow-warm ${className ?? ''}`}
     >
+      {/* Only the drawing is clipped, so an info card near the edge can overflow the frame (GH#216). */}
       <svg
         aria-hidden="true"
         viewBox="0 0 400 300"
         preserveAspectRatio="xMidYMid slice"
-        className="absolute inset-0 size-full"
+        className="absolute inset-0 size-full overflow-hidden rounded-card"
       >
         {/* Sông Hồng */}
         <path
@@ -118,28 +157,46 @@ export function VillageMiniMap({ label, pins, highlight, className }: VillageMin
         {pins.map((p) => {
           const size = p.id === highlight ? HIGHLIGHT_SIZE : PIN_SIZE;
           const placed = placement?.pins.get(p.id);
+          const expanded = openId === p.id;
+          const mark = (
+            <>
+              {p.open ? (
+                <span
+                  aria-hidden="true"
+                  className="absolute size-7 animate-ping rounded-full bg-celadon/40 [animation-duration:2.4s] motion-reduce:hidden"
+                />
+              ) : null}
+              <SealMark
+                size={size}
+                variant={p.open ? 'seal' : 'ink'}
+                bleed={false}
+                className={p.open ? '' : 'opacity-50'}
+              />
+            </>
+          );
           return (
             <li
               key={p.id}
-              className="absolute size-0"
+              className={`absolute size-0 ${expanded ? 'z-20' : ''}`}
               style={
                 placed ? { left: placed.cx, top: placed.cy } : { left: `${p.x}%`, top: `${p.y}%` }
               }
             >
-              <span className="absolute top-0 left-0 grid -translate-x-1/2 -translate-y-1/2 place-items-center">
-                {p.open ? (
-                  <span
-                    aria-hidden="true"
-                    className="absolute size-7 animate-ping rounded-full bg-celadon/40 [animation-duration:2.4s] motion-reduce:hidden"
-                  />
-                ) : null}
-                <SealMark
-                  size={size}
-                  variant={p.open ? 'seal' : 'ink'}
-                  bleed={false}
-                  className={p.open ? '' : 'opacity-50'}
-                />
-              </span>
+              {p.card ? (
+                <button
+                  type="button"
+                  aria-expanded={expanded}
+                  aria-label={t('pinButton', { name: p.card.title })}
+                  onClick={() => setOpenId(expanded ? null : p.id)}
+                  className="absolute top-0 left-0 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full transition-transform hover:scale-110 focus-visible:outline-2 focus-visible:outline-glaze motion-reduce:transition-none"
+                >
+                  {mark}
+                </button>
+              ) : (
+                <span className="absolute top-0 left-0 grid -translate-x-1/2 -translate-y-1/2 place-items-center">
+                  {mark}
+                </span>
+              )}
               <span
                 data-pin-label={p.id}
                 className="absolute rounded-chip bg-paper/90 px-2 text-[0.7rem] leading-5 whitespace-nowrap shadow-warm"
@@ -151,10 +208,58 @@ export function VillageMiniMap({ label, pins, highlight, className }: VillageMin
               >
                 {p.label}
               </span>
+              {p.card && expanded ? <PinCard card={p.card} x={p.x} y={p.y} t={t} /> : null}
             </li>
           );
         })}
       </ul>
     </figure>
+  );
+}
+
+/**
+ * Small info card beside a tapped mini-map pin (GH#216). It opens below pins in the top half and above
+ * pins in the bottom half, and leans away from the nearer side edge, so it stays over the map.
+ */
+function PinCard({
+  card,
+  x,
+  y,
+  t,
+}: {
+  card: MiniMapCard;
+  x: number;
+  y: number;
+  t: ReturnType<typeof useTranslations<'villageMap'>>;
+}) {
+  const vertical = y < 50 ? 'top-6' : 'bottom-6';
+  const horizontal = x < 35 ? '-left-4' : x > 65 ? '-right-4' : '-translate-x-1/2';
+  return (
+    // biome-ignore lint/a11y/useSemanticElements: a labelled group of text and one link, not a form fieldset.
+    <div
+      role="group"
+      aria-label={card.title}
+      className={`absolute ${vertical} ${horizontal} w-60 max-w-[70vw] rounded-card bg-surface p-3 text-left text-small shadow-warm ring-1 ring-ink/10`}
+    >
+      <p className="font-medium text-body leading-snug">{card.title}</p>
+      {card.lines.map((line) => (
+        <p key={line} className="text-ash">
+          {line}
+        </p>
+      ))}
+      {card.status ? (
+        <p className={card.status === 'open' ? 'mt-1 font-medium text-glaze' : 'mt-1 text-ash'}>
+          {t(STATUS_KEY[card.status])}
+        </p>
+      ) : null}
+      {card.link ? (
+        <Link
+          href={card.link.href}
+          className="mt-2 inline-flex min-h-11 items-center text-clay underline underline-offset-4"
+        >
+          {card.link.label}
+        </Link>
+      ) : null}
+    </div>
   );
 }

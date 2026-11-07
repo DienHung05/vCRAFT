@@ -17,8 +17,14 @@ export async function generateMetadata({
 }
 
 /** Bản đồ làng nghề (FR-MAP): ghim của mọi xưởng đã duyệt, luôn kèm danh sách chữ. */
-export default async function VillageMapPage({ params }: PageProps<'/[locale]/ban-do'>) {
+export default async function VillageMapPage({
+  params,
+  searchParams,
+}: PageProps<'/[locale]/ban-do'>) {
   await resolveLocale(params);
+  // `?xuong=<workshop id>` opens the map centred on that workshop with its card (links from mini maps, GH#216).
+  const focus = (await searchParams).xuong;
+  const initialSelectedId = typeof focus === 'string' ? focus : undefined;
   const [t, result] = await Promise.all([getTranslations('villageMap'), fetchMapPins()]);
 
   return (
@@ -28,7 +34,7 @@ export default async function VillageMapPage({ params }: PageProps<'/[locale]/ba
         <p className="text-ash">{t('lead')}</p>
       </header>
       {result.status === 'ok' ? (
-        <VillageMapExplorer pins={result.pins} />
+        <VillageMapExplorer pins={result.pins} {...(initialSelectedId && { initialSelectedId })} />
       ) : (
         <DataUnavailable className="mt-8" message={t('unavailable')} />
       )}

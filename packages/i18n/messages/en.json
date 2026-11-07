@@ -1214,7 +1214,15 @@
       "6": "Saturday"
     },
     "clearFilters": "Clear filters",
-    "offline": "Offline backup map"
+    "offline": "Offline backup map",
+    "directions": "Directions",
+    "closeCard": "Close the info card",
+    "legendTitle": "Legend",
+    "legendOpen": "Open now",
+    "legendClosed": "Closed now",
+    "legendProduction": "Production only",
+    "pinButton": "{name}: show details",
+    "viewOnFullMap": "View on the village map"
   },
   "catalog": {
     "filtersLabel": "Filter products",

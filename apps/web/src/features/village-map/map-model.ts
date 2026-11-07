@@ -81,14 +81,41 @@ export function sortByDistance(pins: readonly MapPinDto[], origin: LatLng): MapP
   return [...pins].sort((a, b) => distanceKm(origin, a) - distanceKm(origin, b));
 }
 
+/**
+ * What a pin's colour says (GH#216): open now (glaze), closed (muted clay), or production only, which
+ * never receives visitors (ash).
+ */
+export type PinStatus = 'open' | 'closed' | 'production';
+
+export function pinStatus(pin: MapPinDto, now: Date): PinStatus {
+  if (!pin.visitable) return 'production';
+  return pinOpenState(pin, now).open ? 'open' : 'closed';
+}
+
+/** Map image id of a pin: one marker per status and workshop purpose (the glyph inside). */
+export const pinIconId = (status: PinStatus, purpose: MapPinDto['purpose']) =>
+  `pin-${status}-${purpose.toLowerCase()}`;
+
+/** Google Maps directions to a workshop, from wherever the visitor is. */
+export const directionsUrl = (pin: { lat: number; lng: number }) =>
+  `https://www.google.com/maps/dir/?api=1&destination=${pin.lat},${pin.lng}`;
+
 /** Dữ liệu GeoJSON cho nguồn MapLibre có gom cụm; `open` điều khiển lớp nhịp thở của ghim mở. */
 export function toFeatureCollection(pins: readonly MapPinDto[], now: Date) {
   return {
     type: 'FeatureCollection' as const,
-    features: pins.map((pin) => ({
-      type: 'Feature' as const,
-      geometry: { type: 'Point' as const, coordinates: [pin.lng, pin.lat] },
-      properties: { id: pin.workshopId, open: pinOpenState(pin, now).open },
-    })),
+    features: pins.map((pin) => {
+      const status = pinStatus(pin, now);
+      return {
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [pin.lng, pin.lat] },
+        properties: {
+          id: pin.workshopId,
+          open: status === 'open',
+          status,
+          icon: pinIconId(status, pin.purpose),
+        },
+      };
+    }),
   };
 }

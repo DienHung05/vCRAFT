@@ -1214,7 +1214,15 @@
       "6": "Thứ bảy"
     },
     "clearFilters": "Bỏ bộ lọc",
-    "offline": "Bản đồ dự phòng ngoại tuyến"
+    "offline": "Bản đồ dự phòng ngoại tuyến",
+    "directions": "Chỉ đường",
+    "closeCard": "Đóng thẻ thông tin",
+    "legendTitle": "Chú giải",
+    "legendOpen": "Đang mở cửa",
+    "legendClosed": "Đang đóng cửa",
+    "legendProduction": "Chỉ sản xuất",
+    "pinButton": "{name}: xem thông tin",
+    "viewOnFullMap": "Xem trên bản đồ làng"
   },
   "catalog": {
     "filtersLabel": "Lọc sản phẩm",
