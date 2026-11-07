@@ -1,12 +1,15 @@
 import type { Metadata } from 'next';
 import { Be_Vietnam_Pro, Fraunces, JetBrains_Mono } from 'next/font/google';
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { InlineScript } from '@/components/inline-script';
 import { Toaster } from '@/components/toaster';
 import { UsdRateProvider } from '@/components/usd-rate-provider';
 import { WebFonts } from '@/components/web-fonts';
 import { routing } from '@/i18n/routing';
+import { NONCE_HEADER } from '@/lib/csp';
 import { FALLBACK_USD_RATE, showsUsdReference } from '@/lib/currency';
 import { siteOrigin } from '@/lib/site';
 import { THEME_SCRIPT } from '@/lib/theme';
@@ -70,6 +73,9 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
+  // The CSP nonce from proxy.ts (NFR-SEC-04). Reading request headers makes every page render per request,
+  // which a per-request nonce needs anyway: a prerendered page could not carry one.
+  const nonce = (await headers()).get(NONCE_HEADER) ?? undefined;
   // Only the English site shows USD (FR-CAT-08). The rate comes from Next's data cache (24h), so
   // this adds no request for visitors and the pages stay statically cacheable.
   const usdRate = showsUsdReference(locale) ? await getUsdRate() : FALLBACK_USD_RATE;
@@ -86,12 +92,9 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
       suppressHydrationWarning
     >
       <head>
-        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a constant script; as a JSX child React would escape its quotes. */}
-        <script dangerouslySetInnerHTML={{ __html: FONTS_FLAG_SCRIPT }} />
-        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a constant script, see lib/theme.ts. */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a constant script, see lib/view-transition.ts. */}
-        <script dangerouslySetInnerHTML={{ __html: VIEW_TRANSITION_GUARD_SCRIPT }} />
+        <InlineScript code={FONTS_FLAG_SCRIPT} nonce={nonce} />
+        <InlineScript code={THEME_SCRIPT} nonce={nonce} />
+        <InlineScript code={VIEW_TRANSITION_GUARD_SCRIPT} nonce={nonce} />
         <noscript>
           {/* Without JS nothing flips data-fonts, so the web fonts are switched on by CSS alone. */}
           <style>

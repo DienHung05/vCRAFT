@@ -4,6 +4,7 @@ import helmet from '@fastify/helmet';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
+import { registerApiDocs } from './common/openapi/api-docs';
 import { configureHttp } from './configure-http';
 
 /** `CORS_ORIGINS`: danh sách origin được phép, ngăn cách bằng dấu phẩy (bỏ dấu `/` cuối). Rỗng = tắt CORS. */
@@ -23,6 +24,8 @@ async function bootstrap() {
   await configureHttp(app);
   // Header bảo mật cho phản hồi JSON. Qua rewrite của Next, phản hồi API không nhận header của next.config nên đặt ở đây.
   await app.register(helmet, { crossOriginResourcePolicy: false });
+  // OpenAPI 3.1 document and the interactive page at /api/docs (SRS 5.2); public and read-only.
+  registerApiDocs(app, AppModule);
   // Web gọi API cùng origin qua rewrite của Next/Caddy nên mặc định không cần CORS (ADR-16); chỉ bật khi gọi chéo origin.
   const origins = corsOrigins();
   if (origins.length > 0) {

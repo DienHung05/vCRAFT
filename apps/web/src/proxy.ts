@@ -3,6 +3,7 @@ import createMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
 import { PATH_HEADER } from './lib/auth/path-header';
 import { refreshSession } from './lib/auth/proxy-session';
+import { contentSecurityPolicyFromEnv, generateNonce, NONCE_HEADER } from './lib/csp';
 import { secureCookiesOnHttps } from './lib/secure-cookies';
 
 const handleI18nRouting = createMiddleware(routing);
@@ -12,6 +13,9 @@ const handleI18nRouting = createMiddleware(routing);
  * 1. làm mới phiên Supabase nếu access token sắp hết hạn (FR-AUTH-04), để trang render với token mới;
  * 2. đặt header `x-vcraft-path` (đường dẫn công khai) cho guard của layout tạo đích quay lại;
  * 3. phát hiện ngôn ngữ và chuyển hướng theo next-intl.
+ * The same pass issues a fresh CSP nonce (NFR-SEC-04, GH#240): the policy goes on the request (Next reads the
+ * nonce from it and stamps its own scripts) and on the response, and the nonce is also sent as `x-nonce` so the
+ * root layout can stamp its inline scripts. Pages that read it render per request, never from a static cache.
  * Finally, every response cookie is marked `Secure` when the request came over https (GH#152).
  * Redirect `/q/:code` do route handler, còn chặn theo vai trò do layout (xem lib/auth/guard.ts).
  */
@@ -19,7 +23,12 @@ export default async function proxy(request: NextRequest) {
   const session = await refreshSession(request);
   const headers = new Headers(request.headers);
   headers.set(PATH_HEADER, `${request.nextUrl.pathname}${request.nextUrl.search}`);
+  const nonce = generateNonce();
+  const csp = contentSecurityPolicyFromEnv(nonce);
+  headers.set(NONCE_HEADER, nonce);
+  headers.set('Content-Security-Policy', csp);
   const response = handleI18nRouting(new NextRequest(request, { headers }));
+  response.headers.set('Content-Security-Policy', csp);
   return secureCookiesOnHttps(request, session.apply(response));
 }
 
