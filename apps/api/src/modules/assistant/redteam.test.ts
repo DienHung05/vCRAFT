@@ -1,7 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { MikroORM } from '@mikro-orm/core';
-import type { AssistantEvent, AssistantMessageRequest } from '@vcraft/contracts';
+import {
+  ASSISTANT_MESSAGE_MAX,
+  type AssistantEvent,
+  type AssistantMessageRequest,
+} from '@vcraft/contracts';
 import { HashingEmbedder, InMemoryVectorStore, indexDocument } from '@vcraft/knowledge';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { AskAssistantService, type AssistantConfig } from './application/ask-assistant.service';
@@ -130,7 +134,7 @@ const config: AssistantConfig = {
 };
 
 const request = (message: string, n: number): AssistantMessageRequest => ({
-  message: message.slice(0, 1000),
+  message: message.slice(0, ASSISTANT_MESSAGE_MAX),
   history: [],
   locale: 'vi',
   pagePath: '/vi',
