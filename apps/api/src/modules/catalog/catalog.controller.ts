@@ -2,6 +2,8 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 import {
   type ListProductsQuery,
   ListProductsQuerySchema,
+  type ListPublicHouseholdsQuery,
+  ListPublicHouseholdsQuerySchema,
   SearchQuerySchema,
 } from '@vcraft/contracts';
 import { Public } from '../../common/auth/auth.guard';
@@ -35,9 +37,12 @@ export class CatalogController {
     return this.catalog.resolveRedirect('HOUSEHOLD', slug);
   }
 
+  /** Every approved household, or one numbered page with `?page=N` (GH#202). */
   @Get('households')
-  listHouseholds() {
-    return this.catalog.listHouseholds();
+  listHouseholds(
+    @Query(new ZodValidationPipe(ListPublicHouseholdsQuerySchema)) query: ListPublicHouseholdsQuery,
+  ) {
+    return this.catalog.listHouseholds(query);
   }
 
   @Get('search/suggest')

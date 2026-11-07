@@ -5,10 +5,15 @@ import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { EmptyState } from '@/components/states/empty-state';
-import { fetchHouseholds } from '@/features/catalog/exhibition-api';
+import { UrlPagination } from '@/components/url-pagination';
+import { fetchHouseholdPage } from '@/features/catalog/exhibition-api';
 import { altFor, photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
 import { resolveLocale } from '@/lib/locale';
+import { parsePageParam } from '@/lib/page-param';
+
+/** Households per numbered page: four rows of the three-column grid (GH#202). */
+const HOUSEHOLD_PAGE_SIZE = 12;
 
 // Danh sách lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
 export const dynamic = 'force-dynamic';
@@ -21,14 +26,21 @@ export async function generateMetadata({
   return { title: t('title'), description: t('lead') };
 }
 
-/** Danh sách hộ nghệ nhân (FR-CAT-06): mỗi hộ đã duyệt một thẻ, lấy từ `GET /households`. */
-export default async function ArtisansIndexPage({ params }: PageProps<'/[locale]/nghe-nhan'>) {
+/**
+ * Danh sách hộ nghệ nhân (FR-CAT-06): mỗi hộ đã duyệt một thẻ, lấy từ `GET /households`, in numbered
+ * pages (`?page=N`, GH#202) rendered on the server.
+ */
+export default async function ArtisansIndexPage({
+  params,
+  searchParams,
+}: PageProps<'/[locale]/nghe-nhan'>) {
   const locale = await resolveLocale(params);
+  const page = parsePageParam((await searchParams).page);
   const [t, preset, nav, result] = await Promise.all([
     getTranslations('indexPages.artisans'),
     getTranslations('presetFigure'),
     getTranslations('nav'),
-    fetchHouseholds(),
+    fetchHouseholdPage(page, HOUSEHOLD_PAGE_SIZE),
   ]);
   if (result.status !== 'ok') return <DataUnavailable />;
   const households = result.data.data;
@@ -38,7 +50,7 @@ export default async function ArtisansIndexPage({ params }: PageProps<'/[locale]
       <header className="flex max-w-prose-vn flex-col gap-3">
         <h1 className="text-h1">{t('title')}</h1>
         <p className="text-ash">{t('lead')}</p>
-        <p className="text-small text-ash">{t('count', { count: households.length })}</p>
+        <p className="text-small text-ash">{t('count', { count: result.data.total })}</p>
       </header>
       {households.length > 0 ? (
         <ul className="mt-10 grid gap-8 sm:grid-cols-2 md:grid-cols-3">
@@ -86,6 +98,15 @@ export default async function ArtisansIndexPage({ params }: PageProps<'/[locale]
           }
         />
       )}
+      <div className="mt-12">
+        <UrlPagination
+          kind="households"
+          page={result.data.page}
+          totalPages={result.data.totalPages}
+          total={result.data.total}
+          pageSize={result.data.pageSize}
+        />
+      </div>
       <PhotoCreditsNote />
     </div>
   );

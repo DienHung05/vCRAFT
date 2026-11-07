@@ -1,5 +1,6 @@
 import { PRODUCT_SORTS, type ProductSort } from '@vcraft/contracts';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
+import { parsePageParam } from '@/lib/page-param';
 import type { ProductFilters } from './exhibition-query';
 
 /** Bộ lọc danh mục như trên URL (FR-CAT-02); giữ chuỗi để ô nhập số không nhảy khi đang gõ. */
@@ -39,9 +40,7 @@ export function parseCatalogParams(
 ): CatalogFilters {
   const category = first(params.category);
   const sort = first(params.sort);
-  const pageStr = first(params.page);
-  const pageNum = /^\d{1,5}$/.test(pageStr) ? parseInt(pageStr, 10) : 1;
-  const page = pageNum >= 1 && pageNum <= 10_000 ? pageNum : 1;
+  const page = parsePageParam(params.page);
   return {
     q: first(params.q).slice(0, 120),
     category: PRODUCT_CATEGORIES.includes(category as ProductCategory)

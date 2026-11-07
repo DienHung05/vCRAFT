@@ -61,6 +61,19 @@ describe('indexing and search', () => {
     expect(store.all().map((c) => c.sourceId)).toEqual(['dat-hang']);
   });
 
+  it('limits results after selecting the requested source type', async () => {
+    const store = new InMemoryVectorStore();
+    await indexDocument(store, embedder, {
+      ...doc('product', 'Đặt hàng', 'Gửi yêu cầu báo giá để đặt nhiều cốc.'),
+      sourceType: 'PRODUCT',
+    });
+    await indexDocument(store, embedder, doc('guide', 'Hướng dẫn', 'Gửi yêu cầu báo giá.'));
+    const [query] = await embedder.embed(['dat hang gui yeu cau bao gia de dat nhieu coc']);
+    expect(await store.search(query as number[], { limit: 1, sourceType: 'FAQ' })).toMatchObject([
+      { sourceId: 'guide', sourceType: 'FAQ' },
+    ]);
+  });
+
   it('filters by locale and similarity', async () => {
     const store = new InMemoryVectorStore();
     await indexDocument(store, embedder, {

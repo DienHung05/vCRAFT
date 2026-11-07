@@ -159,6 +159,30 @@ describe('Public news', () => {
     }
   });
 
+  it('numbered pages (GH#202): totals, same order as the cursor walk, last page past the end', async () => {
+    const all = slugsOf((await t.request({ method: 'GET', url: '/news?limit=100' })).body);
+    const seen: string[] = [];
+    for (const page of [1, 2, 3]) {
+      const res = await t.request({ method: 'GET', url: `/news?page=${page}&limit=3` });
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        page,
+        pageSize: 3,
+        total: 8,
+        totalPages: 3,
+        nextCursor: null,
+      });
+      seen.push(...slugsOf(res.body));
+    }
+    expect(seen).toEqual(all);
+    const far = await t.request({ method: 'GET', url: '/news?page=99&limit=3' });
+    expect(far.body.page).toBe(3);
+    expect(slugsOf(far.body)).toEqual(all.slice(6));
+    const both = await t.request({ method: 'GET', url: '/news?page=1&cursor=abc' });
+    expect(both.status).toBeGreaterThanOrEqual(400);
+    expect(both.status).toBeLessThan(500);
+  });
+
   it('cursor sai là 400, limit ngoài khoảng là 422', async () => {
     const bad = await t.request({ method: 'GET', url: '/news?cursor=khong-hop-le' });
     expect(bad.status).toBe(400);

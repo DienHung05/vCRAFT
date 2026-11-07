@@ -5,6 +5,10 @@ import { fetchMaterialPrices, fetchNews } from '@/features/news/news-api';
 import { NewsView } from '@/features/news/news-view';
 import { VillageNews } from '@/features/news/village-news';
 import { resolveLocale } from '@/lib/locale';
+import { parsePageParam } from '@/lib/page-param';
+
+/** News items per numbered page (GH#202). */
+const NEWS_PAGE_SIZE = 12;
 
 // Tin lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
 export const dynamic = 'force-dynamic';
@@ -29,7 +33,7 @@ export default async function NewsIndexPage({
   const query = await searchParams;
   const householdSlug = first(query.household);
   const [result, prices] = await Promise.all([
-    fetchNews({ householdSlug, cursor: first(query.cursor) }),
+    fetchNews({ householdSlug, page: parsePageParam(query.page), limit: NEWS_PAGE_SIZE }),
     // The village-wide price chart belongs on the main list, not on a household's own news.
     householdSlug ? null : fetchMaterialPrices(),
   ]);

@@ -28,6 +28,11 @@ vi.mock('@/i18n/navigation', () => ({
   ),
   useRouter: () => ({ refresh: vi.fn() }),
 }));
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/vi/tin-tuc',
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: vi.fn() }),
+}));
 
 const page: NewsListDto = {
   data: [
@@ -120,6 +125,20 @@ describe('NewsView', () => {
     expect(more.getAttribute('href')).toContain('household=gom-minh-hai');
     expect(screen.getByText(/Đang xem tin của Gốm Minh Hải/)).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Xem mọi tin' })).toBeTruthy();
+  });
+
+  it('shows the numbered page bar instead of the cursor link when the page has totals (GH#202)', () => {
+    renderVi(
+      <NewsView
+        result={{
+          status: 'ok',
+          page: { ...page, nextCursor: null, page: 1, pageSize: 12, total: 30, totalPages: 3 },
+        }}
+      />,
+    );
+    expect(screen.getByRole('navigation', { name: 'Phân trang tin tức' })).toBeTruthy();
+    expect(screen.getByText('30 tin')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: /Xem thêm tin/ })).toBeNull();
   });
 
   it('shows an empty state when there is no news', () => {

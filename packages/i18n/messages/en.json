@@ -154,7 +154,9 @@
     },
     "day": {
       "title": "A day in Bat Trang",
-      "lead": "From kneading clay to opening the kiln, six steps that every piece goes through. The photos only illustrate each step in general; they are not photos of any particular piece. Swipe sideways to follow each one."
+      "lead": "From kneading clay to opening the kiln, six steps that every piece goes through. The photos only illustrate each step in general; they are not photos of any particular piece. Swipe sideways to follow each one.",
+      "railLabel": "Stages of the day",
+      "current": "Stage {index} of {total}: {name}"
     },
     "artisans": {
       "title": "The hands that keep the craft alive",
@@ -1254,11 +1256,19 @@
     "emptyHint": "Try removing a filter or widening the price range to see more products.",
     "results": "Product results",
     "pagination": {
-      "label": "Product pages",
+      "label": {
+        "products": "Product pages",
+        "households": "Household pages",
+        "news": "News pages"
+      },
       "previous": "Previous page",
       "next": "Next page",
       "goTo": "Page {page}",
-      "showing": "Showing {from}–{to} of {total} products"
+      "showing": {
+        "products": "Showing {from}–{to} of {total} products",
+        "households": "Showing {from}–{to} of {total} households",
+        "news": "Showing {from}–{to} of {total} news items"
+      }
     }
   },
   "auth": {

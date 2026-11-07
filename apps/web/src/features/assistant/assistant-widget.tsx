@@ -170,7 +170,9 @@ export function AssistantWidget() {
             reaction={reaction}
             size={96}
             lookAt="pointer"
+            label={t('mascotLabel')}
             thought={waiting ? thoughtIndices.map((i) => allThoughts[i] ?? '') : undefined}
+            thoughtPortal
           />
         </button>
       }
