@@ -1,4 +1,4 @@
-import type { AssistantMessageRequest } from '@vcraft/contracts';
+import { ASSISTANT_HISTORY_MAX, type AssistantMessageRequest } from '@vcraft/contracts';
 import type { KnowledgeMatch } from '@vcraft/knowledge';
 import type { ChatMessage } from '../infrastructure/llm-client';
 
@@ -56,7 +56,9 @@ export function chatMessages(
   ].join('\n\n');
   return [
     { role: 'system', content: `${systemPrompt(input.locale, canary)}\n\n${data}` },
-    ...input.history.slice(-10).map((turn) => ({ role: turn.role, content: turn.content })),
+    ...input.history
+      .slice(-ASSISTANT_HISTORY_MAX)
+      .map((turn) => ({ role: turn.role, content: turn.content })),
     { role: 'user', content: message },
   ];
 }

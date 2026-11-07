@@ -98,7 +98,7 @@ describe('AskAssistantService', () => {
   beforeEach(() => {
     llm = new FakeLlm();
     db = fakeOrm();
-    config = { enabled: true, dailyTokens: 10_000, allowedOrigins: [], maxAnswerTokens: 500 };
+    config = { enabled: true, dailyTokens: 0, allowedOrigins: [], maxAnswerTokens: 500 };
     service = build();
   });
 
@@ -169,8 +169,26 @@ describe('AskAssistantService', () => {
     expect(events.at(-1)).toEqual({ type: 'blocked', reason: 'BUDGET_EXHAUSTED' });
   });
 
-  it('rate limits a visitor after ten messages a minute', async () => {
+  it('applies no rate limit or token budget by default', async () => {
+    for (let i = 0; i < 80; i++) {
+      const events = await collect(service.ask(request('Làm sao đặt hàng?'), 'ip'));
+      expect(events.at(-1)).toMatchObject({ type: 'done' });
+    }
+    expect(db.rows.some((r) => r.blocked === true)).toBe(false);
+  });
+
+  it('rate limits a visitor once a per-minute limit is configured', async () => {
+    config.rateLimitPerMinute = 10;
+    service = build();
     for (let i = 0; i < 10; i++) await collect(service.ask(request('chào'), 'ip'));
+    const events = await collect(service.ask(request('chào'), 'ip'));
+    expect(events.at(-1)).toMatchObject({ type: 'blocked', reason: 'RATE_LIMITED' });
+  });
+
+  it('rate limits a visitor once a per-day limit is configured', async () => {
+    config.rateLimitPerDay = 2;
+    service = build();
+    for (let i = 0; i < 2; i++) await collect(service.ask(request('chào'), 'ip'));
     const events = await collect(service.ask(request('chào'), 'ip'));
     expect(events.at(-1)).toMatchObject({ type: 'blocked', reason: 'RATE_LIMITED' });
   });
