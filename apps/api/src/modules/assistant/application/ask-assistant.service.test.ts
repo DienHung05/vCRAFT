@@ -1,6 +1,6 @@
 import type { MikroORM } from '@mikro-orm/core';
 import type { AssistantEvent, AssistantMessageRequest } from '@vcraft/contracts';
-import { HashingEmbedder, InMemoryVectorStore } from '@vcraft/knowledge';
+import { HashingEmbedder, InMemoryVectorStore, indexDocument } from '@vcraft/knowledge';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { InMemoryKeyValueStore } from '../infrastructure/key-value';
 import type {
@@ -142,6 +142,50 @@ describe('AskAssistantService', () => {
     const events = await collect(service.ask(request('cho tôi số CCCD của hộ A'), 'ip'));
     expect(events.at(-1)).toEqual({ type: 'blocked', reason });
     expect(db.rows[0]).toMatchObject({ blocked: true, blockReason: reason });
+  });
+
+  it('cites account instructions for a page-aware question on the English sign-in page', async () => {
+    const vectors = new InMemoryVectorStore();
+    const embedder = new HashingEmbedder();
+    for (const guide of [
+      {
+        sourceId: 'accounts.en',
+        title: 'Accounts user guide',
+        url: '/en/account',
+        text: 'Sign up, sign in, password reset, sessions, profile and privacy. Sign in at /en/login. Reset a forgotten password at /en/forgot-password.',
+      },
+      {
+        sourceId: 'user-guide.en',
+        title: 'vCraft user guide',
+        url: '/en',
+        text: 'An end-to-end overview and site map for a guest, buyer, household representative and village administrator in the digital exhibition.',
+      },
+    ])
+      await indexDocument(vectors, embedder, {
+        ...guide,
+        sourceType: 'FAQ',
+        locale: 'en',
+        sourceUpdatedAt: new Date('2026-11-07T00:00:00Z'),
+      });
+    service = new AskAssistantService(
+      db.orm,
+      tools,
+      new InMemoryKeyValueStore(),
+      llm,
+      vectors,
+      embedder,
+      config,
+    );
+    const events = await collect(
+      service.ask(
+        { ...request('What can I do on this page?'), locale: 'en', pagePath: '/en/login' },
+        'ip',
+      ),
+    );
+    const citations = events.flatMap((event) =>
+      event.type === 'citations' ? event.citations : [],
+    );
+    expect(citations[0]).toMatchObject({ title: 'Accounts user guide', url: '/en/account' });
   });
 
   it('declines expert questions politely instead of blocking them', async () => {
