@@ -3,6 +3,7 @@
 import { Button } from '@vcraft/ui';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { setRememberPreference } from '@/lib/auth/remember';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { FormAlert } from './fields';
 
@@ -26,9 +27,12 @@ export function googleCallbackUrl(origin: string, locale: string, next: string |
 export function GoogleSignIn({
   next,
   disabled = false,
+  remember = true,
 }: {
   next: string | null;
   disabled?: boolean;
+  /** Keep the session after the browser closes (default). `false` makes the auth cookies session-only. */
+  remember?: boolean;
 }) {
   const t = useTranslations('auth.google');
   const locale = useLocale();
@@ -38,6 +42,8 @@ export function GoogleSignIn({
     const supabase = browserSupabase();
     if (!supabase) return setState('failed');
     setState('redirecting');
+    // Before the PKCE verifier cookie is written, so the callback session follows the choice too.
+    setRememberPreference(remember);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: googleCallbackUrl(window.location.origin, locale, next) },

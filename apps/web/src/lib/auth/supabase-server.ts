@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { readRememberPreference, withRememberPolicy } from './remember';
 import { supabaseConfig } from './supabase-config';
 
 /**
@@ -16,7 +17,10 @@ export async function createServerSupabase(): Promise<SupabaseClient | null> {
       getAll: () => store.getAll(),
       setAll: (list) => {
         try {
-          for (const { name, value, options } of list) store.set(name, value, options);
+          // Not remembered: the auth cookies become session cookies (see ./remember).
+          const remember = readRememberPreference(store.getAll());
+          for (const { name, value, options } of list)
+            store.set(name, value, withRememberPolicy(options, remember) ?? {});
         } catch {
           // Gọi từ Server Component: bỏ qua, proxy.ts đã làm mới phiên cho request này.
         }
