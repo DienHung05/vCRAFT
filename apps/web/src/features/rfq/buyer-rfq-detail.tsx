@@ -98,7 +98,8 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
   // BRAND §6.3 #2: the offer the buyer just accepted gets the seal pressed onto it once.
   const [stampedId, setStampedId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  /** Reloads the request and returns its fresh status, or null when the reload failed. */
+  const load = useCallback(async (): Promise<RfqResponse['status'] | null> => {
     try {
       const request = await client.getRequest(rfqId);
       if (request.status === 'DRAFT') {
@@ -109,12 +110,11 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
           allocations: [],
           withdrawnNotice: false,
         });
-        return;
+        return request.status;
       }
       const [quotations, allocations, notices] = await Promise.all([
         client.listBuyerQuotations(rfqId),
-        // The API has no allocations to return before a quotation is accepted.
-        client.listAllocations(rfqId).catch(() => [] as AllocationDto[]),
+        client.listAllocations(rfqId),
         client.listNotices(),
       ]);
       setState({
@@ -126,11 +126,13 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
           (notice) => notice.requestId === rfqId && notice.kind === 'QUOTATION_WITHDRAWN',
         ),
       });
+      return request.status;
     } catch (error) {
       setState({
         kind:
           error instanceof QuotationApiError && error.status === 401 ? 'unauthenticated' : 'error',
       });
+      return null;
     }
   }, [client, rfqId]);
 
@@ -214,8 +216,16 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
       notify.success(success);
     } catch (error) {
       const stale = error instanceof QuotationApiError && error.code === 'STALE_VERSION';
-      setActionError(stale ? t('stale') : failure);
-      if (stale) await load();
+      if (!stale) {
+        setActionError(failure);
+        return;
+      }
+      const fresh = await load();
+      // AC-2: the losing accept finds the request already accepted (or otherwise closed).
+      if (dialog?.kind === 'accept' && fresh && fresh !== 'SENT' && fresh !== 'BIDDING') {
+        closeDialog();
+        setActionError(t('closed'));
+      } else setActionError(t('stale'));
     } finally {
       setBusy(false);
     }

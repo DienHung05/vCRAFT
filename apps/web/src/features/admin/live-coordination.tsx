@@ -4,7 +4,7 @@ import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
 import type { CoordinationDto, RfqResponse } from '@vcraft/contracts';
 import { Badge, Button, buttonVariants, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
@@ -23,9 +23,19 @@ type LiveState =
   | { kind: 'ready'; coordination: CoordinationDto; noticeCount: number }
   | { kind: 'error' };
 
-const requestClosed = (request: RfqResponse) =>
-  !['SENT', 'BIDDING'].includes(request.status) ||
+const biddingOpen = (request: RfqResponse) => ['SENT', 'BIDDING'].includes(request.status);
+const deadlinePassed = (request: RfqResponse) =>
   new Date(request.biddingClosesAt).getTime() <= Date.now();
+const requestClosed = (request: RfqResponse) => !biddingOpen(request) || deadlinePassed(request);
+
+/** The coordinator's unsaved split plan, kept across the reload that follows a stale save (BR-L1). */
+interface PlanDraft {
+  /** The request version the failed save was made against. */
+  baseVersion: number;
+  quantities: ReadonlyMap<string, number>;
+  additionalChargeVnd: number;
+  deliveryTerms: 'INCLUDED' | 'SEPARATE';
+}
 
 export function LiveCoordination({
   rfqId,
@@ -47,7 +57,9 @@ function DetailSkeletonBlock({ label }: { label: string }) {
 
 function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
   const t = useTranslations('admin.live');
+  const rfq = useTranslations('rfq');
   const format = useFormatter();
+  const draftRef = useRef<PlanDraft | null>(null);
   const [state, setState] = useState<LiveState>({ kind: 'loading' });
   const [refresh, setRefresh] = useState(0);
   const [claiming, setClaiming] = useState(false);
@@ -111,6 +123,15 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
     };
   }, [client, rfqId, refresh]);
 
+  // The board consumed the draft when it remounted on the new version; drop it so it is not replayed.
+  useEffect(() => {
+    if (
+      state.kind === 'ready' &&
+      draftRef.current?.baseVersion !== state.coordination.request.version
+    )
+      draftRef.current = null;
+  }, [state]);
+
   if (state.kind === 'loading') return <DetailSkeletonBlock label={t('loading')} />;
   if (state.kind === 'unauthenticated') return <p>{t('signIn')}</p>;
   if (state.kind === 'notFound')
@@ -162,7 +183,13 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
   }
 
   const { request, contributions } = state.coordination;
-  const closed = requestClosed(request);
+  // The split board and the bidding-deadline notice only belong to the bidding stage; after
+  // acceptance the order screen shows the status and the order actions instead.
+  const bidding = biddingOpen(request);
+  const closed = bidding ? deadlinePassed(request) : request.status === 'EXPIRED';
+  const pending = draftRef.current;
+  const draft = pending && pending.baseVersion !== request.version ? pending : null;
+  const activeOffers = contributions.filter((offer) => offer.status === 'ACTIVE');
   const submit = async (payload: BoardSubmitPayload) => {
     try {
       await client.submitQuotation(rfqId, payload.requestVersion, {
@@ -170,19 +197,36 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
         additionalChargeVnd: payload.additionalChargeVnd,
         deliveryTerms: payload.deliveryTerms,
       });
+      draftRef.current = null;
     } catch (error) {
-      if (error instanceof QuotationApiError && error.code === 'STALE_VERSION')
+      if (error instanceof QuotationApiError && error.code === 'STALE_VERSION') {
+        // The board remounts on the new request version: hand the typed plan back to it.
+        draftRef.current = {
+          baseVersion: payload.requestVersion,
+          quantities: new Map(payload.parts.map((part) => [part.householdId, part.quantity])),
+          additionalChargeVnd: payload.additionalChargeVnd,
+          deliveryTerms: payload.deliveryTerms,
+        };
         setRefresh((value) => value + 1);
+        throw new Error(t('stale'));
+      }
       throw new Error(t('loadFailed'));
     }
+  };
+  // A failed order action keeps the page and reports through a toast; a stale one also reloads.
+  const actionFailed = (error: unknown, fallback: string) => {
+    if (error instanceof QuotationApiError && error.code === 'STALE_VERSION') {
+      setRefresh((value) => value + 1);
+      notify.error(t('stale'));
+    } else notify.error(fallback);
   };
   const startProduction = async () => {
     try {
       await client.startProduction(rfqId, request.version);
       setRefresh((value) => value + 1);
       notify.success(t('productionStartedToast'));
-    } catch {
-      setState({ kind: 'error' });
+    } catch (error) {
+      actionFailed(error, t('startFailed'));
     }
   };
   const receive = async () => {
@@ -190,8 +234,8 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
       await client.confirmReceipt(rfqId, request.version);
       setRefresh((value) => value + 1);
       notify.success(t('receivedToast'));
-    } catch {
-      setState({ kind: 'error' });
+    } catch (error) {
+      actionFailed(error, t('actionFailed'));
     }
   };
   const closeDialog = () => {
@@ -210,8 +254,8 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
       await client.cancelOrder(rfqId, request.version, { reason: text });
       setRefresh((value) => value + 1);
       notify.success(t('cancelledToast'));
-    } catch {
-      setState({ kind: 'error' });
+    } catch (error) {
+      actionFailed(error, t('actionFailed'));
     }
   };
   return (
@@ -221,7 +265,7 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
         <div>
           <dt>{t('status')}</dt>
           <dd>
-            <Badge>{request.status}</Badge>
+            <Badge>{rfq(`status.${request.status}`)}</Badge>
           </dd>
         </div>
         <div>
@@ -243,18 +287,17 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
         <p role="status">{t('notice', { count: state.noticeCount })}</p>
       ) : null}
       {closed ? <p>{t('closed')}</p> : null}
-      <AllocationBoard
-        key={request.version}
-        rfqId={rfqId}
-        rfqCode={rfqId}
-        requestVersion={request.version}
-        quantity={request.quantity}
-        unit={request.unit}
-        biddingClosesAt={request.biddingClosesAt}
-        requiredBy={request.requiredBy}
-        contributions={contributions
-          .filter((offer) => offer.status === 'ACTIVE')
-          .map((offer) => ({
+      {bidding ? (
+        <AllocationBoard
+          key={request.version}
+          rfqId={rfqId}
+          rfqCode={rfqId}
+          requestVersion={request.version}
+          quantity={request.quantity}
+          unit={request.unit}
+          biddingClosesAt={request.biddingClosesAt}
+          requiredBy={request.requiredBy}
+          contributions={activeOffers.map((offer) => ({
             householdId: offer.householdId,
             name: offer.householdName,
             tint: 'var(--color-clay)',
@@ -263,13 +306,27 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
             completionDate: offer.completionDate,
             contributionVersion: offer.version,
           }))}
-        disabled={closed}
-        onSubmit={submit}
-      />
+          {...(draft
+            ? {
+                initialQuantities: activeOffers.map(
+                  (offer) => draft.quantities.get(offer.householdId) ?? 0,
+                ),
+                initialAdditionalCharge: draft.additionalChargeVnd,
+                initialDeliveryTerms: draft.deliveryTerms,
+                initialError: t('stale'),
+              }
+            : {})}
+          disabled={closed}
+          onSubmit={submit}
+        />
+      ) : null}
       {request.status === 'ACCEPTED' ? (
-        <Button className="self-start" onClick={() => setDialog('start')}>
-          {t('startProduction')}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setDialog('start')}>{t('startProduction')}</Button>
+          <Button variant="secondary" onClick={() => setDialog('cancel')}>
+            {t('cancelOrder')}
+          </Button>
+        </div>
       ) : null}
       {request.status === 'IN_PRODUCTION' ? (
         <div className="flex gap-2">

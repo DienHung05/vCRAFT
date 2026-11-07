@@ -32,6 +32,26 @@ describe('OpenAiLlmClient', () => {
     expect(sent.response_format.json_schema.strict).toBe(true);
   });
 
+  it('falls back to the in-scope default when the classification comes back empty or invalid (GH#233)', async () => {
+    const reply = (content: string | undefined) =>
+      new Response(
+        JSON.stringify({ choices: [{ message: { content } }], usage: { total_tokens: 200 } }),
+      );
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(reply(''))
+      .mockResolvedValueOnce(reply(undefined))
+      .mockResolvedValueOnce(reply('{"intent":'))
+      .mockResolvedValueOnce(reply('null'));
+    const client = new OpenAiLlmClient('key', 'model', fetchImpl);
+    for (let i = 0; i < 4; i++)
+      expect(await client.classify([])).toEqual({ intent: 'site_help', query: '', tokens: 200 });
+    // Room for hidden reasoning tokens as well as the JSON itself.
+    expect(JSON.parse(fetchImpl.mock.calls[0]?.[1].body).max_completion_tokens).toBeGreaterThan(
+      200,
+    );
+  });
+
   it('streams text deltas and the final usage', async () => {
     const fetchImpl = vi
       .fn()

@@ -505,7 +505,8 @@
       "cancel": "Hủy yêu cầu",
       "cancelFailed": "Không hủy được. Dữ liệu vừa thay đổi, hãy thử lại.",
       "reasonRequired": "Hãy ghi lý do.",
-      "stale": "Yêu cầu vừa được cập nhật. Dữ liệu đã được làm mới, hãy thử lại.",
+      "stale": "Dữ liệu vừa được cập nhật. Hãy thử lại.",
+      "closed": "Yêu cầu đã được chốt",
       "description": "Mô tả",
       "category": "Danh mục",
       "coordinated": "Nhờ Ban quản lý điều phối",
@@ -618,7 +619,10 @@
       "receiveTitle": "Xác nhận đã nhận hàng?",
       "receiveText": "Đơn được đánh dấu là đã giao. Không thể hoàn tác.",
       "back": "Quay lại",
-      "reasonRequired": "Hãy ghi lý do."
+      "reasonRequired": "Hãy ghi lý do.",
+      "stale": "Dữ liệu vừa được cập nhật. Hãy soát lại rồi thử lại.",
+      "startFailed": "Chưa thể bắt đầu sản xuất. Hãy chắc chắn mọi hộ đã xác nhận phần việc của mình rồi thử lại.",
+      "actionFailed": "Thao tác không thành công. Hãy thử lại."
     },
     "dashboard": {
       "title": "Tổng quan",

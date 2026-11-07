@@ -227,7 +227,7 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
       {request.coordinationOptIn ? (
         <ContributionForm
           key={contribution?.version ?? 'new'}
-          rfqCode={request.id}
+          rfqCode={request.title}
           quantity={request.quantity}
           unit={request.unit}
           biddingClosesAt={request.biddingClosesAt}
@@ -247,7 +247,7 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
       ) : (
         <DirectQuotationForm
           key={quotation ? `${quotation.id}:${quotation.version}:${quotation.status}` : 'new'}
-          rfqCode={request.id}
+          rfqCode={request.title}
           quantity={request.quantity}
           unit={request.unit}
           biddingClosesAt={request.biddingClosesAt}

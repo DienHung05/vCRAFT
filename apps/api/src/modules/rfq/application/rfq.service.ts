@@ -912,7 +912,10 @@ export class RfqService {
     });
   }
 
-  /** GH#11: đọc allocations của đơn đã chốt. Buyer chủ, admin điều phối, hoặc hộ có phần. */
+  /**
+   * GH#11: đọc allocations của đơn đã chốt. Buyer chủ, admin điều phối, hoặc hộ có phần.
+   * Empty (not 404) until a quotation is accepted, for anyone allowed to view the request.
+   */
   async listAllocations(actor: Actor, requestId: string): Promise<AllocationDto[]> {
     const em = this.orm.em.fork();
     const request = await this.request(em, requestId);
@@ -921,7 +924,6 @@ export class RfqService {
       { request, status: 'ACCEPTED' },
       { populate: ['request'] },
     );
-    if (!accepted) throw notFound();
     if (actor.role === 'ADMIN') this.coordinator(actor, request);
     else if (actor.role === 'BUYER' && request.buyer.id === actor.id) {
       // Buyer chủ đọc toàn bộ allocations.
@@ -929,6 +931,8 @@ export class RfqService {
       const household = await this.ownHousehold(em, actor, false);
       if (!request.invitedHouseholdIds.includes(household.id)) throw notFound();
     } else throw notFound();
+    // Before a quotation is accepted there is nothing to allocate yet: an empty list, not a 404.
+    if (!accepted) return [];
     const allocations = await em.find(
       OrderAllocationEntity,
       { quotation: accepted },

@@ -54,6 +54,9 @@ describe('weatherPlace', () => {
   it('reads the place after the question, or null for the default', () => {
     expect(weatherPlace('Thời tiết ở Hà Nội hôm nay')).toBe('ha noi');
     expect(weatherPlace('thời tiết hôm nay')).toBeNull();
+    // The default village is null so the reply prints BAT_TRANG.name, not the geocoder's spelling (GH#233).
+    expect(weatherPlace('Thời tiết Bát Tràng hôm nay?')).toBeNull();
+    expect(weatherPlace('weather in Bát Tràng today')).toBeNull();
     expect(weatherPlace('weather in Da Nang')).toBe('da nang');
   });
 });
