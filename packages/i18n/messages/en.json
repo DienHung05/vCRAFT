@@ -489,7 +489,8 @@
       "cancel": "Cancel request",
       "cancelFailed": "The request could not be cancelled. The data just changed, please try again.",
       "reasonRequired": "Please give a reason.",
-      "stale": "This request was just updated. The data has been refreshed, please try again.",
+      "stale": "The data was just updated. Please try again.",
+      "closed": "This request has already been accepted",
       "description": "Description",
       "category": "Category",
       "coordinated": "Village board coordinating",
@@ -596,7 +597,10 @@
       "receiveTitle": "Confirm that the goods were received?",
       "receiveText": "The order is marked as delivered. This cannot be undone.",
       "back": "Go back",
-      "reasonRequired": "Please give a reason."
+      "reasonRequired": "Please give a reason.",
+      "stale": "The data was just updated. Review it and try again.",
+      "startFailed": "Production could not be started. Make sure every household has confirmed its share, then try again.",
+      "actionFailed": "The action failed. Please try again."
     },
     "dashboard": {
       "title": "Overview",

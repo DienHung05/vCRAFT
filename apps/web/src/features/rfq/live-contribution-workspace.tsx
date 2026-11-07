@@ -169,7 +169,7 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
       </ConfirmDialog>
       <ContributionForm
         key={contribution?.version ?? 'new'}
-        rfqCode={request.id}
+        rfqCode={request.title}
         quantity={request.quantity}
         unit={request.unit}
         biddingClosesAt={request.biddingClosesAt}

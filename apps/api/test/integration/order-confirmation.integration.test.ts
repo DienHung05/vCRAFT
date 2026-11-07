@@ -211,6 +211,31 @@ describe('order confirmation, progress and receipt', () => {
     expect(strangerRead.status).not.toBe(200);
   });
 
+  it('returns no allocations before acceptance for viewers and still hides the request from strangers', async () => {
+    const { requestId } = await freshRequest();
+    for (const viewer of [buyer, admin, representative(0)]) {
+      const view = await t.request({
+        method: 'GET',
+        url: `/rfqs/${requestId}/allocations`,
+        auth: viewer.auth,
+      });
+      expect(view.status).toBe(200);
+      expect(view.body).toEqual([]);
+    }
+    const strangerView = await t.request({
+      method: 'GET',
+      url: `/rfqs/${requestId}/allocations`,
+      auth: stranger.auth,
+    });
+    expect(strangerView.status).toBe(404);
+    const unknown = await t.request({
+      method: 'GET',
+      url: '/rfqs/00000000-0000-4000-8000-000000000000/allocations',
+      auth: buyer.auth,
+    });
+    expect(unknown.status).toBe(404);
+  });
+
   it('requires every confirmation before production starts', async () => {
     const { requestId } = await acceptFlow();
     const rep0View = await t.request({
