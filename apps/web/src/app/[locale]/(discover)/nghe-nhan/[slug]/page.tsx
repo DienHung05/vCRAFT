@@ -21,6 +21,9 @@ import { MakerCredits } from '@/features/exhibition/maker-credits';
 import { VisitSection } from '@/features/exhibition/visit-section';
 import { Link, permanentRedirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/lib/locale';
+import { jsonLd, metaDescription, pageMetadata } from '@/lib/seo/page-metadata';
+import { localizedPath } from '@/lib/seo/sitemap-entries';
+import { siteOrigin } from '@/lib/site';
 
 // Hồ sơ lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
 export const dynamic = 'force-dynamic';
@@ -28,11 +31,16 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({
   params,
 }: PageProps<'/[locale]/nghe-nhan/[slug]'>): Promise<Metadata> {
+  const locale = await resolveLocale(params);
   const { slug } = await params;
   const result = await fetchHousehold(slug);
-  return result.status === 'ok'
-    ? { title: result.data.name, description: result.data.history.slice(0, 160) }
-    : {};
+  if (result.status !== 'ok') return {};
+  return pageMetadata({
+    locale,
+    href: { pathname: '/nghe-nhan/[slug]', params: { slug: result.data.slug } },
+    title: result.data.name,
+    description: metaDescription(result.data.history || result.data.name),
+  });
 }
 
 /**
@@ -84,8 +92,34 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
     number,
   ][];
 
+  // schema.org LocalBusiness for the household and its first workshop (GH#256).
+  const place = household.workshops[0];
+  const householdLd = jsonLd({
+    '@type': 'LocalBusiness',
+    name: household.name,
+    description: metaDescription(household.history || household.name, 300),
+    url: `${siteOrigin()}${localizedPath({ pathname: '/nghe-nhan/[slug]', params: { slug: household.slug } }, locale)}`,
+    ...(place && {
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: place.address,
+        addressLocality: 'Bát Tràng',
+        addressRegion: 'Hà Nội',
+        addressCountry: 'VN',
+      },
+      ...(place.lat !== null &&
+        place.lat !== undefined &&
+        place.lng !== null &&
+        place.lng !== undefined && {
+          geo: { '@type': 'GeoCoordinates', latitude: place.lat, longitude: place.lng },
+        }),
+    }),
+  });
+
   return (
     <article>
+      {/* biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD from our own data, `<` escaped. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: householdLd }} />
       {/* Hero toàn màn: ảnh xưởng + tên hộ Fraunces cực lớn. */}
       <header className="relative">
         <ImageSlot

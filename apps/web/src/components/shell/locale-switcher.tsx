@@ -18,8 +18,17 @@ export function LocaleSwitcher() {
       type="button"
       lang={next}
       onClick={() =>
-        // @ts-expect-error -- `params` luôn khớp `pathname` hiện tại, next-intl không suy được kiểu.
-        router.replace({ pathname, params }, { locale: next })
+        router.replace(
+          // Filters, sort and page survive the switch (GH#256); read at click time, so the header
+          // needs no Suspense boundary for `useSearchParams`.
+          // @ts-expect-error -- `params` luôn khớp `pathname` hiện tại, next-intl không suy được kiểu.
+          {
+            pathname,
+            params,
+            query: Object.fromEntries(new URLSearchParams(window.location.search)),
+          },
+          { locale: next },
+        )
       }
       className="rounded-chip px-3 py-1 text-small text-ash transition-colors hover:bg-ink/6 hover:text-ink"
       // Tên truy cập phải chứa chữ đang hiển thị (WCAG 2.5.3), nên bắt đầu bằng `switchTo`.
