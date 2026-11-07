@@ -11,8 +11,8 @@ export interface DeviceFacts {
 
 /**
  * The 3D vase runs only where it costs nothing that matters: motion allowed, no data saver, WebGL, at
- * least 4 cores and (where known) 4 GB of memory, and a tablet-or-wider screen. Phones keep the poster
- * photo, which is also the LCP image, so the mobile Lighthouse score is untouched.
+ * least 4 cores and (where known) 4 GB of memory, and a tablet-or-wider screen. Phones keep the hand-drawn
+ * vase, so three.js never loads there and the mobile Lighthouse score is untouched.
  */
 export function canRun3d(facts: DeviceFacts): boolean {
   return (
