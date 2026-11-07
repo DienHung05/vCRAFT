@@ -59,14 +59,18 @@ export class SupabaseVectorStore implements VectorStore {
 
   async search(
     embedding: readonly number[],
-    options: { locale?: 'vi' | 'en'; limit: number; minSimilarity?: number },
+    options: Parameters<VectorStore['search']>[1],
   ): Promise<KnowledgeMatch[]> {
-    const { data, error } = await this.client.rpc('match_knowledge', {
-      query_embedding: JSON.stringify(embedding),
-      match_count: options.limit,
-      filter_locale: options.locale ?? null,
-      min_similarity: options.minSimilarity ?? 0,
-    });
+    const { data, error } = await this.client.rpc(
+      options.sourceType ? 'match_knowledge_by_source' : 'match_knowledge',
+      {
+        query_embedding: JSON.stringify(embedding),
+        match_count: options.limit,
+        filter_locale: options.locale ?? null,
+        min_similarity: options.minSimilarity ?? 0,
+        ...(options.sourceType && { filter_source_type: options.sourceType }),
+      },
+    );
     if (error) throw new Error(`knowledge search failed: ${error.message}`);
     return ((data ?? []) as MatchRow[]).map((row) => ({
       sourceType: row.source_type,

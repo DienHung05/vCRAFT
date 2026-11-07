@@ -148,7 +148,9 @@
     },
     "day": {
       "title": "Một ngày ở Bát Tràng",
-      "lead": "Từ nhào đất tới ra lò là sáu chặng mà món gốm nào cũng đi qua. Ảnh chỉ minh hoạ chung cho từng chặng, không phải ảnh của một món cụ thể. Vuốt ngang để xem từng chặng."
+      "lead": "Từ nhào đất tới ra lò là sáu chặng mà món gốm nào cũng đi qua. Ảnh chỉ minh hoạ chung cho từng chặng, không phải ảnh của một món cụ thể. Vuốt ngang để xem từng chặng.",
+      "railLabel": "Các chặng trong ngày",
+      "current": "Chặng {index} trên {total}: {name}"
     },
     "artisans": {
       "title": "Những bàn tay giữ nghề",

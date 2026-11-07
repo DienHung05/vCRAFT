@@ -146,15 +146,20 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
           </h2>
           <p className="mt-3 max-w-prose-vn text-ash">{t('day.lead')}</p>
         </div>
-        {/* GH#95: on wide screens with motion allowed the strip becomes a pinned horizontal scroll story. */}
+        {/* GH#210: on wide screens with motion allowed the strip becomes a pinned story, one stage at a time. */}
         <DayStory
           labelledBy="day-title"
+          stageNames={DAY_STAGES.map(({ stage }) => stages(`${stage}.name`))}
           // No `scroll-smooth` here: with mandatory snap it makes Chrome report no LCP at all (NO_LCP in Lighthouse).
           className="mt-10 snap-x snap-mandatory overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glaze"
         >
-          <ol className="flex w-max gap-5 px-gutter pb-4">
+          <ol className="day-stages flex w-max gap-5 px-gutter pb-4">
             {DAY_STAGES.map(({ stage, tint }, i) => (
-              <li key={stage} className="w-[78vw] max-w-sm shrink-0 snap-start sm:w-80">
+              <li
+                key={stage}
+                data-day-stage={stage}
+                className="w-[78vw] max-w-sm shrink-0 snap-start sm:w-80"
+              >
                 <ImageSlot
                   alt={stages(`${stage}.name`)}
                   tint={tint}

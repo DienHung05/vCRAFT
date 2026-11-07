@@ -30,6 +30,7 @@ import {
   sanitizeInput,
 } from './guardrails';
 import { chatMessages, classifierPrompt } from './prompt';
+import { siteHelpQuery } from './site-help';
 import { getCurrentDatetime, getWeather, TOOL_TIMEOUT_MS, weatherFallback } from './tools';
 
 /** Runtime settings of the assistant, read from the environment by `AssistantModule`. */
@@ -208,7 +209,16 @@ export class AskAssistantService {
       const open = await this.tools.openWorkshops(new Date(), input.locale);
       if (open) toolResults.push(open);
     }
-    const context = intent === 'chitchat' ? [] : matches;
+    // Only expand after classification and blocked-intent checks. A guide question never bypasses guards.
+    const guideMatches =
+      intent === 'site_help'
+        ? await this.retrieve(
+            siteHelpQuery(message, input.pagePath, input.locale),
+            input.locale,
+            true,
+          )
+        : [];
+    const context = intent === 'chitchat' ? [] : guideMatches.length ? guideMatches : matches;
     const citations = [...context.map(citationOf), ...toolResults.flatMap((t) => t.citations)]
       .filter((c, i, all) => all.findIndex((o) => o.url === c.url) === i)
       .slice(0, 8);
@@ -272,17 +282,22 @@ export class AskAssistantService {
     await em.flush();
   }
 
-  private async retrieve(message: string, locale: 'vi' | 'en'): Promise<KnowledgeMatch[]> {
+  private async retrieve(
+    message: string,
+    locale: 'vi' | 'en',
+    guidesOnly = false,
+  ): Promise<KnowledgeMatch[]> {
     try {
       const work = (async () => {
         const [embedding] = await this.embedder.embed([message]);
-        return embedding
-          ? this.vectors.search(embedding, {
-              locale,
-              limit: RETRIEVAL_LIMIT,
-              minSimilarity: MIN_SIMILARITY,
-            })
-          : [];
+        if (!embedding) return [];
+        const found = await this.vectors.search(embedding, {
+          locale,
+          limit: RETRIEVAL_LIMIT,
+          minSimilarity: MIN_SIMILARITY,
+          ...(guidesOnly && { sourceType: 'FAQ' as const }),
+        });
+        return found;
       })();
       const timeout = new Promise<KnowledgeMatch[]>((resolve) =>
         setTimeout(() => resolve([]), TOOL_TIMEOUT_MS).unref(),

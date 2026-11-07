@@ -56,7 +56,12 @@ export interface VectorStore {
   deleteSource(sourceType: KnowledgeSource, sourceId: string): Promise<void>;
   search(
     embedding: readonly number[],
-    options: { locale?: 'vi' | 'en'; limit: number; minSimilarity?: number },
+    options: {
+      locale?: 'vi' | 'en';
+      sourceType?: KnowledgeSource;
+      limit: number;
+      minSimilarity?: number;
+    },
   ): Promise<KnowledgeMatch[]>;
 }
 

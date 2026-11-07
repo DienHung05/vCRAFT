@@ -94,6 +94,126 @@ html[data-fonts="ready"] {
 }
 
 /*
+ * "A day in Bát Tràng", one stage at a time (GH#210). `day-story.tsx` sets `data-day-story="stage"` on the
+ * scroller only on wide screens with motion allowed, and `data-day-state` (before / active / after) on each
+ * stage. The six stages then share one grid cell beside the progress rail; the stage in focus shows, the
+ * photo of the next one is revealed bottom-up by a clip-path with a slight settle, and its title and text rise
+ * in turn. Only transform, opacity and clip-path animate. Without the attribute the stages stay the strip.
+ */
+[data-day-story="stage"] {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  column-gap: 3rem;
+  align-items: center;
+  max-width: var(--container-editorial);
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+  overflow: visible;
+  scroll-snap-type: none;
+}
+/* Pinned, the whole section has to fit one screen below the sticky header. */
+section:has(> [data-day-story="stage"]) {
+  padding-block: 7rem 2rem;
+}
+[data-day-story="stage"] .day-stages {
+  display: grid;
+  width: auto;
+  padding: 0;
+}
+[data-day-story="stage"] [data-day-stage] {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 28rem);
+  grid-template-rows: 1fr auto auto 1fr;
+  column-gap: 3rem;
+  justify-content: start;
+  width: auto;
+  max-width: none;
+}
+[data-day-story="stage"] [data-day-stage] > :first-child {
+  grid-row: 1 / -1;
+  height: min(54vh, 32rem);
+  width: auto;
+  clip-path: inset(0 0 0 0 round var(--radius-card, 1rem));
+  transition:
+    clip-path var(--duration-slow) var(--ease-clay),
+    transform var(--duration-slow) var(--ease-clay);
+}
+[data-day-story="stage"] [data-day-stage] > h3 {
+  grid-column: 2;
+  grid-row: 2;
+  margin: 0;
+  font-size: var(--text-h2);
+  line-height: var(--text-h2--line-height);
+}
+[data-day-story="stage"] [data-day-stage] > p {
+  grid-column: 2;
+  grid-row: 3;
+  margin-top: 0.75rem;
+  font-size: var(--text-body, 1rem);
+}
+[data-day-story="stage"] [data-day-stage] > h3,
+[data-day-story="stage"] [data-day-stage] > p {
+  transition:
+    opacity var(--duration-slow) var(--ease-clay),
+    transform var(--duration-slow) var(--ease-clay);
+}
+[data-day-story="stage"] [data-day-stage] > p {
+  transition-delay: 90ms;
+}
+[data-day-story="stage"] [data-day-stage][data-day-state] {
+  transition: visibility 0s linear var(--duration-slow);
+}
+[data-day-story="stage"] [data-day-stage][data-day-state="active"] {
+  transition-delay: 0s;
+}
+[data-day-story="stage"] [data-day-stage][data-day-state="before"],
+[data-day-story="stage"] [data-day-stage][data-day-state="after"] {
+  visibility: hidden;
+  pointer-events: none;
+}
+[data-day-story="stage"] [data-day-stage][data-day-state="after"] > :first-child {
+  clip-path: inset(100% 0 0 0 round var(--radius-card, 1rem));
+  transform: scale(1.06);
+}
+[data-day-story="stage"] [data-day-stage][data-day-state="before"] > :first-child {
+  clip-path: inset(0 0 100% 0 round var(--radius-card, 1rem));
+  transform: scale(0.98);
+}
+[data-day-story="stage"] [data-day-stage][data-day-state="after"] > :is(h3, p) {
+  opacity: 0;
+  transform: translateY(1.5rem);
+}
+[data-day-story="stage"] [data-day-stage][data-day-state="before"] > :is(h3, p) {
+  opacity: 0;
+  transform: translateY(-1.5rem);
+}
+.day-rail-step {
+  display: flex;
+  width: 100%;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: var(--radius-input, 0.5rem);
+  padding-inline: 0.5rem;
+  text-align: left;
+  color: var(--color-ash);
+  transition: color var(--duration-quick) var(--ease-clay);
+}
+.day-rail-step:hover,
+.day-rail-step[data-day-state="before"] {
+  color: var(--color-ink);
+}
+.day-rail-step[aria-current="step"] {
+  color: var(--color-clay);
+  font-weight: 600;
+}
+.day-rail-step:focus-visible {
+  outline: 2px solid var(--color-glaze);
+  outline-offset: 2px;
+}
+
+/*
  * Light/dark switch (GH#214): the new theme spreads from the toggle as a wave. `theme-toggle.tsx` sets
  * `data-theme-transition` on <html> only for this switch, with the start point and the radius that reaches the
  * farthest corner in `--theme-wave-x/y/r`, so every other root transition keeps the cross-fade above. The old
