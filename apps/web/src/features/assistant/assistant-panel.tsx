@@ -1,19 +1,23 @@
 'use client';
 
 import {
+  ArrowLeft,
   Check,
   Copy,
+  History,
   RotateCcw,
   Send,
   Square,
   SquarePen,
   ThumbsDown,
   ThumbsUp,
+  Trash2,
   X,
 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { type ChatMessage, type PageKind, secondsLeft } from './conversation';
+import type { ArchivedConversation } from './conversation-archive';
 
 /** Internal markdown links (`[label](/vi/...)`) become anchors; everything else stays plain text. */
 function renderText(text: string): ReactNode[] {
@@ -44,7 +48,7 @@ function useNow(active: boolean): number {
 }
 
 const iconButton =
-  'inline-flex size-8 items-center justify-center rounded-input text-ink/60 transition-colors hover:bg-ink/6 hover:text-ink disabled:opacity-40';
+  'inline-flex size-8 shrink-0 items-center justify-center rounded-input text-ink/60 transition-colors hover:bg-ink/6 hover:text-ink disabled:opacity-40';
 
 function AnswerTools({
   message,
@@ -161,6 +165,10 @@ function Bubble({ message, now, tools }: { message: ChatMessage; now: number; to
 }
 
 export interface AssistantPanelProps {
+  archive: readonly ArchivedConversation[];
+  onHistory: () => void;
+  onRestore: (id: string) => void;
+  onDelete: (id: string) => void;
   messages: readonly ChatMessage[];
   busy: boolean;
   page: PageKind;
@@ -176,6 +184,10 @@ export interface AssistantPanelProps {
 
 /** The chat itself: header, messages, quick questions and the input (FR-AST-04, 05). */
 export function AssistantPanel({
+  archive,
+  onHistory,
+  onRestore,
+  onDelete,
   messages,
   busy,
   page,
@@ -188,6 +200,10 @@ export function AssistantPanel({
   mascot,
 }: AssistantPanelProps) {
   const t = useTranslations('assistant');
+  const locale = useLocale();
+  const [showHistory, setShowHistory] = useState(false);
+  const back = useRef<HTMLButtonElement>(null);
+  const historyButton = useRef<HTMLButtonElement>(null);
   const [draft, setDraft] = useState('');
   const list = useRef<HTMLOListElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -196,7 +212,11 @@ export function AssistantPanel({
   const now = useNow(waiting === true);
   const locked = waiting && secondsLeft(last?.retryAt, now) > 0;
 
-  useEffect(() => input.current?.focus(), []);
+  useEffect(() => {
+    if (showHistory) back.current?.focus();
+    else if (input.current?.disabled) historyButton.current?.focus();
+    else input.current?.focus();
+  }, [showHistory]);
   // Keep the newest text in view while it streams.
   const tail = `${messages.length}:${last?.text.length ?? 0}:${last?.status}`;
   useEffect(() => {
@@ -223,10 +243,33 @@ export function AssistantPanel({
       <div className="flex items-center gap-2 border-ink/8 border-b px-3 py-2">
         <div className="shrink-0">{mascot}</div>
         <div className="min-w-0 flex-1">
-          <p className="font-medium">{t('title')}</p>
+          <p className="truncate font-medium">{t('title')}</p>
           <p className="truncate text-small text-ink/60">{t('subtitle')}</p>
         </div>
-        <button type="button" className={iconButton} aria-label={t('newChat')} onClick={onReset}>
+        <button
+          type="button"
+          className={iconButton}
+          ref={historyButton}
+          aria-label={t('history')}
+          aria-pressed={showHistory}
+          onClick={() => {
+            onHistory();
+            setShowHistory(true);
+          }}
+        >
+          <History className="size-4" aria-hidden />
+        </button>
+        <button
+          type="button"
+          className={iconButton}
+          aria-label={t('newChat')}
+          onClick={() => {
+            onReset();
+            setDraft('');
+            setShowHistory(false);
+            input.current?.focus();
+          }}
+        >
           <SquarePen className="size-4" aria-hidden />
         </button>
         <button type="button" className={iconButton} aria-label={t('close')} onClick={onClose}>
@@ -234,89 +277,158 @@ export function AssistantPanel({
         </button>
       </div>
 
-      <ol
-        ref={list}
-        aria-live="polite"
-        aria-label={t('log')}
-        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-3 py-3"
-      >
-        {messages.length === 0 && (
-          <li className="mr-8 self-start rounded-card bg-surface px-3 py-2 ring-1 ring-ink/8">
-            {t('welcome')}
-          </li>
-        )}
-        {messages.map((m) => (
-          <Bubble
-            key={m.id}
-            message={m}
-            now={now}
-            tools={
-              m.role === 'assistant' && (
-                <AnswerTools
-                  message={m}
-                  canRetry={m === last && !busy}
-                  onRetry={onRetry}
-                  onRate={(rating) => onRate(m, rating)}
-                />
-              )
-            }
-          />
-        ))}
-      </ol>
-
-      {messages.length === 0 && (
-        <ul className="flex flex-wrap gap-2 px-3 pb-2" aria-label={t('quickLabel')}>
-          {chips.map((chip) => (
-            <li key={chip}>
-              <button
-                type="button"
-                className="rounded-chip px-3 py-1.5 text-small ring-1 ring-ink/15 transition-colors hover:bg-ink/6"
-                onClick={() => onSend(chip)}
-              >
-                {chip}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <form
-        className="flex items-end gap-2 border-ink/8 border-t px-3 py-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          submit();
-        }}
-      >
-        <label htmlFor="assistant-input" className="sr-only">
-          {t('inputLabel')}
-        </label>
-        <textarea
-          id="assistant-input"
-          ref={input}
-          rows={1}
-          maxLength={1000}
-          value={draft}
-          disabled={locked}
-          placeholder={t('placeholder')}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={onKeyDown}
-          className="max-h-32 min-h-10 min-w-0 flex-1 resize-none rounded-input bg-paper px-3 py-2 text-base ring-1 ring-ink/15 focus:outline-none focus:ring-2 focus:ring-clay"
-        />
-        {busy ? (
-          <button type="button" className={iconButton} aria-label={t('stop')} onClick={onStop}>
-            <Square className="size-4" aria-hidden />
-          </button>
-        ) : (
+      {showHistory ? (
+        <section aria-label={t('history')} className="flex min-h-0 flex-1 flex-col">
           <button
-            type="submit"
-            className={iconButton}
-            aria-label={t('send')}
-            disabled={!draft.trim() || locked}
+            ref={back}
+            type="button"
+            aria-label={t('backToChat')}
+            className="flex shrink-0 items-center gap-2 self-start rounded-input px-3 py-3 text-small hover:bg-ink/6"
+            onClick={() => setShowHistory(false)}
           >
-            <Send className="size-4" aria-hidden />
+            <ArrowLeft className="size-4" aria-hidden />
+            {t('backToChat')}
           </button>
-        )}
-      </form>
+          <h2 className="px-3 pb-2 font-sans text-base font-medium text-ink">{t('history')}</h2>
+          {archive.length === 0 ? (
+            <p role="status" className="px-3 py-3 text-small text-ink/60">
+              {t('historyEmpty')}
+            </p>
+          ) : (
+            <ul
+              aria-label={t('history')}
+              className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-3"
+            >
+              {archive.map((entry) => {
+                const question =
+                  entry.messages.find((message) => message.role === 'user')?.text ?? t('newChat');
+                const title = question.length > 80 ? `${question.slice(0, 80)}…` : question;
+                return (
+                  <li key={entry.id} className="flex items-center gap-2 border-ink/8 border-b py-1">
+                    <button
+                      type="button"
+                      aria-label={title}
+                      className="min-w-0 flex-1 rounded-input px-2 py-2 text-left hover:bg-ink/6"
+                      onClick={() => {
+                        onRestore(entry.id);
+                        setDraft('');
+                        setShowHistory(false);
+                      }}
+                    >
+                      <span className="block truncate text-small font-medium">{title}</span>
+                      <time
+                        dateTime={new Date(entry.savedAt).toISOString()}
+                        className="block text-small text-ink/60"
+                      >
+                        {new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
+                          entry.savedAt,
+                        )}
+                      </time>
+                    </button>
+                    <button
+                      type="button"
+                      className={iconButton}
+                      aria-label={t('deleteConversation')}
+                      onClick={() => {
+                        onDelete(entry.id);
+                        back.current?.focus();
+                      }}
+                    >
+                      <Trash2 className="size-4" aria-hidden />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      ) : (
+        <>
+          <ol
+            ref={list}
+            aria-live="polite"
+            aria-label={t('log')}
+            className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-3 py-3"
+          >
+            {messages.length === 0 && (
+              <li className="mr-8 self-start rounded-card bg-surface px-3 py-2 ring-1 ring-ink/8">
+                {t('welcome')}
+              </li>
+            )}
+            {messages.map((m) => (
+              <Bubble
+                key={m.id}
+                message={m}
+                now={now}
+                tools={
+                  m.role === 'assistant' && (
+                    <AnswerTools
+                      message={m}
+                      canRetry={m === last && !busy}
+                      onRetry={onRetry}
+                      onRate={(rating) => onRate(m, rating)}
+                    />
+                  )
+                }
+              />
+            ))}
+          </ol>
+
+          {messages.length === 0 && (
+            <ul className="flex flex-wrap gap-2 px-3 pb-2" aria-label={t('quickLabel')}>
+              {chips.map((chip) => (
+                <li key={chip}>
+                  <button
+                    type="button"
+                    className="rounded-chip px-3 py-1.5 text-small ring-1 ring-ink/15 transition-colors hover:bg-ink/6"
+                    onClick={() => onSend(chip)}
+                  >
+                    {chip}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <form
+            className="flex items-end gap-2 border-ink/8 border-t px-3 py-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              submit();
+            }}
+          >
+            <label htmlFor="assistant-input" className="sr-only">
+              {t('inputLabel')}
+            </label>
+            <textarea
+              id="assistant-input"
+              ref={input}
+              rows={1}
+              maxLength={1000}
+              value={draft}
+              disabled={locked}
+              placeholder={t('placeholder')}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={onKeyDown}
+              className="max-h-32 min-h-10 min-w-0 flex-1 resize-none rounded-input bg-paper px-3 py-2 text-base ring-1 ring-ink/15 focus:outline-none focus:ring-2 focus:ring-clay"
+            />
+            {busy ? (
+              <button type="button" className={iconButton} aria-label={t('stop')} onClick={onStop}>
+                <Square className="size-4" aria-hidden />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className={iconButton}
+                aria-label={t('send')}
+                disabled={!draft.trim() || locked}
+              >
+                <Send className="size-4" aria-hidden />
+              </button>
+            )}
+          </form>
+        </>
+      )}
     </div>
   );
 }
