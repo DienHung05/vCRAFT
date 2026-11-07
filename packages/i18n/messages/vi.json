@@ -1784,6 +1784,26 @@
       "qr": "Mã QR",
       "qrLead": "In mã này lên tem dán đáy sản phẩm. Mã không đổi khi đổi tên.",
       "qrDownload": "Tải PNG",
+      "qrDownloadSvg": "Tải SVG",
+      "scans": {
+        "title": "Lượt quét",
+        "lead": "Số lần khách quét mã QR của sản phẩm này. Chỉ ghi quốc gia và loại thiết bị, không ghi địa chỉ IP.",
+        "total": "Tổng lượt quét",
+        "last30Days": "30 ngày qua",
+        "chart": "Lượt quét mỗi ngày trong 30 ngày qua",
+        "countries": "Quốc gia (30 ngày)",
+        "devices": "Thiết bị (30 ngày)",
+        "unknown": "Không rõ",
+        "empty": "Chưa có lượt quét nào trong 30 ngày qua.",
+        "failed": "Chưa tải được số lượt quét.",
+        "device": {
+          "mobile": "Điện thoại",
+          "tablet": "Máy tính bảng",
+          "desktop": "Máy tính",
+          "bot": "Trình thu thập tự động",
+          "unknown": "Không rõ"
+        }
+      },
       "labels": {
         "oneSheet": "Tải nhãn QR để in (PDF)",
         "allPublished": "Nhãn QR cho {count, plural, other {# sản phẩm}} đang trưng bày (PDF)",

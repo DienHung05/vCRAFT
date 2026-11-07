@@ -1,7 +1,7 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { ApiError, type StudioClient } from '@vcraft/api-client';
-import type { HouseholdDto, JournalDto, ProductDto } from '@vcraft/contracts';
-import { describe, expect, it, vi } from 'vitest';
+import type { HouseholdDto, JournalDto, ProductDto, ProductScanStatsDto } from '@vcraft/contracts';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   exifFields,
   isOldPhoto,
@@ -21,9 +21,23 @@ vi.mock('@/i18n/navigation', () => ({
   usePathname: () => '/studio/san-pham',
   useRouter: () => ({ push }),
 }));
+vi.mock('@/features/traceability/trace-qr', () => ({
+  TraceQr: () => <div data-testid="qr" />,
+  QR_LOGO_URL: '/brand/icon-512.png',
+  QR_LOGO_OPTIONS: { margin: 4, hideBackgroundDots: true, imageSize: 0.3 },
+}));
+const qrDownload = vi.hoisted(() => vi.fn(async () => {}));
+const qrOptions = vi.hoisted(() => vi.fn());
+vi.mock('qr-code-styling', () => ({
+  default: class {
+    constructor(options: unknown) {
+      qrOptions(options);
+    }
+    download = qrDownload;
+  },
+}));
 const media = vi.hoisted(() => ({ prepareImage: vi.fn(), sendMedia: vi.fn() }));
 vi.mock('@/features/media/prepare-image', () => media);
-vi.mock('@/features/traceability/trace-qr', () => ({ TraceQr: () => <div data-testid="qr" /> }));
 
 const ID = '00000000-0000-4000-8000-00000000000';
 
@@ -93,6 +107,19 @@ const JOURNAL: JournalDto = {
   missingStages: [],
 };
 
+const SCAN_STATS: ProductScanStatsDto = {
+  total: 42,
+  last30Days: 7,
+  daily: Array.from({ length: 30 }, (_, i) => ({
+    date: `2026-11-${String(i + 1).padStart(2, '0')}`,
+    count: i === 29 ? 7 : 0,
+  })),
+  byCountry: [
+    { country: 'VN', count: 5 },
+    { country: null, count: 2 },
+  ],
+  byDeviceType: [{ deviceType: 'mobile', count: 7 }],
+};
 const READY_PHOTO = {
   id: `${ID}6`,
   status: 'READY',
@@ -119,6 +146,7 @@ function client(overrides: Partial<StudioClient> = {}): StudioClient {
   return {
     getHousehold: vi.fn(async () => HOUSEHOLD),
     getJournal: vi.fn(async () => JOURNAL),
+    getScanStats: vi.fn(async () => SCAN_STATS),
     getMedia: vi.fn(async () => READY_PHOTO),
     appendJournalEntry: vi.fn(async () => JOURNAL),
     deleteJournalEntry: vi.fn(async () => ({ ...JOURNAL, entries: [] })),
@@ -170,6 +198,11 @@ describe('biểu mẫu sản phẩm', () => {
 });
 
 describe('ProductEditor', () => {
+  beforeEach(() => {
+    qrDownload.mockClear();
+    qrOptions.mockClear();
+  });
+
   it('xuất bản bản nháp với phiên bản đang xem; sản phẩm đã rút thì xuất bản lại', async () => {
     const api = client();
     const first = renderVi(<ProductEditor productId={`${ID}1`} client={api} />);
@@ -244,6 +277,37 @@ describe('ProductEditor', () => {
     expect(vi.mocked(api.recordConsent).mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(api.addArtisan).mock.invocationCallOrder[0] ?? 0,
     );
+  });
+
+  it('downloads the QR as PNG or SVG with the centre logo and level H (FR-TRC-02)', async () => {
+    renderVi(<ProductEditor productId={`${ID}1`} client={client()} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Tải SVG' }));
+    await waitFor(() =>
+      expect(qrDownload).toHaveBeenCalledWith({ name: 'vcraft-qr-CODE0001', extension: 'svg' }),
+    );
+    expect(qrOptions).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        type: 'svg',
+        image: '/brand/icon-512.png',
+        imageOptions: expect.objectContaining({ hideBackgroundDots: true, imageSize: 0.3 }),
+        qrOptions: { errorCorrectionLevel: 'H' },
+      }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Tải PNG' }));
+    await waitFor(() =>
+      expect(qrDownload).toHaveBeenLastCalledWith({ name: 'vcraft-qr-CODE0001', extension: 'png' }),
+    );
+    expect(qrOptions).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'canvas' }));
+  });
+
+  it('shows the scan statistics of the product (FR-TRC-06)', async () => {
+    const api = client();
+    renderVi(<ProductEditor productId={`${ID}1`} client={api} />);
+    expect(await screen.findByTestId('scan-total')).toHaveProperty('textContent', '42');
+    expect(api.getScanStats).toHaveBeenCalledWith(`${ID}1`);
+    expect(screen.getByTestId('scan-last30').textContent).toBe('7');
+    expect(screen.getByText('Việt Nam')).toBeTruthy();
+    expect(screen.getByText('Điện thoại')).toBeTruthy();
   });
 
   it('sản phẩm của hộ khác không mở được', async () => {

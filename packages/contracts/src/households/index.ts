@@ -102,6 +102,37 @@ export const AdminDashboardSchema = z.object({
 });
 export type AdminDashboardDto = z.infer<typeof AdminDashboardSchema>;
 
+/** Device classes a QR scan is bucketed into (FR-TRC-06); derived from the User-Agent, which is never stored. */
+export const SCAN_DEVICE_TYPES = ['mobile', 'tablet', 'desktop', 'bot', 'unknown'] as const;
+export const ScanDeviceTypeSchema = z.enum(SCAN_DEVICE_TYPES);
+export type ScanDeviceTypeDto = z.infer<typeof ScanDeviceTypeSchema>;
+
+/**
+ * Optional body of `POST /trace/:code/scan` (FR-TRC-06): the scanner's country (ISO 3166-1 alpha-2) and
+ * device class. Never an IP address. Old clients send no body at all.
+ */
+export const RecordScanRequestSchema = z.object({
+  country: z
+    .string()
+    .regex(/^[A-Z]{2}$/)
+    .nullish(),
+  deviceType: ScanDeviceTypeSchema.nullish(),
+});
+export type RecordScanRequest = z.infer<typeof RecordScanRequestSchema>;
+
+/** Per-product scan statistics for the owning household (FR-TRC-06); the series is the last 30 days in Vietnam time. */
+export const ProductScanStatsSchema = z.object({
+  total: z.int().nonnegative(),
+  last30Days: z.int().nonnegative(),
+  daily: z.array(z.object({ date: IsoDateSchema, count: z.int().nonnegative() })),
+  /** Last 30 days; scans recorded before country tracking are counted under `null`. */
+  byCountry: z.array(z.object({ country: z.string().nullable(), count: z.int().positive() })),
+  byDeviceType: z.array(
+    z.object({ deviceType: ScanDeviceTypeSchema.nullable(), count: z.int().positive() }),
+  ),
+});
+export type ProductScanStatsDto = z.infer<typeof ProductScanStatsSchema>;
+
 const CURRENT_YEAR_LIMIT = 2100;
 const YearSchema = z.int().min(1000, 'Năm không hợp lệ').max(CURRENT_YEAR_LIMIT);
 

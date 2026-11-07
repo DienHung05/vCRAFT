@@ -12,7 +12,7 @@ const PUBLIC_WRITES = new Set([
   // Password endpoints verify Turnstile upstream and share Redis limits across API instances.
   'POST /api/v1/auth/sign-in',
   'POST /api/v1/auth/sign-up',
-  // A QR scan is counted anonymously (FR-ADM-06); it stores only the product and the time.
+  // A QR scan is counted anonymously (FR-ADM-06); it stores the product, the time and an optional country and device class (never an IP).
   'POST /api/v1/trace/:code/scan',
   // The Fox assistant answers guests (PLAN E15): rate limited per hashed IP, logged anonymously.
   'POST /api/v1/assistant/messages',
