@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import type { NextRequest, NextResponse } from 'next/server';
+import { readRememberPreference, withRememberPolicy } from './remember';
 import { supabaseConfig } from './supabase-config';
 
 type CookieToSet = {
@@ -30,9 +31,11 @@ export async function refreshSession(request: NextRequest): Promise<RefreshedSes
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll: (list, headers) => {
+          // Not remembered: the auth cookies become session cookies (see ./remember).
+          const remember = readRememberPreference(request.cookies.getAll());
           for (const cookie of list) {
             request.cookies.set(cookie.name, cookie.value);
-            pending.push(cookie);
+            pending.push({ ...cookie, options: withRememberPolicy(cookie.options, remember) });
           }
           noCache = headers ?? {};
         },
