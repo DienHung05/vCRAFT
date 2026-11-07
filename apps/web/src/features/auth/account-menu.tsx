@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { workspacePath } from '@/lib/auth/access';
+import { clearRememberPreference } from '@/lib/auth/remember';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { useAccount } from '@/lib/auth/use-account';
 
@@ -83,6 +84,7 @@ export function AccountMenu({
     setSigningOut(true);
     try {
       await browserSupabase()?.auth.signOut();
+      clearRememberPreference();
     } finally {
       // Tải lại toàn trang để Server Component bỏ phiên cũ.
       window.location.assign(`/${locale}`);
