@@ -10,6 +10,7 @@ import type {
 } from '@vcraft/contracts';
 import { publicCredit } from '@vcraft/contracts';
 import {
+  Household,
   MediaAsset,
   type MediaCredit,
   MediaLink,
@@ -17,6 +18,7 @@ import {
   type MediaLinkTarget,
   OutboxEvent,
   type Product,
+  QuotationRequest,
 } from '@vcraft/database';
 import { checkMediaUpload, type MediaPurpose } from '@vcraft/domain';
 import { LocalObjectStorage, type ObjectStorage, PRESIGN_TTL_SECONDS } from '@vcraft/storage';
@@ -67,6 +69,8 @@ export class MediaService {
     file: UploadedFile,
   ): Promise<MediaAssetResponse> {
     if (actor.locked) throw forbidden();
+    // A buyer has no profile or catalogue to illustrate: only request attachments (FR-RFQ-01).
+    if (actor.role === 'BUYER' && purpose !== 'RFQ_ATTACHMENT') throw forbidden();
     // Identity papers are only collected after the person consented to the privacy policy (NFR-SEC-07).
     if (purpose === 'CERTIFICATE') await this.consents.require(actor.id, 'ID_DOCUMENT');
     const sniffed = await fileTypeFromBuffer(file.bytes);
@@ -341,11 +345,28 @@ export class MediaService {
     return webp && this.storage.publicUrl(webp.key);
   }
 
-  /** Người tải lên hoặc Ban quản lý; người khác nhận 404 để không lộ sự tồn tại của tệp. */
+  /**
+   * Người tải lên hoặc Ban quản lý; người khác nhận 404 để không lộ sự tồn tại của tệp. Tệp đính kèm của một
+   * yêu cầu báo giá còn đọc được bởi đại diện các hộ được mời khi yêu cầu đã gửi đi (FR-RFQ-01).
+   */
   private async readable(actor: Actor, id: string): Promise<MediaAsset> {
-    const asset = await this.orm.em.fork().findOne(MediaAsset, id);
-    if (!asset || (asset.ownerId !== actor.id && actor.role !== 'ADMIN')) throw notFound();
-    return asset;
+    const em = this.orm.em.fork();
+    const asset = await em.findOne(MediaAsset, id);
+    if (!asset) throw notFound();
+    if (asset.ownerId === actor.id || actor.role === 'ADMIN') return asset;
+    if (asset.purpose === 'RFQ_ATTACHMENT' && actor.role === 'HOUSEHOLD') {
+      const link = await em.findOne(MediaLink, { media: asset, targetType: 'RFQ' });
+      const request = link ? await em.findOne(QuotationRequest, link.targetId) : null;
+      const household = request ? await em.findOne(Household, { representative: actor.id }) : null;
+      if (
+        request &&
+        household &&
+        request.status !== 'DRAFT' &&
+        request.invitedHouseholdIds.includes(household.id)
+      )
+        return asset;
+    }
+    throw notFound();
   }
 
   private toResponse(asset: MediaAsset): MediaAssetResponse {

@@ -1,7 +1,13 @@
 'use client';
 
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
-import type { ContributionDto, PriceHintDto, RfqResponse } from '@vcraft/contracts';
+import type {
+  ContributionDto,
+  CreateDirectQuotationRequest,
+  DirectQuotationDto,
+  PriceHintDto,
+  RfqResponse,
+} from '@vcraft/contracts';
 import { Button } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -11,12 +17,20 @@ import { FormSkeleton } from '@/components/states/skeletons';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { notify } from '@/lib/notify';
 import { ContributionForm, type ContributionFormValues } from './contribution-form';
+import { DirectQuotationForm } from './direct-quotation-form';
+import { RequestAttachments } from './rfq-attachments';
 
 type State =
   | { kind: 'loading' }
   | { kind: 'unauthenticated' }
   | { kind: 'error' }
-  | { kind: 'ready'; request: RfqResponse; contribution: ContributionDto | null };
+  | {
+      kind: 'ready';
+      request: RfqResponse;
+      contribution: ContributionDto | null;
+      /** The household's latest quotation; only read on a request without coordination. */
+      quotation: DirectQuotationDto | null;
+    };
 
 export function LiveContributionWorkspace({
   rfqId,
@@ -34,6 +48,8 @@ export function LiveContributionWorkspace({
 
 function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
   const t = useTranslations('contribution');
+  const summary = useTranslations('rfq.summary');
+  const detail = useTranslations('rfq.detail');
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [refresh, setRefresh] = useState(0);
   const [declineFailed, setDeclineFailed] = useState(false);
@@ -59,12 +75,19 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
     async function load() {
       const current = ++sequence;
       try {
-        const [request, offers] = await Promise.all([
-          client.getRequest(rfqId),
-          client.listOwnContributions(rfqId),
-        ]);
+        const request = await client.getRequest(rfqId);
+        // Without coordination the household quotes the whole request itself (FR-RFQ-04); with it,
+        // the household contributes and the board assembles the quotation.
+        const [offers, quotations] = request.coordinationOptIn
+          ? [await client.listOwnContributions(rfqId), []]
+          : [[], await client.listOwnDirectQuotations(rfqId)];
         if (active && current === sequence)
-          setState({ kind: 'ready', request, contribution: offers[0] ?? null });
+          setState({
+            kind: 'ready',
+            request,
+            contribution: offers[0] ?? null,
+            quotation: quotations[0] ?? null,
+          });
       } catch (error) {
         if (active && current === sequence)
           setState({
@@ -103,7 +126,7 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
         }}
       />
     );
-  const { request, contribution } = state;
+  const { request, contribution, quotation } = state;
   const closed =
     !['SENT', 'BIDDING'].includes(request.status) ||
     new Date(request.biddingClosesAt).getTime() <= Date.now();
@@ -112,6 +135,25 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
       if (contribution)
         await client.updateContribution(contribution.id, contribution.version, values);
       else await client.createContribution(rfqId, values);
+      setRefresh((value) => value + 1);
+    } catch {
+      throw new Error(t('sendFailed'));
+    }
+  };
+  const submitQuotation = async (values: CreateDirectQuotationRequest) => {
+    try {
+      if (quotation?.status === 'SUBMITTED')
+        await client.reviseDirectQuotation(quotation.id, quotation.version, values);
+      else await client.createDirectQuotation(rfqId, values);
+      setRefresh((value) => value + 1);
+    } catch {
+      throw new Error(t('sendFailed'));
+    }
+  };
+  const withdrawQuotation = async () => {
+    if (quotation?.status !== 'SUBMITTED') return;
+    try {
+      await client.withdrawDirectQuotation(quotation.id, quotation.version);
       setRefresh((value) => value + 1);
     } catch {
       throw new Error(t('sendFailed'));
@@ -140,9 +182,24 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
     <div className="flex flex-col gap-4">
       <h1 className="text-h2">{request.title}</h1>
       <p className="break-words whitespace-pre-wrap text-ash">{request.design}</p>
+      {request.customRequirements ? (
+        <div>
+          <h2 className="text-small font-semibold">{summary('customization')}</h2>
+          <p className="break-words whitespace-pre-wrap text-ash">{request.customRequirements}</p>
+        </div>
+      ) : null}
+      {request.attachments && request.attachments.length > 0 ? (
+        <div>
+          <h2 className="text-small font-semibold">{detail('attachments')}</h2>
+          <RequestAttachments attachments={request.attachments} client={client} />
+        </div>
+      ) : null}
       {closed ? <p>{t('closed')}</p> : null}
       {request.declinedByMe ? <p role="status">{t('declined')}</p> : null}
-      {!closed && !request.declinedByMe && contribution?.status !== 'ACTIVE' ? (
+      {!closed &&
+      !request.declinedByMe &&
+      contribution?.status !== 'ACTIVE' &&
+      quotation?.status !== 'SUBMITTED' ? (
         <Button
           type="button"
           variant="secondary"
@@ -167,25 +224,40 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
       >
         <p className="text-ash">{t('declineText')}</p>
       </ConfirmDialog>
-      <ContributionForm
-        key={contribution?.version ?? 'new'}
-        rfqCode={request.id}
-        quantity={request.quantity}
-        unit={request.unit}
-        biddingClosesAt={request.biddingClosesAt}
-        requiredBy={request.requiredBy}
-        priceHint={closed ? null : priceHint}
-        disabled={closed}
-        onSubmit={submit}
-        {...(contribution
-          ? {
-              initial: contribution,
-              version: contribution.version,
-              withdrawn: contribution.status === 'WITHDRAWN',
-            }
-          : {})}
-        {...(contribution?.status === 'ACTIVE' ? { onWithdraw: withdraw } : {})}
-      />
+      {request.coordinationOptIn ? (
+        <ContributionForm
+          key={contribution?.version ?? 'new'}
+          rfqCode={request.id}
+          quantity={request.quantity}
+          unit={request.unit}
+          biddingClosesAt={request.biddingClosesAt}
+          requiredBy={request.requiredBy}
+          priceHint={closed ? null : priceHint}
+          disabled={closed}
+          onSubmit={submit}
+          {...(contribution
+            ? {
+                initial: contribution,
+                version: contribution.version,
+                withdrawn: contribution.status === 'WITHDRAWN',
+              }
+            : {})}
+          {...(contribution?.status === 'ACTIVE' ? { onWithdraw: withdraw } : {})}
+        />
+      ) : (
+        <DirectQuotationForm
+          key={quotation ? `${quotation.id}:${quotation.version}:${quotation.status}` : 'new'}
+          rfqCode={request.id}
+          quantity={request.quantity}
+          unit={request.unit}
+          biddingClosesAt={request.biddingClosesAt}
+          requiredBy={request.requiredBy}
+          quotation={quotation}
+          disabled={closed}
+          onSubmit={submitQuotation}
+          onWithdraw={withdrawQuotation}
+        />
+      )}
     </div>
   );
 }

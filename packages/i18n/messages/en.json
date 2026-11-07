@@ -418,7 +418,10 @@
       "coveragePartial": "Partial · {percent}% ({count, number})",
       "accept": "Accept",
       "acceptBlocked": "Only a bid for the full {quantity} {unit} can be accepted.",
-      "emptyTitle": "No quotations yet"
+      "emptyTitle": "No quotations yet",
+      "direct": "Household quote",
+      "perUnit": "{price} per {unit}",
+      "note": "Household note: {note}"
     },
     "form": {
       "title": "New quote request",
@@ -440,6 +443,18 @@
       "households": "Choose households to invite",
       "householdsLoading": "Loading households…",
       "householdsFailed": "The households could not be loaded.",
+      "customRequirements": "Special requirements (optional)",
+      "customRequirementsHint": "For example: logo printing, separate packaging, glaze colour. Up to 1,000 characters.",
+      "attachments": "Attachments (optional)",
+      "attachmentsHint": "A logo or a drawing: up to 3 image or PDF files, 10 MB each. Only the invited households can see them.",
+      "attachmentsPick": "Add a file",
+      "attachmentsUploading": "Uploading…",
+      "attachmentsRemove": "Remove file {name}",
+      "attachmentsFull": "You have attached 3 files.",
+      "attachmentsErrorType": "Only JPEG, PNG, WebP, AVIF images or PDF files are accepted.",
+      "attachmentsErrorSize": "The file is too large, 10 MB at most.",
+      "attachmentsErrorUpload": "The file could not be uploaded. Please try again.",
+      "householdsMatch": "Leave empty and the system invites up to 10 households that work in the same category as the request.",
       "send": "Send request",
       "sending": "Sending…",
       "saving": "Saving draft…",
@@ -448,6 +463,7 @@
       "saveFailed": "The draft could not be saved to the server. Your text is still in this browser.",
       "sendFailed": "The request could not be sent. Please try again.",
       "emailNotVerified": "Please verify your email before sending the request.",
+      "noMatch": "No household works in this category yet. Choose specific households or ask the board to coordinate.",
       "signIn": "Sign in with a buyer account to create a request.",
       "problem": {
         "title": "Enter a title.",
@@ -458,10 +474,10 @@
         "destination": "Enter where to deliver.",
         "deadline": "The bidding deadline must be at least 24 hours after sending.",
         "requiredBy": "The delivery date must be after the bidding deadline.",
-        "budget": "The budget must be whole numbers, with the lower amount first.",
-        "households": "Choose at least one household, or ask the board to coordinate."
+        "budget": "The budget must be whole numbers, with the lower amount first."
       },
       "sentToast": "Quotation request sent. The households will receive an invitation to quote.",
+      "sentToastMatched": "Quotation request sent to {count, plural, one {# matching household} other {# matching households}}.",
       "consentRequired": "Agree to the privacy policy to send the request."
     },
     "list": {
@@ -497,7 +513,13 @@
       "cancelledToast": "Quotation request cancelled.",
       "receivedToast": "Receipt confirmed. Thank you.",
       "receiveTitle": "Confirm that you received the goods?",
-      "receiveText": "Once confirmed, the order is marked as delivered. This cannot be undone."
+      "receiveText": "Once confirmed, the order is marked as delivered. This cannot be undone.",
+      "attachments": "Attachments",
+      "attachmentName": "Attachment {n}",
+      "attachmentOpen": "Open",
+      "attachmentOpenFailed": "The file could not be opened.",
+      "attachmentKindPdf": "PDF",
+      "attachmentKindImage": "Image"
     }
   },
   "admin": {
@@ -1025,6 +1047,38 @@
     "withdrawText": "It will no longer be used to match quotations. You can send it again before the deadline.",
     "declineTitle": "Decline this invitation?",
     "declineText": "Your household will not take part in this request. You can still send a contribution before the deadline if you change your mind."
+  },
+  "directQuotation": {
+    "title": "Quotation for {code}",
+    "lead": "This request is not coordinated by the board. Your household quotes the whole {quantity} {unit}: your unit price and completion date.",
+    "unitPrice": "Unit price (VND)",
+    "total": "Total for {quantity} {unit}: {total}",
+    "completionDate": "Completion date",
+    "note": "Note for the buyer (optional)",
+    "dateWindow": "The completion date must be after the bidding deadline {closing} and no later than the delivery date {required}.",
+    "problem": {
+      "price": "The unit price must be a whole number, 1 or more.",
+      "dateMissing": "Choose a completion date.",
+      "dateBeforeClosing": "The completion date must be after the bidding deadline {date}.",
+      "dateAfterRequired": "The completion date cannot be later than the delivery date {date}."
+    },
+    "send": "Send quotation",
+    "update": "Update quotation",
+    "sending": "Sending…",
+    "withdraw": "Withdraw quotation",
+    "withdrawTitle": "Withdraw this quotation?",
+    "withdrawText": "The buyer will no longer see it. You can send a new one before the deadline.",
+    "cancel": "Back",
+    "sendFailed": "Sending failed. Please try again later.",
+    "sentToast": "Quotation sent to the buyer.",
+    "updatedToast": "Quotation updated.",
+    "withdrawnToast": "Quotation withdrawn.",
+    "visibleToBuyer": "The buyer sees your household name, unit price, total and completion date. Other households do not.",
+    "active": "Quotation waiting for the buyer: {price} per {unit}, total {total}.",
+    "withdrawn": "Quotation withdrawn. Send it again to take part again.",
+    "accepted": "The buyer accepted your quotation. Confirm your share under Orders.",
+    "rejected": "The buyer chose another household.",
+    "lapsed": "The quotation has expired."
   },
   "order": {
     "title": "Order",
@@ -1900,7 +1954,10 @@
       "declined": "Declined",
       "closed": "Closed",
       "emptyHint": "When a buyer or the Management Board invites your household to quote, the invitation shows up here.",
-      "emptyAction": "Complete the household profile"
+      "emptyAction": "Complete the household profile",
+      "directActive": "Quoted: {price} per {unit}, total {total}",
+      "directAccepted": "The buyer accepted the quotation",
+      "directRejected": "The buyer chose another household"
     },
     "allocations": {
       "title": "Orders",

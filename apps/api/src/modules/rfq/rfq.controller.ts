@@ -20,6 +20,8 @@ import {
   CreateContributionRequestSchema,
   type CreateCooperativeQuotationRequest,
   CreateCooperativeQuotationRequestSchema,
+  type CreateDirectQuotationRequest,
+  CreateDirectQuotationRequestSchema,
   type CreateRfqRequest,
   CreateRfqRequestSchema,
   formatVersionTag,
@@ -156,6 +158,25 @@ export class RfqController {
   @Roles('HOUSEHOLD', 'ADMIN')
   listContributions(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
     return this.rfqs.listContributions(actor, id);
+  }
+
+  /** FR-RFQ-04: an invited household quotes the whole request itself (requests without coordination). */
+  @Post(':id/direct-quotations')
+  @Roles('HOUSEHOLD')
+  createDirectQuotation(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @Body(new ZodValidationPipe(CreateDirectQuotationRequestSchema))
+    body: CreateDirectQuotationRequest,
+  ) {
+    return this.rfqs.createDirectQuotation(actor, id, body);
+  }
+
+  @Get(':id/direct-quotations')
+  @Header('Cache-Control', 'private, no-store')
+  @Roles('HOUSEHOLD')
+  listOwnDirectQuotations(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
+    return this.rfqs.listOwnDirectQuotations(actor, id);
   }
 
   @Post(':id/quotations')
@@ -320,6 +341,34 @@ export class ContributionsController {
   @Roles('HOUSEHOLD', 'ADMIN')
   history(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
     return this.rfqs.contributionHistory(actor, id);
+  }
+}
+
+@Controller('direct-quotations')
+export class DirectQuotationsController {
+  constructor(private readonly rfqs: RfqService) {}
+
+  @Put(':id')
+  @Roles('HOUSEHOLD')
+  revise(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+    @Body(new ZodValidationPipe(CreateDirectQuotationRequestSchema))
+    body: CreateDirectQuotationRequest,
+  ) {
+    return this.rfqs.reviseDirectQuotation(actor, id, version, body);
+  }
+
+  @Post(':id/withdraw')
+  @HttpCode(200)
+  @Roles('HOUSEHOLD')
+  withdraw(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+  ) {
+    return this.rfqs.withdrawDirectQuotation(actor, id, version);
   }
 }
 

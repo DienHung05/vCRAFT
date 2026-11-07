@@ -21,10 +21,13 @@ const isFileTooLarge = (error: unknown) =>
 export class MediaController {
   constructor(private readonly media: MediaService) {}
 
-  /** Multipart, trường `file`. Trả 202: ảnh công khai còn chờ worker chuyển đổi. */
+  /**
+   * Multipart, trường `file`. Trả 202: ảnh công khai còn chờ worker chuyển đổi. Người mua chỉ tải được tệp
+   * đính kèm yêu cầu báo giá (FR-RFQ-01); `MediaService.upload` chặn các mục đích khác.
+   */
   @Post()
   @HttpCode(202)
-  @Roles('HOUSEHOLD', 'ADMIN')
+  @Roles('HOUSEHOLD', 'ADMIN', 'BUYER')
   async upload(
     @CurrentActor() actor: Actor,
     @Query(new ZodValidationPipe(UploadMediaQuerySchema)) query: UploadMediaQuery,
@@ -48,14 +51,14 @@ export class MediaController {
 
   @Get(':id')
   @Header('Cache-Control', 'private, no-store')
-  @Roles('HOUSEHOLD', 'ADMIN')
+  @Roles('HOUSEHOLD', 'ADMIN', 'BUYER')
   get(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
     return this.media.get(actor, id);
   }
 
   @Get(':id/read-url')
   @Header('Cache-Control', 'private, no-store')
-  @Roles('HOUSEHOLD', 'ADMIN')
+  @Roles('HOUSEHOLD', 'ADMIN', 'BUYER')
   readUrl(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
     return this.media.readUrl(actor, id);
   }

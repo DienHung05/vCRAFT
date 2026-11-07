@@ -11,6 +11,7 @@ import {
   FieldCipher,
   Household,
   JournalEntry,
+  MediaLink,
   Notification,
   NotificationPreference,
   OrderAllocation,
@@ -54,6 +55,16 @@ export class DataExportService {
       { buyer: user },
       { orderBy: { createdAt: 'asc', id: 'asc' } },
     );
+    const links = requests.length
+      ? await em.find(
+          MediaLink,
+          { targetType: 'RFQ', targetId: { $in: requests.map((request) => request.id) } },
+          { populate: ['media'], orderBy: { position: 'asc' } },
+        )
+      : [];
+    const attachments = new Map<string, string[]>();
+    for (const link of links)
+      attachments.set(link.targetId, [...(attachments.get(link.targetId) ?? []), link.media.id]);
     const quotations = requests.length
       ? await em.find(CooperativeQuotation, { request: { $in: requests } })
       : [];
@@ -81,6 +92,8 @@ export class DataExportService {
         quantity: request.quantity,
         unit: request.unit,
         destination: request.destination,
+        customRequirements: request.customRequirements ?? null,
+        attachmentIds: attachments.get(request.id) ?? [],
         budgetMinVnd: request.budgetMinVnd ?? null,
         budgetMaxVnd: request.budgetMaxVnd ?? null,
         requiredBy: iso(request.requiredBy),
@@ -112,6 +125,27 @@ export class DataExportService {
               createdAt: iso(offer.createdAt),
             }),
           )
+        : [],
+      directQuotations: household
+        ? (
+            await em.find(
+              CooperativeQuotation,
+              { bidType: 'INDIVIDUAL' },
+              { populate: ['request'], orderBy: { createdAt: 'asc' } },
+            )
+          )
+            .filter((quotation) => quotation.parts[0]?.householdId === household.id)
+            .map((quotation) => ({
+              id: quotation.id,
+              requestId: quotation.request.id,
+              status: quotation.status,
+              quantity: quotation.quantity,
+              unitPriceVnd: quotation.parts[0]?.unitPriceVnd ?? null,
+              totalVnd: quotation.totalVnd,
+              completionDate: quotation.parts[0]?.completionDate ?? null,
+              note: quotation.note ?? null,
+              createdAt: iso(quotation.createdAt),
+            }))
         : [],
       allocations: household
         ? (await em.find(OrderAllocation, { household }, { orderBy: { createdAt: 'asc' } })).map(

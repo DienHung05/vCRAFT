@@ -22,7 +22,7 @@ export interface DemoPhoto {
 
 export interface DemoPhotoLink {
   photo: string;
-  target: MediaLinkTarget;
+  target: Exclude<MediaLinkTarget, 'RFQ'>;
   /** `traceCode` (sản phẩm), `slug` (hộ) hoặc khóa tin trong `NEWS` của pools.ts. */
   key: string;
   role: MediaLinkRole;

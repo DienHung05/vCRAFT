@@ -85,7 +85,7 @@ _Avoid_: Public news, social feed
 
 
 **Quotation request / Yêu cầu báo giá**:
-A buyer's private request for an offer to supply a specified quantity of work. The buyer sends it to selected households, asks the village administration to coordinate a response, or does both.
+A buyer's private request for an offer to supply a specified quantity of work. The buyer sends it to selected households, asks the village administration to coordinate a response, or does both. With neither, the system invites up to ten households that work in the request's category.
 _Avoid_: Order, public tender
 
 **Quotation / Báo giá**:
@@ -94,8 +94,11 @@ _Avoid_: Quotation request, order
 
 **Cooperative quotation / Báo giá hợp tác**:
 A quotation the assigned village administrator assembles from several households' contributions, presented to the buyer as one complete offer.
-_Avoid_: Separate orders, household quotation
+_Avoid_: Separate orders, direct quotation
 
+**Direct quotation / Báo giá trực tiếp**:
+A quotation one invited household sends the buyer for the whole quantity, with its own unit price and completion date, on a request nobody coordinates. The buyer compares the households' direct quotations and accepts one.
+_Avoid_: Contribution offer, cooperative quotation
 
 **Contribution offer / Đề xuất tham gia**:
 A household's private offer to the village administration stating the maximum quantity, unit price, and completion date it proposes for one quotation request. It is an input to a cooperative quotation and does not reserve capacity across requests.

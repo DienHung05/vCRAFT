@@ -1,6 +1,6 @@
 # Private contributions and cooperative quotations
 
-A contribution offer belongs to one quotation request. It declares the household's maximum quantity, VND unit price and completion date. It does not reserve capacity on other requests. The buyer receives complete quotations, with participant quantities and dates but without household unit prices.
+A contribution offer belongs to one quotation request. It declares the household's maximum quantity, VND unit price and completion date. It does not reserve capacity on other requests. The buyer receives complete quotations, with participant quantities and dates but without household unit prices. A household that quotes alone on a request without coordination (see "Direct household quotation") shows the buyer its own unit price.
 
 All endpoints below use `/api/v1` and require the authenticated user's bearer token. Business data goes through the API. Supabase supplies authentication only.
 
@@ -12,6 +12,14 @@ All endpoints below use `/api/v1` and require the authenticated user's bearer to
 4. The assigned administrator may invite additional approved households with `POST /rfqs/:id/invitations`, an `If-Match` header and `{ "householdIds": [...] }`.
 
 Coordination consent permits administrative coordination. It does not invite every household. Representatives can access only requests addressed to their household. Requests return their version through the response body and `ETag` header.
+
+### Custom requirements and attachments
+
+`CreateRfqRequestSchema` also takes `customRequirements` (text, at most 1,000 characters, for example logo printing) and `attachments` (at most three media IDs, for example a logo or a drawing). Attachments are the buyer's own uploads made with `POST /media?purpose=RFQ_ATTACHMENT`: images or PDFs in the private bucket, linked to the request as `media_link` rows of target `RFQ`. A buyer may upload that purpose only. The buyer, the administrators and, once the request is sent, the invited households can read an attachment through `GET /media/:id/read-url`; nobody else can.
+
+### Matching households
+
+A request sent with no invited household and no coordination request is matched at `POST /rfqs/:id/submit` (BR-05). The category is then required. The system invites up to ten households that are APPROVED, whose representative is not locked and that work in the request's category: they declared capacity for it, or sell a published product in it. A declared capacity of zero opts a household out. The best fit comes first: declared capacity, then published products in the category. The model has no rating, response-rate or "accepting orders" data, so BR-05's score reduces to these two. The response lists the matched households in `invitedHouseholdIds`, and the buyer sees "Đã gửi tới N hộ phù hợp". When no household matches, the submit fails with `RFQ_NO_MATCHING_HOUSEHOLD` and the request stays a draft.
 
 ## Contributions
 
@@ -28,6 +36,18 @@ Invited representatives use `POST /rfqs/:id/contributions` with:
 The completion date must follow the quotation deadline and be no later than required delivery. Quantities are positive whole numbers, at most 2,147,483,647. Unit prices are positive whole VND amounts.
 
 `GET /rfqs/:id/contributions` returns the representative's own offer or all offers for the assigned coordinator. Buyers cannot read this endpoint. Representatives update their offer through `PUT /contributions/:id` or withdraw it through `POST /contributions/:id/withdraw`, with its current `If-Match` version. `GET /contributions/:id/history` retains previous versions for the representative and coordinator.
+
+## Direct household quotation
+
+On a request without coordination nobody assembles a quotation, so an invited household quotes the whole quantity itself (FR-RFQ-04). It reuses the quotation entity with `bidType` `INDIVIDUAL`: one part for that household, no additional charge, delivery terms `SEPARATE`.
+
+- `POST /rfqs/:id/direct-quotations` with `{ "unitPriceVnd": 30000, "completionDate": "...", "note": "..." }` submits it. The first one moves the request from SENT to BIDDING. A household has at most one active quotation per request (BR-L3): a second one answers `RFQ_BID_ALREADY_EXISTS`.
+- `PUT /direct-quotations/:id` revises it in place (BR-L4: only while the request is open) and `POST /direct-quotations/:id/withdraw` withdraws it; both take `If-Match` with the quotation version. After a withdrawal the household may submit a new one.
+- `GET /rfqs/:id/direct-quotations` returns the household's own quotations, newest first; `GET /me/invitations` carries the latest as `directQuotation`.
+
+A household that was not invited gets 404. A coordinated request answers `RFQ_DIRECT_QUOTATION_NOT_ALLOWED`: its households send contributions instead. The completion window is the one of contributions.
+
+The buyer reads these quotations in `GET /rfqs/:id/quotations` next to any other, with the household name, unit price, total, completion date and note, and accepts one with `POST /rfqs/:id/accept`. The others become REJECTED. Acceptance creates one PROPOSED allocation for the household, which confirms it, starts production by itself (T4, one-household order), reports progress and waits for the buyer's receipt like any one-part order. Because nobody coordinates such a request, a decline of the allocation notifies every active administrator, and any administrator may cancel the accepted order (T7). The buyer is notified of a new, revised or withdrawn quotation with the existing `QUOTATION_RECEIVED` and `QUOTATION_WITHDRAWN` notices.
 
 ## Manual quotation
 
@@ -48,7 +68,7 @@ With an existing authenticated Supabase browser session, the UUID request ID sel
 - `/vi/admin/dieu-phoi` lists requests that opted into coordination, with one claim per request.
 - `/vi/admin/dieu-phoi/:requestId` lets the assigned coordinator compose the manual quotation, or claim an unassigned request that opted into coordination.
 - `/vi/studio/bao-gia` lists a household's invitations, and `/vi/studio/don-hang` its shares of accepted orders, with confirm, decline and progress reports.
-- `/vi/studio/de-xuat-tham-gia/:requestId` lets an invited representative create, revise, withdraw or reactivate their contribution.
+- `/vi/studio/de-xuat-tham-gia/:requestId` lets an invited representative create, revise, withdraw or reactivate their contribution, or, on a request without coordination, send, revise or withdraw a quotation ("Gửi báo giá").
 - `/vi/yeu-cau-bao-gia` lists the buyer's requests, and `/vi/yeu-cau-bao-gia/moi` creates one. Drafts save automatically through `PUT /rfqs/:id`.
 - `/vi/yeu-cau-bao-gia/:requestId` shows the owning buyer the complete quotations without internal household rates, with accept, cancel and confirm receipt.
 

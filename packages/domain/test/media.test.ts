@@ -98,3 +98,19 @@ describe('mốc biến thể ảnh', () => {
     expect(planVariantWidths(200)).toEqual([200]);
   });
 });
+
+describe('request attachments', () => {
+  it('are private and accept an image or a PDF without conversion', () => {
+    expect(visibilityOf('RFQ_ATTACHMENT')).toBe('PRIVATE');
+    const result = checkMediaUpload({
+      purpose: 'RFQ_ATTACHMENT',
+      declaredMime: 'application/pdf',
+      sniffedMime: 'application/pdf',
+      sizeBytes: 200_000,
+    });
+    expect(result).toEqual({
+      ok: true,
+      value: { mime: 'application/pdf', visibility: 'PRIVATE', convert: false },
+    });
+  });
+});

@@ -1351,6 +1351,23 @@
           "enumItems": [],
           "mappedType": "uuid"
         },
+        "note": {
+          "name": "note",
+          "type": "varchar(500)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 500,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
         "parts": {
           "name": "parts",
           "type": "jsonb",
@@ -5270,6 +5287,23 @@
           "collation": null,
           "enumItems": [],
           "mappedType": "datetime"
+        },
+        "custom_requirements": {
+          "name": "custom_requirements",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "text"
         },
         "declined_household_ids": {
           "name": "declined_household_ids",

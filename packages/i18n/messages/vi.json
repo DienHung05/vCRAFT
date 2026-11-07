@@ -418,7 +418,10 @@
       "coveragePartial": "Một phần · {percent}% ({count, number})",
       "accept": "Chốt",
       "acceptBlocked": "Chỉ chốt được chào giá đủ {quantity} {unit}.",
-      "emptyTitle": "Chưa có chào giá nào"
+      "emptyTitle": "Chưa có chào giá nào",
+      "direct": "Hộ báo giá riêng",
+      "perUnit": "{price} một {unit}",
+      "note": "Ghi chú của hộ: {note}"
     },
     "form": {
       "title": "Yêu cầu báo giá mới",
@@ -440,6 +443,18 @@
       "households": "Chọn hộ được mời",
       "householdsLoading": "Đang tải danh sách hộ…",
       "householdsFailed": "Không tải được danh sách hộ.",
+      "customRequirements": "Yêu cầu riêng (không bắt buộc)",
+      "customRequirementsHint": "Ví dụ: in logo, đóng gói riêng, màu men. Tối đa 1.000 ký tự.",
+      "attachments": "Tệp đính kèm (không bắt buộc)",
+      "attachmentsHint": "Logo hoặc bản vẽ: tối đa 3 tệp ảnh hoặc PDF, mỗi tệp không quá 10 MB. Chỉ các hộ được mời xem được.",
+      "attachmentsPick": "Thêm tệp",
+      "attachmentsUploading": "Đang tải lên…",
+      "attachmentsRemove": "Bỏ tệp {name}",
+      "attachmentsFull": "Đã đủ 3 tệp.",
+      "attachmentsErrorType": "Chỉ nhận ảnh JPEG, PNG, WebP, AVIF hoặc PDF.",
+      "attachmentsErrorSize": "Tệp quá lớn, tối đa 10 MB.",
+      "attachmentsErrorUpload": "Không tải được tệp. Vui lòng thử lại.",
+      "householdsMatch": "Để trống, hệ thống sẽ tự mời tối đa 10 hộ đang làm cùng danh mục với yêu cầu.",
       "send": "Gửi yêu cầu",
       "sending": "Đang gửi…",
       "saving": "Đang lưu nháp…",
@@ -448,6 +463,7 @@
       "saveFailed": "Chưa lưu được nháp lên máy chủ. Nội dung vẫn còn trên trình duyệt này.",
       "sendFailed": "Không gửi được yêu cầu. Vui lòng thử lại.",
       "emailNotVerified": "Hãy xác minh email trước khi gửi yêu cầu.",
+      "noMatch": "Chưa có hộ nào làm danh mục này để mời. Hãy chọn hộ cụ thể hoặc nhờ Ban quản lý điều phối.",
       "signIn": "Đăng nhập bằng tài khoản người mua để tạo yêu cầu.",
       "problem": {
         "title": "Hãy nhập tiêu đề.",
@@ -458,10 +474,10 @@
         "destination": "Hãy nhập nơi giao hàng.",
         "deadline": "Hạn chào giá phải sau thời điểm gửi ít nhất 24 giờ.",
         "requiredBy": "Ngày cần hàng phải sau hạn chào giá.",
-        "budget": "Ngân sách phải là số nguyên, và mức từ không lớn hơn mức đến.",
-        "households": "Chọn ít nhất một hộ, hoặc nhờ Ban quản lý điều phối."
+        "budget": "Ngân sách phải là số nguyên, và mức từ không lớn hơn mức đến."
       },
       "sentToast": "Đã gửi yêu cầu báo giá. Các hộ sẽ nhận được lời mời chào giá.",
+      "sentToastMatched": "Đã gửi yêu cầu báo giá tới {count, plural, other {# hộ phù hợp}}.",
       "consentRequired": "Hãy đồng ý với chính sách quyền riêng tư để gửi yêu cầu."
     },
     "list": {
@@ -497,7 +513,13 @@
       "cancelledToast": "Đã hủy yêu cầu báo giá.",
       "receivedToast": "Đã xác nhận nhận hàng. Cảm ơn bạn.",
       "receiveTitle": "Xác nhận đã nhận hàng?",
-      "receiveText": "Khi xác nhận, đơn được đánh dấu là đã giao và không thể hoàn tác."
+      "receiveText": "Khi xác nhận, đơn được đánh dấu là đã giao và không thể hoàn tác.",
+      "attachments": "Tệp đính kèm",
+      "attachmentName": "Tệp đính kèm {n}",
+      "attachmentOpen": "Mở",
+      "attachmentOpenFailed": "Không mở được tệp.",
+      "attachmentKindPdf": "PDF",
+      "attachmentKindImage": "Ảnh"
     }
   },
   "admin": {
@@ -1025,6 +1047,38 @@
     "withdrawText": "Đề xuất sẽ không còn được dùng để ghép chào giá. Bạn vẫn gửi lại được trước hạn.",
     "declineTitle": "Từ chối lời mời này?",
     "declineText": "Hộ sẽ không tham gia yêu cầu này. Bạn vẫn có thể gửi đề xuất trước hạn nếu đổi ý."
+  },
+  "directQuotation": {
+    "title": "Báo giá cho {code}",
+    "lead": "Yêu cầu này không qua Ban quản lý điều phối. Hộ báo giá trọn {quantity} {unit}: đơn giá và ngày hoàn thành của hộ.",
+    "unitPrice": "Đơn giá (VND)",
+    "total": "Tổng cho {quantity} {unit}: {total}",
+    "completionDate": "Ngày hoàn thành",
+    "note": "Ghi chú cho bên mua (không bắt buộc)",
+    "dateWindow": "Ngày hoàn thành phải sau hạn chào giá {closing} và không muộn hơn hạn giao {required}.",
+    "problem": {
+      "price": "Đơn giá phải là số nguyên từ 1 trở lên.",
+      "dateMissing": "Chọn ngày hoàn thành.",
+      "dateBeforeClosing": "Ngày hoàn thành phải sau hạn chào giá {date}.",
+      "dateAfterRequired": "Ngày hoàn thành không được muộn hơn hạn giao {date}."
+    },
+    "send": "Gửi báo giá",
+    "update": "Cập nhật báo giá",
+    "sending": "Đang gửi…",
+    "withdraw": "Rút báo giá",
+    "withdrawTitle": "Rút báo giá này?",
+    "withdrawText": "Bên mua sẽ không còn thấy báo giá này. Bạn vẫn gửi lại được trước hạn.",
+    "cancel": "Quay lại",
+    "sendFailed": "Gửi không thành công. Bạn thử lại sau.",
+    "sentToast": "Đã gửi báo giá cho bên mua.",
+    "updatedToast": "Đã cập nhật báo giá.",
+    "withdrawnToast": "Đã rút báo giá.",
+    "visibleToBuyer": "Bên mua thấy tên hộ, đơn giá, tổng tiền và ngày hoàn thành của báo giá này. Các hộ khác không thấy.",
+    "active": "Báo giá đang chờ bên mua: {price} một {unit}, tổng {total}.",
+    "withdrawn": "Báo giá đã rút. Gửi lại để tham gia lại.",
+    "accepted": "Bên mua đã chốt báo giá của hộ. Xác nhận phần việc trong mục Đơn hàng.",
+    "rejected": "Bên mua đã chọn hộ khác.",
+    "lapsed": "Báo giá đã hết hiệu lực."
   },
   "order": {
     "title": "Đơn hàng",
@@ -1900,7 +1954,10 @@
       "declined": "Đã từ chối",
       "closed": "Đã đóng",
       "emptyHint": "Khi người mua hoặc Ban quản lý mời hộ báo giá, lời mời sẽ hiện ở đây.",
-      "emptyAction": "Hoàn thiện hồ sơ hộ"
+      "emptyAction": "Hoàn thiện hồ sơ hộ",
+      "directActive": "Đã báo giá: {price} một {unit}, tổng {total}",
+      "directAccepted": "Bên mua đã chốt báo giá của hộ",
+      "directRejected": "Bên mua đã chọn hộ khác"
     },
     "allocations": {
       "title": "Đơn hàng",

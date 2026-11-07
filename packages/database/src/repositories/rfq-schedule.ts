@@ -7,6 +7,7 @@ import {
 } from '@vcraft/domain';
 import { AppUser } from '../entities/app-user.entity.js';
 import { ContributionOffer } from '../entities/contribution-offer.entity.js';
+import { CooperativeQuotation } from '../entities/cooperative-quotation.entity.js';
 import { Household } from '../entities/household.entity.js';
 import { OutboxEvent } from '../entities/outbox-event.entity.js';
 import { QuotationNotice } from '../entities/quotation-notice.entity.js';
@@ -154,7 +155,12 @@ export async function flagRequestsNeedingCoordination(
           { request, status: 'ACTIVE' },
           { fields: ['maxQuantity'] },
         );
-        shortfall = offers.reduce((sum, offer) => sum + offer.maxQuantity, 0) < request.quantity;
+        // A submitted quotation always covers the whole quantity, so it settles the shortfall by itself
+        // (a household quoting alone has no contribution offers).
+        const quoted = await em.count(CooperativeQuotation, { request, status: 'SUBMITTED' });
+        shortfall =
+          quoted === 0 &&
+          offers.reduce((sum, offer) => sum + offer.maxQuantity, 0) < request.quantity;
       }
       if (!unclaimed && !shortfall) return false;
       request.coordinationFlaggedAt = now;

@@ -142,3 +142,52 @@ export function projectBuyerQuotation(quotation: CooperativeQuotation) {
     deliveryTerms: quotation.deliveryTerms,
   };
 }
+
+/** What a household states when it quotes the whole request itself (FR-RFQ-04), without coordination. */
+export interface DirectQuotationDraft {
+  readonly requiredQuantity: number;
+  readonly biddingClosesAt: Date;
+  readonly requiredBy: Date;
+  readonly householdId: string;
+  readonly unitPriceVnd: number;
+  readonly completionDate: Date;
+}
+
+/**
+ * One household's complete quotation: the whole quantity at its unit price, due on its completion date.
+ * It has a single part and no additional charge; delivery is arranged separately because the household
+ * does not state delivery terms. `contributionVersion` is 0 as no contribution offer stands behind it.
+ */
+export function assembleDirectQuotation(
+  draft: DirectQuotationDraft,
+): Result<CooperativeQuotation, DomainError<QuotationErrorCode>> {
+  const fail = (code: QuotationErrorCode) => err(new DomainError(code, code));
+  if (
+    !isWhole(draft.requiredQuantity, 1) ||
+    !isWhole(draft.unitPriceVnd, 1) ||
+    !(draft.requiredBy.getTime() > draft.biddingClosesAt.getTime())
+  ) {
+    return fail('QUOTATION_INPUT_INVALID');
+  }
+  if (!isCompletionDateValid(draft.completionDate, draft.biddingClosesAt, draft.requiredBy)) {
+    return fail('COMPLETION_DATE_INVALID');
+  }
+  const totalVnd = draft.requiredQuantity * draft.unitPriceVnd;
+  if (!isWhole(totalVnd, 0)) return fail('QUOTATION_INPUT_INVALID');
+  return ok({
+    quantity: draft.requiredQuantity,
+    parts: [
+      {
+        householdId: draft.householdId,
+        quantity: draft.requiredQuantity,
+        unitPriceVnd: draft.unitPriceVnd,
+        completionDate: new Date(draft.completionDate),
+        contributionVersion: 0,
+      },
+    ],
+    productionTotalVnd: totalVnd,
+    additionalChargeVnd: 0,
+    totalVnd,
+    deliveryTerms: 'SEPARATE',
+  });
+}

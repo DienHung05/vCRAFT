@@ -28,6 +28,7 @@ import { notify } from '@/lib/notify';
 import { useMoney } from '@/lib/use-money';
 import { BidRow, CountUpMoney } from './bid-motion';
 import { DeadlineCountdown } from './deadline-countdown';
+import { RequestAttachments } from './rfq-attachments';
 import { buyerEvents, rfqStepperModel } from './rfq-flow';
 import { RfqForm } from './rfq-form';
 
@@ -303,7 +304,24 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
                 <span className="break-words whitespace-pre-wrap">{request.design}</span>
               </Item>
               <Item label={rfq('summary.deliverTo')}>{request.destination}</Item>
+              {request.customRequirements ? (
+                <Item label={rfq('summary.customization')}>
+                  <span className="break-words whitespace-pre-wrap">
+                    {request.customRequirements}
+                  </span>
+                </Item>
+              ) : null}
+              {request.attachments && request.attachments.length > 0 ? (
+                <Item label={t('attachments')}>
+                  <RequestAttachments attachments={request.attachments} client={client} />
+                </Item>
+              ) : null}
             </dl>
+            {request.invitedHouseholdIds.length > 0 ? (
+              <p className="text-small text-ash md:col-span-2">
+                {rfq('summary.invited', { count: request.invitedHouseholdIds.length })}
+              </p>
+            ) : null}
             {request.coordinationOptIn ? (
               <p className="text-small text-ash md:col-span-2">{t('coordinated')}</p>
             ) : null}
@@ -343,6 +361,9 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge>{bids(`status.${quotation.status}`)}</Badge>
+                          {quotation.bidType === 'INDIVIDUAL' ? (
+                            <Badge tone="outline">{bids('direct')}</Badge>
+                          ) : null}
                           {best ? <Badge tone="clay">{t('best')}</Badge> : null}
                           {stamped ? (
                             <SealStamp size={40} title={t('acceptedToast')} className="ml-auto" />
@@ -355,6 +376,14 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
                               <span>
                                 {format.number(part.quantity)} {request.unit}
                               </span>
+                              {part.unitPriceVnd !== undefined ? (
+                                <span>
+                                  {bids('perUnit', {
+                                    price: money(part.unitPriceVnd),
+                                    unit: request.unit,
+                                  })}
+                                </span>
+                              ) : null}
                               <time dateTime={part.completionDate} className="text-ash">
                                 {format.dateTime(new Date(part.completionDate), 'short')}
                               </time>
@@ -379,6 +408,11 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
                             <CountUpMoney vnd={quotation.totalVnd} format={money} />
                           </dd>
                         </dl>
+                        {quotation.note ? (
+                          <p className="break-words whitespace-pre-wrap text-small">
+                            {bids('note', { note: quotation.note })}
+                          </p>
+                        ) : null}
                         <p className="text-small text-ash">
                           {live(
                             quotation.deliveryTerms === 'INCLUDED'
