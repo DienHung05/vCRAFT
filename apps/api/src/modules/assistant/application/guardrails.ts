@@ -146,7 +146,8 @@ export class GuardrailPipeline {
 // Markdown images (never shown), raw HTML tags, and markdown links whose target is not allowed.
 const IMAGE = /!\[[^\]]*\]\([^)]*\)/g;
 const HTML_TAG = /<\/?[a-zA-Z][^>]*>/g;
-const LINK = /\[([^\]]+)\]\(([^)\s]+)\)/g;
+// Whitespace inside the parentheses is tolerated: models often write `[text]( /path )`.
+const LINK = /\[([^\]]+)\]\(\s*([^)\s]+)\s*\)/g;
 const BARE_URL = /\bhttps?:\/\/[^\s)]+/g;
 
 /** Cleans one stretch of model output: no images or HTML, only allowed links, PII masked. */

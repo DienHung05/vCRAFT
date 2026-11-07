@@ -24,6 +24,7 @@ const RULES: [AssistantIntent, RegExp][] = [
   // Ordering questions go to site help (the quote request page) even when they name a product.
   ['site_help', /\b(dat|order|bulk|bao gia|quote|so luong)\b/],
   ['catalog', /\b(binh|bat|dia|am chen|lo hoa|coc|vase|bowl|gift|qua tang)\b/],
+  ['off_topic', /\b(tong thong|president|gia vang|gold price|nau pho)\b/],
   ['out_of_scope', /\b(co phieu|stock|bitcoin|benh|thuoc|medicine|lawyer|luat su)\b/],
 ];
 
@@ -35,6 +36,8 @@ const ANSWERS: Record<'vi' | 'en', Partial<Record<AssistantIntent, string>> & { 
       catalog: 'Bạn xem các mẫu trong [danh mục sản phẩm](/vi/san-pham) nhé.',
       open_workshops: 'Bạn xem giờ mở cửa của từng xưởng trên [bản đồ làng](/vi/ban-do).',
       chitchat: 'Tớ là Cáo, trợ lý của vCraft. Tớ mê gốm men lam lắm!',
+      off_topic:
+        'Chuyện này tớ không tra được ngay. Bạn ghé [danh mục sản phẩm](/vi/san-pham) xem gốm Bát Tràng nhé.',
       default:
         'Bạn có thể bắt đầu từ [Gửi yêu cầu báo giá](/vi/yeu-cau-bao-gia/moi) hoặc [danh mục sản phẩm](/vi/san-pham).',
     },
@@ -44,6 +47,8 @@ const ANSWERS: Record<'vi' | 'en', Partial<Record<AssistantIntent, string>> & { 
       catalog: 'Have a look at the [product catalogue](/en/products).',
       open_workshops: 'Opening hours for each workshop are on the [village map](/en/map).',
       chitchat: "I'm Fox, vCraft's assistant. I love blue-glaze pottery!",
+      off_topic:
+        "I can't look that up right now. Come and see Bát Tràng pottery in the [product catalogue](/en/products).",
       default:
         'You can start from [Send a quote request](/en/quotes/new) or the [product catalogue](/en/products).',
     },

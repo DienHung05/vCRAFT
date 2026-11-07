@@ -172,6 +172,29 @@ describe('AssistantPanel', () => {
     ).toBe('polite');
   });
 
+  it('renders a link written with spaces inside the parentheses, and still refuses external ones (GH#233)', () => {
+    renderVi(
+      <AssistantPanel
+        {...panel({
+          messages: [
+            {
+              id: 'a',
+              role: 'assistant',
+              status: 'done',
+              messageId: '00000000-0000-7000-8000-000000000001',
+              text: 'Xem [trang sản phẩm]( /vi/san-pham/chen-tong ) nhé, đừng bấm [lạ]( //evil.test ) hay [xấu]( https://evil.test )',
+            },
+          ],
+        })}
+      />,
+    );
+    expect(screen.getByRole('link', { name: 'trang sản phẩm' }).getAttribute('href')).toBe(
+      '/vi/san-pham/chen-tong',
+    );
+    expect(screen.queryByRole('link', { name: 'lạ' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'xấu' })).toBeNull();
+  });
+
   it('takes thumbs up once, and offers retry after an error', () => {
     const done: ChatMessage = {
       id: 'a',

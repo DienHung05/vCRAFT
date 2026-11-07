@@ -7,6 +7,7 @@ import {
 } from './llm-client';
 
 const ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+const CLASSIFY_MAX_TOKENS = 800;
 
 /**
  * OpenAI Chat Completions over HTTPS with no SDK (ADR-19, `OPENAI_CHAT_MODEL`). Classification uses a
@@ -35,7 +36,8 @@ export class OpenAiLlmClient implements LlmClient {
     const res = await this.post(
       {
         messages,
-        max_completion_tokens: 200,
+        // Reasoning models spend part of the budget on hidden reasoning; 200 left some of them with no content.
+        max_completion_tokens: CLASSIFY_MAX_TOKENS,
         response_format: {
           type: 'json_schema',
           json_schema: {
@@ -60,7 +62,15 @@ export class OpenAiLlmClient implements LlmClient {
       choices: { message: { content: string } }[];
       usage?: { total_tokens?: number };
     };
-    const parsed = JSON.parse(body.choices[0]?.message.content ?? '{}') as Partial<Classification>;
+    // Empty or invalid content (a reasoning model out of budget) must not fail the turn: classify as the safe
+    // in-scope default so the answer call still runs. Output guardrails apply to that answer as usual.
+    let parsed: Partial<Classification> = {};
+    try {
+      parsed = (JSON.parse(body.choices[0]?.message.content || '{}') ??
+        {}) as Partial<Classification>;
+    } catch {
+      parsed = {};
+    }
     const intent = ASSISTANT_INTENTS.includes(parsed.intent as never)
       ? (parsed.intent as Classification['intent'])
       : 'site_help';

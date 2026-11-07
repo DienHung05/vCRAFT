@@ -126,6 +126,7 @@ function fakeOrm(): MikroORM {
 const tools = {
   searchCatalog: async () => null,
   openWorkshops: async () => null,
+  pageContext: async () => null,
 } as unknown as CatalogToolsService;
 
 const config: AssistantConfig = {

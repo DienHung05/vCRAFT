@@ -152,6 +152,14 @@ describe('cleanOutput', () => {
     expect(cleanOutput('[x](javascript:alert(1))', origins)).not.toContain('javascript');
   });
 
+  it('applies the link allowlist to links written with spaces inside the parentheses (GH#233)', () => {
+    expect(cleanOutput('[x]( //evil.example )', origins)).toBe('x');
+    expect(cleanOutput('[x](  https://evil.test/p  )', origins)).toBe('x');
+    expect(cleanOutput('[sản phẩm]( /vi/san-pham/binh ) nhé', origins)).toBe(
+      '[sản phẩm](/vi/san-pham/binh) nhé',
+    );
+  });
+
   it('masks phone numbers, e-mail addresses and ID numbers', () => {
     expect(cleanOutput('Gọi 0912 345 678 hoặc a@b.vn, CCCD 001203004005', [])).toBe(
       'Gọi [phone] hoặc [email], CCCD [cccd]',
