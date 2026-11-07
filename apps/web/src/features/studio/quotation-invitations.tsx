@@ -112,7 +112,11 @@ function Invitations({ client }: { client: QuotationClient }) {
                   {isOpen(row) ? <DeadlineCountdown until={row.request.biddingClosesAt} /> : null}
                 </p>
                 <p className="flex flex-wrap items-center gap-2 text-small">
-                  <Badge tone={row.contribution?.status === 'ACTIVE' ? 'clay' : 'outline'}>
+                  {/* The offer summary is a sentence; it wraps on a phone instead of widening the page. */}
+                  <Badge
+                    tone={row.contribution?.status === 'ACTIVE' ? 'clay' : 'outline'}
+                    className="whitespace-normal"
+                  >
                     {offerLabel(row)}
                   </Badge>
                   {isOpen(row) ? null : <Badge tone="outline">{t('closed')}</Badge>}

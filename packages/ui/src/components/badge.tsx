@@ -12,7 +12,8 @@ export const badgeVariants = cva(
     variants: {
       tone: {
         neutral: 'bg-ink/6 text-ink',
-        clay: 'bg-clay/12 text-clay',
+        // Clay ink, not plain clay: plain clay on clay/12 is 4.3:1, under the 4.5:1 AA floor (GH#257).
+        clay: 'bg-clay/12 text-clay-ink',
         glaze: 'bg-glaze/10 text-glaze',
         celadon: 'bg-celadon/15 text-ink',
         lacquer: 'bg-lacquer/14 text-ink',
