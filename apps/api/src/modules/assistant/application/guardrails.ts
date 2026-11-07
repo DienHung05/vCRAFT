@@ -56,20 +56,40 @@ export function sanitizeInput(raw: string): { message: string; suspicion: number
   return { message, suspicion: Math.min(1, suspicion) };
 }
 
-/** Per IP and per conversation: 10 messages a minute, 60 a day (Redis counters). */
+/**
+ * Reads an optional limit from the environment: a positive integer turns it on, anything else (unset,
+ * empty, 0, negative, not a number) leaves it off. Returns 0 for "off".
+ */
+export function positiveInt(raw: string | undefined): number {
+  const value = Number(raw?.trim());
+  return Number.isInteger(value) && value > 0 ? value : 0;
+}
+
+/**
+ * Optional rate limit per IP and per conversation (Redis counters). Off by default: a window with no
+ * limit (undefined or 0) is never counted, and with neither window set the guard touches no counters.
+ * Set `ASSISTANT_RATE_LIMIT_PER_MINUTE` and/or `ASSISTANT_RATE_LIMIT_PER_DAY` to turn it on.
+ */
 export class RateLimiter implements Guard {
   constructor(
     private readonly kv: KeyValueStore,
-    private readonly perMinute = 10,
-    private readonly perDay = 60,
+    private readonly perMinute = 0,
+    private readonly perDay = 0,
   ) {}
 
+  /** Whether at least one window has a limit; when false `check` always passes. */
+  get enabled(): boolean {
+    return this.perMinute > 0 || this.perDay > 0;
+  }
+
   async check(ctx: GuardContext): Promise<GuardResult> {
+    if (!this.enabled) return { ok: true };
     for (const subject of [`ip:${ctx.ipHash}`, `conv:${ctx.conversationId}`]) {
       for (const [window, limit, ttl] of [
         ['m', this.perMinute, 60],
         ['d', this.perDay, 86_400],
       ] as const) {
+        if (limit <= 0) continue;
         const key = `assistant:rl:${window}:${subject}`;
         if ((await this.kv.increment(key, ttl)) > limit)
           return { ok: false, reason: 'RATE_LIMITED', retryAfter: await this.kv.ttl(key) };
@@ -79,25 +99,34 @@ export class RateLimiter implements Guard {
   }
 }
 
-/** Daily token ceiling across all visitors: a circuit breaker, after which "the Fox is asleep". */
+/**
+ * Optional daily token ceiling across all visitors: a circuit breaker, after which "the Fox is asleep".
+ * Off by default (`dailyTokens` of 0): nothing is blocked and no usage is recorded. Set
+ * `ASSISTANT_DAILY_TOKENS` to a positive integer to turn it on.
+ */
 export class BudgetGuard implements Guard {
   constructor(
     private readonly kv: KeyValueStore,
-    private readonly dailyTokens: number,
+    private readonly dailyTokens = 0,
     private readonly today: () => string = () => new Date().toISOString().slice(0, 10),
   ) {}
+
+  get enabled(): boolean {
+    return this.dailyTokens > 0;
+  }
 
   private key() {
     return `assistant:budget:${this.today()}`;
   }
 
   async check(): Promise<GuardResult> {
+    if (!this.enabled) return { ok: true };
     const used = Number((await this.kv.get(this.key())) ?? 0);
     return used >= this.dailyTokens ? { ok: false, reason: 'BUDGET_EXHAUSTED' } : { ok: true };
   }
 
   async record(tokens: number): Promise<void> {
-    if (tokens > 0) await this.kv.increment(this.key(), 2 * 86_400, tokens);
+    if (this.enabled && tokens > 0) await this.kv.increment(this.key(), 2 * 86_400, tokens);
   }
 }
 

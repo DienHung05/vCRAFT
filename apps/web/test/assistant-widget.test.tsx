@@ -38,15 +38,15 @@ describe('conversation helpers', () => {
     ...over,
   });
 
-  it('sends only finished turns as history, at most ten', () => {
+  it('sends only finished turns as history, at most twenty', () => {
     const list = [
-      ...Array.from({ length: 12 }, (_, i) => msg({ role: 'user', text: `q${i}` })),
+      ...Array.from({ length: 22 }, (_, i) => msg({ role: 'user', text: `q${i}` })),
       msg({ status: 'blocked', text: '' }),
       msg({ status: 'error', text: 'half' }),
     ];
     const history = historyOf(list);
-    expect(history).toHaveLength(10);
-    expect(history.at(-1)).toEqual({ role: 'user', content: 'q11' });
+    expect(history).toHaveLength(20);
+    expect(history.at(-1)).toEqual({ role: 'user', content: 'q21' });
   });
 
   it('restores a stored conversation and marks a cut-off answer as stopped', () => {
