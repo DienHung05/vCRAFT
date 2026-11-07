@@ -89,6 +89,15 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
       'h6-altar': 'pp-a2sbgf7h',
       'h8-white-plate': 'pp-e8uzvyg4',
       'h12-wine-jar': 'pp-bu4ymz85',
+      // GH#197: Commons photos of Bát Tràng for the stories GH#181 left without a cover.
+      'village-cooperative': 'news-dong-hang',
+      'village-trace': 'news-got-bat',
+      'village-kiln-safety': 'news-trong-lo',
+      'village-spring-fair': 'news-dinh-tet',
+      'h0-open-kiln': 'news-khach-tham',
+      'h2-logo-cup': 'news-coc-in-hinh',
+      'h2-batch-code': 'news-lo-binh-moc',
+      'h5-teaset': 'news-am-chen',
     });
     // Only photos credited to Commons, museum open access or Pixabay under CC0/PD/CC BY(-SA) are used.
     for (const photo of covers.values()) {

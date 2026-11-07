@@ -3057,6 +3057,347 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
     },
     widths: [1280],
   },
+  {
+    id: 'bia-minh-hai-lam',
+    alt: 'Gian hàng chất đầy hũ có nắp và bình gốm men lam trắng vẽ rồng, mây',
+    credit: {
+      title: 'File:Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 64.jpg',
+      author: 'Donald Trung',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:Ceramics_shop_in_B%C3%A1t_Tr%C3%A0ng,_Hanoi_(1_March_2018)_64.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-thanh-tung',
+    alt: 'Những chiếc bình cao vẽ hoa lá vàng trên nền men trắng rạn, xếp trước cửa một cửa hàng',
+    credit: {
+      title: 'File:Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 34.jpg',
+      author: 'Donald Trung',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:Ceramics_shop_in_B%C3%A1t_Tr%C3%A0ng,_Hanoi_(1_March_2018)_34.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-bich-hop',
+    alt: 'Kệ thấp bày ấm trà, chén và lọ gốm nâu sẫm xếp thành hàng',
+    credit: {
+      title: 'File:Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 82.jpg',
+      author: 'Donald Trung',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:Ceramics_shop_in_B%C3%A1t_Tr%C3%A0ng,_Hanoi_(1_March_2018)_82.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-hai-yen',
+    alt: 'Tượng các cụ già bằng gốm men, đèn dầu sứ men lam và hai chiếc liễn lớn có nắp đồng',
+    credit: {
+      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2650.JPG',
+      author: '松岡明芳 (Akiyoshi Matsuoka)',
+      license: 'CC BY-SA 3.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2650.JPG',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-quang-vinh',
+    alt: 'Phòng trưng bày gốm có chiếc bàn tròn bày bình, đĩa vẽ rồng và ấm chén, xung quanh là tủ kính',
+    credit: {
+      title: 'File:Bát Tràng DSC 0091.JPG',
+      author: 'Greenknight dv',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:B%C3%A1t_Tr%C3%A0ng_DSC_0091.JPG',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-thu-hang',
+    alt: 'Trong xưởng, thợ đặt những chiếc bát mộc trắng lên các bàn xoay có cần gạt để tạo dáng',
+    credit: {
+      title: 'File:Bat-Trang-Ceramic-Village12.jpg',
+      author: 'Steven C. Price',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bat-Trang-Ceramic-Village12.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-dai-phong',
+    alt: 'Chậu cây, đèn và tượng nhỏ bằng đất nung bày kín khoảng sân trước một cửa hàng',
+    credit: {
+      title: 'File:Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 40.jpg',
+      author: 'Donald Trung',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:Ceramics_shop_in_B%C3%A1t_Tr%C3%A0ng,_Hanoi_(1_March_2018)_40.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-van-khanh',
+    alt: 'Thợ ngồi trên nền xưởng xếp hàng loạt bát, chén mộc giữa những khối khuôn thạch cao',
+    credit: {
+      title: 'File:Bat-Trang-Ceramic-Village9.jpg',
+      author: 'Steven C. Price',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bat-Trang-Ceramic-Village9.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-mai-anh',
+    alt: 'Giá sắt nhiều tầng bày kín chén, bát và ấm trà men lam vẽ tay',
+    credit: {
+      title: 'File:Bát Tràng DSC 0096.JPG',
+      author: 'Greenknight dv',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:B%C3%A1t_Tr%C3%A0ng_DSC_0096.JPG',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-tan-loc',
+    alt: 'Những chiếc chum, vại lớn bọc bao tải xếp dọc bức tường cạnh cổng một ngôi nhà',
+    credit: {
+      title: 'File:Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 08.jpg',
+      author: 'Donald Trung',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:Ceramics_shop_in_B%C3%A1t_Tr%C3%A0ng,_Hanoi_(1_March_2018)_08.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-ngoc-diep',
+    alt: 'Những chum gốm men nâu, trên nắp đắp tượng cóc ngậm tiền và các con giáp men xanh',
+    credit: {
+      title: 'File:Frog with cash coins statuette, Bát Tràng (2018) 01.jpg',
+      author: 'Donald Trung',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:Frog_with_cash_coins_statuette,_B%C3%A1t_Tr%C3%A0ng_(2018)_01.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-phuc-an',
+    alt: 'Ba chiếc bình và liễn lớn đắp nổi rồng phượng, bày sau ô kính của một cửa hàng',
+    credit: {
+      title: 'File:Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 50.jpg',
+      author: 'Donald Trung',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:Ceramics_shop_in_B%C3%A1t_Tr%C3%A0ng,_Hanoi_(1_March_2018)_50.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-truong-son',
+    alt: 'Những chiếc chậu và vại sứ lớn vẽ rồng men lam xếp sát nhau',
+    credit: {
+      title: 'File:Ceramics shop in Bát Tràng, Hanoi (28 February 2018) 02.jpg',
+      author: 'Donald Trung',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:Ceramics_shop_in_B%C3%A1t_Tr%C3%A0ng,_Hanoi_(28_February_2018)_02.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-kim-lien',
+    alt: 'Hàng chục chiếc ấm trà mộc màu trắng xếp sát nhau chờ tráng men',
+    credit: {
+      title: 'File:Bat-Trang-Ceramic-Village7.jpg',
+      author: 'Steven C. Price',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bat-Trang-Ceramic-Village7.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-hoang-long',
+    alt: 'Chậu men xanh rêu xếp chồng dưới kệ tượng lợn, mèo gốm sặc sỡ, bên cạnh những chum nâu',
+    credit: {
+      title: 'File:Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 78.jpg',
+      author: 'Donald Trung',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:Ceramics_shop_in_B%C3%A1t_Tr%C3%A0ng,_Hanoi_(1_March_2018)_78.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-thai-binh',
+    alt: 'Xưởng gốm mái tôn rộng với lò nung ở giữa, thợ ngồi làm việc giữa những chiếc bình mộc',
+    credit: {
+      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2724.JPG',
+      author: '松岡明芳 (Akiyoshi Matsuoka)',
+      license: 'CC BY-SA 3.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2724.JPG',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'bia-lan-chi',
+    alt: 'Kệ hàng nhiều tầng bày hũ, bình và bát men lam trắng',
+    credit: {
+      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2616.JPG',
+      author: '松岡明芳 (Akiyoshi Matsuoka)',
+      license: 'CC BY-SA 3.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2616.JPG',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'ht-to-mau-am',
+    alt: 'Một cô gái ngồi tô màu đỏ lên chiếc ấm trà trắng, phía sau là những chồng ấm mộc',
+    credit: {
+      title: 'File:Bat-Trang-Ceramic-Village6.jpg',
+      author: 'Steven C. Price',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bat-Trang-Ceramic-Village6.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'ht-ve-chen',
+    alt: 'Thợ ngồi quanh bàn dài vẽ hoa văn lên những chiếc chén sứ trắng',
+    credit: {
+      title: 'File:Ceramika metiejo en Vjetnamio 02.jpg',
+      author: 'RG72',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Ceramika_metiejo_en_Vjetnamio_02.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'news-dong-hang',
+    alt: 'Nhiều thợ cùng ngồi trên nền xưởng sửa những chiếc bình và chậu mộc cho một lô hàng lớn',
+    credit: {
+      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2725.JPG',
+      author: '松岡明芳 (Akiyoshi Matsuoka)',
+      license: 'CC BY-SA 3.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2725.JPG',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'news-got-bat',
+    alt: 'Người thợ đội mũ lưỡi trai dùng dao gọt chân một chiếc bát mộc trên bàn xoay',
+    credit: {
+      title: 'File:Bat-Trang-Ceramic-Village13.jpg',
+      author: 'Steven C. Price',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bat-Trang-Ceramic-Village13.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'news-trong-lo',
+    alt: 'Bên trong một lò nung lót bông chịu nhiệt, những chiếc bình mộc xếp hàng trên sàn lò',
+    credit: {
+      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2727.JPG',
+      author: '松岡明芳 (Akiyoshi Matsuoka)',
+      license: 'CC BY-SA 3.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2727.JPG',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'news-dinh-tet',
+    alt: 'Mái đình làng gốm cổ Bát Tràng treo băng chữ chúc mừng năm mới',
+    credit: {
+      title: 'File:Bat Trang communal house (2018) 06.jpg',
+      author: 'Donald Trung',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bat_Trang_communal_house_(2018)_06.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'news-khach-tham',
+    alt: 'Một nhóm khách bước lên bậc thềm vào một cửa hàng gốm có chậu men lam bày hai bên',
+    credit: {
+      title: 'File:Ceramika vendejo en vilaĝo Bát Tràng (Vjetnamio) 01.jpg',
+      author: 'RG72',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:Ceramika_vendejo_en_vila%C4%9Do_B%C3%A1t_Tr%C3%A0ng_(Vjetnamio)_01.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'news-coc-in-hinh',
+    alt: 'Những rổ nhựa đựng cốc sứ trắng in hình, bày cạnh tượng chó bằng gốm',
+    credit: {
+      title: 'File:Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 83.jpg',
+      author: 'Donald Trung',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:Ceramics_shop_in_B%C3%A1t_Tr%C3%A0ng,_Hanoi_(1_March_2018)_83.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'news-lo-binh-moc',
+    alt: 'Thợ ngồi giữa hàng trăm chiếc bình mộc cùng một kiểu, sửa từng chiếc trước khi nung',
+    credit: {
+      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2730.JPG',
+      author: '松岡明芳 (Akiyoshi Matsuoka)',
+      license: 'CC BY-SA 3.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2730.JPG',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'news-am-chen',
+    alt: 'Kệ kính nhiều tầng bày các bộ ấm chén men nâu, đen và vẽ hoa',
+    credit: {
+      title: 'File:Bát Tràng DSC 0098.JPG',
+      author: 'Greenknight dv',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:B%C3%A1t_Tr%C3%A0ng_DSC_0098.JPG',
+    },
+    widths: [640, 1280],
+  },
 ];
 
 export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
@@ -5547,6 +5888,261 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
     alt: 'Lư hương men kem trắng trên chân cao, nắp đục lỗ màu nâu đỏ.',
     altEn: 'Cream-white glazed incense burner on a tall foot with a pierced reddish-brown lid.',
   },
+  {
+    photo: 'bia-minh-hai-lam',
+    target: 'HOUSEHOLD',
+    key: 'gom-minh-hai',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Gian hàng chất đầy hũ có nắp và bình gốm men lam trắng vẽ rồng, mây',
+    altEn: 'A shop floor crowded with lidded jars and vases painted in blue on white',
+  },
+  {
+    photo: 'bia-thanh-tung',
+    target: 'HOUSEHOLD',
+    key: 'gom-thanh-tung',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Những chiếc bình cao vẽ hoa lá vàng trên nền men trắng rạn, xếp trước cửa một cửa hàng',
+    altEn:
+      'Tall vases painted with yellow flowers on a white crackle glaze, lined up outside a shop',
+  },
+  {
+    photo: 'bia-bich-hop',
+    target: 'HOUSEHOLD',
+    key: 'gom-bich-hop',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Kệ thấp bày ấm trà, chén và lọ gốm nâu sẫm xếp thành hàng',
+    altEn: 'A low shelf of dark brown teapots, cups and small bottles set out in rows',
+  },
+  {
+    photo: 'bia-hai-yen',
+    target: 'HOUSEHOLD',
+    key: 'lo-hai-yen',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Tượng các cụ già bằng gốm men, đèn dầu sứ men lam và hai chiếc liễn lớn có nắp đồng',
+    altEn:
+      'Glazed ceramic figures of old sages, blue-and-white oil lamps and two big pots with brass lids',
+  },
+  {
+    photo: 'bia-quang-vinh',
+    target: 'HOUSEHOLD',
+    key: 'gom-quang-vinh',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Phòng trưng bày gốm có chiếc bàn tròn bày bình, đĩa vẽ rồng và ấm chén, xung quanh là tủ kính',
+    altEn:
+      'A showroom with a round table of vases, a dragon-painted plate and teapots, ringed by glass cabinets',
+  },
+  {
+    photo: 'bia-thu-hang',
+    target: 'HOUSEHOLD',
+    key: 'gom-thu-hang',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Trong xưởng, thợ đặt những chiếc bát mộc trắng lên các bàn xoay có cần gạt để tạo dáng',
+    altEn: 'In a workshop, a potter sets white unfired bowls on lever-driven wheels to shape them',
+  },
+  {
+    photo: 'bia-dai-phong',
+    target: 'HOUSEHOLD',
+    key: 'gom-dai-phong',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Chậu cây, đèn và tượng nhỏ bằng đất nung bày kín khoảng sân trước một cửa hàng',
+    altEn:
+      'Terracotta plant pots, lanterns and small figures spread across the forecourt of a shop',
+  },
+  {
+    photo: 'bia-van-khanh',
+    target: 'HOUSEHOLD',
+    key: 'lo-van-khanh',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Thợ ngồi trên nền xưởng xếp hàng loạt bát, chén mộc giữa những khối khuôn thạch cao',
+    altEn:
+      'Workers on a workshop floor sorting batches of unfired bowls and cups among plaster moulds',
+  },
+  {
+    photo: 'bia-mai-anh',
+    target: 'HOUSEHOLD',
+    key: 'gom-mai-anh',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Giá sắt nhiều tầng bày kín chén, bát và ấm trà men lam vẽ tay',
+    altEn: 'Tiered metal racks filled with hand-painted blue-and-white cups, bowls and teapots',
+  },
+  {
+    photo: 'bia-tan-loc',
+    target: 'HOUSEHOLD',
+    key: 'gom-tan-loc',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Những chiếc chum, vại lớn bọc bao tải xếp dọc bức tường cạnh cổng một ngôi nhà',
+    altEn: 'Big jars wrapped in sacking lined up along a wall beside the gate of a house',
+  },
+  {
+    photo: 'bia-ngoc-diep',
+    target: 'HOUSEHOLD',
+    key: 'gom-ngoc-diep',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Những chum gốm men nâu, trên nắp đắp tượng cóc ngậm tiền và các con giáp men xanh',
+    altEn:
+      'Brown-glazed jars topped with figures of toads holding coins and zodiac animals in green glaze',
+  },
+  {
+    photo: 'bia-phuc-an',
+    target: 'HOUSEHOLD',
+    key: 'gom-phuc-an',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Ba chiếc bình và liễn lớn đắp nổi rồng phượng, bày sau ô kính của một cửa hàng',
+    altEn:
+      'Three large vases and lidded jars with raised dragon and phoenix decoration behind a shop window',
+  },
+  {
+    photo: 'bia-truong-son',
+    target: 'HOUSEHOLD',
+    key: 'lo-truong-son',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Những chiếc chậu và vại sứ lớn vẽ rồng men lam xếp sát nhau',
+    altEn: 'Large blue-and-white planters and jars painted with dragons, packed close together',
+  },
+  {
+    photo: 'bia-kim-lien',
+    target: 'HOUSEHOLD',
+    key: 'gom-kim-lien',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Hàng chục chiếc ấm trà mộc màu trắng xếp sát nhau chờ tráng men',
+    altEn: 'Dozens of white unglazed teapots packed together, waiting to be glazed',
+  },
+  {
+    photo: 'bia-hoang-long',
+    target: 'HOUSEHOLD',
+    key: 'gom-hoang-long',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Chậu men xanh rêu xếp chồng dưới kệ tượng lợn, mèo gốm sặc sỡ, bên cạnh những chum nâu',
+    altEn:
+      'Moss-green glazed planters stacked under shelves of brightly painted pig and cat figures, beside brown jars',
+  },
+  {
+    photo: 'bia-thai-binh',
+    target: 'HOUSEHOLD',
+    key: 'lo-thai-binh',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Xưởng gốm mái tôn rộng với lò nung ở giữa, thợ ngồi làm việc giữa những chiếc bình mộc',
+    altEn:
+      'A large tin-roofed pottery workshop with a kiln in the middle and workers among unfired vases',
+  },
+  {
+    photo: 'bia-lan-chi',
+    target: 'HOUSEHOLD',
+    key: 'gom-lan-chi',
+    role: 'BANNER',
+    position: 0,
+    alt: 'Kệ hàng nhiều tầng bày hũ, bình và bát men lam trắng',
+    altEn: 'Tiered shelves of blue-and-white jars, vases and bowls',
+  },
+  {
+    photo: 'ht-to-mau-am',
+    target: 'HOUSEHOLD',
+    key: 'gom-hanh-thuy',
+    role: 'GALLERY',
+    position: 0,
+    alt: 'Một cô gái ngồi tô màu đỏ lên chiếc ấm trà trắng, phía sau là những chồng ấm mộc',
+    altEn:
+      'A young woman painting red colour onto a white teapot, with stacks of unfired teapots behind her',
+  },
+  {
+    photo: 'ht-ve-chen',
+    target: 'HOUSEHOLD',
+    key: 'gom-hanh-thuy',
+    role: 'GALLERY',
+    position: 1,
+    alt: 'Thợ ngồi quanh bàn dài vẽ hoa văn lên những chiếc chén sứ trắng',
+    altEn: 'Painters at a long table decorating white porcelain cups by hand',
+  },
+  {
+    photo: 'news-dong-hang',
+    target: 'NEWS',
+    key: 'village-cooperative',
+    role: 'COVER',
+    position: 0,
+    alt: 'Nhiều thợ cùng ngồi trên nền xưởng sửa những chiếc bình và chậu mộc cho một lô hàng lớn',
+    altEn:
+      'Several workers on a workshop floor finishing unfired vases and planters for a large batch',
+  },
+  {
+    photo: 'news-got-bat',
+    target: 'NEWS',
+    key: 'village-trace',
+    role: 'COVER',
+    position: 0,
+    alt: 'Người thợ đội mũ lưỡi trai dùng dao gọt chân một chiếc bát mộc trên bàn xoay',
+    altEn: 'A potter in a cap trimming the foot of an unfired bowl on a wheel with a blade',
+  },
+  {
+    photo: 'news-trong-lo',
+    target: 'NEWS',
+    key: 'village-kiln-safety',
+    role: 'COVER',
+    position: 0,
+    alt: 'Bên trong một lò nung lót bông chịu nhiệt, những chiếc bình mộc xếp hàng trên sàn lò',
+    altEn: 'Inside a kiln lined with ceramic fibre, rows of unfired vases on the kiln floor',
+  },
+  {
+    photo: 'news-dinh-tet',
+    target: 'NEWS',
+    key: 'village-spring-fair',
+    role: 'COVER',
+    position: 0,
+    alt: 'Mái đình làng gốm cổ Bát Tràng treo băng chữ chúc mừng năm mới',
+    altEn: 'The tiled roof of the Bat Trang communal house hung with a New Year greeting banner',
+  },
+  {
+    photo: 'news-khach-tham',
+    target: 'NEWS',
+    key: 'h0-open-kiln',
+    role: 'COVER',
+    position: 0,
+    alt: 'Một nhóm khách bước lên bậc thềm vào một cửa hàng gốm có chậu men lam bày hai bên',
+    altEn:
+      'A group of visitors climbing the steps into a pottery shop with blue-and-white planters on either side',
+  },
+  {
+    photo: 'news-coc-in-hinh',
+    target: 'NEWS',
+    key: 'h2-logo-cup',
+    role: 'COVER',
+    position: 0,
+    alt: 'Những rổ nhựa đựng cốc sứ trắng in hình, bày cạnh tượng chó bằng gốm',
+    altEn: 'Plastic baskets of printed white porcelain mugs, set beside ceramic dog figures',
+  },
+  {
+    photo: 'news-lo-binh-moc',
+    target: 'NEWS',
+    key: 'h2-batch-code',
+    role: 'COVER',
+    position: 0,
+    alt: 'Thợ ngồi giữa hàng trăm chiếc bình mộc cùng một kiểu, sửa từng chiếc trước khi nung',
+    altEn: 'Workers among hundreds of identical unfired vases, finishing each one before firing',
+  },
+  {
+    photo: 'news-am-chen',
+    target: 'NEWS',
+    key: 'h5-teaset',
+    role: 'COVER',
+    position: 0,
+    alt: 'Kệ kính nhiều tầng bày các bộ ấm chén men nâu, đen và vẽ hoa',
+    altEn: 'Glass shelves holding tea sets in brown, black and flower-painted glazes',
+  },
 ];
 
 /**
@@ -5579,10 +6175,19 @@ export const RETIRED_DEMO_PHOTO_IDS: readonly string[] = [
   'tl-glaze',
   'tl-fire',
   'tl-finish',
+  // Added by GH#197 for news stories that GH#181 had already given a cover, or chose to leave without one:
+  'news-luc-binh-lam',
+  'news-binh-voi-ran',
+  'news-hoa-sen',
+  'news-binh-cao',
+  'news-lu-huong',
+  'news-gia-bat-trang',
+  'news-chum-men-nau',
+  'news-sap-duoi-tan-cay',
 ];
 
 /**
  * Demo households whose banner photo was retired: `demo:media` clears their `cover_url` so cards and the map
  * show a workshop illustration instead (slugs).
  */
-export const NO_COVER_DEMO_HOUSEHOLDS: readonly string[] = ['gom-minh-hai'];
+export const NO_COVER_DEMO_HOUSEHOLDS: readonly string[] = [];
