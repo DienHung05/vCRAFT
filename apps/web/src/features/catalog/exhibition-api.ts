@@ -9,6 +9,7 @@ import {
   VillageStatsSchema,
 } from '@vcraft/contracts';
 import { apiBaseUrl } from '@/features/news/news-api';
+import { logApiFailure } from '@/lib/api/log-api-failure';
 import { type ProductFilters, productsQueryString } from './exhibition-query';
 
 /** `not-found` là 404 thật của API; `unavailable` là API tắt, chậm hoặc trả sai dạng (hiện thử lại). */
@@ -19,7 +20,13 @@ export type ApiResult<T> =
 
 async function getJson<T>(
   path: string,
-  schema: { safeParse: (value: unknown) => { success: true; data: T } | { success: false } },
+  schema: {
+    safeParse: (
+      value: unknown,
+    ) =>
+      | { success: true; data: T }
+      | { success: false; error: { issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey> }> } };
+  },
 ): Promise<ApiResult<T>> {
   try {
     const res = await fetch(`${apiBaseUrl()}${path}`, {
@@ -28,10 +35,16 @@ async function getJson<T>(
       signal: AbortSignal.timeout(4000),
     });
     if (res.status === 404) return { status: 'not-found' };
-    if (!res.ok) return { status: 'unavailable' };
+    if (!res.ok) {
+      logApiFailure(path, { kind: 'http', status: res.status });
+      return { status: 'unavailable' };
+    }
     const parsed = schema.safeParse(await res.json());
-    return parsed.success ? { status: 'ok', data: parsed.data } : { status: 'unavailable' };
-  } catch {
+    if (parsed.success) return { status: 'ok', data: parsed.data };
+    logApiFailure(path, { kind: 'schema', issues: parsed.error.issues });
+    return { status: 'unavailable' };
+  } catch (error) {
+    logApiFailure(path, { kind: 'error', error });
     return { status: 'unavailable' };
   }
 }

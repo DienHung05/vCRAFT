@@ -5,9 +5,6 @@ import { useTranslations } from 'next-intl';
 import { type MouseEvent, useSyncExternalStore } from 'react';
 import { type PaginationSlot, paginationSlots } from './pagination-slots';
 
-/** Products per catalog page. */
-export const CATALOG_PAGE_SIZE = 12;
-
 /** Phones get 5 cells (no siblings) so the bar plus both arrows fits 360px at 44px targets. */
 const WIDE_QUERY = '(min-width: 40rem)';
 
