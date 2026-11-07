@@ -62,7 +62,7 @@ function trapFocus(event: KeyboardEvent<HTMLElement>, close: () => void) {
   if (event.key !== 'Tab') return;
   const focusable = [
     ...event.currentTarget.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled])',
+      'a[href], button:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]), input:not([disabled])',
     ),
   ];
   const first = focusable[0];
@@ -156,11 +156,14 @@ export function AssistantWidget() {
       onRate={assistant.rate}
       onClose={close}
       mascot={
+        // Pointer only (GH#211): the panel's tab order and focus trap stay as they were; keyboard users poke
+        // the Fox through the launcher.
         <button
           type="button"
           onClick={poke}
-          aria-label={t('poke')}
-          className="block rounded-full focus-visible:outline-2 focus-visible:outline-clay"
+          tabIndex={-1}
+          aria-hidden="true"
+          className="block rounded-full"
         >
           <Mascot
             mood={mood}
