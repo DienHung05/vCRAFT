@@ -6,9 +6,10 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link } from '@/i18n/navigation';
+import { setRememberPreference } from '@/lib/auth/remember';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
-import { FormAlert, PasswordField, STANDALONE_LINK, TextField } from './fields';
+import { CheckboxField, FormAlert, PasswordField, STANDALONE_LINK, TextField } from './fields';
 import { GoogleSignIn } from './google-sign-in';
 import { useKilnFeedback } from './kiln/kiln-feedback';
 import { type SignInValues, signInSchema } from './schemas';
@@ -42,6 +43,7 @@ export function SignInForm({
   const message = useValidationMessage();
   const kiln = useKilnFeedback();
   const [error, setError] = useState<AuthErrorKey | null>(null);
+  const [remember, setRemember] = useState(true);
   const [resend, setResend] = useState<'idle' | 'sending' | 'sent'>('idle');
   const captcha = useCaptcha();
   const {
@@ -72,6 +74,8 @@ export function SignInForm({
       if (!supabase) return failWith('unconfigured');
       if (captcha.missing) return failWith('captcha');
       try {
+        // Before the sign-in writes the session cookies, so they follow the choice.
+        setRememberPreference(remember);
         const { error: failure } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -155,12 +159,18 @@ export function SignInForm({
         {...register('password')}
       />
 
+      <CheckboxField
+        label={t('signIn.remember')}
+        checked={remember}
+        onChange={(event) => setRemember(event.target.checked)}
+      />
+
       {captcha.widget}
       <Button type="submit" size="lg" disabled={isSubmitting}>
         {isSubmitting ? t('signIn.submitting') : t('signIn.submit')}
       </Button>
       <p className="text-center text-small text-ash">{t('google.or')}</p>
-      <GoogleSignIn next={next} />
+      <GoogleSignIn next={next} remember={remember} />
 
       <div className="flex flex-col text-small">
         <Link href="/quen-mat-khau" className={STANDALONE_LINK}>
