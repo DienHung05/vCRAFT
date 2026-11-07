@@ -36,8 +36,12 @@ import { getCurrentDatetime, getWeather, TOOL_TIMEOUT_MS, weatherFallback } from
 export interface AssistantConfig {
   /** `ASSISTANT_ENABLED=false` turns the assistant off (FR-AST-07 feature flag). */
   enabled: boolean;
-  /** Daily token ceiling across all visitors (`ASSISTANT_DAILY_TOKENS`). */
+  /** Daily token ceiling across all visitors (`ASSISTANT_DAILY_TOKENS`); 0 means no ceiling. */
   dailyTokens: number;
+  /** Messages a minute per IP and per conversation (`ASSISTANT_RATE_LIMIT_PER_MINUTE`); 0 or absent means no limit. */
+  rateLimitPerMinute?: number;
+  /** Messages a day per IP and per conversation (`ASSISTANT_RATE_LIMIT_PER_DAY`); 0 or absent means no limit. */
+  rateLimitPerDay?: number;
   /** Absolute origins answers may link to besides internal paths (`CORS_ORIGINS`, the site itself). */
   allowedOrigins: string[];
   /** `max_tokens` of one answer. */
@@ -96,7 +100,7 @@ export class AskAssistantService {
     @Inject(EMBEDDER) private readonly embedder: Embedder,
     @Inject(ASSISTANT_CONFIG) private readonly config: AssistantConfig,
   ) {
-    this.rateLimiter = new RateLimiter(kv);
+    this.rateLimiter = new RateLimiter(kv, config.rateLimitPerMinute, config.rateLimitPerDay);
     this.budget = new BudgetGuard(kv, config.dailyTokens);
   }
 
@@ -139,8 +143,10 @@ export class AskAssistantService {
     if (!this.config.enabled) return yield* blocked('DISABLED', 'disabled');
 
     const ctx = { message, suspicion, ipHash, conversationId: input.conversationId };
-    const limited = await new GuardrailPipeline([this.rateLimiter]).run(ctx);
-    if (!limited.ok) return yield* blocked(limited.reason, 'rate_limited', limited.retryAfter);
+    if (this.rateLimiter.enabled) {
+      const limited = await new GuardrailPipeline([this.rateLimiter]).run(ctx);
+      if (!limited.ok) return yield* blocked(limited.reason, 'rate_limited', limited.retryAfter);
+    }
 
     // Fast intents never reach the model, so they cost no budget and answer in well under 100 ms.
     const fast = fastIntent(message);

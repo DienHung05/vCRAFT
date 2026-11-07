@@ -5,6 +5,7 @@ import {
   cleanOutput,
   type Guard,
   GuardrailPipeline,
+  positiveInt,
   RateLimiter,
   StreamingOutputFilter,
   sanitizeInput,
@@ -42,9 +43,33 @@ describe('sanitizeInput', () => {
   });
 });
 
+describe('positiveInt', () => {
+  it('turns a limit on only for a positive integer', () => {
+    expect(positiveInt('25')).toBe(25);
+    expect(positiveInt(' 7 ')).toBe(7);
+    for (const raw of [undefined, '', '  ', '0', '-3', '1.5', 'abc'])
+      expect(positiveInt(raw)).toBe(0);
+  });
+});
+
 describe('RateLimiter', () => {
+  it('is off by default: no limit and no counters touched', async () => {
+    const kv = new InMemoryKeyValueStore();
+    const limiter = new RateLimiter(kv);
+    expect(limiter.enabled).toBe(false);
+    for (let i = 0; i < 500; i++) expect(await limiter.check(ctx())).toEqual({ ok: true });
+    expect(await kv.get('assistant:rl:m:ip:ip-1')).toBeNull();
+    expect(await kv.get('assistant:rl:d:ip:ip-1')).toBeNull();
+  });
+
+  it('limits only the window that is configured', async () => {
+    const perDayOnly = new RateLimiter(new InMemoryKeyValueStore(), 0, 3);
+    for (let i = 0; i < 3; i++) expect(await perDayOnly.check(ctx())).toEqual({ ok: true });
+    expect(await perDayOnly.check(ctx())).toMatchObject({ ok: false, reason: 'RATE_LIMITED' });
+  });
+
   it('allows ten messages a minute per IP and blocks the eleventh with a retry delay', async () => {
-    const limiter = new RateLimiter(new InMemoryKeyValueStore());
+    const limiter = new RateLimiter(new InMemoryKeyValueStore(), 10, 60);
     for (let i = 0; i < 10; i++) expect(await limiter.check(ctx())).toEqual({ ok: true });
     const blocked = await limiter.check(ctx());
     expect(blocked).toMatchObject({ ok: false, reason: 'RATE_LIMITED' });
@@ -69,6 +94,14 @@ describe('RateLimiter', () => {
 });
 
 describe('BudgetGuard', () => {
+  it('is off by default: never blocks and records nothing', async () => {
+    const kv = new InMemoryKeyValueStore();
+    const guard = new BudgetGuard(kv, 0, () => '2026-11-03');
+    await guard.record(10_000_000);
+    expect(await guard.check()).toEqual({ ok: true });
+    expect(await kv.get('assistant:budget:2026-11-03')).toBeNull();
+  });
+
   it('trips once the day has used its tokens and resets the next day', async () => {
     let day = '2026-11-03';
     const guard = new BudgetGuard(new InMemoryKeyValueStore(), 1_000, () => day);

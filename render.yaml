@@ -82,6 +82,9 @@ services:
         sync: false
       - key: OPENAI_CHAT_MODEL
         value: gpt-6-luna
+      # No assistant usage limit by default. To turn one on, add it in the dashboard as a positive integer:
+      # ASSISTANT_RATE_LIMIT_PER_MINUTE and ASSISTANT_RATE_LIMIT_PER_DAY (per IP and per conversation),
+      # ASSISTANT_DAILY_TOKENS (all visitors).
       # Redis nội bộ (Key Value bên dưới). API chưa dùng nhưng khai sẵn cho cache/hàng đợi.
       - key: REDIS_URL
         fromService:

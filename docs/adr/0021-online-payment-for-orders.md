@@ -1,9 +1,9 @@
 # ADR-0021: Online payment for orders (SePay, VNPay, MoMo)
 
-**Status:** Proposed (Release 2, sandbox only until the open questions below are answered)
+**Status:** Accepted 2026-11-07 (Release 2, sandbox only; owner answers recorded under "Owner decisions")
 **Date:** 2026-11-07
 **Deciders:** Project owner, architecture team
-**Tracks:** GH#164 (Beads `vCRAFT-83g.40`)
+**Tracks:** GH#164 (Beads `vCRAFT-83g.40`), GH#194 (owner decisions), GH#205 (build)
 
 ## Context
 
@@ -51,7 +51,7 @@ Card payment through the SePay gateway is possible later with the same port.
   (configurable share, default 30 %) before allocations are confirmed and production starts, and the
   balance before delivery. Amounts are VND integers fixed when the order is made.
 - New entity `payment`: `id`, `order_id`, `kind` (`DEPOSIT` | `BALANCE`), `method` (`BANK_TRANSFER` |
-  `VIETQR` | `VNPAY` | `MOMO`), `provider` (`SEPAY` | `VNPAY` | `MOMO`), `amount_vnd`, `reference_code`
+  `VIETQR` | `VNPAY` | `MOMO` | `OFFLINE`), `provider` (`SEPAY` | `VNPAY` | `MOMO`; null for `OFFLINE`), `amount_vnd`, `reference_code`
   (unique; goes into the transfer content, `vnp_TxnRef` or MoMo `orderId`), `provider_txn_id` (unique per
   provider, nullable), `status` (`PENDING` | `PAID` | `FAILED` | `EXPIRED` | `CANCELLED` | `REFUNDED`),
   `expires_at`, `paid_at`, `raw_last_event` (json), timestamps. Migrations for PostgreSQL and MySQL, with
@@ -108,11 +108,22 @@ apps/web      order page: "Pay deposit" → method picker → QR/bank panel with
 7. E2E: a Playwright happy path per method using sandbox and signed fake webhooks; env table in
    `docs/deploy.md`.
 
-### Open questions for the owner
+### Owner decisions (GH#194, 2026-11-07)
 
-- The deposit share, and whether the balance is paid online at all.
-- Whose bank account receives the money (the village administration's), and whether a merchant contract
-  with VNPay, MoMo or the SePay gateway is realistic. Until then: sandbox only.
+- **Deposit share: 30 %** of the order total, configurable per deployment. The deposit is paid online
+  before allocations are confirmed and production starts.
+- **Balance:** may be paid online with the same methods, or offline; an administrator records an offline
+  balance payment (method `OFFLINE`, entered by hand, audit-logged). Delivery does not wait on an online
+  balance.
+- **Receiving account:** the village administration's bank account, linked to SePay bank-account
+  webhooks. This needs no merchant contract, so bank transfer and VietQR are the first methods to build
+  (slice 3).
+- **Merchant contracts:** a VNPay, MoMo or SePay-gateway merchant contract is not realistic for this
+  release. VNPay and MoMo run against their public sandboxes only and stay behind a feature flag that is
+  off in production.
+- **Sandbox accounts** (SePay account linked to a test bank account, VNPay sandbox merchant, MoMo test
+  credentials) are created by the owner at the start of the build (GH#205); their secrets go on Render
+  only.
 
 ## Options considered
 
@@ -125,7 +136,7 @@ apps/web      order page: "Pay deposit" → method picker → QR/bank panel with
 
 ## Consequences
 
-- No production change until the open questions are answered; the current release stays offline-only.
+- The current release stays offline-only; online payment arrives with Release 2, built in GH#205.
 - When built, the order flow gains a deposit gate before production starts, and the API gains public,
   signature-checked webhook routes that must stay fast and idempotent.
 - Three new secret sets on Render, and sandbox credentials for CI e2e.

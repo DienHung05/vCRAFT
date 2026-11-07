@@ -1,5 +1,6 @@
 'use client';
 
+import { ASSISTANT_MESSAGE_MAX } from '@vcraft/contracts';
 import {
   ArrowLeft,
   Check,
@@ -404,7 +405,7 @@ export function AssistantPanel({
               id="assistant-input"
               ref={input}
               rows={1}
-              maxLength={1000}
+              maxLength={ASSISTANT_MESSAGE_MAX}
               value={draft}
               disabled={locked}
               placeholder={t('placeholder')}
