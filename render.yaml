@@ -76,6 +76,12 @@ services:
       # Bảo mật
       - key: FIELD_ENCRYPTION_KEYS
         sync: false
+      # Fox assistant (ADR-19). Without OPENAI_API_KEY the assistant only answers greetings, date and weather.
+      # Must be the same key as the worker's: both embed with it, and query/document vectors must come from one model.
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_CHAT_MODEL
+        value: gpt-6-luna
       # Redis nội bộ (Key Value bên dưới). API chưa dùng nhưng khai sẵn cho cache/hàng đợi.
       - key: REDIS_URL
         fromService:
@@ -135,6 +141,9 @@ services:
         sync: false
       - key: FIELD_ENCRYPTION_KEYS
         sync: false
+      # Embeds the assistant knowledge base; same key as the API (see above).
+      - key: OPENAI_API_KEY
+        sync: false
       # Mail: URL SMTP của nhà cung cấp, vd. smtps://user:pass@smtp.example.com:465
       - key: SMTP_URL
         sync: false
@@ -185,3 +194,8 @@ envVarGroups:
         value: vcraft-media
       - key: S3_BUCKET_PRIVATE
         value: vcraft-private
+      # Assistant embeddings: API (queries) and worker (ingest) must agree; 1024 matches knowledge_chunks.embedding
+      - key: OPENAI_EMBEDDING_MODEL
+        value: text-embedding-3-large
+      - key: OPENAI_EMBEDDING_DIMENSIONS
+        value: "1024"

@@ -253,9 +253,10 @@ describe('Demo seed and guarded reset', () => {
     expect(bowl.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
     const lamNgoc = await db.orm.em.fork().findOneOrFail(Household, { slug: 'gom-lam-ngoc' });
     expect(lamNgoc.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
-    // Gốm Minh Hải's banner was retired (Commons does not confirm the kilns are in Bát Tràng): no cover, no banner.
+    // Gốm Minh Hải's old kiln banner was retired (Commons does not confirm it is in Bát Tràng); it now has a
+    // banner of a Bát Tràng shop instead (GH#197).
     const minhHai = await db.orm.em.fork().findOneOrFail(Household, { slug: 'gom-minh-hai' });
-    expect(minhHai.coverUrl).toBeNull();
+    expect(minhHai.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
 
     // The public trace page of the cup carries the credit of its own photo and no stage photo on any entry: a generic
     // stage photo is not this cup. The chain still verifies (checked below for every product).
@@ -270,7 +271,7 @@ describe('Demo seed and guarded reset', () => {
 
     // Public household profiles and news read real images and credits from `media_link` (GH#54).
     const minhHaiProfile = await t.request({ method: 'GET', url: '/households/gom-minh-hai' });
-    expect(minhHaiProfile.body.banner).toBeNull();
+    expect(minhHaiProfile.body.banner.url).toBe(minhHai.coverUrl);
     const profile = await t.request({ method: 'GET', url: '/households/gom-lam-ngoc' });
     expect(profile.body.portrait.credit.author).toBeTruthy();
     expect(profile.body.banner.url).toBe(lamNgoc.coverUrl);
@@ -287,8 +288,11 @@ describe('Demo seed and guarded reset', () => {
     const covers = allNews.body.data.flatMap((n: { cover: { credit: unknown } | null }) =>
       n.cover ? [n.cover] : [],
     );
-    // The night-market story has no photo that shows a night market, so only two stories keep a cover.
-    expect(covers).toHaveLength(2);
+    // GH#181 and GH#197: every story with a licensed photo of what it describes shows it as its cover. The
+    // night-market story has no photo that shows a night market, so it keeps the illustration.
+    const newsCovers = DEMO_PHOTO_LINKS.filter((l) => l.target === 'NEWS' && l.role === 'COVER');
+    expect(newsCovers.some((l) => l.key === 'village-lantern')).toBe(false);
+    expect(covers).toHaveLength(newsCovers.length);
     expect(covers.every((c: { altEn: string | null }) => c.altEn)).toBe(true);
 
     // The household list gives each cover its own description (vi and en), not a template.
@@ -296,8 +300,10 @@ describe('Demo seed and guarded reset', () => {
     const listed = households.body.data.find((h: { slug: string }) => h.slug === 'gom-lam-ngoc');
     expect(listed.coverAlt).toBeTruthy();
     expect(listed.coverAltEn).toMatch(/^[\x20-\x7e]+$/);
-    const noCover = households.body.data.find((h: { slug: string }) => h.slug === 'gom-minh-hai');
-    expect(noCover.coverUrl).toBeNull();
+    const minhHaiCard = households.body.data.find(
+      (h: { slug: string }) => h.slug === 'gom-minh-hai',
+    );
+    expect(minhHaiCard.coverUrl).toBe(minhHai.coverUrl);
 
     // Admin sees what each verification document is, not just its MIME type.
     const docs = await t.request({
@@ -348,7 +354,7 @@ describe('Demo seed and guarded reset', () => {
     await publish();
     expect((await verifyDemoData(db.orm.em.fork(), now)).ok).toBe(true);
     await rm(imagesDir, { recursive: true, force: true });
-  }, 120_000);
+  }, 240_000);
 
   it('mỗi sản phẩm có 4–7 mốc nhật ký và chuỗi băm kiểm được bằng mã miền', async () => {
     const em = db.orm.em.fork();

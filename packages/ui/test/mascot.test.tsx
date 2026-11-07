@@ -90,10 +90,19 @@ describe('<Mascot>', () => {
     expect(html96).toContain('width:96px');
   });
 
-  it('mounts both sprite layers so sheets are preloaded', () => {
+  it('mounts all three sprite layers so sheets are preloaded', () => {
     const html = renderToStaticMarkup(<Mascot />);
     expect(html).toContain('fox-directions.webp');
     expect(html).toContain('fox-reactions.webp');
+    expect(html).toContain('fox-directions-blink.webp');
+  });
+
+  it('the hidden blink layer sits on the same cell as the directions layer (GH#186)', () => {
+    const html = renderToStaticMarkup(<Mascot lookAt={null} />);
+    const position = (layer: string) =>
+      html.match(new RegExp(`data-layer="${layer}" style="[^"]*background-position:([^;"]+)`))?.[1];
+    expect(position('blink')).toBe('50% 50%');
+    expect(position('blink')).toBe(position('directions'));
   });
 
   it('accepts custom directions and reactions URLs', () => {

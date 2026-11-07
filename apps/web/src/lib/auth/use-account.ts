@@ -3,17 +3,25 @@
 import { createAccountClient } from '@vcraft/api-client';
 import type { MeDto } from '@vcraft/contracts';
 import { useEffect, useState } from 'react';
+import { ACCOUNT_CHANGED_EVENT, hasHouseholdIntent } from './household-intent';
 import { browserSupabase } from './supabase-browser';
 
 export type AccountState =
   | { readonly status: 'loading' }
   | { readonly status: 'guest' }
   /** `me` là hồ sơ theo CSDL vCraft; `null` khi API chưa trả lời (vẫn biết email từ phiên). */
-  | { readonly status: 'signed-in'; readonly email: string; readonly me: MeDto | null };
+  | {
+      readonly status: 'signed-in';
+      readonly email: string;
+      readonly me: MeDto | null;
+      /** GH#180: the account started household registration (Supabase user metadata). */
+      readonly householdIntent: boolean;
+    };
 
 interface SessionInfo {
   readonly email: string;
   readonly token: string;
+  readonly householdIntent: boolean;
 }
 
 /**
@@ -34,9 +42,25 @@ export function useAccount(): AccountState {
     // INITIAL_SESSION được phát ngay khi đăng ký nên không cần getSession riêng. Callback chỉ ghi
     // state (không gọi lại Supabase bên trong) để tránh khóa vòng đời phiên.
     const { data } = supabase.auth.onAuthStateChange((_event, next) => {
-      setSession(next ? { email: next.user.email ?? '', token: next.access_token } : null);
+      setSession(
+        next
+          ? {
+              email: next.user.email ?? '',
+              token: next.access_token,
+              householdIntent: hasHouseholdIntent(next.user.user_metadata),
+            }
+          : null,
+      );
     });
     return () => data.subscription.unsubscribe();
+  }, []);
+
+  // GH#180: bumped when the role or household changes in this tab (e.g. the wizard's household step).
+  const [revision, setRevision] = useState(0);
+  useEffect(() => {
+    const reload = () => setRevision((value) => value + 1);
+    window.addEventListener(ACCOUNT_CHANGED_EVENT, reload);
+    return () => window.removeEventListener(ACCOUNT_CHANGED_EVENT, reload);
   }, []);
 
   const token = session?.token;
@@ -46,6 +70,7 @@ export function useAccount(): AccountState {
       return;
     }
     let active = true;
+    void revision;
     createAccountClient({ getAccessToken: async () => token })
       .me()
       .then((profile) => active && setMe(profile))
@@ -53,9 +78,14 @@ export function useAccount(): AccountState {
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [token, revision]);
 
   if (session === undefined) return { status: 'loading' };
   if (session === null) return { status: 'guest' };
-  return { status: 'signed-in', email: session.email, me };
+  return {
+    status: 'signed-in',
+    email: session.email,
+    me,
+    householdIntent: session.householdIntent,
+  };
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { type ChainEntry, type ChainFailureReason, verifyChain } from '@vcraft/domain';
-import { Badge, Crackle, cn, SealMark } from '@vcraft/ui';
+import { Badge, Crackle, cn, SealStamp, stampShakeClass } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import type { LogStage } from '@/lib/demo/data';
@@ -82,12 +82,13 @@ export function ChainVerifier({ productId, entries, household, subtle }: ChainVe
       className={cn(
         'relative mx-5 mt-8 overflow-hidden rounded-card bg-surface p-6 shadow-warm',
         broken && 'border border-seal/60',
+        state.status === 'ok' && stampShakeClass(),
       )}
     >
       <Crackle className={broken ? 'text-seal' : 'text-glaze'} opacity={broken ? 0.3 : 0.18} />
       <div className="relative flex items-center gap-5">
         {state.status === 'ok' ? (
-          <SealMark size={64} className="animate-stamp" title={t('okTitle')} />
+          <SealStamp size={64} title={t('okTitle')} />
         ) : (
           <span
             aria-hidden="true"
