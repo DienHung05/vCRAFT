@@ -1254,11 +1254,19 @@
     "emptyHint": "Thử bỏ bớt bộ lọc hoặc đổi khoảng giá để xem thêm sản phẩm.",
     "results": "Kết quả sản phẩm",
     "pagination": {
-      "label": "Phân trang sản phẩm",
+      "label": {
+        "products": "Phân trang sản phẩm",
+        "households": "Phân trang hộ nghệ nhân",
+        "news": "Phân trang tin tức"
+      },
       "previous": "Trang trước",
       "next": "Trang sau",
       "goTo": "Trang {page}",
-      "showing": "Hiển thị {from}–{to} trong {total} sản phẩm"
+      "showing": {
+        "products": "Hiển thị {from}–{to} trong {total} sản phẩm",
+        "households": "Hiển thị {from}–{to} trong {total} hộ",
+        "news": "Hiển thị {from}–{to} trong {total} tin"
+      }
     }
   },
   "auth": {

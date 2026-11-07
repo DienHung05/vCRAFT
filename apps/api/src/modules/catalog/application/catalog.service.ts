@@ -1,16 +1,19 @@
-import { type FilterQuery, MikroORM } from '@mikro-orm/core';
+import { type EntityManager, type FilterQuery, MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
-import type {
-  HouseholdListDto,
-  ListProductsQuery,
-  ProductCardDto,
-  ProductDetailDto,
-  ProductListDto,
-  ProductPageDto,
-  ProductSort,
-  SearchSuggestionsDto,
-  SlugRedirectDto,
-  VillageStatsDto,
+import {
+  DEFAULT_PAGE_LIMIT,
+  type HouseholdListDto,
+  type HouseholdPageDto,
+  type ListProductsQuery,
+  type ListPublicHouseholdsQuery,
+  type ProductCardDto,
+  type ProductDetailDto,
+  type ProductListDto,
+  type ProductPageDto,
+  type ProductSort,
+  type SearchSuggestionsDto,
+  type SlugRedirectDto,
+  type VillageStatsDto,
 } from '@vcraft/contracts';
 import {
   Artisan,
@@ -256,14 +259,46 @@ export class CatalogService {
     };
   }
 
-  async listHouseholds(): Promise<HouseholdListDto> {
+  /**
+   * Approved households by name. Without `page` every one comes back (home page, map, catalog filter); with
+   * `page` one numbered page plus totals, and a page past the end answers with the last page (GH#202).
+   */
+  async listHouseholds(
+    query: Partial<ListPublicHouseholdsQuery> = {},
+  ): Promise<HouseholdListDto | HouseholdPageDto> {
     const em = this.orm.em.fork();
-    const households = await em.find(
-      Household,
-      { status: 'APPROVED' },
-      { orderBy: { name: 'asc' } },
-    );
-    if (households.length === 0) return { data: [] };
+    const where = { status: 'APPROVED' } as const;
+    const orderBy = { name: 'asc', id: 'asc' } as const;
+    if (query.page === undefined) {
+      return {
+        data: await this.householdSummaries(em, await em.find(Household, where, { orderBy })),
+      };
+    }
+    const limit = query.limit ?? DEFAULT_PAGE_LIMIT;
+    const findPage = (page: number) =>
+      em.findAndCount(Household, where, { orderBy, offset: (page - 1) * limit, limit });
+    let page = query.page;
+    let [households, total] = await findPage(page);
+    const totalPages = Math.ceil(total / limit);
+    if (households.length === 0 && total > 0) {
+      page = totalPages;
+      [households, total] = await findPage(page);
+    }
+    return {
+      data: await this.householdSummaries(em, households),
+      page,
+      pageSize: limit,
+      total,
+      totalPages,
+    };
+  }
+
+  /** Cards for the given households: representative, product count, cover and visiting hours. */
+  private async householdSummaries(
+    em: EntityManager,
+    households: Household[],
+  ): Promise<HouseholdListDto['data']> {
+    if (households.length === 0) return [];
     const ids = households.map((h) => h.id);
     const [artisans, workshops, products, banners] = await Promise.all([
       em.find(Artisan, { household: { $in: ids } }, { orderBy: { createdAt: 'asc' } }),
@@ -271,29 +306,27 @@ export class CatalogService {
       em.find(Product, { household: { $in: ids }, status: 'PUBLISHED' }, { fields: ['household'] }),
       this.media.linkedImages('HOUSEHOLD', ids, ['BANNER']),
     ]);
-    return {
-      data: households.map((h) => {
-        const hours = workshops.find((w) => w.household.id === h.id && isVisitable(w));
-        const banner = (banners.get(h.id) ?? []).find((item) => item.image.url === h.coverUrl);
-        return {
-          id: h.id,
-          name: h.name,
-          slug: h.slug,
-          village: h.village ?? null,
-          craft: h.craft ?? null,
-          coverUrl: h.coverUrl ?? null,
-          coverVariants: variantsOfUrl(
-            h.coverUrl ?? null,
-            (banners.get(h.id) ?? []).map((item) => item.image),
-          ),
-          coverAlt: banner?.image.alt || null,
-          coverAltEn: banner?.image.altEn ?? null,
-          representative: artisans.find((a) => a.household.id === h.id)?.name ?? null,
-          productCount: products.filter((p) => p.household.id === h.id).length,
-          openingHours: hours?.openingHours ?? null,
-        };
-      }),
-    };
+    return households.map((h) => {
+      const hours = workshops.find((w) => w.household.id === h.id && isVisitable(w));
+      const banner = (banners.get(h.id) ?? []).find((item) => item.image.url === h.coverUrl);
+      return {
+        id: h.id,
+        name: h.name,
+        slug: h.slug,
+        village: h.village ?? null,
+        craft: h.craft ?? null,
+        coverUrl: h.coverUrl ?? null,
+        coverVariants: variantsOfUrl(
+          h.coverUrl ?? null,
+          (banners.get(h.id) ?? []).map((item) => item.image),
+        ),
+        coverAlt: banner?.image.alt || null,
+        coverAltEn: banner?.image.altEn ?? null,
+        representative: artisans.find((a) => a.household.id === h.id)?.name ?? null,
+        productCount: products.filter((p) => p.household.id === h.id).length,
+        openingHours: hours?.openingHours ?? null,
+      };
+    });
   }
 
   async suggest(q: string): Promise<SearchSuggestionsDto> {

@@ -5,6 +5,8 @@ import {
   NewsDetailResponseSchema,
   type NewsListDto,
   NewsListResponseSchema,
+  type NewsPageDto,
+  NewsPageResponseSchema,
 } from '@vcraft/contracts';
 
 import { apiBaseUrl } from '@/lib/api/internal-url';
@@ -12,11 +14,15 @@ import { logApiFailure } from '@/lib/api/log-api-failure';
 
 export { apiBaseUrl };
 
-export type NewsResult = { status: 'ok'; page: NewsListDto } | { status: 'unavailable' };
+export type NewsResult =
+  | { status: 'ok'; page: NewsListDto | NewsPageDto }
+  | { status: 'unavailable' };
 
 export interface FetchNewsOptions {
   householdSlug?: string | undefined;
   cursor?: string | undefined;
+  /** Numbered page (GH#202); the answer then carries page totals. Not combined with `cursor`. */
+  page?: number | undefined;
   limit?: number | undefined;
 }
 
@@ -29,7 +35,9 @@ const TIMEOUT_MS = 4000;
 export async function fetchNews(options: FetchNewsOptions = {}): Promise<NewsResult> {
   const query = new URLSearchParams({ limit: String(options.limit ?? 24) });
   if (options.householdSlug) query.set('householdSlug', options.householdSlug);
-  if (options.cursor) query.set('cursor', options.cursor);
+  if (options.page) query.set('page', String(options.page));
+  else if (options.cursor) query.set('cursor', options.cursor);
+  const schema = options.page ? NewsPageResponseSchema : NewsListResponseSchema;
   try {
     const res = await fetch(`${apiBaseUrl()}/news?${query}`, {
       headers: { accept: 'application/json' },
@@ -40,7 +48,7 @@ export async function fetchNews(options: FetchNewsOptions = {}): Promise<NewsRes
       logApiFailure('/news', { kind: 'http', status: res.status });
       return { status: 'unavailable' };
     }
-    const parsed = NewsListResponseSchema.safeParse(await res.json());
+    const parsed = schema.safeParse(await res.json());
     if (parsed.success) return { status: 'ok', page: parsed.data };
     logApiFailure('/news', { kind: 'schema', issues: parsed.error.issues });
     return { status: 'unavailable' };

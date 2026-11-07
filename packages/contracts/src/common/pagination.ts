@@ -13,6 +13,21 @@ export const CursorPageQuerySchema = z.object({
 });
 export type CursorPageQuery = z.infer<typeof CursorPageQuerySchema>;
 
+/**
+ * Numbered page (`?page=N`), the documented exception to cursor-only paging for public lists people browse
+ * by page number: the catalog, households and news (ADR-0020). Cannot be combined with `cursor`.
+ */
+export const PageNumberSchema = z.coerce.number().int().min(1).max(10_000);
+
+/** Counters added to a list envelope in page mode, for the numbered page bar. */
+export const PageCountersSchema = z.object({
+  page: z.int().min(1),
+  pageSize: z.int().min(1),
+  total: z.int().nonnegative(),
+  totalPages: z.int().nonnegative(),
+});
+export type PageCounters = z.infer<typeof PageCountersSchema>;
+
 /** Phong bì danh sách: `{ data: [...], nextCursor }`; `nextCursor = null` khi hết dữ liệu. */
 export function cursorPageSchema<T extends z.ZodType>(item: T) {
   return z.object({

@@ -5,6 +5,7 @@ import type {
   MaterialPriceSeriesDto,
   NewsDetailDto,
   NewsListDto,
+  NewsPageDto,
   PublicImageDto,
   TodayOutagesDto,
 } from '@vcraft/contracts';
@@ -69,7 +70,10 @@ export class NewsService {
     private readonly media: MediaService,
   ) {}
 
-  async list(query: ListNewsQuery): Promise<NewsListDto> {
+  async list(query: ListNewsQuery): Promise<NewsListDto | NewsPageDto> {
+    if (query.page !== undefined && query.cursor !== undefined) {
+      throw new AppError('VALIDATION_MALFORMED_REQUEST', 'Cannot use both page and cursor');
+    }
     const em = this.orm.em.fork();
     const and: FilterQuery<News>[] = [
       ...liveNews('PUBLIC'),
@@ -77,6 +81,39 @@ export class NewsService {
     ];
     if (query.category) and.push({ category: query.category });
     if (query.householdSlug) and.push({ household: { slug: query.householdSlug } });
+
+    // Numbered pages for the public news list (GH#202, ADR-0020); a page past the end gives the last one.
+    if (query.page !== undefined) {
+      const limit = query.limit;
+      const findPage = (page: number) =>
+        em.findAndCount(
+          News,
+          { $and: and },
+          {
+            populate: ['household'],
+            orderBy: { pinned: 'desc', publishedAt: 'desc', id: 'desc' },
+            offset: (page - 1) * limit,
+            limit,
+          },
+        );
+      let page = query.page;
+      let [rows, total] = await findPage(page);
+      const totalPages = Math.ceil(total / limit);
+      if (rows.length === 0 && total > 0) {
+        page = totalPages;
+        [rows, total] = await findPage(page);
+      }
+      const covers = await this.covers(rows.map((news) => news.id));
+      return {
+        data: rows.map((news) => toNewsSummaryDto(news, covers.get(news.id) ?? null)),
+        nextCursor: null,
+        page,
+        pageSize: limit,
+        total,
+        totalPages,
+      };
+    }
+
     if (query.cursor) {
       const cursor = decodeCursor(query.cursor);
       const at = new Date(cursor.t);
