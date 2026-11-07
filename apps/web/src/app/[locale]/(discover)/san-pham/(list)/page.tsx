@@ -3,7 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { CatalogExplorer } from '@/features/catalog/catalog-explorer';
 import { parseCatalogParams, toProductFilters } from '@/features/catalog/catalog-filters';
 import { CatalogHeader } from '@/features/catalog/catalog-header';
-import { CATALOG_PAGE_SIZE } from '@/features/catalog/catalog-pagination';
+import { CATALOG_PAGE_SIZE } from '@/features/catalog/catalog-page-size';
 import { fetchHouseholds, fetchProductPage } from '@/features/catalog/exhibition-api';
 import { resolveLocale } from '@/lib/locale';
 
