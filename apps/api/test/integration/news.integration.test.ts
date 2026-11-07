@@ -38,6 +38,7 @@ describe('Public news', () => {
       pinned?: boolean;
       status?: 'DRAFT' | 'PUBLISHED';
       category?: 'HOUSEHOLD_UPDATE' | 'VILLAGE_EVENT' | 'CRAFT_STORY';
+      visibility?: 'PUBLIC' | 'VILLAGE';
     } = {},
   ) {
     const em = db.orm.em.fork();
@@ -51,6 +52,7 @@ describe('Public news', () => {
       status: fields.status ?? 'PUBLISHED',
       publishedAt: fields.publishedAt === undefined ? day(10) : fields.publishedAt,
       pinned: fields.pinned ?? false,
+      visibility: fields.visibility ?? 'PUBLIC',
     });
     await em.flush();
   }
@@ -230,5 +232,15 @@ describe('Public news', () => {
     target.status = 'APPROVED';
     await em.flush();
     expect(slugsOf((await t.request({ method: 'GET', url: '/news' })).body)).toContain('a-moi');
+  });
+
+  it('search suggestions list only news a guest can open (GH#231)', async () => {
+    await news('goi-y-cong-khai', { publishedAt: day(12) });
+    await news('goi-y-thanh-vien', { publishedAt: day(12), visibility: 'VILLAGE' });
+    await news('goi-y-hen-gio', { publishedAt: new Date(Date.now() + 86_400_000) });
+    const res = await t.request({ method: 'GET', url: '/search/suggest?q=goi-y' });
+    expect(res.status).toBe(200);
+    const slugs = (res.body as { news: { slug: string }[] }).news.map((n) => n.slug);
+    expect(slugs).toEqual(['goi-y-cong-khai']);
   });
 });

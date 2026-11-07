@@ -348,8 +348,9 @@ export class CatalogService {
       em.find(
         News,
         {
+          // Only what a guest can open (GH#231): public news whose publish time has passed, like the news list.
           $and: [
-            { status: 'PUBLISHED' },
+            { status: 'PUBLISHED', visibility: 'PUBLIC', publishedAt: { $lte: new Date() } },
             { $or: [{ household: null }, { household: { status: 'APPROVED' } }] },
             ...matching,
           ],
