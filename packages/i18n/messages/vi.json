@@ -922,6 +922,7 @@
         "OVERDUE": "Quá hạn"
       },
       "reallocate": "Chia lại phần còn lại",
+      "declined": "Hộ đã từ chối, cần chia lại",
       "reallocateLegend": "Chia {remaining} {unit} còn lại cho hộ khác",
       "targetHousehold": "Hộ nhận",
       "chooseHousehold": "Chọn hộ",

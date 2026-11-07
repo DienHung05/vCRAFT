@@ -33,7 +33,11 @@ export class AllocationScheduleService {
     const rows = await em.find(
       OrderAllocation,
       {
-        status: { $in: [...ACTIVE, 'DONE'] },
+        // A declined share still waiting to be reallocated shows up so the board can act on it (GH#246).
+        $or: [
+          { status: { $in: [...ACTIVE, 'DONE'] } },
+          { status: 'DECLINED', quantity: { $gt: 0 } },
+        ],
         quotation: { request: { status: { $in: ['ACCEPTED', 'IN_PRODUCTION'] } } },
       },
       { populate: ['household', 'quotation.request'], orderBy: { createdAt: 'asc' } },
@@ -97,6 +101,12 @@ export class AllocationScheduleService {
       assertVersion(late, version);
       const quotation = late.quotation;
       const request = quotation.request as QuotationRequest;
+      // A declined share is handed out again before production starts (FR-ORD-05, GH#246).
+      if (request.status === 'ACCEPTED' && late.status === 'DECLINED' && late.quantity > 0) {
+        await this.checkTargets(em, input);
+        await this.reallocateDeclined(em, actor, late, request, input);
+        return;
+      }
       if (request.status !== 'IN_PRODUCTION' || late.status !== 'IN_PROGRESS')
         throw new AppError('INVALID_TRANSITION', 'only a share in production can be reallocated');
       await this.checkTargets(em, input);
@@ -183,6 +193,87 @@ export class AllocationScheduleService {
       await em.flush();
     });
     return this.schedule();
+  }
+
+  /**
+   * Hands a declined share's quantity to other approved households. New households get a PROPOSED share;
+   * a household already in the order gets its share raised and confirms again (CONFIRMED → PROPOSED). The
+   * declined share keeps its status and drops to zero, and the audit entry records what it held.
+   */
+  private async reallocateDeclined(
+    em: EntityManager,
+    actor: Actor,
+    declined: OrderAllocation,
+    request: QuotationRequest,
+    input: ReallocateRequest,
+  ) {
+    const quotation = declined.quotation;
+    const open = await em.find(
+      OrderAllocation,
+      { quotation, status: { $in: ['PROPOSED', 'CONFIRMED'] } },
+      { populate: ['household'], orderBy: { createdAt: 'asc' } },
+    );
+    if (input.targets.some((t) => t.householdId === declined.household.id))
+      throw new AppError('VALIDATION_FAILED', 'the declining household cannot take the share back');
+    const rows = [...open, declined];
+    const result = reallocate(
+      rows.map((a) => ({ householdId: a.household.id, quantity: a.quantity, completedQty: 0 })),
+      rows.length - 1,
+      input.targets,
+    );
+    if (!result.ok) throw new AppError('VALIDATION_FAILED', result.error.message);
+    const before = declined.quantity;
+    const dueAt = dueOf(declined) ?? request.requiredBy;
+    const unitPriceVnd =
+      quotation.parts.find((p) => p.householdId === declined.household.id)?.unitPriceVnd ?? 0;
+    const touched: string[] = [];
+    for (const share of result.value) {
+      if (share.householdId === declined.household.id) continue;
+      const row = open.find((a) => a.household.id === share.householdId);
+      if (row) {
+        if (row.quantity === share.quantity) continue;
+        row.quantity = share.quantity;
+        if (row.status === 'CONFIRMED')
+          row.status = unwrap(allocationTransition(row.status, 'REOPEN', {}));
+        touched.push(share.householdId);
+        continue;
+      }
+      em.create(OrderAllocation, {
+        quotation,
+        household: em.getReference(Household, share.householdId),
+        quantity: share.quantity,
+        status: 'PROPOSED',
+      });
+      touched.push(share.householdId);
+      quotation.parts = [
+        ...quotation.parts,
+        {
+          householdId: share.householdId,
+          quantity: share.quantity,
+          unitPriceVnd,
+          completionDate: dueAt.toISOString(),
+          contributionVersion: 0,
+        },
+      ];
+    }
+    declined.quantity = 0;
+    em.create(AuditLog, {
+      actorId: actor.id,
+      action: 'allocation.reallocate',
+      entity: 'OrderAllocation',
+      entityId: declined.id,
+      before: { householdId: declined.household.id, remaining: before, status: 'DECLINED' },
+      after: { targets: input.targets },
+    });
+    await this.notifier.notify(em, {
+      kind: 'ALLOCATION_PROPOSED',
+      requestId: request.id,
+      quotationId: quotation.id,
+      actorId: actor.id,
+      recipientIds: await this.notifier.representativeIds(em, touched),
+    });
+    request.revision++;
+    await em.flush();
   }
 
   private async checkTargets(em: EntityManager, input: ReallocateRequest) {

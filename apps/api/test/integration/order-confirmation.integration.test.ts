@@ -259,7 +259,7 @@ describe('order confirmation, progress and receipt', () => {
     expect(started.body.status).toBe('IN_PRODUCTION');
   });
 
-  it('decline cancels the whole unstarted order but keeps history', async () => {
+  it('decline keeps the order and the board reallocates the declined share (GH#246)', async () => {
     const { requestId } = await acceptFlow();
     const own = await t.request({
       method: 'GET',
@@ -274,18 +274,40 @@ describe('order confirmation, progress and receipt', () => {
     });
     expect(declined.status).toBe(200);
     const read = await t.request({ method: 'GET', url: `/rfqs/${requestId}`, auth: buyer.auth });
-    expect(read.body.status).toBe('CANCELLED');
+    expect(read.body.status).toBe('ACCEPTED');
     const kept = await t.request({
       method: 'GET',
       url: `/rfqs/${requestId}/allocations`,
       auth: buyer.auth,
     });
-    expect(kept.status).toBe(200);
-    expect(kept.body).toHaveLength(2);
     expect(kept.body.map((a: { status: string }) => a.status).sort()).toEqual([
-      'CANCELLED',
       'DECLINED',
+      'PROPOSED',
     ]);
+
+    // The board sees the declined share and gives it to the other household.
+    const board = await t.request({ method: 'GET', url: '/admin/allocations', auth: admin.auth });
+    const share = board.body
+      .find((order: { requestId: string }) => order.requestId === requestId)
+      .allocations.find((a: { status: string }) => a.status === 'DECLINED');
+    expect(share.quantity).toBeGreaterThan(0);
+    const moved = await t.request({
+      method: 'POST',
+      url: `/admin/allocations/${share.id}/reallocate`,
+      auth: admin.auth,
+      headers: { 'if-match': String(share.version) },
+      body: { targets: [{ householdId: representative(0).householdId, quantity: share.quantity }] },
+    });
+    expect(moved.status).toBe(200);
+    const after = await t.request({
+      method: 'GET',
+      url: `/rfqs/${requestId}/allocations`,
+      auth: buyer.auth,
+    });
+    const total = after.body.reduce((sum: number, a: { quantity: number }) => sum + a.quantity, 0);
+    expect(total).toBe(3500);
+    const taker = after.body.find((a: { status: string }) => a.status === 'PROPOSED');
+    expect(taker.quantity).toBe(3500);
   });
 
   it('bounds progress and confirms receipt only when all done', async () => {

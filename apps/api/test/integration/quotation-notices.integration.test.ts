@@ -401,7 +401,7 @@ describe('quotation notices: in-app inbox and mail outbox', () => {
     return draft.id;
   }
 
-  it('tells every other party when a household declines', async () => {
+  it('asks the coordinator to reallocate when a household declines (GH#246)', async () => {
     const requestId = await acceptedOrder();
     await step(
       requestId,
@@ -415,7 +415,7 @@ describe('quotation notices: in-app inbox and mail outbox', () => {
         });
         expect(res.status).toBe(200);
       },
-      { buyer: ['ORDER_CANCELLED'], admin: ['ORDER_CANCELLED'], repA: ['ORDER_CANCELLED'] },
+      { admin: ['COORDINATION_NEEDED'] },
     );
   });
 
