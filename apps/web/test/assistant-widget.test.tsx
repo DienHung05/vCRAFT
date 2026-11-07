@@ -112,6 +112,10 @@ describe('assistant copy', () => {
 
 function panel(over: Partial<AssistantPanelProps> = {}) {
   const props: AssistantPanelProps = {
+    archive: [],
+    onHistory: vi.fn(),
+    onRestore: vi.fn(),
+    onDelete: vi.fn(),
     messages: [],
     busy: false,
     page: 'home',
@@ -205,6 +209,9 @@ describe('AssistantPanel', () => {
       />,
     );
     expect(screen.getByText(/Ask again in 30 s/)).toBeTruthy();
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Conversation history' }),
+    );
     expect(
       (screen.getByLabelText('Your question for the Fox') as HTMLTextAreaElement).disabled,
     ).toBe(true);
