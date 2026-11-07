@@ -21,6 +21,9 @@ import {
 import { Link, permanentRedirect } from '@/i18n/navigation';
 import { frameRatioOf } from '@/lib/images';
 import { resolveLocale } from '@/lib/locale';
+import { jsonLd, metaDescription, pageMetadata } from '@/lib/seo/page-metadata';
+import { localizedPath } from '@/lib/seo/sitemap-entries';
+import { siteOrigin } from '@/lib/site';
 
 // Dữ liệu lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
 export const dynamic = 'force-dynamic';
@@ -28,11 +31,17 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({
   params,
 }: PageProps<'/[locale]/san-pham/[slug]'>): Promise<Metadata> {
+  const locale = await resolveLocale(params);
   const { slug } = await params;
   const result = await fetchProduct(slug);
-  return result.status === 'ok'
-    ? { title: result.data.product.name, description: result.data.product.description }
-    : {};
+  if (result.status !== 'ok') return {};
+  const { product } = result.data;
+  return pageMetadata({
+    locale,
+    href: { pathname: '/san-pham/[slug]', params: { slug: product.slug } },
+    title: product.name,
+    description: metaDescription(product.description || product.name),
+  });
 }
 
 /** Chi tiết sản phẩm (FR-PRD, BRAND §9): ảnh 4:5 sticky bên trái, thông tin bên phải, nhật ký rút gọn. */
@@ -81,8 +90,30 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
       ? siblings.data.data.filter((p) => p.slug !== product.slug).slice(0, 4)
       : [];
 
+  // schema.org Product for search results (GH#256); the price only when the household set one.
+  const productLd = jsonLd({
+    '@type': 'Product',
+    name: product.name,
+    description: product.description || undefined,
+    sku: product.traceCode,
+    category: categories(product.category),
+    brand: { '@type': 'Brand', name: household.name },
+    url: `${siteOrigin()}${localizedPath({ pathname: '/san-pham/[slug]', params: { slug: product.slug } }, locale)}`,
+    ...(product.priceVnd > 0 && {
+      offers: {
+        '@type': 'Offer',
+        price: product.priceVnd,
+        priceCurrency: 'VND',
+        availability:
+          product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      },
+    }),
+  });
+
   return (
     <article className="mx-auto max-w-editorial px-gutter pt-8">
+      {/* biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD from our own data, `<` escaped. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: productLd }} />
       <Breadcrumbs
         className="mb-8"
         items={[
