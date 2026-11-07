@@ -3,7 +3,16 @@
 import { ApiError, type StudioClient } from '@vcraft/api-client';
 import type { HouseholdDto, ProductDto, UpdateProductRequest } from '@vcraft/contracts';
 import { PRIVACY_POLICY_VERSION } from '@vcraft/domain';
-import { Badge, Button, buttonVariants, Card, TraceSealFrame } from '@vcraft/ui';
+import {
+  Badge,
+  Button,
+  buttonVariants,
+  Card,
+  cn,
+  SealStamp,
+  stampShakeClass,
+  TraceSealFrame,
+} from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -199,12 +208,16 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
   const [reason, setReason] = useState('');
   const [failed, setFailed] = useState(false);
   const [confirm, setConfirm] = useState<'publish' | 'withdraw' | null>(null);
-  const run = async (action: () => Promise<unknown>, success: string) => {
+  // BRAND §6.3 #2: publishing presses the seal once, right after it succeeds.
+  const [stamped, setStamped] = useState(false);
+  const run = async (action: () => Promise<unknown>, success: string, stamp = false) => {
     setFailed(false);
+    setStamped(false);
     try {
       await action();
       await reload();
       setReason('');
+      setStamped(stamp);
       notify.success(success);
     } catch {
       setFailed(true);
@@ -212,12 +225,22 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
   };
   const approved = household.status === 'APPROVED';
   return (
-    <Card className="flex flex-col gap-4 p-5">
+    <Card
+      className={cn(
+        'flex flex-col gap-4 p-5',
+        stamped && product.status === 'PUBLISHED' && stampShakeClass('tool'),
+      )}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-h3">{t('publishing')}</h2>
-        <Badge tone={product.status === 'PUBLISHED' ? 'lacquer' : 'outline'}>
-          {t(`statuses.${product.status}`)}
-        </Badge>
+        <span className="flex items-center gap-3">
+          {stamped && product.status === 'PUBLISHED' ? (
+            <SealStamp size={40} tempo="tool" title={t('publishedToast')} />
+          ) : null}
+          <Badge tone={product.status === 'PUBLISHED' ? 'lacquer' : 'outline'}>
+            {t(`statuses.${product.status}`)}
+          </Badge>
+        </span>
       </div>
       {product.status === 'PUBLISHED' ? (
         <div className="flex flex-wrap items-end gap-3">
@@ -263,6 +286,7 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
             () =>
               client.publishProduct(product.id, product.version, product.status === 'WITHDRAWN'),
             t('publishedToast'),
+            true,
           );
         }}
       >
