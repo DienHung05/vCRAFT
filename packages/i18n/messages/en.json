@@ -625,7 +625,7 @@
         "latency": "First token (p50 / p95)",
         "latencyValue": "{p50} / {p95}",
         "ms": "{value} ms",
-        "unansweredTitle": "Questions the Fox could not answer",
+        "unansweredTitle": "Questions Fox could not answer",
         "unansweredEmpty": "No unanswered questions yet.",
         "times": "{count, plural, one {# time} other {# times}}"
       }
@@ -1991,17 +1991,17 @@
     }
   },
   "assistant": {
-    "open": "Ask the Fox",
+    "open": "Ask Fox",
     "close": "Close the assistant",
-    "title": "The vCraft Fox",
+    "title": "Fox",
     "subtitle": "Ask about Bát Tràng pottery and using vCraft",
-    "mascotLabel": "The Fox, vCraft's assistant",
-    "welcome": "Hi! I'm the Fox. Looking for pottery, a bulk order, or the story of Bát Tràng village?",
-    "hello": "Hi there 👋 Ask the Fox anything about the pottery village!",
+    "mascotLabel": "Fox",
+    "welcome": "Hi! I'm Fox. Looking for pottery, a bulk order, or the story of Bát Tràng village?",
+    "hello": "Hi there 👋 Ask Fox anything about the pottery village!",
     "dismissHello": "Hide the greeting",
-    "log": "Conversation with the Fox",
-    "inputLabel": "Your question for the Fox",
-    "placeholder": "Ask the Fox something…",
+    "log": "Conversation with Fox",
+    "inputLabel": "Your question for Fox",
+    "placeholder": "Ask Fox something…",
     "send": "Send",
     "stop": "Stop answering",
     "stopped": "Stopped.",
@@ -2015,8 +2015,8 @@
     "historyEmpty": "No saved conversations yet.",
     "deleteConversation": "Delete conversation",
     "backToChat": "Back to chat",
-    "thinking": "The Fox is thinking…",
-    "error": "The Fox tripped up. Please try again.",
+    "thinking": "Fox is thinking…",
+    "error": "Fox tripped up. Please try again.",
     "sources": "Sources",
     "quickLabel": "Suggested questions",
     "source": {
@@ -2031,10 +2031,10 @@
       "INJECTION": "I can't do that. Shall we talk about pottery?",
       "ABUSE": "Let's keep it friendly. I'm still happy to help with Bát Tràng pottery.",
       "PRIVATE_DATA": "I can't see other people's private details. Try asking something else.",
-      "RATE_LIMITED": "That's a lot of questions! The Fox needs a short break. Try again in a few minutes.",
-      "RATE_LIMITED_WAIT": "That's a lot of questions! The Fox needs a short break. Ask again in {seconds} s.",
-      "BUDGET_EXHAUSTED": "The Fox is asleep. See you tomorrow 💤",
-      "DISABLED": "The Fox is resting. Try the FAQ or send a quote request."
+      "RATE_LIMITED": "That's a lot of questions! Fox needs a short break. Try again in a few minutes.",
+      "RATE_LIMITED_WAIT": "That's a lot of questions! Fox needs a short break. Ask again in {seconds} s.",
+      "BUDGET_EXHAUSTED": "Fox is asleep. See you tomorrow 💤",
+      "DISABLED": "Fox is resting. Try the FAQ or send a quote request."
     },
     "quick": {
       "home": [
@@ -2090,7 +2090,7 @@
       "Teapots and cups are a classic…",
       "Pieces that crack in the kiln are discarded…",
       "Masters can throw vases a metre tall…",
-      "The Fox is rummaging through the shelves…"
+      "Fox is rummaging through the shelves…"
     ]
   }
 }

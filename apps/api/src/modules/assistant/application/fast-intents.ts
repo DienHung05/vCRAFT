@@ -44,8 +44,8 @@ export function fastIntent(message: string): FastIntent | null {
 
 const REPLIES: Record<'greeting' | 'thanks' | 'bye', Record<'vi' | 'en', string>> = {
   greeting: {
-    vi: 'Chào bạn, tớ là Cáo của vCraft! Bạn muốn tìm gốm Bát Tràng, đặt hàng số lượng lớn hay truy xuất một món đồ?',
-    en: "Hi, I'm the vCraft Fox! Looking for Bát Tràng pottery, a bulk order, or the story behind a piece?",
+    vi: 'Chào bạn, tớ là Cáo! Bạn muốn tìm gốm Bát Tràng, đặt hàng số lượng lớn hay truy xuất một món đồ?',
+    en: "Hi, I'm Fox! Looking for Bát Tràng pottery, a bulk order, or the story behind a piece?",
   },
   thanks: {
     vi: 'Không có gì đâu! Cần gì thêm cứ hỏi tớ nhé.',

@@ -10,7 +10,7 @@ test.use({ locale: 'vi-VN' });
 async function openFox(page: Page) {
   await page.goto('/vi');
   await page.getByRole('button', { name: 'Hỏi Cáo' }).click();
-  return page.getByRole('dialog', { name: 'Cáo của vCraft' });
+  return page.getByRole('dialog', { name: 'Cáo', exact: true });
 }
 
 async function ask(page: Page, question: string) {
@@ -26,7 +26,7 @@ test('answers a greeting at once and keeps the conversation polite', async ({ pa
   await expect(panel).toBeVisible();
   const started = Date.now();
   await ask(page, 'chao cao');
-  await expect(log(page)).toContainText('Cáo của vCraft', { timeout: 5_000 });
+  await expect(log(page)).toContainText('tớ là Cáo!', { timeout: 5_000 });
   // No model round trip: the reply lands well within a second of the question.
   expect(Date.now() - started).toBeLessThan(3_000);
 });
@@ -59,7 +59,7 @@ test.describe('on a 360 px phone with reduced motion', () => {
     const input = page.getByLabel('Câu hỏi cho Cáo');
     await expect(input).toBeVisible();
     await ask(page, 'chao cao');
-    await expect(log(page)).toContainText('Cáo của vCraft');
+    await expect(log(page)).toContainText('tớ là Cáo!');
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
