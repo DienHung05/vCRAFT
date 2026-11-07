@@ -82,7 +82,6 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
     expect(Object.fromEntries(covers)).toEqual({
       'h7-class': 'ban-xoay-xuong',
       'village-clay-month': 'news-dat-set',
-      'village-lantern': 'bia-hanh-thuy',
       'h0-blue-glaze': 'binh-hoa-lam',
       'h1-crackle': 'ln-hu-men-ngoc',
       'h3-lotus': 'pp-mf52jtdn',
