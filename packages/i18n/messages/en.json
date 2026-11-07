@@ -534,7 +534,73 @@
       "audit": "Audit log",
       "overview": "Overview",
       "pending": "{count} applications waiting",
-      "progress": "Order progress"
+      "progress": "Order progress",
+      "users": "Accounts"
+    },
+    "accounts": {
+      "title": "Accounts",
+      "lead": "Invite administrators or households by email, and suspend or restore accounts. Every action is written to the audit log.",
+      "signIn": "Sign in with a board account.",
+      "invite": {
+        "title": "Invite by email",
+        "lead": "The invited person gets an email with a one-time link to set a password. The role is granted when they first sign in.",
+        "email": "Email of the person to invite",
+        "role": "Role",
+        "roles": {
+          "HOUSEHOLD": "Household representative",
+          "ADMIN": "Administrator"
+        },
+        "adminNote": "A new administrator must set up two-factor authentication (6-digit code) on first sign-in before entering the admin area.",
+        "submit": "Send invitation",
+        "sending": "Sending…",
+        "sent": "Invitation sent to {email}.",
+        "emailInvalid": "Enter a valid email address.",
+        "errors": {
+          "CONFLICT_DUPLICATE": "This email already has an account.",
+          "default": "The invitation could not be sent. Try again in a few minutes."
+        },
+        "listTitle": "Recent invitations",
+        "listEmpty": "No invitations yet.",
+        "status": {
+          "PENDING": "Pending",
+          "ACCEPTED": "Accepted"
+        },
+        "by": "Invited by {name}",
+        "failed": "The invitations could not be loaded."
+      },
+      "users": {
+        "title": "Users",
+        "filters": "Filter users",
+        "search": "Search by email, name or username",
+        "role": "Role",
+        "allRoles": "All roles",
+        "status": "Status",
+        "allStatuses": "All statuses",
+        "statusValues": {
+          "ACTIVE": "Active",
+          "LOCKED": "Suspended"
+        },
+        "loading": "Loading…",
+        "failed": "The users could not be loaded.",
+        "retry": "Try again",
+        "empty": "No account matches.",
+        "noName": "No name yet",
+        "reason": "Reason: {reason}",
+        "suspend": "Suspend",
+        "unsuspend": "Restore",
+        "suspendTitle": "Suspend {name}?",
+        "suspendText": "This person is blocked from their next request and cannot refresh their session. The reason is written to the audit log.",
+        "reasonLabel": "Reason (at least 3 characters)",
+        "unsuspendTitle": "Restore {name}?",
+        "unsuspendText": "This person can sign in again right away.",
+        "cancel": "Cancel",
+        "errors": {
+          "BUSINESS_RULE_VIOLATED": "You cannot suspend your own account.",
+          "INVALID_TRANSITION": "The account status has changed. Reload the list.",
+          "NOT_FOUND": "The account was not found.",
+          "default": "That did not work. Try again in a few minutes."
+        }
+      }
     },
     "board": {
       "barTitle": "Splitting {quantity} {unit} across households",
@@ -792,7 +858,8 @@
         "rfq": "Quote request",
         "quotation": "Cooperative quotation",
         "news": "News",
-        "app_user": "Account"
+        "app_user": "Account",
+        "account_invitation": "Invitation"
       },
       "actions": {
         "household": {
@@ -831,6 +898,11 @@
         },
         "access": {
           "denied": "Blocked from changing another household’s record"
+        },
+        "user": {
+          "suspend": "Suspend account",
+          "unsuspend": "Restore account",
+          "invite": "Invite by email"
         }
       },
       "emptyHint": "Every administrator action will be recorded here.",
@@ -1242,7 +1314,22 @@
       "signOutAll": "Sign out of every device",
       "confirmTitle": "Sign out of every device?",
       "confirmText": "Every session of this account ends at once, this one included. You will need to sign in again.",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "current": "This device",
+      "signedOut": "Signed out",
+      "unknownBrowser": "Unknown browser",
+      "signOutOthersLead": "Keep this session and end every other session on browsers and phones.",
+      "signOutOthers": "Sign out other devices",
+      "othersTitle": "Sign out other devices?",
+      "othersText": "Every other session of this account ends at once. This session stays signed in.",
+      "othersDone": "Other devices were signed out.",
+      "othersFailed": "Other devices could not be signed out. Try again in a few minutes.",
+      "allSessions": "See all sign-in sessions"
+    },
+    "sessions": {
+      "title": "Sign-in sessions",
+      "lead": "Recent sign-ins with the browser and a rough location. If one looks unfamiliar, sign out other devices and change your password.",
+      "back": "Back to account"
     }
   },
   "villageMap": {
@@ -1502,7 +1589,7 @@
     },
     "invitation": {
       "title": "Welcome to vCraft",
-      "lead": "The village administration invited your household to the digital exhibition. Set a password to activate your account.",
+      "lead": "The village administration invited you to vCraft. Set a password to activate your account.",
       "submit": "Set password and enter vCraft",
       "submitting": "Activating…",
       "invalidTitle": "This invitation cannot be used",

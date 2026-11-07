@@ -25,9 +25,9 @@
             </tr>
             <tr>
               <td style="background-color:#fbf8f2;border:1px solid #e3dccf;border-radius:12px;padding:32px 28px;font-family:'Be Vietnam Pro',Arial,Helvetica,sans-serif;font-size:16px;line-height:1.65;color:#1c1814;">
-                <h1 style="margin:0 0 16px 0;font-family:Georgia,'Times New Roman',serif;font-size:26px;line-height:1.25;color:#1e3a6e;font-weight:bold;">Hộ của bạn được mời vào vCraft</h1>
+                <h1 style="margin:0 0 16px 0;font-family:Georgia,'Times New Roman',serif;font-size:26px;line-height:1.25;color:#1e3a6e;font-weight:bold;">{{ if eq .Data.invited_as "ADMIN" }}Bạn được mời làm quản trị viên vCraft{{ else }}Hộ của bạn được mời vào vCraft{{ end }}</h1>
                 <p style="margin:0 0 16px 0;">Chào bạn,</p>
-                <p style="margin:0 0 16px 0;">Ban quản lý làng nghề đã mời hộ của bạn vào triển lãm số vCraft, nơi giới thiệu câu chuyện, xưởng và sản phẩm của hộ tới khách trong và ngoài nước. Bấm nút dưới đây để đặt mật khẩu cho tài khoản <strong>{{ .Email }}</strong>.</p>
+                <p style="margin:0 0 16px 0;">{{ if eq .Data.invited_as "ADMIN" }}Ban quản lý làng nghề đã mời bạn làm quản trị viên của vCraft. Ở lần đăng nhập đầu tiên bạn sẽ cần bật xác thực hai lớp (mã 6 số) trước khi vào khu quản trị. Bấm nút dưới đây để đặt mật khẩu cho tài khoản <strong>{{ .Email }}</strong>.{{ else }}Ban quản lý làng nghề đã mời hộ của bạn vào triển lãm số vCraft, nơi giới thiệu câu chuyện, xưởng và sản phẩm của hộ tới khách trong và ngoài nước. Bấm nút dưới đây để đặt mật khẩu cho tài khoản <strong>{{ .Email }}</strong>.{{ end }}</p>
                 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0;">
                   <tr>
                     <td style="background-color:#a8482a;border-radius:4px;">

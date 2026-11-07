@@ -534,7 +534,73 @@
       "audit": "Nhật ký",
       "overview": "Tổng quan",
       "pending": "{count} hồ sơ đang chờ duyệt",
-      "progress": "Tiến độ đơn"
+      "progress": "Tiến độ đơn",
+      "users": "Tài khoản"
+    },
+    "accounts": {
+      "title": "Tài khoản",
+      "lead": "Mời quản trị viên hoặc hộ bằng email, tạm khóa và mở khóa tài khoản. Mọi thao tác được ghi vào nhật ký.",
+      "signIn": "Hãy đăng nhập bằng tài khoản Ban quản lý.",
+      "invite": {
+        "title": "Mời bằng email",
+        "lead": "Người được mời nhận thư có liên kết dùng một lần để đặt mật khẩu. Vai trò được cấp khi họ đăng nhập lần đầu.",
+        "email": "Email người được mời",
+        "role": "Vai trò",
+        "roles": {
+          "HOUSEHOLD": "Người đại diện hộ",
+          "ADMIN": "Quản trị viên"
+        },
+        "adminNote": "Quản trị viên mới phải bật xác thực hai lớp (mã 6 số) ở lần đăng nhập đầu tiên trước khi vào khu quản trị.",
+        "submit": "Gửi lời mời",
+        "sending": "Đang gửi…",
+        "sent": "Đã gửi lời mời tới {email}.",
+        "emailInvalid": "Hãy nhập một địa chỉ email hợp lệ.",
+        "errors": {
+          "CONFLICT_DUPLICATE": "Email này đã có tài khoản.",
+          "default": "Chưa gửi được lời mời. Thử lại sau ít phút."
+        },
+        "listTitle": "Lời mời gần đây",
+        "listEmpty": "Chưa có lời mời nào.",
+        "status": {
+          "PENDING": "Đang chờ",
+          "ACCEPTED": "Đã nhận"
+        },
+        "by": "Mời bởi {name}",
+        "failed": "Chưa tải được danh sách lời mời."
+      },
+      "users": {
+        "title": "Người dùng",
+        "filters": "Lọc người dùng",
+        "search": "Tìm theo email, tên hoặc tên đăng nhập",
+        "role": "Vai trò",
+        "allRoles": "Mọi vai trò",
+        "status": "Trạng thái",
+        "allStatuses": "Mọi trạng thái",
+        "statusValues": {
+          "ACTIVE": "Đang hoạt động",
+          "LOCKED": "Đã tạm khóa"
+        },
+        "loading": "Đang tải…",
+        "failed": "Chưa tải được danh sách người dùng.",
+        "retry": "Thử lại",
+        "empty": "Không có tài khoản nào khớp.",
+        "noName": "Chưa đặt tên",
+        "reason": "Lý do: {reason}",
+        "suspend": "Tạm khóa",
+        "unsuspend": "Mở khóa",
+        "suspendTitle": "Tạm khóa {name}?",
+        "suspendText": "Người này bị chặn ngay ở yêu cầu kế tiếp và không làm mới được phiên đăng nhập. Lý do được ghi vào nhật ký.",
+        "reasonLabel": "Lý do (ít nhất 3 ký tự)",
+        "unsuspendTitle": "Mở khóa {name}?",
+        "unsuspendText": "Người này có thể đăng nhập lại ngay.",
+        "cancel": "Hủy",
+        "errors": {
+          "BUSINESS_RULE_VIOLATED": "Bạn không thể tự khóa tài khoản của mình.",
+          "INVALID_TRANSITION": "Trạng thái tài khoản đã thay đổi. Hãy tải lại danh sách.",
+          "NOT_FOUND": "Không tìm thấy tài khoản.",
+          "default": "Chưa thực hiện được. Thử lại sau ít phút."
+        }
+      }
     },
     "board": {
       "barTitle": "Chia {quantity} {unit} cho các hộ",
@@ -792,7 +858,8 @@
         "rfq": "Yêu cầu báo giá",
         "quotation": "Chào giá liên kết",
         "news": "Tin tức",
-        "app_user": "Tài khoản"
+        "app_user": "Tài khoản",
+        "account_invitation": "Lời mời"
       },
       "actions": {
         "household": {
@@ -831,6 +898,11 @@
         },
         "access": {
           "denied": "Bị chặn khi sửa bản ghi của hộ khác"
+        },
+        "user": {
+          "suspend": "Tạm khóa tài khoản",
+          "unsuspend": "Mở khóa tài khoản",
+          "invite": "Mời bằng email"
         }
       },
       "emptyHint": "Mọi thao tác của quản trị viên sẽ được ghi lại ở đây.",
@@ -1242,7 +1314,22 @@
       "signOutAll": "Đăng xuất khỏi mọi thiết bị",
       "confirmTitle": "Đăng xuất khỏi mọi thiết bị?",
       "confirmText": "Mọi phiên đăng nhập của tài khoản sẽ kết thúc ngay, kể cả phiên này. Bạn sẽ cần đăng nhập lại.",
-      "cancel": "Hủy"
+      "cancel": "Hủy",
+      "current": "Thiết bị này",
+      "signedOut": "Đã đăng xuất",
+      "unknownBrowser": "Trình duyệt không xác định",
+      "signOutOthersLead": "Giữ phiên này và kết thúc mọi phiên khác trên trình duyệt và điện thoại.",
+      "signOutOthers": "Đăng xuất các thiết bị khác",
+      "othersTitle": "Đăng xuất các thiết bị khác?",
+      "othersText": "Mọi phiên đăng nhập khác của tài khoản sẽ kết thúc ngay. Phiên này vẫn đăng nhập.",
+      "othersDone": "Đã đăng xuất các thiết bị khác.",
+      "othersFailed": "Chưa đăng xuất được các thiết bị khác. Thử lại sau ít phút.",
+      "allSessions": "Xem toàn bộ phiên đăng nhập"
+    },
+    "sessions": {
+      "title": "Phiên đăng nhập",
+      "lead": "Các lần đăng nhập gần đây kèm trình duyệt và vị trí thô. Thấy phiên nào lạ thì đăng xuất các thiết bị khác rồi đổi mật khẩu.",
+      "back": "Về trang tài khoản"
     }
   },
   "villageMap": {
@@ -1502,7 +1589,7 @@
     },
     "invitation": {
       "title": "Chào mừng tới vCraft",
-      "lead": "Ban quản lý đã mời hộ của bạn vào triển lãm số. Đặt mật khẩu để kích hoạt tài khoản.",
+      "lead": "Ban quản lý đã mời bạn vào vCraft. Đặt mật khẩu để kích hoạt tài khoản.",
       "submit": "Đặt mật khẩu và vào vCraft",
       "submitting": "Đang kích hoạt…",
       "invalidTitle": "Lời mời không dùng được",

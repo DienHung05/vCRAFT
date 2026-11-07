@@ -290,7 +290,7 @@ describe('Journal authoring and integrity', () => {
     await em.flush();
     const res = await append({ stage: 'fire', declaredDate: '2026-10-01', note: 'Nung lò.' });
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('HOUSEHOLD_ACCOUNT_LOCKED');
+    expect(res.body.code).toBe('AUTH_ACCOUNT_SUSPENDED');
   });
 });
 

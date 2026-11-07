@@ -55,6 +55,14 @@ export const LoginEventSchema = z.object({
   method: z.string(),
   /** `aal2` once the session passed the second factor. */
   aal: z.enum(['aal1', 'aal2']),
+  /** Coarse browser and system label such as "Chrome · Windows"; null for sessions recorded before it existed. */
+  browser: z.string().nullable().default(null),
+  /** ISO 3166-1 alpha-2 country the hosting edge reported (rough location); null when unknown. */
+  country: z.string().nullable().default(null),
+  /** True for the session that made this request. */
+  current: z.boolean().default(false),
+  /** Set once the person signed this session out with "sign out other devices". */
+  signedOutAt: IsoDateTimeSchema.nullable().default(null),
   createdAt: IsoDateTimeSchema,
 });
 export type LoginEventDto = z.infer<typeof LoginEventSchema>;

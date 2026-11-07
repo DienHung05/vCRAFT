@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AuthAdmin, SupabaseAuthAdmin } from '../../common/auth/auth-admin';
 import { MediaModule } from '../media/media.module';
 import { RfqModule } from '../rfq/rfq.module';
 import { AccountDeletionService } from './application/account-deletion.service';
@@ -10,10 +9,6 @@ import { PrivacyController } from './privacy.controller';
 @Module({
   imports: [MediaModule, RfqModule],
   controllers: [PrivacyController],
-  providers: [
-    DataExportService,
-    AccountDeletionService,
-    { provide: AuthAdmin, useClass: SupabaseAuthAdmin },
-  ],
+  providers: [DataExportService, AccountDeletionService],
 })
 export class PrivacyModule {}

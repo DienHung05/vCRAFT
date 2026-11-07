@@ -99,7 +99,13 @@ export default async function AccountPage({ params }: PageProps<'/[locale]/tai-k
       <Card className="p-5 md:p-8">
         <h2 className="font-display text-h3 text-glaze">{t('security.title')}</h2>
         <p className="mt-1 mb-5 text-ash text-small">{t('security.lead')}</p>
-        <AccountSecurity />
+        <AccountSecurity limit={5} />
+        <Link
+          href="/tai-khoan/phien-dang-nhap"
+          className="mt-5 inline-block text-clay text-small underline underline-offset-4"
+        >
+          {t('security.allSessions')}
+        </Link>
       </Card>
 
       <Card className="p-5 md:p-8">
