@@ -53,6 +53,9 @@ export async function generateMetadata({
  * (mốc mới nhất trước) → người làm → món đồ và hộ → ghé thăm (phòng trưng bày tách khỏi xưởng, bản đồ
  * kèm danh sách) → chứng nhận → tem QR, kèm liên kết về trang chủ.
  */
+/** Lets the sticky call-to-action buttons shrink and wrap instead of pushing the page sideways. */
+const CTA_FIT = 'h-auto min-h-13 min-w-0 flex-1 shrink whitespace-normal py-2 text-center';
+
 export default async function TracePage({ params }: PageProps<'/[locale]/truy-xuat/[code]'>) {
   const locale = await resolveLocale(params);
   const { code } = await params;
@@ -256,12 +259,13 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
             </section>
 
             <nav className="sticky bottom-0 mt-12 flex gap-3 border-ink/10 border-t bg-paper/90 px-5 py-4 backdrop-blur-md">
-              <a href="#workshop" className={`${buttonVariants({ size: 'lg' })} flex-1`}>
+              {/* Both labels share the row and wrap when the English text is long (GH#257). */}
+              <a href="#workshop" className={`${buttonVariants({ size: 'lg' })} ${CTA_FIT}`}>
                 {t('ctaVisit')}
               </a>
               <Link
                 href="/yeu-cau-bao-gia"
-                className={`${buttonVariants({ variant: 'secondary', size: 'lg' })} flex-1`}
+                className={`${buttonVariants({ variant: 'secondary', size: 'lg' })} ${CTA_FIT}`}
               >
                 {t('ctaRfq')}
               </Link>

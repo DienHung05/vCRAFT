@@ -179,11 +179,15 @@ export function AssistantWidget() {
     />
   );
 
-  // Above the map's bottom sheet on the map page; above the iOS home bar everywhere.
+  // Above the map's bottom sheet on the map page, above the Studio tab bar on phones (GH#257), and above
+  // the iOS home bar everywhere.
+  const studio = /^\/(vi|en)\/studio(\/|$)/.test(pathname);
   const lift =
     page === 'map'
       ? 'bottom-[calc(env(safe-area-inset-bottom)+7rem)]'
-      : 'bottom-[calc(env(safe-area-inset-bottom)+1rem)]';
+      : studio
+        ? 'bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] md:bottom-[calc(env(safe-area-inset-bottom)+1rem)]'
+        : 'bottom-[calc(env(safe-area-inset-bottom)+1rem)]';
 
   return (
     <>

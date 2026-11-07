@@ -55,6 +55,8 @@ export function QrLabelsButton({
       <Button
         type="button"
         variant="secondary"
+        // Long labels ("Nhãn QR cho 9 sản phẩm…") wrap on a 360 px phone (GH#257).
+        className="h-auto min-h-11 whitespace-normal py-2 text-left"
         disabled={state === 'busy' || productIds.length === 0}
         onClick={() => void run()}
       >
