@@ -2,7 +2,14 @@
 
 import { SealMark } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
-import { type ComponentProps, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  type ComponentProps,
+  type CSSProperties,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Link } from '@/i18n/navigation';
 import type { PinStatus } from './map-model';
 import { LABEL_GAP, layoutMiniMap, type PlacedPin } from './mini-map-layout';
@@ -54,6 +61,7 @@ export function VillageMiniMap({ label, pins, highlight, className }: VillageMin
   const t = useTranslations('villageMap');
   const figure = useRef<HTMLElement>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const openCard = openId ? pins.find((p) => p.id === openId) : undefined;
 
   // Esc closes the open card; a tap outside the map does too.
   useEffect(() => {
@@ -116,9 +124,10 @@ export function VillageMiniMap({ label, pins, highlight, className }: VillageMin
     <figure
       ref={figure}
       aria-label={label}
-      className={`grain relative m-0 aspect-[4/3] rounded-card bg-paper text-ink shadow-warm ${className ?? ''}`}
+      className={`grain relative m-0 aspect-[4/3] overflow-x-clip rounded-card bg-paper text-ink shadow-warm ${className ?? ''}`}
     >
-      {/* Only the drawing is clipped, so an info card near the edge can overflow the frame (GH#216). */}
+      {/* The frame clips sideways only, so pin labels at the edge never widen the page on a phone while an
+          info card near the top or bottom can still overflow it (GH#216). */}
       <svg
         aria-hidden="true"
         viewBox="0 0 400 300"
@@ -177,7 +186,7 @@ export function VillageMiniMap({ label, pins, highlight, className }: VillageMin
           return (
             <li
               key={p.id}
-              className={`absolute size-0 ${expanded ? 'z-20' : ''}`}
+              className="absolute size-0"
               style={
                 placed ? { left: placed.cx, top: placed.cy } : { left: `${p.x}%`, top: `${p.y}%` }
               }
@@ -208,18 +217,19 @@ export function VillageMiniMap({ label, pins, highlight, className }: VillageMin
               >
                 {p.label}
               </span>
-              {p.card && expanded ? <PinCard card={p.card} x={p.x} y={p.y} t={t} /> : null}
             </li>
           );
         })}
       </ul>
+      {openCard?.card ? <PinCard card={openCard.card} x={openCard.x} y={openCard.y} t={t} /> : null}
     </figure>
   );
 }
 
 /**
  * Small info card beside a tapped mini-map pin (GH#216). It opens below pins in the top half and above
- * pins in the bottom half, and leans away from the nearer side edge, so it stays over the map.
+ * pins in the bottom half, centred on the pin but clamped to the map's width, so it never leaves the frame
+ * sideways on a 360 px phone.
  */
 function PinCard({
   card,
@@ -232,14 +242,18 @@ function PinCard({
   y: number;
   t: ReturnType<typeof useTranslations<'villageMap'>>;
 }) {
-  const vertical = y < 50 ? 'top-6' : 'bottom-6';
-  const horizontal = x < 35 ? '-left-4' : x > 65 ? '-right-4' : '-translate-x-1/2';
+  const style: CSSProperties = {
+    width: 'min(15rem, calc(100% - 1rem))',
+    left: `clamp(0.5rem, calc(${x}% - 7.5rem), calc(100% - min(15rem, calc(100% - 1rem)) - 0.5rem))`,
+    ...(y < 50 ? { top: `calc(${y}% + 1.5rem)` } : { bottom: `calc(${100 - y}% + 1.5rem)` }),
+  };
   return (
     // biome-ignore lint/a11y/useSemanticElements: a labelled group of text and one link, not a form fieldset.
     <div
       role="group"
       aria-label={card.title}
-      className={`absolute ${vertical} ${horizontal} w-60 max-w-[70vw] rounded-card bg-surface p-3 text-left text-small shadow-warm ring-1 ring-ink/10`}
+      style={style}
+      className="absolute z-20 rounded-card bg-surface p-3 text-left text-small shadow-warm ring-1 ring-ink/10"
     >
       <p className="font-medium text-body leading-snug">{card.title}</p>
       {card.lines.map((line) => (
