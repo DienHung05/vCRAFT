@@ -66,6 +66,22 @@ export function CheckEmailPanel({
       </h2>
       <p>{t('lead', { email })}</p>
       <p className="text-small text-ash">{t('spam')}</p>
+      {/* Supabase answers sign-up for an address that already has an account with the same
+          success and sends no mail, so this hint is shown to everyone (no enumeration). */}
+      <p className="text-small text-ash">
+        {t.rich('existingAccount', {
+          signIn: (chunks) => (
+            <Link href="/dang-nhap" className="text-clay underline underline-offset-4">
+              {chunks}
+            </Link>
+          ),
+          forgot: (chunks) => (
+            <Link href="/quen-mat-khau" className="text-clay underline underline-offset-4">
+              {chunks}
+            </Link>
+          ),
+        })}
+      </p>
       {error ? <FormAlert tone="error">{errors(error)}</FormAlert> : null}
       {state === 'sent' && !error ? <FormAlert tone="success">{t('resent')}</FormAlert> : null}
       <div className="flex flex-wrap items-center gap-3">
