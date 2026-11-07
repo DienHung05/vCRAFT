@@ -38,6 +38,11 @@ export interface MascotProps {
   directions?: string;
   /** URL for the 3×3 reactions sprite sheet. Defaults to '/mascots/fox-reactions.webp'. */
   reactions?: string;
+  /**
+   * URL for the 3×3 closed-eye directions sheet, aligned cell for cell with `directions`.
+   * Defaults to '/mascots/fox-directions-blink.webp'.
+   */
+  blinks?: string;
 }
 
 // background-size 300% 300% makes each 1/3 cell a clean 0/50/100% step on both axes.
@@ -159,7 +164,9 @@ function useThought(lines: readonly string[], reduced: boolean) {
 
 /**
  * The Fox, vCraft's assistant mascot (BRAND §10): uses the original page-mascot fox sprite sheets
- * (fox-directions.webp and fox-reactions.webp) unchanged, rendered via two stacked CSS background layers.
+ * (fox-directions.webp and fox-reactions.webp) unchanged, plus fox-directions-blink.webp (the same nine
+ * gaze cells with the eyes closed), rendered via three stacked CSS background layers. A blink swaps the
+ * gaze cell for its closed-eye twin, so the head keeps facing where it looks (GH#186).
  *
  * The component blinks at random, breathes 2 px on a 3 s cycle, turns its head toward the pointer or a
  * point with a slight lag, dozes off when left idle, and shows a thought bubble whose three small clouds
@@ -177,6 +184,7 @@ export function Mascot({
   className,
   directions = '/mascots/fox-directions.webp',
   reactions = '/mascots/fox-reactions.webp',
+  blinks = '/mascots/fox-directions-blink.webp',
 }: MascotProps) {
   const systemReduced = useReducedMotion();
   const reduced = reducedMotion ?? systemReduced;
@@ -191,19 +199,18 @@ export function Mascot({
   const bubble = useThought(lines, reduced);
   const motion = !reduced;
 
-  // Determine which sprite to show on each layer.
-  // Reactions layer is shown for reaction-based moods, or during a blink.
+  // Reactions layer: only for reaction-based moods. Blinking never touches it (GH#186).
   const reactionMood = moodReaction(shown);
-  const showReaction = reactionMood !== null || blinking;
+  const showReaction = reactionMood !== null;
+  // Blink layer: the closed-eye twin of the current gaze cell, shown instantly while blinking.
+  const showBlink = blinking && !showReaction;
 
   // Directions layer: use a fixed direction for think/refuse, otherwise gaze-driven.
   const fixedDir = moodFixedDirection(shown);
   const currentDirection = fixedDir ?? gazeToDirection(gaze);
   const dirIdx = directionIndex(currentDirection);
 
-  // Reactions layer: blink cell when blinking (regardless of mood), otherwise the mood cell.
-  const currentReaction = blinking ? 'blink' : (reactionMood ?? 'blink');
-  const reactIdx = reactionIndex(currentReaction);
+  const reactIdx = reactionIndex(reactionMood ?? 'blink');
 
   return (
     <div
@@ -239,18 +246,29 @@ export function Mascot({
       >
         {/* Directions layer — always mounted so the sheet is preloaded; hidden when reaction is active */}
         <span
+          data-layer="directions"
           style={{
             ...LAYER_BASE,
             backgroundImage: `url(${directions})`,
             ...cellStyle(dirIdx),
             opacity: showReaction ? 0 : 1,
-            // Slight lag on the gaze change for a natural feel
-            transition:
-              motion && !showReaction ? 'background-position 0ms, opacity 60ms' : undefined,
+            transition: motion ? 'opacity 60ms' : undefined,
           }}
         />
-        {/* Reactions layer — always mounted so the sheet is preloaded; shown for blinks and mood reactions */}
+        {/* Blink layer — always mounted so the sheet is preloaded; same cell as the directions layer.
+            No transition: a blink is an instant swap, never a cross-fade between two poses. */}
         <span
+          data-layer="blink"
+          style={{
+            ...LAYER_BASE,
+            backgroundImage: `url(${blinks})`,
+            ...cellStyle(dirIdx),
+            opacity: showBlink ? 1 : 0,
+          }}
+        />
+        {/* Reactions layer — always mounted so the sheet is preloaded; shown for mood reactions */}
+        <span
+          data-layer="reactions"
           style={{
             ...LAYER_BASE,
             backgroundImage: `url(${reactions})`,

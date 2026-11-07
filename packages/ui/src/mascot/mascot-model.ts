@@ -154,7 +154,7 @@ export function isDoubleBlink(random: () => number = Math.random): boolean {
   return random() < 0.2;
 }
 
-/** How long a blink keeps the eyes shut (blink reaction cell is shown). */
+/** How long a blink keeps the eyes shut (the closed-eye twin of the gaze cell is shown). */
 export const BLINK_MS = 120;
 /** How long each thought stays before the next one cross-fades in. */
 export const THOUGHT_MS = 2_500;
