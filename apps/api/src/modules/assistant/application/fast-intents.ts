@@ -6,6 +6,15 @@ import { foldVietnamese } from '@vcraft/utils';
  */
 export type FastIntent = 'greeting' | 'thanks' | 'bye' | 'datetime' | 'weather';
 
+/** The intent names the assistant log records for fast-path turns. */
+export const FAST_INTENTS: readonly FastIntent[] = [
+  'greeting',
+  'thanks',
+  'bye',
+  'datetime',
+  'weather',
+];
+
 const WORDS = (text: string) =>
   foldVietnamese(text)
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
@@ -71,5 +80,7 @@ export function weatherPlace(message: string): string | null {
   const place = match?.[1]?.trim();
   if (!place || /^(hom nay|ngay mai|bay gio|today|tomorrow|now|the nao|ra sao)$/.test(place))
     return null;
+  // The default village keeps the site's own spelling (Bát Tràng) instead of the geocoder's.
+  if (/^bat trang$/.test(place)) return null;
   return place;
 }

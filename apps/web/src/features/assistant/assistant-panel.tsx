@@ -24,7 +24,8 @@ import styles from './pending-indicator.module.css';
 /** Internal markdown links (`[label](/vi/...)`) become anchors; everything else stays plain text. */
 function renderText(text: string): ReactNode[] {
   const parts: ReactNode[] = [];
-  const link = /\[([^\]]+)\]\((\/(?!\/)[^)\s]*)\)/g;
+  // Whitespace inside the parentheses is tolerated, as in the server-side link filter (`[text]( /path )`).
+  const link = /\[([^\]]+)\]\(\s*(\/(?!\/)[^)\s]*)\s*\)/g;
   let last = 0;
   for (const match of text.matchAll(link)) {
     parts.push(text.slice(last, match.index));

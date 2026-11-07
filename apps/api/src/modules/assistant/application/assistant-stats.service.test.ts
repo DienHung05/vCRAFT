@@ -52,6 +52,20 @@ describe('AssistantStatsService (GH#82)', () => {
     });
   });
 
+  it('leaves fast-path turns out of the latency percentiles but still counts them as turns (GH#233)', async () => {
+    const stats = await new AssistantStatsService(
+      orm([
+        row({ intent: 'greeting', firstTokenMs: 90 }),
+        row({ intent: 'weather', firstTokenMs: 120 }),
+        row({ intent: 'datetime', firstTokenMs: 100 }),
+        row({ intent: 'catalog', firstTokenMs: 3000 }),
+        row({ intent: 'site_help', firstTokenMs: 4000 }),
+      ]),
+    ).stats(7);
+    expect(stats.turns).toBe(5);
+    expect(stats.firstTokenMs).toEqual({ p50: 3000, p95: 4000 });
+  });
+
   it('reports zeros, not NaN, without any turn', async () => {
     const stats = await new AssistantStatsService(orm([])).stats(1);
     expect(stats.blockRate).toBe(0);

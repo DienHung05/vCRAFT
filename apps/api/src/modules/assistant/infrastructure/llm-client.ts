@@ -6,6 +6,7 @@ export const ASSISTANT_INTENTS = [
   'village',
   'open_workshops',
   'chitchat',
+  'off_topic',
   'out_of_scope',
   'injection',
   'abuse',
