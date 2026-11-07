@@ -1778,6 +1778,7 @@
       "withdrawReason": "Reason for withdrawing",
       "notApproved": "Your household must be approved before publishing.",
       "publishFailed": "We could not change the status. Please try again later.",
+      "publishJournalRequired": "Add at least one production-journal milestone (with a photo) before publishing.",
       "qr": "QR code",
       "qrLead": "Print this on the label under the piece. The code stays the same if the name changes.",
       "qrDownload": "Download PNG",
@@ -1840,7 +1841,11 @@
       "exifFilled": "Date and time filled from the photo.",
       "exifOld": "This photo is more than 30 days old. Check the date before saving.",
       "waitingPhoto": "Waiting for the photo to process…",
-      "photoFailed": "The photo has not finished processing. Try again later or save without it.",
+      "photoFailed": "The photo has not finished processing. Try again later.",
+      "photoRequired": "Add at least one photo as evidence for this stage.",
+      "oldPhotoTitle": "Photo taken a while ago?",
+      "oldPhotoText": "This photo was taken more than 30 days ago. Save the milestone with it anyway?",
+      "oldPhotoConfirm": "Save anyway",
       "saveFailed": "We could not save this entry. Check the details and try again.",
       "correct": "Correct",
       "correctionTitle": "Correct entry {n}",
@@ -1856,7 +1861,7 @@
       "deleteText": "The milestone and its photo will be removed from the journal. This cannot be undone.",
       "deletedToast": "Milestone deleted.",
       "deleteFailed": "Could not delete the milestone. Please try again later.",
-      "emptyHint": "Each milestone is one stage with a date, a note and, if you have one, a photo. Visitors read them when they scan the QR code."
+      "emptyHint": "Each milestone is one stage with a date, a note and a photo. Visitors read them when they scan the QR code."
     },
     "invitations": {
       "title": "Quote invitations",

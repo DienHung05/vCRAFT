@@ -23,8 +23,10 @@ describe('Journal authoring and integrity', () => {
   let photoUrl: string;
 
   const journalUrl = () => `/me/household/products/${productId}/journal`;
+  /** Every milestone carries a photo (FR-PRD-04); tests that do not care get the household's own. */
+  const proof = () => [{ url: photoUrl, sha256: SHA }];
   const append = (body: Record<string, unknown>, auth = rep.auth) =>
-    t.request({ method: 'POST', url: journalUrl(), auth, body });
+    t.request({ method: 'POST', url: journalUrl(), auth, body: { images: proof(), ...body } });
 
   beforeAll(async () => {
     db = await startTestDatabase();
@@ -105,6 +107,23 @@ describe('Journal authoring and integrity', () => {
     expect(res.body.missingStages).toContain('finish');
   });
 
+  it('mốc phải có từ 1 đến 6 ảnh (FR-PRD-04, GH#251)', async () => {
+    const none = await append({
+      stage: 'clay',
+      declaredDate: '2026-09-03',
+      note: 'Không ảnh.',
+      images: [],
+    });
+    expect(none.status).toBe(422);
+    const seven = await append({
+      stage: 'clay',
+      declaredDate: '2026-09-03',
+      note: 'Quá nhiều ảnh.',
+      images: Array.from({ length: 7 }, () => ({ url: photoUrl, sha256: SHA })),
+    });
+    expect(seven.status).toBe(422);
+  });
+
   it('bỏ qua công đoạn mà thiếu lý do bị từ chối; có lý do thì được', async () => {
     const missing = await append({
       stage: 'glaze',
@@ -134,7 +153,12 @@ describe('Journal authoring and integrity', () => {
       url: `/journal-entries/${dry.id}`,
       auth: rep.auth,
       headers: { 'if-match': String(dry.version) },
-      body: { stage: 'dry', declaredDate: '2026-09-10', note: 'Phơi mộc trong bóng râm.' },
+      body: {
+        stage: 'dry',
+        declaredDate: '2026-09-10',
+        note: 'Phơi mộc trong bóng râm.',
+        images: proof(),
+      },
     });
     expect(edited.status).toBe(200);
     expect(edited.body.entries[2].note).toBe('Phơi mộc trong bóng râm.');
@@ -204,7 +228,13 @@ describe('Journal authoring and integrity', () => {
       url: `/journal-entries/${glaze.id}`,
       auth: rep.auth,
       headers: { 'if-match': String(glaze.version) },
-      body: { stage: 'glaze', declaredDate: '2026-09-21', note: 'Sửa lén.', skipReason: 'x' },
+      body: {
+        stage: 'glaze',
+        declaredDate: '2026-09-21',
+        note: 'Sửa lén.',
+        skipReason: 'x',
+        images: proof(),
+      },
     });
     expect(edit.status).toBe(409);
     expect(edit.body.code).toBe('JOURNAL_PUBLISHED_IMMUTABLE');
