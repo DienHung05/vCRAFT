@@ -39,13 +39,6 @@ describe('Knowledge index sources', () => {
       },
     });
     householdId = applied.body.id;
-    const created = await t.request({
-      method: 'POST',
-      url: '/me/household/products',
-      auth: rep.auth,
-      body: { name: 'Bình men lam vẽ sen', description: 'Bình vẽ tay hoa sen, men lam.' },
-    });
-    product = created.body;
   }, 240_000);
 
   afterAll(async () => {
@@ -53,9 +46,8 @@ describe('Knowledge index sources', () => {
     await db?.stop();
   });
 
-  it('keeps a pending household and its draft product out of the index', async () => {
+  it('keeps a pending household out of the index', async () => {
     expect(await docs('HOUSEHOLD', householdId)).toEqual([]);
-    expect(await docs('PRODUCT', product.id)).toEqual([]);
   });
 
   it('queues a change on approval and publication, and indexes the public documents', async () => {
@@ -66,6 +58,15 @@ describe('Knowledge index sources', () => {
       auth: admin.auth,
       headers: { 'if-match': String(household.body.version) },
     });
+    // Products come after approval (GH#237); a draft stays out of the index.
+    const created = await t.request({
+      method: 'POST',
+      url: '/me/household/products',
+      auth: rep.auth,
+      body: { name: 'Bình men lam vẽ sen', description: 'Bình vẽ tay hoa sen, men lam.' },
+    });
+    product = created.body;
+    expect(await docs('PRODUCT', product.id)).toEqual([]);
     const published = await t.request({
       method: 'POST',
       url: `/products/${product.id}/publish`,

@@ -800,6 +800,9 @@
         },
         "allocation": {
           "reallocate": "Chia lại phần còn lại"
+        },
+        "access": {
+          "denied": "Bị chặn khi sửa bản ghi của hộ khác"
         }
       },
       "emptyHint": "Mọi thao tác của quản trị viên sẽ được ghi lại ở đây.",
@@ -1720,6 +1723,8 @@
       }
     },
     "products": {
+      "pendingHint": "Hộ được Ban quản lý duyệt hồ sơ xong thì mới đăng được sản phẩm.",
+      "pendingAction": "Xem hồ sơ của hộ",
       "title": "Sản phẩm",
       "add": "Thêm sản phẩm",
       "empty": "Chưa có sản phẩm nào ở mục này.",

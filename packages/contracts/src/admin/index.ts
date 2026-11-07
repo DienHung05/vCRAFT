@@ -26,6 +26,8 @@ export const AUDIT_ACTIONS = [
   'news.unpublish',
   'news.delete',
   'account.delete',
+  // A household tried to change another household's record (AC-4, GH#237).
+  'access.denied',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
