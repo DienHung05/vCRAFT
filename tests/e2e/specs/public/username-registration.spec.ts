@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { waitForCaptcha } from '../../fixtures/captcha';
 
 // Exercise the browser form against the public HTTP contract without sending verification emails.
 test('registers a lowercase username and keeps email confirmation', async ({ page }) => {
@@ -12,6 +13,7 @@ test('registers a lowercase username and keeps email confirmation', async ({ pag
   await page.getByLabel('Email', { exact: true }).fill('new.potter@example.com');
   await page.getByLabel('Password', { exact: true }).fill('PotteryTest123');
   await page.getByRole('checkbox').check();
+  await waitForCaptcha(page);
   const submitted = page.waitForRequest('**/api/v1/auth/sign-up');
   await page.getByRole('button', { name: 'Create account', exact: true }).click();
   expect((await submitted).postDataJSON()).toMatchObject({

@@ -204,6 +204,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@mikro-orm/sql@7.2.5': 7f3c5b9ab2b6ebfeba11c5485a83f56ceaaa0d436d73875db33609ca3413e37d
+
 importers:
 
   .:
@@ -9011,12 +9014,12 @@ snapshots:
   '@mikro-orm/migrations@7.2.5(@mikro-orm/core@7.2.5)':
     dependencies:
       '@mikro-orm/core': 7.2.5
-      '@mikro-orm/sql': 7.2.5(@mikro-orm/core@7.2.5)
+      '@mikro-orm/sql': 7.2.5(patch_hash=7f3c5b9ab2b6ebfeba11c5485a83f56ceaaa0d436d73875db33609ca3413e37d)(@mikro-orm/core@7.2.5)
 
   '@mikro-orm/mysql@7.2.5(@mikro-orm/core@7.2.5)(@types/node@26.6.5)':
     dependencies:
       '@mikro-orm/core': 7.2.5
-      '@mikro-orm/sql': 7.2.5(@mikro-orm/core@7.2.5)
+      '@mikro-orm/sql': 7.2.5(patch_hash=7f3c5b9ab2b6ebfeba11c5485a83f56ceaaa0d436d73875db33609ca3413e37d)(@mikro-orm/core@7.2.5)
       kysely: 0.29.6
       mysql2: 3.24.5(@types/node@26.6.5)
       sqlstring: 2.3.3
@@ -9033,7 +9036,7 @@ snapshots:
   '@mikro-orm/postgresql@7.2.5(@mikro-orm/core@7.2.5)':
     dependencies:
       '@mikro-orm/core': 7.2.5
-      '@mikro-orm/sql': 7.2.5(@mikro-orm/core@7.2.5)
+      '@mikro-orm/sql': 7.2.5(patch_hash=7f3c5b9ab2b6ebfeba11c5485a83f56ceaaa0d436d73875db33609ca3413e37d)(@mikro-orm/core@7.2.5)
       kysely: 0.29.6
       pg: 8.23.1
       pg-cursor: 2.22.1(pg@8.23.1)
@@ -9047,7 +9050,7 @@ snapshots:
     dependencies:
       '@mikro-orm/core': 7.2.5
 
-  '@mikro-orm/sql@7.2.5(@mikro-orm/core@7.2.5)':
+  '@mikro-orm/sql@7.2.5(patch_hash=7f3c5b9ab2b6ebfeba11c5485a83f56ceaaa0d436d73875db33609ca3413e37d)(@mikro-orm/core@7.2.5)':
     dependencies:
       '@mikro-orm/core': 7.2.5
       kysely: 0.29.6
