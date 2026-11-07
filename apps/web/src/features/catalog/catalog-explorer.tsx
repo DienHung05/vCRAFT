@@ -21,7 +21,8 @@ import {
   parseCatalogParams,
   toProductFilters,
 } from './catalog-filters';
-import { CATALOG_PAGE_SIZE, CatalogPagination } from './catalog-pagination';
+import { CATALOG_PAGE_SIZE } from './catalog-page-size';
+import { CatalogPagination } from './catalog-pagination';
 import { productsQueryString } from './exhibition-query';
 import { ProductCard, ProductGridSkeleton } from './product-card';
 import { toProductCardView } from './view-models';

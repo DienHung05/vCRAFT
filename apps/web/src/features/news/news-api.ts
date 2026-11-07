@@ -8,6 +8,7 @@ import {
 } from '@vcraft/contracts';
 
 import { apiBaseUrl } from '@/lib/api/internal-url';
+import { logApiFailure } from '@/lib/api/log-api-failure';
 
 export { apiBaseUrl };
 
@@ -35,10 +36,16 @@ export async function fetchNews(options: FetchNewsOptions = {}): Promise<NewsRes
       next: { revalidate: 30 },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-    if (!res.ok) return { status: 'unavailable' };
+    if (!res.ok) {
+      logApiFailure('/news', { kind: 'http', status: res.status });
+      return { status: 'unavailable' };
+    }
     const parsed = NewsListResponseSchema.safeParse(await res.json());
-    return parsed.success ? { status: 'ok', page: parsed.data } : { status: 'unavailable' };
-  } catch {
+    if (parsed.success) return { status: 'ok', page: parsed.data };
+    logApiFailure('/news', { kind: 'schema', issues: parsed.error.issues });
+    return { status: 'unavailable' };
+  } catch (error) {
+    logApiFailure('/news', { kind: 'error', error });
     return { status: 'unavailable' };
   }
 }
@@ -57,10 +64,16 @@ export async function fetchNewsArticle(slug: string): Promise<NewsArticleResult>
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (res.status === 404) return { status: 'not-found' };
-    if (!res.ok) return { status: 'unavailable' };
+    if (!res.ok) {
+      logApiFailure('/news', { kind: 'http', status: res.status });
+      return { status: 'unavailable' };
+    }
     const parsed = NewsDetailResponseSchema.safeParse(await res.json());
-    return parsed.success ? { status: 'ok', article: parsed.data } : { status: 'unavailable' };
-  } catch {
+    if (parsed.success) return { status: 'ok', article: parsed.data };
+    logApiFailure('/news', { kind: 'schema', issues: parsed.error.issues });
+    return { status: 'unavailable' };
+  } catch (error) {
+    logApiFailure('/news', { kind: 'error', error });
     return { status: 'unavailable' };
   }
 }
@@ -73,10 +86,16 @@ export async function fetchMaterialPrices(): Promise<MaterialPriceSeriesDto | nu
       next: { revalidate: 300 },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      logApiFailure('/news/material-prices', { kind: 'http', status: res.status });
+      return null;
+    }
     const parsed = MaterialPriceSeriesResponseSchema.safeParse(await res.json());
-    return parsed.success ? parsed.data : null;
-  } catch {
+    if (parsed.success) return parsed.data;
+    logApiFailure('/news/material-prices', { kind: 'schema', issues: parsed.error.issues });
+    return null;
+  } catch (error) {
+    logApiFailure('/news/material-prices', { kind: 'error', error });
     return null;
   }
 }
