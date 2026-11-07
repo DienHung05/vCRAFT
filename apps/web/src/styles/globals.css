@@ -68,9 +68,8 @@ html[data-fonts="ready"] {
  * kiln-feedback.ts). So the only animated navigation is the sealed sign-in carrying on to its destination.
  *
  * The transition is a plain cross-fade in the kiln grammar (ease.clay over dur.base), opacity only: a scale on
- * the root would move the sticky header. The same root cross-fade also plays for the two same-document
- * transitions: the light/dark switch (`theme-toggle.tsx`) and soft navigations that carry a React
- * `<ViewTransition>` (the product picture below).
+ * the root would move the sticky header. The same root cross-fade also plays for soft navigations that carry a
+ * React `<ViewTransition>` (the product picture below). The light/dark switch has its own wave (below).
  */
 @media (prefers-reduced-motion: no-preference) {
   @view-transition {
@@ -91,6 +90,44 @@ html[data-fonts="ready"] {
 @keyframes kiln-vt-in {
   from {
     opacity: 0;
+  }
+}
+
+/*
+ * Light/dark switch (GH#214): the new theme spreads from the toggle as a wave. `theme-toggle.tsx` sets
+ * `data-theme-transition` on <html> only for this switch, with the start point and the radius that reaches the
+ * farthest corner in `--theme-wave-x/y/r`, so every other root transition keeps the cross-fade above. The old
+ * snapshot stays still; the new one is revealed through a radial mask whose edge carries a soft crest (a
+ * lighter band just inside the front), which reads as a wave rather than a hard circle. The front overshoots the
+ * radius by the crest width so the page ends fully switched. Under reduced motion or without the View
+ * Transitions API the toggle swaps without a transition, so none of this runs.
+ */
+@property --theme-wave-p {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+:root[data-theme-transition="wave"]::view-transition-old(root) {
+  animation: none;
+}
+:root[data-theme-transition="wave"]::view-transition-new(root) {
+  mix-blend-mode: normal;
+  --theme-wave-at: var(--theme-wave-x, 100%) var(--theme-wave-y, 0%);
+  mask-image: radial-gradient(
+    circle at var(--theme-wave-at),
+    #000 calc(var(--theme-wave-p) - 56px),
+    rgb(0 0 0 / 0.55) calc(var(--theme-wave-p) - 40px),
+    #000 calc(var(--theme-wave-p) - 24px),
+    transparent var(--theme-wave-p)
+  );
+  animation: theme-wave 620ms var(--ease-clay) both;
+}
+@keyframes theme-wave {
+  from {
+    --theme-wave-p: 0px;
+  }
+  to {
+    --theme-wave-p: calc(var(--theme-wave-r, 150vmax) + 64px);
   }
 }
 
