@@ -1368,6 +1368,7 @@
       "title": "Kiểm tra hộp thư của bạn",
       "lead": "Chúng tôi đã gửi thư xác minh tới {email}. Bấm liên kết trong thư để kích hoạt tài khoản.",
       "spam": "Chưa thấy thư? Xem mục thư rác, hoặc gửi lại sau ít phút.",
+      "existingAccount": "Không thấy thư? Nếu email này đã có tài khoản, hãy <signIn>đăng nhập</signIn> hoặc dùng <forgot>Quên mật khẩu</forgot>.",
       "resend": "Gửi lại thư",
       "resending": "Đang gửi…",
       "resent": "Đã gửi lại thư.",
