@@ -28,6 +28,11 @@ export interface SealMarkProps {
   variant?: SealVariant;
   /** Vết mực loang ở viền (feTurbulence + feDisplacementMap). Mặc định bật. */
   bleed?: boolean;
+  /**
+   * BRAND §6.3 #2: animate the ink bleed once, from a clean edge to a wide spread that settles back to
+   * the resting bleed, over this many ms. Needs `bleed`. Leave unset under reduced motion.
+   */
+  spreadMs?: number;
   className?: string;
 }
 
@@ -45,6 +50,7 @@ export function SealMark({
   title,
   variant = 'seal',
   bleed = true,
+  spreadMs,
   className,
 }: SealMarkProps) {
   const uid = safeId(useId());
@@ -102,7 +108,18 @@ export function SealMark({
               xChannelSelector="R"
               yChannelSelector="G"
               result="rough"
-            />
+            >
+              {spreadMs ? (
+                // The ink soaks out into the paper fibres as the seal lands, then settles.
+                <animate
+                  attributeName="scale"
+                  values="0;4.5;1.4"
+                  keyTimes="0;0.55;1"
+                  dur={`${spreadMs}ms`}
+                  fill="freeze"
+                />
+              ) : null}
+            </feDisplacementMap>
             {/* Vài lỗ li ti nơi mực không bám. */}
             <feTurbulence
               type="fractalNoise"

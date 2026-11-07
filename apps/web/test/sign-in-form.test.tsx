@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type KilnFeedback, KilnFeedbackContext } from '@/features/auth/kiln/kiln-feedback';
 import { SignInForm } from '@/features/auth/sign-in-form';
+import { setRememberPreference } from '@/lib/auth/remember';
 import { renderVi } from './render';
 
 // `next-intl/navigation` cần runtime Next; thay bằng thẻ <a>.
@@ -23,9 +24,10 @@ vi.mock('@/i18n/navigation', () => ({
 
 const signInWithPassword = vi.fn();
 const resend = vi.fn();
+const signInWithOAuth = vi.fn();
 
 vi.mock('@/lib/auth/supabase-browser', () => ({
-  browserSupabase: () => ({ auth: { signInWithPassword, resend } }),
+  browserSupabase: () => ({ auth: { signInWithPassword, resend, signInWithOAuth } }),
 }));
 
 const assign = vi.fn();
@@ -33,6 +35,7 @@ const assign = vi.fn();
 beforeEach(() => {
   signInWithPassword.mockReset();
   resend.mockReset();
+  signInWithOAuth.mockReset().mockResolvedValue({ error: null });
   assign.mockReset();
   vi.stubGlobal('location', { ...window.location, assign });
 });
@@ -105,6 +108,52 @@ describe('SignInForm', () => {
   it('báo cần đăng nhập khi bị guard chuyển tới', () => {
     renderVi(<SignInForm next="/vi/admin" needSignIn />);
     expect(screen.getByRole('status').textContent).toContain('cần đăng nhập');
+  });
+});
+
+describe('SignInForm remember me', () => {
+  const marker = () => (document.cookie.includes('vcraft-remember=0') ? '0' : null);
+
+  beforeEach(() => {
+    setRememberPreference(true);
+  });
+
+  it('shows the checkbox ticked by default', () => {
+    renderVi(<SignInForm next={null} />);
+    expect((screen.getByLabelText('Ghi nhớ đăng nhập') as HTMLInputElement).checked).toBe(true);
+  });
+
+  it('writes the session marker before signing in when it is unticked', async () => {
+    let markerAtSignIn: string | null = 'unset';
+    signInWithPassword.mockImplementation(async () => {
+      markerAtSignIn = marker();
+      return { error: null };
+    });
+    renderVi(<SignInForm next={null} />);
+    fireEvent.click(screen.getByLabelText('Ghi nhớ đăng nhập'));
+    await fill('buyer@vidu.vn', 'matkhau2026');
+    await waitFor(() => expect(signInWithPassword).toHaveBeenCalled());
+    expect(markerAtSignIn).toBe('0');
+  });
+
+  it('clears a stale marker before signing in when it is ticked', async () => {
+    setRememberPreference(false);
+    let markerAtSignIn: string | null = 'unset';
+    signInWithPassword.mockImplementation(async () => {
+      markerAtSignIn = marker();
+      return { error: null };
+    });
+    renderVi(<SignInForm next={null} />);
+    await fill('buyer@vidu.vn', 'matkhau2026');
+    await waitFor(() => expect(signInWithPassword).toHaveBeenCalled());
+    expect(markerAtSignIn).toBeNull();
+  });
+
+  it('hands the choice to the Google button', async () => {
+    renderVi(<SignInForm next={null} />);
+    fireEvent.click(screen.getByLabelText('Ghi nhớ đăng nhập'));
+    fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục với Google' }));
+    await waitFor(() => expect(marker()).toBe('0'));
   });
 });
 

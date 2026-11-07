@@ -1,7 +1,30 @@
-import { createBrowserClient } from '@supabase/ssr';
+import { createBrowserClient, parseCookieHeader, serializeCookieHeader } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAccountClient } from '@vcraft/api-client';
+import { readRememberPreference, withRememberPolicy } from './remember';
 import { supabaseConfig } from './supabase-config';
+
+/**
+ * The same `document.cookie` handling as the `@supabase/ssr` default, plus the remember policy. The
+ * preference is read on every write, so changing it right before sign-in needs no new client.
+ */
+const documentCookies = {
+  getAll: () => parseCookieHeader(document.cookie),
+  setAll: (
+    list: { name: string; value: string; options: Parameters<typeof serializeCookieHeader>[2] }[],
+  ) => {
+    const remember = readRememberPreference(parseCookieHeader(document.cookie));
+    for (const { name, value, options } of list) {
+      const header = serializeCookieHeader(
+        name,
+        value,
+        withRememberPolicy(options, remember) ?? {},
+      );
+      // biome-ignore lint/suspicious/noDocumentCookie: same synchronous document.cookie write as the @supabase/ssr default, plus the remember policy.
+      document.cookie = header;
+    }
+  },
+};
 
 let cached: SupabaseClient | null | undefined;
 
@@ -13,7 +36,9 @@ let cached: SupabaseClient | null | undefined;
 export function browserSupabase(): SupabaseClient | null {
   if (cached !== undefined) return cached;
   const config = supabaseConfig();
-  cached = config ? createBrowserClient(config.url, config.publishableKey) : null;
+  cached = config
+    ? createBrowserClient(config.url, config.publishableKey, { cookies: documentCookies })
+    : null;
   return cached;
 }
 

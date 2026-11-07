@@ -1,8 +1,13 @@
 import { defaultLocale } from '@vcraft/i18n';
 import type { NextRequest } from 'next/server';
 import { getPathname } from '@/i18n/navigation';
-import { landingPath } from '@/lib/auth/access';
+import { landingPathFor } from '@/lib/auth/access';
+import {
+  hasHouseholdIntent,
+  hasUnfinishedHouseholdRegistration,
+} from '@/lib/auth/household-intent';
 import { parseLocale, redirectTo } from '@/lib/auth/route-handler';
+import { createServerSupabase } from '@/lib/auth/supabase-server';
 import { getViewer } from '@/lib/auth/viewer';
 
 /**
@@ -18,7 +23,22 @@ export async function GET(request: NextRequest): Promise<Response> {
   } catch {
     return redirectTo(getPathname({ href: '/', locale }));
   }
+  if (!viewer) return redirectTo(getPathname({ href: '/dang-nhap', locale }));
+  // GH#180: someone who started household registration resumes the wizard, not the home page.
+  let intent = false;
+  if (viewer.role === 'BUYER' && !viewer.household) {
+    try {
+      const supabase = await createServerSupabase();
+      const user = (await supabase?.auth.getUser())?.data.user;
+      intent = hasHouseholdIntent(user?.user_metadata);
+    } catch {
+      // Auth unreachable: fall back to the role's landing page.
+    }
+  }
   return redirectTo(
-    getPathname({ href: viewer ? landingPath(viewer.role) : '/dang-nhap', locale }),
+    getPathname({
+      href: landingPathFor(viewer, hasUnfinishedHouseholdRegistration(viewer, intent)),
+      locale,
+    }),
   );
 }

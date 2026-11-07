@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { ConsentCheckbox } from '@/components/consent-checkbox';
 import { Link } from '@/i18n/navigation';
+import { HOUSEHOLD_INTENT_KEY } from '@/lib/auth/household-intent';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
 import { CheckEmailPanel } from './check-email-panel';
@@ -81,6 +82,8 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
               // The API records the sign-up consent from this when the account is first created.
               privacy_policy_version: PRIVACY_POLICY_VERSION,
               ...(household && wizardPath ? { next: wizardPath } : {}),
+              // GH#180: lets a later sign-in send this account back to the unfinished wizard.
+              ...(household ? { [HOUSEHOLD_INTENT_KEY]: true } : {}),
             },
           },
         });

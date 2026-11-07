@@ -2652,14 +2652,6 @@
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
     },
     {
-      "id": "news-sap-duoi-tan-cay",
-      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2653.JPG",
-      "ratio": "3/2",
-      "author": "松岡明芳 (Akiyoshi Matsuoka)",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
       "id": "news-dong-hang",
       "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2725.JPG",
       "ratio": "3/2",
@@ -2692,28 +2684,12 @@
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
     },
     {
-      "id": "news-luc-binh-lam",
-      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 56.jpg",
-      "ratio": "3/2",
-      "author": "Donald Trung",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
-    },
-    {
       "id": "news-khach-tham",
       "file": "Ceramika vendejo en vilaĝo Bát Tràng (Vjetnamio) 01.jpg",
       "ratio": "3/2",
       "author": "RG72",
       "license": "CC BY-SA 4.0",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
-    },
-    {
-      "id": "news-binh-voi-ran",
-      "file": "Bình vôi (lime container) 5.JPG",
-      "ratio": "3/2",
-      "author": "Hungda",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
     },
     {
       "id": "news-coc-in-hinh",
@@ -2732,50 +2708,10 @@
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
     },
     {
-      "id": "news-hoa-sen",
-      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2642.JPG",
-      "ratio": "3/2",
-      "author": "松岡明芳 (Akiyoshi Matsuoka)",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
-      "id": "news-binh-cao",
-      "file": "Bát Tràng, vase trimming.jpg",
-      "ratio": "auto",
-      "author": "Charles Haynes",
-      "license": "CC BY-SA 2.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
-    },
-    {
       "id": "news-am-chen",
       "file": "Bát Tràng DSC 0098.JPG",
       "ratio": "3/2",
       "author": "Greenknight dv",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
-    },
-    {
-      "id": "news-lu-huong",
-      "file": "Gom Bat Trang-Lu Huong.jpeg",
-      "ratio": "3/2",
-      "author": "Lưu Ly",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
-      "id": "news-gia-bat-trang",
-      "file": "Ceramika metiejo en Vjetnamio 01.jpg",
-      "ratio": "3/2",
-      "author": "RG72",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
-    },
-    {
-      "id": "news-chum-men-nau",
-      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 74.jpg",
-      "ratio": "3/2",
-      "author": "Donald Trung",
       "license": "CC BY-SA 4.0",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
     }

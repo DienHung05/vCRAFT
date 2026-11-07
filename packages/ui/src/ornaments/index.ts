@@ -25,6 +25,12 @@ export {
   TRACE_FRAME_VIEWBOX,
 } from './seal-geometry';
 export { SealMark, type SealMarkProps, type SealVariant } from './seal-mark';
+export {
+  SealStamp,
+  type SealStampProps,
+  type StampTempo,
+  stampShakeClass,
+} from './seal-stamp';
 export { TraceSealFrame, type TraceSealFrameProps } from './trace-seal-frame';
 export { VaseFigure, type VaseFigureProps } from './vase-figure';
 export { WaveDivider, type WaveDividerProps } from './wave-divider';
