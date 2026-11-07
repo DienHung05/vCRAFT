@@ -3298,19 +3298,6 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
     widths: [640, 1280],
   },
   {
-    id: 'news-sap-duoi-tan-cay',
-    alt: 'Lối đi lát gạch trong một chợ gốm, hai bên là sạp hàng dưới tán cây lớn',
-    credit: {
-      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2653.JPG',
-      author: '松岡明芳 (Akiyoshi Matsuoka)',
-      license: 'CC BY-SA 3.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
-      sourceUrl:
-        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2653.JPG',
-    },
-    widths: [640, 1280],
-  },
-  {
     id: 'news-dong-hang',
     alt: 'Nhiều thợ cùng ngồi trên nền xưởng sửa những chiếc bình và chậu mộc cho một lô hàng lớn',
     credit: {
@@ -3361,19 +3348,6 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
     widths: [640, 1280],
   },
   {
-    id: 'news-luc-binh-lam',
-    alt: 'Những chiếc lục bình cao vẽ cành lá men lam xếp kín trong cửa hàng',
-    credit: {
-      title: 'File:Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 56.jpg',
-      author: 'Donald Trung',
-      license: 'CC BY-SA 4.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
-      sourceUrl:
-        'https://commons.wikimedia.org/wiki/File:Ceramics_shop_in_B%C3%A1t_Tr%C3%A0ng,_Hanoi_(1_March_2018)_56.jpg',
-    },
-    widths: [640, 1280],
-  },
-  {
     id: 'news-khach-tham',
     alt: 'Một nhóm khách bước lên bậc thềm vào một cửa hàng gốm có chậu men lam bày hai bên',
     credit: {
@@ -3383,19 +3357,6 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
       licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
       sourceUrl:
         'https://commons.wikimedia.org/wiki/File:Ceramika_vendejo_en_vila%C4%9Do_B%C3%A1t_Tr%C3%A0ng_(Vjetnamio)_01.jpg',
-    },
-    widths: [640, 1280],
-  },
-  {
-    id: 'news-binh-voi-ran',
-    alt: 'Một chiếc bình vôi men rạn màu xám hồng, quai đắp nổi uốn lượn',
-    credit: {
-      title: 'File:Bình vôi (lime container) 5.JPG',
-      author: 'Hungda',
-      license: 'CC BY-SA 3.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
-      sourceUrl:
-        'https://commons.wikimedia.org/wiki/File:B%C3%ACnh_v%C3%B4i_(lime_container)_5.JPG',
     },
     widths: [640, 1280],
   },
@@ -3426,31 +3387,6 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
     widths: [640, 1280],
   },
   {
-    id: 'news-hoa-sen',
-    alt: 'Những bông sen trang trí màu hồng, cam, tím và trắng đặt giữa lá sen xanh',
-    credit: {
-      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2642.JPG',
-      author: '松岡明芳 (Akiyoshi Matsuoka)',
-      license: 'CC BY-SA 3.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
-      sourceUrl:
-        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2642.JPG',
-    },
-    widths: [640, 1280],
-  },
-  {
-    id: 'news-binh-cao',
-    alt: 'Một người thợ đứng cạnh chiếc bình mộc cao hơn đầu người đặt trên bàn xoay',
-    credit: {
-      title: 'File:Bát Tràng, vase trimming.jpg',
-      author: 'Charles Haynes',
-      license: 'CC BY-SA 2.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/2.0/',
-      sourceUrl: 'https://commons.wikimedia.org/wiki/File:B%C3%A1t_Tr%C3%A0ng,_vase_trimming.jpg',
-    },
-    widths: [640],
-  },
-  {
     id: 'news-am-chen',
     alt: 'Kệ kính nhiều tầng bày các bộ ấm chén men nâu, đen và vẽ hoa',
     credit: {
@@ -3459,43 +3395,6 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
       license: 'CC BY-SA 4.0',
       licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:B%C3%A1t_Tr%C3%A0ng_DSC_0098.JPG',
-    },
-    widths: [640, 1280],
-  },
-  {
-    id: 'news-lu-huong',
-    alt: 'Ba chiếc lư hương gốm: một chiếc men xanh đỏ, một chiếc vẽ rồng men lam, một chiếc men vàng',
-    credit: {
-      title: 'File:Gom Bat Trang-Lu Huong.jpeg',
-      author: 'Lưu Ly',
-      license: 'CC BY-SA 3.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
-      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Gom_Bat_Trang-Lu_Huong.jpeg',
-    },
-    widths: [640, 1280],
-  },
-  {
-    id: 'news-gia-bat-trang',
-    alt: 'Xưởng gốm có giá gỗ trên cao xếp đầy bát đĩa men trắng',
-    credit: {
-      title: 'File:Ceramika metiejo en Vjetnamio 01.jpg',
-      author: 'RG72',
-      license: 'CC BY-SA 4.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
-      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Ceramika_metiejo_en_Vjetnamio_01.jpg',
-    },
-    widths: [640, 1280],
-  },
-  {
-    id: 'news-chum-men-nau',
-    alt: 'Dãy chum, vại men nâu và bình đất nung vẽ hoa bày trước một cửa hàng',
-    credit: {
-      title: 'File:Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 74.jpg',
-      author: 'Donald Trung',
-      license: 'CC BY-SA 4.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
-      sourceUrl:
-        'https://commons.wikimedia.org/wiki/File:Ceramics_shop_in_B%C3%A1t_Tr%C3%A0ng,_Hanoi_(1_March_2018)_74.jpg',
     },
     widths: [640, 1280],
   },
@@ -3735,6 +3634,76 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
     alt: 'Đống đất sét nâu đỏ chất cao trong nhà kho rộng, phía sau là hàng ngói đất nung',
     altEn:
       'A large pile of red-brown clay in a big warehouse, with orange roof tiles stacked behind it',
+  },
+  {
+    photo: 'binh-hoa-lam',
+    target: 'NEWS',
+    key: 'h0-blue-glaze',
+    role: 'COVER',
+    position: 0,
+    alt: 'Hai chiếc bình sứ trắng vẽ men lam: một bình có cảnh nhà bên sông, một bình dáng lục giác',
+    altEn:
+      'Two white porcelain vases painted in cobalt blue: one with a riverside house, one hexagonal',
+  },
+  {
+    photo: 'ln-hu-men-ngoc',
+    target: 'NEWS',
+    key: 'h1-crackle',
+    role: 'COVER',
+    position: 0,
+    alt: 'Chiếc hũ gốm men xanh ngọc nhạt phủ kín vết rạn mảnh, thân tròn, quai cung phía trên',
+    altEn:
+      'A pale jade-green jar covered in fine crackle, with a round body and an arched handle on top',
+  },
+  {
+    photo: 'pp-mf52jtdn',
+    target: 'NEWS',
+    key: 'h3-lotus',
+    role: 'COVER',
+    position: 0,
+    alt: 'Chiếc đĩa sứ trắng vẽ tay bằng men lam một bó hoa sen ở giữa và dây hoa quanh viền',
+    altEn:
+      'A white porcelain plate hand-painted in blue with a lotus bouquet at the centre and a floral border',
+  },
+  {
+    photo: 'khuon-binh-lon',
+    target: 'NEWS',
+    key: 'h4-vase',
+    role: 'COVER',
+    position: 0,
+    alt: 'Các khuôn thạch cao cao gần hai mét, buộc dây, dựng trong một xưởng đúc bình lớn',
+    altEn:
+      'Plaster moulds almost two metres tall, tied with rope, standing in a workshop that casts large vases',
+  },
+  {
+    photo: 'pp-a2sbgf7h',
+    target: 'NEWS',
+    key: 'h6-altar',
+    role: 'COVER',
+    position: 0,
+    alt: 'Chiếc lư hương ba chân miệng rộng, men nâu đen bóng, đứng vững trên ba chân đế',
+    altEn:
+      'A wide-mouthed tripod incense burner in a glossy brown-black glaze, standing on three sturdy feet',
+  },
+  {
+    photo: 'pp-e8uzvyg4',
+    target: 'NEWS',
+    key: 'h8-white-plate',
+    role: 'COVER',
+    position: 0,
+    alt: 'Chiếc đĩa tròn men trắng ngà ngả xám, lòng khắc chìm hoa văn cuộn, viền có một vết nứt đã gắn lại',
+    altEn:
+      'A round ivory-grey glazed dish with an incised scroll design and an old repaired crack at the rim',
+  },
+  {
+    photo: 'pp-bu4ymz85',
+    target: 'NEWS',
+    key: 'h12-wine-jar',
+    role: 'COVER',
+    position: 0,
+    alt: 'Chiếc hũ gốm thấp bè miệng rộng, bốn quai vòng, phủ men nâu ô liu loang',
+    altEn:
+      'A squat stoneware jar with a wide mouth and four loop handles in a mottled olive-brown glaze',
   },
   {
     photo: 'pp-fwmhfyfk',
@@ -6101,15 +6070,6 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
     altEn: 'Painters at a long table decorating white porcelain cups by hand',
   },
   {
-    photo: 'news-sap-duoi-tan-cay',
-    target: 'NEWS',
-    key: 'village-lantern',
-    role: 'COVER',
-    position: 0,
-    alt: 'Lối đi lát gạch trong một chợ gốm, hai bên là sạp hàng dưới tán cây lớn',
-    altEn: 'A brick-paved aisle in a pottery market, with stalls on both sides under big trees',
-  },
-  {
     photo: 'news-dong-hang',
     target: 'NEWS',
     key: 'village-cooperative',
@@ -6147,15 +6107,6 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
     altEn: 'The tiled roof of the Bat Trang communal house hung with a New Year greeting banner',
   },
   {
-    photo: 'news-luc-binh-lam',
-    target: 'NEWS',
-    key: 'h0-blue-glaze',
-    role: 'COVER',
-    position: 0,
-    alt: 'Những chiếc lục bình cao vẽ cành lá men lam xếp kín trong cửa hàng',
-    altEn: 'Tall blue-and-white floor vases painted with branches, filling a shop',
-  },
-  {
     photo: 'news-khach-tham',
     target: 'NEWS',
     key: 'h0-open-kiln',
@@ -6164,15 +6115,6 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
     alt: 'Một nhóm khách bước lên bậc thềm vào một cửa hàng gốm có chậu men lam bày hai bên',
     altEn:
       'A group of visitors climbing the steps into a pottery shop with blue-and-white planters on either side',
-  },
-  {
-    photo: 'news-binh-voi-ran',
-    target: 'NEWS',
-    key: 'h1-crackle',
-    role: 'COVER',
-    position: 0,
-    alt: 'Một chiếc bình vôi men rạn màu xám hồng, quai đắp nổi uốn lượn',
-    altEn: 'A lime pot in a grey-pink crackle glaze with a coiled, sculpted handle',
   },
   {
     photo: 'news-coc-in-hinh',
@@ -6193,24 +6135,6 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
     altEn: 'Workers among hundreds of identical unfired vases, finishing each one before firing',
   },
   {
-    photo: 'news-hoa-sen',
-    target: 'NEWS',
-    key: 'h3-lotus',
-    role: 'COVER',
-    position: 0,
-    alt: 'Những bông sen trang trí màu hồng, cam, tím và trắng đặt giữa lá sen xanh',
-    altEn: 'Decorative lotus flowers in pink, orange, purple and white set among green leaves',
-  },
-  {
-    photo: 'news-binh-cao',
-    target: 'NEWS',
-    key: 'h4-vase',
-    role: 'COVER',
-    position: 0,
-    alt: 'Một người thợ đứng cạnh chiếc bình mộc cao hơn đầu người đặt trên bàn xoay',
-    altEn: 'A potter standing beside an unfired vase taller than himself on a wheel',
-  },
-  {
     photo: 'news-am-chen',
     target: 'NEWS',
     key: 'h5-teaset',
@@ -6218,35 +6142,6 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
     position: 0,
     alt: 'Kệ kính nhiều tầng bày các bộ ấm chén men nâu, đen và vẽ hoa',
     altEn: 'Glass shelves holding tea sets in brown, black and flower-painted glazes',
-  },
-  {
-    photo: 'news-lu-huong',
-    target: 'NEWS',
-    key: 'h6-altar',
-    role: 'COVER',
-    position: 0,
-    alt: 'Ba chiếc lư hương gốm: một chiếc men xanh đỏ, một chiếc vẽ rồng men lam, một chiếc men vàng',
-    altEn:
-      'Three ceramic incense burners: one in green and red, one with a blue dragon, one in yellow glaze',
-  },
-  {
-    photo: 'news-gia-bat-trang',
-    target: 'NEWS',
-    key: 'h8-white-plate',
-    role: 'COVER',
-    position: 0,
-    alt: 'Xưởng gốm có giá gỗ trên cao xếp đầy bát đĩa men trắng',
-    altEn:
-      'A pottery workshop with overhead wooden racks stacked with white-glazed bowls and plates',
-  },
-  {
-    photo: 'news-chum-men-nau',
-    target: 'NEWS',
-    key: 'h12-wine-jar',
-    role: 'COVER',
-    position: 0,
-    alt: 'Dãy chum, vại men nâu và bình đất nung vẽ hoa bày trước một cửa hàng',
-    altEn: 'Rows of brown-glazed jars and painted terracotta vases outside a shop',
   },
 ];
 
@@ -6280,6 +6175,15 @@ export const RETIRED_DEMO_PHOTO_IDS: readonly string[] = [
   'tl-glaze',
   'tl-fire',
   'tl-finish',
+  // Added by GH#197 for news stories that GH#181 had already given a cover, or chose to leave without one:
+  'news-luc-binh-lam',
+  'news-binh-voi-ran',
+  'news-hoa-sen',
+  'news-binh-cao',
+  'news-lu-huong',
+  'news-gia-bat-trang',
+  'news-chum-men-nau',
+  'news-sap-duoi-tan-cay',
 ];
 
 /**

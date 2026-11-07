@@ -105,6 +105,14 @@ _Avoid_: Complete quotation, order, allocation
 The work agreed when a buyer accepts one complete quotation, with its quantity, price, and delivery terms fixed. It awaits confirmation of the participating households' allocations before production starts.
 _Avoid_: Quotation request, quotation
 
+**Payment / Thanh toán** _(planned, [ADR-0021](docs/adr/0021-online-payment-for-orders.md))_:
+One online settlement of part of an order's price by the buyer, through a bank transfer, VietQR, VNPay or MoMo. It counts as paid only when the provider confirms it to the server, never from the buyer's browser.
+_Avoid_: Payout, allocation
+
+**Deposit / Đặt cọc** _(planned, [ADR-0021](docs/adr/0021-online-payment-for-orders.md))_:
+The first payment of an order, a fixed share of its price, which must be paid before production starts. The rest of the price is the balance.
+_Avoid_: Down payment, advance
+
 **Allocation / Phân bổ**:
 One household's specified share of an order, with its own quantity, agreed price, and completion date.
 _Avoid_: Production batch, contribution offer

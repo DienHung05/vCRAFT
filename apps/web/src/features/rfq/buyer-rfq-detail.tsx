@@ -2,7 +2,18 @@
 
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
 import type { AllocationDto, BuyerQuotationDto, RfqResponse } from '@vcraft/contracts';
-import { Badge, Button, buttonVariants, Card, Crackle, Stepper } from '@vcraft/ui';
+import {
+  Badge,
+  Button,
+  buttonVariants,
+  Card,
+  Crackle,
+  cn,
+  SealStamp,
+  Stepper,
+  stampShakeClass,
+} from '@vcraft/ui';
+import { AnimatePresence } from 'motion/react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -15,6 +26,7 @@ import { useLiveEvents } from '@/lib/api/live-events';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { notify } from '@/lib/notify';
 import { useMoney } from '@/lib/use-money';
+import { BidRow, CountUpMoney } from './bid-motion';
 import { DeadlineCountdown } from './deadline-countdown';
 import { buyerEvents, rfqStepperModel } from './rfq-flow';
 import { RfqForm } from './rfq-form';
@@ -82,6 +94,8 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
   const [reasonMissing, setReasonMissing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  // BRAND §6.3 #2: the offer the buyer just accepted gets the seal pressed onto it once.
+  const [stampedId, setStampedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -183,13 +197,19 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
     setActionError(null);
   };
 
-  const run = async (action: () => Promise<unknown>, failure: string, success: string) => {
+  const run = async (
+    action: () => Promise<unknown>,
+    failure: string,
+    success: string,
+    stamp?: string,
+  ) => {
     setBusy(true);
     setActionError(null);
     try {
       await action();
       closeDialog();
       await load();
+      if (stamp) setStampedId(stamp);
       notify.success(success);
     } catch (error) {
       const stale = error instanceof QuotationApiError && error.code === 'STALE_VERSION';
@@ -306,54 +326,77 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
               />
             ) : null}
             <ul className="flex flex-col gap-4" data-testid="quotation-comparison">
-              {quotations.map((quotation) => (
-                <li key={quotation.id}>
-                  <Card className="flex flex-col gap-4 p-5 md:p-6">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge>{bids(`status.${quotation.status}`)}</Badge>
-                      {lowest === quotation.totalVnd && quotation.status === 'SUBMITTED' ? (
-                        <Badge tone="clay">{t('best')}</Badge>
-                      ) : null}
-                    </div>
-                    <ul className="flex flex-col gap-2">
-                      {quotation.parts.map((part) => (
-                        <li key={part.householdId} className="flex flex-wrap gap-x-4">
-                          <span className="font-medium">{part.householdName}</span>
-                          <span>
-                            {format.number(part.quantity)} {request.unit}
-                          </span>
-                          <time dateTime={part.completionDate} className="text-ash">
-                            {format.dateTime(new Date(part.completionDate), 'short')}
-                          </time>
-                        </li>
-                      ))}
-                    </ul>
-                    <dl className="grid grid-cols-[1fr_auto] gap-2">
-                      <dt>{live('productionTotal')}</dt>
-                      <dd>{money(quotation.productionTotalVnd)}</dd>
-                      <dt>{live('additionalCharge')}</dt>
-                      <dd>{money(quotation.additionalChargeVnd)}</dd>
-                      <dt>{live('total')}</dt>
-                      <dd className="font-semibold">{money(quotation.totalVnd)}</dd>
-                    </dl>
-                    <p className="text-small text-ash">
-                      {live(
-                        quotation.deliveryTerms === 'INCLUDED'
-                          ? 'deliveryIncluded'
-                          : 'deliverySeparate',
-                      )}
-                    </p>
-                    {canAccept && quotation.status === 'SUBMITTED' ? (
-                      <Button
-                        className="self-start"
-                        onClick={() => setDialog({ kind: 'accept', quotation })}
+              {/* BRAND §6.3 #8: a new offer slides onto the table; offers there on first load stay put. */}
+              <AnimatePresence initial={false}>
+                {quotations.map((quotation) => {
+                  const best = lowest === quotation.totalVnd && quotation.status === 'SUBMITTED';
+                  const stamped = stampedId === quotation.id && quotation.status === 'ACCEPTED';
+                  return (
+                    <BidRow key={quotation.id}>
+                      <Card
+                        className={cn(
+                          'flex flex-col gap-4 p-5 md:p-6',
+                          stamped && stampShakeClass(),
+                        )}
                       >
-                        {t('accept')}
-                      </Button>
-                    ) : null}
-                  </Card>
-                </li>
-              ))}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge>{bids(`status.${quotation.status}`)}</Badge>
+                          {best ? <Badge tone="clay">{t('best')}</Badge> : null}
+                          {stamped ? (
+                            <SealStamp size={40} title={t('acceptedToast')} className="ml-auto" />
+                          ) : null}
+                        </div>
+                        <ul className="flex flex-col gap-2">
+                          {quotation.parts.map((part) => (
+                            <li key={part.householdId} className="flex flex-wrap gap-x-4">
+                              <span className="font-medium">{part.householdName}</span>
+                              <span>
+                                {format.number(part.quantity)} {request.unit}
+                              </span>
+                              <time dateTime={part.completionDate} className="text-ash">
+                                {format.dateTime(new Date(part.completionDate), 'short')}
+                              </time>
+                            </li>
+                          ))}
+                        </ul>
+                        <dl className="grid grid-cols-[1fr_auto] gap-2">
+                          <dt>{live('productionTotal')}</dt>
+                          <dd>{money(quotation.productionTotalVnd)}</dd>
+                          <dt>{live('additionalCharge')}</dt>
+                          <dd>{money(quotation.additionalChargeVnd)}</dd>
+                          <dt>{live('total')}</dt>
+                          {/* The best cell glows lacquer gold once each time it becomes the best. */}
+                          <dd
+                            key={best ? 'best' : 'plain'}
+                            data-best={best || undefined}
+                            className={cn(
+                              'font-semibold',
+                              best && 'bid-best -mx-1 rounded-input px-1',
+                            )}
+                          >
+                            <CountUpMoney vnd={quotation.totalVnd} format={money} />
+                          </dd>
+                        </dl>
+                        <p className="text-small text-ash">
+                          {live(
+                            quotation.deliveryTerms === 'INCLUDED'
+                              ? 'deliveryIncluded'
+                              : 'deliverySeparate',
+                          )}
+                        </p>
+                        {canAccept && quotation.status === 'SUBMITTED' ? (
+                          <Button
+                            className="self-start"
+                            onClick={() => setDialog({ kind: 'accept', quotation })}
+                          >
+                            {t('accept')}
+                          </Button>
+                        ) : null}
+                      </Card>
+                    </BidRow>
+                  );
+                })}
+              </AnimatePresence>
             </ul>
           </section>
 
@@ -418,6 +461,7 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
                 }),
               t('acceptFailed'),
               t('acceptedToast'),
+              dialog.quotation.id,
             );
         }}
       >

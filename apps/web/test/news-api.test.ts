@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchNews } from '@/features/news/news-api';
+import { fetchNews, fetchNewsArticle } from '@/features/news/news-api';
 
 const ok = {
   data: [
@@ -44,5 +44,21 @@ describe('fetchNews', () => {
     expect(await fetchNews()).toEqual({ status: 'unavailable' });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ x: 1 }))));
     expect(await fetchNews()).toEqual({ status: 'unavailable' });
+  });
+});
+
+describe('news stays up to date without a redeploy (GH#181)', () => {
+  it('list and article are cached for at most 30 seconds', async () => {
+    vi.stubEnv('API_INTERNAL_URL', 'http://api.test/api/v1/');
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 503 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await fetchNews();
+    await fetchNewsArticle('a');
+    for (const [, init] of fetchMock.mock.calls) {
+      const revalidate = (init as { next?: { revalidate?: number } }).next?.revalidate;
+      expect(revalidate).toBeGreaterThan(0);
+      expect(revalidate).toBeLessThanOrEqual(30);
+    }
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

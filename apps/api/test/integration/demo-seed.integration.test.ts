@@ -288,8 +288,11 @@ describe('Demo seed and guarded reset', () => {
     const covers = allNews.body.data.flatMap((n: { cover: { credit: unknown } | null }) =>
       n.cover ? [n.cover] : [],
     );
-    // Every news story with a photo in the manifest shows it as its cover (GH#197 gave one to each story).
-    expect(covers).toHaveLength(DEMO_PHOTO_LINKS.filter((l) => l.target === 'NEWS').length);
+    // GH#181 and GH#197: every story with a licensed photo of what it describes shows it as its cover. The
+    // night-market story has no photo that shows a night market, so it keeps the illustration.
+    const newsCovers = DEMO_PHOTO_LINKS.filter((l) => l.target === 'NEWS' && l.role === 'COVER');
+    expect(newsCovers.some((l) => l.key === 'village-lantern')).toBe(false);
+    expect(covers).toHaveLength(newsCovers.length);
     expect(covers.every((c: { altEn: string | null }) => c.altEn)).toBe(true);
 
     // The household list gives each cover its own description (vi and en), not a template.

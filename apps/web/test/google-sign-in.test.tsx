@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET as callback } from '@/app/auth/callback/route';
 import { GoogleSignIn, googleCallbackUrl } from '@/features/auth/google-sign-in';
+import { setRememberPreference } from '@/lib/auth/remember';
 import { renderVi } from './render';
 
 vi.mock('@/i18n/navigation', () => ({
@@ -50,6 +51,26 @@ describe('GoogleSignIn', () => {
         },
       }),
     );
+  });
+
+  it('sets the remember marker before starting OAuth', async () => {
+    setRememberPreference(true);
+    let markerAtOAuth: boolean | undefined;
+    signInWithOAuth.mockImplementation(async () => {
+      markerAtOAuth = document.cookie.includes('vcraft-remember=0');
+      return { error: null };
+    });
+    const { unmount } = renderVi(<GoogleSignIn next={null} remember={false} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục với Google' }));
+    await waitFor(() => expect(signInWithOAuth).toHaveBeenCalled());
+    expect(markerAtOAuth).toBe(true);
+    unmount();
+
+    // Default (the register page): a stale marker is cleared.
+    renderVi(<GoogleSignIn next={null} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục với Google' }));
+    await waitFor(() => expect(signInWithOAuth).toHaveBeenCalledTimes(2));
+    expect(document.cookie).not.toContain('vcraft-remember');
   });
 
   it('stays disabled until the register page consent is ticked, and says when it fails', async () => {
