@@ -30,6 +30,25 @@ describe('ChainVerifier (FR-TRC-05)', () => {
     ).toBeTruthy();
   });
 
+  it('hiện nhãn hộ đã được BQL xác minh cạnh ấn khi hộ đã duyệt (FR-TRC-04)', async () => {
+    const { code, log } = await sample();
+    const { unmount } = renderVi(
+      <ChainVerifier
+        productId={code}
+        entries={log}
+        household="Gốm Minh Hải"
+        householdVerified
+        subtle={subtle}
+      />,
+    );
+    expect(screen.getByText(/Hộ đã được BQL xác minh/)).toBeTruthy();
+    unmount();
+    renderVi(
+      <ChainVerifier productId={code} entries={log} household="Gốm Minh Hải" subtle={subtle} />,
+    );
+    expect(screen.queryByText(/Hộ đã được BQL xác minh/)).toBeNull();
+  });
+
   it('một mốc bị sửa ⇒ báo lỗi, chỉ đúng mốc và không đóng ấn xác thực', async () => {
     const { code, log } = await sample();
     const tampered = log.map((e, i) => (i === 3 ? { ...e, note: 'Vẽ lam bằng máy in.' } : e));

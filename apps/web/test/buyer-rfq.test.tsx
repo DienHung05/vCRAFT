@@ -155,6 +155,30 @@ describe('RfqForm', () => {
     );
   });
 
+  it('seeds a new form from a product prefill and ignores a browser-kept draft', async () => {
+    window.localStorage.setItem(
+      'vcraft.rfq-draft',
+      JSON.stringify({ id: null, values: { ...EMPTY_RFQ_FORM, title: 'Old draft' } }),
+    );
+    renderVi(
+      <RfqForm
+        client={client()}
+        prefill={{
+          title: 'Bình hoa men lam',
+          category: 'VASE',
+          description: 'Quan tâm đến mã BT7K2QXM',
+        }}
+      />,
+    );
+    await waitFor(() =>
+      expect((screen.getByLabelText('Tiêu đề') as HTMLInputElement).value).toBe('Bình hoa men lam'),
+    );
+    expect((screen.getByLabelText('Danh mục') as HTMLSelectElement).value).toBe('VASE');
+    expect((screen.getByLabelText('Mô tả') as HTMLTextAreaElement).value).toBe(
+      'Quan tâm đến mã BT7K2QXM',
+    );
+  });
+
   it('saves a complete form as a server draft, then updates it with the returned version', async () => {
     const createRequest = vi.fn().mockResolvedValue({ ...REQUEST, status: 'DRAFT', version: 1 });
     const updateRequest = vi.fn().mockResolvedValue({ ...REQUEST, status: 'DRAFT', version: 2 });

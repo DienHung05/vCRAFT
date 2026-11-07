@@ -389,7 +389,12 @@ export const TraceAvailabilityResponseSchema = z.discriminatedUnion('availabilit
     product: ProductResponseSchema,
     /** Credit for `product.coverUrl`; null when the cover is a photo the household uploaded. */
     coverCredit: PublicCreditSchema,
-    household: z.object({ name: z.string(), slug: z.string() }),
+    household: z.object({
+      name: z.string(),
+      slug: z.string(),
+      /** Only APPROVED households are public, so a visible trace always carries APPROVED (FR-TRC-04). */
+      status: HouseholdStatusSchema,
+    }),
     journal: JournalResponseSchema,
     /** Số lượt quét mã QR của sản phẩm này. */
     scanCount: z.int().nonnegative(),

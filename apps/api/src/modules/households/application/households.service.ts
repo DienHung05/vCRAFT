@@ -629,7 +629,11 @@ export class HouseholdsService {
         covers.get(product.id),
       ),
       coverCredit: await this.media.productCoverCredit(product),
-      household: { name: product.household.name, slug: product.household.slug },
+      household: {
+        name: product.household.name,
+        slug: product.household.slug,
+        status: product.household.status,
+      },
       journal: await loadJournal(em, product, this.media),
       scanCount: await em.count(TraceScan, { product }),
     };

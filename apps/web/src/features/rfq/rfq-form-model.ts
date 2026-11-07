@@ -29,6 +29,9 @@ export type RfqFormField =
   | 'households';
 export type RfqFormProblems = Partial<Record<RfqFormField, true>>;
 
+/** Fields a link (for example a product's trace page) may seed on a new form. */
+export type RfqFormPrefill = Partial<Pick<RfqFormValues, 'title' | 'category' | 'description'>>;
+
 export const EMPTY_RFQ_FORM: RfqFormValues = {
   title: '',
   category: '',

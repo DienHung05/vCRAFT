@@ -18,6 +18,7 @@ import {
   clearStoredDraft,
   EMPTY_RFQ_FORM,
   type RfqFormField,
+  type RfqFormPrefill,
   type RfqFormValues,
   readStoredDraft,
   rfqFormPayload,
@@ -31,29 +32,42 @@ const inputClass = 'w-full rounded-input border border-ink/20 bg-surface px-3 py
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'local' | 'failed';
 
-/** Create form for a quotation request (FR-RFQ-01, 02). `draft` continues a saved server draft. */
+/**
+ * Create form for a quotation request (FR-RFQ-01, 02). `draft` continues a saved server draft;
+ * `prefill` seeds a new form (for example from a product's trace page) and wins over a browser-kept one.
+ */
 export function RfqForm({
   client: provided,
   draft,
+  prefill,
 }: {
   client?: QuotationClient;
   draft?: RfqResponse;
+  prefill?: RfqFormPrefill;
 }) {
   const t = useTranslations('rfq.form');
   const { client, loading } = useQuotationClient(provided);
   if (loading) return <FormSkeleton label={t('saving')} />;
   if (!client) return <p className="px-gutter pt-8">{t('signIn')}</p>;
-  return <Form client={client} draft={draft} />;
+  return <Form client={client} draft={draft} prefill={prefill} />;
 }
 
-function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse | undefined }) {
+function Form({
+  client,
+  draft,
+  prefill,
+}: {
+  client: QuotationClient;
+  draft?: RfqResponse | undefined;
+  prefill?: RfqFormPrefill | undefined;
+}) {
   const t = useTranslations('rfq.form');
   const categories = useTranslations('catalog.categories');
   const rfq = useTranslations('rfq');
   const common = useTranslations('common');
   const router = useRouter();
   const [values, setValues] = useState<RfqFormValues>(() =>
-    draft ? rfqFormValues(draft) : EMPTY_RFQ_FORM,
+    draft ? rfqFormValues(draft) : { ...EMPTY_RFQ_FORM, ...prefill },
   );
   const destinationListId = useId();
   const destinationSuggestions = useAddressSuggestions(values.destination);
@@ -73,7 +87,7 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
 
   // A new form restores what this browser kept, including the server draft it belongs to.
   useEffect(() => {
-    if (draft) return;
+    if (draft || prefill) return;
     const stored = readStoredDraft();
     if (!stored) return;
     setValues(stored.values);
@@ -89,7 +103,7 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
         }
       })
       .catch(() => clearStoredDraft());
-  }, [client, draft]);
+  }, [client, draft, prefill]);
 
   const saveToServer = useCallback(
     (current: RfqFormValues) => {
