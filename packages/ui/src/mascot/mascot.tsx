@@ -83,7 +83,10 @@ function useGaze(
     const onMove = (event: PointerEvent) => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() =>
-        setGaze(gazeDirection(centre(), { x: event.clientX, y: event.clientY })),
+        setGaze((current) => {
+          const next = gazeDirection(centre(), { x: event.clientX, y: event.clientY });
+          return next.x === current.x && next.y === current.y ? current : next;
+        }),
       );
     };
     window.addEventListener('pointermove', onMove, { passive: true });
@@ -169,9 +172,10 @@ function useThought(lines: readonly string[], reduced: boolean) {
  * gaze cell for its closed-eye twin, so the head keeps facing where it looks (GH#186).
  *
  * The component blinks at random, breathes 2 px on a 3 s cycle, turns its head toward the pointer or a
- * point with a slight lag, dozes off when left idle, and shows a thought bubble whose three small clouds
- * rise in turn before the line appears. Under `prefers-reduced-motion` it neither blinks, breathes nor
- * turns, and the bubble is static.
+ * point, dozes off when left idle, and shows a thought bubble whose three small clouds rise in turn before
+ * the line appears. Under `prefers-reduced-motion` it neither blinks nor breathes and the bubble is
+ * static; it still turns its head, since that is an instant swap of sprite cells with no movement
+ * (GH#203).
  */
 export function Mascot({
   mood = 'idle',
@@ -193,7 +197,9 @@ export function Mascot({
   const dozing = useDozing(mood === 'idle', dozeAfterMs);
   const shown: MascotMood = dozing ? 'sleep' : mood;
 
-  const gaze = useGaze(wrapperRef, lookAt, reduced || shown === 'sleep' || shown === 'refuse');
+  // A head turn is an instant swap of sprite cells, not movement, so it stays on under reduced motion
+  // (GH#203).
+  const gaze = useGaze(wrapperRef, lookAt, shown === 'sleep' || shown === 'refuse');
   const blinking = useBlink(!reduced && canBlink(shown));
   const lines = thought === undefined ? [] : typeof thought === 'string' ? [thought] : [...thought];
   const bubble = useThought(lines, reduced);

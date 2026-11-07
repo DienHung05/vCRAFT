@@ -107,7 +107,7 @@ describe('AskAssistantService', () => {
     const events = await collect(service.ask(request('chào cáo 👋'), 'ip'));
     expect(Date.now() - started).toBeLessThan(100);
     expect(events[0]).toEqual({ type: 'thinking' });
-    expect(text(events)).toContain('Cáo của vCraft');
+    expect(text(events)).toContain('tớ là Cáo!');
     expect(events.at(-1)).toMatchObject({ type: 'done' });
     expect(llm.classifyCalls).toBe(0);
     expect(db.rows[0]).toMatchObject({ intent: 'greeting', blocked: false, ipHash: 'ip' });
@@ -202,7 +202,7 @@ describe('AskAssistantService', () => {
 
   it('still greets without a model, but cannot answer real questions', async () => {
     service = build({ llm: null });
-    expect(text(await collect(service.ask(request('hello'), 'ip')))).toContain('vCraft');
+    expect(text(await collect(service.ask(request('hello'), 'ip')))).toContain('tớ là Cáo!');
     const events = await collect(service.ask(request('Làm sao đặt hàng?'), 'ip'));
     expect(events.at(-1)).toEqual({ type: 'blocked', reason: 'DISABLED' });
   });

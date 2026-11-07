@@ -212,9 +212,9 @@ describe('AssistantPanel', () => {
     expect(document.activeElement).toBe(
       screen.getByRole('button', { name: 'Conversation history' }),
     );
-    expect(
-      (screen.getByLabelText('Your question for the Fox') as HTMLTextAreaElement).disabled,
-    ).toBe(true);
+    expect((screen.getByLabelText('Your question for Fox') as HTMLTextAreaElement).disabled).toBe(
+      true,
+    );
   });
 
   it('lets the visitor stop a streaming answer', () => {

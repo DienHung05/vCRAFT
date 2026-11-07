@@ -43,7 +43,7 @@ const ANSWERS: Record<'vi' | 'en', Partial<Record<AssistantIntent, string>> & { 
         'Open [Send a quote request](/en/quotes/new) and give the quantity and deadline. Households in the village will send you offers.',
       catalog: 'Have a look at the [product catalogue](/en/products).',
       open_workshops: 'Opening hours for each workshop are on the [village map](/en/map).',
-      chitchat: "I'm the Fox, vCraft's assistant. I love blue-glaze pottery!",
+      chitchat: "I'm Fox, vCraft's assistant. I love blue-glaze pottery!",
       default:
         'You can start from [Send a quote request](/en/quotes/new) or the [product catalogue](/en/products).',
     },
