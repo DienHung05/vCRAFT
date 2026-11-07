@@ -83,6 +83,13 @@ export const ERROR_CATALOG = {
   RFQ_BIDDING_CLOSED: { status: 409, title: 'Bidding is closed' },
   /** BR-02: chỉ hộ APPROVED mới nhận lời mời / chào giá. */
   RFQ_ARTISAN_NOT_ELIGIBLE: { status: 403, title: 'Artisan is not eligible for this RFQ' },
+  /** BR-05: nothing was sent because no household of the category can take the request. */
+  RFQ_NO_MATCHING_HOUSEHOLD: { status: 422, title: 'No household matches this request' },
+  /** The request is coordinated by the village board, so households contribute instead of quoting alone. */
+  RFQ_DIRECT_QUOTATION_NOT_ALLOWED: {
+    status: 409,
+    title: 'Coordinated requests take contributions, not direct quotations',
+  },
   /** SRS §4.1 T3: `quantityOffered` phải bằng `quantity` của RFQ. */
   RFQ_QUANTITY_MISMATCH: { status: 422, title: 'Offered quantity does not match' },
   /** BR-L6: Σ allocation.quantity phải bằng order.quantity. */

@@ -1,4 +1,4 @@
-import { DELIVERY_TERMS, QUOTATION_NOTICE_KINDS } from '@vcraft/domain';
+import { BID_TYPES, DELIVERY_TERMS, QUOTATION_NOTICE_KINDS } from '@vcraft/domain';
 import { z } from 'zod';
 import { IdSchema, IsoDateTimeSchema, VersionSchema, VndSchema } from '../common';
 import { RfqResponseSchema } from './create-rfq';
@@ -66,6 +66,40 @@ export const PriceHintResponseSchema = z.object({
 export type PriceHintDto = z.infer<typeof PriceHintResponseSchema>;
 
 /**
+ * A household quotes the whole quantity of a request without coordination (FR-RFQ-04): one unit price, the
+ * date it can finish, and an optional note. The quantity, total and delivery terms come from the request.
+ */
+export const CreateDirectQuotationRequestSchema = z.strictObject({
+  unitPriceVnd: PositiveVndSchema,
+  completionDate: IsoDateTimeSchema,
+  note: z.string().trim().max(500).optional(),
+});
+export type CreateDirectQuotationRequest = z.infer<typeof CreateDirectQuotationRequestSchema>;
+export const UpdateDirectQuotationRequestSchema = CreateDirectQuotationRequestSchema;
+export type UpdateDirectQuotationRequest = z.infer<typeof UpdateDirectQuotationRequestSchema>;
+
+export const QuotationStatusSchema = z.enum([
+  'SUBMITTED',
+  'ACCEPTED',
+  'REJECTED',
+  'WITHDRAWN',
+  'LAPSED',
+]);
+
+/** A household's own direct quotation, as that household reads it. */
+export const DirectQuotationResponseSchema = z.strictObject({
+  id: IdSchema,
+  version: VersionSchema,
+  status: QuotationStatusSchema,
+  quantity: PositiveQuantitySchema,
+  unitPriceVnd: PositiveVndSchema,
+  totalVnd: VndSchema,
+  completionDate: IsoDateTimeSchema,
+  note: z.string().nullable(),
+});
+export type DirectQuotationDto = z.infer<typeof DirectQuotationResponseSchema>;
+
+/**
  * `GET /me/invitations`: requests addressed to the household, with its own offer only.
  * Sealed bidding: nothing here reveals another household's offer or even who else was invited.
  */
@@ -73,6 +107,8 @@ export const MyInvitationSchema = z.strictObject({
   request: RfqResponseSchema,
   contribution: ContributionResponseSchema.nullable(),
   declined: z.boolean(),
+  /** The household's latest direct quotation on a request without coordination. */
+  directQuotation: DirectQuotationResponseSchema.nullable().optional(),
 });
 export type MyInvitationDto = z.infer<typeof MyInvitationSchema>;
 export const MyInvitationListSchema = z.array(MyInvitationSchema);
@@ -103,19 +139,18 @@ export type CreateCooperativeQuotationRequest = z.infer<
   typeof CreateCooperativeQuotationRequestSchema
 >;
 
-export const QuotationStatusSchema = z.enum([
-  'SUBMITTED',
-  'ACCEPTED',
-  'REJECTED',
-  'WITHDRAWN',
-  'LAPSED',
-]);
-
-/** Buyer-safe projection. It intentionally has no unit price on any part. */
+/**
+ * Buyer-safe projection. A cooperative quotation has no unit price on any part: the household rates stay
+ * private. A direct (`INDIVIDUAL`) quotation is the household's own bid to the buyer, so its single part
+ * carries the unit price the buyer compares.
+ */
 export const BuyerQuotationResponseSchema = z.strictObject({
   id: IdSchema,
   version: VersionSchema,
   status: QuotationStatusSchema,
+  /** Absent on responses from an API that only knew cooperative quotations. */
+  bidType: z.enum(BID_TYPES).optional(),
+  note: z.string().nullable().optional(),
   quantity: PositiveQuantitySchema,
   parts: z.array(
     z.strictObject({
@@ -123,6 +158,7 @@ export const BuyerQuotationResponseSchema = z.strictObject({
       householdName: z.string(),
       quantity: PositiveQuantitySchema,
       completionDate: IsoDateTimeSchema,
+      unitPriceVnd: PositiveVndSchema.optional(),
     }),
   ),
   productionTotalVnd: VndSchema,

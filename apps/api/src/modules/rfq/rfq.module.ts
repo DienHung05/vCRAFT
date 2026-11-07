@@ -11,6 +11,7 @@ import {
   AdminCoordinationController,
   AllocationsController,
   ContributionsController,
+  DirectQuotationsController,
   MyQuotationWorkController,
   RfqController,
 } from './rfq.controller';
@@ -23,6 +24,7 @@ import {
     AdminAllocationsController,
     MyQuotationWorkController,
     ContributionsController,
+    DirectQuotationsController,
     AllocationsController,
     QuotationNoticesController,
   ],

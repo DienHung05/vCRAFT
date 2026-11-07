@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   assembleCooperativeQuotation,
+  assembleDirectQuotation,
   type ContributionOffer,
   projectBuyerQuotation,
 } from '../src';
@@ -177,5 +178,37 @@ describe('projectBuyerQuotation', () => {
       deliveryTerms: 'INCLUDED',
     });
     expect(buyer.parts[0]).not.toHaveProperty('unitPriceVnd');
+  });
+});
+
+describe('assembleDirectQuotation', () => {
+  const draft = {
+    requiredQuantity: 5000,
+    biddingClosesAt: deadline,
+    requiredBy,
+    householdId: 'household-a',
+    unitPriceVnd: 30_000,
+    completionDate: new Date('2027-02-01T00:00:00.000Z'),
+  };
+
+  it('quotes the whole quantity as one part with the household price', () => {
+    const result = assembleDirectQuotation(draft);
+    expect(result.ok && result.value).toMatchObject({
+      quantity: 5000,
+      productionTotalVnd: 150_000_000,
+      additionalChargeVnd: 0,
+      totalVnd: 150_000_000,
+      deliveryTerms: 'SEPARATE',
+      parts: [{ householdId: 'household-a', quantity: 5000, unitPriceVnd: 30_000 }],
+    });
+  });
+
+  it('rejects a completion date outside the window and a non-positive price', () => {
+    for (const completionDate of [deadline, new Date('2027-03-01T00:00:00.000Z')]) {
+      const result = assembleDirectQuotation({ ...draft, completionDate });
+      expect(!result.ok && result.error.code).toBe('COMPLETION_DATE_INVALID');
+    }
+    const free = assembleDirectQuotation({ ...draft, unitPriceVnd: 0 });
+    expect(!free.ok && free.error.code).toBe('QUOTATION_INPUT_INVALID');
   });
 });

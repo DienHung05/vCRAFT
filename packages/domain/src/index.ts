@@ -18,6 +18,7 @@ export * from './allocation';
 export * from './exhibition';
 export * from './household';
 export * from './journal';
+export * from './matching';
 export * from './media';
 export * from './news';
 export * from './notification';

@@ -164,4 +164,24 @@ describe('Scheduled quotation jobs', () => {
     expect(flagged).toContain(near.id);
     expect(flagged).not.toContain(far.id);
   });
+
+  it('does not flag a closing request that already has a complete household quotation', async () => {
+    const quoted = await sentRequest();
+    const em = db.orm.em.fork();
+    const request = await em.findOneOrFail(QuotationRequest, quoted.id);
+    request.biddingClosesAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
+    await em.flush();
+    // The household quotes the whole quantity on its own: it has no contribution offer to count.
+    const quote = await t.request({
+      method: 'POST',
+      url: `/rfqs/${quoted.id}/direct-quotations`,
+      auth: reps[0]?.auth,
+      body: {
+        unitPriceVnd: 30_000,
+        completionDate: new Date(Date.now() + 20 * DAY).toISOString(),
+      },
+    });
+    expect(quote.status).toBe(201);
+    expect(await flagRequestsNeedingCoordination(db.orm)).not.toContain(quoted.id);
+  });
 });

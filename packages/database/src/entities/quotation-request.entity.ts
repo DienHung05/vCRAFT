@@ -26,6 +26,10 @@ export class QuotationRequest extends BaseEntity {
   @Property({ type: 'string', length: 500 })
   design!: string;
 
+  /** Special requests such as logo printing (FR-RFQ-01). Attachments are `media_link` rows of target `RFQ`. */
+  @Property({ type: 'text', nullable: true })
+  customRequirements?: string | null;
+
   @Property({ type: 'integer' })
   quantity!: number;
 

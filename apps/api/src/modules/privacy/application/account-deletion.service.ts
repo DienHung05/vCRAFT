@@ -214,6 +214,30 @@ export class AccountDeletionService {
       request.revision++;
     }
 
+    // A household's own (direct) quotations on requests that are still open go too.
+    const direct = await em.find(
+      CooperativeQuotation,
+      {
+        bidType: 'INDIVIDUAL',
+        status: 'SUBMITTED',
+        request: { status: { $in: [...OPEN_REQUESTS] } },
+      },
+      { populate: ['request'] },
+    );
+    for (const quotation of direct) {
+      const request = quotation.request;
+      if (quotation.parts[0]?.householdId !== household.id) continue;
+      quotation.status = 'WITHDRAWN';
+      await this.notifier.notify(em, {
+        kind: 'QUOTATION_WITHDRAWN',
+        requestId: request.id,
+        quotationId: quotation.id,
+        actorId: user.id,
+        recipientIds: [request.buyer.id],
+      });
+      request.revision++;
+    }
+
     const products = await em.find(Product, { household });
     const entries = products.length
       ? await em.find(JournalEntry, { product: { $in: products } })

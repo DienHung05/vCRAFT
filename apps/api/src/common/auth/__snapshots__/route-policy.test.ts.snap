@@ -29,6 +29,8 @@ GET /api/v1/auth/username-availability PUBLIC
 PUT /api/v1/contributions/:id ROLES(HOUSEHOLD)
 GET /api/v1/contributions/:id/history ROLES(ADMIN,HOUSEHOLD)
 POST /api/v1/contributions/:id/withdraw ROLES(HOUSEHOLD)
+PUT /api/v1/direct-quotations/:id ROLES(HOUSEHOLD)
+POST /api/v1/direct-quotations/:id/withdraw ROLES(HOUSEHOLD)
 GET /api/v1/health PUBLIC
 GET /api/v1/health/ready PUBLIC
 GET /api/v1/households PUBLIC
@@ -70,9 +72,9 @@ GET /api/v1/me/quotation-notices ROLES(ADMIN,BUYER,HOUSEHOLD)
 POST /api/v1/me/quotation-notices/:id/read ROLES(ADMIN,BUYER,HOUSEHOLD)
 POST /api/v1/me/quotation-notices/read-all ROLES(ADMIN,BUYER,HOUSEHOLD)
 PUT /api/v1/me/username AUTHENTICATED
-POST /api/v1/media ROLES(ADMIN,HOUSEHOLD)
-GET /api/v1/media/:id ROLES(ADMIN,HOUSEHOLD)
-GET /api/v1/media/:id/read-url ROLES(ADMIN,HOUSEHOLD)
+POST /api/v1/media ROLES(ADMIN,BUYER,HOUSEHOLD)
+GET /api/v1/media/:id ROLES(ADMIN,BUYER,HOUSEHOLD)
+GET /api/v1/media/:id/read-url ROLES(ADMIN,BUYER,HOUSEHOLD)
 GET /api/v1/media/files/originals/:owner/:asset PUBLIC
 GET /api/v1/news PUBLIC
 GET /api/v1/news/:slug PUBLIC
@@ -99,6 +101,8 @@ POST /api/v1/rfqs/:id/contributions ROLES(HOUSEHOLD)
 POST /api/v1/rfqs/:id/coordinate ROLES(ADMIN)
 GET /api/v1/rfqs/:id/coordination ROLES(ADMIN)
 POST /api/v1/rfqs/:id/decline ROLES(HOUSEHOLD)
+GET /api/v1/rfqs/:id/direct-quotations ROLES(HOUSEHOLD)
+POST /api/v1/rfqs/:id/direct-quotations ROLES(HOUSEHOLD)
 POST /api/v1/rfqs/:id/invitations ROLES(ADMIN)
 GET /api/v1/rfqs/:id/price-hint ROLES(HOUSEHOLD)
 GET /api/v1/rfqs/:id/quotations ROLES(ADMIN,BUYER)

@@ -117,7 +117,8 @@ describe('rfq form rules', () => {
     expect(rfqFormProblems({ ...VALID, requiredBy: '2099-12-01' }, now).requiredBy).toBe(true);
     expect(rfqFormProblems({ ...VALID, budgetMin: '5', budgetMax: '1' }, now).budget).toBe(true);
     expect(rfqFormProblems({ ...VALID, budgetMin: 'abc' }, now).budget).toBe(true);
-    expect(rfqFormProblems({ ...VALID, coordinate: false }, now).households).toBe(true);
+    // Nobody chosen and no coordination is fine: the system matches households of the category (BR-05).
+    expect(rfqFormProblems({ ...VALID, coordinate: false }, now)).toEqual({});
   });
 });
 
