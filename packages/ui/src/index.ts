@@ -17,6 +17,7 @@ export { cn } from './lib/cn';
 export {
   BLINK_MS,
   canBlink,
+  DIZZY_MS,
   directionIndex,
   gazeDirection,
   gazeToDirection,
@@ -26,11 +27,18 @@ export {
   type MascotProps,
   moodFixedDirection,
   moodReaction,
+  NO_POKES,
   nextBlinkDelay,
+  POKE_DIZZY_COUNT,
+  POKE_MS,
+  POKE_WINDOW_MS,
+  type PokeState,
   reactionIndex,
+  registerPoke,
   type SpriteDirection,
   type SpriteReaction,
   THOUGHT_MS,
+  useMascotPoke,
   usesReactionOverlay,
 } from './mascot';
 export {

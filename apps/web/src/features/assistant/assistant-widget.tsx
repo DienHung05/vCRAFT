@@ -1,6 +1,6 @@
 'use client';
 
-import { Mascot, type MascotMood } from '@vcraft/ui';
+import { Mascot, type MascotMood, useMascotPoke } from '@vcraft/ui';
 import { usePathname } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -62,7 +62,7 @@ function trapFocus(event: KeyboardEvent<HTMLElement>, close: () => void) {
   if (event.key !== 'Tab') return;
   const focusable = [
     ...event.currentTarget.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled])',
+      'a[href], button:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]), input:not([disabled])',
     ),
   ];
   const first = focusable[0];
@@ -132,7 +132,10 @@ export function AssistantWidget() {
   const close = useCallback(() => {
     setOpen(false);
   }, []);
+  // Clicks on the Fox, in the launcher or the panel header, count towards the dizzy face (GH#211).
+  const { reaction, poke } = useMascotPoke();
   const toggle = () => {
+    poke();
     dismissHello();
     setOpen((o) => !o);
   };
@@ -153,14 +156,25 @@ export function AssistantWidget() {
       onRate={assistant.rate}
       onClose={close}
       mascot={
-        <Mascot
-          mood={mood}
-          size={96}
-          lookAt="pointer"
-          label={t('mascotLabel')}
-          thought={waiting ? thoughtIndices.map((i) => allThoughts[i] ?? '') : undefined}
-          thoughtPortal
-        />
+        // Pointer only (GH#211): the panel's tab order and focus trap stay as they were; keyboard users poke
+        // the Fox through the launcher.
+        <button
+          type="button"
+          onClick={poke}
+          tabIndex={-1}
+          aria-hidden="true"
+          className="block rounded-full"
+        >
+          <Mascot
+            mood={mood}
+            reaction={reaction}
+            size={96}
+            lookAt="pointer"
+            label={t('mascotLabel')}
+            thought={waiting ? thoughtIndices.map((i) => allThoughts[i] ?? '') : undefined}
+            thoughtPortal
+          />
+        </button>
       }
     />
   );
@@ -201,6 +215,7 @@ export function AssistantWidget() {
       >
         <Mascot
           mood={open ? 'listen' : mood}
+          reaction={reaction}
           size={mobile ? 56 : 64}
           lookAt="pointer"
           label={t('mascotLabel')}
