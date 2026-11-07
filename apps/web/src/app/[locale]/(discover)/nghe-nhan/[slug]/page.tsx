@@ -5,7 +5,6 @@ import { getTranslations } from 'next-intl/server';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
-import { PhotoCredit } from '@/components/photo-credit';
 import { EmptyState } from '@/components/states/empty-state';
 import { fetchHousehold, fetchSlugRedirect } from '@/features/catalog/exhibition-api';
 import { ProductCard } from '@/features/catalog/product-card';
@@ -133,15 +132,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
           </div>
         </div>
       </header>
-      {cover ? (
-        <div className="mx-auto max-w-editorial px-gutter">
-          <PhotoCredit
-            id={cover.photo?.id}
-            credit={householdPhoto.credit}
-            className="mt-2 text-right text-[0.75rem] text-ash"
-          />
-        </div>
-      ) : null}
+      {cover ? <div className="mx-auto max-w-editorial px-gutter"></div> : null}
 
       {/* Bento: câu chuyện, đời thứ N, chứng nhận. */}
       <section
@@ -159,7 +150,6 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
                 // Below 640px the card is the page width minus gutters and padding; 80vw keeps 1.75x phones on the 640w file.
                 sizes="(min-width: 640px) 11rem, 80vw"
               />
-              <PhotoCredit id={portraitPhoto?.photo?.id} credit={portrait.credit} />
             </figure>
           ) : null}
           <h2 className="text-h3">{t('story')}</h2>
@@ -280,7 +270,6 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
                     // 88vw (not 100vw): the single column is ~92vw wide, and this keeps 1.75x phones on the 640w file.
                     sizes="(min-width: 1024px) 28vw, (min-width: 640px) 45vw, 88vw"
                   />
-                  <PhotoCredit id={image?.photo?.id} credit={item.credit} />
                 </figure>
               );
             })}

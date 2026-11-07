@@ -38,7 +38,6 @@ export function MakerCredits({ makers, household, compact, className }: MakerCre
       <p className="mt-4 text-small text-ink/85" data-posted-by="household-administration">
         {t('postedBy', { household })}
       </p>
-      <p className="mt-1 text-small text-ash">{t('illustrative')}</p>
     </section>
   );
 }

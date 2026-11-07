@@ -141,7 +141,6 @@ export function ChainVerifier({ productId, entries, household, subtle }: ChainVe
         ) : null}
       </div>
       <p className="relative mt-4 text-small text-ink/85">{t('match', { household })}</p>
-      <p className="relative mt-2 text-small text-ash">{t('demoNote')}</p>
     </section>
   );
 }

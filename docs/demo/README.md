@@ -20,13 +20,13 @@ Nạp bằng entity MikroORM, chạy giống hệt trên PostgreSQL và MySQL (`
 | Thành phần | Số lượng | Ghi chú |
 | --- | --- | --- |
 | Tài khoản (`app_user`) | 23 | 4 cố định (§2) + 19 người đại diện hộ không đăng nhập được |
-| Hộ sản xuất | 21 | 20 `APPROVED` + 1 `PENDING_REVIEW` ("Gốm Bảo Châu"); tên và người hư cấu, mô tả có nhãn `[Dữ liệu mẫu]` |
+| Hộ sản xuất | 21 | 20 `APPROVED` + 1 `PENDING_REVIEW` ("Gốm Bảo Châu"); tên và người hư cấu; mỗi hộ có một câu chuyện riêng nêu nghề và địa chỉ xưởng (GH#204), không ghi nhãn mẫu |
 | Nghệ nhân / xưởng | 53 / 35 | Xưởng có tọa độ quanh Bát Tràng (20.9758, 105.9139) |
 | Sản phẩm | 222 | 218 `PUBLISHED`; 4 `DRAFT` (2 của hộ household để xuất bản trực tiếp, 2 của hộ chờ duyệt) |
 | Mốc nhật ký | 1.295 | Mỗi sản phẩm 4–7 mốc, chuỗi băm SHA-256 sinh bằng `sealChain` của `@vcraft/domain`, kiểm lại bằng `verifyChain`; công đoạn bị nhảy đều có lý do bỏ qua |
 | Yêu cầu báo giá | 12 | Đủ 8 trạng thái RFQ (bảng bên dưới) |
 | Đề xuất tham gia / chào giá / phân bổ | 24 / 7 / 12 | Chào giá dựng bằng `assembleCooperativeQuotation` nên đúng luật tổng và năng lực |
-| Tin tức | 18 | Đều `PUBLISHED`: 6 tin chung của làng + 12 tin của hộ `APPROVED`, 2 tin ghim; nội dung có nhãn `[Dữ liệu mẫu]`; ngày đăng tính từ mốc đóng băng |
+| Tin tức | 18 | Đều `PUBLISHED`: 6 tin chung của làng + 12 tin của hộ `APPROVED`, 2 tin ghim; nội dung không còn nhãn mẫu (GH#204); ngày đăng tính từ mốc đóng băng |
 
 Ảnh: seed (`demo:reset`) để trống `images: []` ở nhật ký và không có ảnh bìa; ảnh có giấy phép được nối vào bằng `pnpm demo:media` (§1B). Chạy `demo:reset` mà không chạy `demo:media` thì `demo:verify` báo đỏ ở nhóm kiểm ảnh.
 

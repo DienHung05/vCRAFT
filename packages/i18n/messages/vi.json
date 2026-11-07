@@ -118,24 +118,18 @@
     "hours": "Giờ hỗ trợ",
     "hoursValue": "Thứ Hai đến thứ Bảy, {open} đến {close}",
     "rights": "© {year} vCraft. Giữ mọi quyền.",
-    "demo": "Bản trình diễn: tên hộ, nghệ nhân và số liệu là dữ liệu mẫu.",
     "credits": "Ghi nhận ảnh",
     "privacy": "Chính sách quyền riêng tư"
   },
   "credits": {
-    "photoBy": "Ảnh: {author}",
-    "source": "Nguồn",
     "title": "Ghi nhận ảnh",
     "lead": "Ảnh minh hoạ trong bản trình diễn lấy từ Wikimedia Commons, kho ảnh mở của các bảo tàng và Pixabay theo giấy phép cho phép dùng công khai kèm ghi nguồn. Chúng tôi cảm ơn các tác giả dưới đây. Ảnh đã được cắt và nén cho web; không có chỉnh sửa nào khác.",
-    "demoNote": "Ảnh chỉ để minh hoạ: đồ gốm trong ảnh không phải sản phẩm của các hộ mẫu.",
     "table": "Danh sách ảnh và giấy phép",
     "colPhoto": "Ảnh",
     "colAuthor": "Tác giả",
     "colLicense": "Giấy phép",
     "colSource": "Nguồn",
-    "viewSource": "Xem nguồn",
-    "note": "Ảnh minh hoạ lấy từ Wikimedia Commons, kho ảnh mở của bảo tàng và Pixabay theo giấy phép cho phép tái sử dụng, đã cắt và nén cho web.",
-    "noteLink": "Ghi nhận ảnh"
+    "viewSource": "Xem nguồn"
   },
   "notFound": {
     "title": "Trang này chưa ra lò",
@@ -270,7 +264,6 @@
     "verifiedSeal": "Ấn xác thực của vCraft",
     "integrity": {
       "demoBadge": "Dữ liệu minh họa",
-      "demoNote": "Sản phẩm, hộ làm và nhật ký trên trang này là dữ liệu mẫu của bản trình diễn, không phải hàng thật.",
       "match": "Mã này khớp với một sản phẩm minh họa của {household}.",
       "checkingTitle": "Đang kiểm tra nhật ký…",
       "checkingText": "Trình duyệt của bạn đang tự tính lại dấu băm SHA-256 của từng mốc.",
@@ -946,7 +939,6 @@
     "makersLead": "Công làm ra món đồ được ghi cho từng người theo phần việc của họ.",
     "madeBy": "Người làm",
     "postedBy": "Trang này do ban điều hành hộ {household} đăng; người đăng không được ghi là người làm.",
-    "illustrative": "Người và hộ trong bản trình diễn là minh họa.",
     "evidenceTitle": "Bằng chứng quá trình làm",
     "evidenceText": "Mỗi món mang một ấn truy xuất dẫn tới nhật ký sản xuất, có dấu băm để bạn tự kiểm.",
     "evidenceCta": "Xem nhật ký của {product}",
@@ -1915,7 +1907,6 @@
     "title": "Chính sách quyền riêng tư",
     "lead": "Bạn giao cho vCraft những thông tin cá nhân nào, để làm gì, ai nhìn thấy chúng và bạn làm chủ chúng ra sao. Trang này viết ngắn gọn để đọc được trên điện thoại.",
     "updated": "Cập nhật lần cuối: 01/11/2026",
-    "demoNote": "Đây là bản trình diễn: hộ, nghệ nhân và số liệu là dữ liệu mẫu. Chính sách mô tả đúng cách hệ thống xử lý dữ liệu bạn nhập vào.",
     "toc": "Nội dung trang",
     "backToTop": "Về đầu trang",
     "sections": {

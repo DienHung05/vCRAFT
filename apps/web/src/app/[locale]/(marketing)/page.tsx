@@ -2,8 +2,6 @@ import { buttonVariants, cn, TraceSealFrame, VaseFigure, WaveDivider } from '@vc
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
-import { PhotoCredit } from '@/components/photo-credit';
-import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { EmptyState } from '@/components/states/empty-state';
 import { HeroVase } from '@/experience/hero-vase/hero-vase';
 import { CountUp } from '@/experience/motion/count-up';
@@ -181,7 +179,6 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             ))}
           </ol>
         </DayStory>
-        <PhotoCreditsNote className="mx-auto mt-4 max-w-editorial px-gutter text-[0.75rem] leading-snug text-ash" />
       </section>
 
       {/* Nghệ nhân nổi bật: chân dung lớn, bố cục lệch kiểu tạp chí. */}
@@ -243,7 +240,6 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             })}
           </ul>
         )}
-        <PhotoCreditsNote />
       </section>
 
       {/* Bản đồ thu nhỏ "đang mở cửa" + số liệu làng. */}
@@ -373,7 +369,6 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
                       ),
                     )}
                   />
-                  <PhotoCredit credit={n.cover?.credit} />
                 </div>
                 <time dateTime={n.publishedAt} className="text-small text-ash">
                   {format.dateTime(new Date(n.publishedAt), 'long')}

@@ -118,24 +118,18 @@
     "hours": "Support hours",
     "hoursValue": "Monday to Saturday, {open} to {close} (Vietnam time)",
     "rights": "© {year} vCraft. All rights reserved.",
-    "demo": "Demo build: household names, artisans and figures are sample data.",
     "credits": "Image credits",
     "privacy": "Privacy policy"
   },
   "credits": {
-    "photoBy": "Photo: {author}",
-    "source": "Source",
     "title": "Image credits",
     "lead": "The illustrative photos in this demo come from Wikimedia Commons, the open-access collections of museums and Pixabay, under licences that allow public use with attribution. We thank the authors below. Photos were cropped and compressed for the web; no other changes were made.",
-    "demoNote": "Photos are illustrative only: the pottery shown is not made by the sample households.",
     "table": "List of photos and licences",
     "colPhoto": "Photo",
     "colAuthor": "Author",
     "colLicense": "Licence",
     "colSource": "Source",
-    "viewSource": "View source",
-    "note": "Illustrative photos from Wikimedia Commons, museum open-access collections and Pixabay under licences that allow reuse, cropped and compressed for the web.",
-    "noteLink": "Image credits"
+    "viewSource": "View source"
   },
   "notFound": {
     "title": "This page hasn't come out of the kiln",
@@ -270,7 +264,6 @@
     "verifiedSeal": "vCraft verification seal",
     "integrity": {
       "demoBadge": "Demo data",
-      "demoNote": "The product, household and log on this page are sample data for the demo, not real goods.",
       "match": "This code matches a demo product from {household}.",
       "checkingTitle": "Checking the log…",
       "checkingText": "Your browser is recomputing the SHA-256 hash of every entry itself.",
@@ -946,7 +939,6 @@
     "makersLead": "Credit for making the object goes to each person for the part they did.",
     "madeBy": "Made by",
     "postedBy": "This page is posted by the administration of {household}; the poster is not credited as a maker.",
-    "illustrative": "People and households in this demonstration are illustrative.",
     "evidenceTitle": "Evidence of making",
     "evidenceText": "Every object carries a trace seal that leads to its production journal, with hashes you can check yourself.",
     "evidenceCta": "Read the journal of {product}",
@@ -1915,7 +1907,6 @@
     "title": "Privacy policy",
     "lead": "What personal information you give vCraft, what it is used for, who can see it and how you stay in control of it. This page is kept short so it reads well on a phone.",
     "updated": "Last updated: 1 November 2026",
-    "demoNote": "This is a demonstration site: households, artisans and figures are sample data. The policy describes exactly how the system handles what you enter.",
     "toc": "On this page",
     "backToTop": "Back to top",
     "sections": {
