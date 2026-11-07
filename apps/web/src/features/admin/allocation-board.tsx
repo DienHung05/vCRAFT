@@ -58,6 +58,11 @@ export interface AllocationBoardProps {
   contributions: readonly BoardContribution[];
   /** Giá trị nháp khởi điểm (khôi phục bản soạn); không có thì bắt đầu bằng 0 — không tự đề xuất. */
   initialQuantities?: readonly number[];
+  /** Restored draft values for the extra charge and delivery terms (with `initialQuantities`). */
+  initialAdditionalCharge?: number;
+  initialDeliveryTerms?: 'INCLUDED' | 'SEPARATE';
+  /** Message shown as the submit error on mount, e.g. a stale-version notice after a reload. */
+  initialError?: string;
   /**
    * Gửi bản chào giá liên kết. API caller truyền mutation ở đây (kèm token của phiên);
    * không truyền thì bảng chỉ mô phỏng cục bộ và ghi nhãn rõ ràng.
@@ -90,6 +95,9 @@ export function AllocationBoard({
   requiredBy,
   contributions,
   initialQuantities,
+  initialAdditionalCharge,
+  initialDeliveryTerms,
+  initialError,
   onSubmit,
   disabled = false,
 }: AllocationBoardProps) {
@@ -102,9 +110,13 @@ export function AllocationBoard({
       return v === undefined ? '0' : String(v);
     }),
   );
-  const [additionalCharge, setAdditionalCharge] = useState('0');
-  const [deliveryTerms, setDeliveryTerms] = useState<'INCLUDED' | 'SEPARATE'>('INCLUDED');
-  const [submit, setSubmit] = useState<SubmitState>({ kind: 'idle' });
+  const [additionalCharge, setAdditionalCharge] = useState(String(initialAdditionalCharge ?? 0));
+  const [deliveryTerms, setDeliveryTerms] = useState<'INCLUDED' | 'SEPARATE'>(
+    initialDeliveryTerms ?? 'INCLUDED',
+  );
+  const [submit, setSubmit] = useState<SubmitState>(
+    initialError ? { kind: 'error', message: initialError } : { kind: 'idle' },
+  );
   const [confirming, setConfirming] = useState(false);
 
   const parsed = useMemo(
