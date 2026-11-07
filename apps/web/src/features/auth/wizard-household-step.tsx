@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { ConsentCheckbox } from '@/components/consent-checkbox';
 import { getPathname } from '@/i18n/navigation';
+import { ACCOUNT_CHANGED_EVENT } from '@/lib/auth/household-intent';
 import { browserAccountClient } from '@/lib/auth/supabase-browser';
 import { notify } from '@/lib/notify';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
@@ -91,6 +92,8 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
         ...(values.village ? { village: values.village } : {}),
       });
       notify.success(t('wizard.household.savedToast'));
+      // The account is a household representative now: let the header menu reload its role.
+      window.dispatchEvent(new Event(ACCOUNT_CHANGED_EVENT));
       onDone();
     } catch (failure) {
       if (failure instanceof AccountApiError && failure.fieldErrors.length > 0) {

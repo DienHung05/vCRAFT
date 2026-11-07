@@ -1268,6 +1268,8 @@
       "account": "Tài khoản của bạn",
       "signOut": "Đăng xuất",
       "signingOut": "Đang đăng xuất…",
+      "householdPending": "Hồ sơ hộ đang chờ Ban quản lý duyệt",
+      "finishHousehold": "Hoàn tất đăng ký hộ làng nghề",
       "roleLabel": "Vai trò",
       "checking": "Đang kiểm tra phiên đăng nhập",
       "area": "Vào khu làm việc",
