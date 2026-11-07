@@ -220,14 +220,16 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
     }
   };
 
+  // A draft was never sent, so it cancels without a reason (FR-RFQ-09, GH#244).
+  const reasonRequired = request.status !== 'DRAFT';
   const confirmCancel = () => {
     const text = reason.trim();
-    if (!text) {
+    if (!text && reasonRequired) {
       setReasonMissing(true);
       return;
     }
     void run(
-      () => client.cancelOrder(rfqId, request.version, { reason: text }),
+      () => client.cancelOrder(rfqId, request.version, text ? { reason: text } : {}),
       t('cancelFailed'),
       t('cancelledToast'),
     );

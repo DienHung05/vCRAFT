@@ -247,4 +247,56 @@ describe('Buyer quotation requests', () => {
       notices.body.some((notice: { requestId: string }) => notice.requestId === created.id),
     ).toBe(false);
   });
+
+  describe('state machine guards (GH#244)', () => {
+    it('cancels a draft without a reason, but still asks for one once the request is sent', async () => {
+      const draft = await create({ invitedHouseholdIds: [householdId] });
+      const res = await t.request({
+        method: 'POST',
+        url: `/rfqs/${draft.id}/cancel`,
+        auth: buyer.auth,
+        headers: { 'if-match': `"${draft.version}"` },
+        body: {},
+      });
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ status: 'CANCELLED', cancelReason: null });
+
+      const sent = await submit(await create({ invitedHouseholdIds: [householdId] }));
+      const missing = await t.request({
+        method: 'POST',
+        url: `/rfqs/${sent.id}/cancel`,
+        auth: buyer.auth,
+        headers: { 'if-match': `"${sent.version}"` },
+        body: {},
+      });
+      expect(missing.status).toBe(422);
+    });
+
+    it('refuses a bidding deadline less than 24 hours away on the server (T1)', async () => {
+      const draft = await create({
+        invitedHouseholdIds: [householdId],
+        biddingClosesAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      });
+      const res = await t.request({
+        method: 'POST',
+        url: `/rfqs/${draft.id}/submit`,
+        auth: buyer.auth,
+        headers: { 'if-match': `"${draft.version}"` },
+      });
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('BUSINESS_RULE_VIOLATED');
+    });
+
+    it('answers 409 INVALID_TRANSITION, not 500, when receipt is confirmed before any acceptance', async () => {
+      const sent = await submit(await create({ invitedHouseholdIds: [householdId] }));
+      const res = await t.request({
+        method: 'POST',
+        url: `/rfqs/${sent.id}/receive`,
+        auth: buyer.auth,
+        headers: { 'if-match': `"${sent.version}"` },
+      });
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('INVALID_TRANSITION');
+    });
+  });
 });
