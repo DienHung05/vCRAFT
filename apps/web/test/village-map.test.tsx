@@ -31,6 +31,9 @@ function pin(id: string, overrides: Partial<MapPinDto> = {}, craft = 'men lam'):
     visitable: true,
     visitingInfo: null,
     openingHours: HOURS,
+    experience: null,
+    temporarilyClosed: false,
+    closureReason: null,
     lat: 20.97,
     lng: 105.91,
     household: { name: `Hộ ${id}`, slug: `ho-${id}`, craft, coverUrl: null },
@@ -41,7 +44,7 @@ function pin(id: string, overrides: Partial<MapPinDto> = {}, craft = 'men lam'):
 // Thứ hai 10:00 giờ Việt Nam
 const MONDAY = new Date('2026-11-02T10:00:00+07:00');
 const SUNDAY = new Date('2026-11-01T10:00:00+07:00');
-const NO_FILTER = { openNow: false, visitable: false, craft: '' };
+const NO_FILTER = { openNow: false, visitable: false, experience: false, craft: '' };
 
 describe('map-model', () => {
   const pins = [
@@ -58,6 +61,29 @@ describe('map-model', () => {
     expect(ids({ ...NO_FILTER, openNow: true }, SUNDAY)).toEqual([]);
     expect(ids({ ...NO_FILTER, visitable: true })).toEqual(['Xưởng 1', 'Xưởng 3']);
     expect(ids({ ...NO_FILTER, craft: 'men ngọc' })).toEqual(['Xưởng 3']);
+  });
+
+  it('filters workshops that offer an experience (FR-MAP-03)', () => {
+    const experience = {
+      description: 'Nặn gốm cùng nghệ nhân',
+      durationMinutes: 90,
+      priceVnd: 250000,
+    };
+    const withExperience = [pin('1', { experience }), pin('2'), pin('3', { experience })];
+    expect(
+      filterPins(withExperience, { ...NO_FILTER, experience: true }, MONDAY).map(
+        (p) => p.workshopName,
+      ),
+    ).toEqual(['Xưởng 1', 'Xưởng 3']);
+    expect(filterPins(withExperience, NO_FILTER, MONDAY)).toHaveLength(3);
+  });
+
+  it('a temporarily closed workshop never matches the open-now filter (BR-03)', () => {
+    const closed = pin('1', { temporarilyClosed: true, closureReason: 'Nghỉ Tết' });
+    expect(filterPins([closed, pin('2')], { ...NO_FILTER, openNow: true }, MONDAY)).toEqual([
+      pin('2'),
+    ]);
+    expect(toFeatureCollection([closed], MONDAY).features[0]?.properties.status).toBe('closed');
   });
 
   it('danh sách nghề không trùng', () => {
@@ -99,6 +125,28 @@ describe('VillageMapExplorer', () => {
     const list = screen.getByTestId('workshop-list');
     expect(within(list).getAllByRole('listitem')).toHaveLength(1);
     expect(within(list).getByText('Hộ 3')).toBeTruthy();
+  });
+
+  it('lists the experience and the closure reason, and the experience filter narrows the list', () => {
+    const experience = {
+      description: 'Nặn gốm cùng nghệ nhân',
+      durationMinutes: 90,
+      priceVnd: 250000,
+    };
+    renderVi(
+      <VillageMapExplorer
+        pins={[
+          pin('1', { experience }),
+          pin('3', { temporarilyClosed: true, closureReason: 'Nghỉ Tết' }),
+        ]}
+      />,
+    );
+    const list = screen.getByTestId('workshop-list');
+    expect(within(list).getByText(/Có trải nghiệm · 90 phút/)).toBeTruthy();
+    expect(within(list).getByText('Tạm đóng cửa: Nghỉ Tết')).toBeTruthy();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Có trải nghiệm' }));
+    expect(within(list).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(list).getByText('Hộ 1')).toBeTruthy();
   });
 
   it('không xưởng nào khớp thì hiện trạng thái trống', () => {

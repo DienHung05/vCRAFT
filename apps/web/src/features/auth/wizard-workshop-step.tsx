@@ -57,6 +57,7 @@ export function WizardWorkshopStep({ onDone }: { onDone: () => void }) {
         address: values.address,
         purpose: values.purpose,
         acceptsVisitors: values.acceptsVisitors,
+        temporarilyClosed: false,
         ...(values.acceptsVisitors && values.visitingInfo
           ? { visitingInfo: values.visitingInfo }
           : {}),

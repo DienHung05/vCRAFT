@@ -1,5 +1,5 @@
 import { type MapPinDto, MapPinsResponseSchema } from '@vcraft/contracts';
-import { type OpenState, openState } from '@vcraft/domain';
+import { type OpenState, workshopOpenState } from '@vcraft/domain';
 import { apiBaseUrl } from '@/features/news/news-api';
 
 export type MapPinsResult = { status: 'ok'; pins: MapPinDto[] } | { status: 'unavailable' };
@@ -35,13 +35,17 @@ export interface MapBounds {
 export interface MapFilters {
   openNow: boolean;
   visitable: boolean;
+  /** Only workshops that offer an experience (FR-MAP-03). */
+  experience: boolean;
   /** Nghề được chọn; chuỗi rỗng là mọi nghề. */
   craft: string;
 }
 
-/** Xưởng không khai giờ thì không báo "đang mở" (đóng, không có giờ mở lại). */
-export const pinOpenState = (pin: MapPinDto, now: Date): OpenState =>
-  openState(pin.openingHours ?? [], now);
+/**
+ * Xưởng không khai giờ thì không báo "đang mở" (đóng, không có giờ mở lại); xưởng tạm đóng cửa luôn
+ * đóng, dù giờ mở cửa theo tuần có nói gì (BR-03).
+ */
+export const pinOpenState = (pin: MapPinDto, now: Date): OpenState => workshopOpenState(pin, now);
 
 export function filterPins(
   pins: readonly MapPinDto[],
@@ -52,6 +56,7 @@ export function filterPins(
     (pin) =>
       (!filters.openNow || pinOpenState(pin, now).open) &&
       (!filters.visitable || pin.visitable) &&
+      (!filters.experience || pin.experience !== null) &&
       (filters.craft === '' || pin.household.craft === filters.craft),
   );
 }

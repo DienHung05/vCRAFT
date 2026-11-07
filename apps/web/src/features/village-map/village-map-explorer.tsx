@@ -17,7 +17,7 @@ import {
   type MapBounds,
   sortByDistance,
 } from './map-model';
-import { OpenStatus } from './pin-popup';
+import { ExperienceSummary, OpenStatus } from './pin-popup';
 
 const MapCanvas = dynamic(() => import('./map-canvas'), {
   ssr: false,
@@ -55,6 +55,7 @@ export function VillageMapExplorer({
   const [now, setNow] = useState(() => new Date());
   const [openNow, setOpenNow] = useState(false);
   const [visitable, setVisitable] = useState(false);
+  const [experience, setExperience] = useState(false);
   const [craft, setCraft] = useState('');
   const [bounds, setBounds] = useState<MapBounds | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
@@ -78,8 +79,8 @@ export function VillageMapExplorer({
 
   const crafts = useMemo(() => craftsOf(pins), [pins]);
   const filtered = useMemo(
-    () => filterPins(pins, { openNow, visitable, craft }, now),
-    [pins, openNow, visitable, craft, now],
+    () => filterPins(pins, { openNow, visitable, experience, craft }, now),
+    [pins, openNow, visitable, experience, craft, now],
   );
   const listed = useMemo(() => {
     const inView = bounds ? filtered.filter((pin) => inBounds(pin, bounds)) : filtered;
@@ -122,6 +123,14 @@ export function VillageMapExplorer({
             onChange={(event) => setVisitable(event.target.checked)}
           />
           {t('filterVisitors')}
+        </label>
+        <label className="flex items-center gap-2 text-small">
+          <input
+            type="checkbox"
+            checked={experience}
+            onChange={(event) => setExperience(event.target.checked)}
+          />
+          {t('filterExperience')}
         </label>
         <label className="flex items-center gap-2 text-small">
           {t('filterCraft')}
@@ -208,6 +217,7 @@ export function VillageMapExplorer({
                   onClick={() => {
                     setOpenNow(false);
                     setVisitable(false);
+                    setExperience(false);
                     setCraft('');
                     setBounds(null);
                   }}
@@ -259,6 +269,7 @@ export function VillageMapExplorer({
                         </span>
                       ) : null}
                     </p>
+                    <ExperienceSummary pin={pin} />
                     {webgl ? (
                       <button
                         type="button"
