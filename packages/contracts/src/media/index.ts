@@ -61,6 +61,23 @@ export const MediaCreditSchema = z.object({
 export type MediaCreditDto = z.infer<typeof MediaCreditSchema>;
 
 /**
+ * Credit as clients read it from public responses (GH#230): a credit without a usable licence or source URL
+ * (an unknown licence is stored with empty URLs) reads as no credit, so one bad record never makes the whole
+ * page fail its contract check.
+ */
+export const PublicCreditSchema = MediaCreditSchema.nullable().catch(null);
+
+/** The API's side of the same rule: returns the credit only when both of its links are real URLs. */
+export function publicCredit<T extends { licenseUrl: string; sourceUrl: string }>(
+  credit: T | null | undefined,
+): T | null {
+  if (!credit) return null;
+  return z.url().safeParse(credit.licenseUrl).success && z.url().safeParse(credit.sourceUrl).success
+    ? credit
+    : null;
+}
+
+/**
  * Public variants of a processed image: AVIF and WebP at each generated width. Empty for images that are
  * not in the media store (static demo photos), so clients fall back to the single `url`. Defaults to empty
  * when absent, so a web build that is newer than the API it talks to still parses the response.
@@ -82,6 +99,6 @@ export const PublicImageSchema = z.object({
   /** English description for `/en`; null falls back to `alt`. Defaults to null so older APIs still parse. */
   altEn: z.string().nullable().default(null),
   caption: z.string().nullable(),
-  credit: MediaCreditSchema.nullable(),
+  credit: PublicCreditSchema,
 });
 export type PublicImageDto = z.infer<typeof PublicImageSchema>;
