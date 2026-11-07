@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CheckEmailPanel } from '@/features/auth/check-email-panel';
 import { ForgotPasswordForm } from '@/features/auth/forgot-password-form';
-import { renderVi } from './render';
+import { renderEn, renderVi } from './render';
 
 // `next-intl/navigation` needs the Next runtime; use a plain <a>.
 vi.mock('@/i18n/navigation', () => ({
@@ -35,6 +35,24 @@ describe('panels that replace an account form', () => {
     expect(document.activeElement).toBe(heading);
     expect(heading.getAttribute('tabindex')).toBe('-1');
     expect(container.querySelector('[aria-live]')).toBeNull();
+  });
+
+  it('check-email: hints that an existing account should sign in or reset the password (vi)', () => {
+    renderVi(<CheckEmailPanel email="a@b.vn" />);
+    expect(screen.getByText(/Nếu email này đã có tài khoản/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'đăng nhập' }).getAttribute('href')).toBe('/dang-nhap');
+    expect(screen.getByRole('link', { name: 'Quên mật khẩu' }).getAttribute('href')).toBe(
+      '/quen-mat-khau',
+    );
+  });
+
+  it('check-email: the same hint in English', () => {
+    renderEn(<CheckEmailPanel email="a@b.vn" />);
+    expect(screen.getByText(/already has an account/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'sign in' }).getAttribute('href')).toBe('/dang-nhap');
+    expect(screen.getByRole('link', { name: 'Forgot password' }).getAttribute('href')).toBe(
+      '/quen-mat-khau',
+    );
   });
 
   it('forgot password: after sending, focus moves to the new heading', async () => {

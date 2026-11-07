@@ -1368,6 +1368,7 @@
       "title": "Check your inbox",
       "lead": "We sent a verification email to {email}. Click the link in it to activate your account.",
       "spam": "Cannot see it? Look in your spam folder, or resend in a few minutes.",
+      "existingAccount": "No email? If this address already has an account, <signIn>sign in</signIn> or use <forgot>Forgot password</forgot>.",
       "resend": "Resend email",
       "resending": "Sending…",
       "resent": "Email sent again.",
