@@ -40,7 +40,14 @@ type LocationState = 'idle' | 'locating' | 'denied';
  * nên không có WebGL hay dùng trình đọc màn hình vẫn đọc được đủ xưởng; chỉ khi người dùng tự kéo
  * bản đồ thì danh sách mới thu theo khung nhìn, và có nút trả lại toàn bộ.
  */
-export function VillageMapExplorer({ pins }: { pins: readonly MapPinDto[] }) {
+export function VillageMapExplorer({
+  pins,
+  initialSelectedId,
+}: {
+  pins: readonly MapPinDto[];
+  /** Workshop whose card is open when the page loads (`/ban-do?xuong=`). */
+  initialSelectedId?: string;
+}) {
   const t = useTranslations('villageMap');
   const format = useFormatter();
   // Chờ sau hydrate mới biết WebGL và giờ thật, để HTML máy chủ và trình duyệt khớp nhau.
@@ -51,7 +58,11 @@ export function VillageMapExplorer({ pins }: { pins: readonly MapPinDto[] }) {
   const [craft, setCraft] = useState('');
   const [bounds, setBounds] = useState<MapBounds | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialSelectedId && pins.some((pin) => pin.workshopId === initialSelectedId)
+      ? initialSelectedId
+      : null,
+  );
   const [origin, setOrigin] = useState<LatLng | null>(null);
   const [locationState, setLocationState] = useState<LocationState>('idle');
   // The map frame is aria-hidden (the list beside it is the accessible equivalent), so nothing inside

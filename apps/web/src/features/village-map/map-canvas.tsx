@@ -1,7 +1,12 @@
 'use client';
 
 import type { MapPinDto } from '@vcraft/contracts';
-import { addProtocol, type GeoJSONSource, setWorkerUrl } from 'maplibre-gl';
+import {
+  addProtocol,
+  type GeoJSONSource,
+  type Map as MapLibreMap,
+  setWorkerUrl,
+} from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useTranslations } from 'next-intl';
 import { Protocol } from 'pmtiles';
@@ -15,8 +20,9 @@ import MapGL, {
   Source,
   type ViewStateChangeEvent,
 } from 'react-map-gl/maplibre';
-import { type LatLng, type MapBounds, toFeatureCollection } from './map-model';
+import { type LatLng, type MapBounds, type PinStatus, toFeatureCollection } from './map-model';
 import { PMTILES_URL } from './offline-style';
+import { loadPinImage, PIN_COLORS, PIN_HEIGHT, PIN_WIDTH, pinSvg } from './pin-icons';
 import { PinPopup } from './pin-popup';
 import { pulseDue, pulsePaint, shouldPulse } from './pin-pulse';
 import { useMapStyle } from './use-map-style';
@@ -29,9 +35,38 @@ if (PMTILES_URL) addProtocol('pmtiles', new Protocol().tile);
 const SOURCE = 'workshops';
 const CLUSTERS = 'workshop-clusters';
 const PINS = 'workshop-pins';
-const CLAY = '#a4532a';
 const GLAZE = '#2f6f6a';
-const INK = '#2a2622';
+const PAPER = '#fbf7ef';
+const PHONE = '(max-width: 639px)';
+
+/** Marker bitmaps by image id, shared by every map on the page and kept across style switches. */
+const pinImages = new Map<string, HTMLImageElement>();
+
+/** Adds a pin image the style asks for; cached bitmaps go in at once, others once decoded (GH#216). */
+function providePinImage(map: MapLibreMap, id: string) {
+  if (map.hasImage(id)) return;
+  const cached = pinImages.get(id);
+  if (cached) {
+    map.addImage(id, cached, { pixelRatio: 2 });
+    return;
+  }
+  void loadPinImage(id)?.then((image) => {
+    pinImages.set(id, image);
+    if (!map.hasImage(id)) map.addImage(id, image, { pixelRatio: 2 });
+  });
+}
+
+function usePhone(): boolean {
+  const [phone, setPhone] = useState(false);
+  useEffect(() => {
+    const list = window.matchMedia(PHONE);
+    const update = () => setPhone(list.matches);
+    update();
+    list.addEventListener('change', update);
+    return () => list.removeEventListener('change', update);
+  }, []);
+  return phone;
+}
 
 export interface MapCanvasProps {
   pins: readonly MapPinDto[];
@@ -68,8 +103,36 @@ export default function MapCanvas({
     return { longitude: lng, latitude: lat };
   }, []);
 
+  const phone = usePhone();
+  const selectedId = selected?.workshopId ?? '';
   const hasOpenPin = useMemo(() => data.features.some((pin) => pin.properties.open), [data]);
+  const icons = useMemo(
+    () => [...new Set(data.features.map((pin) => pin.properties.icon))],
+    [data],
+  );
   const [container, setContainer] = useState<HTMLElement | null>(null);
+
+  // Pin images: the ones in use now, and any the style asks for later (a style switch drops them).
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !container) return;
+    for (const id of icons) providePinImage(map, id);
+    const onMissing = (event: { id: string }) => providePinImage(map, event.id);
+    map.on('styleimagemissing', onMissing);
+    return () => {
+      map.off('styleimagemissing', onMissing);
+    };
+  }, [icons, container]);
+
+  // Esc closes the info card, as the close button and a tap on the map do.
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onSelect(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selected, onSelect]);
   const [inView, setInView] = useState(true);
 
   useEffect(() => {
@@ -141,7 +204,11 @@ export default function MapCanvas({
       mapStyle={style}
       onError={onMapError}
       onLoad={(event) => setContainer(event.target.getContainer())}
-      initialViewState={{ ...initialCenter, zoom: 14 }}
+      initialViewState={
+        selected
+          ? { longitude: selected.lng, latitude: selected.lat, zoom: 16 }
+          : { ...initialCenter, zoom: 14 }
+      }
       style={{ width: '100%', height: '100%' }}
       interactiveLayerIds={[CLUSTERS, PINS]}
       cursor={highlightId ? 'pointer' : 'grab'}
@@ -159,11 +226,12 @@ export default function MapCanvas({
           id={CLUSTERS}
           type="circle"
           filter={['has', 'point_count']}
+          // Brand-coloured count badges (GH#216); a tap zooms into the cluster.
           paint={{
-            'circle-color': INK,
-            'circle-radius': ['step', ['get', 'point_count'], 16, 5, 20, 15, 26],
-            'circle-stroke-color': '#fff',
-            'circle-stroke-width': 2,
+            'circle-color': PIN_COLORS.open,
+            'circle-radius': ['step', ['get', 'point_count'], 18, 5, 22, 15, 28],
+            'circle-stroke-color': PAPER,
+            'circle-stroke-width': 3,
           }}
         />
         <Layer
@@ -173,9 +241,9 @@ export default function MapCanvas({
           layout={{
             'text-field': ['get', 'point_count_abbreviated'],
             'text-font': ['Noto Sans Regular'],
-            'text-size': 13,
+            'text-size': 15,
           }}
-          paint={{ 'text-color': '#fff' }}
+          paint={{ 'text-color': PAPER }}
         />
         <Layer
           id="workshop-pulse"
@@ -191,15 +259,32 @@ export default function MapCanvas({
             'circle-opacity-transition': { duration: 0, delay: 0 },
           }}
         />
+        {/* Marker pins coloured by status with a purpose glyph (GH#216); the selected one grows and rises. */}
         <Layer
           id={PINS}
-          type="circle"
+          type="symbol"
           filter={['!', ['has', 'point_count']]}
-          paint={{
-            'circle-color': ['case', ['==', ['get', 'open'], true], GLAZE, CLAY],
-            'circle-radius': ['case', ['==', ['get', 'id'], highlightId ?? ''], 11, 7],
-            'circle-stroke-color': '#fff',
-            'circle-stroke-width': ['case', ['==', ['get', 'id'], highlightId ?? ''], 3, 2],
+          layout={{
+            'icon-image': ['get', 'icon'],
+            'icon-anchor': 'bottom',
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+            'icon-size': [
+              'case',
+              ['==', ['get', 'id'], selectedId],
+              1.3,
+              ['==', ['get', 'id'], highlightId ?? ''],
+              1.15,
+              1,
+            ],
+            'symbol-sort-key': [
+              'case',
+              ['==', ['get', 'id'], selectedId],
+              2,
+              ['==', ['get', 'id'], highlightId ?? ''],
+              1,
+              0,
+            ],
           }}
         />
       </Source>
@@ -208,22 +293,65 @@ export default function MapCanvas({
           <span className="block size-4 rounded-full border-2 border-paper bg-seal shadow-warm" />
         </Marker>
       ) : null}
-      {selected ? (
+      {selected && !phone ? (
         <Popup
           longitude={selected.lng}
           latitude={selected.lat}
-          offset={14}
-          maxWidth="17rem"
+          anchor="bottom"
+          offset={Math.round(PIN_HEIGHT * 1.3) + 4}
+          maxWidth="18rem"
+          closeOnClick={false}
           onClose={() => onSelect(null)}
         >
           <PinPopup pin={selected} now={now} />
         </Popup>
       ) : null}
+      {selected && phone ? (
+        // Phones: a bottom sheet over the map instead of a popup that would cover the pin.
+        <div className="absolute inset-x-0 bottom-0 z-10 max-h-[70%] overflow-y-auto rounded-t-card bg-surface p-4 shadow-warm">
+          <PinPopup pin={selected} now={now} onClose={() => onSelect(null)} />
+        </div>
+      ) : (
+        <MapLegend />
+      )}
       {offline ? (
         <p className="absolute top-2 left-2 rounded-chip bg-surface/90 px-2 py-1 text-small text-ash shadow-warm">
           {t('offline')}
         </p>
       ) : null}
     </MapGL>
+  );
+}
+
+const LEGEND: readonly {
+  status: PinStatus;
+  key: 'legendOpen' | 'legendClosed' | 'legendProduction';
+}[] = [
+  { status: 'open', key: 'legendOpen' },
+  { status: 'closed', key: 'legendClosed' },
+  { status: 'production', key: 'legendProduction' },
+];
+
+/** What the pin colours mean (GH#216), in the map's bottom-left corner. */
+function MapLegend() {
+  const t = useTranslations('villageMap');
+  return (
+    <div className="absolute bottom-2 left-2 rounded-input bg-surface/95 px-3 py-2 text-small shadow-warm">
+      <p className="sr-only">{t('legendTitle')}</p>
+      <ul className="flex flex-col gap-1">
+        {LEGEND.map(({ status, key }) => (
+          <li key={status} className="flex items-center gap-2">
+            {/* biome-ignore lint/performance/noImgElement: a tiny inline SVG swatch, nothing to optimise. */}
+            <img
+              src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(pinSvg(status, 'SHOWROOM'))}`}
+              alt=""
+              width={PIN_WIDTH / 2}
+              height={PIN_HEIGHT / 2}
+            />
+            {t(key)}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

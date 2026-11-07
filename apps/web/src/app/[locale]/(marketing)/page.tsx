@@ -26,7 +26,7 @@ import {
   tintOf,
 } from '@/features/catalog/view-models';
 import { fetchNews } from '@/features/news/news-api';
-import { fetchMapPins, pinOpenState } from '@/features/village-map/map-model';
+import { fetchMapPins, pinOpenState, pinStatus } from '@/features/village-map/map-model';
 import { VillageMiniMap } from '@/features/village-map/village-mini-map';
 import { Link } from '@/i18n/navigation';
 import type { LogStage } from '@/lib/demo/data';
@@ -55,6 +55,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
     stages,
     common,
     preset,
+    mapT,
     format,
     householdsResult,
     productsResult,
@@ -66,6 +67,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
     getTranslations('stages'),
     getTranslations('common'),
     getTranslations('presetFigure'),
+    getTranslations('villageMap'),
     getFormatter(),
     fetchHouseholds(),
     fetchProducts({ limit: 1 }),
@@ -296,6 +298,15 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
                 ...(positions.get(pin.workshopId) ?? { x: 50, y: 50 }),
                 open: pinOpenState(pin, now).open,
                 label: pin.household.name,
+                card: {
+                  title: pin.household.name,
+                  lines: [pin.workshopName, pin.address],
+                  status: pinStatus(pin, now),
+                  link: {
+                    href: { pathname: '/nghe-nhan/[slug]', params: { slug: pin.household.slug } },
+                    label: mapT('viewHousehold'),
+                  },
+                },
               }))}
             />
           </div>

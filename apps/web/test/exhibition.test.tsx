@@ -1,9 +1,16 @@
 import { screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { MakerCredits } from '@/features/exhibition/maker-credits';
 import { VisitSection } from '@/features/exhibition/visit-section';
 import { getArtisan, householdWorkshops } from '@/lib/demo/data';
 import { renderVi } from './render';
+
+// The mini map's pin cards link with next-intl, which needs the Next runtime; a plain <a> is enough here.
+vi.mock('@/i18n/navigation', () => ({
+  Link: ({ href, children }: { href: unknown; children: React.ReactNode }) => (
+    <a href={typeof href === 'string' ? href : JSON.stringify(href)}>{children}</a>
+  ),
+}));
 
 describe('ghi công người làm (vCRAFT-9hg.6)', () => {
   it('nêu tên từng người kèm phần việc; người đăng là ban điều hành hộ, không nằm trong danh sách', () => {
