@@ -41,3 +41,28 @@ export function storeTheme(theme: Theme): void {
     // Storage blocked: the switch still applies to this page view.
   }
 }
+
+export interface ThemeWave {
+  /** Wave centre in viewport px. */
+  x: number;
+  y: number;
+  /** Radius that reaches the farthest viewport corner from the centre. */
+  r: number;
+}
+
+/**
+ * Where the theme wave starts (GH#214): at the pointer for a click, or at the button's centre for keyboard
+ * activation (a keyboard "click" reports `detail` 0 and no useful coordinates). The radius covers the
+ * farthest corner of the viewport, so the wave always ends with the whole page switched.
+ */
+export function themeWaveOrigin(
+  click: { detail: number; clientX: number; clientY: number },
+  button: { left: number; top: number; width: number; height: number },
+  viewport: { width: number; height: number },
+): ThemeWave {
+  const fromPointer = click.detail > 0;
+  const x = fromPointer ? click.clientX : button.left + button.width / 2;
+  const y = fromPointer ? click.clientY : button.top + button.height / 2;
+  const r = Math.hypot(Math.max(x, viewport.width - x), Math.max(y, viewport.height - y));
+  return { x: Math.round(x), y: Math.round(y), r: Math.ceil(r) };
+}
