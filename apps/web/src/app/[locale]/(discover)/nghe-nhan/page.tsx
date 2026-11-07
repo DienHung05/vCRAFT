@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
-import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { EmptyState } from '@/components/states/empty-state';
 import { UrlPagination } from '@/components/url-pagination';
 import { fetchHouseholdPage } from '@/features/catalog/exhibition-api';
@@ -107,7 +106,6 @@ export default async function ArtisansIndexPage({
           pageSize={result.data.pageSize}
         />
       </div>
-      <PhotoCreditsNote />
     </div>
   );
 }

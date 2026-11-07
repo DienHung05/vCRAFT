@@ -1,4 +1,3 @@
-import { Badge } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import type { ReactNode } from 'react';
@@ -59,9 +58,6 @@ export default async function PrivacyPolicyPage({
     <article className="mx-auto flex max-w-prose-vn flex-col gap-8 px-gutter pt-10 pb-section">
       <Breadcrumbs items={[{ label: common('home'), href: '/' }, { label: t('title') }]} />
       <header className="flex flex-col gap-3">
-        <Badge tone="outline" className="self-start whitespace-normal">
-          {t('demoNote')}
-        </Badge>
         <h1 className="text-h1">{t('title')}</h1>
         <p className="text-ash">{t('lead')}</p>
         <p className="text-small text-ash">{t('updated')}</p>

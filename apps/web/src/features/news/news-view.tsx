@@ -2,7 +2,6 @@ import { Badge, buttonVariants, Card } from '@vcraft/ui';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
-import { PhotoCredit } from '@/components/photo-credit';
 import { EmptyState } from '@/components/states/empty-state';
 import { UrlPagination } from '@/components/url-pagination';
 import { altFor, photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
@@ -90,7 +89,6 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
                         )}
                         sizes="(min-width: 768px) 40rem, 100vw"
                       />
-                      <PhotoCredit credit={n.cover.credit} />
                     </div>
                   ) : null}
                   <div className="flex flex-wrap items-center gap-2 text-small text-ash">

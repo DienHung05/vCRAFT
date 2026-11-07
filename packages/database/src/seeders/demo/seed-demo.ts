@@ -57,6 +57,15 @@ import {
   VILLAGE_PARTS,
 } from './pools.js';
 
+/** Workshop steps named in artisan bios (GH#204), picked by position so the seed stays deterministic. */
+const CRAFT_STEP = [
+  'vuốt dáng trên bàn xoay',
+  'vẽ họa tiết',
+  'tráng men',
+  'xếp lò và canh lửa',
+  'sửa và hoàn thiện',
+];
+
 /**
  * Dữ liệu mẫu cho buổi bảo vệ (GH#14, vCRAFT-83g mục demo). Viết bằng entity (không SQL tay) nên chạy y hệt
  * trên PostgreSQL và MySQL.
@@ -67,6 +76,7 @@ import {
  * tham gia (`biddingClosesAt`, `requiredBy`, `completionDate`, `createdAt` của chúng) tính theo `now` lúc nạp.
  * Nên reset ngay trước buổi thi (xem docs/demo/README.md).
  */
+
 export const FROZEN_ANCHOR = new Date('2026-09-01T03:00:00.000Z');
 /** Six monthly price notices, newest first (index = months ago). VND, sample figures. */
 const MATERIAL_PRICE_MONTHS = [
@@ -724,7 +734,8 @@ export async function seedDemoData(
       id: demoHouseholdId(row.index),
       name: row.seed.name,
       slug,
-      history: `[Dữ liệu mẫu] Hộ ${row.seed.name} do ${row.seed.owner} đại diện, làm nghề gốm ở Bát Tràng, chuyên ${row.seed.craft}. Đây là hồ sơ hư cấu dùng để trình diễn, không phải hộ thật.`,
+      // Filled in from `story` once the first workshop has its address (GH#204).
+      history: '',
       village: 'Bát Tràng',
       craft: row.seed.craft,
       coverUrl: HOUSEHOLD_COVERS[row.seed.name] ?? null,
@@ -771,7 +782,10 @@ export async function seedDemoData(
           household,
           name: a === 0 ? row.seed.owner : fullName(random),
           craftRole: a === 0 ? 'Chủ hộ, thợ cả' : random.pick(CRAFT_ROLES),
-          bio: `[Dữ liệu mẫu] Làm gốm ${row.seed.craft} tại Bát Tràng.`,
+          bio:
+            a === 0
+              ? `Đại diện hộ ${row.seed.name}, giữ lò và lo khâu chọn đất, pha men cho các món ${row.seed.craft}.`
+              : `Làm ở xưởng của hộ ${row.seed.name}, phụ trách khâu ${CRAFT_STEP[a % CRAFT_STEP.length]}.`,
           createdAt: new Date(createdMs + a * HOUR),
           updatedAt: new Date(createdMs + a * HOUR),
         }),
@@ -783,7 +797,7 @@ export async function seedDemoData(
     const workshopCount = random.int(1, 2);
     for (let w = 0; w < workshopCount; w++) {
       const purpose = w === 0 ? (random.next() < 0.5 ? 'BOTH' : 'SHOWROOM') : 'PRODUCTION';
-      em.create(Workshop, {
+      const workshop = em.create(Workshop, {
         id: idOf('workshop', `${row.index}-${w}`),
         household,
         name: `${WORKSHOP_NAME_BY_PURPOSE[purpose]} ${row.seed.name}`,
@@ -801,6 +815,12 @@ export async function seedDemoData(
         createdAt: new Date(createdMs + w * HOUR),
         updatedAt: new Date(createdMs + w * HOUR),
       });
+      if (w === 0) {
+        household.history = row.seed.story.replace(
+          '{address}',
+          workshop.address.replace(/, Hà Nội$/, ''),
+        );
+      }
       summary.workshops++;
     }
 
@@ -933,7 +953,7 @@ export async function seedDemoData(
       slug: slugify(item.title.replaceAll('{hộ}', ownerName)),
       title: item.title.replaceAll('{hộ}', ownerName),
       summary: item.summary,
-      body: `[Dữ liệu mẫu] ${item.body.replaceAll('{hộ}', ownerName)}`,
+      body: item.body.replaceAll('{hộ}', ownerName),
       category: item.category,
       household: owner,
       status: 'PUBLISHED',
@@ -958,7 +978,7 @@ export async function seedDemoData(
       slug: `gia-nguyen-lieu-${month}`,
       title: `Giá nguyên liệu tháng ${Number(month.slice(5))}/${month.slice(0, 4)}`,
       summary: 'Bảng giá đất sét, men và gas Ban quản lý tổng hợp từ các đại lý trong làng.',
-      body: '[Dữ liệu mẫu] Giá tham khảo tại các đại lý trong làng, áp dụng từ đầu tháng.',
+      body: 'Giá tham khảo tại các đại lý trong làng, áp dụng từ đầu tháng.',
       category: 'MATERIAL_PRICES',
       household: null,
       status: 'PUBLISHED',
@@ -986,7 +1006,7 @@ export async function seedDemoData(
       slug: 'lich-cat-dien-hom-nay',
       title: 'Lịch cắt điện trong làng',
       summary: 'Điện lực báo cắt điện để bảo trì đường dây; các hộ đốt lò điện nên dời mẻ nung.',
-      body: '[Dữ liệu mẫu] Điện lực Gia Lâm báo cắt điện để bảo trì đường dây trung thế.',
+      body: 'Điện lực Gia Lâm báo cắt điện để bảo trì đường dây trung thế.',
       category: 'POWER_SCHEDULE',
       visibility: 'VILLAGE',
       household: null,

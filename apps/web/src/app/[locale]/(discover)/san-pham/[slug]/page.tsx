@@ -6,8 +6,6 @@ import { ViewTransition } from 'react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
-import { PhotoCredit } from '@/components/photo-credit';
-import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { UsdRateNote, UsdReference } from '@/components/usd-reference';
 import { fetchProduct, fetchProducts, fetchSlugRedirect } from '@/features/catalog/exhibition-api';
 import { presetKindOf } from '@/features/catalog/preset-figure';
@@ -54,7 +52,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
     notFound();
   }
   if (result.status === 'unavailable') return <DataUnavailable />;
-  const { product, coverCredit, household, journal } = result.data;
+  const { product, household, journal } = result.data;
   const [t, common, stages, categories, preset, format, siblings] = await Promise.all([
     getTranslations('product'),
     getTranslations('common'),
@@ -122,7 +120,6 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
                 )}
               </ImageSlot>
             </ViewTransition>
-            <PhotoCredit id={image?.photo?.id} credit={coverCredit} />
             {entryPhotos.length > 0 ? (
               <ul className="mt-4 grid grid-cols-4 gap-3" aria-label={t('gallery')}>
                 {entryPhotos.map(({ e, image: own }) => {
@@ -141,7 +138,6 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
                 })}
               </ul>
             ) : null}
-            {image || entryPhotos.length > 0 ? <PhotoCreditsNote /> : null}
           </div>
         </div>
 

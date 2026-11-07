@@ -12,7 +12,6 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
-import { PhotoCredit } from '@/components/photo-credit';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
 import { fetchHousehold, fetchTrace } from '@/features/catalog/exhibition-api';
 import {
@@ -147,7 +146,6 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                     priority
                     sizes="(min-width: 640px) 20rem, 80vw"
                   />
-                  <PhotoCredit id={image.photo?.id} credit={visible.coverCredit} />
                 </figure>
               ) : null}
             </section>
@@ -198,7 +196,6 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                   />
                 )}
               </ImageSlot>
-              <PhotoCredit id={householdImage?.photo?.id} credit={householdPhoto?.credit} />
               {visible.product.artisanNote ? (
                 <blockquote className="mt-6 font-display text-h3 leading-snug text-ink type-soft">
                   “{visible.product.artisanNote}”
