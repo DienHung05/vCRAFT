@@ -11,6 +11,13 @@ import {
   newConversation,
   saveConversation,
 } from './conversation';
+import {
+  type ArchivedConversation,
+  archiveConversation,
+  archiveStorage,
+  deleteArchivedConversation,
+  loadArchive,
+} from './conversation-archive';
 
 const session = () => {
   try {
@@ -30,6 +37,9 @@ export function useAssistant({ locale, pagePath }: { locale: 'vi' | 'en'; pagePa
   const [conversation, setConversation] = useState<Conversation>(() =>
     typeof window === 'undefined' ? newConversation() : loadConversation(session()),
   );
+  const [archive, setArchive] = useState<ArchivedConversation[]>([]);
+  const refreshArchive = useCallback(() => setArchive(loadArchive(archiveStorage())), []);
+  useEffect(refreshArchive, [refreshArchive]);
   const abort = useRef<AbortController | null>(null);
   const busy = conversation.messages.some(
     (m) => m.status === 'pending' || m.status === 'streaming',
@@ -64,7 +74,7 @@ export function useAssistant({ locale, pagePath }: { locale: 'vi' | 'en'; pagePa
       let frame = 0;
       const flush = () => {
         frame = 0;
-        if (!pending) return;
+        if (!pending || abort.current !== controller) return;
         const text = pending;
         pending = '';
         patch(reply.id, (m) => ({ text: m.text + text, status: 'streaming' }));
@@ -72,7 +82,7 @@ export function useAssistant({ locale, pagePath }: { locale: 'vi' | 'en'; pagePa
       const finish = (change: Partial<ChatMessage>) => {
         if (frame) cancelAnimationFrame(frame);
         flush();
-        patch(reply.id, change);
+        if (abort.current === controller) patch(reply.id, change);
       };
 
       try {
@@ -157,9 +167,31 @@ export function useAssistant({ locale, pagePath }: { locale: 'vi' | 'en'; pagePa
 
   const stop = useCallback(() => abort.current?.abort(), []);
 
-  const reset = useCallback(() => {
+  const cancelForSwitch = useCallback(() => {
     abort.current?.abort();
-    setConversation((c) => ({ ...newConversation(), seenThoughts: c.seenThoughts }));
+    abort.current = null;
+  }, []);
+
+  const reset = useCallback(() => {
+    cancelForSwitch();
+    setArchive(archiveConversation(archiveStorage(), conversation));
+    setConversation({ ...newConversation(), seenThoughts: conversation.seenThoughts });
+  }, [cancelForSwitch, conversation]);
+
+  const restore = useCallback(
+    (id: string) => {
+      const storage = archiveStorage();
+      const saved = loadArchive(storage).find((entry) => entry.id === id);
+      if (!saved) return;
+      cancelForSwitch();
+      setArchive(archiveConversation(storage, conversation));
+      setConversation({ id: saved.id, messages: saved.messages, seenThoughts: saved.seenThoughts });
+    },
+    [cancelForSwitch, conversation],
+  );
+
+  const removeFromArchive = useCallback((id: string) => {
+    setArchive(deleteArchivedConversation(archiveStorage(), id));
   }, []);
 
   const rate = useCallback(
@@ -183,6 +215,10 @@ export function useAssistant({ locale, pagePath }: { locale: 'vi' | 'en'; pagePa
   }, []);
 
   return {
+    archive,
+    refreshArchive,
+    restore,
+    removeFromArchive,
     messages: conversation.messages,
     seenThoughts: conversation.seenThoughts,
     busy,

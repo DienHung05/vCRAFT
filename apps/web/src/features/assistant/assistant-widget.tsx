@@ -90,6 +90,11 @@ export function AssistantWidget() {
   const [open, setOpen] = useState(false);
   const [hello, setHello] = useState(false);
   const launcher = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (wasOpen.current && !open) launcher.current?.focus();
+    wasOpen.current = open;
+  }, [open]);
   const viewportHeight = useVisualViewportHeight(open && mobile);
   const assistant = useAssistant({ locale, pagePath: pathname });
   const { messages, busy, seenThoughts, markThoughtsSeen } = assistant;
@@ -126,7 +131,6 @@ export function AssistantWidget() {
 
   const close = useCallback(() => {
     setOpen(false);
-    launcher.current?.focus();
   }, []);
   const toggle = () => {
     dismissHello();
@@ -135,6 +139,10 @@ export function AssistantWidget() {
 
   const panel = (
     <AssistantPanel
+      archive={assistant.archive}
+      onHistory={assistant.refreshArchive}
+      onRestore={assistant.restore}
+      onDelete={assistant.removeFromArchive}
       messages={messages}
       busy={busy}
       page={page}
@@ -188,7 +196,7 @@ export function AssistantWidget() {
         aria-haspopup="dialog"
         aria-label={open ? t('close') : t('open')}
         onClick={toggle}
-        className={`fixed right-4 z-40 flex size-16 items-center justify-center rounded-full bg-surface shadow-warm ring-1 ring-ink/10 transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-clay ${lift} ${open && mobile ? 'hidden' : ''}`}
+        className={`fixed right-4 z-40 size-16 items-center justify-center rounded-full bg-surface shadow-warm ring-1 ring-ink/10 transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-clay ${lift} ${open ? 'hidden' : 'flex'}`}
       >
         <Mascot
           mood={open ? 'listen' : mood}
@@ -203,6 +211,10 @@ export function AssistantWidget() {
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 z-50 bg-ink/30" />
             <Drawer.Content
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                launcher.current?.focus();
+              }}
               aria-describedby={undefined}
               className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-card bg-paper pb-[env(safe-area-inset-bottom)] outline-none"
               style={{
@@ -224,7 +236,10 @@ export function AssistantWidget() {
             role="dialog"
             aria-label={t('title')}
             onKeyDown={(event) => trapFocus(event, close)}
-            className={`fixed right-4 z-50 flex h-[min(36rem,calc(100dvh-8rem))] w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-card bg-paper shadow-warm ring-1 ring-ink/10 ${lift} mb-20`}
+            style={{
+              maxHeight: `calc(100dvh - env(safe-area-inset-bottom) - ${page === 'map' ? '13rem' : '7rem'})`,
+            }}
+            className={`fixed right-4 z-50 flex h-[36rem] w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-card bg-paper shadow-warm ring-1 ring-ink/10 ${lift}`}
           >
             {panel}
           </div>
