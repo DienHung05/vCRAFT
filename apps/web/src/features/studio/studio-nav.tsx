@@ -2,6 +2,7 @@
 
 import { cn } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
+import { TabBrush } from '@/experience/motion/tab-brush';
 import { Link, usePathname } from '@/i18n/navigation';
 
 const ITEMS = [
@@ -24,7 +25,7 @@ export function StudioNav() {
   return (
     <nav
       aria-label={t('label')}
-      className="fixed inset-x-0 bottom-0 z-30 border-ink/10 border-t bg-paper/95 backdrop-blur-md md:static md:mx-auto md:max-w-editorial md:border-t-0 md:border-b md:bg-transparent md:px-gutter md:pt-4"
+      className="fixed inset-x-0 bottom-0 z-30 border-ink/10 border-t bg-paper/95 backdrop-blur-md md:relative md:mx-auto md:max-w-editorial md:border-t-0 md:border-b md:bg-transparent md:px-gutter md:pt-4"
     >
       <ul className="flex gap-1 p-1 md:p-0 md:pb-2">
         {ITEMS.map(({ key, href }) => (
@@ -44,6 +45,7 @@ export function StudioNav() {
           </li>
         ))}
       </ul>
+      <TabBrush activeKey={pathname} className="hidden md:block" />
     </nav>
   );
 }
