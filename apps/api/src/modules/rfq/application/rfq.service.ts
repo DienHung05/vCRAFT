@@ -33,8 +33,10 @@ import {
   allocationTransition,
   assembleCooperativeQuotation,
   checkProgressReport,
+  hasAcceptWindowElapsed,
   isCompletionDateValid,
   projectBuyerQuotation,
+  RFQ_ACCEPT_GRACE_MS,
   suggestPriceRange,
   transition,
 } from '@vcraft/domain';
@@ -94,16 +96,19 @@ export class RfqService {
     const em = this.orm.em.fork();
     const and: FilterQuery<QuotationRequest>[] = [{ buyer: actor.id }];
     const now = new Date();
-    const open = ['SENT', 'BIDDING'] as const;
+    // Same bounds as `requestExpired` (T8): SENT ends at the deadline, BIDDING 7 days after it.
+    const graceStart = new Date(now.getTime() - RFQ_ACCEPT_GRACE_MS);
     if (query.status === 'EXPIRED')
       and.push({
         $or: [
           { status: 'EXPIRED' },
-          { status: { $in: [...open] }, biddingClosesAt: { $lte: now } },
+          { status: 'SENT', biddingClosesAt: { $lte: now } },
+          { status: 'BIDDING', biddingClosesAt: { $lte: graceStart } },
         ],
       });
-    else if (query.status === 'SENT' || query.status === 'BIDDING')
-      and.push({ status: query.status, biddingClosesAt: { $gt: now } });
+    else if (query.status === 'SENT') and.push({ status: 'SENT', biddingClosesAt: { $gt: now } });
+    else if (query.status === 'BIDDING')
+      and.push({ status: 'BIDDING', biddingClosesAt: { $gt: graceStart } });
     else if (query.status) and.push({ status: query.status });
     if (query.cursor) {
       const cursor = decodeRequestCursor(query.cursor);
@@ -790,9 +795,11 @@ export class RfqService {
       assertVersion(allocation, version);
       this.acceptedOnly(request);
       allocation.status = unwrap(allocationTransition(allocation.status, 'DECLINE', {}));
+      // The system ends an accepted order here, so it takes the admin's T7 path; the buyer's own CANCEL
+      // stops at BIDDING (GH#244).
       request.status = unwrap(
-        transition(request.status, 'CANCEL', {
-          actor: 'BUYER_OWNER',
+        transition(request.status, 'ADMIN_CANCEL', {
+          actor: 'ADMIN',
           reason: 'household declined',
         }),
       );
@@ -884,7 +891,7 @@ export class RfqService {
    * Cancels a request with a required reason: the owning buyer before production (T6, FR-RFQ-09),
    * or the coordinator after acceptance (T7). Open quotations and live allocations end with it.
    */
-  async cancelOrder(actor: Actor, requestId: string, version: number, reason: string) {
+  async cancelOrder(actor: Actor, requestId: string, version: number, reason = '') {
     return this.orm.em.fork().transactional(async (em) => {
       const request = await this.request(em, requestId, true);
       if (actor.locked) throw forbidden();
@@ -898,7 +905,7 @@ export class RfqService {
           ? transition(request.status, 'CANCEL', { actor: 'BUYER_OWNER', reason })
           : transition(request.status, 'ADMIN_CANCEL', { actor: 'ADMIN', reason }),
       );
-      request.cancelReason = reason;
+      request.cancelReason = reason || null;
       if (!owner)
         this.audit(
           em,
@@ -960,11 +967,13 @@ export class RfqService {
       if (actor.locked) throw forbidden();
       assertVersion(request, version);
       if (admin && request.coordinatorId !== actor.id) throw notFound();
-      const accepted = await em.findOneOrFail(
+      const accepted = await em.findOne(
         CooperativeQuotationEntity,
         { request, status: 'ACCEPTED' },
         { populate: ['request'] },
       );
+      // Nothing accepted yet means the request is not in production: an invalid transition (GH#244).
+      if (!accepted) throw new AppError('INVALID_TRANSITION');
       const allocations = await em.find(
         OrderAllocationEntity,
         { quotation: accepted },
@@ -1245,11 +1254,15 @@ function decodeRequestCursor(raw: string): { t: string; id: string } {
   throw new AppError('VALIDATION_MALFORMED_REQUEST', 'cursor is not valid');
 }
 
+/**
+ * T8 (GH#244): a request nobody quoted expires at its bidding deadline; one with quotations stays open for the
+ * buyer's 7-day accept window after it, the same bound the T3 guard uses.
+ */
 function requestExpired(request: QuotationRequest): boolean {
-  return (
-    (request.status === 'SENT' || request.status === 'BIDDING') &&
-    Date.now() >= request.biddingClosesAt.getTime()
-  );
+  const now = new Date();
+  if (request.status === 'SENT') return now.getTime() >= request.biddingClosesAt.getTime();
+  if (request.status === 'BIDDING') return hasAcceptWindowElapsed(now, request.biddingClosesAt);
+  return false;
 }
 
 function quotationStatus(quotation: CooperativeQuotationEntity) {

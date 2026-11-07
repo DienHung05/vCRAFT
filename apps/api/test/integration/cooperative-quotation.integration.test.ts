@@ -1,4 +1,5 @@
 import { BuyerQuotationResponseSchema } from '@vcraft/contracts';
+import { RFQ_ACCEPT_GRACE_MS } from '@vcraft/domain';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
@@ -12,7 +13,8 @@ describe('private contributions and cooperative quotations', () => {
   let otherAdmin: { auth: string };
   let reps: Array<{ auth: string; householdId: string }>;
   let requestId: string;
-  const deadline = new Date(Date.now() + 86_400_000).toISOString();
+  // At least 24 h away when submitted (SRS T1, GH#244).
+  const deadline = new Date(Date.now() + 2 * 86_400_000).toISOString();
   const completionDate = new Date(Date.now() + 10 * 86_400_000).toISOString();
   const requiredBy = new Date(Date.now() + 20 * 86_400_000).toISOString();
 
@@ -382,23 +384,29 @@ describe('private contributions and cooperative quotations', () => {
     ).toBe(true);
   });
 
-  it('reports expired requests and lapsed offers at the deadline without an expiry worker', async () => {
+  it('closes bidding at the deadline and expires after the accept window without an expiry worker (T8)', async () => {
     const created = await quote(await plan());
     expect(created.status).toBe(201);
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date(deadline));
-    try {
-      expect((await currentRequest()).status).toBe('EXPIRED');
+    const statusOf = async () => {
       const read = await t.request({
         method: 'GET',
         url: `/rfqs/${requestId}/quotations`,
         auth: buyer.auth,
       });
-      const latest = read.body.find(
-        (quotation: { id: string }) => quotation.id === created.body.id,
-      );
-      expect(latest.status).toBe('LAPSED');
+      return read.body.find((quotation: { id: string }) => quotation.id === created.body.id)
+        .status as string;
+    };
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      // At the deadline no new quote is taken, but the buyer still has 7 days to accept (GH#244).
+      vi.setSystemTime(new Date(deadline));
+      expect((await currentRequest()).status).toBe('BIDDING');
+      expect(await statusOf()).toBe('SUBMITTED');
       expect((await quote(await plan())).status).toBe(409);
+
+      vi.setSystemTime(new Date(new Date(deadline).getTime() + RFQ_ACCEPT_GRACE_MS));
+      expect((await currentRequest()).status).toBe('EXPIRED');
+      expect(await statusOf()).toBe('LAPSED');
     } finally {
       vi.useRealTimers();
     }

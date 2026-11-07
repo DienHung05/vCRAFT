@@ -10,7 +10,8 @@ describe('order confirmation, progress and receipt', () => {
   let stranger: { auth: string };
   let admin: { auth: string };
   let reps: Array<{ auth: string; householdId: string }>;
-  const deadline = new Date(Date.now() + 86_400_000).toISOString();
+  // At least 24 h away when submitted (SRS T1, GH#244).
+  const deadline = new Date(Date.now() + 2 * 86_400_000).toISOString();
   const completionDate = new Date(Date.now() + 10 * 86_400_000).toISOString();
   const requiredBy = new Date(Date.now() + 20 * 86_400_000).toISOString();
 

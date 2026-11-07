@@ -8,16 +8,23 @@ const at = (offsetMs: number) => new Date(NOW.getTime() + offsetMs);
 const codeOf = (r: { readonly ok: boolean; readonly error?: { readonly code: string } }): string =>
   r.ok ? 'OK' : (r.error?.code ?? 'NO_ERROR');
 
-describe('GH#9 buyer request lifecycle: deadline rule (83g: any future time, no 24h minimum)', () => {
-  it('SUBMIT passes with deadline 1h in the future', () => {
-    const r = transition('DRAFT', 'SUBMIT', {
+describe('buyer request lifecycle: deadline rule (SRS T1, GH#244: at least 24h away)', () => {
+  const submit = (closesIn: number) =>
+    transition('DRAFT', 'SUBMIT', {
       actor: 'BUYER_OWNER',
       now: NOW,
       emailVerified: true,
-      biddingClosesAt: at(HOUR),
+      biddingClosesAt: at(closesIn),
       requiredBy: at(30 * 24 * HOUR),
     });
-    expect(r.ok).toBe(true);
+
+  it('SUBMIT passes with the deadline exactly 24h away', () => {
+    expect(submit(24 * HOUR).ok).toBe(true);
+  });
+
+  it('SUBMIT refuses a deadline less than 24h away', () => {
+    expect(codeOf(submit(HOUR))).toBe('BIDDING_DEADLINE_TOO_SOON');
+    expect(codeOf(submit(24 * HOUR - 1))).toBe('BIDDING_DEADLINE_TOO_SOON');
   });
 
   it('SUBMIT still refuses past deadline', () => {
@@ -32,16 +39,10 @@ describe('GH#9 buyer request lifecycle: deadline rule (83g: any future time, no 
   });
 });
 
-describe('GH#9: buyer CANCEL before production (ACCEPTED allowed, IN_PRODUCTION refused)', () => {
-  it('buyer CANCEL from ACCEPTED with reason passes', () => {
+describe('buyer CANCEL only up to BIDDING (SRS T6, GH#244)', () => {
+  it('buyer CANCEL from ACCEPTED is an invalid transition: only the admin cancels then (T7)', () => {
     const r = transition('ACCEPTED', 'CANCEL', { actor: 'BUYER_OWNER', reason: 'doi ke hoach' });
-    expect(r.ok).toBe(true);
-    if (r.ok) expect(r.value).toBe('CANCELLED');
-  });
-
-  it('buyer CANCEL from ACCEPTED without reason is refused', () => {
-    const r = transition('ACCEPTED', 'CANCEL', { actor: 'BUYER_OWNER', reason: '' });
-    expect(codeOf(r)).toBe('REASON_REQUIRED');
+    expect(codeOf(r)).toBe('INVALID_TRANSITION');
   });
 
   it('buyer CANCEL from IN_PRODUCTION is refused (only admin)', () => {
