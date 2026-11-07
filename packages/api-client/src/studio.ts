@@ -11,6 +11,7 @@ import {
   JournalResponseSchema,
   MediaAssetResponseSchema,
   ProductResponseSchema,
+  ProductScanStatsSchema,
   QrLabelsResponseSchema,
   type SetIdNumberRequest,
   type SetProductMakersRequest,
@@ -76,6 +77,9 @@ export function createStudioClient(options: AuthedClientOptions) {
       request('/me/household/qr-labels', QrLabelsResponseSchema, { method: 'POST', body }),
     qrLabelsStatus: (requestId: string) =>
       request(`/me/household/qr-labels/${requestId}`, QrLabelsResponseSchema),
+    /** FR-TRC-06: scan statistics of one of the household's own products. */
+    getScanStats: (productId: string) =>
+      request(`/me/household/products/${productId}/scans`, ProductScanStatsSchema),
     getJournal: (productId: string) =>
       request(`/me/household/products/${productId}/journal`, JournalResponseSchema),
     appendJournalEntry: (productId: string, body: CreateJournalEntryRequest) =>

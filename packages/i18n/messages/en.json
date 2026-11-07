@@ -1781,6 +1781,26 @@
       "qr": "QR code",
       "qrLead": "Print this on the label under the piece. The code stays the same if the name changes.",
       "qrDownload": "Download PNG",
+      "qrDownloadSvg": "Download SVG",
+      "scans": {
+        "title": "Scans",
+        "lead": "How often customers scanned this product's QR code. Only the country and device type are recorded, never an IP address.",
+        "total": "Total scans",
+        "last30Days": "Last 30 days",
+        "chart": "Scans per day over the last 30 days",
+        "countries": "Countries (30 days)",
+        "devices": "Devices (30 days)",
+        "unknown": "Unknown",
+        "empty": "No scans in the last 30 days.",
+        "failed": "We could not load the scan numbers.",
+        "device": {
+          "mobile": "Phone",
+          "tablet": "Tablet",
+          "desktop": "Computer",
+          "bot": "Automated crawler",
+          "unknown": "Unknown"
+        }
+      },
       "labels": {
         "oneSheet": "Download QR labels to print (PDF)",
         "allPublished": "QR labels for {count, plural, one {# listed product} other {# listed products}} (PDF)",

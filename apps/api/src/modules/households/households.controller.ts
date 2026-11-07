@@ -22,6 +22,8 @@ import {
   CreateWorkshopRequestSchema,
   HouseholdDecisionRequestSchema,
   ListHouseholdsQuerySchema,
+  type RecordScanRequest,
+  RecordScanRequestSchema,
   type SetIdNumberRequest,
   SetIdNumberRequestSchema,
   type SetProductMakersRequest,
@@ -146,6 +148,14 @@ export class MyHouseholdController {
     @Body(new ZodValidationPipe(SetProductMakersRequestSchema)) body: SetProductMakersRequest,
   ) {
     return this.households.setMakers(actor, id, body);
+  }
+
+  /** FR-TRC-06: scan statistics of one of the household's own products. */
+  @Get('products/:id/scans')
+  @Header('Cache-Control', 'private, no-store')
+  @Roles('HOUSEHOLD')
+  scanStats(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
+    return this.households.scanStats(actor, id);
   }
 
   @Patch('products/:id')
@@ -296,10 +306,16 @@ export class PublicHouseholdsController {
     return this.households.trace(code);
   }
 
-  /** Đường dẫn ngắn `/q/<code>` báo một lượt quét; luôn 204 để không dò được mã nào tồn tại. */
+  /**
+   * Đường dẫn ngắn `/q/<code>` báo một lượt quét; luôn 204 để không dò được mã nào tồn tại.
+   * The body (country, device class) is optional, so clients that send none still work.
+   */
   @Post('trace/:code/scan')
   @HttpCode(204)
-  async scan(@Param('code') code: string) {
-    await this.households.recordScan(code);
+  async scan(
+    @Param('code') code: string,
+    @Body(new ZodValidationPipe(RecordScanRequestSchema)) body: RecordScanRequest,
+  ) {
+    await this.households.recordScan(code, body);
   }
 }

@@ -19,7 +19,7 @@ import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { ConsentCheckbox } from '@/components/consent-checkbox';
 import { EmptyState } from '@/components/states/empty-state';
-import { TraceQr } from '@/features/traceability/trace-qr';
+import { QR_LOGO_OPTIONS, QR_LOGO_URL, TraceQr } from '@/features/traceability/trace-qr';
 import { Link } from '@/i18n/navigation';
 import { notify } from '@/lib/notify';
 import { traceShortUrl } from '@/lib/site';
@@ -27,6 +27,7 @@ import { HouseholdGate } from './household-gate';
 import { type ProductDraft, ProductFields, toProductDraft } from './product-fields';
 import { ProductPhotos } from './product-photos';
 import { QrLabelsButton } from './qr-labels-button';
+import { ScanStatsCard } from './scan-stats-card';
 import { inputClass } from './workshop-editor';
 
 export function toProductUpdate(draft: ProductDraft): UpdateProductRequest {
@@ -313,14 +314,16 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
   );
 }
 
-/** Tải mã QR PNG cỡ in (FR-TRC-02); thư viện vẽ QR chỉ nạp khi bấm. */
-async function downloadQrPng(url: string, code: string) {
+/** Tải mã QR PNG hoặc SVG cỡ in (FR-TRC-02); thư viện vẽ QR chỉ nạp khi bấm. */
+async function downloadQr(url: string, code: string, extension: 'png' | 'svg') {
   const { default: QRCodeStyling } = await import('qr-code-styling');
   const qr = new QRCodeStyling({
     width: 1024,
     height: 1024,
-    type: 'canvas',
+    type: extension === 'svg' ? 'svg' : 'canvas',
     data: url,
+    image: QR_LOGO_URL,
+    imageOptions: QR_LOGO_OPTIONS,
     margin: 32,
     qrOptions: { errorCorrectionLevel: 'H' },
     dotsOptions: { type: 'rounded', color: '#1c1814' },
@@ -328,7 +331,7 @@ async function downloadQrPng(url: string, code: string) {
     cornersDotOptions: { color: '#c2261f' },
     backgroundOptions: { color: '#ffffff' },
   });
-  await qr.download({ name: `vcraft-qr-${code}`, extension: 'png' });
+  await qr.download({ name: `vcraft-qr-${code}`, extension });
 }
 
 function QrSection({ product, client }: { product: ProductDto; client: StudioClient }) {
@@ -347,9 +350,16 @@ function QrSection({ product, client }: { product: ProductDto; client: StudioCli
           <Button
             type="button"
             variant="secondary"
-            onClick={() => void downloadQrPng(url, product.traceCode)}
+            onClick={() => void downloadQr(url, product.traceCode, 'png')}
           >
             {t('qrDownload')}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => void downloadQr(url, product.traceCode, 'svg')}
+          >
+            {t('qrDownloadSvg')}
           </Button>
           <QrLabelsButton
             client={client}
@@ -409,6 +419,7 @@ export function ProductEditor({ productId, client }: { productId: string; client
             <ProductPhotos product={product} client={live} onSaved={reload} />
             <MakersSection {...props} />
             <QrSection product={product} client={live} />
+            <ScanStatsCard productId={product.id} client={live} />
           </div>
         );
       }}

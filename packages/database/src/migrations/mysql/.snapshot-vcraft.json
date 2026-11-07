@@ -5608,6 +5608,23 @@
     {
       "name": "trace_scan",
       "columns": {
+        "country": {
+          "name": "country",
+          "type": "varchar(2)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 2,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
         "created_at": {
           "name": "created_at",
           "type": "datetime(3)",
@@ -5624,6 +5641,23 @@
           "collation": null,
           "enumItems": [],
           "mappedType": "datetime"
+        },
+        "device_type": {
+          "name": "device_type",
+          "type": "varchar(10)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 10,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
         },
         "id": {
           "name": "id",
