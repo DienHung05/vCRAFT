@@ -296,7 +296,7 @@ describe('BuyerRfqDetail with household quotations', () => {
           direct('a', 'Gốm Minh Hải', 30_000, 'Fired twice'),
           direct('b', 'Gốm Bảo Anh', 28_000, null),
         ]),
-      listAllocations: vi.fn().mockRejectedValue(new QuotationApiError('NOT_FOUND', 404)),
+      listAllocations: vi.fn().mockResolvedValue([]),
       listNotices: vi.fn().mockResolvedValue([]),
       ...overrides,
     });
