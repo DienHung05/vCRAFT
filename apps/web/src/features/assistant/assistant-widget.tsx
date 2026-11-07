@@ -1,6 +1,6 @@
 'use client';
 
-import { Mascot, type MascotMood } from '@vcraft/ui';
+import { Mascot, type MascotMood, useMascotPoke } from '@vcraft/ui';
 import { usePathname } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -132,7 +132,10 @@ export function AssistantWidget() {
   const close = useCallback(() => {
     setOpen(false);
   }, []);
+  // Clicks on the Fox, in the launcher or the panel header, count towards the dizzy face (GH#211).
+  const { reaction, poke } = useMascotPoke();
   const toggle = () => {
+    poke();
     dismissHello();
     setOpen((o) => !o);
   };
@@ -153,13 +156,20 @@ export function AssistantWidget() {
       onRate={assistant.rate}
       onClose={close}
       mascot={
-        <Mascot
-          mood={mood}
-          size={96}
-          lookAt="pointer"
-          label={t('mascotLabel')}
-          thought={waiting ? thoughtIndices.map((i) => allThoughts[i] ?? '') : undefined}
-        />
+        <button
+          type="button"
+          onClick={poke}
+          aria-label={t('poke')}
+          className="block rounded-full focus-visible:outline-2 focus-visible:outline-clay"
+        >
+          <Mascot
+            mood={mood}
+            reaction={reaction}
+            size={96}
+            lookAt="pointer"
+            thought={waiting ? thoughtIndices.map((i) => allThoughts[i] ?? '') : undefined}
+          />
+        </button>
       }
     />
   );
@@ -200,6 +210,7 @@ export function AssistantWidget() {
       >
         <Mascot
           mood={open ? 'listen' : mood}
+          reaction={reaction}
           size={mobile ? 56 : 64}
           lookAt="pointer"
           label={t('mascotLabel')}

@@ -16,11 +16,17 @@ import {
   moodReaction,
   nextBlinkDelay,
   reactionIndex,
+  type SpriteReaction,
   THOUGHT_MS,
 } from './mascot-model';
 
 export interface MascotProps {
   mood?: MascotMood;
+  /**
+   * A short reaction shown over the mood, such as the dizzy face after rapid clicks (`useMascotPoke`,
+   * GH#211). `dizzy` also wobbles the head while motion is allowed.
+   */
+  reaction?: SpriteReaction | null;
   /** Lines for the thought bubble; several cross-fade every 2.5 s. None hides the bubble. */
   thought?: string | readonly string[] | undefined;
   /** Where the head turns: the pointer, a point in viewport coordinates, or straight ahead. */
@@ -179,6 +185,7 @@ function useThought(lines: readonly string[], reduced: boolean) {
  */
 export function Mascot({
   mood = 'idle',
+  reaction = null,
   thought,
   lookAt = null,
   size = 64,
@@ -206,7 +213,7 @@ export function Mascot({
   const motion = !reduced;
 
   // Reactions layer: only for reaction-based moods. Blinking never touches it (GH#186).
-  const reactionMood = moodReaction(shown);
+  const reactionMood = reaction ?? moodReaction(shown);
   const showReaction = reactionMood !== null;
   // Blink layer: the closed-eye twin of the current gaze cell, shown instantly while blinking.
   const showBlink = blinking && !showReaction;
@@ -225,11 +232,13 @@ export function Mascot({
       style={{ width: size, height: size }}
       {...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': true })}
       data-mood={shown}
+      data-reaction={reaction ?? undefined}
       data-motion={motion ? 'on' : 'off'}
     >
       <style>{`
         @keyframes vc-fox-${id}-breathe { 50% { transform: translateY(-2px); } }
         @keyframes vc-fox-${id}-shake { 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+        @keyframes vc-fox-${id}-wobble { 20% { transform: rotate(-10deg); } 40% { transform: rotate(8deg); } 60% { transform: rotate(-6deg); } 80% { transform: rotate(4deg); } }
         @keyframes vc-fox-${id}-rise { from { opacity: 0; transform: translateY(4px) scale(.6); } }
         @keyframes vc-fox-${id}-fade { from { opacity: 0; } }
       `}</style>
@@ -247,6 +256,10 @@ export function Mascot({
           // Head shake for 'refuse' mood
           ...(motion && shown === 'refuse'
             ? { animation: `vc-fox-${id}-shake 0.5s ease-in-out 2` }
+            : {}),
+          // Dizzy after rapid pokes: the head wobbles twice (GH#211); a frame swap only under reduced motion.
+          ...(motion && reaction === 'dizzy'
+            ? { animation: `vc-fox-${id}-wobble 0.9s ease-in-out 2` }
             : {}),
         }}
       >

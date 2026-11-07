@@ -154,6 +154,55 @@ export function isDoubleBlink(random: () => number = Math.random): boolean {
   return random() < 0.2;
 }
 
+// ---------------------------------------------------------------------------
+// Pokes (GH#211): rapid clicks on the Fox make it dizzy
+// ---------------------------------------------------------------------------
+
+/** Pokes counted together when they fall within this window. */
+export const POKE_WINDOW_MS = 1_500;
+/** This many pokes inside the window make the Fox dizzy. */
+export const POKE_DIZZY_COUNT = 4;
+/** How long the dizzy face stays. */
+export const DIZZY_MS = 1_800;
+/** How long the light reaction to a single poke stays. */
+export const POKE_MS = 600;
+
+export interface PokeState {
+  /** Times of the recent pokes inside the window, oldest first. */
+  times: readonly number[];
+  /** Until when the dizzy face shows; 0 when not dizzy. */
+  dizzyUntil: number;
+}
+
+export const NO_POKES: PokeState = { times: [], dizzyUntil: 0 };
+
+/**
+ * One poke at `now`: the next state and the reaction to show for how long. The fourth poke within 1.5 s
+ * makes the Fox dizzy and starts a new count; pokes while it is dizzy keep the dizzy face without extending
+ * it; any other poke gets a short surprised look.
+ */
+export function registerPoke(
+  state: PokeState,
+  now: number,
+): { state: PokeState; reaction: SpriteReaction; holdMs: number } {
+  if (now < state.dizzyUntil) {
+    return {
+      state: { times: [], dizzyUntil: state.dizzyUntil },
+      reaction: 'dizzy',
+      holdMs: state.dizzyUntil - now,
+    };
+  }
+  const times = [...state.times.filter((t) => now - t < POKE_WINDOW_MS), now];
+  if (times.length >= POKE_DIZZY_COUNT) {
+    return {
+      state: { times: [], dizzyUntil: now + DIZZY_MS },
+      reaction: 'dizzy',
+      holdMs: DIZZY_MS,
+    };
+  }
+  return { state: { times, dizzyUntil: 0 }, reaction: 'surprised', holdMs: POKE_MS };
+}
+
 /** How long a blink keeps the eyes shut (the closed-eye twin of the gaze cell is shown). */
 export const BLINK_MS = 120;
 /** How long each thought stays before the next one cross-fades in. */
