@@ -1,8 +1,9 @@
 import { splitWorkshops } from '@vcraft/domain';
 import { Card, cn } from '@vcraft/ui';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import type { VisitWorkshopView } from '@/features/catalog/view-models';
 import { MapWithList } from './map-with-list';
+import { WeeklyHours, WorkshopOpenStatus } from './workshop-hours';
 
 export interface VisitSectionProps {
   household: string;
@@ -16,6 +17,7 @@ export interface VisitSectionProps {
  */
 export function VisitSection({ household, workshops, className }: VisitSectionProps) {
   const t = useTranslations('exhibition');
+  const format = useFormatter();
   const { showrooms, production } = splitWorkshops(workshops);
   return (
     <section id="workshop" aria-labelledby="visit-title" className={cn('scroll-mt-24', className)}>
@@ -34,7 +36,19 @@ export function VisitSection({ household, workshops, className }: VisitSectionPr
                   <Card className="bg-celadon/10 p-6">
                     <p className="font-display text-h3">{w.name}</p>
                     <p className="mt-1 text-small text-ash">{w.address}</p>
+                    <WorkshopOpenStatus workshop={w} />
                     {w.visitingInfo ? <p className="mt-3 text-small">{w.visitingInfo}</p> : null}
+                    {w.openingHours?.length ? <WeeklyHours hours={w.openingHours} /> : null}
+                    {w.experience ? (
+                      <div className="mt-3" data-testid="workshop-experience">
+                        <p className="text-small font-medium">{t('experienceTitle')}</p>
+                        <p className="mt-1 text-small">{w.experience.description}</p>
+                        <p className="mt-1 text-small text-ash">
+                          {t('experienceDuration', { minutes: w.experience.durationMinutes })} ·{' '}
+                          {format.number(w.experience.priceVnd, 'vnd')}
+                        </p>
+                      </div>
+                    ) : null}
                   </Card>
                 </li>
               ))}

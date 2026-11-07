@@ -29,6 +29,13 @@ interface Draft {
   lat: number | null;
   lng: number | null;
   hours: OpeningIntervalDto[];
+  offersExperience: boolean;
+  experienceDescription: string;
+  /** Kept as text while typing; empty until filled. */
+  experienceDuration: string;
+  experiencePrice: string;
+  temporarilyClosed: boolean;
+  closureReason: string;
 }
 
 const toDraft = (w: WorkshopDto | null): Draft => ({
@@ -40,6 +47,12 @@ const toDraft = (w: WorkshopDto | null): Draft => ({
   lat: w?.lat ?? null,
   lng: w?.lng ?? null,
   hours: w?.openingHours ?? [],
+  offersExperience: w?.experience != null,
+  experienceDescription: w?.experience?.description ?? '',
+  experienceDuration: w?.experience ? String(w.experience.durationMinutes) : '',
+  experiencePrice: w?.experience ? String(w.experience.priceVnd) : '',
+  temporarilyClosed: w?.temporarilyClosed ?? false,
+  closureReason: w?.closureReason ?? '',
 });
 
 export function toWorkshopRequest(draft: Draft): CreateWorkshopRequest {
@@ -50,9 +63,31 @@ export function toWorkshopRequest(draft: Draft): CreateWorkshopRequest {
     acceptsVisitors: draft.acceptsVisitors,
     ...(draft.visitingInfo.trim() ? { visitingInfo: draft.visitingInfo.trim() } : {}),
     openingHours: draft.hours,
+    ...(draft.offersExperience
+      ? {
+          experience: {
+            description: draft.experienceDescription.trim(),
+            durationMinutes: Number(draft.experienceDuration),
+            priceVnd: Number(draft.experiencePrice),
+          },
+        }
+      : {}),
+    temporarilyClosed: draft.temporarilyClosed,
+    ...(draft.temporarilyClosed && draft.closureReason.trim()
+      ? { closureReason: draft.closureReason.trim() }
+      : {}),
     ...(draft.lat !== null && draft.lng !== null ? { lat: draft.lat, lng: draft.lng } : {}),
   };
 }
+
+/** The experience offer and the closure reason must be filled in before the workshop can be saved. */
+const isIncomplete = (draft: Draft): boolean =>
+  (draft.offersExperience &&
+    (draft.experienceDescription.trim().length < 5 ||
+      !(Number(draft.experienceDuration) >= 5) ||
+      draft.experiencePrice === '' ||
+      Number(draft.experiencePrice) < 0)) ||
+  (draft.temporarilyClosed && draft.closureReason.trim() === '');
 
 /** Một xưởng (FR-ART-05): địa chỉ, tọa độ, giờ mở cửa theo tuần, cờ đón khách. */
 export function WorkshopEditor({
@@ -200,6 +235,69 @@ export function WorkshopEditor({
         />
       </label>
 
+      <label className="flex items-center gap-2 text-small">
+        <input
+          type="checkbox"
+          checked={draft.offersExperience}
+          onChange={(event) => patch({ offersExperience: event.target.checked })}
+        />
+        {t('experienceOffer')}
+      </label>
+      {draft.offersExperience ? (
+        <div className="grid gap-4 md:grid-cols-[2fr_1fr_1fr]">
+          <label className="flex flex-col gap-1 text-small">
+            {t('experienceDescription')}
+            <input
+              value={draft.experienceDescription}
+              onChange={(event) => patch({ experienceDescription: event.target.value })}
+              className={inputClass}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-small">
+            {t('experienceDuration')}
+            <input
+              type="number"
+              min={5}
+              step={5}
+              value={draft.experienceDuration}
+              onChange={(event) => patch({ experienceDuration: event.target.value })}
+              className={inputClass}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-small">
+            {t('experiencePrice')}
+            <input
+              type="number"
+              min={0}
+              step={1000}
+              value={draft.experiencePrice}
+              onChange={(event) => patch({ experiencePrice: event.target.value })}
+              className={inputClass}
+            />
+          </label>
+        </div>
+      ) : null}
+
+      <label className="flex items-center gap-2 text-small">
+        <input
+          type="checkbox"
+          checked={draft.temporarilyClosed}
+          onChange={(event) => patch({ temporarilyClosed: event.target.checked })}
+        />
+        {t('temporarilyClosed')}
+      </label>
+      {draft.temporarilyClosed ? (
+        <label className="flex flex-col gap-1 text-small">
+          {t('closureReason')}
+          <input
+            value={draft.closureReason}
+            onChange={(event) => patch({ closureReason: event.target.value })}
+            className={inputClass}
+          />
+          <span className="text-ash">{t('closureReasonHint')}</span>
+        </label>
+      ) : null}
+
       <fieldset className="flex flex-col gap-2">
         <legend className="text-small font-medium">{t('hours')}</legend>
         {WEEK.map((day) => {
@@ -247,7 +345,11 @@ export function WorkshopEditor({
       </fieldset>
 
       <div className="flex items-center gap-3">
-        <Button type="button" disabled={status === 'saving'} onClick={() => void save()}>
+        <Button
+          type="button"
+          disabled={status === 'saving' || isIncomplete(draft)}
+          onClick={() => void save()}
+        >
           {common('save')}
         </Button>
         {status === 'failed' ? (

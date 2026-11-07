@@ -41,6 +41,26 @@ export class Workshop extends BaseEntity {
   @Property({ type: 'json', nullable: true })
   openingHours?: OpeningInterval[] | null;
 
+  /**
+   * Experience offer (FR-ART-05): what a visitor can do here. A workshop offers one exactly when the
+   * description is set, and then duration and price are set with it.
+   */
+  @Property({ type: 'text', nullable: true })
+  experienceDescription?: string | null;
+
+  @Property({ type: 'integer', nullable: true })
+  experienceDurationMinutes?: number | null;
+
+  @Property({ type: 'integer', nullable: true })
+  experiencePriceVnd?: number | null;
+
+  /** Temporarily closed (e.g. a holiday), with the reason shown to visitors; overrides the weekly hours (BR-03). */
+  @Property({ type: 'boolean' })
+  temporarilyClosed: Opt<boolean> = false;
+
+  @Property({ type: 'string', length: 300, nullable: true })
+  closureReason?: string | null;
+
   @Property({ type: 'decimal', precision: 9, scale: 6, nullable: true })
   lat?: string | null;
 

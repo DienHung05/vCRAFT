@@ -245,6 +245,11 @@ export class HouseholdsService {
       workshop.acceptsVisitors = input.acceptsVisitors;
       workshop.visitingInfo = input.visitingInfo ?? null;
       workshop.openingHours = input.openingHours ?? null;
+      workshop.experienceDescription = input.experience?.description ?? null;
+      workshop.experienceDurationMinutes = input.experience?.durationMinutes ?? null;
+      workshop.experiencePriceVnd = input.experience?.priceVnd ?? null;
+      workshop.temporarilyClosed = input.temporarilyClosed;
+      workshop.closureReason = input.temporarilyClosed ? (input.closureReason ?? null) : null;
       workshop.lat = input.lat === undefined ? null : input.lat.toFixed(6);
       workshop.lng = input.lng === undefined ? null : input.lng.toFixed(6);
       await em.flush();
@@ -263,6 +268,11 @@ export class HouseholdsService {
         acceptsVisitors: input.acceptsVisitors,
         visitingInfo: input.visitingInfo ?? null,
         openingHours: input.openingHours ?? null,
+        experienceDescription: input.experience?.description ?? null,
+        experienceDurationMinutes: input.experience?.durationMinutes ?? null,
+        experiencePriceVnd: input.experience?.priceVnd ?? null,
+        temporarilyClosed: input.temporarilyClosed,
+        closureReason: input.temporarilyClosed ? (input.closureReason ?? null) : null,
         lat: input.lat === undefined ? null : input.lat.toFixed(6),
         lng: input.lng === undefined ? null : input.lng.toFixed(6),
       });

@@ -196,6 +196,11 @@ export interface VisitWorkshopView {
   purpose: WorkshopDto['purpose'];
   acceptsVisitors: boolean;
   visitingInfo?: string;
+  /** Weekly hours; absent when not declared (the demo catalog declares none). */
+  openingHours?: NonNullable<WorkshopDto['openingHours']>;
+  experience?: NonNullable<WorkshopDto['experience']>;
+  temporarilyClosed?: boolean;
+  closureReason?: string;
   pin: { x: number; y: number };
 }
 
@@ -208,6 +213,10 @@ export function toVisitWorkshops(workshops: readonly WorkshopDto[]): VisitWorksh
     purpose: w.purpose,
     acceptsVisitors: w.acceptsVisitors,
     ...(w.visitingInfo ? { visitingInfo: w.visitingInfo } : {}),
+    ...(w.openingHours ? { openingHours: w.openingHours } : {}),
+    ...(w.experience ? { experience: w.experience } : {}),
+    temporarilyClosed: w.temporarilyClosed,
+    ...(w.closureReason ? { closureReason: w.closureReason } : {}),
     pin: pins.get(w.id) ?? { x: 50, y: 50 },
   }));
 }

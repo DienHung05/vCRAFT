@@ -26,6 +26,12 @@ const toMinutes = (time: string): number => {
   return hours * 60 + minutes;
 };
 
+/** Facts about a workshop that decide whether it is open (BR-03). */
+export interface WorkshopOpeningFacts {
+  readonly temporarilyClosed?: boolean;
+  readonly openingHours?: readonly OpeningInterval[] | null;
+}
+
 /** Khoảng hợp lệ: ngày trong tuần đúng và giờ mở trước giờ đóng. */
 export function isValidOpeningInterval(interval: OpeningInterval): boolean {
   return (
@@ -53,4 +59,13 @@ export function openState(hours: readonly OpeningInterval[], now: Date): OpenSta
   };
   const next = [...hours].sort((a, b) => untilOpen(a) - untilOpen(b))[0];
   return { open: false, reopens: next ? { day: next.day, at: next.open } : null };
+}
+
+/**
+ * Open state of a workshop (BR-03): a temporarily closed workshop is never open, whatever its weekly
+ * hours say; otherwise the weekly hours decide.
+ */
+export function workshopOpenState(workshop: WorkshopOpeningFacts, now: Date): OpenState {
+  if (workshop.temporarilyClosed) return { open: false, reopens: null };
+  return openState(workshop.openingHours ?? [], now);
 }
