@@ -72,6 +72,36 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
     }
   });
 
+  it('news covers are real photos that match the article; the rest keep the illustration (GH#181)', () => {
+    const covers = new Map(
+      DEMO_PHOTO_LINKS.filter((l) => l.target === 'NEWS' && l.role === 'COVER').map((l) => [
+        l.key,
+        l.photo,
+      ]),
+    );
+    expect(Object.fromEntries(covers)).toEqual({
+      'h7-class': 'ban-xoay-xuong',
+      'village-clay-month': 'news-dat-set',
+      'h0-blue-glaze': 'binh-hoa-lam',
+      'h1-crackle': 'ln-hu-men-ngoc',
+      'h3-lotus': 'pp-mf52jtdn',
+      'h4-vase': 'khuon-binh-lon',
+      'h6-altar': 'pp-a2sbgf7h',
+      'h8-white-plate': 'pp-e8uzvyg4',
+      'h12-wine-jar': 'pp-bu4ymz85',
+    });
+    // Only photos credited to Commons, museum open access or Pixabay under CC0/PD/CC BY(-SA) are used.
+    for (const photo of covers.values()) {
+      const credit = DEMO_PHOTOS.find((p) => p.id === photo)?.credit;
+      expect(credit?.license, photo).toMatch(/^(CC0|CC BY|CC BY-SA|Public domain|Pixabay)/i);
+      expect(credit?.sourceUrl, photo).toMatch(/^https:\/\//);
+    }
+    // News about one household never claims the photo shows that household's own piece.
+    for (const link of DEMO_PHOTO_LINKS.filter((l) => l.target === 'NEWS' && /^h\d/.test(l.key))) {
+      expect(`${link.alt} ${link.altEn}`, link.key).not.toMatch(/\{|của hộ|household's/i);
+    }
+  });
+
   it('chỉ sản phẩm có ảnh đúng món đồ mới có ảnh bìa, mỗi sản phẩm một ảnh, mỗi ảnh một sản phẩm', () => {
     const covered = DEMO_PHOTO_LINKS.filter((l) => l.target === 'PRODUCT' && l.role === 'COVER');
     const keys = covered.map((l) => l.key);

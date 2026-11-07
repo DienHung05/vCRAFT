@@ -3295,6 +3295,76 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
       'A large pile of red-brown clay in a big warehouse, with orange roof tiles stacked behind it',
   },
   {
+    photo: 'binh-hoa-lam',
+    target: 'NEWS',
+    key: 'h0-blue-glaze',
+    role: 'COVER',
+    position: 0,
+    alt: 'Hai chiếc bình sứ trắng vẽ men lam: một bình có cảnh nhà bên sông, một bình dáng lục giác',
+    altEn:
+      'Two white porcelain vases painted in cobalt blue: one with a riverside house, one hexagonal',
+  },
+  {
+    photo: 'ln-hu-men-ngoc',
+    target: 'NEWS',
+    key: 'h1-crackle',
+    role: 'COVER',
+    position: 0,
+    alt: 'Chiếc hũ gốm men xanh ngọc nhạt phủ kín vết rạn mảnh, thân tròn, quai cung phía trên',
+    altEn:
+      'A pale jade-green jar covered in fine crackle, with a round body and an arched handle on top',
+  },
+  {
+    photo: 'pp-mf52jtdn',
+    target: 'NEWS',
+    key: 'h3-lotus',
+    role: 'COVER',
+    position: 0,
+    alt: 'Chiếc đĩa sứ trắng vẽ tay bằng men lam một bó hoa sen ở giữa và dây hoa quanh viền',
+    altEn:
+      'A white porcelain plate hand-painted in blue with a lotus bouquet at the centre and a floral border',
+  },
+  {
+    photo: 'khuon-binh-lon',
+    target: 'NEWS',
+    key: 'h4-vase',
+    role: 'COVER',
+    position: 0,
+    alt: 'Các khuôn thạch cao cao gần hai mét, buộc dây, dựng trong một xưởng đúc bình lớn',
+    altEn:
+      'Plaster moulds almost two metres tall, tied with rope, standing in a workshop that casts large vases',
+  },
+  {
+    photo: 'pp-a2sbgf7h',
+    target: 'NEWS',
+    key: 'h6-altar',
+    role: 'COVER',
+    position: 0,
+    alt: 'Chiếc lư hương ba chân miệng rộng, men nâu đen bóng, đứng vững trên ba chân đế',
+    altEn:
+      'A wide-mouthed tripod incense burner in a glossy brown-black glaze, standing on three sturdy feet',
+  },
+  {
+    photo: 'pp-e8uzvyg4',
+    target: 'NEWS',
+    key: 'h8-white-plate',
+    role: 'COVER',
+    position: 0,
+    alt: 'Chiếc đĩa tròn men trắng ngà ngả xám, lòng khắc chìm hoa văn cuộn, viền có một vết nứt đã gắn lại',
+    altEn:
+      'A round ivory-grey glazed dish with an incised scroll design and an old repaired crack at the rim',
+  },
+  {
+    photo: 'pp-bu4ymz85',
+    target: 'NEWS',
+    key: 'h12-wine-jar',
+    role: 'COVER',
+    position: 0,
+    alt: 'Chiếc hũ gốm thấp bè miệng rộng, bốn quai vòng, phủ men nâu ô liu loang',
+    altEn:
+      'A squat stoneware jar with a wide mouth and four loop handles in a mottled olive-brown glaze',
+  },
+  {
     photo: 'pp-fwmhfyfk',
     target: 'PRODUCT',
     key: 'FWMHFYFK',
