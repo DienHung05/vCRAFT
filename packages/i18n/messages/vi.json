@@ -1778,6 +1778,7 @@
       "withdrawReason": "Lý do rút",
       "notApproved": "Hộ cần được duyệt trước khi xuất bản.",
       "publishFailed": "Chưa đổi được trạng thái. Bạn thử lại sau.",
+      "publishJournalRequired": "Hãy thêm ít nhất một mốc nhật ký sản xuất (kèm ảnh) trước khi xuất bản.",
       "qr": "Mã QR",
       "qrLead": "In mã này lên tem dán đáy sản phẩm. Mã không đổi khi đổi tên.",
       "qrDownload": "Tải PNG",
@@ -1820,7 +1821,11 @@
       "exifFilled": "Đã điền ngày giờ theo ảnh.",
       "exifOld": "Ảnh chụp cách đây hơn 30 ngày. Hãy kiểm tra lại ngày trước khi lưu.",
       "waitingPhoto": "Đang chờ xử lý ảnh…",
-      "photoFailed": "Ảnh chưa xử lý xong. Bạn thử lại sau hoặc lưu mốc không kèm ảnh.",
+      "photoFailed": "Ảnh chưa xử lý xong. Bạn thử lại sau.",
+      "photoRequired": "Hãy thêm ít nhất một ảnh làm bằng chứng cho công đoạn này.",
+      "oldPhotoTitle": "Ảnh chụp đã lâu?",
+      "oldPhotoText": "Ảnh này chụp hơn 30 ngày trước. Vẫn lưu mốc với ảnh này?",
+      "oldPhotoConfirm": "Vẫn lưu",
       "saveFailed": "Chưa lưu được mốc. Bạn kiểm tra nội dung rồi thử lại.",
       "correct": "Đính chính",
       "correctionTitle": "Đính chính mốc {n}",
@@ -1836,7 +1841,7 @@
       "deleteText": "Mốc và ảnh kèm theo sẽ bị xóa khỏi nhật ký. Không thể hoàn tác.",
       "deletedToast": "Đã xóa mốc.",
       "deleteFailed": "Chưa xóa được mốc. Bạn thử lại sau.",
-      "emptyHint": "Mỗi mốc là một công đoạn có ngày, ghi chú và có thể kèm ảnh. Khách sẽ đọc chúng khi quét mã QR."
+      "emptyHint": "Mỗi mốc là một công đoạn có ngày, ghi chú và ảnh kèm theo. Khách sẽ đọc chúng khi quét mã QR."
     },
     "invitations": {
       "title": "Lời mời báo giá",

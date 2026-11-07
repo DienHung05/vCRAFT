@@ -26,6 +26,7 @@ import {
   FIELD_CONTEXTS,
   FieldCipher,
   Household,
+  JournalEntry,
   MediaAsset,
   MediaLink,
   OutboxEvent,
@@ -388,6 +389,15 @@ export class HouseholdsService {
       });
       if (!next.ok && next.error.code === 'HOUSEHOLD_NOT_APPROVED') {
         throw new AppError('HOUSEHOLD_NOT_APPROVED');
+      }
+      // FR-PRD-03 / GH#251: a product needs at least one production-log milestone before it goes public.
+      if (
+        next.ok &&
+        isOwner &&
+        (event === 'PUBLISH' || event === 'REPUBLISH') &&
+        (await em.count(JournalEntry, { product })) === 0
+      ) {
+        throw new AppError('PRODUCT_JOURNAL_REQUIRED');
       }
       const before = product.status;
       product.status = unwrap(next);

@@ -97,10 +97,10 @@ function EntryForm({
   const [skipReason, setSkipReason] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
   const [exif, setExif] = useState<'none' | 'filled' | 'old'>('none');
-  const [status, setStatus] = useState<'idle' | 'photo' | 'saving' | 'photo-failed' | 'failed'>(
-    'idle',
-  );
-  const [confirming, setConfirming] = useState(false);
+  const [status, setStatus] = useState<
+    'idle' | 'photo' | 'saving' | 'photo-missing' | 'photo-failed' | 'failed'
+  >('idle');
+  const [confirming, setConfirming] = useState<'old-photo' | 'seal' | null>(null);
   // A published product's journal only grows: a saved milestone can be corrected, never removed.
   const sealed = product.publishedAt !== null;
 
@@ -111,6 +111,8 @@ function EntryForm({
     if (!file) return;
     const prepared = await prepareImage(file, new AbortController().signal);
     setPhoto(prepared.file);
+    setStatus('idle');
+    setExif('none');
     if (prepared.capturedAt) {
       const fields = exifFields(prepared.capturedAt);
       setDate(fields.date);
@@ -119,24 +121,26 @@ function EntryForm({
     }
   };
 
-  const save = async (withPhoto: boolean) => {
-    setStatus(photo && withPhoto ? 'photo' : 'saving');
+  const save = async () => {
+    // FR-PRD-04: every milestone carries a photo; the server refuses one without.
+    if (!photo) {
+      setStatus('photo-missing');
+      return;
+    }
+    setStatus('photo');
     try {
-      let images: { url: string; sha256: string }[] = [];
-      if (photo && withPhoto) {
-        const getToken = browserAccessToken() ?? (async () => null);
-        const uploaded = await sendMedia(
-          photo,
-          'JOURNAL',
-          getToken,
-          () => {},
-          new AbortController().signal,
-        );
-        const image = journalImageOf(await waitForReady(client, uploaded.id));
-        if (!image) throw new Error('photo-not-ready');
-        images = [image];
-        setStatus('saving');
-      }
+      const getToken = browserAccessToken() ?? (async () => null);
+      const uploaded = await sendMedia(
+        photo,
+        'JOURNAL',
+        getToken,
+        () => {},
+        new AbortController().signal,
+      );
+      const image = journalImageOf(await waitForReady(client, uploaded.id));
+      if (!image) throw new Error('photo-not-ready');
+      const images = [image];
+      setStatus('saving');
       const updated = await client.appendJournalEntry(product.id, {
         stage,
         declaredDate: date,
@@ -152,6 +156,17 @@ function EntryForm({
         error instanceof Error && error.message === 'photo-not-ready' ? 'photo-failed' : 'failed',
       );
     }
+  };
+
+  /** Asks for the confirmations that apply (stale photo, then sealed journal) before saving. */
+  const requestSave = (confirmed?: 'old-photo') => {
+    if (!photo) {
+      setStatus('photo-missing');
+      return;
+    }
+    if (exif === 'old' && confirmed !== 'old-photo') setConfirming('old-photo');
+    else if (sealed) setConfirming('seal');
+    else void save();
   };
 
   return (
@@ -237,6 +252,11 @@ function EntryForm({
             {t('waitingPhoto')}
           </p>
         ) : null}
+        {status === 'photo-missing' ? (
+          <p role="alert" className="text-small text-seal">
+            {t('photoRequired')}
+          </p>
+        ) : null}
         {status === 'photo-failed' ? (
           <p role="alert" className="text-small text-seal">
             {t('photoFailed')}
@@ -251,7 +271,7 @@ function EntryForm({
           <Button
             type="button"
             disabled={!note.trim() || status === 'photo' || status === 'saving'}
-            onClick={() => (sealed ? setConfirming(true) : void save(status !== 'photo-failed'))}
+            onClick={() => requestSave()}
           >
             {t('save')}
           </Button>
@@ -261,14 +281,27 @@ function EntryForm({
         </div>
       </Card>
       <ConfirmDialog
-        open={confirming}
+        open={confirming === 'old-photo'}
+        title={t('oldPhotoTitle')}
+        confirmLabel={t('oldPhotoConfirm')}
+        cancelLabel={t('cancel')}
+        onClose={() => setConfirming(null)}
+        onConfirm={() => {
+          setConfirming(null);
+          requestSave('old-photo');
+        }}
+      >
+        <p className="text-ash">{t('oldPhotoText')}</p>
+      </ConfirmDialog>
+      <ConfirmDialog
+        open={confirming === 'seal'}
         title={t('sealTitle')}
         confirmLabel={t('save')}
         cancelLabel={t('cancel')}
-        onClose={() => setConfirming(false)}
+        onClose={() => setConfirming(null)}
         onConfirm={() => {
-          setConfirming(false);
-          void save(status !== 'photo-failed');
+          setConfirming(null);
+          void save();
         }}
       >
         <p className="text-ash">{t('sealText')}</p>

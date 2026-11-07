@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { addMilestone, createJournalPhoto } from './support/journal-photo.js';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
 
@@ -10,7 +11,7 @@ import { startTestDatabase, type TestDatabase } from './support/test-database.js
 describe('Slug redirects after a rename', () => {
   let db: TestDatabase;
   let t: TestApp;
-  let owner: { auth: string };
+  let owner: { id: string; auth: string };
   let other: { auth: string };
   let product: { id: string; version: number; slug: string; traceCode: string };
   let householdVersion: number;
@@ -71,6 +72,7 @@ describe('Slug redirects after a rename', () => {
       body: { name: 'Bình men lam' },
     });
     product = created.body;
+    await addMilestone(t, owner, product.id, await createJournalPhoto(db, t, owner));
     const published = await t.request({
       method: 'POST',
       url: `/products/${product.id}/publish`,

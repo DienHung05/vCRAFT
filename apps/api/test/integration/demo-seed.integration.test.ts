@@ -37,6 +37,7 @@ import {
   pruneRetiredDemoMedia,
   publishDemoMedia,
 } from '../../../worker/src/demo/publish-demo-media.js';
+import { addMilestone, createJournalPhoto } from './support/journal-photo.js';
 import { startTestApp, TEST_FIELD_KEYS, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
 
@@ -475,6 +476,8 @@ describe('Demo seed and guarded reset', () => {
     expect(mine.status).toBe(200);
     const draft = mine.body.products.find((p: { status: string }) => p.status === 'DRAFT');
     expect(draft).toBeTruthy();
+    const household = { id: DEMO_ACCOUNTS.household.id, auth: as('household') };
+    await addMilestone(t, household, draft.id, await createJournalPhoto(db, t, household));
     const published = await t.request({
       method: 'POST',
       url: `/products/${draft.id}/publish`,

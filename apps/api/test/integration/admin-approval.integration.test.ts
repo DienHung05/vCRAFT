@@ -1,5 +1,6 @@
 import { AuditLog, OutboxEvent } from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { addMilestone, createJournalPhoto } from './support/journal-photo.js';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
 
@@ -13,7 +14,7 @@ describe('Admin dashboard and household approval', () => {
   let db: TestDatabase;
   let t: TestApp;
   let admin: { auth: string };
-  let rep: { auth: string };
+  let rep: { id: string; auth: string };
   let buyer: { auth: string };
   let household: { id: string; version: number };
   let documentId: string;
@@ -149,6 +150,7 @@ describe('Admin dashboard and household approval', () => {
       auth: rep.auth,
       body: { name: 'Bình chờ khóa', category: 'VASE' },
     });
+    await addMilestone(t, rep, created.body.id, await createJournalPhoto(db, t, rep));
     await t.request({
       method: 'POST',
       url: `/products/${created.body.id}/publish`,
