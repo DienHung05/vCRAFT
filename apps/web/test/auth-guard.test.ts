@@ -39,6 +39,7 @@ const me = (overrides: Partial<MeDto>): MeDto => ({
   id: '22222222-2222-4222-8222-222222222222',
   email: 'ban@vidu.vn',
   fullName: null,
+  username: 'pottery.buyer',
   role: 'BUYER',
   status: 'ACTIVE',
   emailVerified: true,
@@ -71,6 +72,16 @@ beforeEach(() => {
 });
 
 describe('requireArea', () => {
+  it('asks existing accounts to choose a username and preserves their destination', async () => {
+    viewer = me({ username: null });
+    path = '/vi/yeu-cau-bao-gia';
+    expect(await outcome(() => requireArea('buyer', 'vi'))).toEqual({
+      redirect: {
+        href: { pathname: '/chon-ten-dang-nhap', query: { next: '/vi/yeu-cau-bao-gia' } },
+        locale: 'vi',
+      },
+    });
+  });
   it('khách: chuyển tới /dang-nhap kèm đường dẫn đang xem để quay lại', async () => {
     path = '/vi/yeu-cau-bao-gia/abc?tab=2';
     expect(await outcome(() => requireArea('buyer', 'vi'))).toEqual({

@@ -28,6 +28,7 @@ export const pathnames = {
   // Tài khoản và phiên (FR-AUTH, SRS §5.1)
   '/dang-nhap': { vi: '/dang-nhap', en: '/login' },
   '/dang-ky': { vi: '/dang-ky', en: '/register' },
+  '/chon-ten-dang-nhap': { vi: '/chon-ten-dang-nhap', en: '/choose-username' },
   '/dang-ky-nghe-nhan': { vi: '/dang-ky-nghe-nhan', en: '/register-household' },
   '/quen-mat-khau': { vi: '/quen-mat-khau', en: '/forgot-password' },
   '/dat-lai-mat-khau': { vi: '/dat-lai-mat-khau', en: '/reset-password' },

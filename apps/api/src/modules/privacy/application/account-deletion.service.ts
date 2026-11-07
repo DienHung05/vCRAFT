@@ -92,6 +92,7 @@ export class AccountDeletionService {
 
       user.email = `deleted-${user.id}@deleted.invalid`;
       user.fullName = null;
+      user.username = null;
       user.status = 'DELETED';
       em.create(AuditLog, {
         actorId: user.id,

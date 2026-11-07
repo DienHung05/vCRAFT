@@ -70,6 +70,7 @@ export const DataExportSchema = z.strictObject({
   account: z.strictObject({
     id: IdSchema,
     email: z.string(),
+    username: z.string().nullable().default(null),
     fullName: z.string().nullable(),
     role: z.string(),
     status: z.string(),

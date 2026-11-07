@@ -608,6 +608,7 @@ export async function seedDemoData(
     const user = em.create(AppUser, {
       id: account.id,
       email: account.email,
+      username: account.username,
       fullName: account.fullName,
       role: account.role,
       status: 'ACTIVE',
@@ -712,6 +713,8 @@ export async function seedDemoData(
       representative = em.create(AppUser, {
         id: idOf('user', `rep-${row.index}`),
         email: `rep.${slug}@example.com`,
+        // GH#212: a unique handle derived from the household slug, keeping the sample data consistent.
+        username: slugify(`rep.${slug}`),
         fullName: `${row.seed.owner} (mẫu)`,
         role: 'HOUSEHOLD',
         status: 'ACTIVE',

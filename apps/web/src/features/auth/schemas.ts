@@ -1,5 +1,5 @@
-import { SLUG_PATTERN } from '@vcraft/contracts';
-import { ID_NUMBER_PATTERN } from '@vcraft/domain';
+import { SLUG_PATTERN, UsernameSchema } from '@vcraft/contracts';
+import { ID_NUMBER_PATTERN, isReservedUsername } from '@vcraft/domain';
 import { z } from 'zod';
 
 /**
@@ -8,6 +8,10 @@ import { z } from 'zod';
  * `useValidationMessage` dịch khi hiển thị. Luật cuối cùng vẫn do API/Supabase ép.
  */
 export const VALIDATION_KEYS = [
+  'identifierRequired',
+  'usernameRequired',
+  'usernameInvalid',
+  'usernameReserved',
   'emailRequired',
   'emailInvalid',
   'passwordRequired',
@@ -50,7 +54,7 @@ const newPasswordSchema = z
 
 /** Đăng nhập chỉ cần có nhập: luật mật khẩu mới không được chặn người dùng mật khẩu cũ. */
 export const signInSchema = z.object({
-  email: emailSchema,
+  identifier: z.string().trim().min(1, key('identifierRequired')).max(320, key('usernameInvalid')),
   password: z.string().min(1, key('passwordRequired')),
 });
 export type SignInValues = z.infer<typeof signInSchema>;
@@ -58,7 +62,18 @@ export type SignInValues = z.infer<typeof signInSchema>;
 /** Consent to the privacy policy (NFR-SEC-07) is required to create an account; checked in the browser. */
 const consentSchema = z.boolean().refine((value) => value === true, key('consentRequired'));
 
+export const usernameSchema = z
+  .string()
+  .trim()
+  .min(1, key('usernameRequired'))
+  .refine((value) => UsernameSchema.safeParse(value).success, key('usernameInvalid'))
+  .refine((value) => !isReservedUsername(value), key('usernameReserved'))
+  .transform((value) => value.toLowerCase());
+
+export const chooseUsernameSchema = z.object({ username: usernameSchema });
+
 export const registerSchema = z.object({
+  username: usernameSchema,
   email: emailSchema,
   password: newPasswordSchema,
   consent: consentSchema,

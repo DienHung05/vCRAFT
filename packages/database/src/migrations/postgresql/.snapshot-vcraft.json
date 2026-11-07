@@ -127,6 +127,23 @@
           "enumItems": [],
           "mappedType": "datetime"
         },
+        "username": {
+          "name": "username",
+          "type": "varchar(30)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": true,
+          "length": 30,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "string"
+        },
         "version": {
           "name": "version",
           "type": "int",
@@ -165,9 +182,24 @@
           "keyName": "app_user_pkey",
           "primary": true,
           "unique": true
+        },
+        {
+          "columnNames": [
+            "username"
+          ],
+          "composite": false,
+          "constraint": true,
+          "keyName": "app_user_username_unique",
+          "primary": false,
+          "unique": true
         }
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "app_user_username_format_check",
+          "expression": "regexp_like(username, '^[a-z0-9._-]{3,30}$', 'c')"
+        }
+      ],
       "triggers": [],
       "foreignKeys": {},
       "comment": null,

@@ -30,9 +30,14 @@ vi.mock('@marsidev/react-turnstile', async () => {
 });
 
 const signInWithPassword = vi.fn();
+vi.mock('@/features/auth/public-auth', () => ({
+  signIn: (...args: unknown[]) => signInWithPassword(...args),
+}));
 const resetPasswordForEmail = vi.fn();
 vi.mock('@/lib/auth/supabase-browser', () => ({
-  browserSupabase: () => ({ auth: { signInWithPassword, resetPasswordForEmail } }),
+  browserSupabase: () => ({
+    auth: { setSession: async () => ({ error: null }), resetPasswordForEmail },
+  }),
 }));
 
 beforeEach(() => {
@@ -47,7 +52,9 @@ afterEach(() => {
 });
 
 const fillSignIn = () => {
-  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'buyer@vidu.vn' } });
+  fireEvent.change(screen.getByLabelText('Tên đăng nhập hoặc email'), {
+    target: { value: 'buyer@vidu.vn' },
+  });
   fireEvent.change(screen.getByLabelText('Mật khẩu'), { target: { value: 'mat-khau-1' } });
 };
 
@@ -64,9 +71,9 @@ describe('Turnstile on auth forms (GH#84)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }));
     await waitFor(() =>
       expect(signInWithPassword).toHaveBeenCalledWith({
-        email: 'buyer@vidu.vn',
+        identifier: 'buyer@vidu.vn',
         password: 'mat-khau-1',
-        options: { captchaToken: 'turnstile-token' },
+        captchaToken: 'turnstile-token',
       }),
     );
   });
@@ -107,9 +114,8 @@ describe('Turnstile on auth forms (GH#84)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }));
     await waitFor(() =>
       expect(signInWithPassword).toHaveBeenCalledWith({
-        email: 'buyer@vidu.vn',
+        identifier: 'buyer@vidu.vn',
         password: 'mat-khau-1',
-        options: {},
       }),
     );
   });

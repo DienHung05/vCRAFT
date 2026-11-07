@@ -12,6 +12,16 @@ export async function currentPath(): Promise<string | null> {
   return safeReturnTo((await headers()).get(PATH_HEADER));
 }
 
+/** All signed-in entry points preserve their destination while the account chooses its username. */
+function requireUsername(viewer: Viewer | null, locale: Locale, next: string | null): void {
+  if (viewer?.username === null) {
+    redirect({
+      href: { pathname: '/chon-ten-dang-nhap', ...(next ? { query: { next } } : {}) },
+      locale,
+    });
+  }
+}
+
 /**
  * Cổng vào khu vực cho layout (Buyer, Studio, Admin). Trả về người dùng khi được vào; còn lại thì
  * không trả về:
@@ -31,6 +41,7 @@ export async function requireArea(area: Area, locale: Locale): Promise<Viewer> {
   const onHouseholdProfile =
     path !== null && path.split(/[?#]/)[0]?.replace(/\/$/, '') === profilePath;
 
+  requireUsername(viewer, locale, path);
   const decision = decideAccess(viewer, area, { onHouseholdProfile });
   switch (decision.kind) {
     case 'allow':
@@ -54,6 +65,7 @@ export async function requireArea(area: Area, locale: Locale): Promise<Viewer> {
  */
 export async function requireViewer(locale: Locale): Promise<Viewer> {
   const [viewer, path] = await Promise.all([getViewer(), currentPath()]);
+  requireUsername(viewer, locale, path);
   if (viewer) return viewer;
   return redirect({
     href: { pathname: '/dang-nhap', ...(path ? { query: { next: path } } : {}) },
@@ -69,6 +81,7 @@ export async function requireViewer(locale: Locale): Promise<Viewer> {
 export async function redirectIfSignedIn(locale: Locale, next: string | null): Promise<void> {
   const viewer = await getViewer().catch(() => null);
   if (!viewer) return;
+  requireUsername(viewer, locale, next);
   if (next) redirectTo(next);
   redirect({ href: landingPath(viewer.role), locale });
 }

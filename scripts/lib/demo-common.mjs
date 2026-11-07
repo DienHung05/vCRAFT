@@ -48,22 +48,30 @@ export function apiBase() {
   return `${base.replace(/\/$/, '')}/api/v1`;
 }
 
-/** Đăng nhập một tài khoản demo bằng email/mật khẩu, trả phiên Supabase (một phiên mới mỗi lần gọi). */
+/** Signs a demo account in with its username, returning the API token pair (a fresh session per call).
+ *
+ * GH#212: the identifier sent to `POST /auth/sign-in` is the USERNAME, no longer the email.
+ */
 export async function signIn(accounts, key) {
   const account = accounts.DEMO_ACCOUNTS[key];
-  const env = requireEnv(['SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY', account.passwordEnv]);
-  const { createClient } = await importFrom('apps/api', '@supabase/supabase-js');
-  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_PUBLISHABLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
+  const [api, password] = [apiBase(), requireEnv([account.passwordEnv])[account.passwordEnv]];
+  const username = envOf(`DEMO_${key.toUpperCase()}_USERNAME`)?.trim() || account.username;
+  const response = await fetch(`${api}/auth/sign-in`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ identifier: username, password }),
   });
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: account.email,
-    password: env[account.passwordEnv],
-  });
-  if (error || !data.session) {
-    throw new Error(`Đăng nhập ${key} thất bại: ${error?.message ?? 'không có phiên'}`);
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    throw new Error(
+      `Sign-in failed for ${key} (${username}): HTTP ${response.status} ${detail.code ?? ''}`,
+    );
   }
-  return data.session;
+  const data = await response.json();
+  if (!data.access_token || !data.refresh_token) {
+    throw new Error(`Sign-in failed for ${key} (${username}): token pair missing from response`);
+  }
+  return { access_token: data.access_token, refresh_token: data.refresh_token };
 }
 
 export function printResult(name, ok, detail) {

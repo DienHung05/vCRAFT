@@ -1296,6 +1296,10 @@
       "ADMIN": "Điều phối"
     },
     "fields": {
+      "username": "Tên đăng nhập",
+      "usernameHint": "Dùng 3-30 ký tự a-z, số, dấu chấm, gạch dưới hoặc gạch ngang.",
+      "identifier": "Tên đăng nhập hoặc email",
+      "identifierPlaceholder": "ten.dang.nhap",
       "email": "Email",
       "emailPlaceholder": "ten@vidu.vn",
       "password": "Mật khẩu",
@@ -1307,6 +1311,10 @@
       "optional": "không bắt buộc"
     },
     "validation": {
+      "identifierRequired": "Nhập tên đăng nhập hoặc email.",
+      "usernameRequired": "Nhập tên đăng nhập.",
+      "usernameInvalid": "Tên đăng nhập cần 3-30 ký tự a-z, số, dấu chấm, gạch dưới hoặc gạch ngang.",
+      "usernameReserved": "Tên đăng nhập này dành cho tài khoản hệ thống. Hãy chọn tên khác.",
       "emailRequired": "Nhập email của bạn.",
       "emailInvalid": "Email chưa đúng dạng, ví dụ ten@vidu.vn.",
       "passwordRequired": "Nhập mật khẩu.",
@@ -1324,8 +1332,20 @@
       "consentRequired": "Hãy đồng ý với Chính sách quyền riêng tư để tạo tài khoản.",
       "idNumberInvalid": "Số CCCD gồm đúng 12 chữ số, không có dấu cách."
     },
+    "username": {
+      "checking": "Đang kiểm tra tên đăng nhập...",
+      "available": "Bạn có thể dùng tên đăng nhập này.",
+      "taken": "Tên đăng nhập này đã được dùng. Hãy chọn tên khác.",
+      "unavailable": "Chưa kiểm tra được tên đăng nhập. Bạn có thể thử gửi lại.",
+      "title": "Chọn tên đăng nhập",
+      "lead": "Tài khoản của bạn cần một tên đăng nhập. Email vẫn dùng để xác minh và đặt lại mật khẩu.",
+      "submit": "Lưu tên đăng nhập",
+      "saving": "Đang lưu..."
+    },
     "errors": {
-      "invalid_credentials": "Email hoặc mật khẩu chưa đúng. Kiểm tra lại, hoặc chọn \"Quên mật khẩu\" để đặt mật khẩu mới.",
+      "usernameTaken": "Tên đăng nhập này đã được dùng. Hãy chọn tên khác.",
+      "usernameReserved": "Tên đăng nhập này dành cho tài khoản hệ thống. Hãy chọn tên khác.",
+      "invalid_credentials": "Tên đăng nhập, email hoặc mật khẩu chưa đúng. Kiểm tra lại, hoặc chọn \"Quên mật khẩu\" để đặt mật khẩu mới.",
       "email_not_confirmed": "Email này chưa được xác minh. Mở thư vCraft đã gửi và bấm liên kết xác minh, hoặc gửi lại thư ở dưới.",
       "email_exists": "Không tạo được tài khoản với email này. Nếu bạn từng đăng ký, hãy đăng nhập hoặc chọn \"Quên mật khẩu\".",
       "rate_limited": "Bạn thao tác hơi nhanh. Chờ vài phút rồi thử lại, dữ liệu đã nhập vẫn còn nguyên.",

@@ -9,6 +9,10 @@
  */
 export const ERROR_CATALOG = {
   // --- AUTH: xác thực & phân quyền (FR-AUTH, NFR-SEC-02/04) ---
+  AUTH_INVALID_CREDENTIALS: { status: 401, title: 'Invalid login credentials' },
+  USERNAME_TAKEN: { status: 409, title: 'Username already taken' },
+  USERNAME_RESERVED: { status: 422, title: 'Username reserved for system accounts' },
+  CAPTCHA_FAILED: { status: 400, title: 'Captcha verification failed' },
   AUTH_UNAUTHENTICATED: { status: 401, title: 'Authentication required' },
   AUTH_TOKEN_INVALID: { status: 401, title: 'Invalid access token' },
   AUTH_TOKEN_EXPIRED: { status: 401, title: 'Access token expired' },

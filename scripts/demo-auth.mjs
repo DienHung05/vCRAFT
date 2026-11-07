@@ -9,6 +9,11 @@
  * Cần: APP_ENV=demo, SUPABASE_URL, SUPABASE_SECRET_KEY và DEMO_{ADMIN,BUYER,HOUSEHOLD,PENDING}_PASSWORD.
  * `auth.admin.createUser` nhận `id` (AdminUserAttributes.id, @supabase/auth-js ≥ 2.x), nên không cần cách vòng.
  * Nếu một email demo đã gắn với người dùng id KHÁC, script dừng và nói rõ (xóa người dùng đó ở Dashboard > Authentication).
+ *
+ * GH#212: this script ONLY provisions the Supabase Auth users (the email is still needed for email
+ * confirmation, password reset, Google sign-in, and the API resolving username to email at sign-in).
+ * Demo sign-in does NOT go through this script: the web/API sign in with the username
+ * (`DEMO_ADMIN_USERNAME`, default `admin`) via `POST /api/v1/auth/sign-in`; the script never reads it.
  */
 import {
   envOf,
@@ -56,7 +61,9 @@ for (const account of list) {
     email: account.email,
     password: process.env[account.passwordEnv].trim(),
     email_confirm: true,
-    user_metadata: { full_name: account.fullName, sample_data: true },
+    // GH#212: metadata describes the demo identity. The migration and seed own app_user.username;
+    // the API never grants a reserved username from user-editable metadata.
+    user_metadata: { full_name: account.fullName, username: account.username, sample_data: true },
   };
   const { error } = byId?.user
     ? await admin.updateUserById(account.id, attributes)

@@ -18,6 +18,7 @@ export class UsersService {
     return {
       id: user.id,
       email: user.email,
+      username: user.username ?? null,
       fullName: user.fullName ?? null,
       role: user.role,
       // The guard turns away deleted accounts before this runs.

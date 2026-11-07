@@ -65,6 +65,7 @@ export class DataExportService {
       account: {
         id: user.id,
         email: user.email,
+        username: user.username ?? null,
         fullName: user.fullName ?? null,
         role: user.role,
         status: user.status,

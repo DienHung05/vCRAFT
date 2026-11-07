@@ -14,6 +14,9 @@ allowBuilds:
   cpu-features: false
   ssh2: false
 
+patchedDependencies:
+  '@mikro-orm/sql@7.2.5': patches/@mikro-orm__sql@7.2.5.patch
+
 permissions:
   '@supabase/server':
     skills: true

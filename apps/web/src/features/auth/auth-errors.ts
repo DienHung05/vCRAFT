@@ -2,6 +2,8 @@ import { AccountApiError } from '@vcraft/api-client';
 
 /** Khóa trong `auth.errors` của từ điển: thông điệp tiếng Việt cụ thể, chỉ cách sửa (NFR-UX-05). */
 export type AuthErrorKey =
+  | 'usernameTaken'
+  | 'usernameReserved'
   | 'invalid_credentials'
   | 'email_not_confirmed'
   | 'email_exists'
@@ -50,6 +52,10 @@ const SUPABASE_CODES: Readonly<Record<string, AuthErrorKey>> = {
 };
 
 const API_CODES: Readonly<Record<string, AuthErrorKey>> = {
+  AUTH_INVALID_CREDENTIALS: 'invalid_credentials',
+  USERNAME_TAKEN: 'usernameTaken',
+  USERNAME_RESERVED: 'usernameReserved',
+  CAPTCHA_FAILED: 'captcha',
   AUTH_UNAUTHENTICATED: 'sessionExpired',
   AUTH_TOKEN_INVALID: 'sessionExpired',
   AUTH_TOKEN_EXPIRED: 'sessionExpired',
@@ -77,7 +83,8 @@ export function authErrorKey(error: unknown): AuthErrorKey {
   if (error instanceof TypeError) return 'network';
   if (typeof error === 'object' && error !== null) {
     const { code, status, name } = error as { code?: unknown; status?: unknown; name?: unknown };
-    if (typeof code === 'string' && SUPABASE_CODES[code]) return SUPABASE_CODES[code];
+    const mapped = typeof code === 'string' ? (API_CODES[code] ?? SUPABASE_CODES[code]) : undefined;
+    if (mapped) return mapped;
     if (name === 'AuthRetryableFetchError' || status === 0) return 'network';
     if (status === 429) return 'rate_limited';
   }
