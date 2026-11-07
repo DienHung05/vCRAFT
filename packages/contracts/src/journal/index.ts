@@ -1,7 +1,7 @@
 import { JOURNAL_STAGES } from '@vcraft/domain';
 import { z } from 'zod';
 import { IdSchema, IsoDateSchema, IsoDateTimeSchema, VersionSchema } from '../common';
-import { MediaCreditSchema, PublicImageVariantsSchema } from '../media';
+import { PublicCreditSchema, PublicImageVariantsSchema } from '../media';
 
 /** Nhật ký sản xuất và mốc đính chính (vCRAFT-9hg.4). */
 
@@ -48,7 +48,7 @@ export const JournalEntryResponseSchema = z.object({
    */
   images: z.array(
     JournalImageSchema.extend({
-      credit: MediaCreditSchema.nullable(),
+      credit: PublicCreditSchema,
       variants: PublicImageVariantsSchema,
     }),
   ),

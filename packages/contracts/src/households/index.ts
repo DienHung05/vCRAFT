@@ -9,7 +9,7 @@ import {
 import { z } from 'zod';
 import { IdSchema, IsoDateSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
 import { JournalResponseSchema } from '../journal';
-import { MediaCreditSchema, PublicImageSchema, PublicImageVariantsSchema } from '../media';
+import { PublicCreditSchema, PublicImageSchema, PublicImageVariantsSchema } from '../media';
 
 /** Hộ sản xuất, xưởng, nghệ nhân, sản phẩm và các quyết định duyệt / xuất bản (vCRAFT-9hg.2, 9hg.3). */
 
@@ -349,7 +349,7 @@ export const PublicHouseholdResponseSchema = z.object({
       /** English description for `/en`; null falls back to `alt`. */
       altEn: z.string().nullable().default(null),
       caption: z.string().nullable(),
-      credit: MediaCreditSchema.nullable(),
+      credit: PublicCreditSchema,
     }),
   ),
   capacityByCategory: CapacitySchema,
@@ -388,7 +388,7 @@ export const TraceAvailabilityResponseSchema = z.discriminatedUnion('availabilit
     availability: z.literal('VISIBLE'),
     product: ProductResponseSchema,
     /** Credit for `product.coverUrl`; null when the cover is a photo the household uploaded. */
-    coverCredit: MediaCreditSchema.nullable(),
+    coverCredit: PublicCreditSchema,
     household: z.object({ name: z.string(), slug: z.string() }),
     journal: JournalResponseSchema,
     /** Số lượt quét mã QR của sản phẩm này. */
@@ -407,7 +407,7 @@ export type TraceAvailabilityDto = z.infer<typeof TraceAvailabilityResponseSchem
 export const ProductDetailResponseSchema = z.object({
   product: ProductResponseSchema,
   /** Credit for `product.coverUrl`; null when the cover is a photo the household uploaded. */
-  coverCredit: MediaCreditSchema.nullable(),
+  coverCredit: PublicCreditSchema,
   household: z.object({ name: z.string(), slug: z.string() }),
   journal: JournalResponseSchema,
 });

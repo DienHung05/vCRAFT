@@ -8,6 +8,7 @@ import type {
   MediaVariantResponse,
   PublicImageDto,
 } from '@vcraft/contracts';
+import { publicCredit } from '@vcraft/contracts';
 import {
   MediaAsset,
   type MediaCredit,
@@ -152,7 +153,7 @@ export class MediaService {
       .find(MediaAsset, { sha256: { $in: unique }, status: 'READY', visibility: 'PUBLIC' });
     for (const asset of assets) {
       found.set(asset.sha256, {
-        credit: asset.credit ?? null,
+        credit: publicCredit(asset.credit),
         variants: this.publicVariants(asset),
       });
     }
@@ -192,7 +193,7 @@ export class MediaService {
           alt: link.altText ?? link.media.altText ?? '',
           altEn: link.altEn ?? null,
           caption: link.caption ?? null,
-          credit: link.media.credit ?? null,
+          credit: publicCredit(link.media.credit),
         },
       });
       byTarget.set(link.targetId, list);
