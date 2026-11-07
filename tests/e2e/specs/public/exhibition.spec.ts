@@ -29,15 +29,16 @@ test.describe('Triển lãm công khai', () => {
     await expect(page.getByTestId('place-list').getByRole('listitem').first()).toBeVisible();
   });
 
-  test('biến thể C: trang QR mở bằng ấn, nhật ký mới nhất trước, có liên kết về trang chủ', async ({
+  test('biến thể C: trang QR mở bằng ấn, nhật ký theo thứ tự thời gian, có liên kết về trang chủ', async ({
     page,
   }) => {
     await page.goto('/vi/truy-xuat/BT7K2QXM');
     await expect(page.locator('[data-state="ok"]')).toBeVisible();
     await expect(page.getByText(/^Toàn vẹn nhật ký:/)).toBeVisible();
     const logs = await page.locator('li[id^="log-"]').evaluateAll((els) => els.map((e) => e.id));
-    // Dữ liệu seed có 7 mốc, mốc mới nhất đứng đầu; luồng đính chính nằm ở test tích hợp nhật ký.
-    expect(logs[0]).toBe('log-7');
+    // Seed data has 7 milestones, shown oldest first (FR-TRC-04); corrections are covered by the journal integration test.
+    expect(logs[0]).toBe('log-1');
+    expect(logs.at(-1)).toBe('log-7');
     await expect(page.getByRole('link', { name: 'Về trang chủ triển lãm' })).toBeVisible();
     await expect(page.getByTestId('place-list')).toBeVisible();
   });
