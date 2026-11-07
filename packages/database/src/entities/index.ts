@@ -1,3 +1,4 @@
+export * from './account-invitation.entity.js';
 export * from './app-user.entity.js';
 export * from './artisan.entity.js';
 export * from './assistant-message-log.entity.js';

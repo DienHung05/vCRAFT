@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { CursorPageQuerySchema, cursorPageSchema, IdSchema, IsoDateTimeSchema } from '../common';
+import { AccountRoleSchema, AccountStatusSchema } from '../auth';
+import {
+  CursorPageQuerySchema,
+  cursorPageSchema,
+  IdSchema,
+  IsoDateTimeSchema,
+  MAX_PAGE_LIMIT,
+} from '../common';
 import { RfqStatusSchema } from '../rfq/create-rfq';
 
 /** Every action written to the audit log. The screen offers these as the action filter. */
@@ -26,6 +33,10 @@ export const AUDIT_ACTIONS = [
   'news.unpublish',
   'news.delete',
   'account.delete',
+  // Account administration (FR-AUTH-03, FR-AUTH-10, GH#239).
+  'user.suspend',
+  'user.unsuspend',
+  'user.invite',
   // A household tried to change another household's record (AC-4, GH#237).
   'access.denied',
 ] as const;
@@ -83,3 +94,70 @@ export const CoordinationQueueItemSchema = z.object({
 });
 export type CoordinationQueueItemDto = z.infer<typeof CoordinationQueueItemSchema>;
 export const CoordinationQueueSchema = z.array(CoordinationQueueItemSchema);
+
+/** `GET /admin/users`: accounts for the suspension screen, newest first. `q` matches email, name or username. */
+export const AdminUserListQuerySchema = z.object({
+  q: z.string().trim().max(120).optional(),
+  role: AccountRoleSchema.optional(),
+  status: AccountStatusSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_LIMIT).default(50),
+});
+export type AdminUserListQuery = z.infer<typeof AdminUserListQuerySchema>;
+
+export const AdminUserSchema = z.object({
+  id: IdSchema,
+  email: z.string(),
+  username: z.string().nullable(),
+  fullName: z.string().nullable(),
+  role: AccountRoleSchema,
+  status: AccountStatusSchema,
+  /** Why the account is suspended; null while it is active. */
+  statusReason: z.string().nullable(),
+  createdAt: IsoDateTimeSchema,
+});
+export type AdminUserDto = z.infer<typeof AdminUserSchema>;
+export const AdminUserListSchema = z.object({ items: z.array(AdminUserSchema) });
+export type AdminUserListDto = z.infer<typeof AdminUserListSchema>;
+
+/** `POST /admin/users/:id/suspend`: the reason is required and goes to the audit log (FR-AUTH-10). */
+export const SuspendUserRequestSchema = z.object({
+  reason: z.string().trim().min(3).max(500),
+});
+export type SuspendUserRequest = z.infer<typeof SuspendUserRequestSchema>;
+
+/** `POST /admin/users/:id/unsuspend`: the reason is optional. */
+export const UnsuspendUserRequestSchema = z.object({
+  reason: z.string().trim().max(500).optional(),
+});
+export type UnsuspendUserRequest = z.infer<typeof UnsuspendUserRequestSchema>;
+
+/** Roles an administrator can give by invitation (FR-AUTH-03). Buyers sign themselves up. */
+export const INVITABLE_ROLES = ['HOUSEHOLD', 'ADMIN'] as const;
+export const InvitableRoleSchema = z.enum(INVITABLE_ROLES);
+export type InvitableRole = z.infer<typeof InvitableRoleSchema>;
+
+/** `POST /admin/invitations`. */
+export const InviteAccountRequestSchema = z.object({
+  email: z
+    .email()
+    .max(320)
+    .transform((value) => value.toLowerCase()),
+  role: InvitableRoleSchema,
+});
+export type InviteAccountRequest = z.infer<typeof InviteAccountRequestSchema>;
+
+export const InvitationStatusSchema = z.enum(['PENDING', 'ACCEPTED']);
+
+export const InvitationSchema = z.object({
+  id: IdSchema,
+  email: z.string(),
+  role: AccountRoleSchema,
+  status: InvitationStatusSchema,
+  /** Full name, or email, of the administrator who invited; null if that account is gone. */
+  invitedByName: z.string().nullable(),
+  createdAt: IsoDateTimeSchema,
+  acceptedAt: IsoDateTimeSchema.nullable(),
+});
+export type InvitationDto = z.infer<typeof InvitationSchema>;
+export const InvitationListSchema = z.object({ items: z.array(InvitationSchema) });
+export type InvitationListDto = z.infer<typeof InvitationListSchema>;

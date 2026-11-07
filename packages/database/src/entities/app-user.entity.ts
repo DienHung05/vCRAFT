@@ -53,6 +53,10 @@ export class AppUser {
   @Property({ type: 'string', length: 20 })
   status: Opt<AccountStatus> = 'ACTIVE';
 
+  /** Why an administrator suspended the account (`LOCKED`, FR-AUTH-10); `null` while it is active. */
+  @Property({ type: 'string', length: 500, nullable: true })
+  statusReason?: string | null;
+
   @Property({ type: 'datetime', length: 3 })
   createdAt: Opt<Date> = new Date();
 

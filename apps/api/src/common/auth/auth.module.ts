@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth.guard';
+import { AuthAdmin, SupabaseAuthAdmin } from './auth-admin';
 import { AuthRateLimit } from './auth-rate-limit';
 import { IdentityVerifier, SupabaseIdentityVerifier } from './identity-verifier';
 import { PasswordAuthController } from './password-auth.controller';
@@ -19,8 +20,9 @@ import {
     AuthRateLimit,
     { provide: PasswordIdentityProvider, useClass: SupabasePasswordIdentityProvider },
     { provide: IdentityVerifier, useClass: SupabaseIdentityVerifier },
+    { provide: AuthAdmin, useClass: SupabaseAuthAdmin },
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
-  exports: [IdentityVerifier, PasswordAuthService],
+  exports: [IdentityVerifier, PasswordAuthService, AuthAdmin],
 })
 export class AuthModule {}

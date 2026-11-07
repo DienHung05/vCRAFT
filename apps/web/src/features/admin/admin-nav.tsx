@@ -40,6 +40,7 @@ export function AdminNav() {
   const onProgress = pathname.startsWith('/admin/tien-do');
   const onAudit = pathname.startsWith('/admin/nhat-ky');
   const onNews = pathname.startsWith('/admin/tin-tuc');
+  const onAccounts = pathname.startsWith('/admin/nguoi-dung');
 
   return (
     <nav aria-label={t('label')} className="overflow-x-auto lg:overflow-visible">
@@ -105,6 +106,15 @@ export function AdminNav() {
             className={linkClass(onNews)}
           >
             {t('news')}
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/admin/nguoi-dung"
+            aria-current={onAccounts ? 'page' : undefined}
+            className={linkClass(onAccounts)}
+          >
+            {t('users')}
           </Link>
         </li>
       </ul>

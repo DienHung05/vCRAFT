@@ -8,7 +8,7 @@ import { AppUser, ConsentRecord, FieldCipher } from '@vcraft/database';
 import { type AccountRole, CONSENT_PURPOSES, PRIVACY_POLICY_VERSION } from '@vcraft/domain';
 import { LocalObjectStorage } from '@vcraft/storage';
 import { AppModule } from '../../../src/app.module.js';
-import { AuthAdmin } from '../../../src/common/auth/auth-admin.js';
+import { AuthAdmin, IdentityExistsError } from '../../../src/common/auth/auth-admin.js';
 import {
   IdentityVerifier,
   InvalidTokenError,
@@ -23,7 +23,8 @@ import type { TestDatabase } from './test-database.js';
  * Tài khoản phải có sẵn trong `app_user` (xem {@link TestApp.createUser}) hoặc sẽ được tạo lười vai trò BUYER.
  * Options follow as `|key=value`: `consent=<version>` mimics the sign-up form's metadata; `aal=aal1` a
  * session without the second factor (the default is `aal2`, so admin tests pass MFA); `session=<id>` and
- * `method=<amr>` the Supabase session claims behind sign-in history (GH#83).
+ * `method=<amr>` the Supabase session claims behind sign-in history (GH#83); `verified=no` an address
+ * Supabase has not confirmed; `email=<address>` overrides the default `<sub>@test.local` address.
  */
 class FakeIdentityVerifier extends IdentityVerifier {
   async verify(headers: Readonly<Record<string, string | string[] | undefined>>) {
@@ -42,8 +43,8 @@ class FakeIdentityVerifier extends IdentityVerifier {
     const method = options.get('method');
     return {
       sub: match[1],
-      email: `${match[1]}@test.local`,
-      emailVerified: true,
+      email: options.get('email') ?? `${match[1]}@test.local`,
+      emailVerified: options.get('verified') !== 'no',
       aal: options.get('aal') === 'aal1' ? 'aal1' : 'aal2',
       ...(consent && { consentPolicyVersion: consent }),
       ...(session && { sessionId: session }),
@@ -52,13 +53,43 @@ class FakeIdentityVerifier extends IdentityVerifier {
   }
 }
 
-/** Stands in for Supabase Auth admin: records deletions, can be told to fail. Never touches a real project. */
+/**
+ * Stands in for Supabase Auth admin: records every call, can be told to fail. Never touches a real project.
+ * `bannedIds` is the set of identities currently banned, as Supabase would hold it.
+ */
 export class FakeAuthAdmin extends AuthAdmin {
   readonly deleted: string[] = [];
+  readonly bannedIds = new Set<string>();
+  readonly invites: { email: string; role: AccountRole }[] = [];
+  readonly signedOutOthers: string[] = [];
+  /** Addresses that already have a confirmed Supabase account. */
+  readonly existingEmails = new Set<string>();
   failWith: Error | null = null;
+
   async deleteUser(id: string): Promise<void> {
     if (this.failWith) throw this.failWith;
     this.deleted.push(id);
+  }
+
+  async banUser(id: string): Promise<void> {
+    if (this.failWith) throw this.failWith;
+    this.bannedIds.add(id);
+  }
+
+  async unbanUser(id: string): Promise<void> {
+    if (this.failWith) throw this.failWith;
+    this.bannedIds.delete(id);
+  }
+
+  async inviteUserByEmail(email: string, role: AccountRole): Promise<void> {
+    if (this.failWith) throw this.failWith;
+    if (this.existingEmails.has(email)) throw new IdentityExistsError(email);
+    this.invites.push({ email, role });
+  }
+
+  async signOutOthers(accessToken: string): Promise<void> {
+    if (this.failWith) throw this.failWith;
+    this.signedOutOthers.push(accessToken);
   }
 }
 
