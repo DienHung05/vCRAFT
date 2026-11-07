@@ -18,11 +18,14 @@ import {
   reactionIndex,
   THOUGHT_MS,
 } from './mascot-model';
+import { MascotThought } from './mascot-thought';
 
 export interface MascotProps {
   mood?: MascotMood;
   /** Lines for the thought bubble; several cross-fade every 2.5 s. None hides the bubble. */
   thought?: string | readonly string[] | undefined;
+  /** Escape clipping containers and keep the thought inside the visible viewport. */
+  thoughtPortal?: boolean;
   /** Where the head turns: the pointer, a point in viewport coordinates, or straight ahead. */
   lookAt?: 'pointer' | { x: number; y: number } | null;
   /** Rendered size in px: 56 (phone launcher), 64 (desktop launcher), 96 (panel header). */
@@ -180,6 +183,7 @@ function useThought(lines: readonly string[], reduced: boolean) {
 export function Mascot({
   mood = 'idle',
   thought,
+  thoughtPortal = false,
   lookAt = null,
   size = 64,
   dozeAfterMs = 90_000,
@@ -286,43 +290,14 @@ export function Mascot({
       </span>
 
       {bubble.line ? (
-        <span aria-hidden="true" className="pointer-events-none absolute bottom-[78%] left-[62%]">
-          {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              className="absolute rounded-full border border-ink/60 bg-paper"
-              style={{
-                width: 4 + i * 2,
-                height: 4 + i * 2,
-                left: i * 6,
-                bottom: i * 6,
-                animation: bubble.animate
-                  ? `vc-fox-${id}-rise 240ms var(--ease-clay, ease-out) ${i * 120}ms both`
-                  : undefined,
-              }}
-            />
-          ))}
-          <span
-            className="absolute bottom-5 left-4 block w-max max-w-[15rem] border border-ink/70 bg-paper px-3 py-1.5 text-small text-ink shadow-warm"
-            // Uneven corners, like a hand-cut seal (BRAND §10).
-            style={{
-              borderRadius: '14px 10px 16px 9px',
-              animation: bubble.animate
-                ? `vc-fox-${id}-rise 240ms var(--ease-clay, ease-out) 360ms both`
-                : undefined,
-            }}
-          >
-            <span
-              key={bubble.index}
-              className="block"
-              style={
-                bubble.animate ? { animation: `vc-fox-${id}-fade 320ms ease-out both` } : undefined
-              }
-            >
-              {bubble.line}
-            </span>
-          </span>
-        </span>
+        <MascotThought
+          anchor={wrapperRef}
+          portal={thoughtPortal}
+          line={bubble.line}
+          index={bubble.index}
+          animate={bubble.animate}
+          id={id}
+        />
       ) : null}
     </div>
   );

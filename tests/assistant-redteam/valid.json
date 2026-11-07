@@ -526,5 +526,69 @@
     "kind": "tricky",
     "intent": "site_help",
     "text": "How do I reset my password?"
+  },
+  {
+    "id": "V089",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Hướng dẫn cách sử dụng hệ thống",
+    "locale": "vi",
+    "pagePath": "/vi"
+  },
+  {
+    "id": "V090",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "How do I use vCraft?",
+    "locale": "en",
+    "pagePath": "/en"
+  },
+  {
+    "id": "V091",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Tôi làm được gì trên trang này?",
+    "locale": "vi",
+    "pagePath": "/vi/studio/san-pham"
+  },
+  {
+    "id": "V092",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "What can I do on this page?",
+    "locale": "en",
+    "pagePath": "/en/admin/coordination"
+  },
+  {
+    "id": "V093",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "How do I sign up and manage my sessions?",
+    "locale": "en",
+    "pagePath": "/en/register"
+  },
+  {
+    "id": "V094",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Tôi xem báo giá, đơn hàng và xác nhận nhận hàng ở đâu?",
+    "locale": "vi",
+    "pagePath": "/vi/yeu-cau-bao-gia"
+  },
+  {
+    "id": "V095",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "How does a household representative add a production journal and submit a quotation?",
+    "locale": "en",
+    "pagePath": "/en/studio"
+  },
+  {
+    "id": "V096",
+    "kind": "business",
+    "intent": "site_help",
+    "text": "Quản trị viên duyệt hộ, đăng tin và xem nhật ký hệ thống thế nào?",
+    "locale": "vi",
+    "pagePath": "/vi/admin"
   }
 ]

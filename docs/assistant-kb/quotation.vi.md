@@ -1,6 +1,6 @@
 # Đặt hàng số lượng lớn bằng Yêu cầu báo giá
 
-Muốn đặt nhiều sản phẩm, ví dụ 5.000 cốc in logo, bạn đăng nhập tài khoản khách mua rồi vào "Yêu cầu báo giá" → "Tạo yêu cầu". Bạn mô tả thiết kế, số lượng, đơn vị, nơi giao, ngày cần hàng, hạn chào giá và ngân sách nếu có.
+Muốn đặt nhiều sản phẩm, ví dụ 5.000 cốc in logo, bạn đăng nhập tài khoản khách mua rồi vào "/yêu cầu báo giá" → "Tạo yêu cầu" tại /vi/yeu-cau-bao-gia/moi. Bạn mô tả thiết kế, số lượng, đơn vị, nơi giao, ngày cần hàng, hạn chào giá và ngân sách nếu có. Yêu cầu bắt đầu ở trạng thái nháp; bạn bấm Gửi để gửi cho các hộ.
 
 Bạn có thể tự chọn hộ để mời, hoặc nhờ Ban quản lý làng điều phối: Ban quản lý mời các hộ phù hợp, gom đề xuất của từng hộ thành một chào giá liên kết, rồi gửi bạn so sánh.
 
