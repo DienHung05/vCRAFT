@@ -3,6 +3,8 @@
 import { Stepper } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
+import { HOUSEHOLD_INTENT_KEY, hasHouseholdIntent } from '@/lib/auth/household-intent';
+import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { DocumentUpload } from './document-upload';
 import { RegisterForm } from './register-form';
 import { WizardHouseholdStep } from './wizard-household-step';
@@ -34,6 +36,27 @@ export function HouseholdWizard({
     focusNext.current = false;
     heading.current?.focus();
   });
+
+  // GH#180: a signed-in Buyer who reached the household step (signed in from the wizard, Google, or
+  // came back later) is marked as registering a household, so the next sign-in resumes the wizard.
+  useEffect(() => {
+    if (initialStep !== 'household') return;
+    const supabase = browserSupabase();
+    if (!supabase) return;
+    let active = true;
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        if (!active || !data.user || hasHouseholdIntent(data.user.user_metadata)) return;
+        return supabase.auth.updateUser({ data: { [HOUSEHOLD_INTENT_KEY]: true } });
+      })
+      .catch(() => {
+        // Best effort: the wizard works without the flag.
+      });
+    return () => {
+      active = false;
+    };
+  }, [initialStep]);
 
   const next = (to: WizardStep) => () => {
     focusNext.current = true;

@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { workspacePath } from '@/lib/auth/access';
+import { hasUnfinishedHouseholdRegistration } from '@/lib/auth/household-intent';
 import { clearRememberPreference } from '@/lib/auth/remember';
 import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { useAccount } from '@/lib/auth/use-account';
@@ -78,6 +79,7 @@ export function AccountMenu({
   }
 
   const { email, me } = account;
+  const unfinishedHousehold = hasUnfinishedHouseholdRegistration(me, account.householdIntent);
   const initial = (email.trim()[0] ?? '?').toUpperCase();
 
   const signOut = async () => {
@@ -128,6 +130,17 @@ export function AccountMenu({
             {t('nav.roleLabel')}
             <Badge tone="glaze">{t(`roles.${me.role}`)}</Badge>
           </p>
+        ) : null}
+        {me?.household?.status === 'PENDING_REVIEW' ? (
+          <p className="mt-2 text-small text-ash">{t('nav.householdPending')}</p>
+        ) : null}
+        {unfinishedHousehold ? (
+          <Link
+            href="/dang-ky-nghe-nhan"
+            className="mt-3 block rounded-input bg-glaze/8 px-2 py-2 text-small font-medium text-clay hover:bg-ink/6"
+          >
+            {t('nav.finishHousehold')}
+          </Link>
         ) : null}
         {me ? (
           <Link

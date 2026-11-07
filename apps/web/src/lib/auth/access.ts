@@ -65,3 +65,17 @@ export function workspacePath(role: AccountRole) {
 export function landingPath(role: AccountRole) {
   return role === 'BUYER' ? ('/' as const) : workspacePath(role);
 }
+
+/**
+ * Landing after sign-in for a known viewer. GH#180: a Buyer who started household registration and has
+ * not submitted the household info yet goes back to the wizard instead of the home page.
+ */
+export function landingPathFor(
+  viewer: Pick<MeDto, 'role' | 'household'>,
+  unfinishedHouseholdRegistration: boolean,
+) {
+  if (unfinishedHouseholdRegistration && viewer.role === 'BUYER' && !viewer.household) {
+    return '/dang-ky-nghe-nhan' as const;
+  }
+  return landingPath(viewer.role);
+}
