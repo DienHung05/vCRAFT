@@ -1,6 +1,17 @@
 import type { MeDto } from '@vcraft/contracts';
 import { describe, expect, it } from 'vitest';
-import { AREA_ROLE, type Area, decideAccess, landingPath, workspacePath } from '@/lib/auth/access';
+import {
+  AREA_ROLE,
+  type Area,
+  decideAccess,
+  landingPath,
+  landingPathFor,
+  workspacePath,
+} from '@/lib/auth/access';
+import {
+  hasHouseholdIntent,
+  hasUnfinishedHouseholdRegistration,
+} from '@/lib/auth/household-intent';
 import { localeOfPath, safeReturnTo } from '@/lib/auth/return-to';
 
 type Viewer = Pick<MeDto, 'role' | 'status' | 'household'>;
@@ -82,6 +93,45 @@ describe('đích sau đăng nhập theo vai trò', () => {
 
   it('menu tài khoản trỏ Buyer tới khu yêu cầu báo giá', () => {
     expect(workspacePath('BUYER')).toBe('/yeu-cau-bao-gia');
+  });
+});
+
+describe('unfinished household registration (GH#180)', () => {
+  const pending = {
+    id: 'h1',
+    name: 'Hộ A',
+    slug: 'ho-a',
+    status: 'PENDING_REVIEW' as const,
+    statusReason: null,
+  };
+
+  it('reads the flag only when it is exactly true', () => {
+    expect(hasHouseholdIntent({ household_intent: true })).toBe(true);
+    expect(hasHouseholdIntent({ household_intent: 'true' })).toBe(false);
+    expect(hasHouseholdIntent({})).toBe(false);
+    expect(hasHouseholdIntent(null)).toBe(false);
+    expect(hasHouseholdIntent(undefined)).toBe(false);
+  });
+
+  it('a Buyer with the flag and no household has an unfinished registration', () => {
+    expect(hasUnfinishedHouseholdRegistration({ role: 'BUYER', household: null }, true)).toBe(true);
+    expect(hasUnfinishedHouseholdRegistration({ role: 'BUYER', household: null }, false)).toBe(
+      false,
+    );
+    expect(
+      hasUnfinishedHouseholdRegistration({ role: 'HOUSEHOLD', household: pending }, true),
+    ).toBe(false);
+    expect(hasUnfinishedHouseholdRegistration({ role: 'ADMIN', household: null }, true)).toBe(
+      false,
+    );
+    expect(hasUnfinishedHouseholdRegistration(null, true)).toBe(false);
+  });
+
+  it('sign-in sends that Buyer back to the wizard, everyone else to the role landing', () => {
+    expect(landingPathFor({ role: 'BUYER', household: null }, true)).toBe('/dang-ky-nghe-nhan');
+    expect(landingPathFor({ role: 'BUYER', household: null }, false)).toBe('/');
+    expect(landingPathFor({ role: 'HOUSEHOLD', household: pending }, true)).toBe('/studio/ho-so');
+    expect(landingPathFor({ role: 'ADMIN', household: null }, true)).toBe('/admin');
   });
 });
 
