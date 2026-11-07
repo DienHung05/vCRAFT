@@ -127,7 +127,11 @@ function OrderTimeline({
                   unit: order.unit,
                   due: day(share.dueAt),
                 })}
-                <Badge tone={TONE[share.lateness]}>{t(`lateness.${share.lateness}`)}</Badge>
+                {share.status === 'DECLINED' ? (
+                  <Badge tone="seal">{t('declined')}</Badge>
+                ) : (
+                  <Badge tone={TONE[share.lateness]}>{t(`lateness.${share.lateness}`)}</Badge>
+                )}
               </span>
             </div>
             {/* The bar is decorative; the line above says the same in words. */}
@@ -143,8 +147,10 @@ function OrderTimeline({
               </div>
               <div className="absolute -inset-y-1 w-px bg-glaze" style={{ left: at(now) }} />
             </div>
-            {share.status === 'IN_PROGRESS' &&
-            (share.lateness === 'BEHIND' || share.lateness === 'OVERDUE') ? (
+            {/* A late share in production, or a share a household declined before production (GH#246). */}
+            {(share.status === 'IN_PROGRESS' &&
+              (share.lateness === 'BEHIND' || share.lateness === 'OVERDUE')) ||
+            (share.status === 'DECLINED' && share.quantity > 0) ? (
               open === share.id ? (
                 <ReallocateForm
                   share={share}

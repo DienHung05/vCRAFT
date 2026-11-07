@@ -925,6 +925,7 @@
         "OVERDUE": "Overdue"
       },
       "reallocate": "Reallocate the rest",
+      "declined": "Declined, needs reallocating",
       "reallocateLegend": "Give the remaining {remaining} {unit} to other households",
       "targetHousehold": "Household",
       "chooseHousehold": "Choose a household",

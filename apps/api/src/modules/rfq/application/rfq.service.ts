@@ -795,36 +795,14 @@ export class RfqService {
       assertVersion(allocation, version);
       this.acceptedOnly(request);
       allocation.status = unwrap(allocationTransition(allocation.status, 'DECLINE', {}));
-      // The system ends an accepted order here, so it takes the admin's T7 path; the buyer's own CANCEL
-      // stops at BIDDING (GH#244).
-      request.status = unwrap(
-        transition(request.status, 'ADMIN_CANCEL', {
-          actor: 'ADMIN',
-          reason: 'household declined',
-        }),
-      );
-      const siblings = await em.find(
-        OrderAllocationEntity,
-        { quotation: allocation.quotation, status: ['PROPOSED', 'CONFIRMED'] },
-        { populate: ['household'] },
-      );
-      for (const sibling of siblings) {
-        // Hàng của chính allocation vừa DECLINED còn PROPOSED trong CSDL nhưng đã DECLINED trong bộ nhớ.
-        if (sibling.id === allocation.id) continue;
-        sibling.status = unwrap(allocationTransition(sibling.status, 'CANCEL', {}));
-      }
+      // FR-ORD-05 (GH#246): one household saying no does not end the order. It stays ACCEPTED, the other
+      // shares keep their state, and the coordinator reallocates the declined quantity before production.
       await this.notifier.notify(em, {
-        kind: 'ORDER_CANCELLED',
+        kind: 'COORDINATION_NEEDED',
         requestId: request.id,
         quotationId: allocation.quotation.id,
         actorId: actor.id,
-        recipientIds: [
-          request.buyer.id,
-          request.coordinatorId,
-          ...(await this.notifier.representativeIds(em, [
-            ...siblings.map((sibling) => sibling.household.id),
-          ])),
-        ],
+        recipientIds: [request.coordinatorId],
       });
       request.revision++;
       await em.flush();
@@ -983,7 +961,7 @@ export class RfqService {
       request.status = unwrap(
         transition(request.status, 'CONFIRM_DELIVERY', {
           actor: owner ? 'BUYER_OWNER' : 'ADMIN',
-          allocationStatuses: allocations.map((allocation) => allocation.status),
+          allocationStatuses: liveShares(allocations).map((allocation) => allocation.status),
         }),
       );
       if (admin)
@@ -1034,7 +1012,9 @@ export class RfqService {
         { quotation: accepted },
         { populate: ['household'] },
       );
-      const households = new Set(allocations.map((allocation) => allocation.household.id));
+      const households = new Set(
+        liveShares(allocations).map((allocation) => allocation.household.id),
+      );
       let householdId: string | undefined;
       if (actor.role === 'HOUSEHOLD') {
         householdId = (await this.ownHousehold(em, actor, false)).id;
@@ -1043,7 +1023,7 @@ export class RfqService {
       request.status = unwrap(
         transition(request.status, 'START_PRODUCTION', {
           actor: actor.role === 'ADMIN' ? 'ADMIN' : 'ARTISAN',
-          allocationStatuses: allocations.map((allocation) => allocation.status),
+          allocationStatuses: liveShares(allocations).map((allocation) => allocation.status),
           householdCount: households.size,
           actorOwnsSoleAllocation:
             actor.role === 'ADMIN'
@@ -1258,6 +1238,18 @@ function decodeRequestCursor(raw: string): { t: string; id: string } {
  * T8 (GH#244): a request nobody quoted expires at its bidding deadline; one with quotations stays open for the
  * buyer's 7-day accept window after it, the same bound the T3 guard uses.
  */
+/**
+ * Shares that still count toward the order: a cancelled share and a declined share whose quantity has
+ * been reallocated (GH#246) are history, so they neither block production nor delivery.
+ */
+function liveShares<T extends { status: string; quantity: number }>(
+  allocations: readonly T[],
+): T[] {
+  return allocations.filter(
+    (a) => a.status !== 'CANCELLED' && !(a.status === 'DECLINED' && a.quantity === 0),
+  );
+}
+
 function requestExpired(request: QuotationRequest): boolean {
   const now = new Date();
   if (request.status === 'SENT') return now.getTime() >= request.biddingClosesAt.getTime();
