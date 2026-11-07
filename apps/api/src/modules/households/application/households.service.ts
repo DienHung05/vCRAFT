@@ -11,7 +11,9 @@ import type {
   HouseholdDto,
   MapPinsDto,
   ProductDto,
+  ProductScanStatsDto,
   PublicHouseholdDto,
+  RecordScanRequest,
   RevealedIdNumberDto,
   SetIdNumberRequest,
   SetProductMakersRequest,
@@ -243,6 +245,11 @@ export class HouseholdsService {
       workshop.acceptsVisitors = input.acceptsVisitors;
       workshop.visitingInfo = input.visitingInfo ?? null;
       workshop.openingHours = input.openingHours ?? null;
+      workshop.experienceDescription = input.experience?.description ?? null;
+      workshop.experienceDurationMinutes = input.experience?.durationMinutes ?? null;
+      workshop.experiencePriceVnd = input.experience?.priceVnd ?? null;
+      workshop.temporarilyClosed = input.temporarilyClosed;
+      workshop.closureReason = input.temporarilyClosed ? (input.closureReason ?? null) : null;
       workshop.lat = input.lat === undefined ? null : input.lat.toFixed(6);
       workshop.lng = input.lng === undefined ? null : input.lng.toFixed(6);
       await em.flush();
@@ -261,6 +268,11 @@ export class HouseholdsService {
         acceptsVisitors: input.acceptsVisitors,
         visitingInfo: input.visitingInfo ?? null,
         openingHours: input.openingHours ?? null,
+        experienceDescription: input.experience?.description ?? null,
+        experienceDurationMinutes: input.experience?.durationMinutes ?? null,
+        experiencePriceVnd: input.experience?.priceVnd ?? null,
+        temporarilyClosed: input.temporarilyClosed,
+        closureReason: input.temporarilyClosed ? (input.closureReason ?? null) : null,
         lat: input.lat === undefined ? null : input.lat.toFixed(6),
         lng: input.lng === undefined ? null : input.lng.toFixed(6),
       });
@@ -530,8 +542,11 @@ export class HouseholdsService {
     return { activeHouseholds, pendingApplications, openRfqs, ordersInProduction, qrScans30Days };
   }
 
-  /** Ghi một lượt quét QR; mã không tồn tại hoặc không còn công khai thì bỏ qua, không báo lỗi. */
-  async recordScan(traceCode: string): Promise<void> {
+  /**
+   * Ghi một lượt quét QR; mã không tồn tại hoặc không còn công khai thì bỏ qua, không báo lỗi.
+   * FR-TRC-06: the country and device class are optional; an IP address is never stored.
+   */
+  async recordScan(traceCode: string, input: RecordScanRequest = {}): Promise<void> {
     await this.orm.em.fork().transactional(async (em) => {
       const product = await em.findOne(
         Product,
@@ -540,8 +555,56 @@ export class HouseholdsService {
       );
       if (!product) return;
       if (publicProductAvailability(product.household.status, product.status) !== 'VISIBLE') return;
-      em.create(TraceScan, { product });
+      em.create(TraceScan, {
+        product,
+        country: input.country ?? null,
+        deviceType: input.deviceType ?? null,
+      });
     });
+  }
+
+  /**
+   * FR-TRC-06: scan statistics of the household's own product. The series covers the last 30 days in
+   * Vietnam time (UTC+7, no daylight saving), so `last30Days` equals the sum of `daily`; the breakdowns
+   * cover the same window. Another household's product is a denied, audited attempt (AC-4).
+   */
+  async scanStats(actor: Actor, productId: string): Promise<ProductScanStatsDto> {
+    const em = this.orm.em.fork();
+    const household = await this.ownHousehold(em, actor);
+    const product = await this.ownProduct(em, actor, household, productId);
+    const dayMs = 24 * 60 * 60 * 1000;
+    const vietnamOffsetMs = 7 * 60 * 60 * 1000;
+    const today = new Date(Date.now() + vietnamOffsetMs).toISOString().slice(0, 10);
+    const days = Array.from({ length: 30 }, (_, i) =>
+      new Date(Date.parse(`${today}T00:00:00Z`) - (29 - i) * dayMs).toISOString().slice(0, 10),
+    );
+    const since = new Date(Date.parse(`${days[0]}T00:00:00Z`) - vietnamOffsetMs);
+    const [total, recent] = await Promise.all([
+      em.count(TraceScan, { product }),
+      em.find(TraceScan, { product, createdAt: { $gte: since } }),
+    ]);
+    const perDay = new Map<string, number>();
+    const perCountry = new Map<string | null, number>();
+    const perDevice = new Map<string | null, number>();
+    const bump = <K>(map: Map<K, number>, key: K) => map.set(key, (map.get(key) ?? 0) + 1);
+    for (const scan of recent) {
+      bump(perDay, new Date(scan.createdAt.getTime() + vietnamOffsetMs).toISOString().slice(0, 10));
+      bump(perCountry, scan.country ?? null);
+      bump(perDevice, scan.deviceType ?? null);
+    }
+    const ranked = <K>(map: Map<K, number>) => [...map].sort((a, b) => b[1] - a[1]);
+    return {
+      total,
+      last30Days: recent.length,
+      daily: days.map((date) => ({ date, count: perDay.get(date) ?? 0 })),
+      byCountry: ranked(perCountry)
+        .slice(0, 10)
+        .map(([country, count]) => ({ country, count })),
+      byDeviceType: ranked(perDevice).map(([deviceType, count]) => ({
+        deviceType: deviceType as ProductScanStatsDto['byDeviceType'][number]['deviceType'],
+        count,
+      })),
+    };
   }
 
   async decide(

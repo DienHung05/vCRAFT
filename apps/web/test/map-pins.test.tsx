@@ -29,6 +29,9 @@ const base: MapPinDto = {
   visitingInfo: null,
   // Every day 08:00–17:00 (Vietnam time).
   openingHours: [0, 1, 2, 3, 4, 5, 6].map((day) => ({ day, open: '08:00', close: '17:00' })),
+  experience: null,
+  temporarilyClosed: false,
+  closureReason: null,
   lat: 20.97,
   lng: 105.91,
   household: { name: 'Gốm Minh Hải', slug: 'gom-minh-hai', craft: null, coverUrl: null },
@@ -42,6 +45,12 @@ describe('pin status and icons', () => {
     expect(pinStatus(base, morning)).toBe('open');
     expect(pinStatus(base, night)).toBe('closed');
     expect(pinStatus({ ...base, visitable: false }, morning)).toBe('production');
+  });
+
+  it('shows a temporarily closed workshop as closed even inside its weekly hours (BR-03)', () => {
+    expect(
+      pinStatus({ ...base, temporarilyClosed: true, closureReason: 'Nghỉ Tết' }, morning),
+    ).toBe('closed');
   });
 
   it('names one icon per status and purpose, and parses it back', () => {

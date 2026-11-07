@@ -2,7 +2,7 @@ import { MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { CitationDto } from '@vcraft/contracts';
 import { Household, Product, Workshop } from '@vcraft/database';
-import { isVisitable, openState } from '@vcraft/domain';
+import { isVisitable, openState, workshopOpenState } from '@vcraft/domain';
 import { searchTerms } from '@vcraft/utils';
 import { withTimeout } from './tools';
 
@@ -130,7 +130,7 @@ export class CatalogToolsService {
           { populate: ['household'], orderBy: { name: 'asc' } },
         );
       const open = workshops.filter(
-        (w) => isVisitable(w) && w.openingHours && openState(w.openingHours, now).open,
+        (w) => isVisitable(w) && w.openingHours && workshopOpenState(w, now).open,
       );
       const shown = open.slice(0, LIMIT);
       const citations = shown.map((w) => ({

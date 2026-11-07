@@ -20,6 +20,16 @@ import type { LinkedImage, PublicLinkRole, PublicMedia } from '../media/applicat
 const toNumber = (value: string | null | undefined): number | null =>
   value === null || value === undefined ? null : Number(value);
 
+/** The experience offer, present exactly when the workshop has a description for it (FR-ART-05). */
+const toExperience = (w: Workshop): WorkshopDto['experience'] =>
+  w.experienceDescription
+    ? {
+        description: w.experienceDescription,
+        durationMinutes: w.experienceDurationMinutes ?? 0,
+        priceVnd: w.experiencePriceVnd ?? 0,
+      }
+    : null;
+
 export function toWorkshopDto(w: Workshop): WorkshopDto {
   return {
     id: w.id,
@@ -30,6 +40,9 @@ export function toWorkshopDto(w: Workshop): WorkshopDto {
     acceptsVisitors: w.acceptsVisitors,
     visitingInfo: w.visitingInfo ?? null,
     openingHours: w.openingHours ?? null,
+    experience: toExperience(w),
+    temporarilyClosed: w.temporarilyClosed,
+    closureReason: w.closureReason ?? null,
     lat: toNumber(w.lat),
     lng: toNumber(w.lng),
   };
@@ -141,6 +154,9 @@ export function toMapPinDto(w: Workshop): MapPinDto {
     visitable: isVisitable(w),
     visitingInfo: isVisitable(w) ? (w.visitingInfo ?? null) : null,
     openingHours: isVisitable(w) ? (w.openingHours ?? null) : null,
+    experience: isVisitable(w) ? toExperience(w) : null,
+    temporarilyClosed: isVisitable(w) && w.temporarilyClosed,
+    closureReason: isVisitable(w) && w.temporarilyClosed ? (w.closureReason ?? null) : null,
     lat: Number(w.lat),
     lng: Number(w.lng),
     household: {

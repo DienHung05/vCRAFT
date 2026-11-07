@@ -220,6 +220,15 @@ describe('ProfileEditor', () => {
   });
 });
 
+const NO_OFFER = {
+  offersExperience: false,
+  experienceDescription: '',
+  experienceDuration: '',
+  experiencePrice: '',
+  temporarilyClosed: false,
+  closureReason: '',
+};
+
 describe('toWorkshopRequest', () => {
   it('chỉ gửi tọa độ khi có đủ cặp và bỏ khoảng trắng', () => {
     const body = toWorkshopRequest({
@@ -231,6 +240,7 @@ describe('toWorkshopRequest', () => {
       lat: 20.9,
       lng: null,
       hours: [{ day: 1, open: '08:00', close: '17:00' }],
+      ...NO_OFFER,
     });
     expect(body).toEqual({
       name: 'Lò',
@@ -238,6 +248,39 @@ describe('toWorkshopRequest', () => {
       purpose: 'BOTH',
       acceptsVisitors: true,
       openingHours: [{ day: 1, open: '08:00', close: '17:00' }],
+      temporarilyClosed: false,
     });
+  });
+
+  it('sends the experience offer and the closure reason only while their flags are on', () => {
+    const draft = {
+      name: 'Lò',
+      address: 'Xóm 3',
+      purpose: 'BOTH' as const,
+      acceptsVisitors: true,
+      visitingInfo: '',
+      lat: null,
+      lng: null,
+      hours: [],
+      offersExperience: true,
+      experienceDescription: ' Nặn gốm cùng nghệ nhân ',
+      experienceDuration: '90',
+      experiencePrice: '250000',
+      temporarilyClosed: true,
+      closureReason: ' Nghỉ Tết ',
+    };
+    expect(toWorkshopRequest(draft)).toMatchObject({
+      experience: { description: 'Nặn gốm cùng nghệ nhân', durationMinutes: 90, priceVnd: 250000 },
+      temporarilyClosed: true,
+      closureReason: 'Nghỉ Tết',
+    });
+    const off = toWorkshopRequest({
+      ...draft,
+      offersExperience: false,
+      temporarilyClosed: false,
+    });
+    expect(off).not.toHaveProperty('experience');
+    expect(off).not.toHaveProperty('closureReason');
+    expect(off.temporarilyClosed).toBe(false);
   });
 });

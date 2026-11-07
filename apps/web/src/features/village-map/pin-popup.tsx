@@ -2,7 +2,7 @@
 
 import type { MapPinDto } from '@vcraft/contracts';
 import { ProductFigure } from '@vcraft/ui';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { directionsUrl, pinOpenState } from './map-model';
 
@@ -10,6 +10,15 @@ import { directionsUrl, pinOpenState } from './map-model';
 export function OpenStatus({ pin, now }: { pin: MapPinDto; now: Date }) {
   const t = useTranslations('villageMap');
   if (!pin.visitable) return <span className="text-ash">{t('productionOnly')}</span>;
+  if (pin.temporarilyClosed) {
+    return (
+      <span className="font-medium text-seal">
+        {pin.closureReason
+          ? t('temporarilyClosedReason', { reason: pin.closureReason })
+          : t('temporarilyClosed')}
+      </span>
+    );
+  }
   const state = pinOpenState(pin, now);
   if (state.open) return <span className="font-medium text-glaze">{t('openNow')}</span>;
   if (!state.reopens) return <span className="text-ash">{t('noHours')}</span>;
@@ -20,6 +29,21 @@ export function OpenStatus({ pin, now }: { pin: MapPinDto; now: Date }) {
         time: state.reopens.at,
       })}
     </span>
+  );
+}
+
+/** One line on what the workshop offers visitors (FR-ART-05); nothing when it offers no experience. */
+export function ExperienceSummary({ pin }: { pin: MapPinDto }) {
+  const t = useTranslations('villageMap');
+  const format = useFormatter();
+  if (!pin.experience) return null;
+  return (
+    <p className="text-small">
+      {t('experienceSummary', {
+        minutes: pin.experience.durationMinutes,
+        price: format.number(pin.experience.priceVnd, 'vnd'),
+      })}
+    </p>
   );
 }
 
@@ -82,6 +106,7 @@ export function PinPopup({
       </p>
       <p className="text-small text-ash">{pin.address}</p>
       {pin.visitingInfo ? <p className="text-small">{pin.visitingInfo}</p> : null}
+      <ExperienceSummary pin={pin} />
       <div className="mt-1 flex flex-wrap gap-2">
         <Link
           href={{ pathname: '/nghe-nhan/[slug]', params: { slug: pin.household.slug } }}
