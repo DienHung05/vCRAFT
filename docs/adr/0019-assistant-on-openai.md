@@ -27,7 +27,7 @@ The first release deferred the Fox assistant (E15) to keep the scope small: `vCR
 
 ## Consequences
 
-- One provider, one key (`OPENAI_API_KEY`) for the assistant; one budget guard to watch.
+- One provider, one key (`OPENAI_API_KEY`) for the assistant; the daily token budget guard and the rate limiter are opt-in (`ASSISTANT_DAILY_TOKENS`, `ASSISTANT_RATE_LIMIT_PER_MINUTE`, `ASSISTANT_RATE_LIMIT_PER_DAY`) and off by default (#200), so watch the OpenAI spend by hand until one is set.
 - Changing `OPENAI_EMBEDDING_DIMENSIONS` means a migration of the vector column and a full `pnpm assistant:reindex`. The value stays 1024 while the column is `vector(1024)`.
 - Model names live in environment variables, so a model can be swapped without code changes, but the red-team suite (#82) must be re-run after any swap.
 - The docs that named Claude Haiku and Voyage AI for the assistant (PLAN E15, SRS §3.13/§4, ARCHITECTURE §7.6) now name OpenAI.

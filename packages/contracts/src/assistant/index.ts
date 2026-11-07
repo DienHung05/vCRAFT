@@ -6,8 +6,8 @@ import { IdSchema } from '../common';
  * widget. `POST /assistant/messages` streams Server-Sent Events whose `data` is one `AssistantEvent`.
  */
 
-export const ASSISTANT_MESSAGE_MAX = 1_000;
-export const ASSISTANT_HISTORY_MAX = 10;
+export const ASSISTANT_MESSAGE_MAX = 4_000;
+export const ASSISTANT_HISTORY_MAX = 20;
 
 const TurnSchema = z.object({
   role: z.enum(['user', 'assistant']),
@@ -16,7 +16,7 @@ const TurnSchema = z.object({
 
 export const AssistantMessageRequestSchema = z.strictObject({
   message: z.string().trim().min(1).max(ASSISTANT_MESSAGE_MAX),
-  /** Earlier turns of this conversation, oldest first; only the last ten are kept. */
+  /** Earlier turns of this conversation, oldest first; only the last twenty are kept. */
   history: z.array(TurnSchema).max(ASSISTANT_HISTORY_MAX).default([]),
   locale: z.enum(['vi', 'en']),
   /** The page the widget was opened on, for context (`/vi/san-pham/...`). Internal paths only. */

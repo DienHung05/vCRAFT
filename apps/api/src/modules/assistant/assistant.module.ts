@@ -6,6 +6,7 @@ import {
 } from './application/ask-assistant.service';
 import { AssistantStatsService } from './application/assistant-stats.service';
 import { CatalogToolsService } from './application/catalog-tools.service';
+import { positiveInt } from './application/guardrails';
 import { AssistantController, AssistantStatsController } from './assistant.controller';
 import {
   ASSISTANT_KV,
@@ -27,7 +28,9 @@ const origins = (raw = '') =>
  * The Fox assistant (PLAN E15, ADR-19). Settings come from the environment:
  * `ASSISTANT_ENABLED=false` turns it off, `ASSISTANT_LLM=scripted` swaps in the offline stand-in, `OPENAI_API_KEY` + `OPENAI_CHAT_MODEL` pick the model (without a
  * key only greetings, date and weather are answered), `REDIS_URL` holds rate limits and the token budget
- * (in memory without it), `ASSISTANT_DAILY_TOKENS` caps the spend per day.
+ * (in memory without it). No usage limit applies by default; `ASSISTANT_RATE_LIMIT_PER_MINUTE`,
+ * `ASSISTANT_RATE_LIMIT_PER_DAY` (per IP and per conversation) and `ASSISTANT_DAILY_TOKENS` (all
+ * visitors) each turn one on when set to a positive integer.
  */
 @Module({
   controllers: [AssistantController, AssistantStatsController],
@@ -39,7 +42,9 @@ const origins = (raw = '') =>
       provide: ASSISTANT_CONFIG,
       useFactory: (): AssistantConfig => ({
         enabled: process.env.ASSISTANT_ENABLED?.trim().toLowerCase() !== 'false',
-        dailyTokens: Number(process.env.ASSISTANT_DAILY_TOKENS) || 2_000_000,
+        dailyTokens: positiveInt(process.env.ASSISTANT_DAILY_TOKENS),
+        rateLimitPerMinute: positiveInt(process.env.ASSISTANT_RATE_LIMIT_PER_MINUTE),
+        rateLimitPerDay: positiveInt(process.env.ASSISTANT_RATE_LIMIT_PER_DAY),
         allowedOrigins: origins(process.env.CORS_ORIGINS),
         maxAnswerTokens: 500,
       }),
