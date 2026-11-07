@@ -12,6 +12,7 @@ import { type AuthErrorKey, authErrorKey } from './auth-errors';
 import { CheckboxField, FormAlert, PasswordField, STANDALONE_LINK, TextField } from './fields';
 import { GoogleSignIn } from './google-sign-in';
 import { useKilnFeedback } from './kiln/kiln-feedback';
+import { signIn } from './public-auth';
 import { type SignInValues, signInSchema } from './schemas';
 import { useCaptcha } from './turnstile';
 import { useFocusSubmitOnError } from './use-focus-submit-on-error';
@@ -44,17 +45,15 @@ export function SignInForm({
   const kiln = useKilnFeedback();
   const [error, setError] = useState<AuthErrorKey | null>(null);
   const [remember, setRemember] = useState(true);
-  const [resend, setResend] = useState<'idle' | 'sending' | 'sent'>('idle');
   const captcha = useCaptcha();
   const {
     register,
     handleSubmit,
-    getValues,
     formState: { errors, isSubmitting },
   } = useForm<SignInValues>({
     resolver: zodResolver(signInSchema),
     mode: 'onTouched',
-    defaultValues: { email: '', password: '' },
+    defaultValues: { identifier: '', password: '' },
   });
 
   // The kiln card reacts to the outcome: a failure crackles and shakes the card.
@@ -66,26 +65,29 @@ export function SignInForm({
   const formRef = useFocusSubmitOnError(error, isSubmitting);
 
   const onSubmit = handleSubmit(
-    async ({ email, password }) => {
+    async ({ identifier, password }) => {
       kiln.fire();
       setError(null);
-      setResend('idle');
-      const supabase = browserSupabase();
-      if (!supabase) return failWith('unconfigured');
       if (captcha.missing) return failWith('captcha');
       try {
         // Before the sign-in writes the session cookies, so they follow the choice.
         setRememberPreference(remember);
-        const { error: failure } = await supabase.auth.signInWithPassword({
-          email,
+        const { error: failure, session } = await signIn({
+          identifier,
           password,
-          options: captcha.options,
+          ...captcha.options,
         });
         if (failure) {
           captcha.reset();
-          return failWith(authErrorKey(failure));
+          const key = authErrorKey(failure);
+          return failWith(key === 'email_not_confirmed' ? 'invalid_credentials' : key);
         }
-        const destination = next ?? `/auth/continue?locale=${locale}`;
+        if (!session) return failWith('invalid_credentials');
+        const supabase = browserSupabase();
+        if (!supabase) return failWith('unconfigured');
+        const installed = await supabase.auth.setSession(session);
+        if (installed.error) return failWith(authErrorKey(installed.error));
+        const destination = `/auth/continue?locale=${locale}${next ? `&next=${encodeURIComponent(next)}` : ''}`;
         // The seal stamps first (the destination is prerendered meanwhile), then the navigation
         // (a cross-document view transition) follows.
         await kiln.seal(destination);
@@ -100,57 +102,21 @@ export function SignInForm({
     () => kiln.fail('invalid'),
   );
 
-  const resendVerification = async () => {
-    const supabase = browserSupabase();
-    if (!supabase) return;
-    setResend('sending');
-    const { error: failure } = await supabase.auth.resend({
-      type: 'signup',
-      email: getValues('email').trim(),
-      options: captcha.options,
-    });
-    captcha.reset();
-    if (failure) {
-      setResend('idle');
-      return setError(authErrorKey(failure));
-    }
-    setResend('sent');
-  };
-
   return (
     <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {linkInvalid ? <FormAlert tone="error">{t('signIn.notice.linkInvalid')}</FormAlert> : null}
       {oauthFailed ? <FormAlert tone="error">{t('google.failed')}</FormAlert> : null}
       {needSignIn && !error ? <FormAlert tone="info">{t('signIn.needSignIn')}</FormAlert> : null}
       {error ? <FormAlert tone="error">{t(`errors.${error}`)}</FormAlert> : null}
-      {error === 'email_not_confirmed' ? (
-        <div className="flex flex-col items-start gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="min-h-11"
-            onClick={resendVerification}
-            disabled={resend === 'sending'}
-          >
-            {resend === 'sending' ? t('signIn.resending') : t('signIn.resend')}
-          </Button>
-          {resend === 'sent' ? (
-            <FormAlert tone="success">
-              {t('signIn.resent', { email: getValues('email').trim() })}
-            </FormAlert>
-          ) : null}
-        </div>
-      ) : null}
 
       <TextField
-        label={t('fields.email')}
-        type="email"
-        autoComplete="email"
-        inputMode="email"
-        placeholder={t('fields.emailPlaceholder')}
-        error={message(errors.email)}
-        {...register('email')}
+        label={t('fields.identifier')}
+        autoComplete="username"
+        autoCapitalize="none"
+        spellCheck={false}
+        placeholder={t('fields.identifierPlaceholder')}
+        error={message(errors.identifier)}
+        {...register('identifier')}
       />
       <PasswordField
         label={t('fields.password')}

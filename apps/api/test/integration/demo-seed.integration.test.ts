@@ -110,7 +110,18 @@ describe('Demo seed and guarded reset', () => {
 
     for (const account of Object.values(DEMO_ACCOUNTS)) {
       const user = await em.findOneOrFail(AppUser, account.id);
-      expect(user).toMatchObject({ email: account.email, role: account.role, status: 'ACTIVE' });
+      expect(user).toMatchObject({
+        email: account.email,
+        username: account.username,
+        role: account.role,
+        status: 'ACTIVE',
+      });
+    }
+    // GH#212: the four demo usernames are the reserved set, always lowercase and unique.
+    const usernames = (await em.find(AppUser, {})).map((u) => u.username);
+    expect(new Set(usernames).size).toBe(usernames.length);
+    for (const account of Object.values(DEMO_ACCOUNTS)) {
+      expect(usernames).toContain(account.username);
     }
     const pending = await em.findOneOrFail(Household, DEMO_HOUSEHOLD_IDS.pending, {
       populate: ['representative'],

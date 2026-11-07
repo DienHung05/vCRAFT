@@ -123,24 +123,31 @@ APP_ENV=demo pnpm demo:media -- --only=media,links,covers,prune   # steps: media
 
 `app_user.id` **phải bằng** `sub` của Supabase Auth, nên bốn tài khoản dùng UUID cố định ở cả hai nơi (`packages/database/src/seeders/demo/accounts.ts`). `demo:reset` ghi bảng `app_user`; `demo:auth` ghi Supabase Auth.
 
-| Khóa | Vai trò | Email | UUID | Biến mật khẩu |
-| --- | --- | --- | --- | --- |
-| `admin` | ADMIN | `demo.admin@example.com` | `d3a10000-0000-4000-8000-000000000001` | `DEMO_ADMIN_PASSWORD` |
-| `buyer` | BUYER | `demo.buyer@example.com` | `d3a10000-0000-4000-8000-000000000002` | `DEMO_BUYER_PASSWORD` |
-| `household` | HOUSEHOLD (Lò Đức Phát, đã duyệt) | `demo.household@example.com` | `d3a10000-0000-4000-8000-000000000003` | `DEMO_HOUSEHOLD_PASSWORD` |
-| `pending` | HOUSEHOLD (Gốm Bảo Châu, chờ duyệt) | `demo.pending@example.com` | `d3a10000-0000-4000-8000-000000000004` | `DEMO_PENDING_PASSWORD` |
+GH#212 adds a unique lowercase username to each demo account. Sign in with `admin`, `buyer`, `household` or `pending` and the corresponding password. Email sign-in remains available for existing accounts. Public registration cannot claim these demo usernames or the system names `root` and `support`.
+
+| Khóa | Vai trò | Email | Username | UUID | Biến mật khẩu |
+| --- | --- | --- | --- | --- | --- |
+| `admin` | ADMIN | `demo.admin@example.com` | `admin` | `d3a10000-0000-4000-8000-000000000001` | `DEMO_ADMIN_PASSWORD` |
+| `buyer` | BUYER | `demo.buyer@example.com` | `buyer` | `d3a10000-0000-4000-8000-000000000002` | `DEMO_BUYER_PASSWORD` |
+| `household` | HOUSEHOLD (Lò Đức Phát, đã duyệt) | `demo.household@example.com` | `household` | `d3a10000-0000-4000-8000-000000000003` | `DEMO_HOUSEHOLD_PASSWORD` |
+| `pending` | HOUSEHOLD (Gốm Bảo Châu, chờ duyệt) | `demo.pending@example.com` | `pending` | `d3a10000-0000-4000-8000-000000000004` | `DEMO_PENDING_PASSWORD` |
 
 Mật khẩu **không** nằm trong mã; đặt trong `.env` của máy demo (không commit) hoặc kho bí mật của nhóm.
 
+Set `DEMO_ADMIN_USERNAME=admin` and keep the password in `DEMO_ADMIN_PASSWORD`. Demo clients read the username override; `demo:auth` provisions Supabase identities by email. The migration backfills the four fixed usernames and the seed keeps them consistent on subsequent runs.
+
 ```bash
 # Trong .env của môi trường demo: APP_ENV=demo, SUPABASE_URL, SUPABASE_SECRET_KEY, bốn DEMO_*_PASSWORD
+# DEMO_ADMIN_USERNAME is used by demo sign-in clients; this provisioning script does not read it.
 pnpm demo:auth                 # tạo hoặc cập nhật 4 người dùng (id cố định, email đã xác nhận); chạy lại được
 pnpm demo:auth -- --check      # chỉ kiểm tra, không ghi
 ```
 
 `auth.admin.createUser` nhận thuộc tính `id` (đã xác nhận trong kiểu `AdminUserAttributes` của `@supabase/auth-js`), nên không cần cách vòng. Nếu một email demo đã gắn với người dùng id khác (vd. đã đăng ký tay), script dừng và hướng dẫn xóa người dùng đó ở Dashboard → Authentication rồi chạy lại. Nếu tài khoản bị khóa hay đổi vai trò khi tập dượt thì `demo:reset` đưa `app_user` về đúng vai trò.
 
-Sau khi tạo: đăng nhập từng tài khoản **một lần** trên đúng thiết bị thi (Buyer: Chrome, Hộ: điện thoại, Admin: Edge) và giữ phiên. Hạn token của Supabase là 15 phút nhưng trình duyệt tự làm mới bằng refresh token; kiểm tra phiên còn sống sáng hôm thi.
+Sau khi tạo: đăng nhập từng tài khoản **một lần** trên đúng thiết bị thi (Buyer: Chrome, Hộ: điện thoại, Admin: Edge) và giữ phiên. Hạn token của Supabase là 15 phút nhưng trình duyệt tự làm mới bằng refresh token; kiểm tra phiên còn sống sáng hôm thi. 
+
+GH#212: sign in again at `/vi/dang-nhap` using the account's username. Admin MFA still applies.
 
 ### Đăng nhập trên web và email xác thực tiếng Việt (GH#27)
 

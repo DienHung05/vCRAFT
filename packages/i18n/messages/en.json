@@ -1294,6 +1294,10 @@
       "ADMIN": "Coordination"
     },
     "fields": {
+      "username": "Username",
+      "usernameHint": "Use 3-30 characters: a-z, digits, dots, underscores or hyphens.",
+      "identifier": "Username or email",
+      "identifierPlaceholder": "your.username",
       "email": "Email",
       "emailPlaceholder": "name@example.com",
       "password": "Password",
@@ -1305,6 +1309,10 @@
       "optional": "optional"
     },
     "validation": {
+      "identifierRequired": "Enter your username or email.",
+      "usernameRequired": "Enter a username.",
+      "usernameInvalid": "Use 3-30 characters: a-z, digits, dots, underscores or hyphens.",
+      "usernameReserved": "This username is reserved for system accounts. Choose another.",
       "emailRequired": "Enter your email.",
       "emailInvalid": "That email does not look right, for example name@example.com.",
       "passwordRequired": "Enter your password.",
@@ -1322,8 +1330,20 @@
       "consentRequired": "Agree to the Privacy policy to create an account.",
       "idNumberInvalid": "The ID number is exactly 12 digits, without spaces."
     },
+    "username": {
+      "checking": "Checking username...",
+      "available": "This username is available.",
+      "taken": "This username is already taken. Choose another.",
+      "unavailable": "Cannot check the username right now. You can retry submitting.",
+      "title": "Choose a username",
+      "lead": "Your account needs a username. Keep using email for verification and password reset.",
+      "submit": "Save username",
+      "saving": "Saving..."
+    },
     "errors": {
-      "invalid_credentials": "The email or password is not right. Check them, or choose \"Forgot password\" to set a new one.",
+      "usernameTaken": "This username is already taken. Choose another.",
+      "usernameReserved": "This username is reserved for system accounts. Choose another.",
+      "invalid_credentials": "The username, email or password is not right. Check them, or choose \"Forgot password\" to set a new one.",
       "email_not_confirmed": "This email is not verified yet. Open the vCraft message and click the verification link, or resend it below.",
       "email_exists": "Could not create an account with this email. If you registered before, sign in or choose \"Forgot password\".",
       "rate_limited": "You are going a little fast. Wait a few minutes and try again; what you typed is still here.",

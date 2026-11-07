@@ -1,9 +1,22 @@
 import { type Opt } from '@mikro-orm/core';
-import { Entity, PrimaryKey, Property, Unique } from '@mikro-orm/decorators/legacy';
+import { Check, Entity, PrimaryKey, Property, Unique } from '@mikro-orm/decorators/legacy';
 import type { AccountRole } from '@vcraft/domain';
 
 export const ACCOUNT_STATUSES = ['ACTIVE', 'LOCKED', 'DELETED'] as const;
 export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
+
+/**
+ * Database CHECK for `username` (GH#212): only lowercase `a-z 0-9 . _ -`, 3-30 characters. The
+ * application layer (`UsernameSchema` of `@vcraft/contracts`) normalizes to lowercase before writing;
+ * this constraint keeps the database clean even when a row is written through another path. The
+ * `'c'` flag forces case-sensitive matching: MySQL's default collation would otherwise let
+ * uppercase through. `regexp_like` exists on both PostgreSQL 15+ (Supabase) and MySQL 8+. A CHECK
+ * constraint ignores NULL, so existing accounts that have not chosen a username yet stay valid.
+ */
+const USERNAME_CHECK = {
+  name: 'app_user_username_format_check',
+  expression: "regexp_like(username, '^[a-z0-9._-]{3,30}$', 'c')",
+} as const;
 
 /**
  * Tài khoản vCraft (ARCHITECTURE §7.5): Supabase giữ danh tính, vCraft giữ quyền.
@@ -13,6 +26,7 @@ export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
  * không bị đứt: `email` và `fullName` đã bị gỡ và tài khoản không đăng nhập lại được.
  */
 @Entity({ tableName: 'app_user' })
+@Check(USERNAME_CHECK)
 export class AppUser {
   @PrimaryKey({ type: 'uuid' })
   id!: string;
@@ -20,6 +34,15 @@ export class AppUser {
   @Property({ type: 'string', length: 320 })
   @Unique()
   email!: string;
+
+  /**
+   * Sign-in username (GH#212): unique, case-insensitive by storing everything lowercase
+   * (`UsernameSchema` of `@vcraft/contracts` normalizes before writing). `null` = an existing account
+   * that has not chosen a name yet; the user is asked to pick one after their next sign-in.
+   */
+  @Property({ type: 'string', length: 30, nullable: true })
+  @Unique()
+  username?: string | null;
 
   @Property({ type: 'string', length: 160, nullable: true })
   fullName?: string | null;

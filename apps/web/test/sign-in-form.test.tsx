@@ -23,17 +23,22 @@ vi.mock('@/i18n/navigation', () => ({
 }));
 
 const signInWithPassword = vi.fn();
+const setSession = vi.fn();
+vi.mock('@/features/auth/public-auth', () => ({
+  signIn: (...args: unknown[]) => signInWithPassword(...args),
+}));
 const resend = vi.fn();
 const signInWithOAuth = vi.fn();
 
 vi.mock('@/lib/auth/supabase-browser', () => ({
-  browserSupabase: () => ({ auth: { signInWithPassword, resend, signInWithOAuth } }),
+  browserSupabase: () => ({ auth: { setSession, resend, signInWithOAuth } }),
 }));
 
 const assign = vi.fn();
 
 beforeEach(() => {
   signInWithPassword.mockReset();
+  setSession.mockReset().mockResolvedValue({ error: null });
   resend.mockReset();
   signInWithOAuth.mockReset().mockResolvedValue({ error: null });
   assign.mockReset();
@@ -41,12 +46,26 @@ beforeEach(() => {
 });
 
 async function fill(email: string, password: string) {
-  fireEvent.change(screen.getByLabelText('Email'), { target: { value: email } });
+  fireEvent.change(screen.getByLabelText('Tên đăng nhập hoặc email'), { target: { value: email } });
   fireEvent.change(screen.getByLabelText('Mật khẩu'), { target: { value: password } });
   fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }));
 }
 
 describe('SignInForm', () => {
+  it('authenticates a username on the server and installs the returned session', async () => {
+    signInWithPassword.mockResolvedValue({
+      error: null,
+      session: { access_token: 'access', refresh_token: 'refresh' },
+    });
+    renderVi(<SignInForm next={null} />);
+    await fill('pottery.buyer', 'password123');
+    await waitFor(() => expect(assign).toHaveBeenCalled());
+    expect(signInWithPassword).toHaveBeenCalledWith({
+      identifier: 'pottery.buyer',
+      password: 'password123',
+    });
+    expect(setSession).toHaveBeenCalledWith({ access_token: 'access', refresh_token: 'refresh' });
+  });
   it('sai thông tin: báo lỗi cụ thể bằng tiếng Việt và giữ nguyên email, mật khẩu đã nhập (NFR-UX-05)', async () => {
     signInWithPassword.mockResolvedValue({
       error: Object.assign(new Error('Invalid login credentials'), {
@@ -58,40 +77,49 @@ describe('SignInForm', () => {
     await fill('buyer@vidu.vn', 'sai-mat-khau-1');
 
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toContain('Email hoặc mật khẩu chưa đúng');
+    expect(alert.textContent).toContain('Tên đăng nhập, email hoặc mật khẩu chưa đúng');
     expect(alert.textContent).not.toContain('Invalid login credentials');
-    expect((screen.getByLabelText('Email') as HTMLInputElement).value).toBe('buyer@vidu.vn');
+    expect((screen.getByLabelText('Tên đăng nhập hoặc email') as HTMLInputElement).value).toBe(
+      'buyer@vidu.vn',
+    );
     expect((screen.getByLabelText('Mật khẩu') as HTMLInputElement).value).toBe('sai-mat-khau-1');
     expect(assign).not.toHaveBeenCalled();
   });
 
-  it('email chưa xác minh: có nút gửi lại thư xác minh tới đúng email đã nhập', async () => {
+  it('keeps an unconfirmed username indistinguishable from invalid credentials', async () => {
     signInWithPassword.mockResolvedValue({
       error: Object.assign(new Error('Email not confirmed'), {
         code: 'email_not_confirmed',
         status: 400,
       }),
     });
-    resend.mockResolvedValue({ error: null });
     renderVi(<SignInForm next={null} />);
-    await fill('moi@vidu.vn', 'matkhau2026');
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Gửi lại thư xác minh' }));
-    await waitFor(() =>
-      expect(resend).toHaveBeenCalledWith({ type: 'signup', email: 'moi@vidu.vn', options: {} }),
+    await fill('new.buyer', 'matkhau2026');
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'Tên đăng nhập, email hoặc mật khẩu chưa đúng',
     );
-    expect(await screen.findByText(/Đã gửi lại thư xác minh tới moi@vidu\.vn/)).toBeTruthy();
+    expect(resend).not.toHaveBeenCalled();
   });
 
   it('thành công: về đích quay lại đã lọc an toàn', async () => {
-    signInWithPassword.mockResolvedValue({ error: null });
+    signInWithPassword.mockResolvedValue({
+      error: null,
+      session: { access_token: 'access', refresh_token: 'refresh' },
+    });
     renderVi(<SignInForm next="/vi/yeu-cau-bao-gia/abc" />);
     await fill('buyer@vidu.vn', 'matkhau2026');
-    await waitFor(() => expect(assign).toHaveBeenCalledWith('/vi/yeu-cau-bao-gia/abc'));
+    await waitFor(() =>
+      expect(assign).toHaveBeenCalledWith(
+        '/auth/continue?locale=vi&next=%2Fvi%2Fyeu-cau-bao-gia%2Fabc',
+      ),
+    );
   });
 
   it('thành công không có đích: qua /auth/continue để vào trang theo vai trò', async () => {
-    signInWithPassword.mockResolvedValue({ error: null });
+    signInWithPassword.mockResolvedValue({
+      error: null,
+      session: { access_token: 'access', refresh_token: 'refresh' },
+    });
     renderVi(<SignInForm next={null} />);
     await fill('buyer@vidu.vn', 'matkhau2026');
     await waitFor(() => expect(assign).toHaveBeenCalledWith('/auth/continue?locale=vi'));
@@ -100,7 +128,7 @@ describe('SignInForm', () => {
   it('chưa nhập gì: chỉ ra từng ô còn thiếu và không gọi Supabase', async () => {
     renderVi(<SignInForm next={null} />);
     fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }));
-    expect(await screen.findByText('Nhập email của bạn.')).toBeTruthy();
+    expect(await screen.findByText('Nhập tên đăng nhập hoặc email.')).toBeTruthy();
     expect(await screen.findByText('Nhập mật khẩu.')).toBeTruthy();
     expect(signInWithPassword).not.toHaveBeenCalled();
   });
@@ -127,7 +155,7 @@ describe('SignInForm remember me', () => {
     let markerAtSignIn: string | null = 'unset';
     signInWithPassword.mockImplementation(async () => {
       markerAtSignIn = marker();
-      return { error: null };
+      return { error: null, session: { access_token: 'access', refresh_token: 'refresh' } };
     });
     renderVi(<SignInForm next={null} />);
     fireEvent.click(screen.getByLabelText('Ghi nhớ đăng nhập'));
@@ -141,7 +169,7 @@ describe('SignInForm remember me', () => {
     let markerAtSignIn: string | null = 'unset';
     signInWithPassword.mockImplementation(async () => {
       markerAtSignIn = marker();
-      return { error: null };
+      return { error: null, session: { access_token: 'access', refresh_token: 'refresh' } };
     });
     renderVi(<SignInForm next={null} />);
     await fill('buyer@vidu.vn', 'matkhau2026');
@@ -183,7 +211,10 @@ describe('SignInForm in the kiln card', () => {
   }
 
   it('fires on submit, seals on success, and only navigates once the seal has landed', async () => {
-    signInWithPassword.mockResolvedValue({ error: null });
+    signInWithPassword.mockResolvedValue({
+      error: null,
+      session: { access_token: 'access', refresh_token: 'refresh' },
+    });
     const { feedback, release } = feedbackSpy();
     renderInCard(feedback);
     await fill('buyer@vidu.vn', 'matkhau2026');
@@ -222,7 +253,7 @@ describe('SignInForm in the kiln card', () => {
     const { feedback } = feedbackSpy();
     renderInCard(feedback);
     fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }));
-    await screen.findByText('Nhập email của bạn.');
+    await screen.findByText('Nhập tên đăng nhập hoặc email.');
     expect(feedback.fail).toHaveBeenCalledTimes(1);
     expect(feedback.fail).toHaveBeenCalledWith('invalid');
     expect(feedback.fire).not.toHaveBeenCalled();

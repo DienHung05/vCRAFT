@@ -22,7 +22,7 @@ test('unfinished household registration: sign in again → wizard household step
   page,
 }) => {
   await page.goto('/vi/dang-nhap');
-  await page.getByLabel('Email').fill(email ?? '');
+  await page.getByLabel('Tên đăng nhập hoặc email').fill(email ?? '');
   await page.getByLabel('Mật khẩu').fill(password ?? '');
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
 

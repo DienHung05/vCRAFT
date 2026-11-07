@@ -24,7 +24,9 @@ test('sign-in passes the Turnstile check in test mode before calling Supabase', 
 
   const password = process.env[DEMO.accounts.buyer.passwordEnv];
   const live = Boolean(process.env.E2E_BASE_URL && password);
-  await page.getByLabel('Email').fill(live ? DEMO.accounts.buyer.email : 'buyer@vidu.vn');
+  await page
+    .getByLabel('Tên đăng nhập hoặc email')
+    .fill(live ? DEMO.accounts.buyer.email : 'buyer@vidu.vn');
   await page.getByLabel('Mật khẩu').fill(live ? (password ?? '') : 'mat-khau-thu-1');
   await page.getByRole('button', { name: 'Đăng nhập' }).click();
 

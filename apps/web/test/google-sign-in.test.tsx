@@ -98,7 +98,7 @@ describe('/auth/callback', () => {
       data: { privacy_policy_version: expect.any(String) },
     });
     expect(res.status).toBe(303);
-    expect(res.headers.get('location')).toBe('/vi/san-pham');
+    expect(res.headers.get('location')).toBe('/auth/continue?locale=vi&next=%2Fvi%2Fsan-pham');
   });
 
   it('keeps an existing consent and goes to the role landing without next', async () => {

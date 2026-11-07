@@ -6,6 +6,7 @@ import {
   hasHouseholdIntent,
   hasUnfinishedHouseholdRegistration,
 } from '@/lib/auth/household-intent';
+import { safeReturnTo } from '@/lib/auth/return-to';
 import { parseLocale, redirectTo } from '@/lib/auth/route-handler';
 import { createServerSupabase } from '@/lib/auth/supabase-server';
 import { getViewer } from '@/lib/auth/viewer';
@@ -24,6 +25,12 @@ export async function GET(request: NextRequest): Promise<Response> {
     return redirectTo(getPathname({ href: '/', locale }));
   }
   if (!viewer) return redirectTo(getPathname({ href: '/dang-nhap', locale }));
+  const next = safeReturnTo(request.nextUrl.searchParams.get('next'));
+  if (!viewer.username) {
+    const target = getPathname({ href: '/chon-ten-dang-nhap', locale });
+    return redirectTo(`${target}${next ? `?next=${encodeURIComponent(next)}` : ''}`);
+  }
+  if (next) return redirectTo(next);
   // GH#180: someone who started household registration resumes the wizard, not the home page.
   let intent = false;
   if (viewer.role === 'BUYER' && !viewer.household) {

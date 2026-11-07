@@ -28,7 +28,10 @@ export async function GET(request: NextRequest): Promise<Response> {
   const supabase = await createServerSupabase();
   if (supabase && tokenHash && type && CONFIRM_TYPES.includes(type)) {
     const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
-    if (!error) return redirectTo(next ?? `/auth/continue?locale=${locale}`);
+    if (!error)
+      return redirectTo(
+        `/auth/continue?locale=${locale}${next ? `&next=${encodeURIComponent(next)}` : ''}`,
+      );
   }
   return redirectTo(`${getPathname({ href: '/dang-nhap', locale })}?error=link_invalid`);
 }
