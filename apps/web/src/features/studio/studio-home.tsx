@@ -85,9 +85,11 @@ function HomeView({ household }: { household: HouseholdDto }) {
           {t('actions')}
         </h2>
         <div className="mt-3 flex flex-wrap gap-3">
-          <Link href="/studio/san-pham/moi" className={buttonVariants({})}>
-            {t('newProduct')}
-          </Link>
+          {household.status === 'APPROVED' ? (
+            <Link href="/studio/san-pham/moi" className={buttonVariants({})}>
+              {t('newProduct')}
+            </Link>
+          ) : null}
           <Link href="/studio/ho-so" className={buttonVariants({ variant: 'secondary' })}>
             {t('editProfile')}
           </Link>

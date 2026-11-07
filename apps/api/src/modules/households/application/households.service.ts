@@ -50,6 +50,7 @@ import {
 } from '@vcraft/domain';
 import { slugify } from '@vcraft/utils';
 import type { Actor } from '../../../common/auth/auth.guard';
+import { deniedAccess } from '../../../common/auth/denied-access';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
 import { MediaService } from '../../media/application/media.service';
@@ -285,7 +286,7 @@ export class HouseholdsService {
 
   async createProduct(actor: Actor, input: CreateProductRequest): Promise<ProductDto> {
     return this.orm.em.fork().transactional(async (em) => {
-      const household = await this.ownWritableHousehold(em, actor);
+      const household = await this.ownApprovedHousehold(em, actor);
       const traceCode = await this.uniqueTraceCode(em);
       const product = em.create(Product, {
         household,
@@ -317,8 +318,7 @@ export class HouseholdsService {
   ): Promise<ProductDto> {
     const id = await this.orm.em.fork().transactional(async (em) => {
       const household = await this.ownWritableHousehold(em, actor);
-      const product = await em.findOne(Product, { id: productId, household });
-      if (!product) throw notFound();
+      const product = await this.ownProduct(em, actor, household, productId);
       assertVersion(product, expectedVersion);
       if (input.images) {
         const ids = input.images.map((image) => image.mediaId);
@@ -375,7 +375,8 @@ export class HouseholdsService {
       if (!product) throw notFound();
       const household = product.household;
       const isOwner = household.representative.id === actor.id;
-      if (actor.role !== 'ADMIN' && !isOwner) throw notFound();
+      if (actor.role !== 'ADMIN' && !isOwner)
+        throw await deniedAccess(this.orm, actor, 'product', product.id);
       if (isOwner && actor.locked) throw new AppError('HOUSEHOLD_ACCOUNT_LOCKED');
       assertVersion(product, expectedVersion);
 
@@ -420,8 +421,7 @@ export class HouseholdsService {
   ): Promise<ProductDto> {
     return this.orm.em.fork().transactional(async (em) => {
       const household = await this.ownWritableHousehold(em, actor);
-      const product = await em.findOne(Product, { id: productId, household });
-      if (!product) throw notFound();
+      const product = await this.ownProduct(em, actor, household, productId);
       const artisans = await em.find(Artisan, { household });
       unwrap(checkMakerCredits(input.makers, new Set(artisans.map((a) => a.id))));
       for (const maker of await em.find(ProductMaker, { product })) em.remove(maker);
@@ -650,6 +650,30 @@ export class HouseholdsService {
     const household = await this.ownHousehold(em, actor);
     if (household.status === 'REJECTED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
     return household;
+  }
+
+  /**
+   * FR-AUTH-02 (GH#237): a household under review (or suspended) sees its application and records but posts
+   * no new products until the village board approves it.
+   */
+  private async ownApprovedHousehold(em: EntityManager, actor: Actor): Promise<Household> {
+    const household = await this.ownWritableHousehold(em, actor);
+    if (household.status !== 'APPROVED') throw forbidden('the household is not approved yet');
+    return household;
+  }
+
+  /** The household's own product; another household's product is a denied, audited attempt (AC-4). */
+  private async ownProduct(
+    em: EntityManager,
+    actor: Actor,
+    household: Household,
+    productId: string,
+  ): Promise<Product> {
+    const product = await em.findOne(Product, productId);
+    if (!product) throw notFound();
+    if (product.household.id !== household.id)
+      throw await deniedAccess(this.orm, actor, 'product', product.id);
+    return product;
   }
 
   private maskedIdNumber(household: Household): string | null {

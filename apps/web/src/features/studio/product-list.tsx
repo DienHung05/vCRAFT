@@ -22,6 +22,8 @@ export function ProductList({ client }: { client?: StudioClient }) {
       {({ household, client: live }) => {
         const products = household.products.filter((p) => filter === 'ALL' || p.status === filter);
         const published = household.products.filter((p) => p.status === 'PUBLISHED');
+        // Only an approved household posts products (FR-AUTH-02, GH#237).
+        const approved = household.status === 'APPROVED';
         return (
           <div className="mx-auto flex max-w-editorial flex-col gap-6 px-gutter py-8 pb-24 md:pb-12">
             <header className="flex flex-wrap items-center justify-between gap-4">
@@ -34,9 +36,11 @@ export function ProductList({ client }: { client?: StudioClient }) {
                     label={t('labels.allPublished', { count: published.length })}
                   />
                 ) : null}
-                <Link href="/studio/san-pham/moi" className={buttonVariants({})}>
-                  {t('add')}
-                </Link>
+                {approved ? (
+                  <Link href="/studio/san-pham/moi" className={buttonVariants({})}>
+                    {t('add')}
+                  </Link>
+                ) : null}
               </span>
             </header>
             <fieldset className="flex flex-wrap gap-2">
@@ -63,9 +67,11 @@ export function ProductList({ client }: { client?: StudioClient }) {
               <EmptyState
                 illustration="vase"
                 title={t('empty')}
-                description={filter === 'ALL' ? t('emptyHint') : undefined}
+                description={
+                  filter !== 'ALL' ? undefined : approved ? t('emptyHint') : t('pendingHint')
+                }
                 action={
-                  filter === 'ALL' ? (
+                  filter === 'ALL' && !approved ? undefined : filter === 'ALL' ? (
                     <Link href="/studio/san-pham/moi" className={buttonVariants({})}>
                       {t('add')}
                     </Link>

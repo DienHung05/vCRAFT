@@ -807,6 +807,9 @@
         },
         "allocation": {
           "reallocate": "Reallocate remaining pieces"
+        },
+        "access": {
+          "denied": "Blocked from changing another household’s record"
         }
       },
       "emptyHint": "Every administrator action will be recorded here.",
@@ -1720,6 +1723,8 @@
       }
     },
     "products": {
+      "pendingHint": "You can add products once the village board has approved your household.",
+      "pendingAction": "View your household profile",
       "title": "Products",
       "add": "Add product",
       "empty": "No products in this view yet.",

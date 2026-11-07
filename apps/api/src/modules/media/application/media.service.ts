@@ -232,6 +232,29 @@ export class MediaService {
     return new Set(assets.map((asset) => asset.id));
   }
 
+  /**
+   * GH#237: every journal photo must be one of the person's own processed uploads, named by its checksum and
+   * one of its public variant URLs, so the hash chain never covers a made-up checksum or someone else's file.
+   */
+  async ownsJournalImages(
+    ownerId: string,
+    images: readonly { url: string; sha256: string }[],
+  ): Promise<boolean> {
+    if (images.length === 0) return true;
+    const assets = await this.orm.em.fork().find(MediaAsset, {
+      ownerId,
+      status: 'READY',
+      sha256: { $in: [...new Set(images.map((image) => image.sha256))] },
+    });
+    return images.every((image) =>
+      assets.some(
+        (asset) =>
+          asset.sha256 === image.sha256 &&
+          this.publicVariants(asset).some((variant) => variant.url === image.url),
+      ),
+    );
+  }
+
   /** Every file the person uploaded, with a link to it (signed and short-lived for private files). */
   async exportOwned(ownerId: string): Promise<ExportedMediaDto[]> {
     const assets = await this.orm.em

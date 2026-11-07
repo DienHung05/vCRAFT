@@ -116,6 +116,15 @@ describe('ProductList', () => {
     expect(within(screen.getByTestId('studio-products')).getByText('Món 3')).toBeTruthy();
     expect(screen.queryByText('Món 1')).toBeNull();
   });
+
+  it('hộ chưa được duyệt không thấy nút thêm sản phẩm, chỉ thấy lời giải thích (GH#237)', async () => {
+    const pending = { ...HOUSEHOLD, status: 'PENDING_REVIEW', products: [] } as HouseholdDto;
+    renderVi(<ProductList client={client({ getHousehold: vi.fn(async () => pending) })} />);
+    expect(
+      await screen.findByText('Hộ được Ban quản lý duyệt hồ sơ xong thì mới đăng được sản phẩm.'),
+    ).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Thêm sản phẩm' })).toBeNull();
+  });
 });
 
 describe('biểu mẫu sản phẩm', () => {

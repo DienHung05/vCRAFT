@@ -131,8 +131,14 @@ describe('Personal data: consent, export and deletion', () => {
       sizeBytes: 10,
       sha256: PHOTO_SHA.replace(/b/g, label === 'a' ? 'b' : 'c'),
       originalKey: `originals/${rep.id}/photo`,
+      variants: [
+        { format: 'webp', width: 1280, height: 800, key: `v/${rep.id}-1280.webp`, bytes: 1 },
+      ],
     });
     await em.flush();
+    // Journal photos must be the household's own processed uploads (GH#237).
+    const photoUrl = (await t.request({ method: 'GET', url: `/media/${photo.id}`, auth: rep.auth }))
+      .body.variants[0].url as string;
     await t.storage.put({
       bucket: 'private',
       key: photo.originalKey,
@@ -147,7 +153,7 @@ describe('Personal data: consent, export and deletion', () => {
         stage: 'clay',
         declaredDate: '2026-09-02',
         note: `Clay notes ${label}`,
-        images: [{ url: 'https://media.example/clay.webp', sha256: photo.sha256 }],
+        images: [{ url: photoUrl, sha256: photo.sha256 }],
       },
     });
     expect(journal.status).toBe(201);

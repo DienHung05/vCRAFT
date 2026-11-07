@@ -63,6 +63,13 @@ describe('Public exhibition and QR trace', () => {
     ]) {
       await t.request({ method: 'POST', url: '/me/household/workshops', auth: rep.auth, body });
     }
+    await t.request({
+      method: 'POST',
+      url: `/admin/households/${applied.body.id}/approve`,
+      auth: admin.auth,
+      headers: { 'if-match': String(applied.body.version) },
+    });
+    // Only an approved household posts products (GH#237).
     const product = await t.request({
       method: 'POST',
       url: '/me/household/products',
@@ -71,13 +78,6 @@ describe('Public exhibition and QR trace', () => {
     });
     productId = product.body.id;
     traceCode = product.body.traceCode;
-
-    await t.request({
-      method: 'POST',
-      url: `/admin/households/${applied.body.id}/approve`,
-      auth: admin.auth,
-      headers: { 'if-match': String(applied.body.version) },
-    });
 
     // Hộ chưa duyệt: không được hiện trên bản đồ
     const pending = await t.createUser('BUYER');

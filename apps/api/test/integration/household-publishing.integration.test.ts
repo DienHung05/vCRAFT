@@ -31,7 +31,7 @@ describe('Household approval and publishing', () => {
     await db?.stop();
   });
 
-  it('người đại diện nộp hồ sơ, thêm xưởng, nghệ nhân và sản phẩm nháp', async () => {
+  it('người đại diện nộp hồ sơ, thêm xưởng và nghệ nhân; chưa duyệt thì chưa đăng sản phẩm (GH#237)', async () => {
     const applied = await t.request({
       method: 'POST',
       url: '/me/household',
@@ -69,29 +69,17 @@ describe('Household approval and publishing', () => {
       ).status,
     ).toBe(201);
 
-    const product = await t.request({
+    // FR-AUTH-02: a household under review posts no products (403, nothing stored).
+    const early = await t.request({
       method: 'POST',
       url: '/me/household/products',
       auth: rep.auth,
       body: { name: 'Bình men lam vẽ sen', description: 'Bình cao 40cm' },
     });
-    expect(product.status).toBe(201);
-    expect(product.body).toMatchObject({ status: 'DRAFT', kind: 'OBJECT' });
-    expect(product.body.traceCode).toMatch(/^[2-9A-HJKMNP-Z]{8}$/);
-    expect(product.body.slug).toBe(`binh-men-lam-ve-sen-${product.body.traceCode.toLowerCase()}`);
-    productId = product.body.id;
-    traceCode = product.body.traceCode;
+    expect(early.status).toBe(403);
   });
 
-  it('hộ chưa duyệt: không xuất bản được, không có gì công khai', async () => {
-    const publish = await t.request({
-      method: 'POST',
-      url: `/products/${productId}/publish`,
-      auth: rep.auth,
-      headers: { 'if-match': '1' },
-    });
-    expect(publish.status).toBe(409);
-    expect(publish.body.code).toBe('HOUSEHOLD_NOT_APPROVED');
+  it('hộ chưa duyệt: không có gì công khai', async () => {
     expect((await t.request({ method: 'GET', url: '/households/gom-dong-hai' })).status).toBe(404);
   });
 
@@ -130,6 +118,19 @@ describe('Household approval and publishing', () => {
     expect(approved.status).toBe(200);
     expect(approved.body.status).toBe('APPROVED');
     householdVersion = approved.body.version;
+
+    const product = await t.request({
+      method: 'POST',
+      url: '/me/household/products',
+      auth: rep.auth,
+      body: { name: 'Bình men lam vẽ sen', description: 'Bình cao 40cm' },
+    });
+    expect(product.status).toBe(201);
+    expect(product.body).toMatchObject({ status: 'DRAFT', kind: 'OBJECT' });
+    expect(product.body.traceCode).toMatch(/^[2-9A-HJKMNP-Z]{8}$/);
+    expect(product.body.slug).toBe(`binh-men-lam-ve-sen-${product.body.traceCode.toLowerCase()}`);
+    productId = product.body.id;
+    traceCode = product.body.traceCode;
   });
 
   it('hộ đã duyệt xuất bản sản phẩm ⇒ hồ sơ công khai có xưởng và sản phẩm, QR hiện đầy đủ', async () => {

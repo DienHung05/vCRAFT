@@ -15,8 +15,9 @@ import {
   verifyChain,
 } from '@vcraft/domain';
 import type { Actor } from '../../../common/auth/auth.guard';
+import { deniedAccess } from '../../../common/auth/denied-access';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
-import { AppError, notFound } from '../../../common/errors/app-error';
+import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
 import { MediaService } from '../../media/application/media.service';
 import { loadEntries, loadJournal, toChainEntry, toJournalDto } from './journal.queries';
 
@@ -47,6 +48,7 @@ export class JournalService {
   ): Promise<JournalDto> {
     return this.orm.em.fork().transactional(async (em) => {
       const product = await this.ownProduct(em, actor, productId, true);
+      await this.assertOwnImages(actor, input.images);
       const entries = await loadEntries(em, product);
 
       const supersedes =
@@ -102,6 +104,7 @@ export class JournalService {
       const { product, entries, entry } = await this.ownEntry(em, actor, entryId);
       unwrap(checkDraftEdit(this.state(actor, product, entries)));
       assertVersion(entry, expectedVersion);
+      await this.assertOwnImages(actor, input.images);
       const before = entries.filter((e) => e.seq < entry.seq);
       unwrap(
         checkNewEntry(
@@ -174,9 +177,18 @@ export class JournalService {
       populate: ['household'],
       ...(lock && { lockMode: LockMode.PESSIMISTIC_WRITE }),
     });
-    // Không lộ sự tồn tại sản phẩm của hộ khác
-    if (!product || product.household.representative.id !== actor.id) throw notFound();
+    if (!product) throw notFound();
+    if (product.household.representative.id !== actor.id) {
+      // Reading another household's journal stays a plain 404; a write is a denied, audited attempt (AC-4).
+      if (lock) throw await deniedAccess(this.orm, actor, 'product', product.id);
+      throw notFound();
+    }
     return product;
+  }
+
+  private async assertOwnImages(actor: Actor, images: readonly { url: string; sha256: string }[]) {
+    if (!(await this.media.ownsJournalImages(actor.id, images)))
+      throw forbidden('journal photos must be your own processed uploads');
   }
 
   private async ownEntry(em: EntityManager, actor: Actor, entryId: string) {
