@@ -1268,6 +1268,8 @@
       "account": "Your account",
       "signOut": "Sign out",
       "signingOut": "Signing out…",
+      "householdPending": "Household application awaiting review",
+      "finishHousehold": "Finish household registration",
       "roleLabel": "Role",
       "checking": "Checking your session",
       "area": "Go to your workspace",
