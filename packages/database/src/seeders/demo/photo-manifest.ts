@@ -3295,16 +3295,6 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
       'A large pile of red-brown clay in a big warehouse, with orange roof tiles stacked behind it',
   },
   {
-    photo: 'bia-hanh-thuy',
-    target: 'NEWS',
-    key: 'village-lantern',
-    role: 'COVER',
-    position: 0,
-    alt: 'Một gian hàng gốm ở Bát Tràng, kệ đầy bát, đĩa và bình men lam trắng xếp thành dãy',
-    altEn:
-      'A pottery stall in Bat Trang with shelves full of blue-and-white bowls, plates and vases',
-  },
-  {
     photo: 'binh-hoa-lam',
     target: 'NEWS',
     key: 'h0-blue-glaze',

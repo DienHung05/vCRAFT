@@ -287,8 +287,9 @@ describe('Demo seed and guarded reset', () => {
     const covers = allNews.body.data.flatMap((n: { cover: { credit: unknown } | null }) =>
       n.cover ? [n.cover] : [],
     );
-    // The night-market story has no photo that shows a night market, so only two stories keep a cover.
-    expect(covers).toHaveLength(2);
+    // GH#181: nine stories have a licensed photo of what they describe. The night-market story has no
+    // photo that shows a night market, so it keeps the illustration like the other eight.
+    expect(covers).toHaveLength(9);
     expect(covers.every((c: { altEn: string | null }) => c.altEn)).toBe(true);
 
     // The household list gives each cover its own description (vi and en), not a template.
