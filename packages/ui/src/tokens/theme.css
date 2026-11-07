@@ -104,6 +104,25 @@
     }
   }
 
+  /* Frame shake as the seal lands (SealStamp): starts near the end of the press, transform only. */
+  --animate-stamp-shake: stamp-shake 200ms linear calc(var(--duration-slow) * 0.55) both;
+  /* Studio/Admin: press, shake and all done within 280 ms (BRAND §6.4). */
+  --animate-stamp-shake-quick: stamp-shake 120ms linear 160ms both;
+  @keyframes stamp-shake {
+    20% {
+      transform: translate(-1.5px, 1px);
+    }
+    45% {
+      transform: translate(1.5px, -1px);
+    }
+    70% {
+      transform: translate(-1px, 0.5px);
+    }
+    to {
+      transform: none;
+    }
+  }
+
   /* ── Ô tốt nhất phát sáng vàng sơn mài (BRAND §6.3 #8): một nhịp lan ra rồi tắt ─ */
   --animate-glow: glow calc(var(--duration-slow) * 2) var(--ease-clay) both;
   @keyframes glow {
@@ -258,6 +277,8 @@
     --duration-story: 150ms;
     /* Đóng ấn chỉ còn mờ dần, không phóng to/xoay. */
     --animate-stamp: stamp-fade var(--duration-slow) linear both;
+    --animate-stamp-shake: none;
+    --animate-stamp-shake-quick: none;
     --animate-glow: none;
   }
   @keyframes stamp-fade {
@@ -280,5 +301,103 @@
   }
   .brush-orn {
     animation: brush-fade 150ms linear both;
+  }
+}
+
+/* ── Đóng ấn (BRAND §6.3 #2, SealStamp): tempo and the ink wash that soaks out under the seal ──── */
+.seal-stamp[data-tempo="tool"] .animate-stamp {
+  animation-duration: var(--duration-base);
+}
+.seal-stamp-wash {
+  position: absolute;
+  inset: 8%;
+  border-radius: 22%;
+  background: var(--color-seal);
+  filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  animation: stamp-wash var(--duration-slow) var(--ease-clay) both;
+}
+.seal-stamp[data-tempo="tool"] .seal-stamp-wash {
+  animation-duration: var(--duration-base);
+}
+@keyframes stamp-wash {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 0.32;
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.45);
+  }
+}
+
+/* ── Unfired-clay skeleton (BRAND §6.3 micro-interactions): a soft sheen drifts across raw clay ── */
+.clay-skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: color-mix(in oklch, var(--color-clay) 10%, transparent);
+}
+.clay-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    color-mix(in oklch, var(--color-paper) 55%, transparent) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: clay-sheen 1.8s var(--ease-kiln) infinite;
+}
+@keyframes clay-sheen {
+  to {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clay-skeleton::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* ── Best offer glows lacquer gold (BRAND §6.3 #8): a halo swells and fades once, opacity/transform only ── */
+.bid-best {
+  position: relative;
+  background-color: color-mix(in oklch, var(--color-lacquer) 12%, transparent);
+}
+.bid-best::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 3px color-mix(in oklch, var(--color-lacquer) 55%, transparent),
+    0 0 16px 2px color-mix(in oklch, var(--color-lacquer) 45%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  animation: bid-glow calc(var(--duration-slow) * 2) var(--ease-clay) both;
+}
+@keyframes bid-glow {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  30% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bid-best::after {
+    animation: none;
   }
 }

@@ -280,6 +280,44 @@ describe('BuyerRfqDetail', () => {
     expect(acceptQuotation).toHaveBeenCalledWith(ID, 4, { quotationId: 'a' });
   });
 
+  it('a bid lands on the table: best total glows, amounts are readable, the accepted offer is sealed (GH#175)', async () => {
+    const accepted = { ...quotation('a', 2_000_000), status: 'ACCEPTED' } as BuyerQuotationDto;
+    const listBuyerQuotations = vi
+      .fn()
+      .mockResolvedValueOnce([quotation('a', 2_000_000), quotation('b', 3_000_000)])
+      .mockResolvedValue([accepted, { ...quotation('b', 3_000_000), status: 'REJECTED' }]);
+    const acceptQuotation = vi.fn().mockResolvedValue({ ...REQUEST, status: 'ACCEPTED' });
+    const getRequest = vi
+      .fn()
+      .mockResolvedValueOnce(REQUEST)
+      .mockResolvedValue({ ...REQUEST, status: 'ACCEPTED', version: 5 });
+    const { container } = renderVi(
+      <BuyerRfqDetail
+        rfqId={ID}
+        client={client({ getRequest, listBuyerQuotations, acceptQuotation })}
+      />,
+    );
+    expect(await screen.findByText('Household a')).toBeTruthy();
+    const best = container.querySelectorAll('[data-best]');
+    expect(best).toHaveLength(1);
+    expect(best[0]?.className).toContain('bid-best');
+    // The counting digits are hidden from screen readers; the final amount is always in the text.
+    expect(best[0]?.querySelector('.sr-only')?.textContent).toMatch(/2\.000\.000/);
+
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Chốt chào giá này', hidden: true })[0] as HTMLElement,
+    );
+    const dialog = (await screen.findByText('Chốt chào giá này?')).closest('dialog') as HTMLElement;
+    const confirm = Array.from(dialog.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Chốt chào giá này',
+    ) as HTMLElement;
+    await act(async () => {
+      fireEvent.click(confirm);
+    });
+    await waitFor(() => expect(container.querySelector('.seal-stamp')).toBeTruthy());
+    expect(container.querySelector('.animate-stamp-shake')).toBeTruthy();
+  });
+
   it('requires a reason before cancelling', async () => {
     const cancelOrder = vi.fn().mockResolvedValue({ ...REQUEST, status: 'CANCELLED' });
     renderVi(<BuyerRfqDetail rfqId={ID} client={client({ cancelOrder })} />);

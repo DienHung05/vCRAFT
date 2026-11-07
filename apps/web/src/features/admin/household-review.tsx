@@ -3,7 +3,7 @@
 import { type AdminClient, ApiError, type HouseholdAction } from '@vcraft/api-client';
 import type { HouseholdDocumentDto, HouseholdDto } from '@vcraft/contracts';
 import { isInBatTrang } from '@vcraft/domain';
-import { Badge, Button, buttonVariants, Card, SealMark } from '@vcraft/ui';
+import { Badge, Button, buttonVariants, Card, cn, SealStamp, stampShakeClass } from '@vcraft/ui';
 import dynamic from 'next/dynamic';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
@@ -221,14 +221,17 @@ export function HouseholdReview({
           { label: household.name },
         ]}
       />
-      <header className="flex flex-wrap items-center gap-3">
+      <header
+        className={cn(
+          'flex flex-wrap items-center gap-3',
+          result === 'sealed' && stampShakeClass('tool'),
+        )}
+      >
         <h1 className="text-h2">{household.name}</h1>
         <Badge tone={household.status === 'PENDING_REVIEW' ? 'lacquer' : 'outline'}>
           {statuses(household.status)}
         </Badge>
-        {result === 'sealed' ? (
-          <SealMark size={64} className="animate-stamp" title={t('sealed')} />
-        ) : null}
+        {result === 'sealed' ? <SealStamp size={64} tempo="tool" title={t('sealed')} /> : null}
       </header>
       {household.statusReason ? (
         <p className="text-small text-ash">
