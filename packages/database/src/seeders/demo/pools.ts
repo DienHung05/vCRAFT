@@ -337,14 +337,24 @@ export interface NewsSeed {
   /** Khóa ổn định để sinh id (UUID v5). */
   key: string;
   category: 'HOUSEHOLD_UPDATE' | 'VILLAGE_EVENT' | 'CRAFT_STORY';
-  /** Chỉ số trong HOUSEHOLDS; `null` = tin chung của làng. */
+  /** Chỉ số trong HOUSEHOLDS; `null` = tin chung của làng (tin của hộ là tùy chọn, GH#314). */
   h: number | null;
   title: string;
   summary: string;
   /** Văn bản thuần; `{hộ}` được thay bằng tên hộ. */
   body: string;
-  /** Số ngày trước mốc đóng băng. */
-  daysAgo: number;
+  /** Số ngày trước mốc đóng băng. Bỏ qua khi có `publishedAt`. */
+  daysAgo?: number;
+  /** Real publish date of the story on this site (ISO 8601). When present it replaces `daysAgo`. */
+  publishedAt?: string;
+  /** Publisher of the original story, e.g. "VnExpress". Required for real stories (checked by `demo:verify`). */
+  sourceName?: string;
+  /** https link to the original story. */
+  sourceUrl?: string;
+  /** Original publication date (ISO 8601); defaults to `publishedAt`. */
+  sourcePublishedAt?: string;
+  /** English text of the story. Reserved: the news table has no English columns yet, so it is not stored. */
+  en?: { title: string; summary: string; body: string };
   pinned?: boolean;
 }
 

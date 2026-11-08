@@ -16,6 +16,8 @@ export const RFQ_COORDINATION_CHECK_JOB = 'rfq.coordination-check';
 export const ASSISTANT_LOG_PURGE_JOB = 'assistant.purge-logs';
 /** Deletes idempotency keys older than 24 hours (BR-L5). */
 export const IDEMPOTENCY_PURGE_JOB = 'idempotency.purge-keys';
+/** Imports real village news from the configured feeds and, when news is scarce, adds evergreen articles (GH#314). */
+export const NEWS_IMPORT_JOB = 'news.import';
 /** Expires pending payments past their expiry time and tells the buyers (ADR-0021). */
 export const PAYMENT_EXPIRE_SWEEP_JOB = 'payment.expire-sweep';
 

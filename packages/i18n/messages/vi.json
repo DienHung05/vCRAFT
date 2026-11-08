@@ -58,7 +58,6 @@
     "favourites": "Yêu thích"
   },
   "indexPages": {
-    "demoNote": "Bản trình diễn: danh sách này lấy từ dữ liệu mẫu, không phải hộ và sản phẩm thật.",
     "products": {
       "title": "Sản phẩm",
       "lead": "Mỗi món gốm mang một ấn truy xuất dưới đáy. Chọn một món để xem hành trình của nó.",
@@ -104,6 +103,8 @@
       "villageTitle": "Tin dành cho các hộ",
       "notFound": "Không tìm thấy tin này, hoặc tin chỉ dành cho các hộ trong làng.",
       "loading": "Đang tải tin…",
+      "sourceLine": "Nguồn: {name}, {date}",
+      "sourceLineNoDate": "Nguồn: {name}",
       "emptyHint": "Tin mới của làng và của từng hộ sẽ hiện ở đây khi được đăng."
     },
     "rfq": {
@@ -140,7 +141,7 @@
   },
   "credits": {
     "title": "Ghi nhận ảnh",
-    "lead": "Ảnh minh hoạ trong bản trình diễn lấy từ Wikimedia Commons, kho ảnh mở của các bảo tàng và Pixabay theo giấy phép cho phép dùng công khai kèm ghi nguồn. Chúng tôi cảm ơn các tác giả dưới đây. Ảnh đã được cắt và nén cho web; không có chỉnh sửa nào khác.",
+    "lead": "Ảnh trên trang web này lấy từ Wikimedia Commons, kho ảnh mở của các bảo tàng và Pixabay theo giấy phép cho phép dùng công khai kèm ghi nguồn. Chúng tôi cảm ơn các tác giả dưới đây. Ảnh đã được cắt và nén cho web; không có chỉnh sửa nào khác.",
     "table": "Danh sách ảnh và giấy phép",
     "colPhoto": "Ảnh",
     "colAuthor": "Tác giả",
@@ -165,7 +166,7 @@
     },
     "day": {
       "title": "Một ngày ở Bát Tràng",
-      "lead": "Từ nhào đất tới ra lò là sáu chặng mà món gốm nào cũng đi qua. Ảnh chỉ minh hoạ chung cho từng chặng, không phải ảnh của một món cụ thể. Vuốt ngang để xem từng chặng.",
+      "lead": "Từ nhào đất tới ra lò là sáu chặng mà món gốm nào cũng đi qua. Ảnh chỉ mang tính chung cho từng chặng, không phải ảnh của một món cụ thể. Vuốt ngang để xem từng chặng.",
       "railLabel": "Các chặng trong ngày",
       "current": "Chặng {index} trên {total}: {name}"
     },
@@ -301,9 +302,8 @@
     "scanned": "Bạn vừa quét ấn của",
     "verifiedSeal": "Ấn xác thực của vCraft",
     "integrity": {
-      "demoBadge": "Dữ liệu minh họa",
       "householdVerified": "Hộ đã được BQL xác minh",
-      "match": "Mã này khớp với một sản phẩm minh họa của {household}.",
+      "match": "Mã này khớp với một sản phẩm của {household}.",
       "checkingTitle": "Đang kiểm tra nhật ký…",
       "checkingText": "Trình duyệt của bạn đang tự tính lại dấu băm SHA-256 của từng mốc.",
       "okTitle": "Nhật ký toàn vẹn",
@@ -320,13 +320,13 @@
       "unavailableTitle": "Chưa kiểm được trên trình duyệt này",
       "unavailableText": "Việc kiểm chứng cần Web Crypto, chỉ có khi mở trang qua HTTPS. Nhật ký bên dưới chưa được xác nhận là toàn vẹn.",
       "emptyTitle": "Chưa có nhật ký để kiểm",
-      "emptyText": "Sản phẩm minh họa này chưa có mốc sản xuất nào.",
+      "emptyText": "Sản phẩm này chưa có mốc sản xuất nào.",
       "sentence": "Toàn vẹn nhật ký: nhật ký này không bị âm thầm thay đổi, xóa hay đảo thứ tự kể từ khi được ghi. Điều đó không chứng minh các công đoạn đã diễn ra đúng như ghi, cũng không chứng minh ai đã tự tay làm ra món đồ."
     },
     "scans": "{count, plural, other {# lượt quét}}",
     "timelineTitle": "Hành trình qua lửa",
     "timelineLead": "Từng công đoạn do chính người thợ ghi lại, kèm dấu băm, và ảnh khi người thợ có chụp.",
-    "journeyIllustration": "Hình minh họa loại gốm, không phải ảnh chụp món đồ.",
+    "journeyIllustration": "Hình vẽ loại gốm, không phải ảnh chụp món đồ.",
     "journalBy": "Nhật ký do {household} công bố",
     "stageNotRecorded": "{stage}, chưa ghi nhận",
     "notRecordedStages": "Chưa ghi nhận: {stages}",
@@ -346,7 +346,7 @@
     "recordedBy": "Do {household} ghi lại",
     "notRecorded": "Chưa ghi",
     "storyTrack": "Các công đoạn của món gốm",
-    "pieceNote": "Hình vẽ minh họa các công đoạn, không phải ảnh của món đồ này.",
+    "pieceNote": "Hình vẽ các công đoạn, không phải ảnh của món đồ này.",
     "withdrawnTitle": "Món đồ này không còn được trưng bày",
     "withdrawnText": "Hộ làm ra món đồ đã rút nó khỏi triển lãm, nên nhật ký không còn hiện công khai.",
     "lockedTitle": "Chưa xác thực được món đồ này",
@@ -687,7 +687,7 @@
     "board": {
       "barTitle": "Chia {quantity} {unit} cho các hộ",
       "barLabel": "Đã chia {sum} trên {quantity} {unit}",
-      "statusOk": "Đã chia đủ {quantity} {unit}. Bạn có thể mô phỏng gửi chào giá liên kết.",
+      "statusOk": "Đã chia đủ {quantity} {unit}. Bạn có thể xem trước việc gửi chào giá liên kết.",
       "problem": {
         "short": "Còn thiếu {count} {unit}.",
         "excess": "Đang chia thừa {count} {unit}.",
@@ -731,11 +731,11 @@
         "total": "Tổng cho bên mua"
       },
       "send": "Gửi chào giá liên kết",
-      "sentLabel": "Đã mô phỏng",
-      "demoNote": "Bản trình diễn: thao tác chỉ chạy trên trình duyệt của bạn, chưa lưu, chưa gửi lên máy chủ và không có thông báo nào được gửi.",
+      "sentLabel": "Đã xem trước",
+      "demoNote": "Thao tác này chỉ chạy trên trình duyệt của bạn: chưa lưu, chưa gửi lên máy chủ và không có thông báo nào được gửi.",
       "sendBlocked": "Chia đủ số lượng, không hộ nào vượt mức tối đa và ngày hoàn thành hợp lệ thì mới gửi được.",
       "sent": {
-        "title": "Đã mô phỏng (chưa lưu, không gửi thông báo)",
+        "title": "Đã xem trước (chưa lưu, không gửi thông báo)",
         "text": "Phương án chia đơn cho yêu cầu {code} chỉ chạy thử trên trình duyệt này. Chưa có chào giá nào tới bên mua và chưa hộ nào nhận thông báo."
       },
       "manualTitle": "Chia đơn",
@@ -1110,6 +1110,13 @@
       },
       "stateFilter": "Trạng thái",
       "allStates": "Tất cả",
+      "originFilter": "Nguồn gốc tin",
+      "allOrigins": "Mọi nguồn gốc",
+      "origin": {
+        "MANUAL": "Nhập tay",
+        "IMPORTED": "Nhập tự động",
+        "GENERATED": "Bài tự sinh"
+      },
       "publishedAt": "Đăng lúc {date}",
       "scheduledAt": "Sẽ đăng lúc {date}",
       "form": {
@@ -1129,6 +1136,11 @@
         "publishAt": "Thời điểm đăng",
         "cover": "Ảnh bìa",
         "coverAlt": "Mô tả ảnh bìa",
+        "sourceTitle": "Nguồn tin gốc",
+        "sourceName": "Tên đơn vị đăng tin",
+        "sourceUrl": "Đường dẫn bài gốc (https)",
+        "sourcePublishedOn": "Ngày đăng bài gốc",
+        "sourceHint": "Hiện công khai ở dạng \"Nguồn: tên, ngày\" kèm liên kết tới bài gốc.",
         "removeCover": "Bỏ ảnh bìa",
         "coverUploading": "Đang xử lý ảnh…",
         "coverFailed": "Không tải được ảnh bìa.",
@@ -1142,7 +1154,8 @@
           "summary": "Hãy nhập tóm tắt.",
           "body": "Hãy nhập nội dung.",
           "publishAt": "Hãy chọn thời điểm trong tương lai.",
-          "slug": "Đường dẫn chỉ gồm chữ thường không dấu, số và dấu gạch ngang."
+          "slug": "Đường dẫn chỉ gồm chữ thường không dấu, số và dấu gạch ngang.",
+          "sourceUrl": "Đường dẫn bài gốc phải bắt đầu bằng https:// và cần có tên đơn vị đăng tin."
         },
         "draftSavedToast": "Đã lưu bản nháp.",
         "scheduledToast": "Đã hẹn giờ đăng tin.",
@@ -1329,14 +1342,14 @@
     "sending": "Đang gửi…",
     "sentRealLabel": "Đã gửi",
     "updatedLabel": "Đã cập nhật",
-    "simulatedLabel": "Đã mô phỏng",
-    "simulatedNote": "Đã mô phỏng (chưa lưu, không gửi thông báo). Bản trình diễn chỉ chạy trên trình duyệt này.",
+    "simulatedLabel": "Đã xem trước",
+    "simulatedNote": "Đã xem trước (chưa lưu, không gửi thông báo). Thao tác chỉ chạy trên trình duyệt này.",
     "sentNote": "Đề xuất đã lưu trên máy chủ. BQL điều phối sẽ dùng mức tối đa, đơn giá và ngày hoàn thành này để ghép chào giá.",
     "withdraw": "Rút đề xuất",
     "withdrawn": "Đề xuất đã rút. Gửi lại để tham gia lại.",
     "sendFailed": "Gửi không thành công. Bạn thử lại sau.",
     "capacityExceeded": "Số lượng vượt năng lực bạn đã khai cho nhóm hàng này. Hãy giảm số lượng hoặc cập nhật năng lực trong hồ sơ rồi gửi lại.",
-    "demoNote": "Bản trình diễn: thao tác chỉ chạy trên trình duyệt của bạn, chưa lưu, chưa gửi lên máy chủ.",
+    "demoNote": "Thao tác này chỉ chạy trên trình duyệt của bạn: chưa lưu, chưa gửi lên máy chủ.",
     "liveNote": "Đề xuất sẽ gửi lên máy chủ qua API, kèm phiên đăng nhập của bạn. Thông tin này riêng giữa hộ và Ban quản lý, bên mua không thấy.",
     "privacyNote": "Mức tối đa, đơn giá và ngày hoàn thành là thông tin riêng giữa hộ và Ban quản lý; bên mua chỉ thấy hộ, phần chia và ngày hoàn thành.",
     "loading": "Đang tải yêu cầu…",
@@ -2607,15 +2620,15 @@
     "binh-men-lam-xam": "Bình cổ cao, bụng tròn, men xám lam, đắp nổi cành cây và một người cầm cần câu nhuốm vàng"
   },
   "presetFigure": {
-    "bowl": "Hình minh hoạ chiếc bát, chưa có ảnh thật của sản phẩm này",
-    "cup": "Hình minh hoạ chiếc cốc, chưa có ảnh thật của sản phẩm này",
-    "vase": "Hình minh hoạ chiếc bình, chưa có ảnh thật của sản phẩm này",
-    "jar": "Hình minh hoạ chiếc hũ, chưa có ảnh thật của sản phẩm này",
-    "plate": "Hình minh hoạ chiếc đĩa, chưa có ảnh thật của sản phẩm này",
-    "teaset": "Hình minh hoạ bộ ấm chén, chưa có ảnh thật của sản phẩm này",
-    "incense": "Hình minh hoạ chiếc lư hương, chưa có ảnh thật của sản phẩm này",
-    "generic": "Hình minh hoạ đồ gốm, chưa có ảnh thật của sản phẩm này",
-    "household": "Hình minh hoạ đồ gốm, hộ này chưa có ảnh xưởng"
+    "bowl": "Hình vẽ chiếc bát, sản phẩm này chưa có ảnh thật",
+    "cup": "Hình vẽ chiếc cốc, sản phẩm này chưa có ảnh thật",
+    "vase": "Hình vẽ chiếc bình, sản phẩm này chưa có ảnh thật",
+    "jar": "Hình vẽ chiếc hũ, sản phẩm này chưa có ảnh thật",
+    "plate": "Hình vẽ chiếc đĩa, sản phẩm này chưa có ảnh thật",
+    "teaset": "Hình vẽ bộ ấm chén, sản phẩm này chưa có ảnh thật",
+    "incense": "Hình vẽ chiếc lư hương, sản phẩm này chưa có ảnh thật",
+    "generic": "Hình vẽ đồ gốm, sản phẩm này chưa có ảnh thật",
+    "household": "Hình vẽ đồ gốm, hộ này chưa có ảnh xưởng"
   },
   "privacy": {
     "title": "Chính sách quyền riêng tư",

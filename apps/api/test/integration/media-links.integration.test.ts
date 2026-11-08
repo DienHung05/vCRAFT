@@ -412,6 +412,14 @@ describe('Public images from media_link', () => {
     expect(profile.body.coverVariants).toEqual(variantsOf('bia-ho'));
   });
 
+  it('lists the credit of photos on published news once, with no sign-in (GH#314)', async () => {
+    const res = await t.request({ method: 'GET', url: '/media/credits' });
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([CREDIT]);
+    // Only news covers count: the household photos and journal photos share the same credit but are not listed again.
+    expect(res.body.data).toHaveLength(1);
+  });
+
   it('a preset cover URL has no variants', async () => {
     const em = db.orm.em.fork();
     const product = await em.findOneOrFail(Product, { slug: 'binh-co-anh' });

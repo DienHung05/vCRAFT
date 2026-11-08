@@ -94,6 +94,7 @@ PUT /api/v1/me/username AUTHENTICATED
 POST /api/v1/media ROLES(ADMIN,BUYER,HOUSEHOLD)
 GET /api/v1/media/:id ROLES(ADMIN,BUYER,HOUSEHOLD)
 GET /api/v1/media/:id/read-url ROLES(ADMIN,BUYER,HOUSEHOLD)
+GET /api/v1/media/credits PUBLIC
 GET /api/v1/media/files/originals/:owner/:asset PUBLIC
 GET /api/v1/news PUBLIC
 GET /api/v1/news/:slug PUBLIC

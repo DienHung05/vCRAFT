@@ -208,6 +208,19 @@ pnpm assistant:reindex                # then rebuild the Fox assistant's knowled
 pnpm demo:verify -- --offline         # the check "No demo disclaimer text" must pass
 ```
 
+### Swapping the seed news for the real stories on a live database (GH#314)
+
+`pnpm demo:reset` wipes every business table, so a live database gets the real stories with `pnpm news:swap` instead. The command is keyed on the stable news ids (UUID v5 of the seed key in `pools.ts`), idempotent and non-destructive: it creates or updates the `news` rows of the seed pool (text, publish date, publisher, link and original date), links their covers from `photo-manifest.ts` with Vietnamese and English alt text, and sets the old invented stories (`LEGACY_NEWS_KEYS` in `news-seed.ts`) that are no longer in the pool back to draft. It never deletes a row and writes nothing outside `news`, the news cover rows of `media_link` and the outbox event that makes the assistant reindex. Stories of a household that does not exist in the target database are skipped and counted.
+
+```bash
+pnpm demo:media -- --only=media        # uploads the cover photos and registers their credits (additive; needs APP_ENV=demo)
+NEWS_SWAP_CONFIRM=<host>:<port>/<name> pnpm news:swap -- --dry-run   # prints created/updated/unchanged/retired counts, writes nothing
+NEWS_SWAP_CONFIRM=<host>:<port>/<name> pnpm news:swap                # applies the change; a second run reports only `unchanged`
+pnpm assistant:reindex                 # the Fox assistant reads the new news
+```
+
+`NEWS_SWAP_CONFIRM` must equal the `host:port/name` the command prints for the target, so a copied `.env` cannot hit the wrong database. Photos imported by the worker (see "Automatic news import" in [deploy.md](../operations/deploy.md)) are credited on `/ghi-nhan-anh` from `media_asset.credit` through `GET /api/v1/media/credits`.
+
 ## 4. Ma trận nghiệm thu
 
 Một dòng một bước. Cột "Giám khảo thấy gì" là điều để kiểm bằng mắt; cột cuối nói thật điều gì đã có.

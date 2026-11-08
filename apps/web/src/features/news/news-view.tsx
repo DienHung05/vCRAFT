@@ -11,6 +11,7 @@ import { Reveal } from '@/experience/motion/reveal';
 import { altFor, photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
 import type { NewsResult } from './news-api';
+import { NewsSourceLine } from './news-source-line';
 
 interface NewsViewProps {
   result: NewsResult;
@@ -165,6 +166,7 @@ export function NewsView({
                         t('village')
                       )}
                     </p>
+                    <NewsSourceLine item={n} />
                   </article>
                 </Card>
               </Reveal>

@@ -68,3 +68,17 @@ describe('từ điển vi/en', () => {
     }
   });
 });
+
+/** Wording that tells visitors the site is sample or demo data (GH#314). Real limits are worded without it. */
+const BANNED_VISITOR_WORDS =
+  /dữ liệu mẫu|tin mẫu|bản trình diễn|minh h[oọ]a|minh hoạ|mô phỏng|sample data|demo|illustrative/i;
+
+describe('visitor-facing wording', () => {
+  it.each([
+    ['vi', vi],
+    ['en', en],
+  ] as const)('%s strings never say sample, demo or illustrative data', (_locale, strings) => {
+    const offenders = [...strings].filter(([, text]) => BANNED_VISITOR_WORDS.test(text));
+    expect(offenders.map(([key]) => key)).toEqual([]);
+  });
+});

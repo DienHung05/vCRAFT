@@ -6,6 +6,7 @@ import { ImageSlot } from '@/components/image-slot';
 import { Reveal } from '@/experience/motion/reveal';
 import { altFor, photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
+import { NewsSourceLine } from './news-source-line';
 
 /** Full article: cover, category, body and related news (FR-NEWS-01). */
 export function NewsArticleView({ article }: { article: NewsDetailDto }) {
@@ -39,6 +40,7 @@ export function NewsArticleView({ article }: { article: NewsDetailDto }) {
         <p className="text-small text-ash">
           {article.householdName ? t('byHousehold', { name: article.householdName }) : t('village')}
         </p>
+        <NewsSourceLine item={article} />
       </header>
       {article.cover ? (
         // GH#301: the cover reveals once below the fold (composite-only; reduced-motion safe).

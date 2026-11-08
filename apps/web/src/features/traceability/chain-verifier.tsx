@@ -143,7 +143,6 @@ export function ChainVerifier({
       </div>
 
       <div className="relative mt-5 flex flex-wrap gap-2">
-        <Badge tone="outline">{t('demoBadge')}</Badge>
         {householdVerified ? <Badge tone="celadon">✓ {t('householdVerified')}</Badge> : null}
         {state.status === 'ok' ? (
           <Badge tone="celadon">✓ {t('okBadge', { count: state.count })}</Badge>

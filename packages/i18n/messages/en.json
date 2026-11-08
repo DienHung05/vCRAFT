@@ -58,7 +58,6 @@
     "favourites": "Favourites"
   },
   "indexPages": {
-    "demoNote": "Demo: this list comes from sample data, not real households and products.",
     "products": {
       "title": "Products",
       "lead": "Every piece carries a trace seal on its base. Pick one to see its journey.",
@@ -104,6 +103,8 @@
       "villageTitle": "News for households",
       "notFound": "This item was not found, or it is only for village households.",
       "loading": "Loading…",
+      "sourceLine": "Source: {name}, {date}",
+      "sourceLineNoDate": "Source: {name}",
       "emptyHint": "News from the village and from each household will show up here once it is published."
     },
     "rfq": {
@@ -140,7 +141,7 @@
   },
   "credits": {
     "title": "Image credits",
-    "lead": "The illustrative photos in this demo come from Wikimedia Commons, the open-access collections of museums and Pixabay, under licences that allow public use with attribution. We thank the authors below. Photos were cropped and compressed for the web; no other changes were made.",
+    "lead": "The photos on this site come from Wikimedia Commons, the open-access collections of museums and Pixabay, under licences that allow public use with attribution. We thank the authors below. Photos were cropped and compressed for the web; no other changes were made.",
     "table": "List of photos and licences",
     "colPhoto": "Photo",
     "colAuthor": "Author",
@@ -165,7 +166,7 @@
     },
     "day": {
       "title": "A day in Bat Trang",
-      "lead": "From kneading clay to opening the kiln, six steps that every piece goes through. The photos only illustrate each step in general; they are not photos of any particular piece. Swipe sideways to follow each one.",
+      "lead": "From kneading clay to opening the kiln, six steps that every piece goes through. The photos are general pictures of each step, not photos of any particular piece. Swipe sideways to follow each one.",
       "railLabel": "Stages of the day",
       "current": "Stage {index} of {total}: {name}"
     },
@@ -301,9 +302,8 @@
     "scanned": "You just scanned the seal of",
     "verifiedSeal": "vCraft verification seal",
     "integrity": {
-      "demoBadge": "Demo data",
       "householdVerified": "Household verified by the management board",
-      "match": "This code matches a demo product from {household}.",
+      "match": "This code matches a product from {household}.",
       "checkingTitle": "Checking the log…",
       "checkingText": "Your browser is recomputing the SHA-256 hash of every entry itself.",
       "okTitle": "Log intact",
@@ -320,13 +320,13 @@
       "unavailableTitle": "Can't check on this browser",
       "unavailableText": "Verification needs Web Crypto, which is only available when the page is opened over HTTPS. The log below is not confirmed intact.",
       "emptyTitle": "No log to check",
-      "emptyText": "This demo product has no production entries yet.",
+      "emptyText": "This product has no production entries yet.",
       "sentence": "Journal integrity: this journal has not been silently changed, deleted or reordered since it was recorded. It does not prove the stages happened as written, nor who physically made the object."
     },
     "scans": "{count, plural, one {# scan} other {# scans}}",
     "timelineTitle": "A journey through fire",
     "timelineLead": "Each step was recorded by the maker themselves, with a hash, and a photo when the maker took one.",
-    "journeyIllustration": "An illustration of this kind of pottery, not a photograph of the piece.",
+    "journeyIllustration": "A drawing of this kind of pottery, not a photograph of the piece.",
     "journalBy": "Journal published by {household}",
     "stageNotRecorded": "{stage}, not recorded",
     "notRecordedStages": "Not recorded: {stages}",
@@ -682,7 +682,7 @@
     "board": {
       "barTitle": "Splitting {quantity} {unit} across households",
       "barLabel": "{sum} of {quantity} {unit} allocated",
-      "statusOk": "All {quantity} {unit} allocated. You can simulate sending the co-op bid.",
+      "statusOk": "All {quantity} {unit} allocated. You can preview sending the co-op bid.",
       "problem": {
         "short": "{count} {unit} still missing.",
         "excess": "{count} {unit} too many allocated.",
@@ -726,11 +726,11 @@
         "total": "Buyer total"
       },
       "send": "Send cooperative quotation",
-      "sentLabel": "Simulated",
-      "demoNote": "Demo: this only runs in your browser. Nothing is saved or sent to a server, and no notification goes out.",
+      "sentLabel": "Previewed",
+      "demoNote": "This only runs in your browser. Nothing is saved or sent to a server, and no notification goes out.",
       "sendBlocked": "You can send once the full quantity is allocated, no household is over its maximum, and completion dates are valid.",
       "sent": {
-        "title": "Simulated (not saved, no notifications sent)",
+        "title": "Previewed (not saved, no notifications sent)",
         "text": "The allocation plan for request {code} was only trialled in this browser. No bid has reached the buyer and no household has been notified."
       },
       "manualTitle": "Allocation",
@@ -1105,6 +1105,13 @@
       },
       "stateFilter": "Status",
       "allStates": "All",
+      "originFilter": "Origin",
+      "allOrigins": "Any origin",
+      "origin": {
+        "MANUAL": "Written by hand",
+        "IMPORTED": "Imported",
+        "GENERATED": "Generated"
+      },
       "publishedAt": "Published {date}",
       "scheduledAt": "Publishes {date}",
       "form": {
@@ -1124,6 +1131,11 @@
         "publishAt": "Publish at",
         "cover": "Cover image",
         "coverAlt": "Cover image description",
+        "sourceTitle": "Original source",
+        "sourceName": "Publisher",
+        "sourceUrl": "Link to the original story (https)",
+        "sourcePublishedOn": "Original publication date",
+        "sourceHint": "Shown publicly as \"Source: publisher, date\" with a link to the original story.",
         "removeCover": "Remove cover",
         "coverUploading": "Processing image…",
         "coverFailed": "The cover image could not be uploaded.",
@@ -1137,7 +1149,8 @@
           "summary": "Enter a summary.",
           "body": "Enter the content.",
           "publishAt": "Choose a time in the future.",
-          "slug": "A slug uses lowercase letters without accents, numbers and hyphens."
+          "slug": "A slug uses lowercase letters without accents, numbers and hyphens.",
+          "sourceUrl": "The original link must start with https:// and needs a publisher name."
         },
         "draftSavedToast": "Draft saved.",
         "scheduledToast": "Article scheduled.",
@@ -1324,14 +1337,14 @@
     "sending": "Sending…",
     "sentRealLabel": "Sent",
     "updatedLabel": "Updated",
-    "simulatedLabel": "Simulated",
-    "simulatedNote": "Simulated (not saved, no notifications sent). The demo only runs in this browser.",
+    "simulatedLabel": "Previewed",
+    "simulatedNote": "Previewed (not saved, no notifications sent). This only runs in this browser.",
     "sentNote": "The offer is saved on the server. The management board will use this maximum, unit price and completion date to assemble the quotation.",
     "withdraw": "Withdraw offer",
     "withdrawn": "The offer was withdrawn. Send again to rejoin.",
     "capacityExceeded": "The quantity is above the capacity you declared for this category. Lower it or update your capacity in the profile, then send again.",
     "sendFailed": "Sending failed. Please try again later.",
-    "demoNote": "Demo: this only runs in your browser. Nothing is saved or sent to a server.",
+    "demoNote": "This only runs in your browser. Nothing is saved or sent to a server.",
     "liveNote": "The offer will be sent to the server through the API with your signed-in session. This information is private between the household and the management board; the buyer never sees it.",
     "privacyNote": "Maximum, unit price and completion date are private between the household and the management board; the buyer only sees the household, its share and the completion date.",
     "loading": "Loading the request…",
@@ -2602,15 +2615,15 @@
     "binh-men-lam-xam": "A tall-necked, round-bellied vase in grey-blue glaze with a relief branch and a gilded figure holding a fishing rod"
   },
   "presetFigure": {
-    "bowl": "Illustration of a bowl; this product has no photo yet",
-    "cup": "Illustration of a cup; this product has no photo yet",
-    "vase": "Illustration of a vase; this product has no photo yet",
-    "jar": "Illustration of a jar; this product has no photo yet",
-    "plate": "Illustration of a plate; this product has no photo yet",
-    "teaset": "Illustration of a tea set; this product has no photo yet",
-    "incense": "Illustration of an incense burner; this product has no photo yet",
-    "generic": "Illustration of a piece of pottery; this product has no photo yet",
-    "household": "Illustration of a piece of pottery; this household has no workshop photo yet"
+    "bowl": "Drawing of a bowl; this product has no photo yet",
+    "cup": "Drawing of a cup; this product has no photo yet",
+    "vase": "Drawing of a vase; this product has no photo yet",
+    "jar": "Drawing of a jar; this product has no photo yet",
+    "plate": "Drawing of a plate; this product has no photo yet",
+    "teaset": "Drawing of a tea set; this product has no photo yet",
+    "incense": "Drawing of an incense burner; this product has no photo yet",
+    "generic": "Drawing of a piece of pottery; this product has no photo yet",
+    "household": "Drawing of a piece of pottery; this household has no workshop photo yet"
   },
   "privacy": {
     "title": "Privacy policy",

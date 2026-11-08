@@ -96,7 +96,7 @@ describe('Demo seed and guarded reset', () => {
     expect(await em.count(Household, { status: 'APPROVED' })).toBeGreaterThanOrEqual(20);
     expect(await em.count(Product)).toBeGreaterThanOrEqual(200);
     expect(await em.count(QuotationRequest)).toBe(12);
-    expect(await em.count(News, { status: 'PUBLISHED' })).toBeGreaterThanOrEqual(15);
+    expect(await em.count(News, { status: 'PUBLISHED' })).toBeGreaterThanOrEqual(6);
     const statuses = new Set((await em.find(QuotationRequest, {})).map((r) => r.status));
     expect(statuses).toEqual(
       new Set([
