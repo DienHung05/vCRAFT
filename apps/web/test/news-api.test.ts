@@ -29,10 +29,15 @@ describe('fetchNews', () => {
     vi.stubEnv('API_INTERNAL_URL', 'http://api.test/api/v1/');
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(ok)));
     vi.stubGlobal('fetch', fetchMock);
-    const result = await fetchNews({ householdSlug: 'gom-a', cursor: 'xyz' });
+    const result = await fetchNews({
+      category: 'MATERIAL_PRICES',
+      householdSlug: 'gom-a',
+      cursor: 'xyz',
+    });
     expect(result).toEqual({ status: 'ok', page: ok });
     const url = String(fetchMock.mock.calls[0]?.[0]);
     expect(url.startsWith('http://api.test/api/v1/news?')).toBe(true);
+    expect(url).toContain('category=MATERIAL_PRICES');
     expect(url).toContain('householdSlug=gom-a');
     expect(url).toContain('cursor=xyz');
   });

@@ -72,6 +72,7 @@
       "filteredBy": "Đang xem tin của {name}.",
       "clearFilter": "Xem mọi tin",
       "more": "Xem thêm tin",
+      "categoryFilter": "Phân loại tin",
       "categories": {
         "HOUSEHOLD_UPDATE": "Từ hộ làng nghề",
         "VILLAGE_EVENT": "Sự kiện làng",

@@ -1,5 +1,8 @@
+import type { NewsCategoryDto } from '@vcraft/contracts';
+import { NEWS_CATEGORIES } from '@vcraft/domain';
 import { Badge, buttonVariants, Card } from '@vcraft/ui';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { EmptyState } from '@/components/states/empty-state';
@@ -12,10 +15,17 @@ interface NewsViewProps {
   result: NewsResult;
   /** Bộ lọc `?household=` đang áp dụng. */
   householdSlug?: string | undefined;
+  category?: NewsCategoryDto | undefined;
+  children?: ReactNode;
 }
 
 /** Trang tin tức công khai: đầu trang, danh sách tin (ghim trước) và liên kết "Xem thêm" theo con trỏ. */
-export function NewsView({ result, householdSlug }: NewsViewProps) {
+export function NewsView({
+  result,
+  householdSlug,
+  category: selectedCategory,
+  children,
+}: NewsViewProps) {
   const t = useTranslations('indexPages.news');
   const category = useTranslations('indexPages.news.categories');
   const nav = useTranslations('nav');
@@ -26,6 +36,15 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
   // Numbered pages when the page came with totals (GH#202); the cursor link is the fallback.
   const counters = result.status === 'ok' && 'totalPages' in result.page ? result.page : null;
   const householdName = items.find((n) => n.householdSlug === householdSlug)?.householdName;
+  const categoryHref = (value?: NewsCategoryDto) => ({
+    pathname: '/tin-tuc' as const,
+    query: {
+      ...(householdSlug ? { household: householdSlug } : {}),
+      ...(value ? { category: value } : {}),
+    },
+  });
+  const categoryClass = (active: boolean) =>
+    `inline-flex min-h-11 items-center rounded-chip border px-3 py-2 text-small transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay ${active ? 'border-clay bg-clay/12 text-clay-ink' : 'border-ink/15 text-ash hover:border-clay hover:text-clay-ink'}`;
 
   return (
     <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section">
@@ -39,6 +58,26 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
         )}
       </header>
 
+      <nav aria-label={t('categoryFilter')} className="mt-6 flex flex-wrap gap-2">
+        <Link
+          href={categoryHref()}
+          aria-current={selectedCategory === undefined ? 'page' : undefined}
+          className={categoryClass(selectedCategory === undefined)}
+        >
+          {t('allNews')}
+        </Link>
+        {NEWS_CATEGORIES.map((value) => (
+          <Link
+            key={value}
+            href={categoryHref(value)}
+            aria-current={selectedCategory === value ? 'page' : undefined}
+            className={categoryClass(selectedCategory === value)}
+          >
+            {category(value)}
+          </Link>
+        ))}
+      </nav>
+
       {householdSlug && (
         <p className="mt-6 text-small text-ash">
           {t('filteredBy', { name: householdName ?? householdSlug })}{' '}
@@ -47,6 +86,8 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
           </Link>
         </p>
       )}
+
+      {children}
 
       {result.status === 'unavailable' && (
         <DataUnavailable className="mt-10" message={t('unavailable')} />
@@ -69,10 +110,10 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
       )}
 
       {items.length > 0 && (
-        <ul aria-label={t('listLabel')} className="mt-10 flex max-w-prose-vn flex-col gap-4">
+        <ul aria-label={t('listLabel')} className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
           {items.map((n) => (
             <li key={n.slug}>
-              <Card className="p-5 md:p-6">
+              <Card className="h-full p-5 md:p-6">
                 <article className="flex flex-col gap-2">
                   {n.cover ? (
                     <div className="mb-2">
@@ -143,7 +184,11 @@ export function NewsView({ result, householdSlug }: NewsViewProps) {
           <Link
             href={{
               pathname: '/tin-tuc',
-              query: { cursor: nextCursor, ...(householdSlug && { household: householdSlug }) },
+              query: {
+                cursor: nextCursor,
+                ...(householdSlug && { household: householdSlug }),
+                ...(selectedCategory && { category: selectedCategory }),
+              },
             }}
             className="text-clay underline underline-offset-4"
           >

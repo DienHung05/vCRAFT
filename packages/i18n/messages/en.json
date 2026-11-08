@@ -72,6 +72,7 @@
       "filteredBy": "Showing news from {name}.",
       "clearFilter": "Show all news",
       "more": "Load more news",
+      "categoryFilter": "News categories",
       "categories": {
         "HOUSEHOLD_UPDATE": "From a household",
         "VILLAGE_EVENT": "Village event",
