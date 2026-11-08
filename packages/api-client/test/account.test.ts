@@ -96,6 +96,8 @@ describe('account HTTP client', () => {
           workshops: [],
           visit: { showrooms: [], productionWorkshops: [] },
           products: [],
+          ratingAverage: null,
+          ratingCount: 0,
           status: 'PENDING_REVIEW',
           statusReason: null,
           reviewState: 'NEW',
