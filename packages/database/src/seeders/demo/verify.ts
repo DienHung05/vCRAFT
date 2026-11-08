@@ -2,6 +2,7 @@ import type { EntityManager } from '@mikro-orm/core';
 import { type ChainEntry, verifyChain } from '@vcraft/domain';
 import {
   AppUser,
+  Artisan,
   CooperativeQuotation,
   Household,
   JournalEntry,
@@ -49,6 +50,11 @@ const MUST_STAY_OPEN = [
 ] as const;
 const MIN_OPEN_DAYS = 3;
 
+/** Words of the old demo disclaimers (GH#204, GH#298). */
+const DEMO_DISCLAIMER = /dữ liệu mẫu|hư cấu|không phải hộ thật|dùng để trình diễn/i;
+/** A name still carrying the old "(mẫu)" tag. */
+const SAMPLE_NAME_SUFFIX = /\(mẫu\)/i;
+
 export interface VerifyDemoOptions {
   /** Kiểm ảnh và giấy tờ (sau `pnpm demo:media`). Mặc định bật; tắt khi chỉ có dữ liệu seed chưa gắn ảnh. */
   media?: boolean;
@@ -74,6 +80,33 @@ export async function verifyDemoData(
     'Hộ: ≥ 20 (gồm 1 hộ chờ duyệt)',
     households >= 20 && pending === 1,
     `${households} hộ, ${pending} chờ duyệt`,
+  );
+
+  // GH#298: the old "sample data" disclaimers must be gone from every text a visitor can read.
+  const disclaimed = (texts: ReadonlyArray<string | null | undefined>) =>
+    texts.filter((text) => text != null && DEMO_DISCLAIMER.test(text)).length;
+  const disclaimerCounts = {
+    household: disclaimed(
+      (await em.find(Household, {}, { fields: ['history'] })).map((h) => h.history),
+    ),
+    artisan: disclaimed((await em.find(Artisan, {}, { fields: ['bio'] })).map((a) => a.bio)),
+    news: disclaimed(
+      (await em.find(News, {}, { fields: ['title', 'body'] })).flatMap((n) => [n.title, n.body]),
+    ),
+    product: disclaimed(
+      (await em.find(Product, {}, { fields: ['description'] })).map((p) => p.description),
+    ),
+    // The "(mẫu)" suffix the demo accounts used to carry in `app_user.full_name`.
+    appUser: (await em.find(AppUser, {}, { fields: ['fullName'] })).filter(
+      (u) => u.fullName != null && SAMPLE_NAME_SUFFIX.test(u.fullName),
+    ).length,
+  };
+  add(
+    'No demo disclaimer text',
+    Object.values(disclaimerCounts).every((count) => count === 0),
+    Object.entries(disclaimerCounts)
+      .map(([table, count]) => `${table} ${count}`)
+      .join(', '),
   );
 
   const products = await em.find(Product, {}, { fields: ['id', 'traceCode', 'status'] });

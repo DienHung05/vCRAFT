@@ -23,6 +23,7 @@
     "demo:reset": "pnpm --filter @vcraft/domain --filter @vcraft/utils run build && pnpm --filter @vcraft/database exec node --disable-warning=DEP0205 --env-file-if-exists=../../.env --import @swc-node/register/esm-register ./src/seeders/demo/reset-cli.ts",
     "demo:verify": "pnpm --filter @vcraft/domain --filter @vcraft/utils run build && pnpm --filter @vcraft/database exec node --disable-warning=DEP0205 --env-file-if-exists=../../.env --import @swc-node/register/esm-register ./src/seeders/demo/verify-cli.ts",
     "demo:backfill-id-numbers": "pnpm --filter @vcraft/domain --filter @vcraft/utils run build && pnpm --filter @vcraft/database exec node --disable-warning=DEP0205 --env-file-if-exists=../../.env --import @swc-node/register/esm-register ./src/seeders/demo/backfill-id-numbers-cli.ts",
+    "demo:refresh-text": "pnpm --filter @vcraft/domain --filter @vcraft/utils run build && pnpm --filter @vcraft/database exec node --disable-warning=DEP0205 --env-file-if-exists=../../.env --import @swc-node/register/esm-register ./src/seeders/demo/refresh-text-cli.ts",
     "demo:media": "pnpm --filter \"@vcraft/worker...\" run build && pnpm --filter @vcraft/worker exec node --disable-warning=DEP0205 --env-file-if-exists=../../.env dist/demo/cli.js",
     "assistant:reindex": "pnpm --filter \"@vcraft/worker...\" run build && pnpm --filter @vcraft/worker exec node --disable-warning=DEP0205 --env-file-if-exists=../../.env dist/assistant/reindex-cli.js",
     "demo:auth": "node --env-file-if-exists=.env scripts/demo/auth.mjs",

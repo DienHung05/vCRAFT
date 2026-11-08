@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   AppUser,
+  Artisan,
   CooperativeQuotation,
   clearBusinessData,
   DEMO_ACCOUNTS,
@@ -27,6 +28,7 @@ import {
   Product,
   QuotationRequest,
   RETIRED_DEMO_PHOTO_IDS,
+  refreshDemoText,
   seedDemoData,
   verifyDemoData,
 } from '@vcraft/database';
@@ -159,6 +161,85 @@ describe('Demo seed and guarded reset', () => {
     const report = await verifyDemoData(db.orm.em.fork(), now, { media: false });
     expect(report.checks.filter((c) => !c.ok)).toEqual([]);
     expect(report.ok).toBe(true);
+  });
+
+  it('GH#298: demo:refresh-text restores the seed text over the old disclaimers and is idempotent', async () => {
+    const check = async () =>
+      (await verifyDemoData(db.orm.em.fork(), now, { media: false })).checks.find(
+        (c) => c.name === 'No demo disclaimer text',
+      );
+    expect(await check()).toMatchObject({ ok: true });
+
+    const em = db.orm.em.fork();
+    const households = await em.find(Household, {}, { orderBy: { slug: 'asc' } });
+    const artisans = await em.find(Artisan, {}, { orderBy: { id: 'asc' } });
+    const bodies = new Map(households.map((h) => [h.id, h.history]));
+    const bios = new Map(artisans.map((a) => [a.id, a.bio]));
+    const household = households[0] as Household;
+    const artisan = artisans[0] as Artisan;
+    const prices = await em.findOneOrFail(News, { category: 'MATERIAL_PRICES' });
+    const pricesBody = prices.body;
+    household.history = `[Dữ liệu mẫu] ${household.name} làm nghề gốm. Đây là hồ sơ hư cấu dùng để trình diễn, không phải hộ thật.`;
+    artisan.bio = '[Dữ liệu mẫu] Làm gốm men lam tại Bát Tràng.';
+    prices.body = `[Dữ liệu mẫu] ${pricesBody}`;
+    // The four fixed accounts and a household representative used to carry a " (mẫu)" suffix.
+    const pendingUser = await em.findOneOrFail(AppUser, DEMO_ACCOUNTS.pending.id);
+    const adminUser = await em.findOneOrFail(AppUser, DEMO_ACCOUNTS.admin.id);
+    const rep = await em.findOneOrFail(AppUser, { email: { $like: 'rep.%' } });
+    const repName = rep.fullName;
+    pendingUser.fullName = 'Đại diện hộ chờ duyệt (mẫu)';
+    adminUser.fullName = 'Ban quản lý làng nghề (mẫu)';
+    rep.fullName = `${repName} (mẫu)`;
+    await em.flush();
+    expect(await check()).toMatchObject({
+      ok: false,
+      detail: 'household 1, artisan 1, news 1, product 0, appUser 3',
+    });
+
+    const dry = await refreshDemoText(db.orm.em.fork(), { dryRun: true });
+    expect(dry).toMatchObject({
+      dryRun: true,
+      household: { changed: 1 },
+      artisan: { changed: 1 },
+      news: { changed: 1 },
+      product: { changed: 0 },
+      appUser: { changed: 3 },
+    });
+    expect(await check()).toMatchObject({ ok: false });
+
+    const first = await refreshDemoText(db.orm.em.fork());
+    expect(first).toMatchObject({
+      household: { changed: 1 },
+      artisan: { changed: 1 },
+      news: { changed: 1 },
+      product: { changed: 0 },
+      appUser: { changed: 3 },
+      changedHouseholdSlugs: [household.slug],
+    });
+    const second = await refreshDemoText(db.orm.em.fork());
+    expect(second).toMatchObject({
+      household: { changed: 0 },
+      artisan: { changed: 0 },
+      news: { changed: 0 },
+      product: { changed: 0 },
+      appUser: { changed: 0 },
+      changedHouseholdSlugs: [],
+    });
+
+    const after = db.orm.em.fork();
+    expect((await after.findOneOrFail(Household, household.id)).history).toBe(
+      bodies.get(household.id),
+    );
+    expect((await after.findOneOrFail(Artisan, artisan.id)).bio).toBe(bios.get(artisan.id));
+    expect((await after.findOneOrFail(News, prices.id)).body).toBe(pricesBody);
+    expect((await after.findOneOrFail(AppUser, DEMO_ACCOUNTS.pending.id)).fullName).toBe(
+      DEMO_ACCOUNTS.pending.fullName,
+    );
+    expect((await after.findOneOrFail(AppUser, DEMO_ACCOUNTS.admin.id)).fullName).toBe(
+      DEMO_ACCOUNTS.admin.fullName,
+    );
+    expect((await after.findOneOrFail(AppUser, rep.id)).fullName).toBe(repName);
+    expect(await check()).toMatchObject({ ok: true });
   });
 
   it('chưa chạy `demo:media` thì nhóm kiểm ảnh và giấy tờ báo đỏ', async () => {
