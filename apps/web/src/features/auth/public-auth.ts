@@ -11,11 +11,17 @@ async function request(path: string, body: unknown): Promise<unknown> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  const data: unknown = await response.json();
+  // An edge challenge or proxy error answers HTML: read it as "no body" so the status still maps to a message.
+  const data: unknown = await response.json().catch(() => undefined);
   if (!response.ok) {
     const problem = z.object({ code: z.string().optional() }).safeParse(data);
     throw Object.assign(new Error('Authentication request failed'), {
       code: problem.success ? problem.data.code : undefined,
+      status: response.status,
+    });
+  }
+  if (data === undefined) {
+    throw Object.assign(new Error('Authentication response was not JSON'), {
       status: response.status,
     });
   }

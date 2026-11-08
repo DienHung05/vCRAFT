@@ -47,6 +47,8 @@ Tất cả lấy từ Supabase Dashboard (đường dẫn trong ngoặc theo `.e
 | `FIELD_ENCRYPTION_KEYS` | API, worker | Sinh mới: `v1:` + `openssl rand -base64 32`. **Giống nhau ở cả hai service**; giữ bản sao ở nơi an toàn, mất khóa là mất dữ liệu đã mã hóa. Thiếu hoặc sai định dạng thì API và worker không khởi động. Xoay khóa: đặt khóa mới lên đầu (`v2:<khóa mới>,v1:<khóa cũ>`), redeploy cả hai service, chạy `pnpm db:rotate-field-keys` (cần cùng `DB_*` và `FIELD_ENCRYPTION_KEYS`), rồi mới bỏ `v1` khỏi danh sách (xem ADR-18) |
 | `NEXT_PUBLIC_PRIVACY_EMAIL` | Web (Vercel) | Optional. Mailbox that receives personal-data requests the account page cannot handle (an order in progress blocks self-service deletion). Shown as a mailto link in the privacy policy (NFR-SEC-07); empty shows the generic Management Board wording. Build-time: Redeploy after changing it |
 | `SMTP_URL`, `MAIL_FROM` | worker | Nhà cung cấp SMTP, vd. `smtps://user:pass@smtp.example.com:465`; `MAIL_FROM="vCraft <no-reply@<domain>>"` |
+| `API_RATE_LIMIT_PER_MINUTE` | API | Optional, default `600`. Requests per minute per caller across the whole API (NFR-SEC-04): a signed-in caller is counted by a hash of its bearer token, an anonymous one by IP; over it the API answers `429` problem+json (`RATE_LIMITED`) with `Retry-After`. `GET /health*` is never limited. Sign-in, sign-up and username checks keep their own stricter limits. Needs `TRUST_PROXY=true` so the IP is the visitor's, not the proxy's. Counting signed-in callers by token keeps page renders on Vercel, which share a few server IPs, from sharing one bucket; anonymous renders still share one, so raise the limit if many guests browse at once |
+| `API_RATE_LIMIT_ENABLED` | API | Optional, default `true`. `false` turns the global limiter off (for example while a load test runs) |
 | `APP_URL` | API, worker | Origin công khai của web: `https://<domain>` (không có `/` cuối). Worker dùng để sinh liên kết trong email |
 
 **CA của pooler.** Mặc định `render.yaml` đặt `DB_SSL_CA_FILE=/opt/render/project/src/infra/certs/supabase-root-2021.crt` (Render clone repo vào `/opt/render/project/src`). Nếu muốn dán PEM thay cho file: xóa `DB_SSL_CA_FILE` khỏi nhóm biến `vcraft-shared` trên Render, rồi đặt `DB_SSL_CA` ở cả hai service (chỉ đặt MỘT trong hai, nếu không API từ chối khởi động).
@@ -184,6 +186,15 @@ The account page (`/vi/tai-khoan`) lists the last 20 sign-ins. The API records o
 - **Phương án thêm, rẻ: keep-alive.** Dùng dịch vụ giám sát bên ngoài (vd. UptimeRobot, cron-job.org) gọi `GET https://<URL Render>/api/v1/health` mỗi 5 phút. Chỉ bổ sung cho `starter` (phát hiện sự cố sớm), không thay thế nếu để `free`.
 - Trước giờ thi 1 giờ: mở `<URL Render>/api/v1/health` và `https://<domain>/vi`, chạy `pnpm demo:e2e:preexam` (demo README), và nhìn Render → *Metrics* xem không có restart lặp lại.
 - Supabase Free tự tạm dừng sau 7 ngày không hoạt động: vào Dashboard khôi phục nếu cần, trước ngày thi ít nhất một ngày.
+
+### 7.1 Cloudflare in front of the API host (owner-only)
+
+`vcraft-api.onrender.com` can sit behind a Cloudflare proxy that Render controls. Its Bot Fight or rate rules answer a burst of requests (a few dozen from one IP, such as an exam room behind one NAT, or the Vercel servers calling `/me` on every signed-in page) with an HTML "Just a moment..." challenge, `429` or `503`, even for `/api/v1/health`. Those answers are not RFC 9457 and the web app cannot solve a challenge. The app now retries once and shows a retryable "session unavailable" state instead of an HTTP 500, but the edge rule is the real cause and only the account owner can change it:
+
+- In the Cloudflare dashboard for the API host, relax or skip Bot Fight Mode, Super Bot Fight Mode and any rate-limiting rule for `/api/v1/*` (a WAF custom rule with action *Skip* on `starts_with(http.request.uri.path, "/api/v1/")` is enough), or rely on the application limiter above, which answers in problem+json with `Retry-After`.
+- Challenge pages must never be served to the Vercel server-side fetches (`API_INTERNAL_URL`): they run without a browser and cannot pass a challenge. If the host is not under your control, put the API on a domain you own behind your own Cloudflare zone and add the skip rule there.
+- Check: `for i in $(seq 60); do curl -s -o /dev/null -w '%{http_code} %{content_type}
+' https://<URL Render>/api/v1/health; done` should print only `200 application/json`.
 
 ## 8. Kiểm tra sau triển khai
 

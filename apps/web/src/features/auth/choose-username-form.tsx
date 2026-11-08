@@ -41,9 +41,10 @@ export function ChooseUsernameForm({ next }: { next: string | null }) {
         body: JSON.stringify(body),
       });
       if (!response.ok) {
-        const data = await response.json();
+        // An edge challenge or proxy error answers HTML: no body, but the status still maps to a message.
+        const data = await response.json().catch(() => null);
         throw Object.assign(new Error('Username could not be saved'), {
-          code: data.code,
+          code: data?.code,
           status: response.status,
         });
       }

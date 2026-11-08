@@ -87,6 +87,7 @@ export function authErrorKey(error: unknown): AuthErrorKey {
     if (mapped) return mapped;
     if (name === 'AuthRetryableFetchError' || status === 0) return 'network';
     if (status === 429) return 'rate_limited';
+    if (typeof status === 'number' && status >= 500) return 'apiDown';
   }
   return 'unknown';
 }

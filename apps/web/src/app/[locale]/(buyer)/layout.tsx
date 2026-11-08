@@ -1,3 +1,4 @@
+import { SessionUnavailable } from '@/components/session-unavailable';
 import { PublicShell } from '@/components/shell/public-shell';
 import { requireArea } from '@/lib/auth/guard';
 import { resolveLocale } from '@/lib/locale';
@@ -6,6 +7,7 @@ import { resolveLocale } from '@/lib/locale';
 // Khu Buyer cần đăng nhập với vai trò Buyer: khách bị chuyển tới đăng nhập, vai trò khác nhận 403.
 export default async function Layout({ children, params }: LayoutProps<'/[locale]'>) {
   const locale = await resolveLocale(params);
-  await requireArea('buyer', locale);
-  return <PublicShell>{children}</PublicShell>;
+  const viewer = await requireArea('buyer', locale);
+  // The API could not confirm the session: stay inside the shell with a retry instead of a 500 page.
+  return <PublicShell>{viewer ? children : <SessionUnavailable />}</PublicShell>;
 }

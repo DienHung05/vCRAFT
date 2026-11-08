@@ -11,9 +11,17 @@ class Redirected extends Error {
 class Forbidden extends Error {}
 
 let viewer: MeDto | null = null;
+let unavailable = false;
 let path: string | null = null;
 
-vi.mock('@/lib/auth/viewer', () => ({ getViewer: async () => viewer }));
+vi.mock('@/lib/auth/viewer', () => ({
+  getViewerState: async () =>
+    unavailable
+      ? { status: 'unavailable' }
+      : viewer
+        ? { status: 'signed-in', viewer }
+        : { status: 'guest' },
+}));
 vi.mock('next/headers', () => ({
   headers: async () => new Headers(path ? { 'x-vcraft-path': path } : {}),
 }));
@@ -70,6 +78,7 @@ async function outcome(run: () => Promise<unknown>): Promise<unknown> {
 
 beforeEach(() => {
   viewer = null;
+  unavailable = false;
   path = null;
 });
 
@@ -129,6 +138,25 @@ describe('requireArea', () => {
     viewer = me({ role: 'HOUSEHOLD', household: pendingHousehold });
     path = '/en/studio/profile';
     expect(await outcome(() => requireArea('studio', 'en'))).toBe(viewer);
+  });
+});
+
+describe('API cannot confirm the session (slow, 429, HTML challenge)', () => {
+  it('requireArea returns null instead of throwing, so the layout can render a retry state', async () => {
+    unavailable = true;
+    for (const area of ['buyer', 'studio', 'admin'] as const) {
+      expect(await outcome(() => requireArea(area, 'vi'))).toBeNull();
+    }
+  });
+
+  it('requireViewer returns null instead of throwing', async () => {
+    unavailable = true;
+    expect(await outcome(() => requireViewer('vi'))).toBeNull();
+  });
+
+  it('redirectIfSignedIn keeps showing the guest form', async () => {
+    unavailable = true;
+    expect(await outcome(() => redirectIfSignedIn('vi', null))).toBeUndefined();
   });
 });
 

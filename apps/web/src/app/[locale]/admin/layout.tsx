@@ -1,5 +1,6 @@
 import { Logo } from '@vcraft/ui';
 import { getTranslations } from 'next-intl/server';
+import { SessionUnavailable } from '@/components/session-unavailable';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
 import { AdminNav } from '@/features/admin/admin-nav';
 import { AccountMenu } from '@/features/auth/account-menu';
@@ -14,6 +15,18 @@ export default async function AdminLayout({ children, params }: LayoutProps<'/[l
   const locale = await resolveLocale(params);
   const viewer = await requireArea('admin', locale);
   const t = await getTranslations('admin');
+
+  // The API could not confirm the session: show a retry inside the admin frame instead of a 500 page.
+  if (!viewer) {
+    return (
+      <main id="main" className="min-h-svh px-4 py-6 md:px-8">
+        <Link href="/" aria-label={t('home')}>
+          <Logo size={26} />
+        </Link>
+        <SessionUnavailable />
+      </main>
+    );
+  }
 
   // GH#83: until this session passes TOTP the API refuses every admin route, so show the code screen
   // instead of pages that would only fail.

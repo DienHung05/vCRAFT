@@ -1,6 +1,7 @@
 import { Card } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { SessionUnavailable } from '@/components/session-unavailable';
 import { AccountSecurity } from '@/features/account/account-security';
 import { Link } from '@/i18n/navigation';
 import { requireViewer } from '@/lib/auth/guard';
@@ -24,7 +25,9 @@ export default async function AccountSessionsPage({
   params,
 }: PageProps<'/[locale]/tai-khoan/phien-dang-nhap'>) {
   const locale = await resolveLocale(params);
-  await requireViewer(locale);
+  const viewer = await requireViewer(locale);
+  // The API could not confirm the session: stay inside the shell with a retry instead of a 500 page.
+  if (!viewer) return <SessionUnavailable />;
   const t = await getTranslations('account.sessions');
 
   return (

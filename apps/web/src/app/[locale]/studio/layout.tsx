@@ -1,3 +1,4 @@
+import { SessionUnavailable } from '@/components/session-unavailable';
 import { PublicShell } from '@/components/shell/public-shell';
 import { OutageBanner } from '@/features/studio/outage-banner';
 import { StudioNav } from '@/features/studio/studio-nav';
@@ -9,6 +10,14 @@ import { resolveLocale } from '@/lib/locale';
 export default async function StudioLayout({ children, params }: LayoutProps<'/[locale]/studio'>) {
   const locale = await resolveLocale(params);
   const viewer = await requireArea('studio', locale);
+  // The API could not confirm the session: stay inside the shell with a retry instead of a 500 page.
+  if (!viewer) {
+    return (
+      <PublicShell>
+        <SessionUnavailable />
+      </PublicShell>
+    );
+  }
   return (
     // The phone tab bar is fixed to the bottom edge; this keeps the footer clear of it.
     <div className="pb-16 md:pb-0">
