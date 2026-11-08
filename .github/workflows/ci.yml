@@ -8,6 +8,15 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  # Turbo keeps its local cache inside the workspace so actions/cache can save and restore it.
+  TURBO_CACHE_DIR: .turbo/cache
+  # Set at workflow level so quality and e2e build the web app with identical env, hence identical turbo hashes
+  # (turbo.json hashes API_INTERNAL_URL and NEXT_PUBLIC_* for the build task) and e2e can reuse quality's build cache.
+  # NEXT_PUBLIC_TURNSTILE_SITE_KEY must match in both builds too, but is set per step/job instead: turbo forwards
+  # NEXT_PUBLIC_* to every task, and the web unit tests fail when the CAPTCHA key is present.
+  API_INTERNAL_URL: http://localhost:4000/api/v1
+
 jobs:
   # Pipeline mặc định bật; đặt repo variable CI_ENABLED=false để tắt.
   quality:
@@ -19,35 +28,57 @@ jobs:
       - uses: actions/setup-node@v7
         with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v6
+        with:
+          path: .turbo/cache
+          key: turbo-quality-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-quality-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            turbo-quality-${{ runner.os }}-
       - run: pnpm lint
       - run: pnpm deps:check
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm test:scripts
       - run: pnpm build
+        env:
+          # GH#84: Cloudflare's always-pass Turnstile test key, built into the web app for the CAPTCHA e2e.
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
 
   # Chứng minh "độc lập CSDL": cùng bộ integration test chạy trên 2 hệ quản trị.
   # Test dựng CSDL thật bằng Testcontainers nên cần Docker daemon (ubuntu-latest có sẵn).
   # Suite rỗng KHÔNG còn được coi là xanh: không có file test thì bước này thất bại.
-  integration:
-    needs: quality
+  # Runs in parallel with quality (no `needs`) and splits each database into 4 shards to cut wall-clock time.
+  integration-shard:
+    name: integration (${{ matrix.db }} ${{ matrix.shard }}/4)
     if: vars.CI_ENABLED != 'false'
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         db: [postgresql, mysql]
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @vcraft/api test:integration
+      - run: pnpm --filter @vcraft/api test:integration --shard=${{ matrix.shard }}/4
         env:
           DB_DRIVER: ${{ matrix.db }}
 
+  # The single required status check for integration: branch protection names `integration`, so the shard
+  # count can change without touching it. `always()` makes it run (and fail) when a shard fails or is cancelled.
+  integration:
+    name: integration
+    needs: integration-shard
+    if: always() && vars.CI_ENABLED != 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - run: test "${{ needs.integration-shard.result }}" = success
+
   e2e:
-    needs: quality
     if: vars.CI_ENABLED != 'false'
     runs-on: ubuntu-latest
     # Trang công khai đọc API thật nên E2E cần CSDL đã nạp dữ liệu mẫu và API đang chạy.
@@ -66,7 +97,6 @@ jobs:
       DB_PASSWORD: pw
       DB_NAME: vcraft
       DB_SSL: "false"
-      API_INTERNAL_URL: http://localhost:4000/api/v1
       # Throwaway key for CI only (NFR-SEC-03): the demo seed encrypts sample ID numbers and the API refuses to start without one.
       FIELD_ENCRYPTION_KEYS: v1:Y2ktb25seS1maWVsZC1rZXktMDEyMzQ1Njc4OWFiY2Q=
       # GH#84: Cloudflare's always-pass Turnstile test key, built into the web app for the CAPTCHA e2e.
@@ -77,7 +107,30 @@ jobs:
       - uses: actions/setup-node@v7
         with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @vcraft/e2e exec playwright install --with-deps chromium
+      - uses: actions/cache@v6
+        with:
+          path: .turbo/cache
+          key: turbo-e2e-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-e2e-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            turbo-e2e-${{ runner.os }}-
+            turbo-quality-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            turbo-quality-${{ runner.os }}-
+      - name: Resolve Playwright version
+        id: playwright-version
+        run: echo "version=$(pnpm --filter @vcraft/e2e exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+      - name: Install Playwright browsers and system dependencies
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @vcraft/e2e exec playwright install --with-deps chromium
+      - name: Install Playwright system dependencies (browsers cached)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @vcraft/e2e exec playwright install-deps chromium
       - run: pnpm db:migrate
       - name: Nạp dữ liệu mẫu
         run: pnpm demo:reset
