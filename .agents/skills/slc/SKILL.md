@@ -1,6 +1,6 @@
 ---
 name: slc
-description: "Scope decisions using Simple, Lovable, Complete. Use when choosing an initial usable release, reducing or renegotiating scope, or judging whether a proposed release delivers its promised outcome. Also use for explicit SLC requests. For fixed-scope implementation, debugging, or experiments concerned only with learning, use the relevant workflow instead."
+description: "Scope decisions using Simple, Lovable, Complete. Use when choosing an initial usable release, reducing or renegotiating scope, or judging whether a proposed release delivers its promised outcome."
 ---
 
 # SLC
@@ -44,7 +44,3 @@ Example: "Scope a payroll tool for our staff: calculations, saved runs, and them
 When the promise has no unresolved correctness, safety, or authorization blocker, read [delivery.md](delivery.md) and continue the scope decision. Label assumptions that do not determine those obligations. Resolve other unknowns with a focused question only when their answers would materially change the recommendation; otherwise give a provisional recommendation.
 
 After a clarification answer, check whether it resolves the blocker. Continue through this branch when it does; ask only about what remains unresolved when it does not.
-
-## Source and adaptation
-
-[Jason Cohen, "Your customers hate MVPs. Make a SLC instead."](https://longform.asmartbear.com/slc/) supplies Simple, Lovable, Complete and the test of a useful release without further feature development. Cohen presents SLC as an alternative to MVP. This skill deliberately pairs SLC's delivery standard with MVP-style learning; the process and examples are an adaptation, not claims from the article.
