@@ -718,3 +718,38 @@ li:last-child > .journey-dot .journey-dot-label {
     transform: none;
   }
 }
+
+/*
+ * Turning vase (GH#316, experience/hero-vase/turning-vase.tsx): the server-rendered hero vase. Glaze
+ * motifs slide across the body inside the silhouette clip, one motif period per loop, so the loop is
+ * seamless; a glint sweeps over the same body. Transform only, so it runs on the compositor and starts
+ * at first paint without JavaScript. Under reduced motion the shaded vase stays as one still frame.
+ */
+.turning-vase-spin {
+  animation: turning-vase-spin 7s linear infinite;
+  will-change: transform;
+}
+.turning-vase-glint {
+  animation: turning-vase-glint 7s linear infinite;
+  will-change: transform;
+}
+@keyframes turning-vase-spin {
+  to {
+    transform: translateX(-80px);
+  }
+}
+@keyframes turning-vase-glint {
+  from {
+    transform: translateX(-150px);
+  }
+  to {
+    transform: translateX(150px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .turning-vase-spin,
+  .turning-vase-glint {
+    animation: none;
+    will-change: auto;
+  }
+}

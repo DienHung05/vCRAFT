@@ -1,9 +1,10 @@
-import { buttonVariants, cn, TraceSealFrame, VaseFigure, WaveDivider } from '@vcraft/ui';
+import { buttonVariants, cn, TraceSealFrame, WaveDivider } from '@vcraft/ui';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { EmptyState } from '@/components/states/empty-state';
 import { HeroVase } from '@/experience/hero-vase/hero-vase';
+import { TurningVase } from '@/experience/hero-vase/turning-vase';
 import { CountUp } from '@/experience/motion/count-up';
 import { DayStory } from '@/experience/motion/day-story';
 import { HandUnderline } from '@/experience/motion/hand-underline';
@@ -124,10 +125,10 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             ratio="4/5"
             className="grid place-items-center"
           >
-            {/* GH#215: no photo. The hand-drawn vase is the placeholder and the fallback; on capable
-                desktops the forming, turning WebGL vase (GH#94) cross-fades in over it once its first
-                frame is ready. */}
-            <VaseFigure className="h-[72%] drop-shadow-[0_24px_40px_rgb(30_58_110/0.35)]" />
+            {/* GH#316: no photo and never the flat figure. The shaded, CSS-turning vase is in the first
+                HTML and is the fallback on every device; on capable desktops the WebGL vase (GH#94)
+                cross-fades in over it, in the same box, once its first frame has been drawn. */}
+            <TurningVase className="absolute inset-0 size-full" />
             <HeroVase sectionId="home-hero" />
           </ImageSlot>
           {showcase ? (
