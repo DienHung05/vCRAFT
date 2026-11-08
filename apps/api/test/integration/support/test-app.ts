@@ -120,7 +120,7 @@ export interface TestApp {
     body?: unknown;
     headers?: Record<string, string>;
     // biome-ignore lint/suspicious/noExplicitAny: test đọc JSON tùy dạng, kiểm bằng expect
-  }) => Promise<{ status: number; body: any }>;
+  }) => Promise<{ status: number; body: any; headers: Record<string, unknown> }>;
   close: () => Promise<void>;
 }
 
@@ -187,7 +187,11 @@ export async function startTestApp(
         headers: { ...(auth && { authorization: auth }), ...headers },
         ...(body !== undefined && { payload: body as object }),
       });
-      return { status: res.statusCode, body: res.body ? JSON.parse(res.body) : undefined };
+      return {
+        status: res.statusCode,
+        body: res.body ? JSON.parse(res.body) : undefined,
+        headers: res.headers,
+      };
     },
     close: async () => {
       await app.close();

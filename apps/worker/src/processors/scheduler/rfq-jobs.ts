@@ -4,6 +4,7 @@ import {
   expireRequest,
   flagRequestsNeedingCoordination,
   purgeAssistantLogs,
+  purgeIdempotencyKeys,
 } from '@vcraft/database';
 
 /** Job names on the scheduler queue (PLAN E9). */
@@ -12,11 +13,14 @@ export const RFQ_EXPIRE_SWEEP_JOB = 'rfq.expire-sweep';
 export const RFQ_COORDINATION_CHECK_JOB = 'rfq.coordination-check';
 /** Deletes assistant logs older than 30 days (PLAN E15). */
 export const ASSISTANT_LOG_PURGE_JOB = 'assistant.purge-logs';
+/** Deletes idempotency keys older than 24 hours (BR-L5). */
+export const IDEMPOTENCY_PURGE_JOB = 'idempotency.purge-keys';
 
 /** How often the safety sweep and the coordination check run. */
 export const RFQ_SWEEP_EVERY_MS = 60_000;
 export const COORDINATION_CHECK_EVERY_MS = 15 * 60_000;
 export const ASSISTANT_LOG_PURGE_EVERY_MS = 24 * 60 * 60_000;
+export const IDEMPOTENCY_PURGE_EVERY_MS = 60 * 60_000;
 
 export interface RfqExpireJob {
   requestId: string;
@@ -42,6 +46,8 @@ export async function runSchedulerJob(
       return flagRequestsNeedingCoordination(orm, now);
     case ASSISTANT_LOG_PURGE_JOB:
       return purgeAssistantLogs(orm, now);
+    case IDEMPOTENCY_PURGE_JOB:
+      return purgeIdempotencyKeys(orm, now);
     default:
       throw new Error(`unknown scheduler job: ${name}`);
   }
