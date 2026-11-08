@@ -55,7 +55,10 @@ export async function SiteHeader() {
           <div className="hidden sm:block">
             <LocaleSwitcher />
           </div>
-          <ThemeToggle />
+          {/* Below sm the theme toggle moves into the menu too, making room for the search button (GH#254). */}
+          <div className="hidden sm:block">
+            <ThemeToggle />
+          </div>
           <LazyNotificationBell />
           <LazyAccountMenu compact />
           <Disclosure className="lg:hidden" summary={t('menu')}>
@@ -63,8 +66,9 @@ export async function SiteHeader() {
               aria-label={t('label')}
               className="absolute right-0 mt-2 w-56 rounded-card bg-surface p-2 shadow-warm ring-1 ring-ink/8"
             >
-              <div className="p-1 sm:hidden">
+              <div className="flex items-center gap-1 p-1 sm:hidden">
                 <LocaleSwitcher />
+                <ThemeToggle />
               </div>
               <HeaderNavLinks items={items} />
             </nav>
