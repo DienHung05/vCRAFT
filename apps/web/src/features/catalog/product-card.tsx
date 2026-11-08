@@ -89,7 +89,7 @@ export function ProductGridSkeleton({ label, count = 8 }: { label: string; count
       role="status"
       aria-label={label}
       data-testid="product-skeleton"
-      className="grid grid-cols-2 gap-6 md:grid-cols-4"
+      className="grid grid-cols-2 gap-8 md:grid-cols-4"
     >
       {Array.from({ length: count }, (_, index) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: khung chờ giống hệt nhau, không đổi thứ tự.

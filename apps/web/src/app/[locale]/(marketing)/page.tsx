@@ -11,6 +11,7 @@ import { InkCursor } from '@/experience/motion/ink-cursor';
 import { InkReveal } from '@/experience/motion/ink-reveal';
 import { Magnetic } from '@/experience/motion/magnetic';
 import { PressedHeadline } from '@/experience/motion/pressed-headline';
+import { Reveal } from '@/experience/motion/reveal';
 import {
   fetchHouseholds,
   fetchProducts,
@@ -187,65 +188,68 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
         className="cv-auto mx-auto max-w-editorial px-gutter pb-section"
         aria-labelledby="artisans-title"
       >
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 id="artisans-title">{t('artisans.title')}</h2>
-            <p className="mt-3 max-w-prose-vn text-ash">{t('artisans.lead')}</p>
+        {/* GH#301: reveal the whole block once (images keep their ink-bleed inside it). */}
+        <Reveal>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 id="artisans-title">{t('artisans.title')}</h2>
+              <p className="mt-3 max-w-prose-vn text-ash">{t('artisans.lead')}</p>
+            </div>
+            <Link href="/nghe-nhan" className={buttonVariants({ variant: 'ghost' })}>
+              {t('artisans.all')} →
+            </Link>
           </div>
-          <Link href="/nghe-nhan" className={buttonVariants({ variant: 'ghost' })}>
-            {t('artisans.all')} →
-          </Link>
-        </div>
-        {householdsResult.status !== 'ok' ? (
-          <DataUnavailable className="mt-10 flex flex-col items-start gap-3" />
-        ) : featured.length === 0 ? (
-          <EmptyState
-            className="mt-6"
-            illustration="vase"
-            headingLevel="h3"
-            title={t('artisans.empty')}
-            action={
-              <Link href="/san-pham" className={buttonVariants({ variant: 'secondary' })}>
-                {t('hero.ctaExplore')}
-              </Link>
-            }
-          />
-        ) : (
-          <ul className="mt-10 grid gap-8 md:grid-cols-3">
-            {featured.map((h, i) => {
-              const coverAlt =
-                altFor(locale, h.coverAlt ?? '', h.coverAltEn) || preset('household');
-              return (
-                <li key={h.slug} className={cn(i === 1 && 'md:mt-16')}>
-                  <Link
-                    href={{ pathname: '/nghe-nhan/[slug]', params: { slug: h.slug } }}
-                    className="group block"
-                  >
-                    <InkReveal>
-                      <ImageSlot
-                        alt={coverAlt}
-                        tint={tintOf(h.slug)}
-                        ratio="3/4"
-                        {...slotPhoto(photoFromUrl(h.coverUrl, coverAlt, h.coverVariants))}
-                        sizes="(min-width: 768px) 30vw, 100vw"
-                        className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
-                      />
-                    </InkReveal>
-                    <h3 className="mt-4 transition-colors group-hover:text-clay">{h.name}</h3>
-                    <p className="text-small text-ash">
-                      {[h.representative, h.craft].filter(Boolean).join(' · ')}
-                    </p>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+          {householdsResult.status !== 'ok' ? (
+            <DataUnavailable className="mt-10 flex flex-col items-start gap-3" />
+          ) : featured.length === 0 ? (
+            <EmptyState
+              className="mt-6"
+              illustration="vase"
+              headingLevel="h3"
+              title={t('artisans.empty')}
+              action={
+                <Link href="/san-pham" className={buttonVariants({ variant: 'secondary' })}>
+                  {t('hero.ctaExplore')}
+                </Link>
+              }
+            />
+          ) : (
+            <ul className="mt-10 grid gap-8 md:grid-cols-3">
+              {featured.map((h, i) => {
+                const coverAlt =
+                  altFor(locale, h.coverAlt ?? '', h.coverAltEn) || preset('household');
+                return (
+                  <li key={h.slug} className={cn(i === 1 && 'md:mt-16')}>
+                    <Link
+                      href={{ pathname: '/nghe-nhan/[slug]', params: { slug: h.slug } }}
+                      className="group block"
+                    >
+                      <InkReveal>
+                        <ImageSlot
+                          alt={coverAlt}
+                          tint={tintOf(h.slug)}
+                          ratio="3/4"
+                          {...slotPhoto(photoFromUrl(h.coverUrl, coverAlt, h.coverVariants))}
+                          sizes="(min-width: 768px) 30vw, 100vw"
+                          className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
+                        />
+                      </InkReveal>
+                      <h3 className="mt-4 transition-colors group-hover:text-clay">{h.name}</h3>
+                      <p className="text-small text-ash">
+                        {[h.representative, h.craft].filter(Boolean).join(' · ')}
+                      </p>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Reveal>
       </section>
 
       {/* Bản đồ thu nhỏ "đang mở cửa" + số liệu làng. */}
       <section className="cv-auto bg-glaze text-paper" aria-labelledby="map-title">
-        <div className="mx-auto grid max-w-editorial gap-12 px-gutter py-section md:grid-cols-12">
+        <div className="mx-auto grid max-w-editorial gap-12 px-gutter pt-section pb-section-tail md:grid-cols-12">
           <div className="md:col-span-5">
             <h2 id="map-title" className="text-paper">
               {t('map.title')}
@@ -337,50 +341,55 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
         </dl>
       </section>
 
-      <section className="cv-auto mx-auto max-w-editorial px-gutter" aria-labelledby="news-title">
-        <div className="flex items-end justify-between gap-4">
-          <h2 id="news-title">{t('news.title')}</h2>
-        </div>
-        {newsResult.status === 'ok' && newsResult.page.data.length === 0 ? (
-          <EmptyState
-            className="mt-6"
-            illustration="scroll"
-            headingLevel="h3"
-            title={t('news.empty')}
-            action={
-              <Link href="/tin-tuc" className={buttonVariants({ variant: 'secondary' })}>
-                {t('news.all')}
-              </Link>
-            }
-          />
-        ) : newsResult.status === 'ok' ? (
-          <ul className="mt-8 grid gap-6 md:grid-cols-3">
-            {newsResult.page.data.map((n) => (
-              <li key={n.slug} className="flex flex-col gap-3">
-                <div>
-                  <ImageSlot
-                    alt={altFor(locale, n.cover?.alt || n.title, n.cover?.altEn)}
-                    tint={tintOf(n.slug)}
-                    ratio="3/2"
-                    {...slotPhoto(
-                      photoFromUrl(
-                        n.cover?.url ?? null,
-                        altFor(locale, n.cover?.alt || n.title, n.cover?.altEn),
-                        n.cover?.variants,
-                      ),
-                    )}
-                  />
-                </div>
-                <time dateTime={n.publishedAt} className="text-small text-ash">
-                  {format.dateTime(new Date(n.publishedAt), 'long')}
-                </time>
-                <h3 className="text-[1.25rem] leading-snug">{n.title}</h3>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <DataUnavailable className="mt-8 flex flex-col items-start gap-3" />
-        )}
+      <section
+        className="cv-auto mx-auto max-w-editorial px-gutter pt-section pb-section-tail"
+        aria-labelledby="news-title"
+      >
+        <Reveal>
+          <div className="flex items-end justify-between gap-4">
+            <h2 id="news-title">{t('news.title')}</h2>
+          </div>
+          {newsResult.status === 'ok' && newsResult.page.data.length === 0 ? (
+            <EmptyState
+              className="mt-6"
+              illustration="scroll"
+              headingLevel="h3"
+              title={t('news.empty')}
+              action={
+                <Link href="/tin-tuc" className={buttonVariants({ variant: 'secondary' })}>
+                  {t('news.all')}
+                </Link>
+              }
+            />
+          ) : newsResult.status === 'ok' ? (
+            <ul className="mt-8 grid gap-6 md:grid-cols-3">
+              {newsResult.page.data.map((n) => (
+                <li key={n.slug} className="flex flex-col gap-3">
+                  <div>
+                    <ImageSlot
+                      alt={altFor(locale, n.cover?.alt || n.title, n.cover?.altEn)}
+                      tint={tintOf(n.slug)}
+                      ratio="3/2"
+                      {...slotPhoto(
+                        photoFromUrl(
+                          n.cover?.url ?? null,
+                          altFor(locale, n.cover?.alt || n.title, n.cover?.altEn),
+                          n.cover?.variants,
+                        ),
+                      )}
+                    />
+                  </div>
+                  <time dateTime={n.publishedAt} className="text-small text-ash">
+                    {format.dateTime(new Date(n.publishedAt), 'long')}
+                  </time>
+                  <h3 className="text-[1.25rem] leading-snug">{n.title}</h3>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <DataUnavailable className="mt-8 flex flex-col items-start gap-3" />
+          )}
+        </Reveal>
       </section>
     </>
   );

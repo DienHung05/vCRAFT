@@ -6,7 +6,7 @@ import { ProductGridSkeleton } from '@/features/catalog/product-card';
 export default function Loading() {
   const t = useTranslations('catalog');
   return (
-    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section">
+    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section-tail">
       <CatalogHeader />
       <div className="mt-8">
         <ProductGridSkeleton label={t('loading')} />

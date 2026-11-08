@@ -1,0 +1,495 @@
+{
+  "report": [
+    {
+      "route": "home",
+      "size": "1440",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi",
+      "capture": {
+        "url": "http://localhost:3011/vi",
+        "viewportWidth": 1440,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "imageWidth": 1440,
+        "imageHeight": 8718
+      },
+      "ms": 11129,
+      "overflow360": null
+    },
+    {
+      "route": "san-pham",
+      "size": "1440",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/san-pham",
+      "capture": {
+        "url": "http://localhost:3011/vi/san-pham",
+        "viewportWidth": 1440,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "imageWidth": 1440,
+        "imageHeight": 2721
+      },
+      "ms": 7492,
+      "overflow360": null
+    },
+    {
+      "route": "san-pham-detail",
+      "size": "1440",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/san-pham/binh-hut-loc-men-lam-bt7k2qxm",
+      "capture": {
+        "url": "http://localhost:3011/vi/san-pham/binh-hut-loc-men-lam-bt7k2qxm",
+        "viewportWidth": 1440,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "imageWidth": 1440,
+        "imageHeight": 2494
+      },
+      "ms": 6211,
+      "overflow360": null
+    },
+    {
+      "route": "nghe-nhan",
+      "size": "1440",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/nghe-nhan",
+      "capture": {
+        "url": "http://localhost:3011/vi/nghe-nhan",
+        "viewportWidth": 1440,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "imageWidth": 1440,
+        "imageHeight": 4091
+      },
+      "ms": 6832,
+      "overflow360": null
+    },
+    {
+      "route": "nghe-nhan-detail",
+      "size": "1440",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/nghe-nhan/gom-bich-hop",
+      "capture": {
+        "url": "http://localhost:3011/vi/nghe-nhan/gom-bich-hop",
+        "viewportWidth": 1440,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "imageWidth": 1440,
+        "imageHeight": 6463
+      },
+      "ms": 5129,
+      "overflow360": null
+    },
+    {
+      "route": "ban-do",
+      "size": "1440",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/ban-do",
+      "capture": {
+        "url": "http://localhost:3011/vi/ban-do",
+        "viewportWidth": 1440,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "imageWidth": 1440,
+        "imageHeight": 6452
+      },
+      "ms": 4140,
+      "overflow360": null
+    },
+    {
+      "route": "tin-tuc",
+      "size": "1440",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/tin-tuc",
+      "capture": {
+        "url": "http://localhost:3011/vi/tin-tuc",
+        "viewportWidth": 1440,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "imageWidth": 1440,
+        "imageHeight": 5404
+      },
+      "ms": 4673,
+      "overflow360": null
+    },
+    {
+      "route": "tin-tuc-detail",
+      "size": "1440",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/tin-tuc/cho-gom-dem-bat-trang-tro-lai-vao-cuoi-tuan",
+      "capture": {
+        "url": "http://localhost:3011/vi/tin-tuc/cho-gom-dem-bat-trang-tro-lai-vao-cuoi-tuan",
+        "viewportWidth": 1440,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "imageWidth": 1440,
+        "imageHeight": 1770
+      },
+      "ms": 2861,
+      "overflow360": null
+    },
+    {
+      "route": "bao-gia",
+      "size": "1440",
+      "status": 200,
+      "state": "signed-out redirect",
+      "requestedPath": "/vi/yeu-cau-bao-gia/moi",
+      "capture": {
+        "url": "http://localhost:3011/vi/dang-nhap?next=%2Fvi%2Fyeu-cau-bao-gia%2Fmoi",
+        "viewportWidth": 1440,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "imageWidth": 1440,
+        "imageHeight": 1587
+      },
+      "ms": 3891,
+      "overflow360": null
+    },
+    {
+      "route": "truy-xuat",
+      "size": "1440",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/truy-xuat/BT7K2QXM",
+      "capture": {
+        "url": "http://localhost:3011/vi/truy-xuat/BT7K2QXM",
+        "viewportWidth": 1440,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "imageWidth": 1440,
+        "imageHeight": 5219
+      },
+      "ms": 6114,
+      "overflow360": null
+    },
+    {
+      "route": "dang-nhap",
+      "size": "1440",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/dang-nhap",
+      "capture": {
+        "url": "http://localhost:3011/vi/dang-nhap",
+        "viewportWidth": 1440,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "imageWidth": 1440,
+        "imageHeight": 1520
+      },
+      "ms": 3205,
+      "overflow360": null
+    },
+    {
+      "route": "dang-ky",
+      "size": "1440",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/dang-ky",
+      "capture": {
+        "url": "http://localhost:3011/vi/dang-ky",
+        "viewportWidth": 1440,
+        "scrollWidth": 1440,
+        "clientWidth": 1440,
+        "imageWidth": 1440,
+        "imageHeight": 1797
+      },
+      "ms": 8299,
+      "overflow360": null
+    },
+    {
+      "route": "home",
+      "size": "390",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi",
+      "capture": {
+        "url": "http://localhost:3011/vi",
+        "viewportWidth": 390,
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "imageWidth": 390,
+        "imageHeight": 7780
+      },
+      "ms": 6094,
+      "overflow360": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "offenders": [
+          "ol.day-stages.flex",
+          "li.w-[78vw].max-w-sm",
+          "div.grain.relative",
+          "img.absolute.inset-0",
+          "h3.mt-4"
+        ]
+      }
+    },
+    {
+      "route": "san-pham",
+      "size": "390",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/san-pham",
+      "capture": {
+        "url": "http://localhost:3011/vi/san-pham",
+        "viewportWidth": 390,
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "imageWidth": 390,
+        "imageHeight": 3884
+      },
+      "ms": 4994,
+      "overflow360": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "offenders": []
+      }
+    },
+    {
+      "route": "san-pham-detail",
+      "size": "390",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/san-pham/binh-hut-loc-men-lam-bt7k2qxm",
+      "capture": {
+        "url": "http://localhost:3011/vi/san-pham/binh-hut-loc-men-lam-bt7k2qxm",
+        "viewportWidth": 390,
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "imageWidth": 390,
+        "imageHeight": 3565
+      },
+      "ms": 5826,
+      "overflow360": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "offenders": []
+      }
+    },
+    {
+      "route": "nghe-nhan",
+      "size": "390",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/nghe-nhan",
+      "capture": {
+        "url": "http://localhost:3011/vi/nghe-nhan",
+        "viewportWidth": 390,
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "imageWidth": 390,
+        "imageHeight": 8826
+      },
+      "ms": 5566,
+      "overflow360": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "offenders": []
+      }
+    },
+    {
+      "route": "nghe-nhan-detail",
+      "size": "390",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/nghe-nhan/gom-bich-hop",
+      "capture": {
+        "url": "http://localhost:3011/vi/nghe-nhan/gom-bich-hop",
+        "viewportWidth": 390,
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "imageWidth": 390,
+        "imageHeight": 7432
+      },
+      "ms": 4905,
+      "overflow360": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "offenders": [
+          "svg",
+          "path"
+        ]
+      }
+    },
+    {
+      "route": "ban-do",
+      "size": "390",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/ban-do",
+      "capture": {
+        "url": "http://localhost:3011/vi/ban-do",
+        "viewportWidth": 390,
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "imageWidth": 390,
+        "imageHeight": 7989
+      },
+      "ms": 6282,
+      "overflow360": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "offenders": []
+      }
+    },
+    {
+      "route": "tin-tuc",
+      "size": "390",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/tin-tuc",
+      "capture": {
+        "url": "http://localhost:3011/vi/tin-tuc",
+        "viewportWidth": 390,
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "imageWidth": 390,
+        "imageHeight": 7389
+      },
+      "ms": 4764,
+      "overflow360": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "offenders": [
+          "table",
+          "caption",
+          "thead",
+          "tr",
+          "th"
+        ]
+      }
+    },
+    {
+      "route": "tin-tuc-detail",
+      "size": "390",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/tin-tuc/cho-gom-dem-bat-trang-tro-lai-vao-cuoi-tuan",
+      "capture": {
+        "url": "http://localhost:3011/vi/tin-tuc/cho-gom-dem-bat-trang-tro-lai-vao-cuoi-tuan",
+        "viewportWidth": 390,
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "imageWidth": 390,
+        "imageHeight": 2210
+      },
+      "ms": 2732,
+      "overflow360": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "offenders": []
+      }
+    },
+    {
+      "route": "bao-gia",
+      "size": "390",
+      "status": 200,
+      "state": "signed-out redirect",
+      "requestedPath": "/vi/yeu-cau-bao-gia/moi",
+      "capture": {
+        "url": "http://localhost:3011/vi/dang-nhap?next=%2Fvi%2Fyeu-cau-bao-gia%2Fmoi",
+        "viewportWidth": 390,
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "imageWidth": 390,
+        "imageHeight": 2176
+      },
+      "ms": 3644,
+      "overflow360": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "offenders": [
+          "g",
+          "g",
+          "g",
+          "path",
+          "path"
+        ]
+      }
+    },
+    {
+      "route": "truy-xuat",
+      "size": "390",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/truy-xuat/BT7K2QXM",
+      "capture": {
+        "url": "http://localhost:3011/vi/truy-xuat/BT7K2QXM",
+        "viewportWidth": 390,
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "imageWidth": 390,
+        "imageHeight": 5337
+      },
+      "ms": 4947,
+      "overflow360": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "offenders": []
+      }
+    },
+    {
+      "route": "dang-nhap",
+      "size": "390",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/dang-nhap",
+      "capture": {
+        "url": "http://localhost:3011/vi/dang-nhap",
+        "viewportWidth": 390,
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "imageWidth": 390,
+        "imageHeight": 2109
+      },
+      "ms": 3165,
+      "overflow360": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "offenders": [
+          "g",
+          "g",
+          "g",
+          "path",
+          "path"
+        ]
+      }
+    },
+    {
+      "route": "dang-ky",
+      "size": "390",
+      "status": 200,
+      "state": "public page",
+      "requestedPath": "/vi/dang-ky",
+      "capture": {
+        "url": "http://localhost:3011/vi/dang-ky",
+        "viewportWidth": 390,
+        "scrollWidth": 390,
+        "clientWidth": 390,
+        "imageWidth": 390,
+        "imageHeight": 2420
+      },
+      "ms": 3781,
+      "overflow360": {
+        "scrollWidth": 360,
+        "clientWidth": 360,
+        "offenders": [
+          "g",
+          "g",
+          "g",
+          "path",
+          "path"
+        ]
+      }
+    }
+  ],
+  "household": "/vi/nghe-nhan/gom-bich-hop",
+  "news": "/vi/tin-tuc/cho-gom-dem-bat-trang-tro-lai-vao-cuoi-tuan"
+}
