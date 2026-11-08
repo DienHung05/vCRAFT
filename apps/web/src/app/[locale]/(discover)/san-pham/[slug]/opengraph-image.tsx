@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { fetchProduct } from '@/features/catalog/exhibition-api';
 import { resolveLocale } from '@/lib/locale';
+import { textFor } from '@/lib/localized-text';
 import { OG_CONTENT_TYPE, OG_SIZE, renderOgCard } from '@/lib/seo/og-card';
 
 export const size = OG_SIZE;
@@ -33,7 +34,7 @@ export default async function Image({ params }: Params) {
     result.status === 'ok'
       ? {
           eyebrow: t('products'),
-          title: result.data.product.name,
+          title: textFor(locale, result.data.product.name, result.data.product.nameEn),
           subtitle: result.data.household.name,
         }
       : { eyebrow: t('products'), title: 'vCraft' },

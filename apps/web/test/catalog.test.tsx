@@ -32,6 +32,7 @@ function card(id: string, overrides: Partial<ProductCardDto> = {}): ProductCardD
   return {
     id,
     name: `Món ${id}`,
+    nameEn: null,
     slug: `mon-${id}`,
     traceCode: `CODE${id}`,
     kind: 'BATCH',

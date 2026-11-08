@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
 import { Link, useRouter } from '@/i18n/navigation';
 import {
@@ -28,12 +28,13 @@ export function SearchBox({
   fetchSuggestions?: FetchSuggestions;
 }) {
   const t = useTranslations('catalog');
+  const locale = useLocale();
   const router = useRouter();
   const panelId = useId();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const { results, failed } = useSuggestions(query, fetchSuggestions);
-  const entries = suggestionEntries(results, (category) => t(`categories.${category}`));
+  const entries = suggestionEntries(results, (category) => t(`categories.${category}`), locale);
 
   const close = () => {
     setOpen(false);

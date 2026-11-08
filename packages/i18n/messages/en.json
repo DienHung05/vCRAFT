@@ -27,6 +27,20 @@
     "cancel": "Cancel",
     "close": "Close"
   },
+  "favourites": {
+    "title": "Favourites",
+    "lead": "The pieces you saved with the heart. Signed in, the list follows you to every device.",
+    "label": "Favourite",
+    "toggle": "Save {name} to favourites",
+    "failed": "Could not update your favourites. Please try again.",
+    "loading": "Loading your favourites",
+    "loadFailed": "Your favourites could not be loaded right now.",
+    "listLabel": "Favourite products",
+    "empty": "No favourites yet",
+    "emptyHint": "Tap the heart on a product to keep it here.",
+    "browse": "Browse products",
+    "guestNote": "Saved in this browser. Sign in to keep them on every device."
+  },
   "nav": {
     "home": "Back to the vCraft home page",
     "label": "Main navigation",
@@ -40,7 +54,8 @@
     "quotes": "Quote requests",
     "theme": "Switch light/dark theme",
     "themeToDark": "Switch to dark theme",
-    "themeToLight": "Switch to light theme"
+    "themeToLight": "Switch to light theme",
+    "favourites": "Favourites"
   },
   "indexPages": {
     "demoNote": "Demo: this list comes from sample data, not real households and products.",
@@ -1796,7 +1811,8 @@
       "roleLabel": "Role",
       "checking": "Checking your session",
       "area": "Go to your workspace",
-      "settings": "Account and notifications"
+      "settings": "Account and notifications",
+      "favourites": "Favourites"
     },
     "roles": {
       "BUYER": "Buyer",
@@ -2363,6 +2379,12 @@
       },
       "newTitle": "New product",
       "editTitle": "Edit product",
+      "englishSection": "English (optional)",
+      "englishHint": "Shown on the English pages. Leave a field empty to show the Vietnamese text.",
+      "nameEn": "Product name (English)",
+      "descriptionEn": "Description (English)",
+      "materialEn": "Material (English)",
+      "dimensionsEn": "Dimensions (English)",
       "notFound": "This product is not in your household.",
       "name": "Product name",
       "description": "Description",

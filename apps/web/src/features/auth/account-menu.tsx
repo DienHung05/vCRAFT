@@ -152,6 +152,15 @@ export function AccountMenu({
           </Link>
         ) : null}
         <Link
+          href="/yeu-thich"
+          onClick={() => {
+            if (menu.current) menu.current.open = false;
+          }}
+          className="block rounded-input px-2 py-2 text-small text-clay hover:bg-ink/6"
+        >
+          {t('nav.favourites')}
+        </Link>
+        <Link
           href="/tai-khoan"
           onClick={() => {
             if (menu.current) menu.current.open = false;

@@ -22,6 +22,11 @@ export interface ProductDraft {
   weightGrams: string;
   artisanNote: string;
   tags: string[];
+  /** English versions (FR-CAT-08); empty means the English pages show the Vietnamese text. */
+  nameEn: string;
+  descriptionEn: string;
+  materialEn: string;
+  dimensionsEn: string;
 }
 
 export const EMPTY_PRODUCT: ProductDraft = {
@@ -37,6 +42,10 @@ export const EMPTY_PRODUCT: ProductDraft = {
   weightGrams: '',
   artisanNote: '',
   tags: [],
+  nameEn: '',
+  descriptionEn: '',
+  materialEn: '',
+  dimensionsEn: '',
 };
 
 export const toProductDraft = (p: ProductDto): ProductDraft => ({
@@ -52,6 +61,10 @@ export const toProductDraft = (p: ProductDto): ProductDraft => ({
   weightGrams: p.weightGrams?.toString() ?? '',
   artisanNote: p.artisanNote ?? '',
   tags: p.tags,
+  nameEn: p.nameEn ?? '',
+  descriptionEn: p.descriptionEn ?? '',
+  materialEn: p.materialEn ?? '',
+  dimensionsEn: p.dimensionsEn ?? '',
 });
 
 const optional = (value: string) => (value.trim() ? { value: value.trim() } : null);
@@ -61,6 +74,10 @@ export function parseNewProduct(draft: ProductDraft) {
   const material = optional(draft.material);
   const dimensions = optional(draft.dimensions);
   const note = optional(draft.artisanNote);
+  const nameEn = optional(draft.nameEn);
+  const descriptionEn = optional(draft.descriptionEn);
+  const materialEn = optional(draft.materialEn);
+  const dimensionsEn = optional(draft.dimensionsEn);
   return CreateProductRequestSchema.safeParse({
     name: draft.name,
     description: draft.description,
@@ -74,6 +91,10 @@ export function parseNewProduct(draft: ProductDraft) {
     ...(draft.weightGrams ? { weightGrams: Number(draft.weightGrams) } : {}),
     ...(note && { artisanNote: note.value }),
     ...(draft.tags.length > 0 && { tags: draft.tags }),
+    ...(nameEn && { nameEn: nameEn.value }),
+    ...(descriptionEn && { descriptionEn: descriptionEn.value }),
+    ...(materialEn && { materialEn: materialEn.value }),
+    ...(dimensionsEn && { dimensionsEn: dimensionsEn.value }),
   });
 }
 
@@ -199,6 +220,24 @@ export function ProductFields({
           className={inputClass}
         />
       </label>
+      <fieldset className="flex flex-col gap-4 rounded-card border border-ink/10 p-4">
+        <legend className="px-2 text-small font-medium">{t('englishSection')}</legend>
+        <p className="text-small text-ash">{t('englishHint')}</p>
+        {field('nameEn', t('nameEn'))}
+        <label className="flex flex-col gap-1 text-small">
+          {t('descriptionEn')}
+          <textarea
+            rows={3}
+            value={draft.descriptionEn}
+            onChange={(event) => onChange({ descriptionEn: event.target.value })}
+            className={inputClass}
+          />
+        </label>
+        <div className="grid gap-4 md:grid-cols-2">
+          {field('materialEn', t('materialEn'))}
+          {field('dimensionsEn', t('dimensionsEn'))}
+        </div>
+      </fieldset>
     </div>
   );
 }

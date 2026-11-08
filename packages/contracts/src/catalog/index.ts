@@ -35,6 +35,13 @@ export const ListProductsQuerySchema = CursorPageQuerySchema.extend({
   inStock: FlagSchema.optional(),
   /** Only products of households with a workshop open to visitors (a showroom that accepts visitors). */
   openWorkshop: FlagSchema.optional(),
+  /** Only these products (comma-separated ids, at most 100): how a guest's favourites list gets its cards. */
+  ids: z
+    .string()
+    .max(4_000)
+    .transform((value) => value.split(','))
+    .pipe(z.array(z.uuid()).min(1).max(100))
+    .optional(),
   sort: ProductSortSchema.default('newest'),
   /** Page mode (catalog exception to cursor-only paging, see ADR-0020); cannot be combined with `cursor`. */
   page: PageNumberSchema.optional(),
@@ -45,6 +52,8 @@ export type ListProductsQuery = z.infer<typeof ListProductsQuerySchema>;
 export const ProductCardSchema = z.object({
   id: z.string(),
   name: z.string(),
+  /** English name for `/en`; null falls back to `name`. */
+  nameEn: z.string().nullable().default(null),
   slug: z.string(),
   traceCode: z.string(),
   kind: ProductKindSchema,
@@ -63,6 +72,10 @@ export const ProductCardSchema = z.object({
   household: z.object({ name: z.string(), slug: z.string() }),
 });
 export type ProductCardDto = z.infer<typeof ProductCardSchema>;
+
+/** `GET /me/favourites`: the signed-in user's saved products that are still publicly visible. */
+export const FavouritesResponseSchema = z.object({ data: z.array(ProductCardSchema) });
+export type FavouritesDto = z.infer<typeof FavouritesResponseSchema>;
 
 export const ProductListResponseSchema = cursorPageSchema(ProductCardSchema);
 export type ProductListDto = z.infer<typeof ProductListResponseSchema>;
@@ -121,7 +134,14 @@ export type SlugRedirectDto = z.infer<typeof SlugRedirectResponseSchema>;
 
 /** Gợi ý tức thời (FR-CAT-04), mỗi nhóm tối đa 5 mục. */
 export const SearchSuggestionsSchema = z.object({
-  products: z.array(z.object({ name: z.string(), slug: z.string(), household: z.string() })),
+  products: z.array(
+    z.object({
+      name: z.string(),
+      nameEn: z.string().nullable().default(null),
+      slug: z.string(),
+      household: z.string(),
+    }),
+  ),
   households: z.array(z.object({ name: z.string(), slug: z.string() })),
   /** Categories whose name matches, in either language; the web labels them in the page locale. */
   categories: z.array(z.object({ category: ProductCategorySchema })),

@@ -476,6 +476,8 @@ export class HouseholdsService {
         slug: productSlug(input.name, traceCode),
         traceCode,
         description: input.description,
+        nameEn: input.nameEn || null,
+        descriptionEn: input.descriptionEn || null,
         kind: input.kind,
         batchSize: input.batchSize ?? null,
         category: input.category,
@@ -483,6 +485,8 @@ export class HouseholdsService {
         stock: input.stock,
         material: input.material ?? null,
         dimensions: input.dimensions ?? null,
+        materialEn: input.materialEn || null,
+        dimensionsEn: input.dimensionsEn || null,
         weightGrams: input.weightGrams ?? null,
         artisanNote: input.artisanNote ?? null,
         tags: normalizeTags(input.tags ?? []),
@@ -508,6 +512,8 @@ export class HouseholdsService {
         slug: productSlug(source.name, traceCode),
         traceCode,
         description: source.description,
+        nameEn: source.nameEn ?? null,
+        descriptionEn: source.descriptionEn ?? null,
         kind: source.kind,
         batchSize: source.batchSize ?? null,
         category: source.category,
@@ -515,6 +521,8 @@ export class HouseholdsService {
         stock: source.stock,
         material: source.material ?? null,
         dimensions: source.dimensions ?? null,
+        materialEn: source.materialEn ?? null,
+        dimensionsEn: source.dimensionsEn ?? null,
         weightGrams: source.weightGrams ?? null,
         artisanNote: source.artisanNote ?? null,
         tags: [...(source.tags ?? [])],
@@ -586,6 +594,10 @@ export class HouseholdsService {
       if (input.stock !== undefined) product.stock = input.stock;
       if (input.material !== undefined) product.material = input.material || null;
       if (input.dimensions !== undefined) product.dimensions = input.dimensions || null;
+      if (input.nameEn !== undefined) product.nameEn = input.nameEn || null;
+      if (input.descriptionEn !== undefined) product.descriptionEn = input.descriptionEn || null;
+      if (input.materialEn !== undefined) product.materialEn = input.materialEn || null;
+      if (input.dimensionsEn !== undefined) product.dimensionsEn = input.dimensionsEn || null;
       if (input.weightGrams !== undefined) product.weightGrams = input.weightGrams;
       if (input.artisanNote !== undefined) product.artisanNote = input.artisanNote || null;
       if (input.tags !== undefined) product.tags = normalizeTags(input.tags);

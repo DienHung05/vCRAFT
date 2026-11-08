@@ -5,7 +5,7 @@ import { siteOrigin } from '@/lib/site';
 
 // Signed-in areas in every locale's spelling: Studio, Admin, the account page and the buyer's
 // quotation requests, plus the auth callbacks.
-const PRIVATE = ['/studio', '/admin', '/tai-khoan', '/yeu-cau-bao-gia'] as const;
+const PRIVATE = ['/studio', '/admin', '/tai-khoan', '/yeu-cau-bao-gia', '/yeu-thich'] as const;
 
 export function disallowedPaths(): string[] {
   const localized = locales.flatMap((locale) => PRIVATE.map((href) => localizedPath(href, locale)));

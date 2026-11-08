@@ -376,6 +376,10 @@ export const CreateProductRequestSchema = z
     weightGrams: z.int().positive().max(1_000_000).optional(),
     artisanNote: z.string().trim().max(2_000).optional(),
     tags: ProductTagsSchema.optional(),
+    nameEn: z.string().trim().max(200).optional(),
+    descriptionEn: z.string().trim().max(10_000).optional(),
+    materialEn: z.string().trim().max(200).optional(),
+    dimensionsEn: z.string().trim().max(200).optional(),
   })
   .refine((p) => (p.kind === 'BATCH') === (p.batchSize !== undefined), {
     message: 'Lô sản xuất cần số lượng vật trong lô; vật đơn chiếc thì không',
@@ -394,6 +398,10 @@ export const UpdateProductRequestSchema = z.object({
   dimensions: z.string().trim().max(200).optional(),
   weightGrams: z.int().positive().max(1_000_000).nullable().optional(),
   artisanNote: z.string().trim().max(2_000).optional(),
+  nameEn: z.string().trim().max(200).optional(),
+  descriptionEn: z.string().trim().max(10_000).optional(),
+  materialEn: z.string().trim().max(200).optional(),
+  dimensionsEn: z.string().trim().max(200).optional(),
   images: z.array(ProductImageInputSchema).max(MAX_PRODUCT_IMAGES).optional(),
   tags: ProductTagsSchema.optional(),
 });
@@ -474,9 +482,11 @@ export const ProductResponseSchema = z.object({
   id: IdSchema,
   version: VersionSchema,
   name: z.string(),
+  nameEn: z.string().nullable().default(null),
   slug: z.string(),
   traceCode: z.string(),
   description: z.string(),
+  descriptionEn: z.string().nullable().default(null),
   kind: ProductKindSchema,
   batchSize: z.int().nullable(),
   category: CategorySchema,
@@ -484,6 +494,8 @@ export const ProductResponseSchema = z.object({
   stock: z.int().nonnegative(),
   material: z.string().nullable(),
   dimensions: z.string().nullable(),
+  materialEn: z.string().nullable().default(null),
+  dimensionsEn: z.string().nullable().default(null),
   weightGrams: z.int().nullable(),
   artisanNote: z.string().nullable(),
   /** Free-text tags (FR-PRD-01), at most 10, in the order the household wrote them. */

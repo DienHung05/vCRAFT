@@ -56,6 +56,9 @@ GET /api/v1/me/consents AUTHENTICATED
 POST /api/v1/me/consents AUTHENTICATED
 GET /api/v1/me/data-export AUTHENTICATED
 GET /api/v1/me/events ROLES(ADMIN,BUYER,HOUSEHOLD)
+GET /api/v1/me/favourites ROLES(ADMIN,BUYER,HOUSEHOLD)
+DELETE /api/v1/me/favourites/:productId ROLES(ADMIN,BUYER,HOUSEHOLD)
+PUT /api/v1/me/favourites/:productId ROLES(ADMIN,BUYER,HOUSEHOLD)
 GET /api/v1/me/household ROLES(HOUSEHOLD)
 PATCH /api/v1/me/household ROLES(HOUSEHOLD)
 POST /api/v1/me/household AUTHENTICATED

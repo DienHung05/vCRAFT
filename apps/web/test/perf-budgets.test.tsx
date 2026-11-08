@@ -27,6 +27,7 @@ function card(id: string): ProductCardDto {
   return {
     id,
     name: `Item ${id}`,
+    nameEn: null,
     slug: `item-${id}`,
     traceCode: `CODE${id}`,
     kind: 'BATCH',

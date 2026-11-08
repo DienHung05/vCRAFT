@@ -9,6 +9,7 @@ import type { ChainEntry, JournalStage, ProductStatus } from '@vcraft/domain';
 import type { ProductFigureKind } from '@vcraft/ui';
 import { PHOTO_BY_ID } from '@/lib/demo/photo-credits';
 import type { ImageVariant } from '@/lib/images';
+import { textFor } from '@/lib/localized-text';
 import { presetKindOf } from './preset-figure';
 
 /** Tham chiếu ảnh có giấy phép trong `/images/demo` (kèm ghi công) hoặc ảnh tải lên qua kho media. */
@@ -24,7 +25,7 @@ export interface PhotoView {
 
 /** Description to show for `locale`: the English one on `/en` when there is one, else the Vietnamese one. */
 export function altFor(locale: string, alt: string, altEn?: string | null): string {
-  return locale === 'en' && altEn?.trim() ? altEn : alt;
+  return textFor(locale, alt, altEn);
 }
 
 /** What the household cover is: the banner, else the household's first workshop photo (the API's `coverUrl`). */
@@ -117,6 +118,8 @@ export function tintOf(seed: string): string {
 }
 
 export interface ProductCardView {
+  /** Product id, the key of the favourites list. */
+  id: string;
   slug: string;
   name: string;
   /** Which placeholder illustration to draw while the product has no photo. */
@@ -134,9 +137,11 @@ export interface ProductCardView {
 type ProductCardSource = Omit<ProductCardDto, 'status'> & { status: ProductStatus };
 
 export function toProductCardView(dto: ProductCardSource, locale = 'vi'): ProductCardView {
+  const name = textFor(locale, dto.name, dto.nameEn);
   return {
+    id: dto.id,
     slug: dto.slug,
-    name: dto.name,
+    name,
     presetKind: presetKindOf(dto.category, dto.name),
     tint: tintOf(dto.traceCode),
     price: dto.priceVnd,
@@ -144,7 +149,7 @@ export function toProductCardView(dto: ProductCardSource, locale = 'vi'): Produc
     sold: dto.status === 'SOLD',
     image: photoFromUrl(
       dto.coverUrl,
-      altFor(locale, dto.coverAlt ?? dto.name, dto.coverAltEn),
+      altFor(locale, dto.coverAlt ?? name, dto.coverAltEn),
       dto.coverVariants,
     ),
   };

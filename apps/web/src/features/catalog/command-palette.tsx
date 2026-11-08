@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useRouter } from '@/i18n/navigation';
 import {
@@ -69,6 +69,7 @@ function PaletteDialog({
   onClose: () => void;
 }) {
   const t = useTranslations('catalog');
+  const locale = useLocale();
   const router = useRouter();
   const dialog = useRef<HTMLDialogElement>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -79,7 +80,7 @@ function PaletteDialog({
   const { results, failed } = useSuggestions(query, fetchSuggestions);
   const term = query.trim();
 
-  const suggestions = suggestionEntries(results, (category) => t(`categories.${category}`));
+  const suggestions = suggestionEntries(results, (category) => t(`categories.${category}`), locale);
   // The last row always searches the whole catalog for what was typed.
   const viewAll: SuggestionEntry = {
     key: 'all',

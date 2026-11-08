@@ -5,7 +5,7 @@ import { TabBrush } from '@/experience/motion/tab-brush';
 import { Link, usePathname } from '@/i18n/navigation';
 
 export interface HeaderNavItem {
-  href: '/san-pham' | '/nghe-nhan' | '/ban-do' | '/tin-tuc' | '/yeu-cau-bao-gia';
+  href: '/san-pham' | '/nghe-nhan' | '/ban-do' | '/tin-tuc' | '/yeu-cau-bao-gia' | '/yeu-thich';
   label: string;
 }
 

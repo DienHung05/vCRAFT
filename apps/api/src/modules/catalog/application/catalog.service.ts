@@ -195,7 +195,7 @@ function productSearch(terms: readonly string[]): FilterQuery<Product>[] {
     : matching;
 }
 
-function toCardDto(
+export function toCardDto(
   p: Product,
   media: ReadonlyMap<string, PublicMedia>,
   linkedCovers: readonly CoverImage[] = [],
@@ -204,6 +204,7 @@ function toCardDto(
   return {
     id: p.id,
     name: p.name,
+    nameEn: p.nameEn ?? null,
     slug: p.slug,
     traceCode: p.traceCode,
     kind: p.kind,
@@ -250,6 +251,7 @@ export class CatalogService {
       },
       ...productSearch(searchTerms(query.q ?? '')),
     ];
+    if (query.ids) and.push({ id: { $in: query.ids } });
     if (query.category) and.push({ category: query.category });
     if (query.minPrice !== undefined) and.push({ priceVnd: { $gte: query.minPrice } });
     if (query.maxPrice !== undefined) and.push({ priceVnd: { $lte: query.maxPrice } });
@@ -479,7 +481,7 @@ export class CatalogService {
           ],
         },
         {
-          fields: ['name', 'slug', 'household.name'],
+          fields: ['name', 'nameEn', 'slug', 'household.name'],
           orderBy: { name: 'asc' },
           limit: SUGGESTION_LIMIT,
         },
@@ -505,6 +507,7 @@ export class CatalogService {
     return {
       products: products.map((p) => ({
         name: p.name,
+        nameEn: p.nameEn ?? null,
         slug: p.slug,
         household: p.household.name,
       })),

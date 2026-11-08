@@ -44,6 +44,10 @@ export function toProductUpdate(draft: ProductDraft): UpdateProductRequest {
     weightGrams: draft.weightGrams ? Number(draft.weightGrams) : null,
     artisanNote: draft.artisanNote.trim(),
     tags: draft.tags,
+    nameEn: draft.nameEn.trim(),
+    descriptionEn: draft.descriptionEn.trim(),
+    materialEn: draft.materialEn.trim(),
+    dimensionsEn: draft.dimensionsEn.trim(),
   };
 }
 
