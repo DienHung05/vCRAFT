@@ -12,6 +12,6 @@ export class ProductFavourite extends BaseEntity {
   @Property({ type: 'uuid' })
   userId!: string;
 
-  @ManyToOne({ entity: () => Product })
+  @ManyToOne({ entity: () => Product, index: true })
   product!: Product;
 }
