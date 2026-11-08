@@ -1,4 +1,4 @@
-import { Badge, buttonVariants, Card, cn, ProductFigure, SealMark } from '@vcraft/ui';
+import { Badge, buttonVariants, ProductFigure, SealMark } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations } from 'next-intl/server';
@@ -8,6 +8,7 @@ import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { UsdRateNote, UsdReference } from '@/components/usd-reference';
 import { fetchProduct, fetchProducts, fetchSlugRedirect } from '@/features/catalog/exhibition-api';
+import { JourneyCard } from '@/features/catalog/journey-card';
 import { presetKindOf } from '@/features/catalog/preset-figure';
 import { ProductCard, productImageTransition } from '@/features/catalog/product-card';
 import {
@@ -72,8 +73,6 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
     fetchProducts({ household: household.slug, limit: 5 }),
   ]);
   const log = toLogEntries(journal);
-  const first = log[0];
-  const last = log.at(-1);
   const tint = tintOf(product.traceCode);
   const image = photoFromUrl(
     product.coverUrl,
@@ -224,47 +223,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
           </div>
 
           {/* Nhật ký rút gọn 1 dòng ⇒ landing truy xuất (BRAND §9). */}
-          {first && last ? (
-            <Card className="flex flex-col gap-4 p-6">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="font-sans text-body font-semibold text-ink">{t('journey')}</h2>
-                <span className="font-mono text-small text-ash">{product.traceCode}</span>
-              </div>
-              <ol className="flex items-center" aria-label={t('journey')}>
-                {log.map((e, i) => (
-                  <li key={e.hash} className="flex flex-1 items-center last:flex-none">
-                    <span
-                      title={stages(`${e.stage}.name`)}
-                      className="size-3 shrink-0 rounded-full ring-2 ring-surface"
-                      style={{ background: e.tint }}
-                    />
-                    {i < log.length - 1 ? (
-                      <span
-                        aria-hidden="true"
-                        className="h-0.5 flex-1 bg-linear-to-r from-clay/50 to-seal/50"
-                      />
-                    ) : null}
-                  </li>
-                ))}
-              </ol>
-              <p className="text-small text-ash">
-                {t('journeySummary', {
-                  count: log.length,
-                  from: format.dateTime(new Date(first.at), 'short'),
-                  to: format.dateTime(new Date(last.at), 'short'),
-                })}
-              </p>
-              <Link
-                href={{ pathname: '/truy-xuat/[code]', params: { code: product.traceCode } }}
-                className={cn(
-                  buttonVariants({ variant: 'ghost', size: 'sm' }),
-                  'self-start px-0 text-clay hover:bg-transparent hover:underline',
-                )}
-              >
-                {t('journeyCta')} →
-              </Link>
-            </Card>
-          ) : null}
+          <JourneyCard entries={log} traceCode={product.traceCode} />
 
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 border-ink/10 border-t pt-6 text-small">
             {product.material ? (

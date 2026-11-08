@@ -27,6 +27,7 @@ import { MakerCredits } from '@/features/exhibition/maker-credits';
 import { VisitSection } from '@/features/exhibition/visit-section';
 import { ChainVerifier } from '@/features/traceability/chain-verifier';
 import { FireTimeline } from '@/features/traceability/fire-timeline';
+import { pieceKindOf } from '@/features/traceability/piece-shapes';
 import { TraceQr } from '@/features/traceability/trace-qr';
 import { Link } from '@/i18n/navigation';
 import { frameRatioOf } from '@/lib/images';
@@ -166,7 +167,12 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
             <section aria-labelledby="journey-title" className="px-5 pt-12">
               <h2 id="journey-title">{t('timelineTitle')}</h2>
               <p className="mt-2 mb-8 text-small text-ash">{t('timelineLead')}</p>
-              <FireTimeline entries={toLogEntries(visible.journal)} />
+              <FireTimeline
+                entries={toLogEntries(visible.journal)}
+                household={visible.household.name}
+                pieceKind={pieceKindOf(visible.product.category, visible.product.name)}
+                glaze={tintOf(visible.product.traceCode)}
+              />
             </section>
 
             <MakerCredits
