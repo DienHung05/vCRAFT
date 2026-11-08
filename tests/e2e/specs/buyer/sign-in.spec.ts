@@ -30,7 +30,7 @@ test.describe('Đăng nhập, phiên và phân quyền khu vực', () => {
     await expect(page).toHaveURL(/\/vi\/dang-nhap\?next=%2Fvi%2Fyeu-cau-bao-gia/);
     await expect(page.getByText('Bạn cần đăng nhập để vào trang này.')).toBeVisible();
 
-    await page.getByLabel('Email').fill(DEMO.accounts.buyer.email);
+    await page.getByLabel('Tên đăng nhập hoặc email').fill('buyer');
     await page.getByLabel('Mật khẩu').fill(password ?? '');
     await page.getByRole('button', { name: 'Đăng nhập' }).click();
 
@@ -52,7 +52,7 @@ test.describe('Đăng nhập, phiên và phân quyền khu vực', () => {
 
   test('Buyer vào khu Admin nhận trang 403, không phải trang trống', async ({ page }) => {
     await page.goto('/vi/dang-nhap');
-    await page.getByLabel('Email').fill(DEMO.accounts.buyer.email);
+    await page.getByLabel('Tên đăng nhập hoặc email').fill('buyer');
     await page.getByLabel('Mật khẩu').fill(password ?? '');
     await page.getByRole('button', { name: 'Đăng nhập' }).click();
     await expect(page).not.toHaveURL(/dang-nhap/, SIGN_IN_NAVIGATION);
@@ -66,12 +66,12 @@ test.describe('Đăng nhập, phiên và phân quyền khu vực', () => {
 
   test('sai mật khẩu: thông báo cụ thể và giữ nguyên email đã nhập', async ({ page }) => {
     await page.goto('/vi/dang-nhap');
-    await page.getByLabel('Email').fill(DEMO.accounts.buyer.email);
+    await page.getByLabel('Tên đăng nhập hoặc email').fill('buyer');
     await page.getByLabel('Mật khẩu').fill('mat-khau-sai-12345');
     await page.getByRole('button', { name: 'Đăng nhập' }).click();
     await expect(page.locator('form [role="alert"]')).toContainText(
-      'Email hoặc mật khẩu chưa đúng',
+      'Tên đăng nhập, email hoặc mật khẩu chưa đúng',
     );
-    await expect(page.getByLabel('Email')).toHaveValue(DEMO.accounts.buyer.email);
+    await expect(page.getByLabel('Tên đăng nhập hoặc email')).toHaveValue('buyer');
   });
 });

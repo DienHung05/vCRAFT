@@ -5,7 +5,7 @@ import { AppError } from '../errors/app-error';
 
 /** Kiểm tra body/query bằng schema của `@vcraft/contracts` (ARCHITECTURE §4.2). Lỗi ⇒ 422 kèm `errors[]`. */
 export class ZodValidationPipe<S extends z.ZodType> implements PipeTransform<unknown, z.infer<S>> {
-  constructor(private readonly schema: S) {}
+  constructor(readonly schema: S) {}
 
   transform(value: unknown): z.infer<S> {
     const result = this.schema.safeParse(value ?? {});

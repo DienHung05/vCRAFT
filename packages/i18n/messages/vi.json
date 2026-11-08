@@ -118,24 +118,18 @@
     "hours": "Giờ hỗ trợ",
     "hoursValue": "Thứ Hai đến thứ Bảy, {open} đến {close}",
     "rights": "© {year} vCraft. Giữ mọi quyền.",
-    "demo": "Bản trình diễn: tên hộ, nghệ nhân và số liệu là dữ liệu mẫu.",
     "credits": "Ghi nhận ảnh",
     "privacy": "Chính sách quyền riêng tư"
   },
   "credits": {
-    "photoBy": "Ảnh: {author}",
-    "source": "Nguồn",
     "title": "Ghi nhận ảnh",
     "lead": "Ảnh minh hoạ trong bản trình diễn lấy từ Wikimedia Commons, kho ảnh mở của các bảo tàng và Pixabay theo giấy phép cho phép dùng công khai kèm ghi nguồn. Chúng tôi cảm ơn các tác giả dưới đây. Ảnh đã được cắt và nén cho web; không có chỉnh sửa nào khác.",
-    "demoNote": "Ảnh chỉ để minh hoạ: đồ gốm trong ảnh không phải sản phẩm của các hộ mẫu.",
     "table": "Danh sách ảnh và giấy phép",
     "colPhoto": "Ảnh",
     "colAuthor": "Tác giả",
     "colLicense": "Giấy phép",
     "colSource": "Nguồn",
-    "viewSource": "Xem nguồn",
-    "note": "Ảnh minh hoạ lấy từ Wikimedia Commons, kho ảnh mở của bảo tàng và Pixabay theo giấy phép cho phép tái sử dụng, đã cắt và nén cho web.",
-    "noteLink": "Ghi nhận ảnh"
+    "viewSource": "Xem nguồn"
   },
   "notFound": {
     "title": "Trang này chưa ra lò",
@@ -154,7 +148,9 @@
     },
     "day": {
       "title": "Một ngày ở Bát Tràng",
-      "lead": "Từ nhào đất tới ra lò là sáu chặng mà món gốm nào cũng đi qua. Ảnh chỉ minh hoạ chung cho từng chặng, không phải ảnh của một món cụ thể. Vuốt ngang để xem từng chặng."
+      "lead": "Từ nhào đất tới ra lò là sáu chặng mà món gốm nào cũng đi qua. Ảnh chỉ minh hoạ chung cho từng chặng, không phải ảnh của một món cụ thể. Vuốt ngang để xem từng chặng.",
+      "railLabel": "Các chặng trong ngày",
+      "current": "Chặng {index} trên {total}: {name}"
     },
     "artisans": {
       "title": "Những bàn tay giữ nghề",
@@ -268,7 +264,7 @@
     "verifiedSeal": "Ấn xác thực của vCraft",
     "integrity": {
       "demoBadge": "Dữ liệu minh họa",
-      "demoNote": "Sản phẩm, hộ làm và nhật ký trên trang này là dữ liệu mẫu của bản trình diễn, không phải hàng thật.",
+      "householdVerified": "Hộ đã được BQL xác minh",
       "match": "Mã này khớp với một sản phẩm minh họa của {household}.",
       "checkingTitle": "Đang kiểm tra nhật ký…",
       "checkingText": "Trình duyệt của bạn đang tự tính lại dấu băm SHA-256 của từng mốc.",
@@ -297,7 +293,7 @@
     "qrLabel": "Ấn truy xuất mã {code}",
     "shortLink": "Đường dẫn ngắn trong mã QR",
     "ctaVisit": "Ghé xưởng",
-    "ctaRfq": "Đặt số lượng",
+    "ctaRfq": "Yêu cầu báo giá",
     "proofAlt": "Ảnh minh chứng công đoạn {stage}",
     "corrects": "Đính chính mốc {n}",
     "correctedBy": "Đã được đính chính ở mốc {n}",
@@ -422,12 +418,16 @@
       "coveragePartial": "Một phần · {percent}% ({count, number})",
       "accept": "Chốt",
       "acceptBlocked": "Chỉ chốt được chào giá đủ {quantity} {unit}.",
-      "emptyTitle": "Chưa có chào giá nào"
+      "emptyTitle": "Chưa có chào giá nào",
+      "direct": "Hộ báo giá riêng",
+      "perUnit": "{price} một {unit}",
+      "note": "Ghi chú của hộ: {note}"
     },
     "form": {
       "title": "Yêu cầu báo giá mới",
       "lead": "Mô tả nhu cầu của bạn. Nháp được lưu tự động, đóng trang rồi mở lại vẫn còn.",
       "requestTitle": "Tiêu đề",
+      "prefillDescription": "Tôi quan tâm đến sản phẩm “{product}” của {household} (mã truy xuất {code}).",
       "category": "Danh mục",
       "chooseCategory": "Chọn danh mục",
       "description": "Mô tả",
@@ -443,6 +443,18 @@
       "households": "Chọn hộ được mời",
       "householdsLoading": "Đang tải danh sách hộ…",
       "householdsFailed": "Không tải được danh sách hộ.",
+      "customRequirements": "Yêu cầu riêng (không bắt buộc)",
+      "customRequirementsHint": "Ví dụ: in logo, đóng gói riêng, màu men. Tối đa 1.000 ký tự.",
+      "attachments": "Tệp đính kèm (không bắt buộc)",
+      "attachmentsHint": "Logo hoặc bản vẽ: tối đa 3 tệp ảnh hoặc PDF, mỗi tệp không quá 10 MB. Chỉ các hộ được mời xem được.",
+      "attachmentsPick": "Thêm tệp",
+      "attachmentsUploading": "Đang tải lên…",
+      "attachmentsRemove": "Bỏ tệp {name}",
+      "attachmentsFull": "Đã đủ 3 tệp.",
+      "attachmentsErrorType": "Chỉ nhận ảnh JPEG, PNG, WebP, AVIF hoặc PDF.",
+      "attachmentsErrorSize": "Tệp quá lớn, tối đa 10 MB.",
+      "attachmentsErrorUpload": "Không tải được tệp. Vui lòng thử lại.",
+      "householdsMatch": "Để trống, hệ thống sẽ tự mời tối đa 10 hộ đang làm cùng danh mục với yêu cầu.",
       "send": "Gửi yêu cầu",
       "sending": "Đang gửi…",
       "saving": "Đang lưu nháp…",
@@ -451,6 +463,7 @@
       "saveFailed": "Chưa lưu được nháp lên máy chủ. Nội dung vẫn còn trên trình duyệt này.",
       "sendFailed": "Không gửi được yêu cầu. Vui lòng thử lại.",
       "emailNotVerified": "Hãy xác minh email trước khi gửi yêu cầu.",
+      "noMatch": "Chưa có hộ nào làm danh mục này để mời. Hãy chọn hộ cụ thể hoặc nhờ Ban quản lý điều phối.",
       "signIn": "Đăng nhập bằng tài khoản người mua để tạo yêu cầu.",
       "problem": {
         "title": "Hãy nhập tiêu đề.",
@@ -461,10 +474,10 @@
         "destination": "Hãy nhập nơi giao hàng.",
         "deadline": "Hạn chào giá phải sau thời điểm gửi ít nhất 24 giờ.",
         "requiredBy": "Ngày cần hàng phải sau hạn chào giá.",
-        "budget": "Ngân sách phải là số nguyên, và mức từ không lớn hơn mức đến.",
-        "households": "Chọn ít nhất một hộ, hoặc nhờ Ban quản lý điều phối."
+        "budget": "Ngân sách phải là số nguyên, và mức từ không lớn hơn mức đến."
       },
       "sentToast": "Đã gửi yêu cầu báo giá. Các hộ sẽ nhận được lời mời chào giá.",
+      "sentToastMatched": "Đã gửi yêu cầu báo giá tới {count, plural, other {# hộ phù hợp}}.",
       "consentRequired": "Hãy đồng ý với chính sách quyền riêng tư để gửi yêu cầu."
     },
     "list": {
@@ -492,7 +505,8 @@
       "cancel": "Hủy yêu cầu",
       "cancelFailed": "Không hủy được. Dữ liệu vừa thay đổi, hãy thử lại.",
       "reasonRequired": "Hãy ghi lý do.",
-      "stale": "Yêu cầu vừa được cập nhật. Dữ liệu đã được làm mới, hãy thử lại.",
+      "stale": "Dữ liệu vừa được cập nhật. Hãy thử lại.",
+      "closed": "Yêu cầu đã được chốt",
       "description": "Mô tả",
       "category": "Danh mục",
       "coordinated": "Nhờ Ban quản lý điều phối",
@@ -500,7 +514,13 @@
       "cancelledToast": "Đã hủy yêu cầu báo giá.",
       "receivedToast": "Đã xác nhận nhận hàng. Cảm ơn bạn.",
       "receiveTitle": "Xác nhận đã nhận hàng?",
-      "receiveText": "Khi xác nhận, đơn được đánh dấu là đã giao và không thể hoàn tác."
+      "receiveText": "Khi xác nhận, đơn được đánh dấu là đã giao và không thể hoàn tác.",
+      "attachments": "Tệp đính kèm",
+      "attachmentName": "Tệp đính kèm {n}",
+      "attachmentOpen": "Mở",
+      "attachmentOpenFailed": "Không mở được tệp.",
+      "attachmentKindPdf": "PDF",
+      "attachmentKindImage": "Ảnh"
     }
   },
   "admin": {
@@ -514,7 +534,73 @@
       "audit": "Nhật ký",
       "overview": "Tổng quan",
       "pending": "{count} hồ sơ đang chờ duyệt",
-      "progress": "Tiến độ đơn"
+      "progress": "Tiến độ đơn",
+      "users": "Tài khoản"
+    },
+    "accounts": {
+      "title": "Tài khoản",
+      "lead": "Mời quản trị viên hoặc hộ bằng email, tạm khóa và mở khóa tài khoản. Mọi thao tác được ghi vào nhật ký.",
+      "signIn": "Hãy đăng nhập bằng tài khoản Ban quản lý.",
+      "invite": {
+        "title": "Mời bằng email",
+        "lead": "Người được mời nhận thư có liên kết dùng một lần để đặt mật khẩu. Vai trò được cấp khi họ đăng nhập lần đầu.",
+        "email": "Email người được mời",
+        "role": "Vai trò",
+        "roles": {
+          "HOUSEHOLD": "Người đại diện hộ",
+          "ADMIN": "Quản trị viên"
+        },
+        "adminNote": "Quản trị viên mới phải bật xác thực hai lớp (mã 6 số) ở lần đăng nhập đầu tiên trước khi vào khu quản trị.",
+        "submit": "Gửi lời mời",
+        "sending": "Đang gửi…",
+        "sent": "Đã gửi lời mời tới {email}.",
+        "emailInvalid": "Hãy nhập một địa chỉ email hợp lệ.",
+        "errors": {
+          "CONFLICT_DUPLICATE": "Email này đã có tài khoản.",
+          "default": "Chưa gửi được lời mời. Thử lại sau ít phút."
+        },
+        "listTitle": "Lời mời gần đây",
+        "listEmpty": "Chưa có lời mời nào.",
+        "status": {
+          "PENDING": "Đang chờ",
+          "ACCEPTED": "Đã nhận"
+        },
+        "by": "Mời bởi {name}",
+        "failed": "Chưa tải được danh sách lời mời."
+      },
+      "users": {
+        "title": "Người dùng",
+        "filters": "Lọc người dùng",
+        "search": "Tìm theo email, tên hoặc tên đăng nhập",
+        "role": "Vai trò",
+        "allRoles": "Mọi vai trò",
+        "status": "Trạng thái",
+        "allStatuses": "Mọi trạng thái",
+        "statusValues": {
+          "ACTIVE": "Đang hoạt động",
+          "LOCKED": "Đã tạm khóa"
+        },
+        "loading": "Đang tải…",
+        "failed": "Chưa tải được danh sách người dùng.",
+        "retry": "Thử lại",
+        "empty": "Không có tài khoản nào khớp.",
+        "noName": "Chưa đặt tên",
+        "reason": "Lý do: {reason}",
+        "suspend": "Tạm khóa",
+        "unsuspend": "Mở khóa",
+        "suspendTitle": "Tạm khóa {name}?",
+        "suspendText": "Người này bị chặn ngay ở yêu cầu kế tiếp và không làm mới được phiên đăng nhập. Lý do được ghi vào nhật ký.",
+        "reasonLabel": "Lý do (ít nhất 3 ký tự)",
+        "unsuspendTitle": "Mở khóa {name}?",
+        "unsuspendText": "Người này có thể đăng nhập lại ngay.",
+        "cancel": "Hủy",
+        "errors": {
+          "BUSINESS_RULE_VIOLATED": "Bạn không thể tự khóa tài khoản của mình.",
+          "INVALID_TRANSITION": "Trạng thái tài khoản đã thay đổi. Hãy tải lại danh sách.",
+          "NOT_FOUND": "Không tìm thấy tài khoản.",
+          "default": "Chưa thực hiện được. Thử lại sau ít phút."
+        }
+      }
     },
     "board": {
       "barTitle": "Chia {quantity} {unit} cho các hộ",
@@ -599,7 +685,10 @@
       "receiveTitle": "Xác nhận đã nhận hàng?",
       "receiveText": "Đơn được đánh dấu là đã giao. Không thể hoàn tác.",
       "back": "Quay lại",
-      "reasonRequired": "Hãy ghi lý do."
+      "reasonRequired": "Hãy ghi lý do.",
+      "stale": "Dữ liệu vừa được cập nhật. Hãy soát lại rồi thử lại.",
+      "startFailed": "Chưa thể bắt đầu sản xuất. Hãy chắc chắn mọi hộ đã xác nhận phần việc của mình rồi thử lại.",
+      "actionFailed": "Thao tác không thành công. Hãy thử lại."
     },
     "dashboard": {
       "title": "Tổng quan",
@@ -769,7 +858,8 @@
         "rfq": "Yêu cầu báo giá",
         "quotation": "Chào giá liên kết",
         "news": "Tin tức",
-        "app_user": "Tài khoản"
+        "app_user": "Tài khoản",
+        "account_invitation": "Lời mời"
       },
       "actions": {
         "household": {
@@ -805,6 +895,14 @@
         },
         "allocation": {
           "reallocate": "Chia lại phần còn lại"
+        },
+        "access": {
+          "denied": "Bị chặn khi sửa bản ghi của hộ khác"
+        },
+        "user": {
+          "suspend": "Tạm khóa tài khoản",
+          "unsuspend": "Mở khóa tài khoản",
+          "invite": "Mời bằng email"
         }
       },
       "emptyHint": "Mọi thao tác của quản trị viên sẽ được ghi lại ở đây.",
@@ -927,6 +1025,7 @@
         "OVERDUE": "Quá hạn"
       },
       "reallocate": "Chia lại phần còn lại",
+      "declined": "Hộ đã từ chối, cần chia lại",
       "reallocateLegend": "Chia {remaining} {unit} còn lại cho hộ khác",
       "targetHousehold": "Hộ nhận",
       "chooseHousehold": "Chọn hộ",
@@ -944,7 +1043,6 @@
     "makersLead": "Công làm ra món đồ được ghi cho từng người theo phần việc của họ.",
     "madeBy": "Người làm",
     "postedBy": "Trang này do ban điều hành hộ {household} đăng; người đăng không được ghi là người làm.",
-    "illustrative": "Người và hộ trong bản trình diễn là minh họa.",
     "evidenceTitle": "Bằng chứng quá trình làm",
     "evidenceText": "Mỗi món mang một ấn truy xuất dẫn tới nhật ký sản xuất, có dấu băm để bạn tự kiểm.",
     "evidenceCta": "Xem nhật ký của {product}",
@@ -954,6 +1052,12 @@
     "showroomsEmpty": "Hộ chưa mở nơi đón khách.",
     "productionTitle": "Nơi sản xuất",
     "productionNote": "Chỉ dùng để làm, không đón khách tham quan.",
+    "weeklyHours": "Giờ mở cửa trong tuần",
+    "dayClosed": "Nghỉ",
+    "closedNow": "Đã đóng cửa",
+    "reopensAt": "mở lại lúc {time}, {day}",
+    "experienceTitle": "Trải nghiệm",
+    "experienceDuration": "{minutes} phút",
     "mapTitle": "Bản đồ làng",
     "listTitle": "Danh sách địa điểm",
     "listVisitable": "đón khách",
@@ -1019,6 +1123,38 @@
     "withdrawText": "Đề xuất sẽ không còn được dùng để ghép chào giá. Bạn vẫn gửi lại được trước hạn.",
     "declineTitle": "Từ chối lời mời này?",
     "declineText": "Hộ sẽ không tham gia yêu cầu này. Bạn vẫn có thể gửi đề xuất trước hạn nếu đổi ý."
+  },
+  "directQuotation": {
+    "title": "Báo giá cho {code}",
+    "lead": "Yêu cầu này không qua Ban quản lý điều phối. Hộ báo giá trọn {quantity} {unit}: đơn giá và ngày hoàn thành của hộ.",
+    "unitPrice": "Đơn giá (VND)",
+    "total": "Tổng cho {quantity} {unit}: {total}",
+    "completionDate": "Ngày hoàn thành",
+    "note": "Ghi chú cho bên mua (không bắt buộc)",
+    "dateWindow": "Ngày hoàn thành phải sau hạn chào giá {closing} và không muộn hơn hạn giao {required}.",
+    "problem": {
+      "price": "Đơn giá phải là số nguyên từ 1 trở lên.",
+      "dateMissing": "Chọn ngày hoàn thành.",
+      "dateBeforeClosing": "Ngày hoàn thành phải sau hạn chào giá {date}.",
+      "dateAfterRequired": "Ngày hoàn thành không được muộn hơn hạn giao {date}."
+    },
+    "send": "Gửi báo giá",
+    "update": "Cập nhật báo giá",
+    "sending": "Đang gửi…",
+    "withdraw": "Rút báo giá",
+    "withdrawTitle": "Rút báo giá này?",
+    "withdrawText": "Bên mua sẽ không còn thấy báo giá này. Bạn vẫn gửi lại được trước hạn.",
+    "cancel": "Quay lại",
+    "sendFailed": "Gửi không thành công. Bạn thử lại sau.",
+    "sentToast": "Đã gửi báo giá cho bên mua.",
+    "updatedToast": "Đã cập nhật báo giá.",
+    "withdrawnToast": "Đã rút báo giá.",
+    "visibleToBuyer": "Bên mua thấy tên hộ, đơn giá, tổng tiền và ngày hoàn thành của báo giá này. Các hộ khác không thấy.",
+    "active": "Báo giá đang chờ bên mua: {price} một {unit}, tổng {total}.",
+    "withdrawn": "Báo giá đã rút. Gửi lại để tham gia lại.",
+    "accepted": "Bên mua đã chốt báo giá của hộ. Xác nhận phần việc trong mục Đơn hàng.",
+    "rejected": "Bên mua đã chọn hộ khác.",
+    "lapsed": "Báo giá đã hết hiệu lực."
   },
   "order": {
     "title": "Đơn hàng",
@@ -1178,7 +1314,22 @@
       "signOutAll": "Đăng xuất khỏi mọi thiết bị",
       "confirmTitle": "Đăng xuất khỏi mọi thiết bị?",
       "confirmText": "Mọi phiên đăng nhập của tài khoản sẽ kết thúc ngay, kể cả phiên này. Bạn sẽ cần đăng nhập lại.",
-      "cancel": "Hủy"
+      "cancel": "Hủy",
+      "current": "Thiết bị này",
+      "signedOut": "Đã đăng xuất",
+      "unknownBrowser": "Trình duyệt không xác định",
+      "signOutOthersLead": "Giữ phiên này và kết thúc mọi phiên khác trên trình duyệt và điện thoại.",
+      "signOutOthers": "Đăng xuất các thiết bị khác",
+      "othersTitle": "Đăng xuất các thiết bị khác?",
+      "othersText": "Mọi phiên đăng nhập khác của tài khoản sẽ kết thúc ngay. Phiên này vẫn đăng nhập.",
+      "othersDone": "Đã đăng xuất các thiết bị khác.",
+      "othersFailed": "Chưa đăng xuất được các thiết bị khác. Thử lại sau ít phút.",
+      "allSessions": "Xem toàn bộ phiên đăng nhập"
+    },
+    "sessions": {
+      "title": "Phiên đăng nhập",
+      "lead": "Các lần đăng nhập gần đây kèm trình duyệt và vị trí thô. Thấy phiên nào lạ thì đăng xuất các thiết bị khác rồi đổi mật khẩu.",
+      "back": "Về trang tài khoản"
     }
   },
   "villageMap": {
@@ -1214,7 +1365,19 @@
       "6": "Thứ bảy"
     },
     "clearFilters": "Bỏ bộ lọc",
-    "offline": "Bản đồ dự phòng ngoại tuyến"
+    "filterExperience": "Có trải nghiệm",
+    "temporarilyClosed": "Tạm đóng cửa",
+    "temporarilyClosedReason": "Tạm đóng cửa: {reason}",
+    "experienceSummary": "Có trải nghiệm · {minutes} phút · {price}",
+    "offline": "Bản đồ dự phòng ngoại tuyến",
+    "directions": "Chỉ đường",
+    "closeCard": "Đóng thẻ thông tin",
+    "legendTitle": "Chú giải",
+    "legendOpen": "Đang mở cửa",
+    "legendClosed": "Đang đóng cửa",
+    "legendProduction": "Chỉ sản xuất",
+    "pinButton": "{name}: xem thông tin",
+    "viewOnFullMap": "Xem trên bản đồ làng"
   },
   "catalog": {
     "filtersLabel": "Lọc sản phẩm",
@@ -1254,11 +1417,19 @@
     "emptyHint": "Thử bỏ bớt bộ lọc hoặc đổi khoảng giá để xem thêm sản phẩm.",
     "results": "Kết quả sản phẩm",
     "pagination": {
-      "label": "Phân trang sản phẩm",
+      "label": {
+        "products": "Phân trang sản phẩm",
+        "households": "Phân trang hộ nghệ nhân",
+        "news": "Phân trang tin tức"
+      },
       "previous": "Trang trước",
       "next": "Trang sau",
       "goTo": "Trang {page}",
-      "showing": "Hiển thị {from}–{to} trong {total} sản phẩm"
+      "showing": {
+        "products": "Hiển thị {from}–{to} trong {total} sản phẩm",
+        "households": "Hiển thị {from}–{to} trong {total} hộ",
+        "news": "Hiển thị {from}–{to} trong {total} tin"
+      }
     }
   },
   "auth": {
@@ -1286,6 +1457,10 @@
       "ADMIN": "Điều phối"
     },
     "fields": {
+      "username": "Tên đăng nhập",
+      "usernameHint": "Dùng 3-30 ký tự a-z, số, dấu chấm, gạch dưới hoặc gạch ngang.",
+      "identifier": "Tên đăng nhập hoặc email",
+      "identifierPlaceholder": "ten.dang.nhap",
       "email": "Email",
       "emailPlaceholder": "ten@vidu.vn",
       "password": "Mật khẩu",
@@ -1297,6 +1472,10 @@
       "optional": "không bắt buộc"
     },
     "validation": {
+      "identifierRequired": "Nhập tên đăng nhập hoặc email.",
+      "usernameRequired": "Nhập tên đăng nhập.",
+      "usernameInvalid": "Tên đăng nhập cần 3-30 ký tự a-z, số, dấu chấm, gạch dưới hoặc gạch ngang.",
+      "usernameReserved": "Tên đăng nhập này dành cho tài khoản hệ thống. Hãy chọn tên khác.",
       "emailRequired": "Nhập email của bạn.",
       "emailInvalid": "Email chưa đúng dạng, ví dụ ten@vidu.vn.",
       "passwordRequired": "Nhập mật khẩu.",
@@ -1314,8 +1493,20 @@
       "consentRequired": "Hãy đồng ý với Chính sách quyền riêng tư để tạo tài khoản.",
       "idNumberInvalid": "Số CCCD gồm đúng 12 chữ số, không có dấu cách."
     },
+    "username": {
+      "checking": "Đang kiểm tra tên đăng nhập...",
+      "available": "Bạn có thể dùng tên đăng nhập này.",
+      "taken": "Tên đăng nhập này đã được dùng. Hãy chọn tên khác.",
+      "unavailable": "Chưa kiểm tra được tên đăng nhập. Bạn có thể thử gửi lại.",
+      "title": "Chọn tên đăng nhập",
+      "lead": "Tài khoản của bạn cần một tên đăng nhập. Email vẫn dùng để xác minh và đặt lại mật khẩu.",
+      "submit": "Lưu tên đăng nhập",
+      "saving": "Đang lưu..."
+    },
     "errors": {
-      "invalid_credentials": "Email hoặc mật khẩu chưa đúng. Kiểm tra lại, hoặc chọn \"Quên mật khẩu\" để đặt mật khẩu mới.",
+      "usernameTaken": "Tên đăng nhập này đã được dùng. Hãy chọn tên khác.",
+      "usernameReserved": "Tên đăng nhập này dành cho tài khoản hệ thống. Hãy chọn tên khác.",
+      "invalid_credentials": "Tên đăng nhập, email hoặc mật khẩu chưa đúng. Kiểm tra lại, hoặc chọn \"Quên mật khẩu\" để đặt mật khẩu mới.",
       "email_not_confirmed": "Email này chưa được xác minh. Mở thư vCraft đã gửi và bấm liên kết xác minh, hoặc gửi lại thư ở dưới.",
       "email_exists": "Không tạo được tài khoản với email này. Nếu bạn từng đăng ký, hãy đăng nhập hoặc chọn \"Quên mật khẩu\".",
       "rate_limited": "Bạn thao tác hơi nhanh. Chờ vài phút rồi thử lại, dữ liệu đã nhập vẫn còn nguyên.",
@@ -1398,7 +1589,7 @@
     },
     "invitation": {
       "title": "Chào mừng tới vCraft",
-      "lead": "Ban quản lý đã mời hộ của bạn vào triển lãm số. Đặt mật khẩu để kích hoạt tài khoản.",
+      "lead": "Ban quản lý đã mời bạn vào vCraft. Đặt mật khẩu để kích hoạt tài khoản.",
       "submit": "Đặt mật khẩu và vào vCraft",
       "submitting": "Đang kích hoạt…",
       "invalidTitle": "Lời mời không dùng được",
@@ -1676,6 +1867,13 @@
       "closed": "Nghỉ",
       "open": "Mở",
       "close": "Đóng",
+      "experienceOffer": "Có trải nghiệm cho khách",
+      "experienceDescription": "Mô tả trải nghiệm",
+      "experienceDuration": "Thời lượng (phút)",
+      "experiencePrice": "Giá trải nghiệm (đ)",
+      "temporarilyClosed": "Tạm đóng cửa",
+      "closureReason": "Lý do tạm đóng cửa",
+      "closureReasonHint": "Khách thấy lý do này; xưởng hiện là đóng cửa dù đã khai giờ mở cửa.",
       "capacity": "Năng lực sản xuất (đơn vị/tháng)",
       "idNumber": {
         "title": "Số CCCD",
@@ -1690,6 +1888,8 @@
       }
     },
     "products": {
+      "pendingHint": "Hộ được Ban quản lý duyệt hồ sơ xong thì mới đăng được sản phẩm.",
+      "pendingAction": "Xem hồ sơ của hộ",
       "title": "Sản phẩm",
       "add": "Thêm sản phẩm",
       "empty": "Chưa có sản phẩm nào ở mục này.",
@@ -1742,9 +1942,30 @@
       "withdrawReason": "Lý do rút",
       "notApproved": "Hộ cần được duyệt trước khi xuất bản.",
       "publishFailed": "Chưa đổi được trạng thái. Bạn thử lại sau.",
+      "publishJournalRequired": "Hãy thêm ít nhất một mốc nhật ký sản xuất (kèm ảnh) trước khi xuất bản.",
       "qr": "Mã QR",
       "qrLead": "In mã này lên tem dán đáy sản phẩm. Mã không đổi khi đổi tên.",
       "qrDownload": "Tải PNG",
+      "qrDownloadSvg": "Tải SVG",
+      "scans": {
+        "title": "Lượt quét",
+        "lead": "Số lần khách quét mã QR của sản phẩm này. Chỉ ghi quốc gia và loại thiết bị, không ghi địa chỉ IP.",
+        "total": "Tổng lượt quét",
+        "last30Days": "30 ngày qua",
+        "chart": "Lượt quét mỗi ngày trong 30 ngày qua",
+        "countries": "Quốc gia (30 ngày)",
+        "devices": "Thiết bị (30 ngày)",
+        "unknown": "Không rõ",
+        "empty": "Chưa có lượt quét nào trong 30 ngày qua.",
+        "failed": "Chưa tải được số lượt quét.",
+        "device": {
+          "mobile": "Điện thoại",
+          "tablet": "Máy tính bảng",
+          "desktop": "Máy tính",
+          "bot": "Trình thu thập tự động",
+          "unknown": "Không rõ"
+        }
+      },
       "labels": {
         "oneSheet": "Tải nhãn QR để in (PDF)",
         "allPublished": "Nhãn QR cho {count, plural, other {# sản phẩm}} đang trưng bày (PDF)",
@@ -1784,7 +2005,11 @@
       "exifFilled": "Đã điền ngày giờ theo ảnh.",
       "exifOld": "Ảnh chụp cách đây hơn 30 ngày. Hãy kiểm tra lại ngày trước khi lưu.",
       "waitingPhoto": "Đang chờ xử lý ảnh…",
-      "photoFailed": "Ảnh chưa xử lý xong. Bạn thử lại sau hoặc lưu mốc không kèm ảnh.",
+      "photoFailed": "Ảnh chưa xử lý xong. Bạn thử lại sau.",
+      "photoRequired": "Hãy thêm ít nhất một ảnh làm bằng chứng cho công đoạn này.",
+      "oldPhotoTitle": "Ảnh chụp đã lâu?",
+      "oldPhotoText": "Ảnh này chụp hơn 30 ngày trước. Vẫn lưu mốc với ảnh này?",
+      "oldPhotoConfirm": "Vẫn lưu",
       "saveFailed": "Chưa lưu được mốc. Bạn kiểm tra nội dung rồi thử lại.",
       "correct": "Đính chính",
       "correctionTitle": "Đính chính mốc {n}",
@@ -1800,7 +2025,7 @@
       "deleteText": "Mốc và ảnh kèm theo sẽ bị xóa khỏi nhật ký. Không thể hoàn tác.",
       "deletedToast": "Đã xóa mốc.",
       "deleteFailed": "Chưa xóa được mốc. Bạn thử lại sau.",
-      "emptyHint": "Mỗi mốc là một công đoạn có ngày, ghi chú và có thể kèm ảnh. Khách sẽ đọc chúng khi quét mã QR."
+      "emptyHint": "Mỗi mốc là một công đoạn có ngày, ghi chú và ảnh kèm theo. Khách sẽ đọc chúng khi quét mã QR."
     },
     "invitations": {
       "title": "Lời mời báo giá",
@@ -1820,7 +2045,10 @@
       "declined": "Đã từ chối",
       "closed": "Đã đóng",
       "emptyHint": "Khi người mua hoặc Ban quản lý mời hộ báo giá, lời mời sẽ hiện ở đây.",
-      "emptyAction": "Hoàn thiện hồ sơ hộ"
+      "emptyAction": "Hoàn thiện hồ sơ hộ",
+      "directActive": "Đã báo giá: {price} một {unit}, tổng {total}",
+      "directAccepted": "Bên mua đã chốt báo giá của hộ",
+      "directRejected": "Bên mua đã chọn hộ khác"
     },
     "allocations": {
       "title": "Đơn hàng",
@@ -1877,7 +2105,6 @@
     "title": "Chính sách quyền riêng tư",
     "lead": "Bạn giao cho vCraft những thông tin cá nhân nào, để làm gì, ai nhìn thấy chúng và bạn làm chủ chúng ra sao. Trang này viết ngắn gọn để đọc được trên điện thoại.",
     "updated": "Cập nhật lần cuối: 01/11/2026",
-    "demoNote": "Đây là bản trình diễn: hộ, nghệ nhân và số liệu là dữ liệu mẫu. Chính sách mô tả đúng cách hệ thống xử lý dữ liệu bạn nhập vào.",
     "toc": "Nội dung trang",
     "backToTop": "Về đầu trang",
     "sections": {
@@ -1993,9 +2220,9 @@
   "assistant": {
     "open": "Hỏi Cáo",
     "close": "Đóng trợ lý",
-    "title": "Cáo của vCraft",
+    "title": "Cáo",
     "subtitle": "Hỏi về gốm Bát Tràng và cách dùng vCraft",
-    "mascotLabel": "Cáo, trợ lý của vCraft",
+    "mascotLabel": "Cáo",
     "welcome": "Chào bạn! Tớ là Cáo. Bạn muốn tìm gốm, đặt hàng số lượng lớn hay tìm hiểu làng Bát Tràng?",
     "hello": "Chào bạn 👋 Cần tìm gì ở làng gốm cứ hỏi Cáo nhé!",
     "dismissHello": "Ẩn lời chào",

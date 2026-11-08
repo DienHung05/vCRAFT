@@ -1,4 +1,4 @@
-import { OutboxEvent } from '@vcraft/database';
+import { Household, OutboxEvent } from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
@@ -33,6 +33,14 @@ describe('QR label sheets', () => {
       });
       if (user === owner) householdId = applied.body.id;
     }
+    // Only an approved household posts products (GH#237).
+    await db.orm.em
+      .fork()
+      .nativeUpdate(
+        Household,
+        { slug: { $in: ['gom-nhan-qr', 'gom-khac'] } },
+        { status: 'APPROVED' },
+      );
     products = [];
     for (const name of ['Bình men lam', 'Ấm men nâu']) {
       const created = await t.request({

@@ -1,3 +1,4 @@
+import { AuditLog, Household } from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
@@ -64,6 +65,10 @@ describe('Studio products', () => {
         body: { name: `Hộ ${slug}`, slug, history: '' },
       });
     }
+    // Only an approved household posts products (GH#237).
+    await db.orm.em
+      .fork()
+      .nativeUpdate(Household, { slug: { $in: ['gom-a', 'gom-b'] } }, { status: 'APPROVED' });
     const created = await t.request({
       method: 'POST',
       url: '/me/household/products',
@@ -88,7 +93,12 @@ describe('Studio products', () => {
 
   it('bản cũ bị từ chối; hộ khác không thấy sản phẩm; thiếu tên thì lỗi kiểm dữ liệu', async () => {
     expect((await patch({ stock: 1 }, product.version - 1)).status).toBe(409);
-    expect((await patch({ stock: 1 }, product.version, other.auth)).status).toBe(404);
+    // AC-4 (GH#237): another household's product is a 403 and an audit entry, not a hidden 404.
+    expect((await patch({ stock: 1 }, product.version, other.auth)).status).toBe(403);
+    const denied = await db.orm.em
+      .fork()
+      .find(AuditLog, { action: 'access.denied', entityId: product.id });
+    expect(denied).toHaveLength(1);
     expect((await patch({ name: 'x' })).status).toBe(422);
   });
 

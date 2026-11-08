@@ -1,6 +1,15 @@
 import { PRODUCT_CATEGORIES } from '@vcraft/domain';
 import { z } from 'zod';
-import { CursorPageQuerySchema, cursorPageSchema, IsoDateTimeSchema, SlugSchema } from '../common';
+import {
+  CursorPageQuerySchema,
+  cursorPageSchema,
+  DEFAULT_PAGE_LIMIT,
+  IsoDateTimeSchema,
+  MAX_PAGE_LIMIT,
+  PageCountersSchema,
+  PageNumberSchema,
+  SlugSchema,
+} from '../common';
 import { OpeningIntervalSchema, ProductKindSchema } from '../households';
 import { PublicImageVariantsSchema } from '../media';
 
@@ -26,7 +35,7 @@ export const ListProductsQuerySchema = CursorPageQuerySchema.extend({
   inStock: FlagSchema.optional(),
   sort: ProductSortSchema.default('newest'),
   /** Page mode (catalog exception to cursor-only paging, see ADR-0020); cannot be combined with `cursor`. */
-  page: z.coerce.number().int().min(1).max(10_000).optional(),
+  page: PageNumberSchema.optional(),
 });
 export type ListProductsQuery = z.infer<typeof ListProductsQuerySchema>;
 
@@ -54,12 +63,7 @@ export const ProductListResponseSchema = cursorPageSchema(ProductCardSchema);
 export type ProductListDto = z.infer<typeof ProductListResponseSchema>;
 
 /** Response of `GET /products?page=N`: the cursor envelope plus page counters (ADR-0020). */
-export const ProductPageResponseSchema = ProductListResponseSchema.extend({
-  page: z.int().min(1),
-  pageSize: z.int().min(1),
-  total: z.int().nonnegative(),
-  totalPages: z.int().nonnegative(),
-});
+export const ProductPageResponseSchema = ProductListResponseSchema.extend(PageCountersSchema.shape);
 export type ProductPageDto = z.infer<typeof ProductPageResponseSchema>;
 
 /** Một dòng trong danh sách hộ công khai. */
@@ -84,6 +88,22 @@ export type HouseholdSummaryDto = z.infer<typeof HouseholdSummarySchema>;
 
 export const HouseholdListResponseSchema = z.object({ data: z.array(HouseholdSummarySchema) });
 export type HouseholdListDto = z.infer<typeof HouseholdListResponseSchema>;
+
+/**
+ * `GET /households`: without `page` every approved household comes back (home page, map, catalog filter);
+ * with `?page=N&limit=M` one numbered page of the `/nghe-nhan` list (GH#202, ADR-0020).
+ */
+export const ListPublicHouseholdsQuerySchema = z.object({
+  page: PageNumberSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_LIMIT).default(DEFAULT_PAGE_LIMIT),
+});
+export type ListPublicHouseholdsQuery = z.infer<typeof ListPublicHouseholdsQuerySchema>;
+
+/** Response of `GET /households?page=N`: the household list plus page counters. */
+export const HouseholdPageResponseSchema = HouseholdListResponseSchema.extend(
+  PageCountersSchema.shape,
+);
+export type HouseholdPageDto = z.infer<typeof HouseholdPageResponseSchema>;
 
 export const SearchQuerySchema = z.object({ q: z.string().trim().min(1).max(120) });
 

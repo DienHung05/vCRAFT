@@ -1,0 +1,29 @@
+diff --git a/dialects/mysql/MySqlSchemaHelper.js b/dialects/mysql/MySqlSchemaHelper.js
+index 14819d5a83a93b537d2042a700f1c9349704c4ac..1a9739ff6f632bd391c058808d22e5e7c880b288 100644
+--- a/dialects/mysql/MySqlSchemaHelper.js
++++ b/dialects/mysql/MySqlSchemaHelper.js
+@@ -300,7 +300,9 @@ export class MySqlSchemaHelper extends SchemaHelper {
+                 name: check.name,
+                 columnName: check.column_name,
+                 definition: `check ${check.expression}`,
+-                expression: check.expression.replace(/^\((.*)\)$/, '$1'),
++                // MySQL 8.4 escapes quotes in CHECK_CLAUSE. Normalize them before schema comparison
++                // so charset introducers and quoted literals match the entity's SQL expression.
++                expression: check.expression.replace(/\\'/g, "'").replace(/^\((.*)\)$/, '$1'),
+             });
+         }
+         return ret;
+diff --git a/schema/SchemaComparator.js b/schema/SchemaComparator.js
+index a321317bec438a20e98f0a51457c62fd8610f9a0..310491f656fbce7a53c87fa6ba76b91a66075361 100644
+--- a/schema/SchemaComparator.js
++++ b/schema/SchemaComparator.js
+@@ -914,7 +914,8 @@ export class SchemaComparator {
+         const simplify = (str) => {
+             return (str
+                 // lookbehind: only strip a real charset introducer, never an underscore inside a literal like 'a_b'
+-                ?.replace(/(?<![\w'])_\w+'(.*?)'/g, '$1')
++                // Keep literal quotes so the dot protection below also covers MySQL charset literals.
++                ?.replace(/(?<![\w'])_\w+'(.*?)'/g, "'$1'")
+                 .replace(/!=/g, '<>')
+                 // `\b` keeps this from firing inside identifiers like `min(...)`
+                 .replace(/\bnot\s+in\s*\((.*?)\)/gi, '<> all (array[$1])')

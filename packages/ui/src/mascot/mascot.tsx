@@ -16,13 +16,22 @@ import {
   moodReaction,
   nextBlinkDelay,
   reactionIndex,
+  type SpriteReaction,
   THOUGHT_MS,
 } from './mascot-model';
+import { MascotThought } from './mascot-thought';
 
 export interface MascotProps {
   mood?: MascotMood;
+  /**
+   * A short reaction shown over the mood, such as the dizzy face after rapid clicks (`useMascotPoke`,
+   * GH#211). `dizzy` also wobbles the head while motion is allowed.
+   */
+  reaction?: SpriteReaction | null;
   /** Lines for the thought bubble; several cross-fade every 2.5 s. None hides the bubble. */
   thought?: string | readonly string[] | undefined;
+  /** Escape clipping containers and keep the thought inside the visible viewport. */
+  thoughtPortal?: boolean;
   /** Where the head turns: the pointer, a point in viewport coordinates, or straight ahead. */
   lookAt?: 'pointer' | { x: number; y: number } | null;
   /** Rendered size in px: 56 (phone launcher), 64 (desktop launcher), 96 (panel header). */
@@ -83,7 +92,10 @@ function useGaze(
     const onMove = (event: PointerEvent) => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() =>
-        setGaze(gazeDirection(centre(), { x: event.clientX, y: event.clientY })),
+        setGaze((current) => {
+          const next = gazeDirection(centre(), { x: event.clientX, y: event.clientY });
+          return next.x === current.x && next.y === current.y ? current : next;
+        }),
       );
     };
     window.addEventListener('pointermove', onMove, { passive: true });
@@ -169,13 +181,16 @@ function useThought(lines: readonly string[], reduced: boolean) {
  * gaze cell for its closed-eye twin, so the head keeps facing where it looks (GH#186).
  *
  * The component blinks at random, breathes 2 px on a 3 s cycle, turns its head toward the pointer or a
- * point with a slight lag, dozes off when left idle, and shows a thought bubble whose three small clouds
- * rise in turn before the line appears. Under `prefers-reduced-motion` it neither blinks, breathes nor
- * turns, and the bubble is static.
+ * point, dozes off when left idle, and shows a thought bubble whose three small clouds rise in turn before
+ * the line appears. Under `prefers-reduced-motion` it neither blinks nor breathes and the bubble is
+ * static; it still turns its head, since that is an instant swap of sprite cells with no movement
+ * (GH#203).
  */
 export function Mascot({
   mood = 'idle',
+  reaction = null,
   thought,
+  thoughtPortal = false,
   lookAt = null,
   size = 64,
   dozeAfterMs = 90_000,
@@ -193,14 +208,16 @@ export function Mascot({
   const dozing = useDozing(mood === 'idle', dozeAfterMs);
   const shown: MascotMood = dozing ? 'sleep' : mood;
 
-  const gaze = useGaze(wrapperRef, lookAt, reduced || shown === 'sleep' || shown === 'refuse');
+  // A head turn is an instant swap of sprite cells, not movement, so it stays on under reduced motion
+  // (GH#203).
+  const gaze = useGaze(wrapperRef, lookAt, shown === 'sleep' || shown === 'refuse');
   const blinking = useBlink(!reduced && canBlink(shown));
   const lines = thought === undefined ? [] : typeof thought === 'string' ? [thought] : [...thought];
   const bubble = useThought(lines, reduced);
   const motion = !reduced;
 
   // Reactions layer: only for reaction-based moods. Blinking never touches it (GH#186).
-  const reactionMood = moodReaction(shown);
+  const reactionMood = reaction ?? moodReaction(shown);
   const showReaction = reactionMood !== null;
   // Blink layer: the closed-eye twin of the current gaze cell, shown instantly while blinking.
   const showBlink = blinking && !showReaction;
@@ -219,11 +236,13 @@ export function Mascot({
       style={{ width: size, height: size }}
       {...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': true })}
       data-mood={shown}
+      data-reaction={reaction ?? undefined}
       data-motion={motion ? 'on' : 'off'}
     >
       <style>{`
         @keyframes vc-fox-${id}-breathe { 50% { transform: translateY(-2px); } }
         @keyframes vc-fox-${id}-shake { 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+        @keyframes vc-fox-${id}-wobble { 20% { transform: rotate(-10deg); } 40% { transform: rotate(8deg); } 60% { transform: rotate(-6deg); } 80% { transform: rotate(4deg); } }
         @keyframes vc-fox-${id}-rise { from { opacity: 0; transform: translateY(4px) scale(.6); } }
         @keyframes vc-fox-${id}-fade { from { opacity: 0; } }
       `}</style>
@@ -241,6 +260,10 @@ export function Mascot({
           // Head shake for 'refuse' mood
           ...(motion && shown === 'refuse'
             ? { animation: `vc-fox-${id}-shake 0.5s ease-in-out 2` }
+            : {}),
+          // Dizzy after rapid pokes: the head wobbles twice (GH#211); a frame swap only under reduced motion.
+          ...(motion && reaction === 'dizzy'
+            ? { animation: `vc-fox-${id}-wobble 0.9s ease-in-out 2` }
             : {}),
         }}
       >
@@ -280,43 +303,14 @@ export function Mascot({
       </span>
 
       {bubble.line ? (
-        <span aria-hidden="true" className="pointer-events-none absolute bottom-[78%] left-[62%]">
-          {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              className="absolute rounded-full border border-ink/60 bg-paper"
-              style={{
-                width: 4 + i * 2,
-                height: 4 + i * 2,
-                left: i * 6,
-                bottom: i * 6,
-                animation: bubble.animate
-                  ? `vc-fox-${id}-rise 240ms var(--ease-clay, ease-out) ${i * 120}ms both`
-                  : undefined,
-              }}
-            />
-          ))}
-          <span
-            className="absolute bottom-5 left-4 block w-max max-w-[15rem] border border-ink/70 bg-paper px-3 py-1.5 text-small text-ink shadow-warm"
-            // Uneven corners, like a hand-cut seal (BRAND §10).
-            style={{
-              borderRadius: '14px 10px 16px 9px',
-              animation: bubble.animate
-                ? `vc-fox-${id}-rise 240ms var(--ease-clay, ease-out) 360ms both`
-                : undefined,
-            }}
-          >
-            <span
-              key={bubble.index}
-              className="block"
-              style={
-                bubble.animate ? { animation: `vc-fox-${id}-fade 320ms ease-out both` } : undefined
-              }
-            >
-              {bubble.line}
-            </span>
-          </span>
-        </span>
+        <MascotThought
+          anchor={wrapperRef}
+          portal={thoughtPortal}
+          line={bubble.line}
+          index={bubble.index}
+          animate={bubble.animate}
+          id={id}
+        />
       ) : null}
     </div>
   );

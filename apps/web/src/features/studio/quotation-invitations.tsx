@@ -56,7 +56,18 @@ function Invitations({ client }: { client: QuotationClient }) {
     void load();
   }, [load]);
 
-  const offerLabel = ({ request, contribution, declined }: MyInvitationDto) => {
+  const offerLabel = ({ request, contribution, declined, directQuotation }: MyInvitationDto) => {
+    // A request without coordination is quoted by the household itself (FR-RFQ-04).
+    if (!request.coordinationOptIn && directQuotation) {
+      if (directQuotation.status === 'SUBMITTED')
+        return t('directActive', {
+          price: money(directQuotation.unitPriceVnd),
+          unit: request.unit,
+          total: money(directQuotation.totalVnd),
+        });
+      if (directQuotation.status === 'ACCEPTED') return t('directAccepted');
+      if (directQuotation.status === 'REJECTED') return t('directRejected');
+    }
     if (contribution?.status === 'ACTIVE')
       return t('active', {
         price: money(contribution.unitPriceVnd),
@@ -112,7 +123,17 @@ function Invitations({ client }: { client: QuotationClient }) {
                   {isOpen(row) ? <DeadlineCountdown until={row.request.biddingClosesAt} /> : null}
                 </p>
                 <p className="flex flex-wrap items-center gap-2 text-small">
-                  <Badge tone={row.contribution?.status === 'ACTIVE' ? 'clay' : 'outline'}>
+                  {/* The offer summary is a sentence; it wraps on a phone instead of widening the page. */}
+                  <Badge
+                    tone={
+                      row.contribution?.status === 'ACTIVE' ||
+                      row.directQuotation?.status === 'SUBMITTED' ||
+                      row.directQuotation?.status === 'ACCEPTED'
+                        ? 'clay'
+                        : 'outline'
+                    }
+                    className="whitespace-normal"
+                  >
                     {offerLabel(row)}
                   </Badge>
                   {isOpen(row) ? null : <Badge tone="outline">{t('closed')}</Badge>}

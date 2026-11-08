@@ -238,4 +238,81 @@ describe('Studio household profile', () => {
     const pub = await t.request({ method: 'GET', url: '/households/gom-ho-so' });
     expect(pub.body.workshops[0].address).toBe('Số 12 đường Gốm, Bát Tràng');
   });
+
+  it('xưởng: trải nghiệm và tạm đóng cửa được lưu, hiện công khai trên hộ và bản đồ, rồi gỡ được (GH#236)', async () => {
+    const base = {
+      name: 'Phòng trải nghiệm',
+      address: 'Xóm 5, Bát Tràng',
+      purpose: 'SHOWROOM',
+      acceptsVisitors: true,
+      openingHours: [{ day: 1, open: '08:00', close: '17:00' }],
+      lat: 20.9761,
+      lng: 105.9142,
+    };
+    const experience = {
+      description: 'Nặn gốm cùng nghệ nhân',
+      durationMinutes: 90,
+      priceVnd: 250000,
+    };
+
+    // A closure needs its reason, and an experience needs duration and price.
+    const noReason = await t.request({
+      method: 'POST',
+      url: '/me/household/workshops',
+      auth: owner.auth,
+      body: { ...base, temporarilyClosed: true },
+    });
+    expect(noReason.status).toBe(422);
+    const noPrice = await t.request({
+      method: 'POST',
+      url: '/me/household/workshops',
+      auth: owner.auth,
+      body: { ...base, experience: { description: 'Nặn gốm cùng nghệ nhân', durationMinutes: 90 } },
+    });
+    expect(noPrice.status).toBe(422);
+
+    const created = await t.request({
+      method: 'POST',
+      url: '/me/household/workshops',
+      auth: owner.auth,
+      body: { ...base, experience, temporarilyClosed: true, closureReason: 'Nghỉ Tết' },
+    });
+    expect(created.status).toBe(201);
+    expect(created.body).toMatchObject({
+      experience,
+      temporarilyClosed: true,
+      closureReason: 'Nghỉ Tết',
+    });
+
+    const listed = (workshops: { id: string }[]) => workshops.find((w) => w.id === created.body.id);
+    const pub = await t.request({ method: 'GET', url: '/households/gom-ho-so' });
+    expect(listed(pub.body.workshops)).toMatchObject({
+      experience,
+      temporarilyClosed: true,
+      closureReason: 'Nghỉ Tết',
+    });
+    const map = await t.request({ method: 'GET', url: '/map/workshops' });
+    expect(
+      map.body.data.find((p: { workshopId: string }) => p.workshopId === created.body.id),
+    ).toMatchObject({ experience, temporarilyClosed: true, closureReason: 'Nghỉ Tết' });
+
+    // Reopening clears the reason; dropping the experience clears its fields.
+    const reopened = await t.request({
+      method: 'PUT',
+      url: `/me/household/workshops/${created.body.id}`,
+      auth: owner.auth,
+      headers: { 'if-match': `"${created.body.version}"` },
+      body: { ...base, closureReason: 'Nghỉ Tết' },
+    });
+    expect(reopened.status).toBe(200);
+    expect(reopened.body).toMatchObject({
+      experience: null,
+      temporarilyClosed: false,
+      closureReason: null,
+    });
+    const mapAfter = await t.request({ method: 'GET', url: '/map/workshops' });
+    expect(
+      mapAfter.body.data.find((p: { workshopId: string }) => p.workshopId === created.body.id),
+    ).toMatchObject({ experience: null, temporarilyClosed: false, closureReason: null });
+  });
 });

@@ -18,9 +18,34 @@ for (const path of PAGES) {
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("base-uri 'self'");
     expect(csp).toContain("object-src 'none'");
+    // NFR-SEC-04 (GH#240): scripts run only with this request's nonce, never through 'unsafe-inline'.
+    const scriptSrc = /script-src ([^;]+)/.exec(csp)?.[1] ?? '';
+    expect(scriptSrc).toMatch(/'nonce-[A-Za-z0-9+/=]+'/);
+    expect(scriptSrc).toContain("'strict-dynamic'");
+    expect(scriptSrc).not.toContain("'unsafe-inline'");
     expect(headers['x-powered-by']).toBeUndefined();
   });
 }
+
+test('every inline script carries the nonce of its own response, and the nonce changes per request', async ({
+  request,
+}) => {
+  const nonces: string[] = [];
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await request.get('/vi', { maxRedirects: 0 });
+    const nonce = /'nonce-([^']+)'/.exec(res.headers()['content-security-policy'] ?? '')?.[1];
+    expect(nonce).toBeTruthy();
+    const html = await res.text();
+    const scripts = html.match(/<script[^>]*>/g) ?? [];
+    expect(scripts.length).toBeGreaterThan(0);
+    for (const tag of scripts) {
+      if (/type="application\/ld\+json"/.test(tag)) continue;
+      expect(tag, 'script tag without the response nonce').toContain(`nonce="${nonce}"`);
+    }
+    nonces.push(nonce ?? '');
+  }
+  expect(nonces[0]).not.toBe(nonces[1]);
+});
 
 test('cookies set by public pages are SameSite and never readable cross-site', async ({
   page,

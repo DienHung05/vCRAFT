@@ -37,6 +37,7 @@ import {
   pruneRetiredDemoMedia,
   publishDemoMedia,
 } from '../../../worker/src/demo/publish-demo-media.js';
+import { addMilestone, createJournalPhoto } from './support/journal-photo.js';
 import { startTestApp, TEST_FIELD_KEYS, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
 
@@ -110,7 +111,18 @@ describe('Demo seed and guarded reset', () => {
 
     for (const account of Object.values(DEMO_ACCOUNTS)) {
       const user = await em.findOneOrFail(AppUser, account.id);
-      expect(user).toMatchObject({ email: account.email, role: account.role, status: 'ACTIVE' });
+      expect(user).toMatchObject({
+        email: account.email,
+        username: account.username,
+        role: account.role,
+        status: 'ACTIVE',
+      });
+    }
+    // GH#212: the four demo usernames are the reserved set, always lowercase and unique.
+    const usernames = (await em.find(AppUser, {})).map((u) => u.username);
+    expect(new Set(usernames).size).toBe(usernames.length);
+    for (const account of Object.values(DEMO_ACCOUNTS)) {
+      expect(usernames).toContain(account.username);
     }
     const pending = await em.findOneOrFail(Household, DEMO_HOUSEHOLD_IDS.pending, {
       populate: ['representative'],
@@ -170,7 +182,7 @@ describe('Demo seed and guarded reset', () => {
       await writeFile(join(imagesDir, name), small);
     }
     const specimenDir = fileURLToPath(
-      new URL('../../../../scripts/demo-photos/specimen-docs', import.meta.url),
+      new URL('../../../../scripts/demo/photos/specimen-docs', import.meta.url),
     );
     const publish = async () => {
       const uploaded = await publishDemoMedia({
@@ -248,9 +260,9 @@ describe('Demo seed and guarded reset', () => {
       expect(product.coverAlt, product.traceCode).toBeTruthy();
       expect(product.coverAltEn, product.traceCode).toMatch(/^[\x20-\x7e]+$/);
     }
-    // The product HX2M9KQD now has a matching photo.
+    // HX2M9KQD's photo had no recorded author or licence, so it shows the illustration again (GH#204).
     const bowl = await db.orm.em.fork().findOneOrFail(Product, { traceCode: 'HX2M9KQD' });
-    expect(bowl.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
+    expect(bowl.coverUrl).toBeNull();
     const lamNgoc = await db.orm.em.fork().findOneOrFail(Household, { slug: 'gom-lam-ngoc' });
     expect(lamNgoc.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
     // Gốm Minh Hải's old kiln banner was retired (Commons does not confirm it is in Bát Tràng); it now has a
@@ -464,6 +476,8 @@ describe('Demo seed and guarded reset', () => {
     expect(mine.status).toBe(200);
     const draft = mine.body.products.find((p: { status: string }) => p.status === 'DRAFT');
     expect(draft).toBeTruthy();
+    const household = { id: DEMO_ACCOUNTS.household.id, auth: as('household') };
+    await addMilestone(t, household, draft.id, await createJournalPhoto(db, t, household));
     const published = await t.request({
       method: 'POST',
       url: `/products/${draft.id}/publish`,

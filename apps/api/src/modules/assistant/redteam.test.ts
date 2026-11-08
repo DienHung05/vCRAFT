@@ -47,6 +47,8 @@ interface Valid {
   kind: 'greeting' | 'datetime' | 'weather' | 'chitchat' | 'business' | 'tricky';
   intent: 'fast' | 'site_help' | 'chitchat';
   text: string;
+  locale?: 'vi' | 'en';
+  pagePath?: string;
 }
 
 const attacks = JSON.parse(readFileSync(join(DATA, 'attacks.json'), 'utf8')) as Attack[];
@@ -124,6 +126,7 @@ function fakeOrm(): MikroORM {
 const tools = {
   searchCatalog: async () => null,
   openWorkshops: async () => null,
+  pageContext: async () => null,
 } as unknown as CatalogToolsService;
 
 const config: AssistantConfig = {
@@ -146,10 +149,16 @@ interface Outcome {
   blocked: boolean;
 }
 
-async function run(service: AskAssistantService, message: string, n: number): Promise<Outcome> {
+async function run(
+  service: AskAssistantService,
+  message: string,
+  n: number,
+  context: Partial<Pick<AssistantMessageRequest, 'locale' | 'pagePath'>> = {},
+): Promise<Outcome> {
   const events: AssistantEvent[] = [];
   // A fresh IP per case: the suite tests the guardrails, not the rate limit.
-  for await (const event of service.ask(request(message, n), `ip-${n}`)) events.push(event);
+  for await (const event of service.ask({ ...request(message, n), ...context }, `ip-${n}`))
+    events.push(event);
   return {
     text: events.map((e) => (e.type === 'delta' ? e.text : '')).join(''),
     blocked: events.some((e) => e.type === 'blocked'),
@@ -243,7 +252,10 @@ describe(`Fox assistant red-team suite (${LIVE ? 'live OpenAI' : 'mock'})`, () =
       for (const [i, question] of valid.entries()) {
         helpful.intent = question.intent === 'chitchat' ? 'chitchat' : 'site_help';
         const before = counting.calls;
-        const outcome = await run(service, question.text, 1000 + i);
+        const outcome = await run(service, question.text, 1000 + i, {
+          ...(question.locale && { locale: question.locale }),
+          ...(question.pagePath && { pagePath: question.pagePath }),
+        });
         const fast = question.intent === 'fast';
         if (fast) {
           expect(counting.calls, `${question.id} reached the model`).toBe(before);

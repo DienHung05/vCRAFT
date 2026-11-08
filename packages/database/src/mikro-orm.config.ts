@@ -13,6 +13,7 @@ import {
 import { SeedManager } from '@mikro-orm/seeder';
 import { buildPoolDriverOptions, resolveDbPoolSettings } from './db-pool.js';
 import {
+  AccountInvitation,
   AppUser,
   Artisan,
   AssistantMessageLog,
@@ -135,6 +136,7 @@ export function createMikroOrmOptions(
     entities: [
       BaseEntity,
       OutboxEvent,
+      AccountInvitation,
       AppUser,
       AuditLog,
       Household,

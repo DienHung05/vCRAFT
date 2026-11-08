@@ -1,5 +1,5 @@
 /**
- * Token chuyển động vCraft — nguồn chuẩn: docs/BRAND.md §6.2.
+ * Token chuyển động vCraft — nguồn chuẩn: docs/design/BRAND.md §6.2.
  * Giá trị phải khớp `--ease-*` và `--duration-*` trong ../tokens/theme.css.
  */
 

@@ -3,6 +3,7 @@ import {
   BuyerQuotationResponseSchema,
   CreateContributionRequestSchema,
   CreateCooperativeQuotationRequestSchema,
+  CreateDirectQuotationRequestSchema,
 } from '../src';
 
 const validContribution = {
@@ -81,6 +82,40 @@ describe('quantity storage limits', () => {
         ...validContribution,
         maxQuantity: 2_147_483_648,
       }).success,
+    ).toBe(false);
+  });
+});
+
+describe('direct quotation input', () => {
+  const completionDate = '2027-02-01T00:00:00.000Z';
+
+  it('takes a unit price, a date and an optional trimmed note', () => {
+    const parsed = CreateDirectQuotationRequestSchema.safeParse({
+      unitPriceVnd: 30_000,
+      completionDate,
+      note: '  Two firings  ',
+    });
+    expect(parsed.success && parsed.data.note).toBe('Two firings');
+    expect(
+      CreateDirectQuotationRequestSchema.safeParse({ unitPriceVnd: 30_000, completionDate })
+        .success,
+    ).toBe(true);
+  });
+
+  it('refuses a free price, a long note and fields that belong to the request', () => {
+    expect(
+      CreateDirectQuotationRequestSchema.safeParse({ unitPriceVnd: 0, completionDate }).success,
+    ).toBe(false);
+    expect(
+      CreateDirectQuotationRequestSchema.safeParse({
+        unitPriceVnd: 1,
+        completionDate,
+        note: 'x'.repeat(501),
+      }).success,
+    ).toBe(false);
+    expect(
+      CreateDirectQuotationRequestSchema.safeParse({ unitPriceVnd: 1, completionDate, quantity: 5 })
+        .success,
     ).toBe(false);
   });
 });

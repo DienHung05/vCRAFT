@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
 import type { BuyerQuotationDto, RfqListItemDto, RfqResponse } from '@vcraft/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,6 +11,7 @@ import {
   rfqFormPayload,
   rfqFormProblems,
 } from '@/features/rfq/rfq-form-model';
+import { confirmDialog, openDialog } from './confirm';
 import { renderVi } from './render';
 
 const push = vi.fn();
@@ -64,7 +65,7 @@ function client(overrides: Partial<QuotationClient> = {}): QuotationClient {
   return {
     getRequest: vi.fn().mockResolvedValue(REQUEST),
     listBuyerQuotations: vi.fn().mockResolvedValue([]),
-    listAllocations: vi.fn().mockRejectedValue(new QuotationApiError('NOT_FOUND', 404)),
+    listAllocations: vi.fn().mockResolvedValue([]),
     listNotices: vi.fn().mockResolvedValue([]),
     recordConsent: vi.fn().mockResolvedValue({}),
     ...overrides,
@@ -116,7 +117,8 @@ describe('rfq form rules', () => {
     expect(rfqFormProblems({ ...VALID, requiredBy: '2099-12-01' }, now).requiredBy).toBe(true);
     expect(rfqFormProblems({ ...VALID, budgetMin: '5', budgetMax: '1' }, now).budget).toBe(true);
     expect(rfqFormProblems({ ...VALID, budgetMin: 'abc' }, now).budget).toBe(true);
-    expect(rfqFormProblems({ ...VALID, coordinate: false }, now).households).toBe(true);
+    // Nobody chosen and no coordination is fine: the system matches households of the category (BR-05).
+    expect(rfqFormProblems({ ...VALID, coordinate: false }, now)).toEqual({});
   });
 });
 
@@ -152,6 +154,30 @@ describe('RfqForm', () => {
     renderVi(<RfqForm client={api} />);
     await waitFor(() =>
       expect((screen.getByLabelText('Tiêu đề') as HTMLInputElement).value).toBe('Half done'),
+    );
+  });
+
+  it('seeds a new form from a product prefill and ignores a browser-kept draft', async () => {
+    window.localStorage.setItem(
+      'vcraft.rfq-draft',
+      JSON.stringify({ id: null, values: { ...EMPTY_RFQ_FORM, title: 'Old draft' } }),
+    );
+    renderVi(
+      <RfqForm
+        client={client()}
+        prefill={{
+          title: 'Bình hoa men lam',
+          category: 'VASE',
+          description: 'Quan tâm đến mã BT7K2QXM',
+        }}
+      />,
+    );
+    await waitFor(() =>
+      expect((screen.getByLabelText('Tiêu đề') as HTMLInputElement).value).toBe('Bình hoa men lam'),
+    );
+    expect((screen.getByLabelText('Danh mục') as HTMLSelectElement).value).toBe('VASE');
+    expect((screen.getByLabelText('Mô tả') as HTMLTextAreaElement).value).toBe(
+      'Quan tâm đến mã BT7K2QXM',
     );
   });
 
@@ -278,6 +304,61 @@ describe('BuyerRfqDetail', () => {
       fireEvent.click(confirm);
     });
     expect(acceptQuotation).toHaveBeenCalledWith(ID, 4, { quotationId: 'a' });
+  });
+
+  it('closes the accept dialog with "Yêu cầu đã được chốt" when the other session accepted first (AC-2)', async () => {
+    const acceptQuotation = vi.fn().mockRejectedValue(new QuotationApiError('STALE_VERSION', 409));
+    const getRequest = vi
+      .fn()
+      .mockResolvedValueOnce(REQUEST)
+      .mockResolvedValue({ ...REQUEST, status: 'ACCEPTED', version: 5 });
+    renderVi(
+      <BuyerRfqDetail
+        rfqId={ID}
+        client={client({
+          getRequest,
+          listBuyerQuotations: vi.fn().mockResolvedValue([quotation('a', 3_000_000)]),
+          acceptQuotation,
+        })}
+      />,
+    );
+    await screen.findByText('Household a');
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Chốt chào giá này', hidden: true })[0] as HTMLElement,
+    );
+    await screen.findByText('Chốt chào giá này?');
+    await act(async () => {
+      confirmDialog('Chốt chào giá này');
+    });
+    await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
+    expect((await screen.findByRole('alert')).textContent).toBe('Yêu cầu đã được chốt');
+    expect(screen.queryByText(/vừa được cập nhật/)).toBeNull();
+  });
+
+  it('keeps the accept dialog open with the stale message while the request is still open', async () => {
+    const acceptQuotation = vi.fn().mockRejectedValue(new QuotationApiError('STALE_VERSION', 409));
+    renderVi(
+      <BuyerRfqDetail
+        rfqId={ID}
+        client={client({
+          getRequest: vi.fn().mockResolvedValue({ ...REQUEST, version: 5 }),
+          listBuyerQuotations: vi.fn().mockResolvedValue([quotation('a', 3_000_000)]),
+          acceptQuotation,
+        })}
+      />,
+    );
+    await screen.findByText('Household a');
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Chốt chào giá này', hidden: true })[0] as HTMLElement,
+    );
+    await screen.findByText('Chốt chào giá này?');
+    await act(async () => {
+      confirmDialog('Chốt chào giá này');
+    });
+    expect(within(openDialog()).getByRole('alert').textContent).toContain(
+      'Dữ liệu vừa được cập nhật',
+    );
+    expect(document.querySelector('dialog[open]')).toBeTruthy();
   });
 
   it('a bid lands on the table: best total glows, amounts are readable, the accepted offer is sealed (GH#175)', async () => {

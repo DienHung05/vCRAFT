@@ -14,7 +14,7 @@ import {
 /** SRS §4.3 */
 const EXPECTED: Record<AllocationStatus, Partial<Record<AllocationEvent, AllocationStatus>>> = {
   PROPOSED: { CONFIRM: 'CONFIRMED', DECLINE: 'DECLINED', CANCEL: 'CANCELLED' },
-  CONFIRMED: { START: 'IN_PROGRESS', CANCEL: 'CANCELLED' },
+  CONFIRMED: { START: 'IN_PROGRESS', CANCEL: 'CANCELLED', REOPEN: 'PROPOSED' }, // REOPEN: GH#246
   IN_PROGRESS: { COMPLETE: 'DONE', CANCEL: 'CANCELLED' },
   DECLINED: {},
   DONE: {},

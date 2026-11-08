@@ -12,7 +12,8 @@ describe('quotation notices: in-app inbox and mail outbox', () => {
   let t: TestApp;
   let users: Record<Party, { id: string; auth: string }>;
   let householdIds: Record<'repA' | 'repB' | 'repC', string>;
-  const deadline = new Date(Date.now() + 86_400_000).toISOString();
+  // At least 24 h away when submitted (SRS T1, GH#244).
+  const deadline = new Date(Date.now() + 2 * 86_400_000).toISOString();
   const completionDate = new Date(Date.now() + 10 * 86_400_000).toISOString();
   const requiredBy = new Date(Date.now() + 20 * 86_400_000).toISOString();
   const parties: Party[] = ['buyer', 'admin', 'stranger', 'repA', 'repB', 'repC'];
@@ -400,7 +401,7 @@ describe('quotation notices: in-app inbox and mail outbox', () => {
     return draft.id;
   }
 
-  it('tells every other party when a household declines', async () => {
+  it('asks the coordinator to reallocate when a household declines (GH#246)', async () => {
     const requestId = await acceptedOrder();
     await step(
       requestId,
@@ -414,7 +415,7 @@ describe('quotation notices: in-app inbox and mail outbox', () => {
         });
         expect(res.status).toBe(200);
       },
-      { buyer: ['ORDER_CANCELLED'], admin: ['ORDER_CANCELLED'], repA: ['ORDER_CANCELLED'] },
+      { admin: ['COORDINATION_NEEDED'] },
     );
   });
 

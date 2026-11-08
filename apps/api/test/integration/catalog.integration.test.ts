@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { addMilestone, createJournalPhoto } from './support/journal-photo.js';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
 
@@ -10,7 +11,7 @@ describe('Public catalog', () => {
   let db: TestDatabase;
   let t: TestApp;
   let adminAuth: string;
-  let rep: { auth: string };
+  let rep: { id: string; auth: string };
   let householdId: string;
   let householdVersion: number;
 
@@ -33,6 +34,9 @@ describe('Public catalog', () => {
       body: { name, ...fields },
     });
     expect(created.status).toBe(201);
+    expect(
+      (await addMilestone(t, rep, created.body.id, await createJournalPhoto(db, t, rep))).status,
+    ).toBe(201);
     const res = await t.request({
       method: 'POST',
       url: `/products/${created.body.id}/publish`,
@@ -193,6 +197,10 @@ describe('Public catalog', () => {
     expect(list.body.data).toEqual([
       expect.objectContaining({ slug: 'gom-bat-trang-xua', productCount: 3 }),
     ]);
+    const page = await t.request({ method: 'GET', url: '/households?page=5&limit=12' });
+    expect(page.status).toBe(200);
+    expect(page.body).toMatchObject({ page: 1, pageSize: 12, total: 1, totalPages: 1 });
+    expect(page.body.data).toEqual([expect.objectContaining({ slug: 'gom-bat-trang-xua' })]);
     const stats = await t.request({ method: 'GET', url: '/village/stats' });
     expect(stats.body).toEqual({ households: 1, products: 3, artisans: 0 });
   });
@@ -203,7 +211,8 @@ describe('Public catalog', () => {
     expect(detail.status).toBe(200);
     expect(detail.body.product.priceVnd).toBe(900_000);
     expect(detail.body.household.slug).toBe('gom-bat-trang-xua');
-    expect(detail.body.journal.entries).toEqual([]);
+    // Each published product carries the single milestone the helper added before publishing.
+    expect(detail.body.journal.entries).toHaveLength(1);
     expect((await t.request({ method: 'GET', url: '/products/khong-co' })).status).toBe(404);
 
     const suspended = await t.request({

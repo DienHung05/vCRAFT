@@ -24,7 +24,7 @@ describe('Scheduled quotation jobs', () => {
   const DAY = 86_400_000;
 
   async function sentRequest(opts: { closesInMs?: number; coordinationOptIn?: boolean } = {}) {
-    const biddingClosesAt = new Date(Date.now() + (opts.closesInMs ?? DAY)).toISOString();
+    const biddingClosesAt = new Date(Date.now() + (opts.closesInMs ?? 2 * DAY)).toISOString();
     const created = await t.request({
       method: 'POST',
       url: '/rfqs',
@@ -154,9 +154,34 @@ describe('Scheduled quotation jobs', () => {
 
   it('flags a request closing within a day whose offers cannot cover the quantity', async () => {
     const far = await sentRequest({ closesInMs: 5 * DAY });
-    const near = await sentRequest({ closesInMs: 12 * 60 * 60 * 1000 });
+    // Buyers cannot submit a deadline under 24 h (SRS T1), so the request gets close to it with time.
+    const near = await sentRequest();
+    const em = db.orm.em.fork();
+    const nearRequest = await em.findOneOrFail(QuotationRequest, near.id);
+    nearRequest.biddingClosesAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
+    await em.flush();
     const flagged = await flagRequestsNeedingCoordination(db.orm);
     expect(flagged).toContain(near.id);
     expect(flagged).not.toContain(far.id);
+  });
+
+  it('does not flag a closing request that already has a complete household quotation', async () => {
+    const quoted = await sentRequest();
+    const em = db.orm.em.fork();
+    const request = await em.findOneOrFail(QuotationRequest, quoted.id);
+    request.biddingClosesAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
+    await em.flush();
+    // The household quotes the whole quantity on its own: it has no contribution offer to count.
+    const quote = await t.request({
+      method: 'POST',
+      url: `/rfqs/${quoted.id}/direct-quotations`,
+      auth: reps[0]?.auth,
+      body: {
+        unitPriceVnd: 30_000,
+        completionDate: new Date(Date.now() + 20 * DAY).toISOString(),
+      },
+    });
+    expect(quote.status).toBe(201);
+    expect(await flagRequestsNeedingCoordination(db.orm)).not.toContain(quoted.id);
   });
 });

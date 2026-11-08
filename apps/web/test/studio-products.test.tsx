@@ -1,7 +1,7 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { ApiError, type StudioClient } from '@vcraft/api-client';
-import type { HouseholdDto, JournalDto, ProductDto } from '@vcraft/contracts';
-import { describe, expect, it, vi } from 'vitest';
+import type { HouseholdDto, JournalDto, ProductDto, ProductScanStatsDto } from '@vcraft/contracts';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   exifFields,
   isOldPhoto,
@@ -12,7 +12,7 @@ import {
 import { ProductEditor, toProductUpdate } from '@/features/studio/product-editor';
 import { EMPTY_PRODUCT, parseNewProduct } from '@/features/studio/product-fields';
 import { ProductList } from '@/features/studio/product-list';
-import { confirmDialog } from './confirm';
+import { confirmDialog, openDialog } from './confirm';
 import { renderVi } from './render';
 
 const push = vi.fn();
@@ -21,7 +21,23 @@ vi.mock('@/i18n/navigation', () => ({
   usePathname: () => '/studio/san-pham',
   useRouter: () => ({ push }),
 }));
-vi.mock('@/features/traceability/trace-qr', () => ({ TraceQr: () => <div data-testid="qr" /> }));
+vi.mock('@/features/traceability/trace-qr', () => ({
+  TraceQr: () => <div data-testid="qr" />,
+  QR_LOGO_URL: '/brand/icon-512.png',
+  QR_LOGO_OPTIONS: { margin: 4, hideBackgroundDots: true, imageSize: 0.3 },
+}));
+const qrDownload = vi.hoisted(() => vi.fn(async () => {}));
+const qrOptions = vi.hoisted(() => vi.fn());
+vi.mock('qr-code-styling', () => ({
+  default: class {
+    constructor(options: unknown) {
+      qrOptions(options);
+    }
+    download = qrDownload;
+  },
+}));
+const media = vi.hoisted(() => ({ prepareImage: vi.fn(), sendMedia: vi.fn() }));
+vi.mock('@/features/media/prepare-image', () => media);
 
 const ID = '00000000-0000-4000-8000-00000000000';
 
@@ -91,10 +107,47 @@ const JOURNAL: JournalDto = {
   missingStages: [],
 };
 
+const SCAN_STATS: ProductScanStatsDto = {
+  total: 42,
+  last30Days: 7,
+  daily: Array.from({ length: 30 }, (_, i) => ({
+    date: `2026-11-${String(i + 1).padStart(2, '0')}`,
+    count: i === 29 ? 7 : 0,
+  })),
+  byCountry: [
+    { country: 'VN', count: 5 },
+    { country: null, count: 2 },
+  ],
+  byDeviceType: [{ deviceType: 'mobile', count: 7 }],
+};
+const READY_PHOTO = {
+  id: `${ID}6`,
+  status: 'READY',
+  sha256: 'c'.repeat(64),
+  variants: [{ format: 'webp', width: 1280, height: 800, url: 'https://cdn.test/j-1280.webp' }],
+};
+const PHOTO_IMAGE = { url: 'https://cdn.test/j-1280.webp', sha256: 'c'.repeat(64) };
+
+/** Picks a photo in the milestone form; `capturedAt` is the EXIF date the browser would read from it. */
+async function pickPhoto(form: HTMLElement, capturedAt: Date | null = null) {
+  media.prepareImage.mockResolvedValue({
+    file: new File(['x'], 'clay.jpg', { type: 'image/jpeg' }),
+    capturedAt,
+  });
+  media.sendMedia.mockResolvedValue({ id: READY_PHOTO.id });
+  const input = within(form).getByLabelText('Ảnh công đoạn') as HTMLInputElement;
+  fireEvent.change(input, {
+    target: { files: [new File(['x'], 'clay.jpg', { type: 'image/jpeg' })] },
+  });
+  await act(async () => {});
+}
+
 function client(overrides: Partial<StudioClient> = {}): StudioClient {
   return {
     getHousehold: vi.fn(async () => HOUSEHOLD),
     getJournal: vi.fn(async () => JOURNAL),
+    getScanStats: vi.fn(async () => SCAN_STATS),
+    getMedia: vi.fn(async () => READY_PHOTO),
     appendJournalEntry: vi.fn(async () => JOURNAL),
     deleteJournalEntry: vi.fn(async () => ({ ...JOURNAL, entries: [] })),
     publishProduct: vi.fn(async () => product(1)),
@@ -116,6 +169,15 @@ describe('ProductList', () => {
     expect(within(screen.getByTestId('studio-products')).getByText('Món 3')).toBeTruthy();
     expect(screen.queryByText('Món 1')).toBeNull();
   });
+
+  it('hộ chưa được duyệt không thấy nút thêm sản phẩm, chỉ thấy lời giải thích (GH#237)', async () => {
+    const pending = { ...HOUSEHOLD, status: 'PENDING_REVIEW', products: [] } as HouseholdDto;
+    renderVi(<ProductList client={client({ getHousehold: vi.fn(async () => pending) })} />);
+    expect(
+      await screen.findByText('Hộ được Ban quản lý duyệt hồ sơ xong thì mới đăng được sản phẩm.'),
+    ).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Thêm sản phẩm' })).toBeNull();
+  });
 });
 
 describe('biểu mẫu sản phẩm', () => {
@@ -136,6 +198,11 @@ describe('biểu mẫu sản phẩm', () => {
 });
 
 describe('ProductEditor', () => {
+  beforeEach(() => {
+    qrDownload.mockClear();
+    qrOptions.mockClear();
+  });
+
   it('xuất bản bản nháp với phiên bản đang xem; sản phẩm đã rút thì xuất bản lại', async () => {
     const api = client();
     const first = renderVi(<ProductEditor productId={`${ID}1`} client={api} />);
@@ -149,6 +216,22 @@ describe('ProductEditor', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Xuất bản lại' }));
     confirmDialog('Xuất bản lại');
     await waitFor(() => expect(api.publishProduct).toHaveBeenCalledWith(`${ID}3`, 2, true));
+  });
+
+  it('xuất bản bị từ chối vì chưa có mốc nhật ký thì báo rõ cách khắc phục (FR-PRD-03)', async () => {
+    const api = client({
+      publishProduct: vi.fn(async () => {
+        throw new ApiError('PRODUCT_JOURNAL_REQUIRED', 409);
+      }),
+    });
+    renderVi(<ProductEditor productId={`${ID}1`} client={api} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Xuất bản' }));
+    confirmDialog('Xuất bản');
+    expect(
+      await screen.findByText(
+        'Hãy thêm ít nhất một mốc nhật ký sản xuất (kèm ảnh) trước khi xuất bản.',
+      ),
+    ).toBeTruthy();
   });
 
   it('rút cần lý do', async () => {
@@ -196,6 +279,37 @@ describe('ProductEditor', () => {
     );
   });
 
+  it('downloads the QR as PNG or SVG with the centre logo and level H (FR-TRC-02)', async () => {
+    renderVi(<ProductEditor productId={`${ID}1`} client={client()} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Tải SVG' }));
+    await waitFor(() =>
+      expect(qrDownload).toHaveBeenCalledWith({ name: 'vcraft-qr-CODE0001', extension: 'svg' }),
+    );
+    expect(qrOptions).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        type: 'svg',
+        image: '/brand/icon-512.png',
+        imageOptions: expect.objectContaining({ hideBackgroundDots: true, imageSize: 0.3 }),
+        qrOptions: { errorCorrectionLevel: 'H' },
+      }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Tải PNG' }));
+    await waitFor(() =>
+      expect(qrDownload).toHaveBeenLastCalledWith({ name: 'vcraft-qr-CODE0001', extension: 'png' }),
+    );
+    expect(qrOptions).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'canvas' }));
+  });
+
+  it('shows the scan statistics of the product (FR-TRC-06)', async () => {
+    const api = client();
+    renderVi(<ProductEditor productId={`${ID}1`} client={api} />);
+    expect(await screen.findByTestId('scan-total')).toHaveProperty('textContent', '42');
+    expect(api.getScanStats).toHaveBeenCalledWith(`${ID}1`);
+    expect(screen.getByTestId('scan-last30').textContent).toBe('7');
+    expect(screen.getByText('Việt Nam')).toBeTruthy();
+    expect(screen.getByText('Điện thoại')).toBeTruthy();
+  });
+
   it('sản phẩm của hộ khác không mở được', async () => {
     renderVi(<ProductEditor productId={`${ID}7`} client={client()} />);
     expect(await screen.findByText(/không tìm thấy|Không tìm thấy/)).toBeTruthy();
@@ -230,15 +344,73 @@ describe('JournalEditor', () => {
     fireEvent.change(within(form).getByLabelText('Ghi chú'), { target: { value: 'Vuốt xong' } });
     fireEvent.change(within(form).getByLabelText('Ngày'), { target: { value: '2026-09-03' } });
     fireEvent.change(within(form).getByLabelText('Giờ'), { target: { value: '14:30' } });
+    await pickPhoto(form);
     fireEvent.click(within(form).getByRole('button', { name: 'Lưu mốc' }));
     await waitFor(() =>
       expect(api.appendJournalEntry).toHaveBeenCalledWith(`${ID}1`, {
         stage: 'throw',
         declaredDate: '2026-09-03',
         note: '14:30 · Vuốt xong',
-        images: [],
+        images: [PHOTO_IMAGE],
       }),
     );
+  });
+
+  it('không lưu mốc khi chưa có ảnh và báo lỗi ngay tại biểu mẫu (FR-PRD-04)', async () => {
+    const api = client();
+    renderVi(<JournalEditor productId={`${ID}1`} client={api} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Thêm mốc' }));
+    const form = screen.getByTestId('journal-form');
+    fireEvent.change(within(form).getByLabelText('Ghi chú'), { target: { value: 'Vuốt xong' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Lưu mốc' }));
+    expect(
+      await within(form).findByText('Hãy thêm ít nhất một ảnh làm bằng chứng cho công đoạn này.'),
+    ).toBeTruthy();
+    expect(api.appendJournalEntry).not.toHaveBeenCalled();
+    expect(media.sendMedia).not.toHaveBeenCalled();
+  });
+
+  it('ảnh chụp hơn 30 ngày trước phải được xác nhận rồi mới lưu mốc (FR-PRD-04)', async () => {
+    const api = client();
+    renderVi(<JournalEditor productId={`${ID}1`} client={api} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Thêm mốc' }));
+    const form = screen.getByTestId('journal-form');
+    fireEvent.change(within(form).getByLabelText('Ghi chú'), { target: { value: 'Vuốt xong' } });
+    await pickPhoto(form, new Date(Date.now() - 45 * 24 * 60 * 60 * 1000));
+    await within(form).findByText(/Ảnh chụp cách đây hơn 30 ngày/);
+    fireEvent.click(within(form).getByRole('button', { name: 'Lưu mốc' }));
+
+    expect(openDialog().textContent).toContain(
+      'Ảnh này chụp hơn 30 ngày trước. Vẫn lưu mốc với ảnh này?',
+    );
+    expect(api.appendJournalEntry).not.toHaveBeenCalled();
+    expect(media.sendMedia).not.toHaveBeenCalled();
+    confirmDialog('Vẫn lưu');
+    await waitFor(() =>
+      expect(api.appendJournalEntry).toHaveBeenCalledWith(
+        `${ID}1`,
+        expect.objectContaining({ images: [PHOTO_IMAGE] }),
+      ),
+    );
+  });
+
+  it('hủy xác nhận ảnh cũ thì không lưu mốc; ảnh mới chụp lưu thẳng', async () => {
+    const api = client();
+    renderVi(<JournalEditor productId={`${ID}1`} client={api} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Thêm mốc' }));
+    const form = screen.getByTestId('journal-form');
+    fireEvent.change(within(form).getByLabelText('Ghi chú'), { target: { value: 'Vuốt xong' } });
+    await pickPhoto(form, new Date(Date.now() - 45 * 24 * 60 * 60 * 1000));
+    await within(form).findByText(/Ảnh chụp cách đây hơn 30 ngày/);
+    fireEvent.click(within(form).getByRole('button', { name: 'Lưu mốc' }));
+    confirmDialog('Hủy');
+    expect(api.appendJournalEntry).not.toHaveBeenCalled();
+
+    // A recent photo needs no extra confirmation.
+    await pickPhoto(form, new Date());
+    await within(form).findByText('Đã điền ngày giờ theo ảnh.');
+    fireEvent.click(within(form).getByRole('button', { name: 'Lưu mốc' }));
+    await waitFor(() => expect(api.appendJournalEntry).toHaveBeenCalledTimes(1));
   });
 
   it('nhảy công đoạn thì phải ghi lý do', async () => {
@@ -265,6 +437,7 @@ describe('JournalEditor', () => {
     expect(screen.queryByRole('button', { name: 'Xóa mốc' })).toBeNull();
     const form = screen.getByTestId('journal-form');
     fireEvent.change(within(form).getByLabelText('Ghi chú'), { target: { value: 'Sửa lại ngày' } });
+    await pickPhoto(form);
     fireEvent.click(within(form).getByRole('button', { name: 'Lưu mốc' }));
     expect(sealed.appendJournalEntry).not.toHaveBeenCalled();
     confirmDialog('Lưu mốc');

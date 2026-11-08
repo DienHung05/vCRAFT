@@ -37,16 +37,26 @@ export const emailVerified: RfqGuard = (ctx) => {
     : new DomainError('EMAIL_NOT_VERIFIED', 'Email must be verified before submitting an RFQ');
 };
 
-/** T1 (83g): `biddingClosesAt > now` — any future time, no 24h minimum. */
+/** Shortest bidding window a buyer may set (SRS T1): households get at least a day to answer. */
+export const RFQ_MIN_BIDDING_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * T1: `biddingClosesAt ≥ now + 24h`. The server enforces it as well as the web form (GH#244), so a request
+ * sent through the API directly cannot give households less than a day.
+ */
 export const biddingDeadlineInFuture: RfqGuard = (ctx) => {
   if (ctx.now === undefined || ctx.biddingClosesAt === undefined) {
     return missing('now', 'biddingClosesAt');
   }
-  return ctx.biddingClosesAt.getTime() > ctx.now.getTime()
+  return ctx.biddingClosesAt.getTime() >= ctx.now.getTime() + RFQ_MIN_BIDDING_MS
     ? undefined
-    : new DomainError('BIDDING_DEADLINE_TOO_SOON', 'biddingClosesAt must be in the future', {
-        rule: 'T1',
-      });
+    : new DomainError(
+        'BIDDING_DEADLINE_TOO_SOON',
+        'biddingClosesAt must be at least 24 hours away',
+        {
+          rule: 'T1',
+        },
+      );
 };
 
 /** T1: `requiredBy > biddingClosesAt`. */

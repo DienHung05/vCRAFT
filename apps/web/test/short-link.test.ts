@@ -1,10 +1,20 @@
 // @vitest-environment node
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET } from '@/app/q/[code]/route';
+import { scanCountry, scanDeviceType } from '@/lib/scan-context';
 import { isTraceCode, traceShortUrl } from '@/lib/site';
 
-function call(code: string, init: { accept?: string; cookie?: string } = {}) {
+// `after()` only works inside a real request; the test collects its callbacks and runs them by hand.
+const afterTasks = vi.hoisted(() => [] as Array<() => unknown>);
+vi.mock('next/server', () => ({ after: (task: () => unknown) => afterTasks.push(task) }));
+
+function call(
+  code: string,
+  init: { accept?: string; cookie?: string; country?: string; userAgent?: string } = {},
+) {
   const headers = new Headers();
+  if (init.country) headers.set('x-vercel-ip-country', init.country);
+  if (init.userAgent) headers.set('user-agent', init.userAgent);
   if (init.accept) headers.set('accept-language', init.accept);
   if (init.cookie) headers.set('cookie', init.cookie);
   // NextRequest cần cho `request.cookies`; dựng tối thiểu đủ dùng cho route.
@@ -50,6 +60,71 @@ describe('GET /q/[code] (FR-TRC-03)', () => {
     expect(res.status).toBe(308);
     expect(res.headers.get('location')).not.toContain('?');
     expect(res.headers.get('location')).not.toContain('/../');
+  });
+});
+
+describe('GET /q/[code] scan recording (FR-TRC-06)', () => {
+  const fetchMock = vi.fn();
+  beforeEach(() => {
+    afterTasks.length = 0;
+    fetchMock.mockReset().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('posts the scan after the response with country and device only, never the IP', async () => {
+    const res = await call('BT7K2QXM', {
+      country: 'vn',
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148',
+    });
+    expect(res.status).toBe(308);
+    // Nothing is sent before `after()` runs, so the redirect is never delayed by the API.
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(afterTasks).toHaveLength(1);
+    await afterTasks[0]?.();
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toMatch(/\/trace\/BT7K2QXM\/scan$/);
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body as string)).toEqual({ country: 'VN', deviceType: 'mobile' });
+    expect(JSON.stringify(init)).not.toMatch(/forwarded|x-real-ip/i);
+  });
+
+  it('sends a null country when the edge header is missing and survives an API failure', async () => {
+    fetchMock.mockRejectedValue(new Error('network down'));
+    const res = await call('BT7K2QXM');
+    expect(res.status).toBe(308);
+    await expect(afterTasks[0]?.()).resolves.toBeUndefined();
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).toEqual({ country: null, deviceType: 'unknown' });
+  });
+});
+
+describe('scan context helpers', () => {
+  it('accepts only a two-letter country', () => {
+    expect(scanCountry('VN')).toBe('VN');
+    expect(scanCountry(' us ')).toBe('US');
+    expect(scanCountry('XX1')).toBeNull();
+    expect(scanCountry('')).toBeNull();
+    expect(scanCountry(null)).toBeNull();
+  });
+
+  it('buckets the User-Agent into mobile, tablet, desktop, bot or unknown', () => {
+    const ua = {
+      iphone: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148',
+      androidPhone: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) Chrome/120.0 Mobile Safari/537.36',
+      androidTablet: 'Mozilla/5.0 (Linux; Android 14; SM-X700) Chrome/120.0 Safari/537.36',
+      ipad: 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) Mobile/15E148',
+      desktop: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0 Safari/537.36',
+      bot: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+    };
+    expect(scanDeviceType(ua.iphone)).toBe('mobile');
+    expect(scanDeviceType(ua.androidPhone)).toBe('mobile');
+    expect(scanDeviceType(ua.androidTablet)).toBe('tablet');
+    expect(scanDeviceType(ua.ipad)).toBe('tablet');
+    expect(scanDeviceType(ua.desktop)).toBe('desktop');
+    expect(scanDeviceType(ua.bot)).toBe('bot');
+    expect(scanDeviceType(null)).toBe('unknown');
+    expect(scanDeviceType('')).toBe('unknown');
   });
 });
 

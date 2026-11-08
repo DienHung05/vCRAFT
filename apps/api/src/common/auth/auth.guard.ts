@@ -7,10 +7,11 @@ import {
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { AppUser, ConsentRecord, LoginEvent } from '@vcraft/database';
+import { AccountInvitation, AppUser, ConsentRecord, LoginEvent } from '@vcraft/database';
 import { type AccountRole, isCurrentPolicyVersion } from '@vcraft/domain';
 import { AppError } from '../errors/app-error';
 import type { HttpRequest } from '../http/http-types';
+import { clientHints } from './client-hints';
 import { IdentityVerifier, InvalidTokenError } from './identity-verifier';
 
 /** Tác nhân của request: tài khoản vCraft đã xác thực (một vai trò cho mỗi tài khoản). */
@@ -22,6 +23,8 @@ export interface Actor {
   readonly emailVerified?: boolean;
   /** `aal2` once the session passed the second factor; tokens without the claim count as `aal1`. */
   readonly aal: 'aal1' | 'aal2';
+  /** Supabase session id of this request's token, when the token carries one. */
+  readonly sessionId?: string;
 }
 
 type RequestWithActor = HttpRequest & { actor?: Actor | null };
@@ -29,6 +32,7 @@ type RequestWithActor = HttpRequest & { actor?: Actor | null };
 export const PUBLIC_KEY = 'vcraft:public';
 export const ROLES_KEY = 'vcraft:roles';
 export const AAL2_KEY = 'vcraft:aal2';
+export const ALLOW_SUSPENDED_KEY = 'vcraft:allow-suspended';
 
 /** Route công khai: không bắt buộc đăng nhập (nếu có token hợp lệ thì vẫn gắn `actor`). */
 export const Public = () => SetMetadata(PUBLIC_KEY, true);
@@ -39,6 +43,12 @@ export const Roles = (...roles: AccountRole[]) => SetMetadata(ROLES_KEY, roles);
  * role already requires it; this marks other routes explicitly.
  */
 export const RequireAal2 = () => SetMetadata(AAL2_KEY, true);
+
+/**
+ * FR-AUTH-10: a suspended account is refused on every route with `AUTH_ACCOUNT_SUSPENDED` (403). A route
+ * marked with this stays open to it; only `GET /me`, so the web can tell the person why they are locked out.
+ */
+export const AllowSuspended = () => SetMetadata(ALLOW_SUSPENDED_KEY, true);
 
 /** `AUTH_ADMIN_MFA=off` lifts the admin second-factor rule (local demos without Supabase MFA). */
 export const adminMfaEnforced = () => process.env.AUTH_ADMIN_MFA?.trim().toLowerCase() !== 'off';
@@ -79,6 +89,10 @@ export class AuthGuard implements CanActivate {
     request.actor = actor;
     if (isPublic) return true;
     if (!actor) throw new AppError('AUTH_UNAUTHENTICATED');
+    // FR-AUTH-10: the database status is checked on every request, so a suspension holds at once, before the
+    // Supabase ban has made the person's token stop verifying.
+    if (actor.locked && !this.reflector.getAllAndOverride<boolean>(ALLOW_SUSPENDED_KEY, targets))
+      throw new AppError('AUTH_ACCOUNT_SUSPENDED');
     if (roles && !roles.includes(actor.role)) throw new AppError('AUTH_FORBIDDEN');
     const aal2 =
       this.reflector.getAllAndOverride<boolean>(AAL2_KEY, targets) || roles?.includes('ADMIN');
@@ -99,7 +113,23 @@ export class AuthGuard implements CanActivate {
     const em = this.orm.em.fork();
     let user = await em.findOne(AppUser, identity.sub);
     if (!user) {
-      user = em.create(AppUser, { id: identity.sub, email: identity.email, role: 'BUYER' });
+      // FR-AUTH-03: a person invited by an administrator gets the invited role on the first sign-in, but
+      // only once Supabase confirms they own the address (accepting the invitation mail confirms it).
+      const invitation = identity.emailVerified
+        ? await em.findOne(AccountInvitation, {
+            email: identity.email.trim().toLowerCase(),
+            status: 'PENDING',
+          })
+        : null;
+      user = em.create(AppUser, {
+        id: identity.sub,
+        email: identity.email,
+        role: invitation?.role ?? 'BUYER',
+      });
+      if (invitation) {
+        invitation.status = 'ACCEPTED';
+        invitation.acceptedAt = new Date();
+      }
       // The sign-up form's consent box travels in the user metadata; record it with the new account.
       if (identity.consentPolicyVersion && isCurrentPolicyVersion(identity.consentPolicyVersion)) {
         em.create(ConsentRecord, {
@@ -112,7 +142,7 @@ export class AuthGuard implements CanActivate {
     }
     // The person deleted their account (NFR-SEC-07); a token issued before that must stop working now.
     if (user.status === 'DELETED') throw new AppError('AUTH_TOKEN_INVALID');
-    if (identity.sessionId) await this.recordSignIn(user.id, identity);
+    if (identity.sessionId) await this.recordSignIn(user.id, identity, request.headers);
     return {
       id: user.id,
       email: user.email,
@@ -120,6 +150,7 @@ export class AuthGuard implements CanActivate {
       locked: user.status === 'LOCKED',
       emailVerified: identity.emailVerified === true,
       aal: identity.aal ?? 'aal1',
+      ...(identity.sessionId && { sessionId: identity.sessionId }),
     };
   }
 
@@ -127,6 +158,7 @@ export class AuthGuard implements CanActivate {
   private async recordSignIn(
     userId: string,
     identity: { sessionId?: string; method?: string; aal?: 'aal1' | 'aal2' },
+    headers: HttpRequest['headers'],
   ): Promise<void> {
     const sessionId = identity.sessionId as string;
     // Keyed with the level, so a session that later passes TOTP is looked at once more.
@@ -146,6 +178,7 @@ export class AuthGuard implements CanActivate {
         sessionId,
         method: identity.method ?? 'unknown',
         aal: identity.aal ?? 'aal1',
+        ...clientHints(headers),
       });
       // A parallel request of the same new session may have written it first; that is fine.
       await em.flush().catch(() => undefined);

@@ -2,6 +2,7 @@ import { MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { AssistantStatsDto } from '@vcraft/contracts';
 import { AssistantMessageLog } from '@vcraft/database';
+import { FAST_INTENTS, type FastIntent } from './fast-intents';
 
 /** Nearest-rank percentile of sorted values; null for an empty list. */
 export function percentile(sorted: readonly number[], p: number): number | null {
@@ -12,7 +13,7 @@ export function percentile(sorted: readonly number[], p: number): number | null 
 
 /**
  * The Assistant card on the admin dashboard (FR-AST-08, GH#82): turns, block rate, thumbs up/down,
- * first-token latency and the questions the Fox could not answer, over the last few days. Reads the
+ * first-token latency (model turns only) and the questions the Fox could not answer, over the last few days. Reads the
  * anonymous log only, which holds at most 30 days.
  */
 @Injectable()
@@ -29,7 +30,9 @@ export class AssistantStatsService {
         { fields: ['blocked', 'answered', 'firstTokenMs', 'feedback', 'question', 'intent'] },
       );
     const blocked = rows.filter((r) => r.blocked).length;
+    // Fast-path turns never reach the model; mixing their ~100 ms in would hide the real first-token latency.
     const latencies = rows
+      .filter((r) => !FAST_INTENTS.includes(r.intent as FastIntent))
       .map((r) => r.firstTokenMs)
       .filter((ms): ms is number => typeof ms === 'number')
       .sort((a, b) => a - b);

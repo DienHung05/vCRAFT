@@ -5,7 +5,6 @@ import { getTranslations } from 'next-intl/server';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
-import { PhotoCredit } from '@/components/photo-credit';
 import { EmptyState } from '@/components/states/empty-state';
 import { fetchHousehold, fetchSlugRedirect } from '@/features/catalog/exhibition-api';
 import { ProductCard } from '@/features/catalog/product-card';
@@ -22,6 +21,9 @@ import { MakerCredits } from '@/features/exhibition/maker-credits';
 import { VisitSection } from '@/features/exhibition/visit-section';
 import { Link, permanentRedirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/lib/locale';
+import { jsonLd, metaDescription, pageMetadata } from '@/lib/seo/page-metadata';
+import { localizedPath } from '@/lib/seo/sitemap-entries';
+import { siteOrigin } from '@/lib/site';
 
 // Hồ sơ lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
 export const dynamic = 'force-dynamic';
@@ -29,11 +31,16 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({
   params,
 }: PageProps<'/[locale]/nghe-nhan/[slug]'>): Promise<Metadata> {
+  const locale = await resolveLocale(params);
   const { slug } = await params;
   const result = await fetchHousehold(slug);
-  return result.status === 'ok'
-    ? { title: result.data.name, description: result.data.history.slice(0, 160) }
-    : {};
+  if (result.status !== 'ok') return {};
+  return pageMetadata({
+    locale,
+    href: { pathname: '/nghe-nhan/[slug]', params: { slug: result.data.slug } },
+    title: result.data.name,
+    description: metaDescription(result.data.history || result.data.name),
+  });
 }
 
 /**
@@ -85,8 +92,34 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
     number,
   ][];
 
+  // schema.org LocalBusiness for the household and its first workshop (GH#256).
+  const place = household.workshops[0];
+  const householdLd = jsonLd({
+    '@type': 'LocalBusiness',
+    name: household.name,
+    description: metaDescription(household.history || household.name, 300),
+    url: `${siteOrigin()}${localizedPath({ pathname: '/nghe-nhan/[slug]', params: { slug: household.slug } }, locale)}`,
+    ...(place && {
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: place.address,
+        addressLocality: 'Bát Tràng',
+        addressRegion: 'Hà Nội',
+        addressCountry: 'VN',
+      },
+      ...(place.lat !== null &&
+        place.lat !== undefined &&
+        place.lng !== null &&
+        place.lng !== undefined && {
+          geo: { '@type': 'GeoCoordinates', latitude: place.lat, longitude: place.lng },
+        }),
+    }),
+  });
+
   return (
     <article>
+      {/* biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD from our own data, `<` escaped. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: householdLd }} />
       {/* Hero toàn màn: ảnh xưởng + tên hộ Fraunces cực lớn. */}
       <header className="relative">
         <ImageSlot
@@ -133,15 +166,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
           </div>
         </div>
       </header>
-      {cover ? (
-        <div className="mx-auto max-w-editorial px-gutter">
-          <PhotoCredit
-            id={cover.photo?.id}
-            credit={householdPhoto.credit}
-            className="mt-2 text-right text-[0.75rem] text-ash"
-          />
-        </div>
-      ) : null}
+      {cover ? <div className="mx-auto max-w-editorial px-gutter"></div> : null}
 
       {/* Bento: câu chuyện, đời thứ N, chứng nhận. */}
       <section
@@ -159,7 +184,6 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
                 // Below 640px the card is the page width minus gutters and padding; 80vw keeps 1.75x phones on the 640w file.
                 sizes="(min-width: 640px) 11rem, 80vw"
               />
-              <PhotoCredit id={portraitPhoto?.photo?.id} credit={portrait.credit} />
             </figure>
           ) : null}
           <h2 className="text-h3">{t('story')}</h2>
@@ -280,7 +304,6 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
                     // 88vw (not 100vw): the single column is ~92vw wide, and this keeps 1.75x phones on the 640w file.
                     sizes="(min-width: 1024px) 28vw, (min-width: 640px) 45vw, 88vw"
                   />
-                  <PhotoCredit id={image?.photo?.id} credit={item.credit} />
                 </figure>
               );
             })}

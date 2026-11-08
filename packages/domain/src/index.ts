@@ -13,10 +13,12 @@
  * - village/      Ranh giới xã Bát Tràng (GeoJSON tĩnh) và kiểm tra điểm trong đa giác
  * - shared/     DomainError, Result, helper máy trạng thái; (sau này) Money, GeoPoint, OpeningHours
  */
+export * from './account';
 export * from './allocation';
 export * from './exhibition';
 export * from './household';
 export * from './journal';
+export * from './matching';
 export * from './media';
 export * from './news';
 export * from './notification';

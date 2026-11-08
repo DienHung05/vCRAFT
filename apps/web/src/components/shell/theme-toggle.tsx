@@ -2,7 +2,15 @@
 
 import { useTranslations } from 'next-intl';
 import { useSyncExternalStore } from 'react';
-import { effectiveTheme, oppositeTheme, parseTheme, storeTheme, type Theme } from '@/lib/theme';
+import {
+  effectiveTheme,
+  oppositeTheme,
+  parseTheme,
+  storeTheme,
+  type Theme,
+  type ThemeWave,
+  themeWaveOrigin,
+} from '@/lib/theme';
 
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 
@@ -25,20 +33,42 @@ function currentTheme(): Theme {
   );
 }
 
-function applyTheme(next: Theme) {
+/** The running theme switch, so a second click finishes it before starting the next one. */
+let running: ViewTransition | null = null;
+
+function applyTheme(next: Theme, wave: ThemeWave | null) {
+  const root = document.documentElement;
   const swap = () => {
-    document.documentElement.dataset.theme = next;
+    root.dataset.theme = next;
   };
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // Same-document View Transition cross-fades the palettes (BRAND §6); plain swap where unsupported.
-  if (!reduced && typeof document.startViewTransition === 'function')
-    document.startViewTransition(swap);
-  else swap();
   storeTheme(next);
+  // Plain swap under reduced motion and where the View Transitions API is missing.
+  if (reduced || typeof document.startViewTransition !== 'function') {
+    swap();
+    return;
+  }
+  // A click during a running switch jumps it to its end state first, so switches never stack.
+  running?.skipTransition();
+  // The wave (globals.css) applies only while this attribute is set; other root transitions keep the fade.
+  if (wave) {
+    root.style.setProperty('--theme-wave-x', `${wave.x}px`);
+    root.style.setProperty('--theme-wave-y', `${wave.y}px`);
+    root.style.setProperty('--theme-wave-r', `${wave.r}px`);
+    root.dataset.themeTransition = 'wave';
+  }
+  const transition = document.startViewTransition(swap);
+  running = transition;
+  transition.finished.finally(() => {
+    if (running !== transition) return;
+    running = null;
+    delete root.dataset.themeTransition;
+  });
 }
 
 /**
- * Light ⇄ dark switch in the site header. The first click flips away from the theme on screen.
+ * Light ⇄ dark switch in the site header. The first click flips away from the theme on screen, and the new
+ * theme spreads over the page as a wave from the button (GH#214).
  * Drawn at 36px like the search toggle so the lg header row still fits 1024px; `after:-inset-1` keeps a 44px hit target.
  */
 export function ThemeToggle() {
@@ -52,7 +82,15 @@ export function ThemeToggle() {
   return (
     <button
       type="button"
-      onClick={() => applyTheme(oppositeTheme(currentTheme()))}
+      onClick={(event) =>
+        applyTheme(
+          oppositeTheme(currentTheme()),
+          themeWaveOrigin(event, event.currentTarget.getBoundingClientRect(), {
+            width: window.innerWidth,
+            height: window.innerHeight,
+          }),
+        )
+      }
       aria-label={label}
       title={label}
       className="relative inline-flex size-9 shrink-0 items-center justify-center rounded-chip text-ash transition-colors hover:bg-ink/6 hover:text-ink focus-visible:outline-2 focus-visible:outline-glaze focus-visible:outline-offset-2 after:absolute after:-inset-1 after:content-['']"

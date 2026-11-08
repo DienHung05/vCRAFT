@@ -121,7 +121,6 @@ export async function SiteFooter() {
         <div className="mx-auto flex max-w-editorial flex-col gap-4 px-gutter py-6 text-small text-ash lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
             <p>{t('rights', { year: new Date().getFullYear() })}</p>
-            <p>{t('demo')}</p>
           </div>
           <ul className="flex flex-wrap items-center gap-x-5 gap-y-1">
             <li>

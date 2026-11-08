@@ -19,11 +19,13 @@ import { useLocale, useTranslations } from 'next-intl';
 import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import { type ChatMessage, type PageKind, secondsLeft } from './conversation';
 import type { ArchivedConversation } from './conversation-archive';
+import styles from './pending-indicator.module.css';
 
 /** Internal markdown links (`[label](/vi/...)`) become anchors; everything else stays plain text. */
 function renderText(text: string): ReactNode[] {
   const parts: ReactNode[] = [];
-  const link = /\[([^\]]+)\]\((\/(?!\/)[^)\s]*)\)/g;
+  // Whitespace inside the parentheses is tolerated, as in the server-side link filter (`[text]( /path )`).
+  const link = /\[([^\]]+)\]\(\s*(\/(?!\/)[^)\s]*)\s*\)/g;
   let last = 0;
   for (const match of text.matchAll(link)) {
     parts.push(text.slice(last, match.index));
@@ -130,7 +132,21 @@ function Bubble({ message, now, tools }: { message: ChatMessage; now: number; to
     );
   const wait = secondsLeft(message.retryAt, now);
   let body: ReactNode = renderText(message.text);
-  if (message.status === 'pending') body = <span className="text-ink/60">{t('thinking')}</span>;
+  if (message.status === 'pending')
+    body = (
+      <span className="inline-flex min-h-5 items-center gap-1.5 text-clay">
+        <span className="sr-only">{t('thinking')}</span>
+        <span aria-hidden="true" className="inline-flex items-center gap-1.5">
+          {[0, 1, 2].map((dot) => (
+            <span
+              key={dot}
+              className={`${styles.dot} size-1.5 rounded-full bg-current`}
+              style={{ animationDelay: `${dot * 160}ms` }}
+            />
+          ))}
+        </span>
+      </span>
+    );
   if (message.status === 'blocked')
     body =
       message.blockReason === 'RATE_LIMITED' && wait > 0

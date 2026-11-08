@@ -78,7 +78,9 @@ export interface HeaderRule {
  * Header bảo mật cho mọi đường dẫn (tương đương khối `header` của routes.caddy và Caddyfile.prod).
  * HSTS chỉ có tác dụng trên HTTPS nên vô hại ở localhost.
  *
- * CSP: hiện chỉ đặt các chỉ thị không cần phân tích script (chống nhúng iframe, đổi base URI, plugin). `script-src` theo nonce cần proxy.ts sinh nonce cho từng request và là việc riêng.
+ * CSP: this static header is only the baseline (no framing, no base URI change, no plugins) for every path,
+ * including those `proxy.ts` skips. The full policy with the per-request `script-src` nonce is built in
+ * `lib/csp.ts` and set by `proxy.ts` on every page response (NFR-SEC-04, GH#240).
  */
 export function securityHeaders(): HeaderRule[] {
   return [

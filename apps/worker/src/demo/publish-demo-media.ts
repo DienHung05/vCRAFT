@@ -22,7 +22,7 @@ export interface PublishDemoMediaOptions {
   storage: ObjectStorage;
   /** Thư mục ảnh minh hoạ `<id>-<width>.webp` (apps/web/public/images/demo). */
   imagesDir: string;
-  /** Thư mục giấy tờ mẫu `<id>.png` (scripts/demo-photos/specimen-docs). */
+  /** Thư mục giấy tờ mẫu `<id>.png` (scripts/demo/photos/specimen-docs). */
   specimenDir: string;
   /** Làm lại cả những tệp đã READY với cùng nội dung. */
   force?: boolean;
@@ -74,7 +74,7 @@ export async function publishDemoMedia(
   };
 
   for (const photo of DEMO_PHOTOS) {
-    // Bản rộng nhất làm "ảnh gốc": đã cắt đúng tỉ lệ khung và đã xóa metadata ở bước chuẩn bị ảnh (scripts/demo-photos).
+    // Bản rộng nhất làm "ảnh gốc": đã cắt đúng tỉ lệ khung và đã xóa metadata ở bước chuẩn bị ảnh (scripts/demo/photos).
     const width = Math.max(...photo.widths);
     const bytes = new Uint8Array(
       await readFile(join(options.imagesDir, `${photo.id}-${width}.webp`)),

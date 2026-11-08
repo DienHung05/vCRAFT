@@ -64,7 +64,7 @@ describe('GH#9 contracts: request creation', () => {
     expect(res.success).toBe(true);
   });
 
-  it('requires at least one invite or coordination opt-in', () => {
+  it('needs a category, an invite or coordination opt-in so the request reaches someone', () => {
     expect(
       CreateRfqRequestSchema.safeParse({
         ...valid,
@@ -72,6 +72,15 @@ describe('GH#9 contracts: request creation', () => {
         coordinationOptIn: false,
       }).success,
     ).toBe(false);
+    // BR-05: with a category the system matches households itself.
+    expect(
+      CreateRfqRequestSchema.safeParse({
+        ...valid,
+        category: 'VASE',
+        invitedHouseholdIds: [],
+        coordinationOptIn: false,
+      }).success,
+    ).toBe(true);
     expect(
       CreateRfqRequestSchema.safeParse({
         ...valid,
@@ -86,5 +95,41 @@ describe('GH#9 contracts: request creation', () => {
       true,
     );
     expect(AcceptBidRequestSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe('request requirements and attachments (FR-RFQ-01)', () => {
+  const base = {
+    design: 'Cups',
+    quantity: 10,
+    unit: 'cup',
+    destination: 'Hanoi',
+    requiredBy: '2027-03-01T00:00:00.000Z',
+    biddingClosesAt: '2027-02-01T00:00:00.000Z',
+    coordinationOptIn: true,
+  };
+  const id = (n: number) => `123e4567-e89b-12d3-a456-42661417400${n}`;
+
+  it('takes up to 1000 characters of custom requirements and trims them', () => {
+    const ok = CreateRfqRequestSchema.safeParse({ ...base, customRequirements: '  Logo  ' });
+    expect(ok.success && ok.data.customRequirements).toBe('Logo');
+    expect(
+      CreateRfqRequestSchema.safeParse({ ...base, customRequirements: 'x'.repeat(1001) }).success,
+    ).toBe(false);
+  });
+
+  it('defaults to no attachments and allows at most three distinct ones', () => {
+    const none = CreateRfqRequestSchema.safeParse(base);
+    expect(none.success && none.data.attachments).toEqual([]);
+    expect(
+      CreateRfqRequestSchema.safeParse({ ...base, attachments: [id(1), id(2), id(3)] }).success,
+    ).toBe(true);
+    expect(
+      CreateRfqRequestSchema.safeParse({ ...base, attachments: [id(1), id(2), id(3), id(4)] })
+        .success,
+    ).toBe(false);
+    expect(CreateRfqRequestSchema.safeParse({ ...base, attachments: [id(1), id(1)] }).success).toBe(
+      false,
+    );
   });
 });

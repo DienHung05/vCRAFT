@@ -12,7 +12,14 @@ export const ALLOCATION_STATUSES = [
 ] as const;
 export type AllocationStatus = (typeof ALLOCATION_STATUSES)[number];
 
-export const ALLOCATION_EVENTS = ['CONFIRM', 'DECLINE', 'START', 'COMPLETE', 'CANCEL'] as const;
+export const ALLOCATION_EVENTS = [
+  'CONFIRM',
+  'DECLINE',
+  'START',
+  'COMPLETE',
+  'CANCEL',
+  'REOPEN',
+] as const;
 export type AllocationEvent = (typeof ALLOCATION_EVENTS)[number];
 
 export type AllocationGuardCode = 'MISSING_CONTEXT' | 'ALLOCATION_NOT_COMPLETE';
@@ -47,6 +54,9 @@ export const ALLOCATION_TRANSITIONS = {
   CONFIRMED: {
     START: { to: 'IN_PROGRESS' }, // kích hoạt bởi RFQ START_PRODUCTION (T4)
     CANCEL: { to: 'CANCELLED' },
+    // A confirmed share that takes part of a declined share goes back to the household for a fresh yes
+    // (GH#246): nobody's share grows without their consent.
+    REOPEN: { to: 'PROPOSED' },
   },
   IN_PROGRESS: {
     COMPLETE: { to: 'DONE', guards: [completedAllQuantity] },

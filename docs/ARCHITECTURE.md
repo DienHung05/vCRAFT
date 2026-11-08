@@ -1,6 +1,6 @@
 # vCraft — Kiến trúc hệ thống
 
-> Phiên bản 1.0 · 27/10/2026 · Đi kèm [SRS.md](SRS.md), [PLAN.md](PLAN.md), [BRAND.md](BRAND.md)
+> Phiên bản 1.0 · 27/10/2026 · Đi kèm [SRS.md](requirements/SRS.md), [PLAN.md](PLAN.md), [BRAND.md](design/BRAND.md)
 
 ---
 
@@ -202,12 +202,11 @@ vCRAFT/
 ├── infra/
 │   ├── compose/       # compose.dev.yml (mysql*, redis, mailpit, caddy); CSDL + file trên Supabase
 │   ├── docker/        # Dockerfile đa tầng cho web, api, worker
-│   ├── caddy/         # Caddyfile.dev (HTTP :8080), Caddyfile.prod (HTTPS tự động + HSTS), routes.caddy dùng chung; production chính là Vercel + Render (ADR-16), Caddy còn dùng cho dev và dự phòng
-│   └── scripts/       # gen-keys.sh, backup.sh, pmtiles-extract.sh
-├── render.yaml        # Render Blueprint: api, worker, Key Value (ADR-16); web: apps/web/vercel.json; runbook: docs/deploy.md
+│   └── caddy/         # Caddyfile.dev (HTTP :8080), Caddyfile.prod (HTTPS tự động + HSTS), routes.caddy dùng chung; production chính là Vercel + Render (ADR-16), Caddy còn dùng cho dev và dự phòng
+├── render.yaml        # Render Blueprint: api, worker, Key Value (ADR-16); web: apps/web/vercel.json; runbook: docs/operations/deploy.md
 ├── supabase/          # migrations/: vector store (ADR-13), bucket Storage (ADR-14), chặn Data API cho bảng nghiệp vụ (ADR-15)
-├── docs/              # SRS, ARCHITECTURE, PLAN, BRAND, adr/, requirements/, assistant-kb/ (FAQ vi/en)
-├── scripts/           # script tiện ích phát triển
+├── docs/              # ARCHITECTURE, PLAN, README (index); requirements/ (SRS), design/ (BRAND), api/, operations/ (deploy), adr/, assistant-kb/ (FAQ vi/en)
+├── scripts/           # script tiện ích phát triển (ci/, demo/, map/, brand/, mascot/)
 ├── .github/           # workflows/ci.yml, pull_request_template.md
 ├── package.json · pnpm-workspace.yaml · turbo.json · biome.json
 ├── .dependency-cruiser.cjs · lefthook.yml · .editorconfig · .nvmrc · .env.example
@@ -522,7 +521,7 @@ Nguyên tắc:
 - Hồ sơ `User` được tạo **lười** ở request đầu tiên (không dùng trigger trong schema `auth`, vì trigger không di động được).
 - `SupabaseAuthGuard` là guard NestJS tự viết, bọc `verifyAuth()` của `@supabase/server`. Không dùng adapter NestJS có sẵn vì adapter chỉ hỗ trợ Nest 10/11 và sẽ bị gỡ vào 01/12/2026.
 - Secret key Supabase chỉ có trong `apps/api`/`apps/worker`; frontend chỉ dùng publishable key.
-- Email xác thực gửi qua **SMTP riêng** cấu hình trong Supabase (SMTP mặc định giới hạn vài email/giờ), mẫu email tiếng Việt theo [BRAND](BRAND.md).
+- Email xác thực gửi qua **SMTP riêng** cấu hình trong Supabase (SMTP mặc định giới hạn vài email/giờ), mẫu email tiếng Việt theo [BRAND](design/BRAND.md).
 
 ### 7.6 Trợ lý Cáo (RAG + guardrail)
 
@@ -669,7 +668,7 @@ features/rfq/
 | Vi tương tác                     | CSS (`@starting-style`, transitions) + SVG filter                                              | Nút, ấn triện, ghim bản đồ                   |
 
 Quy tắc:
-- Token thời lượng/easing tập trung ở `packages/ui/src/motion/tokens.ts` (xem [BRAND §6](BRAND.md#6-ngôn-ngữ-chuyển-động)).
+- Token thời lượng/easing tập trung ở `packages/ui/src/motion/tokens.ts` (xem [BRAND §6](design/BRAND.md#6-ngôn-ngữ-chuyển-động)).
 - Mọi hook hoạt ảnh đọc `useReducedMotion()`; 3D chỉ tải khi `IntersectionObserver` thấy + thiết bị đủ mạnh (`navigator.hardwareConcurrency ≥ 4`, có WebGL2), ngược lại dùng ảnh poster/video ngắn.
 - Chỉ animate `transform`/`opacity`/`filter`; `will-change` bật/tắt quanh hoạt ảnh; 3D dừng render khi ra khỏi màn hình (`frameloop="demand"`).
 
@@ -710,7 +709,7 @@ Quy tắc:
 | Môi trường    | Cách chạy                                                                                                                                                          |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Dev           | `pnpm infra:up` (Redis, Mailpit, Caddy) + `pnpm dev`; CSDL + file trên Supabase (ADR-14, ADR-15)                                                                   |
-| Demo/Prod     | **Web trên Vercel; API, worker và Redis (Render Key Value) trên Render; CSDL, Auth, file trên Supabase** (ADR-16, [deploy.md](deploy.md)). Tên miền thật ⇒ Vercel tự cấp HTTPS (QR quét được từ điện thoại giám khảo). ~~1 VPS + Docker Compose + Caddy~~: bị thay thế bởi ADR-16 |
+| Demo/Prod     | **Web trên Vercel; API, worker và Redis (Render Key Value) trên Render; CSDL, Auth, file trên Supabase** (ADR-16, [deploy.md](operations/deploy.md)). Tên miền thật ⇒ Vercel tự cấp HTTPS (QR quét được từ điện thoại giám khảo). ~~1 VPS + Docker Compose + Caddy~~: bị thay thế bởi ADR-16 |
 | Dự phòng demo | Toàn bộ chạy local + Cloudflare Tunnel để có URL HTTPS công khai (chuyển DNS của domain thi từ Vercel sang tunnel, ADR-16); bản đồ dùng PMTiles tự host; `STORAGE_DRIVER=local` cho ảnh |
 
 ### 13.2 CI/CD

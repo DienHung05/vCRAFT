@@ -1,4 +1,4 @@
-import { AppUser, JournalEntry } from '@vcraft/database';
+import { AppUser, AuditLog, JournalEntry, MediaAsset } from '@vcraft/database';
 import { verifyChain } from '@vcraft/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startTestApp, type TestApp } from './support/test-app.js';
@@ -19,10 +19,14 @@ describe('Journal authoring and integrity', () => {
   let productId: string;
   let productVersion: number;
   let traceCode: string;
+  /** Public URL of the household's own processed photo with checksum `SHA` (GH#237). */
+  let photoUrl: string;
 
   const journalUrl = () => `/me/household/products/${productId}/journal`;
+  /** Every milestone carries a photo (FR-PRD-04); tests that do not care get the household's own. */
+  const proof = () => [{ url: photoUrl, sha256: SHA }];
   const append = (body: Record<string, unknown>, auth = rep.auth) =>
-    t.request({ method: 'POST', url: journalUrl(), auth, body });
+    t.request({ method: 'POST', url: journalUrl(), auth, body: { images: proof(), ...body } });
 
   beforeAll(async () => {
     db = await startTestDatabase();
@@ -58,6 +62,25 @@ describe('Journal authoring and integrity', () => {
       auth: other.auth,
       body: { name: 'Hộ khác', slug: 'ho-khac' },
     });
+
+    // Journal photos must be the household's own processed uploads (GH#237).
+    const em = db.orm.em.fork();
+    const photo = em.create(MediaAsset, {
+      ownerId: rep.id,
+      purpose: 'JOURNAL',
+      visibility: 'PUBLIC',
+      status: 'READY',
+      mimeType: 'image/webp',
+      sizeBytes: 1,
+      width: 1280,
+      height: 800,
+      sha256: SHA,
+      originalKey: 'originals/clay',
+      variants: [{ format: 'webp', width: 1280, height: 800, key: 'v/clay-1280.webp', bytes: 1 }],
+    });
+    await em.flush();
+    const read = await t.request({ method: 'GET', url: `/media/${photo.id}`, auth: rep.auth });
+    photoUrl = read.body.variants[0].url;
   });
 
   afterAll(async () => {
@@ -70,7 +93,7 @@ describe('Journal authoring and integrity', () => {
       stage: 'clay',
       declaredDate: '2026-09-02',
       note: 'Lọc đất sông Hồng, ủ ba tuần.',
-      images: [{ url: 'https://media.example/clay.webp', sha256: SHA }],
+      images: [{ url: photoUrl, sha256: SHA }],
     });
     expect(res.status).toBe(201);
     expect(res.body.entries[0]).toMatchObject({
@@ -82,6 +105,23 @@ describe('Journal authoring and integrity', () => {
     });
     expect(res.body.inProgress).toBe(true);
     expect(res.body.missingStages).toContain('finish');
+  });
+
+  it('mốc phải có từ 1 đến 6 ảnh (FR-PRD-04, GH#251)', async () => {
+    const none = await append({
+      stage: 'clay',
+      declaredDate: '2026-09-03',
+      note: 'Không ảnh.',
+      images: [],
+    });
+    expect(none.status).toBe(422);
+    const seven = await append({
+      stage: 'clay',
+      declaredDate: '2026-09-03',
+      note: 'Quá nhiều ảnh.',
+      images: Array.from({ length: 7 }, () => ({ url: photoUrl, sha256: SHA })),
+    });
+    expect(seven.status).toBe(422);
   });
 
   it('bỏ qua công đoạn mà thiếu lý do bị từ chối; có lý do thì được', async () => {
@@ -113,7 +153,12 @@ describe('Journal authoring and integrity', () => {
       url: `/journal-entries/${dry.id}`,
       auth: rep.auth,
       headers: { 'if-match': String(dry.version) },
-      body: { stage: 'dry', declaredDate: '2026-09-10', note: 'Phơi mộc trong bóng râm.' },
+      body: {
+        stage: 'dry',
+        declaredDate: '2026-09-10',
+        note: 'Phơi mộc trong bóng râm.',
+        images: proof(),
+      },
     });
     expect(edited.status).toBe(200);
     expect(edited.body.entries[2].note).toBe('Phơi mộc trong bóng râm.');
@@ -135,7 +180,7 @@ describe('Journal authoring and integrity', () => {
     });
   });
 
-  it('hộ khác không đọc hay ghi được nhật ký này (404, không lộ sản phẩm tồn tại)', async () => {
+  it('hộ khác không đọc được (404) và ghi bị từ chối 403 kèm audit (AC-4, GH#237)', async () => {
     expect((await t.request({ method: 'GET', url: journalUrl(), auth: other.auth })).status).toBe(
       404,
     );
@@ -143,7 +188,28 @@ describe('Journal authoring and integrity', () => {
       { stage: 'fire', declaredDate: '2026-10-01', note: 'x' },
       other.auth,
     );
-    expect(write.status).toBe(404);
+    expect(write.status).toBe(403);
+    const denied = await db.orm.em
+      .fork()
+      .find(AuditLog, { action: 'access.denied', entity: 'product', entityId: productId });
+    expect(denied).toHaveLength(1);
+  });
+
+  it('không nhận ảnh có checksum bịa hoặc không phải ảnh của hộ (GH#237)', async () => {
+    const fabricated = await append({
+      stage: 'fire',
+      declaredDate: '2026-10-01',
+      note: 'Ảnh lạ',
+      images: [{ url: 'https://media.example/fake.webp', sha256: 'b'.repeat(64) }],
+    });
+    expect(fabricated.status).toBe(403);
+    const wrongUrl = await append({
+      stage: 'fire',
+      declaredDate: '2026-10-01',
+      note: 'Ảnh đúng checksum, sai địa chỉ',
+      images: [{ url: 'https://media.example/clay.webp', sha256: SHA }],
+    });
+    expect(wrongUrl.status).toBe(403);
   });
 
   it('sau xuất bản: không sửa trực tiếp; mốc đính chính nêu mốc bị thay và cả hai cùng hiện', async () => {
@@ -162,7 +228,13 @@ describe('Journal authoring and integrity', () => {
       url: `/journal-entries/${glaze.id}`,
       auth: rep.auth,
       headers: { 'if-match': String(glaze.version) },
-      body: { stage: 'glaze', declaredDate: '2026-09-21', note: 'Sửa lén.', skipReason: 'x' },
+      body: {
+        stage: 'glaze',
+        declaredDate: '2026-09-21',
+        note: 'Sửa lén.',
+        skipReason: 'x',
+        images: proof(),
+      },
     });
     expect(edit.status).toBe(409);
     expect(edit.body.code).toBe('JOURNAL_PUBLISHED_IMMUTABLE');
@@ -218,7 +290,7 @@ describe('Journal authoring and integrity', () => {
     await em.flush();
     const res = await append({ stage: 'fire', declaredDate: '2026-10-01', note: 'Nung lò.' });
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('HOUSEHOLD_ACCOUNT_LOCKED');
+    expect(res.body.code).toBe('AUTH_ACCOUNT_SUSPENDED');
   });
 });
 

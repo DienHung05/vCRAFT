@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { isValidOpeningInterval, type OpeningInterval, openState } from '../src/exhibition';
+import {
+  isValidOpeningInterval,
+  type OpeningInterval,
+  openState,
+  workshopOpenState,
+} from '../src/exhibition';
 
 const weekdays: OpeningInterval[] = [1, 2, 3, 4, 5].map((day) => ({
   day,
@@ -59,5 +64,32 @@ describe('isValidOpeningInterval', () => {
     expect(isValidOpeningInterval({ day: 7, open: '08:00', close: '17:00' })).toBe(false);
     expect(isValidOpeningInterval({ day: 1, open: '17:00', close: '08:00' })).toBe(false);
     expect(isValidOpeningInterval({ day: 1, open: '08:00', close: '17:00' })).toBe(true);
+  });
+});
+
+describe('workshopOpenState', () => {
+  const monday10 = vn('2026-11-02T10:00:00');
+
+  it('follows the weekly hours when not temporarily closed', () => {
+    expect(workshopOpenState({ openingHours: weekdays }, monday10)).toEqual({
+      open: true,
+      closesAt: '17:00',
+    });
+  });
+
+  it('is never open while temporarily closed, even inside the weekly hours (BR-03)', () => {
+    expect(
+      workshopOpenState({ temporarilyClosed: true, openingHours: weekdays }, monday10),
+    ).toEqual({
+      open: false,
+      reopens: null,
+    });
+  });
+
+  it('is closed without hours', () => {
+    expect(workshopOpenState({ openingHours: null }, monday10)).toEqual({
+      open: false,
+      reopens: null,
+    });
   });
 });

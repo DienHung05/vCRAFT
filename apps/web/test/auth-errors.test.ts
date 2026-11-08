@@ -10,7 +10,9 @@ const supabaseError = (code: string, status = 400) =>
 describe('authErrorKey (thông điệp lỗi cụ thể, NFR-UX-05)', () => {
   it('đăng nhập sai báo chung email hoặc mật khẩu, không tiết lộ email có tồn tại', () => {
     expect(authErrorKey(supabaseError('invalid_credentials'))).toBe('invalid_credentials');
-    expect(messages.vi.auth.errors.invalid_credentials).toContain('Email hoặc mật khẩu');
+    expect(messages.vi.auth.errors.invalid_credentials).toContain(
+      'Tên đăng nhập, email hoặc mật khẩu',
+    );
   });
 
   it('email chưa xác minh được tách riêng để gợi ý gửi lại thư', () => {

@@ -10,7 +10,7 @@
 - **Ảnh có giấy phép đã nằm trong CSDL và Supabase Storage** (GH#26, §1B): `pnpm demo:media` tải ảnh minh hoạ lên `vcraft-media`, giấy tờ mẫu lên `vcraft-private` và nối vào seed kèm ghi công (`media_link`, mô tả vi/en). `demo:media` cũng đặt `coverUrl`/`coverAlt`/`coverAltEn` của 76 sản phẩm (`BT7K2QXM`, `84PZKVJU` và 74 sản phẩm có ảnh riêng `pp-<mã>`) và `coverUrl` của 4 hộ về URL trong bucket nên API công khai (GH#47) trả ảnh Supabase. Nhật ký không còn ảnh nào (xem quy tắc bên dưới).
 - **Trang công khai của `apps/web` đọc API thật** (trang chủ, sản phẩm, nghệ nhân, truy xuất, bản đồ, tin tức). `apps/web/src/lib/demo/data.ts` chỉ còn phục vụ các màn yêu cầu báo giá và điều phối đang dùng dữ liệu minh họa.
 - Một số bước chưa có màn hình (duyệt hộ của Admin, xuất bản của hộ): kịch bản e2e gọi thẳng API bằng đúng phiên đã đăng nhập và ghi chú ở từng bước.
-- **Triển khai production (GH#39):** web trên Vercel, API + worker + Redis trên Render, CSDL/Auth/Storage ở Supabase ([ADR-16](../adr/0016-deploy-vercel-render.md)); cấu hình nằm trong repo (`render.yaml`, `apps/web/vercel.json`, `next.config.ts`), các bước tạo project và dán biến môi trường ở [docs/deploy.md](../deploy.md). Đã chạy thử local: build production và khởi động API/worker bằng đúng lệnh start, rewrite `/api/*`. **Chưa** chạy trên Vercel/Render thật vì cần tài khoản của nhóm.
+- **Triển khai production (GH#39):** web trên Vercel, API + worker + Redis trên Render, CSDL/Auth/Storage ở Supabase ([ADR-16](../adr/0016-deploy-vercel-render.md)); cấu hình nằm trong repo (`render.yaml`, `apps/web/vercel.json`, `next.config.ts`), các bước tạo project và dán biến môi trường ở [docs/operations/deploy.md](../operations/deploy.md). Đã chạy thử local: build production và khởi động API/worker bằng đúng lệnh start, rewrite `/api/*`. **Chưa** chạy trên Vercel/Render thật vì cần tài khoản của nhóm.
 - **Chưa kiểm chứng được ở máy phát triển:** chạy trên URL đã triển khai, Lighthouse, tạo người dùng trên Supabase Auth thật, dựng Supabase cục bộ. Các mục này nằm trong checklist §7 để làm một lần trước ngày thi.
 
 ## 1. Dữ liệu mẫu
@@ -20,13 +20,13 @@ Nạp bằng entity MikroORM, chạy giống hệt trên PostgreSQL và MySQL (`
 | Thành phần | Số lượng | Ghi chú |
 | --- | --- | --- |
 | Tài khoản (`app_user`) | 23 | 4 cố định (§2) + 19 người đại diện hộ không đăng nhập được |
-| Hộ sản xuất | 21 | 20 `APPROVED` + 1 `PENDING_REVIEW` ("Gốm Bảo Châu"); tên và người hư cấu, mô tả có nhãn `[Dữ liệu mẫu]` |
+| Hộ sản xuất | 21 | 20 `APPROVED` + 1 `PENDING_REVIEW` ("Gốm Bảo Châu"); tên và người hư cấu; mỗi hộ có một câu chuyện riêng nêu nghề và địa chỉ xưởng (GH#204), không ghi nhãn mẫu |
 | Nghệ nhân / xưởng | 53 / 35 | Xưởng có tọa độ quanh Bát Tràng (20.9758, 105.9139) |
 | Sản phẩm | 222 | 218 `PUBLISHED`; 4 `DRAFT` (2 của hộ household để xuất bản trực tiếp, 2 của hộ chờ duyệt) |
 | Mốc nhật ký | 1.295 | Mỗi sản phẩm 4–7 mốc, chuỗi băm SHA-256 sinh bằng `sealChain` của `@vcraft/domain`, kiểm lại bằng `verifyChain`; công đoạn bị nhảy đều có lý do bỏ qua |
 | Yêu cầu báo giá | 12 | Đủ 8 trạng thái RFQ (bảng bên dưới) |
 | Đề xuất tham gia / chào giá / phân bổ | 24 / 7 / 12 | Chào giá dựng bằng `assembleCooperativeQuotation` nên đúng luật tổng và năng lực |
-| Tin tức | 18 | Đều `PUBLISHED`: 6 tin chung của làng + 12 tin của hộ `APPROVED`, 2 tin ghim; nội dung có nhãn `[Dữ liệu mẫu]`; ngày đăng tính từ mốc đóng băng |
+| Tin tức | 18 | Đều `PUBLISHED`: 6 tin chung của làng + 12 tin của hộ `APPROVED`, 2 tin ghim; nội dung không còn nhãn mẫu (GH#204); ngày đăng tính từ mốc đóng băng |
 
 Ảnh: seed (`demo:reset`) để trống `images: []` ở nhật ký và không có ảnh bìa; ảnh có giấy phép được nối vào bằng `pnpm demo:media` (§1B). Chạy `demo:reset` mà không chạy `demo:media` thì `demo:verify` báo đỏ ở nhóm kiểm ảnh.
 
@@ -106,7 +106,7 @@ pnpm demo:auth -- --check
 
 **Ảnh bìa đang dùng ngay:** `demo:media` ghi đè `product.cover_url`/`cover_alt`/`cover_alt_en` (76 sản phẩm) và `household.cover_url` (ảnh bìa 4 hộ) bằng URL biến thể WebP 1280 trong bucket; API công khai của GH#47 trả đúng hai cột này nên không cần sửa API. **The API reads everything else (galleries, portraits, news covers, credits) from `media_link` (GH#54):** household/product/news images = `media_link` by (`target_type`, `target_id`, `role`, `position`) → `media_asset.variants` (URL = `MEDIA_PUBLIC_BASE_URL` + `key`), `credit`, `alt_text` (`media_link.alt_text` takes priority). `GET /households/{slug}` returns `portrait`, `banner`, `gallery`; `GET /news` and `GET /news/{slug}` return `cover`; `GET /products/{slug}` and `GET /trace/{code}` return `coverCredit`. Journal entry images: `journal_entry.images[].url` is already a public URL; `credit` is looked up by `images[].sha256` = `media_asset.sha256`. `DOCUMENT` files, private files and files that are not `READY` never reach the public API.
 
-**Giấy tờ mẫu:** ba ảnh vẽ cục bộ bằng `scripts/demo-photos/make-specimen-docs.mjs` (căn cước, xác nhận cư trú, ảnh xưởng), toàn dữ liệu giả và đóng dấu chéo "MẪU – KHÔNG CÓ GIÁ TRỊ"; không bao giờ dùng giấy tờ thật. Chỉ nằm ở `vcraft-private`: Admin đọc qua `GET /media/{id}/read-url` (URL ký 5 phút), người khác bị từ chối, không có biến thể công khai.
+**Giấy tờ mẫu:** ba ảnh vẽ cục bộ bằng `scripts/demo/photos/make-specimen-docs.mjs` (căn cước, xác nhận cư trú, ảnh xưởng), toàn dữ liệu giả và đóng dấu chéo "MẪU – KHÔNG CÓ GIÁ TRỊ"; không bao giờ dùng giấy tờ thật. Chỉ nằm ở `vcraft-private`: Admin đọc qua `GET /media/{id}/read-url` (URL ký 5 phút), người khác bị từ chối, không có biến thể công khai.
 
 ```bash
 APP_ENV=demo pnpm demo:media                 # tải lên + nối vào seed; chạy lại được
@@ -123,24 +123,31 @@ APP_ENV=demo pnpm demo:media -- --only=media,links,covers,prune   # steps: media
 
 `app_user.id` **phải bằng** `sub` của Supabase Auth, nên bốn tài khoản dùng UUID cố định ở cả hai nơi (`packages/database/src/seeders/demo/accounts.ts`). `demo:reset` ghi bảng `app_user`; `demo:auth` ghi Supabase Auth.
 
-| Khóa | Vai trò | Email | UUID | Biến mật khẩu |
-| --- | --- | --- | --- | --- |
-| `admin` | ADMIN | `demo.admin@example.com` | `d3a10000-0000-4000-8000-000000000001` | `DEMO_ADMIN_PASSWORD` |
-| `buyer` | BUYER | `demo.buyer@example.com` | `d3a10000-0000-4000-8000-000000000002` | `DEMO_BUYER_PASSWORD` |
-| `household` | HOUSEHOLD (Lò Đức Phát, đã duyệt) | `demo.household@example.com` | `d3a10000-0000-4000-8000-000000000003` | `DEMO_HOUSEHOLD_PASSWORD` |
-| `pending` | HOUSEHOLD (Gốm Bảo Châu, chờ duyệt) | `demo.pending@example.com` | `d3a10000-0000-4000-8000-000000000004` | `DEMO_PENDING_PASSWORD` |
+GH#212 adds a unique lowercase username to each demo account. Sign in with `admin`, `buyer`, `household` or `pending` and the corresponding password. Email sign-in remains available for existing accounts. Public registration cannot claim these demo usernames or the system names `root` and `support`.
+
+| Khóa | Vai trò | Email | Username | UUID | Biến mật khẩu |
+| --- | --- | --- | --- | --- | --- |
+| `admin` | ADMIN | `demo.admin@example.com` | `admin` | `d3a10000-0000-4000-8000-000000000001` | `DEMO_ADMIN_PASSWORD` |
+| `buyer` | BUYER | `demo.buyer@example.com` | `buyer` | `d3a10000-0000-4000-8000-000000000002` | `DEMO_BUYER_PASSWORD` |
+| `household` | HOUSEHOLD (Lò Đức Phát, đã duyệt) | `demo.household@example.com` | `household` | `d3a10000-0000-4000-8000-000000000003` | `DEMO_HOUSEHOLD_PASSWORD` |
+| `pending` | HOUSEHOLD (Gốm Bảo Châu, chờ duyệt) | `demo.pending@example.com` | `pending` | `d3a10000-0000-4000-8000-000000000004` | `DEMO_PENDING_PASSWORD` |
 
 Mật khẩu **không** nằm trong mã; đặt trong `.env` của máy demo (không commit) hoặc kho bí mật của nhóm.
 
+Set `DEMO_ADMIN_USERNAME=admin` and keep the password in `DEMO_ADMIN_PASSWORD`. Demo clients read the username override; `demo:auth` provisions Supabase identities by email. The migration backfills the four fixed usernames and the seed keeps them consistent on subsequent runs.
+
 ```bash
 # Trong .env của môi trường demo: APP_ENV=demo, SUPABASE_URL, SUPABASE_SECRET_KEY, bốn DEMO_*_PASSWORD
+# DEMO_ADMIN_USERNAME is used by demo sign-in clients; this provisioning script does not read it.
 pnpm demo:auth                 # tạo hoặc cập nhật 4 người dùng (id cố định, email đã xác nhận); chạy lại được
 pnpm demo:auth -- --check      # chỉ kiểm tra, không ghi
 ```
 
 `auth.admin.createUser` nhận thuộc tính `id` (đã xác nhận trong kiểu `AdminUserAttributes` của `@supabase/auth-js`), nên không cần cách vòng. Nếu một email demo đã gắn với người dùng id khác (vd. đã đăng ký tay), script dừng và hướng dẫn xóa người dùng đó ở Dashboard → Authentication rồi chạy lại. Nếu tài khoản bị khóa hay đổi vai trò khi tập dượt thì `demo:reset` đưa `app_user` về đúng vai trò.
 
-Sau khi tạo: đăng nhập từng tài khoản **một lần** trên đúng thiết bị thi (Buyer: Chrome, Hộ: điện thoại, Admin: Edge) và giữ phiên. Hạn token của Supabase là 15 phút nhưng trình duyệt tự làm mới bằng refresh token; kiểm tra phiên còn sống sáng hôm thi.
+Sau khi tạo: đăng nhập từng tài khoản **một lần** trên đúng thiết bị thi (Buyer: Chrome, Hộ: điện thoại, Admin: Edge) và giữ phiên. Hạn token của Supabase là 15 phút nhưng trình duyệt tự làm mới bằng refresh token; kiểm tra phiên còn sống sáng hôm thi. 
+
+GH#212: sign in again at `/vi/dang-nhap` using the account's username. Admin MFA still applies.
 
 ### Đăng nhập trên web và email xác thực tiếng Việt (GH#27)
 
@@ -220,7 +227,7 @@ Thiếu `E2E_BASE_URL` hoặc thông tin đăng nhập thì cả kịch bản t�
 ## 5. Chiếc cốc và URL ổn định
 
 - QR dán lên cốc: `https://<DOMAIN>/q/DF6P3WZE`. Domain phải là domain thật dùng cả khi thi (cũng là domain của Cloudflare Tunnel dự phòng, xem §8), vì mã QR in ra không đổi được.
-- `NEXT_PUBLIC_SITE_URL` được nhúng vào mã QR hiển thị trên web lúc **build**: build bản triển khai với đúng domain. Trên Vercel đặt biến này ở Environment Variables rồi Redeploy ([deploy.md §4](../deploy.md#4-vercel-tạo-project)).
+- `NEXT_PUBLIC_SITE_URL` được nhúng vào mã QR hiển thị trên web lúc **build**: build bản triển khai với đúng domain. Trên Vercel đặt biến này ở Environment Variables rồi Redeploy ([deploy.md §4](../operations/deploy.md#4-vercel-tạo-project)).
 - Ngày thi: thử quét bằng ít nhất một iPhone và một Android khác máy của nhóm, ở mạng 4G (không dùng Wi-Fi nhà).
 
 ## 6. Sao lưu và khôi phục
@@ -295,7 +302,7 @@ Kiểm tra máy không làm thay được, cần người: đọc thử mô tả
 
 ## 8. Phương án dự phòng khi mất dịch vụ tại địa điểm thi
 
-Nguyên tắc: **nếu dịch vụ ngoài lỗi thì mở bản local + tunnel trước**, không sửa sự cố ngay trước mặt giám khảo. Hạ tầng chính: Vercel (web) + Render (API, worker, Redis) + Supabase (Auth, Postgres, Storage) + SMTP ([ADR-16](../adr/0016-deploy-vercel-render.md), [deploy.md](../deploy.md)); dự phòng: Cloudflare Tunnel. ~~1 VPS + Caddy~~ là kế hoạch cũ, đã bị ADR-16 thay thế.
+Nguyên tắc: **nếu dịch vụ ngoài lỗi thì mở bản local + tunnel trước**, không sửa sự cố ngay trước mặt giám khảo. Hạ tầng chính: Vercel (web) + Render (API, worker, Redis) + Supabase (Auth, Postgres, Storage) + SMTP ([ADR-16](../adr/0016-deploy-vercel-render.md), [deploy.md](../operations/deploy.md)); dự phòng: Cloudflare Tunnel. ~~1 VPS + Caddy~~ là kế hoạch cũ, đã bị ADR-16 thay thế.
 
 Cây quyết định:
 

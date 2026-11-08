@@ -1,7 +1,7 @@
 import { JOURNAL_STAGES } from '@vcraft/domain';
 import { z } from 'zod';
 import { IdSchema, IsoDateSchema, IsoDateTimeSchema, VersionSchema } from '../common';
-import { MediaCreditSchema, PublicImageVariantsSchema } from '../media';
+import { PublicCreditSchema, PublicImageVariantsSchema } from '../media';
 
 /** Nhật ký sản xuất và mốc đính chính (vCRAFT-9hg.4). */
 
@@ -20,7 +20,11 @@ const JournalContentSchema = z.object({
   /** Ngày hộ khai; lùi ngày hay ngày tương lai đều hiện đúng như khai. */
   declaredDate: IsoDateSchema,
   note: z.string().trim().min(1, 'Hãy ghi vài dòng về công đoạn này').max(2_000),
-  images: z.array(JournalImageSchema).max(12).default([]),
+  /** FR-PRD-04: mỗi mốc có từ 1 đến 6 ảnh làm bằng chứng. */
+  images: z
+    .array(JournalImageSchema)
+    .min(1, 'Thêm ít nhất một ảnh làm bằng chứng cho công đoạn này')
+    .max(6, 'Mỗi công đoạn tối đa 6 ảnh'),
   /** Một dòng lý do khi bỏ qua công đoạn trước đó chưa ghi. */
   skipReason: z.string().trim().max(300).optional(),
 });
@@ -48,7 +52,7 @@ export const JournalEntryResponseSchema = z.object({
    */
   images: z.array(
     JournalImageSchema.extend({
-      credit: MediaCreditSchema.nullable(),
+      credit: PublicCreditSchema,
       variants: PublicImageVariantsSchema,
     }),
   ),

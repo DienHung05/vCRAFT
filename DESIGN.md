@@ -277,7 +277,7 @@ TraceSealFrame wraps a QR code in a double seal frame with an 8 character mono c
 
 ## Do's and Don'ts
 
-Concrete visual guardrails grounded in the incumbent implementation and BRAND.md.
+Concrete visual guardrails grounded in the incumbent implementation and docs/design/BRAND.md.
 
 ### Do:
 - **Do** keep paper as the page ground and reserve pure white for no permanent surface.

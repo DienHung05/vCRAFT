@@ -33,5 +33,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     // A failure here only means the consent is asked again later; the sign-in itself succeeded.
     await supabase.auth.updateUser({ data: { privacy_policy_version: PRIVACY_POLICY_VERSION } });
   }
-  return redirectTo(next ?? `/auth/continue?locale=${locale}`);
+  return redirectTo(
+    `/auth/continue?locale=${locale}${next ? `&next=${encodeURIComponent(next)}` : ''}`,
+  );
 }

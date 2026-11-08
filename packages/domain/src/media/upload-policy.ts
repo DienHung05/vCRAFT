@@ -5,7 +5,7 @@ import { err, ok, type Result } from '../shared/result';
  * Upload media (FR-MEDIA-03/04, ADR-14). Tầng API dò magic bytes rồi hỏi luật ở đây; luật không
  * tin `Content-Type` client gửi: loại thật lấy từ magic bytes, khai báo sai loại thì từ chối.
  */
-export const MEDIA_PURPOSES = ['JOURNAL', 'PRODUCT', 'CERTIFICATE'] as const;
+export const MEDIA_PURPOSES = ['JOURNAL', 'PRODUCT', 'CERTIFICATE', 'RFQ_ATTACHMENT'] as const;
 export type MediaPurpose = (typeof MEDIA_PURPOSES)[number];
 
 export type MediaVisibility = 'PUBLIC' | 'PRIVATE';
@@ -41,9 +41,12 @@ export interface MediaUploadPlan {
   readonly convert: boolean;
 }
 
-/** Giấy chứng nhận chỉ Ban quản lý xem (FR-MEDIA-04); ảnh nhật ký và sản phẩm là công khai. */
+/**
+ * Giấy chứng nhận chỉ Ban quản lý xem (FR-MEDIA-04); ảnh nhật ký và sản phẩm là công khai. Tệp đính kèm của
+ * yêu cầu báo giá (logo, bản vẽ; FR-RFQ-01) là riêng tư: chỉ người mua, Ban quản lý và các hộ được mời đọc.
+ */
 export function visibilityOf(purpose: MediaPurpose): MediaVisibility {
-  return purpose === 'CERTIFICATE' ? 'PRIVATE' : 'PUBLIC';
+  return purpose === 'CERTIFICATE' || purpose === 'RFQ_ATTACHMENT' ? 'PRIVATE' : 'PUBLIC';
 }
 
 function normalizeMime(mime: string): string {

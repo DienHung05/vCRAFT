@@ -9,12 +9,15 @@ import type {
   CoordinationQueueItemDto,
   CreateContributionRequest,
   CreateCooperativeQuotationRequest,
+  CreateDirectQuotationRequest,
   CreateRfqRequest,
+  DirectQuotationDto,
   ListRfqsQuery,
   MyAllocationDto,
   MyInvitationDto,
   PriceHintDto,
   ReportProgressRequest,
+  RfqAttachmentDto,
   RfqListDto,
   RfqResponse,
 } from '@vcraft/contracts';
@@ -24,6 +27,8 @@ import {
   ContributionOffer as ContributionOfferEntity,
   CooperativeQuotation as CooperativeQuotationEntity,
   Household,
+  MediaAsset,
+  MediaLink,
   OrderAllocation as OrderAllocationEntity,
   OutboxEvent,
   Product,
@@ -32,9 +37,14 @@ import {
 import {
   allocationTransition,
   assembleCooperativeQuotation,
+  assembleDirectQuotation,
+  bidTransition,
   checkProgressReport,
+  hasAcceptWindowElapsed,
   isCompletionDateValid,
   projectBuyerQuotation,
+  RFQ_ACCEPT_GRACE_MS,
+  selectMatchingHouseholds,
   suggestPriceRange,
   transition,
 } from '@vcraft/domain';
@@ -66,7 +76,8 @@ export class RfqService {
         ...requestFields(input),
       });
       await em.flush();
-      return toRfqResponse(request);
+      await this.setAttachments(em, actor, request, input.attachments);
+      return toRfqResponse(request, await this.attachmentsOf(em, request.id));
     });
   }
 
@@ -86,7 +97,8 @@ export class RfqService {
       await this.checkHouseholds(em, input.invitedHouseholdIds);
       Object.assign(request, requestFields(input));
       await em.flush();
-      return toRfqResponse(request);
+      await this.setAttachments(em, actor, request, input.attachments);
+      return toRfqResponse(request, await this.attachmentsOf(em, request.id));
     });
   }
 
@@ -94,16 +106,19 @@ export class RfqService {
     const em = this.orm.em.fork();
     const and: FilterQuery<QuotationRequest>[] = [{ buyer: actor.id }];
     const now = new Date();
-    const open = ['SENT', 'BIDDING'] as const;
+    // Same bounds as `requestExpired` (T8): SENT ends at the deadline, BIDDING 7 days after it.
+    const graceStart = new Date(now.getTime() - RFQ_ACCEPT_GRACE_MS);
     if (query.status === 'EXPIRED')
       and.push({
         $or: [
           { status: 'EXPIRED' },
-          { status: { $in: [...open] }, biddingClosesAt: { $lte: now } },
+          { status: 'SENT', biddingClosesAt: { $lte: now } },
+          { status: 'BIDDING', biddingClosesAt: { $lte: graceStart } },
         ],
       });
-    else if (query.status === 'SENT' || query.status === 'BIDDING')
-      and.push({ status: query.status, biddingClosesAt: { $gt: now } });
+    else if (query.status === 'SENT') and.push({ status: 'SENT', biddingClosesAt: { $gt: now } });
+    else if (query.status === 'BIDDING')
+      and.push({ status: 'BIDDING', biddingClosesAt: { $gt: graceStart } });
     else if (query.status) and.push({ status: query.status });
     if (query.cursor) {
       const cursor = decodeRequestCursor(query.cursor);
@@ -142,7 +157,7 @@ export class RfqService {
     const em = this.orm.em.fork();
     const request = await this.request(em, id);
     await this.canRead(em, actor, request);
-    const response = toRfqResponse(request);
+    const response = toRfqResponse(request, await this.attachmentsOf(em, request.id));
     if (actor.role === 'HOUSEHOLD') {
       const household = await this.ownHousehold(em, actor, false);
       response.invitedHouseholdIds = [household.id];
@@ -169,6 +184,14 @@ export class RfqService {
       { populate: ['household'] },
     );
     const byRequest = new Map(offers.map((offer) => [offer.request.id, offer]));
+    const direct = new Map<string, CooperativeQuotationEntity>();
+    for (const quotation of await em.find(
+      CooperativeQuotationEntity,
+      { request: { $in: requests.map((request) => request.id) }, bidType: 'INDIVIDUAL' },
+      { populate: ['request'], orderBy: { createdAt: 'desc' } },
+    ))
+      if (ownsDirectQuotation(quotation, household.id) && !direct.has(quotation.request.id))
+        direct.set(quotation.request.id, quotation);
     const isOpen = (request: QuotationRequest) =>
       (request.status === 'SENT' || request.status === 'BIDDING') && !requestExpired(request);
     return requests
@@ -179,10 +202,12 @@ export class RfqService {
       )
       .map((request) => {
         const offer = byRequest.get(request.id);
+        const quotation = direct.get(request.id);
         return {
           request: { ...toRfqResponse(request), invitedHouseholdIds: [household.id] },
           contribution: offer ? toContributionDto(offer) : null,
           declined: (request.declinedHouseholdIds ?? []).includes(household.id),
+          directQuotation: quotation ? toDirectQuotationDto(quotation) : null,
         };
       });
   }
@@ -242,6 +267,12 @@ export class RfqService {
       const request = await this.request(em, id, true);
       if (request.buyer.id !== actor.id) throw notFound();
       assertVersion(request, version);
+      // BR-05: with no chosen household and no coordination the system invites households of the category.
+      if (request.invitedHouseholdIds.length === 0 && !request.coordinationOptIn) {
+        const matched = await this.matchHouseholds(em, request);
+        if (matched.length === 0) throw new AppError('RFQ_NO_MATCHING_HOUSEHOLD');
+        request.invitedHouseholdIds = matched;
+      }
       await this.checkHouseholds(em, request.invitedHouseholdIds);
       request.status = unwrap(
         transition(request.status, 'SUBMIT', {
@@ -264,7 +295,7 @@ export class RfqService {
         payload: { requestId: request.id, biddingClosesAt: request.biddingClosesAt.toISOString() },
       });
       await em.flush();
-      return toRfqResponse(request);
+      return toRfqResponse(request, await this.attachmentsOf(em, request.id));
     });
   }
 
@@ -543,6 +574,162 @@ export class RfqService {
     ];
   }
 
+  /**
+   * FR-RFQ-04, BR-L3: an invited household of a request without coordination quotes the whole quantity
+   * itself. One active quotation per household and request; the first quotation moves the request to
+   * BIDDING (T2). The buyer accepts it like any other quotation.
+   */
+  async createDirectQuotation(
+    actor: Actor,
+    requestId: string,
+    input: CreateDirectQuotationRequest,
+  ): Promise<DirectQuotationDto> {
+    return this.orm.em.fork().transactional(async (em) => {
+      const request = await this.request(em, requestId, true);
+      this.open(request);
+      const household = await this.directQuotingHousehold(em, actor, request);
+      if (household.status !== 'APPROVED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
+      const existing = await this.activeDirectQuotation(em, request, household.id);
+      if (existing) throw new AppError('RFQ_BID_ALREADY_EXISTS');
+      const plan = this.directPlan(request, household.id, input);
+      if (request.status === 'SENT')
+        request.status = unwrap(
+          transition(request.status, 'RECEIVE_BID', {
+            actor: 'ARTISAN',
+            now: new Date(),
+            biddingClosesAt: request.biddingClosesAt,
+            hasBidFromArtisan: false,
+          }),
+        );
+      request.declinedHouseholdIds = (request.declinedHouseholdIds ?? []).filter(
+        (id) => id !== household.id,
+      );
+      const entity = em.create(CooperativeQuotationEntity, {
+        request,
+        bidType: 'INDIVIDUAL',
+        note: input.note || null,
+        ...plan,
+      });
+      await this.notifier.notify(em, {
+        kind: 'QUOTATION_RECEIVED',
+        requestId: request.id,
+        quotationId: entity.id,
+        actorId: actor.id,
+        recipientIds: [request.buyer.id],
+      });
+      request.revision++;
+      await em.flush();
+      return toDirectQuotationDto(entity);
+    });
+  }
+
+  /** The household's own direct quotations on a request, newest first (the first one is current). */
+  async listOwnDirectQuotations(actor: Actor, requestId: string): Promise<DirectQuotationDto[]> {
+    const em = this.orm.em.fork();
+    const request = await this.request(em, requestId);
+    const household = await this.ownHousehold(em, actor, false);
+    if (!request.invitedHouseholdIds.includes(household.id)) throw notFound();
+    const rows = await em.find(
+      CooperativeQuotationEntity,
+      { request, bidType: 'INDIVIDUAL' },
+      { populate: ['request'], orderBy: { createdAt: 'desc' } },
+    );
+    return rows.filter((row) => ownsDirectQuotation(row, household.id)).map(toDirectQuotationDto);
+  }
+
+  /** BR-L3/L4: the household revises its active quotation before the deadline (the version goes up). */
+  async reviseDirectQuotation(
+    actor: Actor,
+    id: string,
+    version: number,
+    input: CreateDirectQuotationRequest,
+  ): Promise<DirectQuotationDto> {
+    return this.changeDirectQuotation(actor, id, version, input);
+  }
+
+  /** FR-RFQ-05: the household withdraws its quotation while the request is open. */
+  async withdrawDirectQuotation(actor: Actor, id: string, version: number) {
+    return this.changeDirectQuotation(actor, id, version);
+  }
+
+  private async changeDirectQuotation(
+    actor: Actor,
+    id: string,
+    version: number,
+    input?: CreateDirectQuotationRequest,
+  ): Promise<DirectQuotationDto> {
+    // Read the immutable request ID before BEGIN, as changeContribution does (MySQL REPEATABLE READ).
+    const reference = await this.orm.em.fork().findOne(CooperativeQuotationEntity, id);
+    if (reference?.bidType !== 'INDIVIDUAL') throw notFound();
+    return this.orm.em.fork().transactional(async (em) => {
+      const request = await this.request(em, reference.request.id, true);
+      const quotation = await em.findOneOrFail(CooperativeQuotationEntity, id, {
+        populate: ['request'],
+        refresh: true,
+      });
+      const household = await this.directQuotingHousehold(em, actor, request);
+      if (!ownsDirectQuotation(quotation, household.id)) throw notFound();
+      assertVersion(quotation, version);
+      this.open(request);
+      const event = input ? 'REVISE' : 'WITHDRAW';
+      quotation.status = unwrap(
+        bidTransition(quotation.status, event, {
+          rfqStatus: request.status,
+          biddingClosesAt: request.biddingClosesAt,
+          now: new Date(),
+        }),
+      );
+      if (input) {
+        if (household.status !== 'APPROVED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
+        const plan = this.directPlan(request, household.id, input);
+        quotation.parts = plan.parts;
+        quotation.productionTotalVnd = plan.productionTotalVnd;
+        quotation.totalVnd = plan.totalVnd;
+        quotation.note = input.note || null;
+      }
+      await this.notifier.notify(em, {
+        kind: input ? 'QUOTATION_RECEIVED' : 'QUOTATION_WITHDRAWN',
+        requestId: request.id,
+        quotationId: quotation.id,
+        actorId: actor.id,
+        recipientIds: [request.buyer.id],
+      });
+      request.revision++;
+      await em.flush();
+      return toDirectQuotationDto(quotation);
+    });
+  }
+
+  /** The stored shape of a household's quotation for the whole request, checked by the domain. */
+  private directPlan(
+    request: QuotationRequest,
+    householdId: string,
+    input: CreateDirectQuotationRequest,
+  ) {
+    this.completion(input.completionDate, request);
+    const plan = unwrap(
+      assembleDirectQuotation({
+        requiredQuantity: request.quantity,
+        biddingClosesAt: request.biddingClosesAt,
+        requiredBy: request.requiredBy,
+        householdId,
+        unitPriceVnd: input.unitPriceVnd,
+        completionDate: new Date(input.completionDate),
+      }),
+    );
+    return {
+      quantity: plan.quantity,
+      parts: plan.parts.map((part) => ({
+        ...part,
+        completionDate: part.completionDate.toISOString(),
+      })),
+      productionTotalVnd: plan.productionTotalVnd,
+      additionalChargeVnd: plan.additionalChargeVnd,
+      totalVnd: plan.totalVnd,
+      deliveryTerms: plan.deliveryTerms,
+    };
+  }
+
   async createCooperativeQuotation(
     actor: Actor,
     requestId: string,
@@ -617,7 +804,7 @@ export class RfqService {
       });
       request.revision++;
       await em.flush();
-      return toInternalQuotationDto(entity, offers);
+      return toInternalQuotationDto(entity, householdNames(offers.map((o) => o.household)));
     });
   }
 
@@ -634,10 +821,14 @@ export class RfqService {
       { request },
       { orderBy: { createdAt: 'asc' } },
     );
-    const offers = await em.find(ContributionOfferEntity, { request }, { populate: ['household'] });
+    const names = householdNames(
+      await em.find(Household, {
+        id: { $in: [...new Set(quotations.flatMap((q) => q.parts.map((p) => p.householdId)))] },
+      }),
+    );
     if (actor.role === 'ADMIN')
-      return quotations.map((quotation) => toInternalQuotationDto(quotation, offers));
-    return quotations.map((quotation) => toBuyerQuotationDto(quotation, offers));
+      return quotations.map((quotation) => toInternalQuotationDto(quotation, names));
+    return quotations.map((quotation) => toBuyerQuotationDto(quotation, names));
   }
 
   /**
@@ -678,14 +869,16 @@ export class RfqService {
         if (quotation.id === chosen.id) quotation.status = 'ACCEPTED';
         else quotation.status = 'REJECTED';
       }
-      const offers = await em.find(
-        ContributionOfferEntity,
-        { request },
-        { populate: ['household'] },
-      );
-      const names = new Map(offers.map((offer) => [offer.household.id, offer.household]));
       if (chosen.parts.length === 0)
         throw new AppError('BUSINESS_RULE_VIOLATED', 'ACCEPT_EMPTY_PLAN');
+      const partHouseholds = chosen.parts.map((part) => part.householdId);
+      // A household's own quotation is accepted only while that household is still eligible (BR-02).
+      if (chosen.bidType === 'INDIVIDUAL') await this.checkHouseholds(em, partHouseholds);
+      const names = new Map(
+        (await em.find(Household, { id: { $in: [...new Set(partHouseholds)] } })).map(
+          (household) => [household.id, household],
+        ),
+      );
       for (const part of chosen.parts) {
         const household = names.get(part.householdId);
         if (!household) throw new AppError('BUSINESS_RULE_VIOLATED', 'ACCEPT_UNKNOWN_HOUSEHOLD');
@@ -719,7 +912,10 @@ export class RfqService {
     });
   }
 
-  /** GH#11: đọc allocations của đơn đã chốt. Buyer chủ, admin điều phối, hoặc hộ có phần. */
+  /**
+   * GH#11: đọc allocations của đơn đã chốt. Buyer chủ, admin điều phối, hoặc hộ có phần.
+   * Empty (not 404) until a quotation is accepted, for anyone allowed to view the request.
+   */
   async listAllocations(actor: Actor, requestId: string): Promise<AllocationDto[]> {
     const em = this.orm.em.fork();
     const request = await this.request(em, requestId);
@@ -728,7 +924,6 @@ export class RfqService {
       { request, status: 'ACCEPTED' },
       { populate: ['request'] },
     );
-    if (!accepted) throw notFound();
     if (actor.role === 'ADMIN') this.coordinator(actor, request);
     else if (actor.role === 'BUYER' && request.buyer.id === actor.id) {
       // Buyer chủ đọc toàn bộ allocations.
@@ -736,6 +931,8 @@ export class RfqService {
       const household = await this.ownHousehold(em, actor, false);
       if (!request.invitedHouseholdIds.includes(household.id)) throw notFound();
     } else throw notFound();
+    // Before a quotation is accepted there is nothing to allocate yet: an empty list, not a 404.
+    if (!accepted) return [];
     const allocations = await em.find(
       OrderAllocationEntity,
       { quotation: accepted },
@@ -790,34 +987,19 @@ export class RfqService {
       assertVersion(allocation, version);
       this.acceptedOnly(request);
       allocation.status = unwrap(allocationTransition(allocation.status, 'DECLINE', {}));
-      request.status = unwrap(
-        transition(request.status, 'CANCEL', {
-          actor: 'BUYER_OWNER',
-          reason: 'household declined',
-        }),
-      );
-      const siblings = await em.find(
-        OrderAllocationEntity,
-        { quotation: allocation.quotation, status: ['PROPOSED', 'CONFIRMED'] },
-        { populate: ['household'] },
-      );
-      for (const sibling of siblings) {
-        // Hàng của chính allocation vừa DECLINED còn PROPOSED trong CSDL nhưng đã DECLINED trong bộ nhớ.
-        if (sibling.id === allocation.id) continue;
-        sibling.status = unwrap(allocationTransition(sibling.status, 'CANCEL', {}));
-      }
+      // FR-ORD-05 (GH#246): one household saying no does not end the order. It stays ACCEPTED, the other
+      // shares keep their state, and the coordinator reallocates the declined quantity before production.
+      // Without a coordinator (a household's own quotation) every active admin is asked instead.
       await this.notifier.notify(em, {
-        kind: 'ORDER_CANCELLED',
+        kind: 'COORDINATION_NEEDED',
         requestId: request.id,
         quotationId: allocation.quotation.id,
         actorId: actor.id,
-        recipientIds: [
-          request.buyer.id,
-          request.coordinatorId,
-          ...(await this.notifier.representativeIds(em, [
-            ...siblings.map((sibling) => sibling.household.id),
-          ])),
-        ],
+        recipientIds: request.coordinatorId
+          ? [request.coordinatorId]
+          : (await em.find(AppUser, { role: 'ADMIN', status: 'ACTIVE' }, { fields: ['id'] })).map(
+              (admin) => admin.id,
+            ),
       });
       request.revision++;
       await em.flush();
@@ -884,12 +1066,12 @@ export class RfqService {
    * Cancels a request with a required reason: the owning buyer before production (T6, FR-RFQ-09),
    * or the coordinator after acceptance (T7). Open quotations and live allocations end with it.
    */
-  async cancelOrder(actor: Actor, requestId: string, version: number, reason: string) {
+  async cancelOrder(actor: Actor, requestId: string, version: number, reason = '') {
     return this.orm.em.fork().transactional(async (em) => {
       const request = await this.request(em, requestId, true);
       if (actor.locked) throw forbidden();
       const owner = actor.role === 'BUYER' && request.buyer.id === actor.id;
-      if (!owner) this.coordinator(actor, request);
+      if (!owner) this.coordinatorOrBoard(actor, request);
       assertVersion(request, version);
       if (requestExpired(request)) throw new AppError('INVALID_TRANSITION');
       const statusBefore = request.status;
@@ -898,7 +1080,7 @@ export class RfqService {
           ? transition(request.status, 'CANCEL', { actor: 'BUYER_OWNER', reason })
           : transition(request.status, 'ADMIN_CANCEL', { actor: 'ADMIN', reason }),
       );
-      request.cancelReason = reason;
+      request.cancelReason = reason || null;
       if (!owner)
         this.audit(
           em,
@@ -960,11 +1142,13 @@ export class RfqService {
       if (actor.locked) throw forbidden();
       assertVersion(request, version);
       if (admin && request.coordinatorId !== actor.id) throw notFound();
-      const accepted = await em.findOneOrFail(
+      const accepted = await em.findOne(
         CooperativeQuotationEntity,
         { request, status: 'ACCEPTED' },
         { populate: ['request'] },
       );
+      // Nothing accepted yet means the request is not in production: an invalid transition (GH#244).
+      if (!accepted) throw new AppError('INVALID_TRANSITION');
       const allocations = await em.find(
         OrderAllocationEntity,
         { quotation: accepted },
@@ -974,7 +1158,7 @@ export class RfqService {
       request.status = unwrap(
         transition(request.status, 'CONFIRM_DELIVERY', {
           actor: owner ? 'BUYER_OWNER' : 'ADMIN',
-          allocationStatuses: allocations.map((allocation) => allocation.status),
+          allocationStatuses: liveShares(allocations).map((allocation) => allocation.status),
         }),
       );
       if (admin)
@@ -1025,7 +1209,9 @@ export class RfqService {
         { quotation: accepted },
         { populate: ['household'] },
       );
-      const households = new Set(allocations.map((allocation) => allocation.household.id));
+      const households = new Set(
+        liveShares(allocations).map((allocation) => allocation.household.id),
+      );
       let householdId: string | undefined;
       if (actor.role === 'HOUSEHOLD') {
         householdId = (await this.ownHousehold(em, actor, false)).id;
@@ -1034,7 +1220,7 @@ export class RfqService {
       request.status = unwrap(
         transition(request.status, 'START_PRODUCTION', {
           actor: actor.role === 'ADMIN' ? 'ADMIN' : 'ARTISAN',
-          allocationStatuses: allocations.map((allocation) => allocation.status),
+          allocationStatuses: liveShares(allocations).map((allocation) => allocation.status),
           householdCount: households.size,
           actorOwnsSoleAllocation:
             actor.role === 'ADMIN'
@@ -1165,6 +1351,13 @@ export class RfqService {
     if (actor.locked) throw forbidden();
   }
 
+  /** The coordinator of a coordinated request; any admin for a request nobody coordinates (T7 names "Admin"). */
+  private coordinatorOrBoard(actor: Actor, request: QuotationRequest) {
+    if (request.coordinationOptIn) return this.coordinator(actor, request);
+    if (actor.role !== 'ADMIN') throw notFound();
+    if (actor.locked) throw forbidden();
+  }
+
   private async ownHousehold(em: EntityManager, actor: Actor, writing = true) {
     if (writing && actor.locked) throw new AppError('HOUSEHOLD_ACCOUNT_LOCKED');
     const household = await em.findOne(Household, { representative: actor.id });
@@ -1186,6 +1379,113 @@ export class RfqService {
       if (request.invitedHouseholdIds.includes(household.id)) return;
     }
     throw notFound();
+  }
+
+  /** The files attached to a request, in the order the buyer attached them. */
+  private async attachmentsOf(em: EntityManager, requestId: string): Promise<RfqAttachmentDto[]> {
+    const links = await em.find(
+      MediaLink,
+      { targetType: 'RFQ', targetId: requestId, role: 'DOCUMENT' },
+      { populate: ['media'], orderBy: { position: 'asc' } },
+    );
+    return links.map((link) => ({
+      id: link.media.id,
+      mimeType: link.media.mimeType,
+      sizeBytes: link.media.sizeBytes,
+    }));
+  }
+
+  /** Replaces the attachments of a draft with the buyer's own request attachments (FR-RFQ-01). */
+  private async setAttachments(
+    em: EntityManager,
+    actor: Actor,
+    request: QuotationRequest,
+    mediaIds: readonly string[],
+  ) {
+    const current = await em.find(
+      MediaLink,
+      { targetType: 'RFQ', targetId: request.id, role: 'DOCUMENT' },
+      { orderBy: { position: 'asc' } },
+    );
+    if (
+      current.length === mediaIds.length &&
+      current.every((link, index) => link.media.id === mediaIds[index])
+    )
+      return;
+    const assets = mediaIds.length
+      ? await em.find(MediaAsset, {
+          id: { $in: [...mediaIds] },
+          ownerId: actor.id,
+          purpose: 'RFQ_ATTACHMENT',
+          status: 'READY',
+        })
+      : [];
+    if (assets.length !== mediaIds.length)
+      throw new AppError('VALIDATION_FAILED', 'attachments are not available');
+    for (const link of current) em.remove(link);
+    // The unique (target, role, position) key forbids inserting before the old rows are gone.
+    await em.flush();
+    mediaIds.forEach((id, position) => {
+      const asset = assets.find((candidate) => candidate.id === id) as MediaAsset;
+      em.create(MediaLink, {
+        media: asset,
+        targetType: 'RFQ',
+        targetId: request.id,
+        role: 'DOCUMENT',
+        position,
+      });
+    });
+    await em.flush();
+  }
+
+  /**
+   * BR-05: approved households with an unlocked representative that work in the request's category,
+   * best fit first, capped. Capacity comes from the household's declared capacity and its published
+   * products in the category; ratings and response rates do not exist in the model.
+   */
+  private async matchHouseholds(em: EntityManager, request: QuotationRequest): Promise<string[]> {
+    const category = request.category;
+    if (!category) return [];
+    const households = await em.find(Household, {
+      status: 'APPROVED',
+      representative: { status: { $ne: 'LOCKED' } },
+    });
+    if (households.length === 0) return [];
+    const products = await em.find(
+      Product,
+      { status: 'PUBLISHED', category, household: { $in: households.map((h) => h.id) } },
+      { fields: ['household'] },
+    );
+    const published = new Map<string, number>();
+    for (const product of products)
+      published.set(product.household.id, (published.get(product.household.id) ?? 0) + 1);
+    return selectMatchingHouseholds(
+      households.map((household) => ({
+        householdId: household.id,
+        declaredCapacity: household.capacityByCategory?.[category],
+        publishedProducts: published.get(household.id) ?? 0,
+      })),
+    );
+  }
+
+  /** The invited household's active (SUBMITTED) direct quotation on the request, if any. */
+  private activeDirectQuotation(em: EntityManager, request: QuotationRequest, householdId: string) {
+    return em
+      .find(CooperativeQuotationEntity, { request, bidType: 'INDIVIDUAL', status: 'SUBMITTED' })
+      .then((rows) => rows.find((row) => ownsDirectQuotation(row, householdId)) ?? null);
+  }
+
+  /** The household checks an invited, non-coordinated request before it quotes. */
+  private async directQuotingHousehold(
+    em: EntityManager,
+    actor: Actor,
+    request: QuotationRequest,
+    writing = true,
+  ) {
+    const household = await this.ownHousehold(em, actor, writing);
+    if (!request.invitedHouseholdIds.includes(household.id)) throw notFound();
+    if (request.coordinationOptIn) throw new AppError('RFQ_DIRECT_QUOTATION_NOT_ALLOWED');
+    return household;
   }
 
   private async checkHouseholds(em: EntityManager, ids: readonly string[]) {
@@ -1213,8 +1513,18 @@ export class RfqService {
   }
 }
 
+/** A direct quotation has exactly one part: the household that made it. */
+function ownsDirectQuotation(quotation: CooperativeQuotationEntity, householdId: string): boolean {
+  return quotation.bidType === 'INDIVIDUAL' && quotation.parts[0]?.householdId === householdId;
+}
+
+function householdNames(households: readonly Household[]): Map<string, string> {
+  return new Map(households.map((household) => [household.id, household.name]));
+}
+
 function requestFields(input: CreateRfqRequest) {
   return {
+    customRequirements: input.customRequirements || null,
     title: input.title ?? null,
     category: input.category ?? null,
     budgetMinVnd: input.budgetMinVnd ?? null,
@@ -1245,11 +1555,27 @@ function decodeRequestCursor(raw: string): { t: string; id: string } {
   throw new AppError('VALIDATION_MALFORMED_REQUEST', 'cursor is not valid');
 }
 
-function requestExpired(request: QuotationRequest): boolean {
-  return (
-    (request.status === 'SENT' || request.status === 'BIDDING') &&
-    Date.now() >= request.biddingClosesAt.getTime()
+/**
+ * T8 (GH#244): a request nobody quoted expires at its bidding deadline; one with quotations stays open for the
+ * buyer's 7-day accept window after it, the same bound the T3 guard uses.
+ */
+/**
+ * Shares that still count toward the order: a cancelled share and a declined share whose quantity has
+ * been reallocated (GH#246) are history, so they neither block production nor delivery.
+ */
+function liveShares<T extends { status: string; quantity: number }>(
+  allocations: readonly T[],
+): T[] {
+  return allocations.filter(
+    (a) => a.status !== 'CANCELLED' && !(a.status === 'DECLINED' && a.quantity === 0),
   );
+}
+
+function requestExpired(request: QuotationRequest): boolean {
+  const now = new Date();
+  if (request.status === 'SENT') return now.getTime() >= request.biddingClosesAt.getTime();
+  if (request.status === 'BIDDING') return hasAcceptWindowElapsed(now, request.biddingClosesAt);
+  return false;
 }
 
 function quotationStatus(quotation: CooperativeQuotationEntity) {
@@ -1258,7 +1584,10 @@ function quotationStatus(quotation: CooperativeQuotationEntity) {
     : quotation.status;
 }
 
-function toRfqResponse(request: QuotationRequest): RfqResponse {
+function toRfqResponse(
+  request: QuotationRequest,
+  attachments?: readonly RfqAttachmentDto[],
+): RfqResponse {
   return {
     id: request.id,
     version: request.version,
@@ -1278,6 +1607,22 @@ function toRfqResponse(request: QuotationRequest): RfqResponse {
     biddingClosesAt: request.biddingClosesAt.toISOString(),
     invitedHouseholdIds: request.invitedHouseholdIds,
     coordinationOptIn: request.coordinationOptIn,
+    customRequirements: request.customRequirements ?? null,
+    ...(attachments ? { attachments: [...attachments] } : {}),
+  };
+}
+
+function toDirectQuotationDto(quotation: CooperativeQuotationEntity): DirectQuotationDto {
+  const part = quotation.parts[0];
+  return {
+    id: quotation.id,
+    version: quotation.version,
+    status: quotationStatus(quotation),
+    quantity: quotation.quantity,
+    unitPriceVnd: part?.unitPriceVnd ?? 0,
+    totalVnd: quotation.totalVnd,
+    completionDate: part?.completionDate ?? '',
+    note: quotation.note ?? null,
   };
 }
 
@@ -1295,13 +1640,14 @@ function toContributionDto(offer: ContributionOfferEntity): ContributionDto {
 
 function toInternalQuotationDto(
   quotation: CooperativeQuotationEntity,
-  offers: readonly ContributionOfferEntity[],
+  names: ReadonlyMap<string, string>,
 ) {
-  const names = new Map(offers.map((offer) => [offer.household.id, offer.household.name]));
   return {
     id: quotation.id,
     version: quotation.version,
     status: quotationStatus(quotation),
+    bidType: quotation.bidType,
+    note: quotation.note ?? null,
     quantity: quotation.quantity,
     parts: quotation.parts.map((part) => ({
       ...part,
@@ -1316,9 +1662,8 @@ function toInternalQuotationDto(
 
 function toBuyerQuotationDto(
   quotation: CooperativeQuotationEntity,
-  offers: readonly ContributionOfferEntity[],
+  names: ReadonlyMap<string, string>,
 ): BuyerQuotationDto {
-  const names = new Map(offers.map((offer) => [offer.household.id, offer.household.name]));
   const projected = projectBuyerQuotation({
     quantity: quotation.quantity,
     parts: quotation.parts.map((part) => ({
@@ -1334,11 +1679,17 @@ function toBuyerQuotationDto(
     id: quotation.id,
     version: quotation.version,
     status: quotationStatus(quotation),
+    bidType: quotation.bidType,
+    note: quotation.note ?? null,
     ...projected,
-    parts: projected.parts.map((part) => ({
+    parts: projected.parts.map((part, index) => ({
       ...part,
       householdName: names.get(part.householdId) ?? part.householdId,
       completionDate: part.completionDate.toISOString(),
+      // The household bid to the buyer itself, so the buyer compares its price; cooperative rates stay private.
+      ...(quotation.bidType === 'INDIVIDUAL' && quotation.parts[index]
+        ? { unitPriceVnd: quotation.parts[index].unitPriceVnd }
+        : {}),
     })),
   };
 }

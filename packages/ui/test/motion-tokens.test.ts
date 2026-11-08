@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { dur, durMs, ease, spring, stagger, staggerDelay } from '../src/motion/tokens';
 
-// Giá trị chuẩn: docs/BRAND.md §6.2
+// Giá trị chuẩn: docs/design/BRAND.md §6.2
 describe('motion tokens (BRAND §6.2)', () => {
   it('easing', () => {
     expect(ease.clay).toEqual([0.22, 1, 0.36, 1]);

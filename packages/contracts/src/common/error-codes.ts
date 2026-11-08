@@ -9,6 +9,10 @@
  */
 export const ERROR_CATALOG = {
   // --- AUTH: xác thực & phân quyền (FR-AUTH, NFR-SEC-02/04) ---
+  AUTH_INVALID_CREDENTIALS: { status: 401, title: 'Invalid login credentials' },
+  USERNAME_TAKEN: { status: 409, title: 'Username already taken' },
+  USERNAME_RESERVED: { status: 422, title: 'Username reserved for system accounts' },
+  CAPTCHA_FAILED: { status: 400, title: 'Captcha verification failed' },
   AUTH_UNAUTHENTICATED: { status: 401, title: 'Authentication required' },
   AUTH_TOKEN_INVALID: { status: 401, title: 'Invalid access token' },
   AUTH_TOKEN_EXPIRED: { status: 401, title: 'Access token expired' },
@@ -66,6 +70,11 @@ export const ERROR_CATALOG = {
   JOURNAL_PUBLISHED_IMMUTABLE: { status: 409, title: 'Published journal entries are immutable' },
   /** Chuỗi băm đang lưu không còn khớp: từ chối ghi thêm để không che dấu thay đổi. */
   JOURNAL_INTEGRITY_BROKEN: { status: 409, title: 'Journal hash chain is broken' },
+  /** FR-PRD-03: sản phẩm cần ít nhất một mốc nhật ký sản xuất trước khi xuất bản. */
+  PRODUCT_JOURNAL_REQUIRED: {
+    status: 409,
+    title: 'Add a production-log milestone before publishing',
+  },
 
   // --- RFQ: yêu cầu báo giá, chào giá, phân bổ (SRS §4) ---
   /** BR-L3: mỗi hộ tối đa một bid cho mỗi RFQ (sửa = tăng revision). */
@@ -74,6 +83,13 @@ export const ERROR_CATALOG = {
   RFQ_BIDDING_CLOSED: { status: 409, title: 'Bidding is closed' },
   /** BR-02: chỉ hộ APPROVED mới nhận lời mời / chào giá. */
   RFQ_ARTISAN_NOT_ELIGIBLE: { status: 403, title: 'Artisan is not eligible for this RFQ' },
+  /** BR-05: nothing was sent because no household of the category can take the request. */
+  RFQ_NO_MATCHING_HOUSEHOLD: { status: 422, title: 'No household matches this request' },
+  /** The request is coordinated by the village board, so households contribute instead of quoting alone. */
+  RFQ_DIRECT_QUOTATION_NOT_ALLOWED: {
+    status: 409,
+    title: 'Coordinated requests take contributions, not direct quotations',
+  },
   /** SRS §4.1 T3: `quantityOffered` phải bằng `quantity` của RFQ. */
   RFQ_QUANTITY_MISMATCH: { status: 422, title: 'Offered quantity does not match' },
   /** BR-L6: Σ allocation.quantity phải bằng order.quantity. */

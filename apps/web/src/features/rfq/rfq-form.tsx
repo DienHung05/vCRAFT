@@ -14,10 +14,13 @@ import { useRouter } from '@/i18n/navigation';
 import { useAddressSuggestions } from '@/lib/address/use-address-suggestions';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { notify } from '@/lib/notify';
+import { AttachmentsField } from './rfq-attachments';
 import {
   clearStoredDraft,
   EMPTY_RFQ_FORM,
+  type RfqAttachmentValue,
   type RfqFormField,
+  type RfqFormPrefill,
   type RfqFormValues,
   readStoredDraft,
   rfqFormPayload,
@@ -31,29 +34,47 @@ const inputClass = 'w-full rounded-input border border-ink/20 bg-surface px-3 py
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'local' | 'failed';
 
-/** Create form for a quotation request (FR-RFQ-01, 02). `draft` continues a saved server draft. */
+/**
+ * Create form for a quotation request (FR-RFQ-01, 02). `draft` continues a saved server draft;
+ * `prefill` seeds a new form (for example from a product's trace page) and wins over a browser-kept one.
+ */
 export function RfqForm({
   client: provided,
   draft,
+  prefill,
+  upload,
 }: {
   client?: QuotationClient;
   draft?: RfqResponse;
+  prefill?: RfqFormPrefill;
+  /** Sends one attachment; replaced in tests. */
+  upload?: (file: File) => Promise<RfqAttachmentValue>;
 }) {
   const t = useTranslations('rfq.form');
   const { client, loading } = useQuotationClient(provided);
   if (loading) return <FormSkeleton label={t('saving')} />;
   if (!client) return <p className="px-gutter pt-8">{t('signIn')}</p>;
-  return <Form client={client} draft={draft} />;
+  return <Form client={client} draft={draft} prefill={prefill} upload={upload} />;
 }
 
-function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse | undefined }) {
+function Form({
+  client,
+  draft,
+  prefill,
+  upload,
+}: {
+  client: QuotationClient;
+  draft?: RfqResponse | undefined;
+  prefill?: RfqFormPrefill | undefined;
+  upload?: ((file: File) => Promise<RfqAttachmentValue>) | undefined;
+}) {
   const t = useTranslations('rfq.form');
   const categories = useTranslations('catalog.categories');
   const rfq = useTranslations('rfq');
   const common = useTranslations('common');
   const router = useRouter();
   const [values, setValues] = useState<RfqFormValues>(() =>
-    draft ? rfqFormValues(draft) : EMPTY_RFQ_FORM,
+    draft ? rfqFormValues(draft) : { ...EMPTY_RFQ_FORM, ...prefill },
   );
   const destinationListId = useId();
   const destinationSuggestions = useAddressSuggestions(values.destination);
@@ -63,7 +84,10 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
   const [showProblems, setShowProblems] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState<'sendFailed' | 'emailNotVerified' | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [sendError, setSendError] = useState<'sendFailed' | 'emailNotVerified' | 'noMatch' | null>(
+    null,
+  );
   const [households, setHouseholds] = useState<readonly HouseholdSummaryDto[] | null>(null);
   const [householdsFailed, setHouseholdsFailed] = useState(false);
   const saved = useRef<{ id: string; version: number } | null>(
@@ -73,7 +97,7 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
 
   // A new form restores what this browser kept, including the server draft it belongs to.
   useEffect(() => {
-    if (draft) return;
+    if (draft || prefill) return;
     const stored = readStoredDraft();
     if (!stored) return;
     setValues(stored.values);
@@ -89,7 +113,7 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
         }
       })
       .catch(() => clearStoredDraft());
-  }, [client, draft]);
+  }, [client, draft, prefill]);
 
   const saveToServer = useCallback(
     (current: RfqFormValues) => {
@@ -170,14 +194,21 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
       if (!target) throw new Error('draft was not saved');
       const sent = await client.submitRequest(target.id, target.version);
       clearStoredDraft();
-      notify.success(t('sentToast'));
+      // With no chosen household the system matched some: the buyer is told how many (FR-RFQ-03).
+      notify.success(
+        sent.invitedHouseholdIds.length > 0
+          ? t('sentToastMatched', { count: sent.invitedHouseholdIds.length })
+          : t('sentToast'),
+      );
       router.push({ pathname: '/yeu-cau-bao-gia/[code]', params: { code: sent.id } });
     } catch (error) {
       saving.current = Promise.resolve();
       setSendError(
         error instanceof QuotationApiError && error.code === 'AUTH_EMAIL_NOT_VERIFIED'
           ? 'emailNotVerified'
-          : 'sendFailed',
+          : error instanceof QuotationApiError && error.code === 'RFQ_NO_MATCHING_HOUSEHOLD'
+            ? 'noMatch'
+            : 'sendFailed',
       );
     } finally {
       setSending(false);
@@ -262,6 +293,23 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
         />
         {problem('description')}
       </label>
+      <label className="flex flex-col gap-1">
+        {t('customRequirements')}
+        <textarea
+          value={values.customRequirements}
+          rows={3}
+          maxLength={1000}
+          onChange={(event) => set('customRequirements', event.target.value)}
+          className={inputClass}
+        />
+        <span className="text-small text-ash">{t('customRequirementsHint')}</span>
+      </label>
+      <AttachmentsField
+        value={values.attachments}
+        onChange={(next) => set('attachments', next)}
+        onBusyChange={setUploading}
+        {...(upload ? { upload } : {})}
+      />
       <div className="grid gap-5 sm:grid-cols-2">
         <label className="flex flex-col gap-1">
           {t('quantity')}
@@ -370,6 +418,7 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
       {values.coordinate ? null : (
         <fieldset className="flex flex-col gap-2">
           <legend>{t('households')}</legend>
+          <p className="text-small text-ash">{t('householdsMatch')}</p>
           {householdsFailed ? (
             <p role="alert">{t('householdsFailed')}</p>
           ) : households === null ? (
@@ -393,7 +442,6 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
               </label>
             ))
           )}
-          {problem('households')}
         </fieldset>
       )}
       <ConsentCheckbox
@@ -407,7 +455,7 @@ function Form({ client, draft }: { client: QuotationClient; draft?: RfqResponse 
         error={showProblems && !consent ? t('consentRequired') : undefined}
       />
       <div className="flex flex-wrap items-center gap-4">
-        <Button type="submit" disabled={sending}>
+        <Button type="submit" disabled={sending || uploading}>
           {t(sending ? 'sending' : 'send')}
         </Button>
         {status ? (

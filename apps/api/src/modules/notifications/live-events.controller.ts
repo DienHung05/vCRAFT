@@ -8,7 +8,7 @@ import { NotificationsService } from './application/notifications.service';
 /** How often the stream looks for changes, keeps the proxy awake, and hands the client back to reconnect. */
 export const LIVE_CHECK_MS = 3_000;
 export const LIVE_HEARTBEAT_MS = 15_000;
-// The web reaches the API through the Vercel rewrite, which cuts a response after about 30 s (docs/deploy.md
+// The web reaches the API through the Vercel rewrite, which cuts a response after about 30 s (docs/operations/deploy.md
 // §7), so each stream ends just before that and the client reconnects at once: updates still arrive within
 // a few seconds. `LIVE_EVENTS_MAX_MS` raises it where nothing sits in between.
 export const LIVE_MAX_MS = 25_000;

@@ -16,10 +16,10 @@ _Bài tập lớn INT3306 — Phát triển ứng dụng web · Fall 2026_
 
 | Tài liệu                                                     | Nội dung                                                                                                             |
 | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| [docs/SRS.md](docs/SRS.md)                                   | Đặc tả yêu cầu: chức năng theo vai trò, máy trạng thái báo giá, quy tắc khóa, phi chức năng, truy vết tiêu chí chấm  |
+| [docs/requirements/SRS.md](docs/requirements/SRS.md)                                   | Đặc tả yêu cầu: chức năng theo vai trò, máy trạng thái báo giá, quy tắc khóa, phi chức năng, truy vết tiêu chí chấm  |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)                 | Kiến trúc C4, monorepo & luật ranh giới, backend, design patterns, mô hình dữ liệu, bảo mật, frontend, hoạt ảnh, ADR |
 | [docs/PLAN.md](docs/PLAN.md)                                 | Tech stack, phân vai, lộ trình sprint, backlog, kịch bản demo, chuẩn bị vấn đáp, rủi ro                              |
-| [docs/BRAND.md](docs/BRAND.md)                               | Nhận diện thương hiệu: ấn triện, màu, chữ, hoa văn, ngôn ngữ chuyển động, giọng văn                                  |
+| [docs/design/BRAND.md](docs/design/BRAND.md)                               | Nhận diện thương hiệu: ấn triện, màu, chữ, hoa văn, ngôn ngữ chuyển động, giọng văn                                  |
 | [docs/requirements/vCraft.pdf](docs/requirements/vCraft.pdf) | Đề bài gốc                                                                                                           |
 
 ## Cấu trúc monorepo
@@ -39,7 +39,7 @@ packages/
   utils/      Tiện ích tiếng Việt (slug, đọc số, SĐT, địa giới)
 tooling/      tsconfig dùng chung
 tests/        e2e (Playwright), load (k6)
-infra/        compose, docker, caddy, scripts
+infra/        compose, docker, caddy
 docs/         SRS, kiến trúc, kế hoạch, thương hiệu
 ```
 
@@ -120,7 +120,7 @@ MySQL chỉ có hệ migration của MikroORM (không có `supabase/migrations`)
 ### Reverse proxy
 
 - Dev: `infra/caddy/Caddyfile.dev` (HTTP `:8080`, `auto_https off`), `pnpm infra:up` nạp sẵn.
-- Production chính thức: web trên Vercel, API + worker trên Render, không dùng Caddy ([ADR-16](docs/adr/0016-deploy-vercel-render.md), [docs/deploy.md](docs/deploy.md), `render.yaml`). `Caddyfile.prod` dưới đây chỉ còn cho phương án tự host/dự phòng.
+- Production chính thức: web trên Vercel, API + worker trên Render, không dùng Caddy ([ADR-16](docs/adr/0016-deploy-vercel-render.md), [docs/operations/deploy.md](docs/operations/deploy.md), `render.yaml`). `Caddyfile.prod` dưới đây chỉ còn cho phương án tự host/dự phòng.
 - Tự host: `infra/caddy/Caddyfile.prod` dùng `{$DOMAIN}`, bật auto HTTPS, chuyển hướng HTTP sang HTTPS, kèm HSTS. Đặt `DOMAIN`, `API_UPSTREAM`, `WEB_UPSTREAM` rồi chạy `caddy run --config Caddyfile.prod --adapter caddyfile`. Cú pháp đã qua `caddy validate`; việc cấp chứng chỉ thật chưa thử, cần kiểm tra trên máy có tên miền trước khi ra mắt.
 
 ## Quy ước

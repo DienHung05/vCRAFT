@@ -3,7 +3,6 @@ import { Badge } from '@vcraft/ui';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ImageSlot } from '@/components/image-slot';
-import { PhotoCredit } from '@/components/photo-credit';
 import { altFor, photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
 
@@ -55,7 +54,6 @@ export function NewsArticleView({ article }: { article: NewsDetailDto }) {
             )}
             sizes="(min-width: 768px) 40rem, 100vw"
           />
-          <PhotoCredit credit={article.cover.credit} />
         </div>
       ) : null}
       {article.bodyHtml ? (

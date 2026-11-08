@@ -2,8 +2,6 @@ import { buttonVariants, cn, TraceSealFrame, VaseFigure, WaveDivider } from '@vc
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
-import { PhotoCredit } from '@/components/photo-credit';
-import { PhotoCreditsNote } from '@/components/photo-credits-note';
 import { EmptyState } from '@/components/states/empty-state';
 import { HeroVase } from '@/experience/hero-vase/hero-vase';
 import { CountUp } from '@/experience/motion/count-up';
@@ -26,22 +24,12 @@ import {
   tintOf,
 } from '@/features/catalog/view-models';
 import { fetchNews } from '@/features/news/news-api';
-import { fetchMapPins, pinOpenState } from '@/features/village-map/map-model';
+import { fetchMapPins, pinOpenState, pinStatus } from '@/features/village-map/map-model';
 import { VillageMiniMap } from '@/features/village-map/village-mini-map';
 import { Link } from '@/i18n/navigation';
-import type { DemoPhotoRef, LogStage } from '@/lib/demo/data';
+import type { LogStage } from '@/lib/demo/data';
 import { dayPhoto } from '@/lib/demo/stage-photos';
 import { resolveLocale } from '@/lib/locale';
-
-/**
- * Hero photo: a Commons-confirmed Bát Tràng vase (the file name states "Bat Trang ceramic"), the same file as the cover of
- * BT7K2QXM. Drop it and the hand-drawn vase figure takes its place.
- */
-const HERO_PHOTO: DemoPhotoRef | undefined = {
-  id: 'binh-men-lam-xam',
-  alt: 'Bình cổ cao, bụng tròn, men xám lam, đắp nổi cành cây và một người cầm cần câu nhuốm vàng',
-  altKey: 'binh-men-lam-xam',
-};
 
 const DAY_STAGES: readonly { stage: LogStage; tint: string }[] = [
   { stage: 'clay', tint: '#a88d6c' },
@@ -65,6 +53,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
     stages,
     common,
     preset,
+    mapT,
     format,
     householdsResult,
     productsResult,
@@ -76,6 +65,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
     getTranslations('stages'),
     getTranslations('common'),
     getTranslations('presetFigure'),
+    getTranslations('villageMap'),
     getFormatter(),
     fetchHouseholds(),
     fetchProducts({ limit: 1 }),
@@ -96,7 +86,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
   return (
     <>
       <InkCursor />
-      {/* Hero: ảnh tĩnh bình đã ra lò; bản 3D (BRAND §6.3 #1) nạp lười ở experience/hero-vase. */}
+      {/* Hero: the forming, turning 3D vase (BRAND §6.3 #1, experience/hero-vase) over the hand-drawn vase. */}
       <section
         id="home-hero"
         className="mx-auto grid max-w-editorial items-center gap-10 px-gutter pt-12 pb-section md:grid-cols-12 md:pt-20"
@@ -130,21 +120,14 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             alt={t('hero.vaseAlt')}
             tint="#d9c6a6"
             ratio="4/5"
-            photo={HERO_PHOTO}
-            priority
-            // 88vw (not 100vw) so phones at 1.75x pick the 640w file: the box is ~92vw wide.
-            sizes="(min-width: 768px) 40vw, 88vw"
             className="grid place-items-center"
           >
-            {HERO_PHOTO ? null : (
-              <VaseFigure className="h-[72%] drop-shadow-[0_24px_40px_rgb(30_58_110/0.35)]" />
-            )}
-            {/* GH#94: the WebGL vase fades in over the photo on capable desktops; the photo stays the poster. */}
+            {/* GH#215: no photo. The hand-drawn vase is the placeholder and the fallback; on capable
+                desktops the forming, turning WebGL vase (GH#94) cross-fades in over it once its first
+                frame is ready. */}
+            <VaseFigure className="h-[72%] drop-shadow-[0_24px_40px_rgb(30_58_110/0.35)]" />
             <HeroVase sectionId="home-hero" />
           </ImageSlot>
-          {HERO_PHOTO ? (
-            <PhotoCredit id={HERO_PHOTO.id} className="mt-1.5 text-right text-[0.75rem] text-ash" />
-          ) : null}
           {showcase ? (
             <div className="absolute -bottom-6 -left-4 hidden rotate-[-4deg] rounded-card bg-paper p-3 shadow-warm sm:block">
               <TraceSealFrame code={showcase.traceCode} size={112} title={t('hero.sealAlt')}>
@@ -165,15 +148,20 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
           </h2>
           <p className="mt-3 max-w-prose-vn text-ash">{t('day.lead')}</p>
         </div>
-        {/* GH#95: on wide screens with motion allowed the strip becomes a pinned horizontal scroll story. */}
+        {/* GH#210: on wide screens with motion allowed the strip becomes a pinned story, one stage at a time. */}
         <DayStory
           labelledBy="day-title"
+          stageNames={DAY_STAGES.map(({ stage }) => stages(`${stage}.name`))}
           // No `scroll-smooth` here: with mandatory snap it makes Chrome report no LCP at all (NO_LCP in Lighthouse).
           className="mt-10 snap-x snap-mandatory overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glaze"
         >
-          <ol className="flex w-max gap-5 px-gutter pb-4">
+          <ol className="day-stages flex w-max gap-5 px-gutter pb-4">
             {DAY_STAGES.map(({ stage, tint }, i) => (
-              <li key={stage} className="w-[78vw] max-w-sm shrink-0 snap-start sm:w-80">
+              <li
+                key={stage}
+                data-day-stage={stage}
+                className="w-[78vw] max-w-sm shrink-0 snap-start sm:w-80"
+              >
                 <ImageSlot
                   alt={stages(`${stage}.name`)}
                   tint={tint}
@@ -191,7 +179,6 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             ))}
           </ol>
         </DayStory>
-        <PhotoCreditsNote className="mx-auto mt-4 max-w-editorial px-gutter text-[0.75rem] leading-snug text-ash" />
       </section>
 
       {/* Nghệ nhân nổi bật: chân dung lớn, bố cục lệch kiểu tạp chí. */}
@@ -253,7 +240,6 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             })}
           </ul>
         )}
-        <PhotoCreditsNote />
       </section>
 
       {/* Bản đồ thu nhỏ "đang mở cửa" + số liệu làng. */}
@@ -308,6 +294,15 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
                 ...(positions.get(pin.workshopId) ?? { x: 50, y: 50 }),
                 open: pinOpenState(pin, now).open,
                 label: pin.household.name,
+                card: {
+                  title: pin.household.name,
+                  lines: [pin.workshopName, pin.address],
+                  status: pinStatus(pin, now),
+                  link: {
+                    href: { pathname: '/nghe-nhan/[slug]', params: { slug: pin.household.slug } },
+                    label: mapT('viewHousehold'),
+                  },
+                },
               }))}
             />
           </div>
@@ -374,7 +369,6 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
                       ),
                     )}
                   />
-                  <PhotoCredit credit={n.cover?.credit} />
                 </div>
                 <time dateTime={n.publishedAt} className="text-small text-ash">
                   {format.dateTime(new Date(n.publishedAt), 'long')}

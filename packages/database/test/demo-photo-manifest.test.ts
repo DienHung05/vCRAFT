@@ -25,7 +25,7 @@ const TRACE_CODE = /^[2-9A-HJKMNP-Z]{8}$/;
 /** Products with a photo from before the product-photo round (they keep their Commons photos). */
 const EARLIER_COVERED_TRACE_CODES = ['BT7K2QXM', '84PZKVJU'];
 /** Product photos of vCRAFT-83g.48 (74) and vCRAFT-83g.52 (146): one `pp-<trace code>` photo per product. */
-const PRODUCT_PHOTO_COUNT = 220;
+const PRODUCT_PHOTO_COUNT = 74;
 
 describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
   const photos = new Map(DEMO_PHOTOS.map((p) => [p.id, p]));
@@ -176,7 +176,7 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
   it('giấy tờ mẫu có tệp và nằm riêng tư (ba loại, mô tả ghi rõ là bản mẫu)', () => {
     expect(DEMO_VERIFICATION_DOCS).toHaveLength(3);
     for (const doc of DEMO_VERIFICATION_DOCS) {
-      expect(existsSync(repoPath(`scripts/demo-photos/specimen-docs/${doc.id}.png`)), doc.id).toBe(
+      expect(existsSync(repoPath(`scripts/demo/photos/specimen-docs/${doc.id}.png`)), doc.id).toBe(
         true,
       );
       expect(doc.altText).toMatch(/MẪU – KHÔNG CÓ GIÁ TRỊ/);

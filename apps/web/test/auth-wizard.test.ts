@@ -56,21 +56,21 @@ const messageOf = (result: { success: boolean; error?: { issues: { message: stri
   result.error?.issues.map((issue) => issue.message);
 
 describe('luật kiểm tra form tài khoản (khóa i18n, không phải câu chữ)', () => {
-  it('email bắt buộc và đúng dạng', () => {
-    expect(messageOf(signInSchema.safeParse({ email: '', password: 'x' }))).toContain(
-      'emailRequired',
-    );
+  it('requires a username or email for sign-in', () => {
     expect(
-      messageOf(signInSchema.safeParse({ email: 'khong-phai-email', password: 'x' })),
-    ).toContain('emailInvalid');
+      messageOf(signInSchema.safeParse({ identifier: '', password: 'password123' })),
+    ).toContain('identifierRequired');
+    expect(
+      signInSchema.safeParse({ identifier: 'pottery.buyer', password: 'password123' }).success,
+    ).toBe(true);
   });
 
   it('đăng nhập không áp luật độ mạnh: mật khẩu cũ ngắn vẫn nhập được', () => {
-    expect(signInSchema.safeParse({ email: 'a@b.vn', password: '123' }).success).toBe(true);
+    expect(signInSchema.safeParse({ identifier: 'a@b.vn', password: '123' }).success).toBe(true);
   });
 
   it('đăng ký: tối thiểu 8 ký tự và có cả chữ lẫn số', () => {
-    const base = { email: 'a@b.vn', consent: true };
+    const base = { username: 'pottery.buyer', email: 'a@b.vn', consent: true };
     expect(messageOf(registerSchema.safeParse({ ...base, password: 'abc1' }))).toContain(
       'passwordShort',
     );
@@ -84,7 +84,7 @@ describe('luật kiểm tra form tài khoản (khóa i18n, không phải câu ch
   });
 
   it('đăng ký: bắt buộc đồng ý chính sách quyền riêng tư', () => {
-    const values = { email: 'a@b.vn', password: 'matkhau2026' };
+    const values = { username: 'pottery.buyer', email: 'a@b.vn', password: 'password123' };
     expect(messageOf(registerSchema.safeParse({ ...values, consent: false }))).toContain(
       'consentRequired',
     );

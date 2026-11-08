@@ -115,6 +115,10 @@ export function createAccountClient(options: AccountClientOptions) {
     loginEvents() {
       return request('/me/login-events', LoginEventListSchema);
     },
+    /** Signs every other device out; the session making the call stays. Returns the refreshed history. */
+    signOutOtherSessions() {
+      return request('/me/sessions/sign-out-others', LoginEventListSchema, { method: 'POST' });
+    },
     getMyHousehold() {
       return request('/me/household', HouseholdResponseSchema);
     },

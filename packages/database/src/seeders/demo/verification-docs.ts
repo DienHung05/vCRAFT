@@ -1,7 +1,7 @@
 /**
- * Giấy tờ xác minh MẪU của hộ chờ duyệt (Gốm Bảo Châu): ảnh vẽ cục bộ bằng `scripts/demo-photos/make-specimen-docs.mjs`,
+ * Giấy tờ xác minh MẪU của hộ chờ duyệt (Gốm Bảo Châu): ảnh vẽ cục bộ bằng `scripts/demo/photos/make-specimen-docs.mjs`,
  * đóng dấu chéo "MẪU – KHÔNG CÓ GIÁ TRỊ", toàn số liệu giả. KHÔNG BAO GIỜ dùng giấy tờ thật của người thật làm dữ liệu mẫu.
- * Tệp nằm ở `scripts/demo-photos/specimen-docs/<id>.png` và được tải lên bucket riêng tư bằng `pnpm demo:media`.
+ * Tệp nằm ở `scripts/demo/photos/specimen-docs/<id>.png` và được tải lên bucket riêng tư bằng `pnpm demo:media`.
  */
 export interface DemoVerificationDoc {
   id: string;

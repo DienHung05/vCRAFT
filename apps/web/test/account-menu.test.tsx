@@ -29,6 +29,7 @@ function me(overrides: Partial<MeDto>): MeDto {
   return {
     id: '00000000-0000-4000-8000-000000000001',
     email: 'a@b.vn',
+    username: 'pottery.buyer',
     fullName: null,
     role: 'BUYER',
     status: 'ACTIVE',

@@ -10,8 +10,9 @@ export const AcceptQuotationRequestSchema = z.strictObject({
 export type AcceptQuotationRequest = z.infer<typeof AcceptQuotationRequestSchema>;
 
 /** GH#11: admin hủy đơn sau sản xuất. Lý do bắt buộc (guard T6/T7 reasonProvided). */
+/** `reason` may be left out only when cancelling a draft (FR-RFQ-09); the API asks for it in every other state. */
 export const CancelOrderRequestSchema = z.strictObject({
-  reason: z.string().trim().min(1, 'Hãy ghi lý do').max(500),
+  reason: z.string().trim().max(500).optional(),
 });
 export type CancelOrderRequest = z.infer<typeof CancelOrderRequestSchema>;
 

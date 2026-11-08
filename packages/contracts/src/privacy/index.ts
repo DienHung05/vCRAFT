@@ -70,6 +70,7 @@ export const DataExportSchema = z.strictObject({
   account: z.strictObject({
     id: IdSchema,
     email: z.string(),
+    username: z.string().nullable().default(null),
     fullName: z.string().nullable(),
     role: z.string(),
     status: z.string(),
@@ -89,6 +90,8 @@ export const DataExportSchema = z.strictObject({
   quotationRequests: z.array(ExportRowSchema),
   /** The household's own offers to quotation requests. */
   contributions: z.array(ExportRowSchema),
+  /** The household's own quotations on requests nobody coordinates (FR-RFQ-04). */
+  directQuotations: z.array(ExportRowSchema).default([]),
   /** The household's own order allocations. */
   allocations: z.array(ExportRowSchema),
   notifications: z.array(ExportRowSchema),

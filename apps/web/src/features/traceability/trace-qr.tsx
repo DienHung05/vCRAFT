@@ -2,6 +2,15 @@
 
 import { useEffect, useRef } from 'react';
 
+/** Brand mark drawn in the centre of every QR (FR-TRC-02); error correction H keeps the code readable. */
+export const QR_LOGO_URL = '/brand/icon-512.png';
+export const QR_LOGO_OPTIONS = {
+  margin: 4,
+  hideBackgroundDots: true,
+  imageSize: 0.3,
+  crossOrigin: 'anonymous',
+} as const;
+
 export interface TraceQrProps {
   /** URL ngắn mã hóa trong QR (FR-TRC-02: `https://<domain>/q/<code>`). */
   url: string;
@@ -28,6 +37,8 @@ export function TraceQr({ url, size }: TraceQrProps) {
         height: size,
         type: 'svg',
         data: url,
+        image: QR_LOGO_URL,
+        imageOptions: QR_LOGO_OPTIONS,
         margin: 0,
         qrOptions: { errorCorrectionLevel: 'H' },
         dotsOptions: { type: 'rounded', color: ink },

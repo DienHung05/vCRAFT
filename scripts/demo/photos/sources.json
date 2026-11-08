@@ -1,0 +1,1113 @@
+{
+  "note": "Nguồn ảnh minh hoạ trình diễn. Chạy `node scripts/demo/photos/build.mjs` để xử lý.",
+  "widths": [640, 1280],
+  "photos": [
+    {
+      "id": "binh-men-lam-xam",
+      "position": "centre",
+      "file": "Vase, Bat Trang ceramic with blue glaze - Nguyen dynasty, 19th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05325.JPG",
+      "ratio": "4/5",
+      "author": "Daderot",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "ban-xoay-xuong",
+      "file": "Bát Tràng, studio.jpg",
+      "ratio": "3/2",
+      "author": "Charles Haynes",
+      "license": "CC BY-SA 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+    },
+    {
+      "id": "ban-tay-vuot-gom",
+      "file": "Bat-Trang-Ceramic-Village8.jpg",
+      "ratio": "3/4",
+      "author": "Steven C. Price",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "binh-hoa-lam",
+      "file": "Gom Bat Trang-Lo hoa.jpeg",
+      "ratio": "1/1",
+      "author": "Lưu Ly",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "khuon-phoi-san",
+      "file": "Bát Tràng, molded ware.jpg",
+      "ratio": "3/2",
+      "author": "Charles Haynes",
+      "license": "CC BY-SA 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+    },
+    {
+      "id": "than-phoi-tuong",
+      "file": "Bát Tràng, tường than.JPG",
+      "ratio": "3/4",
+      "author": "Greenknight dv",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "khuon-binh-lon",
+      "file": "Bát Tràng, big molds.jpg",
+      "ratio": "3/2",
+      "author": "Charles Haynes",
+      "license": "CC BY-SA 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/"
+    },
+    {
+      "id": "chan-dung-minh-hai",
+      "file": "Bat-Trang-Ceramic-Village11.jpg",
+      "ratio": "3/4",
+      "author": "Steven C. Price",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "chan-dung-lam-ngoc",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2723.JPG",
+      "ratio": "3/4",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "chan-dung-duc-phat",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2733.JPG",
+      "ratio": "3/4",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "chan-dung-hanh-thuy",
+      "file": "Bat-Trang-Ceramic-Village10.jpg",
+      "ratio": "3/4",
+      "author": "Steven C. Price",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "position": "right"
+    },
+    {
+      "id": "bia-lam-ngoc",
+      "file": "Bình vôi (lime container) 3.JPG",
+      "ratio": "16/9",
+      "author": "Hungda",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "bia-duc-phat",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2736.JPG",
+      "ratio": "16/9",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "bia-hanh-thuy",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2647.JPG",
+      "ratio": "16/9",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "ln-hu-men-ngoc",
+      "file": "Bình vôi (lime container) 6.JPG",
+      "ratio": "1/1",
+      "author": "Hungda",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "ln-am-men-xanh",
+      "file": "Bình vôi (lime container) 1.JPG",
+      "ratio": "3/4",
+      "author": "Hungda",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "ln-bo-am-quai-ran",
+      "file": "Bình vôi (lime container) 4.JPG",
+      "ratio": "3/2",
+      "author": "Hungda",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "dp-chau-nau",
+      "file": "Porcelana vendejo en vilaĝo Bát Tràng (Vjetnamio) 03.jpg",
+      "ratio": "3/2",
+      "author": "RG72",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "dp-chau-dat-nung",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2649.JPG",
+      "ratio": "1/1",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "dp-chum-cam",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2665.JPG",
+      "ratio": "3/4",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "day-clay",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2711.JPG",
+      "ratio": "3/4",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "day-dry",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2734.JPG",
+      "ratio": "3/4",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "day-paint",
+      "file": "Bat-Trang-Ceramic-Village3.jpg",
+      "ratio": "3/4",
+      "author": "Steven C. Price",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "position": "right"
+    },
+    {
+      "id": "day-fire",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2741.JPG",
+      "ratio": "3/4",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "day-finish",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2676.JPG",
+      "ratio": "3/4",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "news-dat-set",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2699.JPG",
+      "ratio": "3/2",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "ong-gom-lam-may",
+      "file": "Tube for papers, Bat Trang ceramic - Nguyen dynasty, 19th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05329.JPG",
+      "ratio": "3/4",
+      "region": [0, 0.045, 1, 0.911],
+      "position": "centre",
+      "author": "Daderot",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-fwmhfyfk",
+      "url": "https://openaccess-cdn.clevelandart.org/1953.15/1953.15_print.jpg",
+      "title": "Lotus-Seed Bowl with Petals and Arabesques",
+      "sourceUrl": "https://clevelandart.org/art/1953.15",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-p6p8hrj7",
+      "file": "Bowl with Chrysanthemum Spray, Floral Scrolls, and Lotus Petals LACMA M.84.213.215.jpg",
+      "bucketOnly": true,
+      "author": "Los Angeles County Museum of Art",
+      "license": "Public domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/"
+    },
+    {
+      "id": "pp-nd73b6vb",
+      "file": "Covered vase, white glaze ceramic with cobalt blue patterns - Early Le dynasty, 15th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05378.JPG",
+      "bucketOnly": true,
+      "author": "Daderot",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-57rbnwya",
+      "url": "https://openaccess-cdn.clevelandart.org/1957.66/1957.66_print.jpg",
+      "title": "Sunflower Bowl",
+      "sourceUrl": "https://clevelandart.org/art/1957.66",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-cppt2uxg",
+      "file": "Bowl, crackled ivory white glaze ceramic - Lý dynasty, 11th-12th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05393.JPG",
+      "bucketOnly": true,
+      "author": "Daderot",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-jhnp32yg",
+      "url": "https://openaccess-cdn.clevelandart.org/1921.626/1921.626_print.jpg",
+      "title": "Crackle-glazed Bowl",
+      "sourceUrl": "https://clevelandart.org/art/1921.626",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-4dxr7bu5",
+      "file": "Xixia Museum brown-glazed alms bowl with floral design.jpg",
+      "bucketOnly": true,
+      "author": "BabelStone",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "pp-rg8b5md7",
+      "file": "Bowl, China, Song dynasty, 960-1279 AD, stoneware - Östasiatiska museet, Stockholm - DSC09640.JPG",
+      "bucketOnly": true,
+      "author": "Daderot",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-3m5dk2fe",
+      "url": "https://openaccess-cdn.clevelandart.org/1942.126/1942.126_print.jpg",
+      "title": "Tea Bowl: Jian ware",
+      "sourceUrl": "https://clevelandart.org/art/1942.126",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-6ymrb5r4",
+      "url": "https://openaccess-cdn.clevelandart.org/1942.132/1942.132_print.jpg",
+      "title": "Tea Bowl:  Jian Ware",
+      "sourceUrl": "https://clevelandart.org/art/1942.132",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-k67nbxxv",
+      "url": "https://openaccess-cdn.clevelandart.org/1923.53/1923.53_print.jpg",
+      "title": "Tea Bowl",
+      "sourceUrl": "https://clevelandart.org/art/1923.53",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-6dugkgkb",
+      "url": "https://openaccess-cdn.clevelandart.org/1928.179/1928.179_print.jpg",
+      "title": "Wine Ewer with Incised Bamboo Shoot Design",
+      "sourceUrl": "https://clevelandart.org/art/1928.179",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-e7nm6tnw",
+      "url": "https://openaccess-cdn.clevelandart.org/1928.173/1928.173_print.jpg",
+      "title": "Melon-shaped Wine Ewer",
+      "sourceUrl": "https://clevelandart.org/art/1928.173",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-fjrgtt8v",
+      "url": "https://openaccess-cdn.clevelandart.org/1921.631/1921.631_print.jpg",
+      "title": "Water Ewer for Rituals (Kundika) with Incised Parrot Design",
+      "sourceUrl": "https://clevelandart.org/art/1921.631",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-vfekccuh",
+      "file": "Ewer, Ly-Tran dynasty, 11th-14th century AD, brown and celadon glazed ceramic - National Museum of Vietnamese History - Hanoi, Vietnam - DSC05514.JPG",
+      "bucketOnly": true,
+      "author": "Daderot",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-db8a2j9j",
+      "file": "Blue and white Chu Dau jar NMVH EDAV.jpg",
+      "bucketOnly": true,
+      "author": "Marie-Lan Nguyen",
+      "license": "Public domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/"
+    },
+    {
+      "id": "pp-4hk89785",
+      "file": "20241025 Blue Glazed Vase with Coiling Dragon Design, Jiajing Reign of Ming Dynasty.jpg",
+      "bucketOnly": true,
+      "author": "Windmemories",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "pp-86esm7my",
+      "file": "20250809 Gongyi Museum - Blue Glazed Vase with Dancing Lions Design.jpg",
+      "bucketOnly": true,
+      "author": "Windmemories",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "pp-gp2tph8h",
+      "url": "https://openaccess-cdn.clevelandart.org/1942.727/1942.727_print.jpg",
+      "title": "Pear-Shaped Vase",
+      "sourceUrl": "https://clevelandart.org/art/1942.727",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-pedznfsz",
+      "url": "https://openaccess-cdn.clevelandart.org/1942.705.1/1942.705.1_print.jpg",
+      "title": "Bottle Vase",
+      "sourceUrl": "https://clevelandart.org/art/1942.705.1",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-32z7mp7e",
+      "url": "https://openaccess-cdn.clevelandart.org/1917.382/1917.382_print.jpg",
+      "title": "Bottle Vase: Ding ware",
+      "sourceUrl": "https://clevelandart.org/art/1917.382",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-b5pn4z5k",
+      "url": "https://openaccess-cdn.clevelandart.org/2022.205/2022.205_print.jpg",
+      "title": "Flower Vase with Chrysanthemums",
+      "sourceUrl": "https://clevelandart.org/art/2022.205",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-344c464m",
+      "url": "https://cdn.pixabay.com/photo/2020/07/22/08/05/cactus-5428374_1280.jpg",
+      "title": "Caudiciform succulent in a ceramic pot (Pixabay 5428374)",
+      "sourceUrl": "https://pixabay.com/photos/cactus-succulent-plant-vase-5428374/",
+      "bucketOnly": true,
+      "author": "yellow_bird",
+      "license": "Pixabay Content License",
+      "licenseUrl": "https://pixabay.com/service/license-summary/"
+    },
+    {
+      "id": "pp-5fz2qsgn",
+      "file": "Glazed Flowerpot.jpg",
+      "region": [0, 0, 1, 0.82],
+      "bucketOnly": true,
+      "author": "Oser Pottery (Missouri Historical Society)",
+      "license": "Public domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/"
+    },
+    {
+      "id": "pp-5g36nhe6",
+      "url": "https://openaccess-cdn.clevelandart.org/2022.144.1/2022.144.1_print.jpg",
+      "title": "Cup from Tea Cups with Dragons",
+      "sourceUrl": "https://clevelandart.org/art/2022.144.1",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-5t4byzy6",
+      "url": "https://openaccess-cdn.clevelandart.org/2022.171.6/2022.171.6_print.jpg",
+      "title": "Teacup from Tea Set with Chinese Landscape",
+      "sourceUrl": "https://clevelandart.org/art/2022.171.6",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-a22a7wac",
+      "url": "https://openaccess-cdn.clevelandart.org/2022.170.2/2022.170.2_print.jpg",
+      "title": "Teacup from Tea Set with Orchids",
+      "sourceUrl": "https://clevelandart.org/art/2022.170.2",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-g5bmby7p",
+      "file": "Achthoekige kop met bloemranken in vakdecoratie, AK-RBK-15326-B-1.jpg",
+      "bucketOnly": true,
+      "author": "Rijksmuseum",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-3ggterzz",
+      "file": "Teacup impressed with chrysanthemum decoration in white glaze.tif",
+      "bucketOnly": true,
+      "author": "National Palace Museum, Taipei",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    {
+      "id": "pp-5d23ek6n",
+      "url": "https://openaccess-cdn.clevelandart.org/1980.185.a/1980.185.a_print.jpg",
+      "title": "Cup and Stand (Cup)",
+      "sourceUrl": "https://clevelandart.org/art/1980.185.a",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-6yr6jysv",
+      "url": "https://openaccess-cdn.clevelandart.org/1980.185/1980.185_print.jpg",
+      "title": "Cup and Stand",
+      "sourceUrl": "https://clevelandart.org/art/1980.185",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-df6p3wze",
+      "file": "A white mug sits on open books beside a window.jpg",
+      "bucketOnly": true,
+      "author": "Nenad Stojković (Shixart1985)",
+      "license": "CC BY 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/"
+    },
+    {
+      "id": "pp-9k2w6ryb",
+      "url": "https://openaccess-cdn.clevelandart.org/1972.191/1972.191_print.jpg",
+      "title": "Chinoiserie Mug",
+      "sourceUrl": "https://clevelandart.org/art/1972.191",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-j657spfa",
+      "file": "WLA vanda Mug with rice grain pattern.jpg",
+      "region": [0, 0, 1, 0.93],
+      "bucketOnly": true,
+      "author": "veronikab (Wikipedia Loves Art participant)",
+      "license": "CC BY 2.5",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.5/"
+    },
+    {
+      "id": "pp-jr7m5cwp",
+      "file": "Mug (AM 614973-1).jpg",
+      "region": [0, 0, 1, 0.83],
+      "bucketOnly": true,
+      "author": "Auckland War Memorial Museum",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    {
+      "id": "pp-422ecp7g",
+      "url": "https://openaccess-cdn.clevelandart.org/2023.42/2023.42_print.jpg",
+      "title": "Small Dish (Kozara) with Fireworks",
+      "sourceUrl": "https://clevelandart.org/art/2023.42",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-52tb37xt",
+      "file": "Small dish shaped like three pots with dewdrop design, Nabeshima ware, Edo period, 1600s AD, porcelain, cobalt glaze - Tokyo National Museum - Tokyo, Japan - DSC09504.jpg",
+      "bucketOnly": true,
+      "author": "Daderot",
+      "license": "Public domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/"
+    },
+    {
+      "id": "pp-dpus5949",
+      "url": "https://openaccess-cdn.clevelandart.org/1964.505/1964.505_print.jpg",
+      "title": "Cup and Saucer (Tasse et soucoupe)",
+      "sourceUrl": "https://clevelandart.org/art/1964.505",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-jqfh8tgr",
+      "url": "https://openaccess-cdn.clevelandart.org/1972.189.b/1972.189.b_print.jpg",
+      "title": "Saucer",
+      "sourceUrl": "https://clevelandart.org/art/1972.189.b",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-9tsrxd9d",
+      "file": "2024.01.21 Rosenthal White Porcelain Louise XIV Plate.jpg",
+      "bucketOnly": true,
+      "author": "Dina Panayotis",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "pp-e8uzvyg4",
+      "url": "https://openaccess-cdn.clevelandart.org/1921.644/1921.644_print.jpg",
+      "title": "Dish with Incised Scroll Design",
+      "sourceUrl": "https://clevelandart.org/art/1921.644",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-362hsd3h",
+      "url": "https://openaccess-cdn.clevelandart.org/2020.196/2020.196_print.jpg",
+      "title": "Large Dish with Landscape",
+      "sourceUrl": "https://clevelandart.org/art/2020.196",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-aftavv92",
+      "file": "20241025 Blue and White Porcelain Plate, Qianlong Reign of Qing Dynasty.jpg",
+      "bucketOnly": true,
+      "author": "Windmemories",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "pp-mf52jtdn",
+      "file": "20241025 Blue and White Porcelain Plate of Yongle Reign, Ming Dynasty.jpg",
+      "bucketOnly": true,
+      "author": "Windmemories",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "pp-v5d6n6z3",
+      "file": "20241025 Blue and White Porcelain Plate with Interlocking Lotus Design and Yongle Reign Mark, Ming Dynasty.jpg",
+      "region": [0, 0, 1, 0.92],
+      "bucketOnly": true,
+      "author": "Windmemories",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "pp-y4rh3t7g",
+      "file": "20241018 Blue and White Porcelain Plate with Lotuses Design, Xuande Reign of Ming Dynasty 01.jpg",
+      "bucketOnly": true,
+      "author": "Windmemories",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "pp-3z5a5a8n",
+      "url": "https://openaccess-cdn.clevelandart.org/1989.259/1989.259_print.jpg",
+      "title": "Small Dish with Flowers",
+      "sourceUrl": "https://clevelandart.org/art/1989.259",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-a7j3y9me",
+      "file": "Jarlet with Cursive Floral Scroll LACMA M.84.213.226.jpg",
+      "bucketOnly": true,
+      "author": "Los Angeles County Museum of Art",
+      "license": "Public domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/"
+    },
+    {
+      "id": "pp-e2vqydj2",
+      "file": "National Museum Vietnamese History 29 (cropped).jpg",
+      "bucketOnly": true,
+      "author": "Gryffindor (derivative of National Museum Vietnamese History 29.jpg)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "pp-ey3x2ykq",
+      "file": "Storage jar with lotus and wave motifs, Thang Long citadel, Hanoi, Tran to Le So dynasty, 14th-15th century AD, pattern brown glazed ceramic - National Museum of Vietnamese History - Hanoi, Vietnam - DSC05503.JPG",
+      "region": [0, 0, 1, 0.84],
+      "bucketOnly": true,
+      "author": "Daderot",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-2vdawxnx",
+      "file": "Pot, Bien Hoa ceramic, brown glaze - Nguyen dynasty, 19th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05300.JPG",
+      "bucketOnly": true,
+      "author": "Daderot",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-bu4ymz85",
+      "file": "Jar LACMA M.84.213.256.jpg",
+      "bucketOnly": true,
+      "author": "Los Angeles County Museum of Art",
+      "license": "Public domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/"
+    },
+    {
+      "id": "pp-5ma8ha8g",
+      "file": "20260520 Brown-Glazed Vase with Carved Peony Patterns.jpg",
+      "bucketOnly": true,
+      "author": "Windmemories",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "pp-bgzyypnt",
+      "url": "https://openaccess-cdn.clevelandart.org/1919.655/1919.655_print.jpg",
+      "title": "Vase with Floral Design",
+      "sourceUrl": "https://clevelandart.org/art/1919.655",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-5nx28yma",
+      "file": "Vase (USA), 1900 (CH 18457571).jpg",
+      "bucketOnly": true,
+      "author": "Rookwood Pottery (Cooper Hewitt, Smithsonian Design Museum)",
+      "license": "Public domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/"
+    },
+    {
+      "id": "pp-a2sbgf7h",
+      "url": "https://openaccess-cdn.clevelandart.org/1969.66/1969.66_print.jpg",
+      "title": "Incense Burner: Jizhou ware",
+      "sourceUrl": "https://clevelandart.org/art/1969.66",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-bs4mgesk",
+      "file": "Jokei IncenseBurner pre1635 20180824 NationalmuseumTokio 1.jpg",
+      "bucketOnly": true,
+      "author": "Zenwort (object by Jōkei)",
+      "license": "Public domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/"
+    },
+    {
+      "id": "pp-3zmybv5u",
+      "file": "20241025 Greyish Blue Glazed Porcelain Square Vase, Qianlong Reign of Qing Dynasty.jpg",
+      "bucketOnly": true,
+      "author": "Windmemories",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "pp-agkgpseg",
+      "file": "20260520 Sky Blue Glazed Porcelain Vase with Petal Mouth, Jun Kiln.jpg",
+      "bucketOnly": true,
+      "author": "Windmemories",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "pp-amf85x49",
+      "url": "https://openaccess-cdn.clevelandart.org/1989.307/1989.307_print.jpg",
+      "title": "Brush Pot with Landscape",
+      "sourceUrl": "https://clevelandart.org/art/1989.307",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-bnux83x4",
+      "url": "https://openaccess-cdn.clevelandart.org/1964.179/1964.179_print.jpg",
+      "title": "Brush Pot with Episode from Life on Sima Guang",
+      "sourceUrl": "https://clevelandart.org/art/1964.179",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-hqqgrf67",
+      "file": "Brush holder, early 18th century, Chinese, hard-paste porcelain, Honolulu Museum of Art.JPG",
+      "bucketOnly": true,
+      "author": "Hiart",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-u39kntt8",
+      "file": "Brush holder with Dutchmen, Japan, Arita ware, late 18th to early 19th century, underglaze blue on porcelain - Östasiatiska museet, Stockholm - DSC09171.JPG",
+      "bucketOnly": true,
+      "author": "Daderot",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-4nqzd98g",
+      "url": "https://openaccess-cdn.clevelandart.org/1928.175/1928.175_print.jpg",
+      "title": "Bowl with Flowering Vines Design in Relief",
+      "sourceUrl": "https://clevelandart.org/art/1928.175",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-75aczu2w",
+      "url": "https://openaccess-cdn.clevelandart.org/2025.179/2025.179_print.jpg",
+      "title": "Celadon Bowl",
+      "sourceUrl": "https://clevelandart.org/art/2025.179",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-78dwbkhw",
+      "url": "https://openaccess-cdn.clevelandart.org/2020.181/2020.181_print.jpg",
+      "title": "Bowl with Carved Lotus Design",
+      "sourceUrl": "https://clevelandart.org/art/2020.181",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-cef77ydk",
+      "url": "https://openaccess-cdn.clevelandart.org/1942.721/1942.721_print.jpg",
+      "title": "Bowl with Lotus Petal Design in Relief",
+      "sourceUrl": "https://clevelandart.org/art/1942.721",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-y9mp5ajq",
+      "url": "https://openaccess-cdn.clevelandart.org/1930.308/1930.308_print.jpg",
+      "title": "Bowl",
+      "sourceUrl": "https://clevelandart.org/art/1930.308",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-87zfuqmm",
+      "file": "Klokvormige kom met bloemranken, AK-RAK-1971-7.jpg",
+      "bucketOnly": true,
+      "author": "Rijksmuseum",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-ha8cys37",
+      "url": "https://openaccess-cdn.clevelandart.org/2022.154/2022.154_print.jpg",
+      "title": "Sweets Bowl with Egrets and Willow in Snow",
+      "sourceUrl": "https://clevelandart.org/art/2022.154",
+      "bucketOnly": true,
+      "author": "Cleveland Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-hbfm9jqu",
+      "file": "Blue and white bowl Jingdezhen Ming Yongle 1403 1424.jpg",
+      "bucketOnly": true,
+      "author": "World Imaging",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "pp-j26na3d8",
+      "file": "Blue and White Bowl from a Shipwreck, Jingdezhen, Qing, c. 1750 (9847366343).jpg",
+      "bucketOnly": true,
+      "author": "Gary Todd",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-8j6uyuxr",
+      "file": "Tureen, celadon glaze ceramic - Lý dynasty, 11th-12th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05384.JPG",
+      "bucketOnly": true,
+      "author": "Daderot",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp-b2mbkja9",
+      "file": "Vietnam 14th C - Celadon jar Museum of Asian Civilisation.jpg",
+      "bucketOnly": true,
+      "author": "Asian Civilisations Museum, Singapore",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "bia-minh-hai-lam",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 64.jpg",
+      "ratio": "16/9",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "bia-thanh-tung",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 34.jpg",
+      "ratio": "16/9",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "bia-bich-hop",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 82.jpg",
+      "ratio": "16/9",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "bia-hai-yen",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2650.JPG",
+      "ratio": "16/9",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "bia-quang-vinh",
+      "file": "Bát Tràng DSC 0091.JPG",
+      "ratio": "16/9",
+      "author": "Greenknight dv",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "bia-thu-hang",
+      "file": "Bat-Trang-Ceramic-Village12.jpg",
+      "ratio": "16/9",
+      "author": "Steven C. Price",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "bia-dai-phong",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 40.jpg",
+      "ratio": "16/9",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "bia-van-khanh",
+      "file": "Bat-Trang-Ceramic-Village9.jpg",
+      "ratio": "16/9",
+      "author": "Steven C. Price",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "bia-mai-anh",
+      "file": "Bát Tràng DSC 0096.JPG",
+      "ratio": "16/9",
+      "author": "Greenknight dv",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "bia-tan-loc",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 08.jpg",
+      "ratio": "16/9",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "bia-ngoc-diep",
+      "file": "Frog with cash coins statuette, Bát Tràng (2018) 01.jpg",
+      "ratio": "16/9",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "bia-phuc-an",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 50.jpg",
+      "ratio": "16/9",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "bia-truong-son",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (28 February 2018) 02.jpg",
+      "ratio": "16/9",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "bia-kim-lien",
+      "file": "Bat-Trang-Ceramic-Village7.jpg",
+      "ratio": "16/9",
+      "author": "Steven C. Price",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "bia-hoang-long",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 78.jpg",
+      "ratio": "16/9",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "bia-thai-binh",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2724.JPG",
+      "ratio": "16/9",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "bia-lan-chi",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2616.JPG",
+      "ratio": "16/9",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "region": [0.22, 0, 0.78, 0.76]
+    },
+    {
+      "id": "ht-to-mau-am",
+      "file": "Bat-Trang-Ceramic-Village6.jpg",
+      "ratio": "3/2",
+      "author": "Steven C. Price",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "ht-ve-chen",
+      "file": "Ceramika metiejo en Vjetnamio 02.jpg",
+      "ratio": "3/2",
+      "author": "RG72",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "news-dong-hang",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2725.JPG",
+      "ratio": "3/2",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "news-got-bat",
+      "file": "Bat-Trang-Ceramic-Village13.jpg",
+      "ratio": "3/2",
+      "author": "Steven C. Price",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "news-trong-lo",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2727.JPG",
+      "ratio": "3/2",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "news-dinh-tet",
+      "file": "Bat Trang communal house (2018) 06.jpg",
+      "ratio": "3/2",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "news-khach-tham",
+      "file": "Ceramika vendejo en vilaĝo Bát Tràng (Vjetnamio) 01.jpg",
+      "ratio": "3/2",
+      "author": "RG72",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "news-coc-in-hinh",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 83.jpg",
+      "ratio": "3/2",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "news-lo-binh-moc",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2730.JPG",
+      "ratio": "3/2",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "news-am-chen",
+      "file": "Bát Tràng DSC 0098.JPG",
+      "ratio": "3/2",
+      "author": "Greenknight dv",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    }
+  ]
+}

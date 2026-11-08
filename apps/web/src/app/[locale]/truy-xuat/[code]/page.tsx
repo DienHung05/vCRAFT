@@ -12,7 +12,6 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
-import { PhotoCredit } from '@/components/photo-credit';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
 import { fetchHousehold, fetchTrace } from '@/features/catalog/exhibition-api';
 import {
@@ -42,18 +41,20 @@ export async function generateMetadata({
 }: PageProps<'/[locale]/truy-xuat/[code]'>): Promise<Metadata> {
   const { code } = await params;
   const result = await fetchTrace(code);
-  const title =
-    result.status === 'ok' && result.data.availability === 'VISIBLE'
-      ? result.data.product.name
-      : code;
-  return { title, robots: { index: false } };
+  // A published trace code is indexable (NFR-PERF-02); unknown, withdrawn or locked codes are not.
+  if (result.status === 'ok' && result.data.availability === 'VISIBLE')
+    return { title: result.data.product.name };
+  return { title: code, robots: { index: false } };
 }
 
 /**
  * Landing truy xuất — biến thể C "quét mã mở sổ" (vCRAFT-9hg.6), mobile-first: ấn xác thực và nhật ký
- * (mốc mới nhất trước) → người làm → món đồ và hộ → ghé thăm (phòng trưng bày tách khỏi xưởng, bản đồ
+ * (mốc theo thứ tự thời gian, cũ nhất trước) → người làm → món đồ và hộ → ghé thăm (phòng trưng bày tách khỏi xưởng, bản đồ
  * kèm danh sách) → chứng nhận → tem QR, kèm liên kết về trang chủ.
  */
+/** Lets the sticky call-to-action buttons shrink and wrap instead of pushing the page sideways. */
+const CTA_FIT = 'h-auto min-h-13 min-w-0 flex-1 shrink whitespace-normal py-2 text-center';
+
 export default async function TracePage({ params }: PageProps<'/[locale]/truy-xuat/[code]'>) {
   const locale = await resolveLocale(params);
   const { code } = await params;
@@ -147,7 +148,6 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                     priority
                     sizes="(min-width: 640px) 20rem, 80vw"
                   />
-                  <PhotoCredit id={image.photo?.id} credit={visible.coverCredit} />
                 </figure>
               ) : null}
             </section>
@@ -157,6 +157,7 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
               productId={visible.journal.productId}
               entries={toLogEntries(visible.journal)}
               household={visible.household.name}
+              householdVerified={visible.household.status === 'APPROVED'}
             />
             <p className="mx-5 mt-3 text-small text-ash">
               {t('scans', { count: visible.scanCount })}
@@ -165,7 +166,7 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
             <section aria-labelledby="journey-title" className="px-5 pt-12">
               <h2 id="journey-title">{t('timelineTitle')}</h2>
               <p className="mt-2 mb-8 text-small text-ash">{t('timelineLead')}</p>
-              <FireTimeline entries={toLogEntries(visible.journal)} newestFirst />
+              <FireTimeline entries={toLogEntries(visible.journal)} />
             </section>
 
             <MakerCredits
@@ -198,7 +199,6 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                   />
                 )}
               </ImageSlot>
-              <PhotoCredit id={householdImage?.photo?.id} credit={householdPhoto?.credit} />
               {visible.product.artisanNote ? (
                 <blockquote className="mt-6 font-display text-h3 leading-snug text-ink type-soft">
                   “{visible.product.artisanNote}”
@@ -259,12 +259,16 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
             </section>
 
             <nav className="sticky bottom-0 mt-12 flex gap-3 border-ink/10 border-t bg-paper/90 px-5 py-4 backdrop-blur-md">
-              <a href="#workshop" className={`${buttonVariants({ size: 'lg' })} flex-1`}>
+              {/* Both labels share the row and wrap when the English text is long (GH#257). */}
+              <a href="#workshop" className={`${buttonVariants({ size: 'lg' })} ${CTA_FIT}`}>
                 {t('ctaVisit')}
               </a>
               <Link
-                href="/yeu-cau-bao-gia"
-                className={`${buttonVariants({ variant: 'secondary', size: 'lg' })} flex-1`}
+                href={{
+                  pathname: '/yeu-cau-bao-gia/moi',
+                  query: { product: visible.product.traceCode },
+                }}
+                className={`${buttonVariants({ variant: 'secondary', size: 'lg' })} ${CTA_FIT}`}
               >
                 {t('ctaRfq')}
               </Link>

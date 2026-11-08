@@ -61,7 +61,12 @@ export function demoSkipReason(): string | undefined {
   return missing.length > 0 ? `Thiếu mật khẩu demo: ${missing.join(', ')}.` : undefined;
 }
 
-/** Đăng nhập email/mật khẩu qua REST của Supabase Auth; mỗi lần gọi là một phiên mới. */
+/** Đăng nhập email/mật khẩu qua REST của Supabase Auth; mỗi lần gọi là một phiên mới.
+ *
+ * GH#212: the cookie-injection scenario still goes straight to Supabase (not through the form),
+ * because it needs the exact `@supabase/ssr` response; the UI scenario signs in with the username
+ * through the real form.
+ */
 export async function signIn(key: DemoAccountKey): Promise<SupabaseSession> {
   const account = DEMO.accounts[key];
   const response = await fetch(`${supabaseUrl()}/auth/v1/token?grant_type=password`, {

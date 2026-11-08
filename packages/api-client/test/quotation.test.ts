@@ -122,3 +122,51 @@ it('normalizes gateway errors even when the response is HTML', async () => {
     status: 502,
   });
 });
+
+describe('direct quotation calls', () => {
+  const direct = {
+    id: requestId,
+    version: 2,
+    status: 'SUBMITTED',
+    quantity: 100,
+    unitPriceVnd: 30_000,
+    totalVnd: 3_000_000,
+    completionDate: '2027-02-01T00:00:00.000Z',
+    note: null,
+  };
+
+  it('submits, revises and withdraws with the right verbs, paths and versions', async () => {
+    const seen: Request[] = [];
+    const client = createQuotationClient({
+      getAccessToken: async () => 'session-token',
+      fetch: async (url, options) => {
+        seen.push(new Request(`https://vcraft.test${url}`, options));
+        return Response.json(direct);
+      },
+    });
+    const input = { unitPriceVnd: 30_000, completionDate: '2027-02-01T00:00:00.000Z' };
+    await client.createDirectQuotation(requestId, input);
+    await client.reviseDirectQuotation(requestId, 2, { ...input, note: 'faster' });
+    await client.withdrawDirectQuotation(requestId, 3);
+    expect(seen.map((r) => [r.method, new URL(r.url).pathname, r.headers.get('if-match')])).toEqual(
+      [
+        ['POST', `/api/v1/rfqs/${requestId}/direct-quotations`, null],
+        ['PUT', `/api/v1/direct-quotations/${requestId}`, '"2"'],
+        ['POST', `/api/v1/direct-quotations/${requestId}/withdraw`, '"3"'],
+      ],
+    );
+  });
+
+  it('refuses a free quotation before it leaves the browser', async () => {
+    const client = createQuotationClient({
+      getAccessToken: async () => 'session-token',
+      fetch: async () => Response.json(direct),
+    });
+    expect(() =>
+      client.createDirectQuotation(requestId, {
+        unitPriceVnd: 0,
+        completionDate: '2027-02-01T00:00:00.000Z',
+      }),
+    ).toThrow();
+  });
+});

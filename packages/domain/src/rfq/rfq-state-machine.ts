@@ -79,12 +79,7 @@ export const RFQ_TRANSITIONS = {
     },
   },
   ACCEPTED: {
-    CANCEL: {
-      to: 'CANCELLED',
-      ref: 'T6',
-      guards: [actorIn('BUYER_OWNER')],
-      inputGuards: [reasonProvided],
-    },
+    // No buyer CANCEL here (GH#244): T6 ends at BIDDING; after acceptance only the admin cancels (T7).
     START_PRODUCTION: {
       to: 'IN_PRODUCTION',
       ref: 'T4',

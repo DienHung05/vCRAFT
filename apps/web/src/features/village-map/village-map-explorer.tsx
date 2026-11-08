@@ -17,7 +17,7 @@ import {
   type MapBounds,
   sortByDistance,
 } from './map-model';
-import { OpenStatus } from './pin-popup';
+import { ExperienceSummary, OpenStatus } from './pin-popup';
 
 const MapCanvas = dynamic(() => import('./map-canvas'), {
   ssr: false,
@@ -40,7 +40,14 @@ type LocationState = 'idle' | 'locating' | 'denied';
  * nên không có WebGL hay dùng trình đọc màn hình vẫn đọc được đủ xưởng; chỉ khi người dùng tự kéo
  * bản đồ thì danh sách mới thu theo khung nhìn, và có nút trả lại toàn bộ.
  */
-export function VillageMapExplorer({ pins }: { pins: readonly MapPinDto[] }) {
+export function VillageMapExplorer({
+  pins,
+  initialSelectedId,
+}: {
+  pins: readonly MapPinDto[];
+  /** Workshop whose card is open when the page loads (`/ban-do?xuong=`). */
+  initialSelectedId?: string;
+}) {
   const t = useTranslations('villageMap');
   const format = useFormatter();
   // Chờ sau hydrate mới biết WebGL và giờ thật, để HTML máy chủ và trình duyệt khớp nhau.
@@ -48,10 +55,15 @@ export function VillageMapExplorer({ pins }: { pins: readonly MapPinDto[] }) {
   const [now, setNow] = useState(() => new Date());
   const [openNow, setOpenNow] = useState(false);
   const [visitable, setVisitable] = useState(false);
+  const [experience, setExperience] = useState(false);
   const [craft, setCraft] = useState('');
   const [bounds, setBounds] = useState<MapBounds | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialSelectedId && pins.some((pin) => pin.workshopId === initialSelectedId)
+      ? initialSelectedId
+      : null,
+  );
   const [origin, setOrigin] = useState<LatLng | null>(null);
   const [locationState, setLocationState] = useState<LocationState>('idle');
   // The map frame is aria-hidden (the list beside it is the accessible equivalent), so nothing inside
@@ -67,8 +79,8 @@ export function VillageMapExplorer({ pins }: { pins: readonly MapPinDto[] }) {
 
   const crafts = useMemo(() => craftsOf(pins), [pins]);
   const filtered = useMemo(
-    () => filterPins(pins, { openNow, visitable, craft }, now),
-    [pins, openNow, visitable, craft, now],
+    () => filterPins(pins, { openNow, visitable, experience, craft }, now),
+    [pins, openNow, visitable, experience, craft, now],
   );
   const listed = useMemo(() => {
     const inView = bounds ? filtered.filter((pin) => inBounds(pin, bounds)) : filtered;
@@ -111,6 +123,14 @@ export function VillageMapExplorer({ pins }: { pins: readonly MapPinDto[] }) {
             onChange={(event) => setVisitable(event.target.checked)}
           />
           {t('filterVisitors')}
+        </label>
+        <label className="flex items-center gap-2 text-small">
+          <input
+            type="checkbox"
+            checked={experience}
+            onChange={(event) => setExperience(event.target.checked)}
+          />
+          {t('filterExperience')}
         </label>
         <label className="flex items-center gap-2 text-small">
           {t('filterCraft')}
@@ -197,6 +217,7 @@ export function VillageMapExplorer({ pins }: { pins: readonly MapPinDto[] }) {
                   onClick={() => {
                     setOpenNow(false);
                     setVisitable(false);
+                    setExperience(false);
                     setCraft('');
                     setBounds(null);
                   }}
@@ -248,6 +269,7 @@ export function VillageMapExplorer({ pins }: { pins: readonly MapPinDto[] }) {
                         </span>
                       ) : null}
                     </p>
+                    <ExperienceSummary pin={pin} />
                     {webgl ? (
                       <button
                         type="button"

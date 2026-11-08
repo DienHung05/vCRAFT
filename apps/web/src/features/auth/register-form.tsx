@@ -8,17 +8,17 @@ import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { ConsentCheckbox } from '@/components/consent-checkbox';
 import { Link } from '@/i18n/navigation';
-import { HOUSEHOLD_INTENT_KEY } from '@/lib/auth/household-intent';
-import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
 import { CheckEmailPanel } from './check-email-panel';
 import { FormAlert, PasswordField, STANDALONE_LINK, TextField } from './fields';
 import { GoogleSignIn } from './google-sign-in';
 import { useKilnFeedback } from './kiln/kiln-feedback';
+import { signUp } from './public-auth';
 import { type RegisterValues, registerSchema } from './schemas';
 import { useCaptcha } from './turnstile';
 import { useFocusSubmitOnError } from './use-focus-submit-on-error';
 import { useValidationMessage } from './use-validation-message';
+import { UsernameAvailability } from './username-availability';
 
 export interface RegisterFormProps {
   /**
@@ -51,10 +51,11 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
   } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     mode: 'onTouched',
-    defaultValues: { email: '', password: '', consent: false },
+    defaultValues: { username: '', email: '', password: '', consent: false },
   });
   // Google sign-up needs the same consent box ticked first (GH#122).
   const consented = useWatch({ control, name: 'consent' });
+  const username = useWatch({ control, name: 'username' });
 
   // The kiln card reacts to the outcome: a failure crackles and shakes the card.
   const failWith = (key: AuthErrorKey) => {
@@ -65,32 +66,21 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
   const formRef = useFocusSubmitOnError(error, isSubmitting);
 
   const onSubmit = handleSubmit(
-    async ({ email, password }) => {
+    async ({ username, email, password }) => {
       kiln.fire();
       setError(null);
-      const supabase = browserSupabase();
-      if (!supabase) return failWith('unconfigured');
       if (captcha.missing) return failWith('captcha');
       try {
-        const { error: failure } = await supabase.auth.signUp({
+        await signUp({
+          username,
           email,
           password,
-          options: {
-            ...captcha.options,
-            data: {
-              locale,
-              // The API records the sign-up consent from this when the account is first created.
-              privacy_policy_version: PRIVACY_POLICY_VERSION,
-              ...(household && wizardPath ? { next: wizardPath } : {}),
-              // GH#180: lets a later sign-in send this account back to the unfinished wizard.
-              ...(household ? { [HOUSEHOLD_INTENT_KEY]: true } : {}),
-            },
-          },
+          ...captcha.options,
+          locale,
+          privacyPolicyVersion: PRIVACY_POLICY_VERSION,
+          ...(household ? { householdIntent: true } : {}),
+          ...(household && wizardPath ? { next: wizardPath } : {}),
         });
-        if (failure) {
-          captcha.reset();
-          return failWith(authErrorKey(failure));
-        }
         // Email đã có tài khoản cũng ra màn này (Supabase che), nên không lộ email nào đã đăng ký.
         // The form swaps to the check-email panel, so there is no stamp: just clear the card.
         kiln.reset();
@@ -110,6 +100,16 @@ export function RegisterForm({ intent = 'buyer', wizardPath }: RegisterFormProps
   return (
     <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
       {error ? <FormAlert tone="error">{t(`errors.${error}`)}</FormAlert> : null}
+      <TextField
+        label={t('fields.username')}
+        autoComplete="username"
+        autoCapitalize="none"
+        spellCheck={false}
+        hint={t('fields.usernameHint')}
+        error={message(errors.username)}
+        {...register('username')}
+      />
+      <UsernameAvailability username={username} />
       <TextField
         label={t('fields.email')}
         type="email"

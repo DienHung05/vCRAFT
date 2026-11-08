@@ -11,7 +11,9 @@ import type {
   HouseholdDto,
   MapPinsDto,
   ProductDto,
+  ProductScanStatsDto,
   PublicHouseholdDto,
+  RecordScanRequest,
   RevealedIdNumberDto,
   SetIdNumberRequest,
   SetProductMakersRequest,
@@ -26,6 +28,7 @@ import {
   FIELD_CONTEXTS,
   FieldCipher,
   Household,
+  JournalEntry,
   MediaAsset,
   MediaLink,
   OutboxEvent,
@@ -50,6 +53,7 @@ import {
 } from '@vcraft/domain';
 import { slugify } from '@vcraft/utils';
 import type { Actor } from '../../../common/auth/auth.guard';
+import { deniedAccess } from '../../../common/auth/denied-access';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
 import { MediaService } from '../../media/application/media.service';
@@ -241,6 +245,11 @@ export class HouseholdsService {
       workshop.acceptsVisitors = input.acceptsVisitors;
       workshop.visitingInfo = input.visitingInfo ?? null;
       workshop.openingHours = input.openingHours ?? null;
+      workshop.experienceDescription = input.experience?.description ?? null;
+      workshop.experienceDurationMinutes = input.experience?.durationMinutes ?? null;
+      workshop.experiencePriceVnd = input.experience?.priceVnd ?? null;
+      workshop.temporarilyClosed = input.temporarilyClosed;
+      workshop.closureReason = input.temporarilyClosed ? (input.closureReason ?? null) : null;
       workshop.lat = input.lat === undefined ? null : input.lat.toFixed(6);
       workshop.lng = input.lng === undefined ? null : input.lng.toFixed(6);
       await em.flush();
@@ -259,6 +268,11 @@ export class HouseholdsService {
         acceptsVisitors: input.acceptsVisitors,
         visitingInfo: input.visitingInfo ?? null,
         openingHours: input.openingHours ?? null,
+        experienceDescription: input.experience?.description ?? null,
+        experienceDurationMinutes: input.experience?.durationMinutes ?? null,
+        experiencePriceVnd: input.experience?.priceVnd ?? null,
+        temporarilyClosed: input.temporarilyClosed,
+        closureReason: input.temporarilyClosed ? (input.closureReason ?? null) : null,
         lat: input.lat === undefined ? null : input.lat.toFixed(6),
         lng: input.lng === undefined ? null : input.lng.toFixed(6),
       });
@@ -285,7 +299,7 @@ export class HouseholdsService {
 
   async createProduct(actor: Actor, input: CreateProductRequest): Promise<ProductDto> {
     return this.orm.em.fork().transactional(async (em) => {
-      const household = await this.ownWritableHousehold(em, actor);
+      const household = await this.ownApprovedHousehold(em, actor);
       const traceCode = await this.uniqueTraceCode(em);
       const product = em.create(Product, {
         household,
@@ -317,8 +331,7 @@ export class HouseholdsService {
   ): Promise<ProductDto> {
     const id = await this.orm.em.fork().transactional(async (em) => {
       const household = await this.ownWritableHousehold(em, actor);
-      const product = await em.findOne(Product, { id: productId, household });
-      if (!product) throw notFound();
+      const product = await this.ownProduct(em, actor, household, productId);
       assertVersion(product, expectedVersion);
       if (input.images) {
         const ids = input.images.map((image) => image.mediaId);
@@ -375,7 +388,8 @@ export class HouseholdsService {
       if (!product) throw notFound();
       const household = product.household;
       const isOwner = household.representative.id === actor.id;
-      if (actor.role !== 'ADMIN' && !isOwner) throw notFound();
+      if (actor.role !== 'ADMIN' && !isOwner)
+        throw await deniedAccess(this.orm, actor, 'product', product.id);
       if (isOwner && actor.locked) throw new AppError('HOUSEHOLD_ACCOUNT_LOCKED');
       assertVersion(product, expectedVersion);
 
@@ -387,6 +401,15 @@ export class HouseholdsService {
       });
       if (!next.ok && next.error.code === 'HOUSEHOLD_NOT_APPROVED') {
         throw new AppError('HOUSEHOLD_NOT_APPROVED');
+      }
+      // FR-PRD-03 / GH#251: a product needs at least one production-log milestone before it goes public.
+      if (
+        next.ok &&
+        isOwner &&
+        (event === 'PUBLISH' || event === 'REPUBLISH') &&
+        (await em.count(JournalEntry, { product })) === 0
+      ) {
+        throw new AppError('PRODUCT_JOURNAL_REQUIRED');
       }
       const before = product.status;
       product.status = unwrap(next);
@@ -420,8 +443,7 @@ export class HouseholdsService {
   ): Promise<ProductDto> {
     return this.orm.em.fork().transactional(async (em) => {
       const household = await this.ownWritableHousehold(em, actor);
-      const product = await em.findOne(Product, { id: productId, household });
-      if (!product) throw notFound();
+      const product = await this.ownProduct(em, actor, household, productId);
       const artisans = await em.find(Artisan, { household });
       unwrap(checkMakerCredits(input.makers, new Set(artisans.map((a) => a.id))));
       for (const maker of await em.find(ProductMaker, { product })) em.remove(maker);
@@ -520,8 +542,11 @@ export class HouseholdsService {
     return { activeHouseholds, pendingApplications, openRfqs, ordersInProduction, qrScans30Days };
   }
 
-  /** Ghi một lượt quét QR; mã không tồn tại hoặc không còn công khai thì bỏ qua, không báo lỗi. */
-  async recordScan(traceCode: string): Promise<void> {
+  /**
+   * Ghi một lượt quét QR; mã không tồn tại hoặc không còn công khai thì bỏ qua, không báo lỗi.
+   * FR-TRC-06: the country and device class are optional; an IP address is never stored.
+   */
+  async recordScan(traceCode: string, input: RecordScanRequest = {}): Promise<void> {
     await this.orm.em.fork().transactional(async (em) => {
       const product = await em.findOne(
         Product,
@@ -530,8 +555,56 @@ export class HouseholdsService {
       );
       if (!product) return;
       if (publicProductAvailability(product.household.status, product.status) !== 'VISIBLE') return;
-      em.create(TraceScan, { product });
+      em.create(TraceScan, {
+        product,
+        country: input.country ?? null,
+        deviceType: input.deviceType ?? null,
+      });
     });
+  }
+
+  /**
+   * FR-TRC-06: scan statistics of the household's own product. The series covers the last 30 days in
+   * Vietnam time (UTC+7, no daylight saving), so `last30Days` equals the sum of `daily`; the breakdowns
+   * cover the same window. Another household's product is a denied, audited attempt (AC-4).
+   */
+  async scanStats(actor: Actor, productId: string): Promise<ProductScanStatsDto> {
+    const em = this.orm.em.fork();
+    const household = await this.ownHousehold(em, actor);
+    const product = await this.ownProduct(em, actor, household, productId);
+    const dayMs = 24 * 60 * 60 * 1000;
+    const vietnamOffsetMs = 7 * 60 * 60 * 1000;
+    const today = new Date(Date.now() + vietnamOffsetMs).toISOString().slice(0, 10);
+    const days = Array.from({ length: 30 }, (_, i) =>
+      new Date(Date.parse(`${today}T00:00:00Z`) - (29 - i) * dayMs).toISOString().slice(0, 10),
+    );
+    const since = new Date(Date.parse(`${days[0]}T00:00:00Z`) - vietnamOffsetMs);
+    const [total, recent] = await Promise.all([
+      em.count(TraceScan, { product }),
+      em.find(TraceScan, { product, createdAt: { $gte: since } }),
+    ]);
+    const perDay = new Map<string, number>();
+    const perCountry = new Map<string | null, number>();
+    const perDevice = new Map<string | null, number>();
+    const bump = <K>(map: Map<K, number>, key: K) => map.set(key, (map.get(key) ?? 0) + 1);
+    for (const scan of recent) {
+      bump(perDay, new Date(scan.createdAt.getTime() + vietnamOffsetMs).toISOString().slice(0, 10));
+      bump(perCountry, scan.country ?? null);
+      bump(perDevice, scan.deviceType ?? null);
+    }
+    const ranked = <K>(map: Map<K, number>) => [...map].sort((a, b) => b[1] - a[1]);
+    return {
+      total,
+      last30Days: recent.length,
+      daily: days.map((date) => ({ date, count: perDay.get(date) ?? 0 })),
+      byCountry: ranked(perCountry)
+        .slice(0, 10)
+        .map(([country, count]) => ({ country, count })),
+      byDeviceType: ranked(perDevice).map(([deviceType, count]) => ({
+        deviceType: deviceType as ProductScanStatsDto['byDeviceType'][number]['deviceType'],
+        count,
+      })),
+    };
   }
 
   async decide(
@@ -619,7 +692,11 @@ export class HouseholdsService {
         covers.get(product.id),
       ),
       coverCredit: await this.media.productCoverCredit(product),
-      household: { name: product.household.name, slug: product.household.slug },
+      household: {
+        name: product.household.name,
+        slug: product.household.slug,
+        status: product.household.status,
+      },
       journal: await loadJournal(em, product, this.media),
       scanCount: await em.count(TraceScan, { product }),
     };
@@ -650,6 +727,30 @@ export class HouseholdsService {
     const household = await this.ownHousehold(em, actor);
     if (household.status === 'REJECTED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
     return household;
+  }
+
+  /**
+   * FR-AUTH-02 (GH#237): a household under review (or suspended) sees its application and records but posts
+   * no new products until the village board approves it.
+   */
+  private async ownApprovedHousehold(em: EntityManager, actor: Actor): Promise<Household> {
+    const household = await this.ownWritableHousehold(em, actor);
+    if (household.status !== 'APPROVED') throw forbidden('the household is not approved yet');
+    return household;
+  }
+
+  /** The household's own product; another household's product is a denied, audited attempt (AC-4). */
+  private async ownProduct(
+    em: EntityManager,
+    actor: Actor,
+    household: Household,
+    productId: string,
+  ): Promise<Product> {
+    const product = await em.findOne(Product, productId);
+    if (!product) throw notFound();
+    if (product.household.id !== household.id)
+      throw await deniedAccess(this.orm, actor, 'product', product.id);
+    return product;
   }
 
   private maskedIdNumber(household: Household): string | null {

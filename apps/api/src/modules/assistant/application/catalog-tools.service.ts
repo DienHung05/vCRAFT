@@ -1,8 +1,8 @@
 import { MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { CitationDto } from '@vcraft/contracts';
-import { Product, Workshop } from '@vcraft/database';
-import { isVisitable, openState } from '@vcraft/domain';
+import { Household, Product, Workshop } from '@vcraft/database';
+import { isVisitable, openState, workshopOpenState } from '@vcraft/domain';
 import { searchTerms } from '@vcraft/utils';
 import { withTimeout } from './tools';
 
@@ -38,6 +38,12 @@ const price = (vnd: number, locale: 'vi' | 'en') =>
     : locale === 'vi'
       ? 'giá liên hệ'
       : 'price on request';
+
+// Public page paths that name one record: product slug, household slug or trace code (see `@vcraft/i18n`).
+const RECORD_PAGE =
+  /^\/(?:vi|en)\/(san-pham|products|nghe-nhan|artisans|truy-xuat|trace)\/([^/?#\s]+)\/?(?:[?#].*)?$/;
+
+const oneLine = (text: string) => text.replace(/\s+/g, ' ').trim().slice(0, 160);
 
 /**
  * The assistant's database tools, with Guest permissions only (PLAN E15): published products of approved
@@ -81,6 +87,38 @@ export class CatalogToolsService {
     });
   }
 
+  /**
+   * Resolves a product, household or trace page path into one factual line for the model (FR-AST-05):
+   * the product's name, category and household, or the household's name and village. Only published
+   * products of approved households are named, as on the public pages. Any other path gives null.
+   */
+  async pageContext(pagePath: string, locale: 'vi' | 'en'): Promise<string | null> {
+    const match = RECORD_PAGE.exec(pagePath);
+    const kind = match?.[1];
+    const key = match?.[2];
+    if (!kind || !key) return null;
+    return withTimeout(async () => {
+      const em = this.orm.em.fork();
+      if (kind === 'nghe-nhan' || kind === 'artisans') {
+        const household = await em.findOne(Household, { slug: key, status: 'APPROVED' });
+        if (!household) return null;
+        const village = household.village ? ` in the village ${oneLine(household.village)}` : '';
+        return `This page is the household "${oneLine(household.name)}"${village}.`;
+      }
+      const where =
+        kind === 'truy-xuat' || kind === 'trace' ? { traceCode: key.toUpperCase() } : { slug: key };
+      const product = await em.findOne(
+        Product,
+        { ...where, status: 'PUBLISHED', household: { status: 'APPROVED' } },
+        { populate: ['household'] },
+      );
+      if (!product) return null;
+      const { household } = product;
+      const village = household.village ? `, village ${oneLine(household.village)}` : '';
+      return `This page is the product "${oneLine(product.name)}" (category ${product.category}), made by the household "${oneLine(household.name)}"${village}: ${PATHS[locale].household}/${household.slug}.`;
+    });
+  }
+
   /** `get_open_workshops`: showrooms of approved households that are open at `now` (Vietnam time). */
   async openWorkshops(now: Date, locale: 'vi' | 'en'): Promise<ToolResult | null> {
     return withTimeout(async () => {
@@ -92,7 +130,7 @@ export class CatalogToolsService {
           { populate: ['household'], orderBy: { name: 'asc' } },
         );
       const open = workshops.filter(
-        (w) => isVisitable(w) && w.openingHours && openState(w.openingHours, now).open,
+        (w) => isVisitable(w) && w.openingHours && workshopOpenState(w, now).open,
       );
       const shown = open.slice(0, LIMIT);
       const citations = shown.map((w) => ({

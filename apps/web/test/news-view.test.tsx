@@ -28,6 +28,11 @@ vi.mock('@/i18n/navigation', () => ({
   ),
   useRouter: () => ({ refresh: vi.fn() }),
 }));
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/vi/tin-tuc',
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: vi.fn() }),
+}));
 
 const page: NewsListDto = {
   data: [
@@ -74,7 +79,7 @@ const page: NewsListDto = {
 };
 
 describe('NewsView', () => {
-  it('shows the cover image with its credit, and nothing for news without a cover', () => {
+  it('shows the cover image without a credit line, and nothing for news without a cover', () => {
     renderVi(<NewsView result={{ status: 'ok', page }} />);
     const [withCover, withoutCover] = within(
       screen.getByRole('list', { name: 'Danh sách tin tức' }),
@@ -83,10 +88,9 @@ describe('NewsView', () => {
     expect(withCover.querySelector('img')?.getAttribute('src')).toBe(
       'https://cdn.test/cho-gom.webp',
     );
-    expect(within(withCover).getByText(/Tác giả ảnh/)).toBeTruthy();
-    expect(within(withCover).getByRole('link', { name: 'CC BY 4.0' }).getAttribute('href')).toBe(
-      'https://creativecommons.org/licenses/by/4.0/',
-    );
+    // Credits live on /ghi-nhan-anh only (GH#204).
+    expect(within(withCover).queryByText(/Tác giả ảnh/)).toBeNull();
+    expect(within(withCover).queryByRole('link', { name: 'CC BY 4.0' })).toBeNull();
     expect(withoutCover.querySelector('img')).toBeNull();
     expect(within(withoutCover).queryByRole('img')).toBeNull();
   });
@@ -120,6 +124,20 @@ describe('NewsView', () => {
     expect(more.getAttribute('href')).toContain('household=gom-minh-hai');
     expect(screen.getByText(/Đang xem tin của Gốm Minh Hải/)).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Xem mọi tin' })).toBeTruthy();
+  });
+
+  it('shows the numbered page bar instead of the cursor link when the page has totals (GH#202)', () => {
+    renderVi(
+      <NewsView
+        result={{
+          status: 'ok',
+          page: { ...page, nextCursor: null, page: 1, pageSize: 12, total: 30, totalPages: 3 },
+        }}
+      />,
+    );
+    expect(screen.getByRole('navigation', { name: 'Phân trang tin tức' })).toBeTruthy();
+    expect(screen.getByText('30 tin')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: /Xem thêm tin/ })).toBeNull();
   });
 
   it('shows an empty state when there is no news', () => {

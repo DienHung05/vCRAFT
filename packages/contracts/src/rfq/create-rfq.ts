@@ -3,6 +3,10 @@ import { z } from 'zod';
 import { CursorPageQuerySchema, cursorPageSchema } from '../common/pagination';
 import { IdSchema, IsoDateTimeSchema, VersionSchema, VndSchema } from '../common/primitives';
 
+/** FR-RFQ-01: up to three attachments (a logo, a drawing) per request. */
+export const RFQ_MAX_ATTACHMENTS = 3;
+export const RFQ_MAX_CUSTOM_REQUIREMENTS = 1000;
+
 /** GH#9: tạo yêu cầu báo giá — design, số lượng, đơn vị, điểm đến, ngày cần hàng, hạn chào giá. */
 export const CreateRfqRequestSchema = z
   .strictObject({
@@ -11,6 +15,14 @@ export const CreateRfqRequestSchema = z
     budgetMinVnd: VndSchema.optional(),
     budgetMaxVnd: VndSchema.optional(),
     design: z.string().trim().min(1, 'Thiếu mô tả mẫu sản phẩm').max(500),
+    /** Special requests such as logo printing (FR-RFQ-01). */
+    customRequirements: z.string().trim().max(RFQ_MAX_CUSTOM_REQUIREMENTS).optional(),
+    /** Ids of the buyer's own `RFQ_ATTACHMENT` uploads (`POST /media?purpose=RFQ_ATTACHMENT`). */
+    attachments: z
+      .array(IdSchema)
+      .max(RFQ_MAX_ATTACHMENTS, 'Attach at most 3 files')
+      .refine((ids) => new Set(ids).size === ids.length, 'Attachments must be distinct')
+      .default([]),
     quantity: z.int().min(1, 'Số lượng phải từ 1 trở lên').max(2_147_483_647),
     unit: z.string().trim().min(1, 'Thiếu đơn vị tính').max(30),
     destination: z.string().trim().min(1, 'Thiếu nơi nhận hàng').max(300),
@@ -30,15 +42,27 @@ export const CreateRfqRequestSchema = z
       v.budgetMinVnd <= v.budgetMaxVnd,
     { message: 'Ngân sách tối thiểu không được lớn hơn tối đa', path: ['budgetMinVnd'] },
   )
-  .refine((v) => v.invitedHouseholdIds.length > 0 || v.coordinationOptIn, {
-    message: 'Chọn ít nhất một hộ được mời hoặc nhờ BQL điều phối',
-    path: ['invitedHouseholdIds'],
-  });
+  // BR-05: with no chosen household and no coordination the system picks households of the craft category.
+  .refine(
+    (v) => v.invitedHouseholdIds.length > 0 || v.coordinationOptIn || v.category !== undefined,
+    {
+      message: 'Choose a category for matching, invite households or ask the board to coordinate',
+      path: ['category'],
+    },
+  );
 export type CreateRfqRequest = z.infer<typeof CreateRfqRequestSchema>;
 
 /** Sua yeu cau khi còn DRAFT. Phiên bản kỳ vọng nằm ở header `If-Match` (BR-L1), không nằm trong body. */
 export const UpdateRfqRequestSchema = CreateRfqRequestSchema;
 export type UpdateRfqRequest = z.infer<typeof UpdateRfqRequestSchema>;
+
+/** A file attached to a request. Private: read through `GET /media/{id}/read-url`. */
+export const RfqAttachmentSchema = z.strictObject({
+  id: IdSchema,
+  mimeType: z.string(),
+  sizeBytes: z.int().nonnegative(),
+});
+export type RfqAttachmentDto = z.infer<typeof RfqAttachmentSchema>;
 
 /** Response luôn có id + version + revision (BR-L1, lịch sử phiên bản). */
 export const RfqStatusSchema = z.enum(RFQ_STATUSES);
@@ -55,6 +79,9 @@ export const RfqResponseSchema = z.strictObject({
   cancelReason: z.string().nullable(),
   createdAt: IsoDateTimeSchema,
   design: z.string(),
+  /** Absent on responses from an API older than FR-RFQ-01 custom requirements. */
+  customRequirements: z.string().nullable().optional(),
+  attachments: z.array(RfqAttachmentSchema).optional(),
   quantity: z.int().min(1),
   unit: z.string(),
   destination: z.string(),

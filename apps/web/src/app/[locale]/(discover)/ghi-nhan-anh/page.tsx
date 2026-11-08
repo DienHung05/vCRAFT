@@ -1,4 +1,3 @@
-import { Badge } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { PHOTO_CREDITS } from '@/lib/demo/photo-credits';
@@ -23,9 +22,6 @@ export default async function ImageCreditsPage({ params }: PageProps<'/[locale]/
   return (
     <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section">
       <header className="flex max-w-prose-vn flex-col gap-3">
-        <Badge tone="outline" className="self-start whitespace-normal">
-          {t('demoNote')}
-        </Badge>
         <h1 className="text-h1">{t('title')}</h1>
         <p className="text-ash">{t('lead')}</p>
       </header>

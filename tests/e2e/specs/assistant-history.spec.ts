@@ -4,14 +4,14 @@ const question = 'Where can I visit a pottery workshop?';
 const answer = 'You can find workshops on the village map.';
 const copy = {
   en: {
-    open: 'Ask the Fox',
+    open: 'Ask Fox',
     close: 'Close the assistant',
     history: 'Conversation history',
     newChat: 'New conversation',
     remove: 'Delete conversation',
     back: 'Back to chat',
     empty: 'No saved conversations yet.',
-    input: 'Your question for the Fox',
+    input: 'Your question for Fox',
     send: 'Send',
   },
   vi: {

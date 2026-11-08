@@ -1,6 +1,6 @@
 # vCraft — Kế hoạch thực hiện
 
-> Phiên bản 1.0 · 27/10/2026 · Nhóm 3 người · Đi kèm [SRS.md](SRS.md), [ARCHITECTURE.md](ARCHITECTURE.md), [BRAND.md](BRAND.md)
+> Phiên bản 1.0 · 27/10/2026 · Nhóm 3 người · Đi kèm [SRS.md](requirements/SRS.md), [ARCHITECTURE.md](ARCHITECTURE.md), [BRAND.md](design/BRAND.md)
 > Giả định lịch vấn đáp **đầu tháng 1/2027**. Lịch khác thì co giãn Sprint 6–8, **không** cắt Sprint 7 (cứng hóa).
 
 ---
@@ -27,7 +27,7 @@
 | # | Tiêu chí                  | Hệ số        | Công sức | Cách "chốt" điểm tối đa                                                                                                                                                                        |
 | - | --------------------------- | -------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1 | Chức năng                 | **0.35** | ~40%       | Làm **đủ 100% chức năng trong đề** (mức M) trước 06/12, sau đó mới thêm "wow" (mức S/C). Mỗi chức năng trong đề có ít nhất một điểm vượt kỳ vọng (bảng 1.2).    |
-| 3 | Giao diện & bản sắc      | **0.2**  | ~25%       | Hệ thống thương hiệu hoàn chỉnh ([BRAND.md](BRAND.md)), 10 khoảnh khắc chuyển động đặc trưng, ảnh Bát Tràng có giấy phép rõ ràng, responsive kiểm từng màn ở 360/768/1440. |
+| 3 | Giao diện & bản sắc      | **0.2**  | ~25%       | Hệ thống thương hiệu hoàn chỉnh ([BRAND.md](design/BRAND.md)), 10 khoảnh khắc chuyển động đặc trưng, ảnh Bát Tràng có giấy phép rõ ràng, responsive kiểm từng màn ở 360/768/1440. |
 | 2 | Thiết kế logic, dễ dùng | 0.1            | ~8%        | Stepper trạng thái thống nhất, chỉ hiện hành động hợp lệ, wizard, trạng thái rỗng/lỗi có hướng dẫn, test với 5 người.                                                          |
 | 4 | Hiệu năng / AJAX / JSON   | 0.1            | ~8%        | Mọi tương tác là fetch → JSON → cập nhật DOM; SSE realtime; Lighthouse ≥ 90; chứng minh bằng tab Network.                                                                                |
 | 5 | Phong cách lập trình     | 0.05           | ~5%        | Monorepo có ranh giới cưỡng chế, domain thuần, 12+ pattern có tên, JSDoc tham chiếu mã yêu cầu.                                                                                          |
@@ -191,7 +191,7 @@ gantt
 | **S0** 27/10–01/11 | Repo chạy được, CI xanh, có hướng thương hiệu                 | Moodboard, logo ấn bình, token màu/chữ, Figma 6 màn chính                                                                                | Mô hình domain, schema Zod đầu tiên, bảng state machine + test                                                                                                                      | `create-next-app`, `nest new`, MikroORM + 2 driver, compose, CI; cấu hình Supabase Auth (Site URL, redirect URLs, SMTP riêng, JWT 15′, MFA, Turnstile)        |
 | **S1** 02/11–08/11 | Đăng ký/đăng nhập, hộ nộp hồ sơ, admin duyệt                 | `packages/ui` (button, input, card, dialog, toast…), layout, header/footer, trang auth, wizard đăng ký hộ                               | `SupabaseAuthGuard` (JWKS), cấp hồ sơ lần đầu, CASL, throttler, kiểm duyệt hộ (+ invite/ban qua Supabase admin API)                                                            | Entities User/LoginEvent/Artisan/Workshop, migration, seeder cơ bản, mail (Mailpit), mã hóa trường CCCD                                                         |
 | **S2** 09/11–15/11 | Hộ đăng sản phẩm có nhiều ảnh + nhật ký                       | Studio (mobile-first): hồ sơ hộ, form sản phẩm, uploader nhiều ảnh, thêm mốc nhật ký                                                | Module products, production-logs, chuỗi băm (domain), mẫu công đoạn                                                                                                                 | **Media pipeline**: upload, magic bytes, worker sharp AVIF/WebP, thumbhash, SSE `media.ready`                                                                 |
-| **S3** 16/11–22/11 | Khách quét QR xem hành trình; xem bản đồ; duyệt danh mục       | Trang danh mục (lọc + URL + cuộn vô hạn), chi tiết sản phẩm, hồ sơ hộ công khai, landing truy xuất                                | Module catalog (Specification, cursor, tìm không dấu), gợi ý ⌘K                                                                                                                     | Traceability (mã, QR, `/q` redirect, lượt quét), **bản đồ** (style, ghim bbox, popup, đang mở, cluster), seed 200 sản phẩm                         |
+| **S3** 16/11–22/11 | Khách quét QR xem hành trình; xem bản đồ; duyệt danh mục       | Trang danh mục (lọc + URL + phân trang theo số trang, ADR-0020), chi tiết sản phẩm, hồ sơ hộ công khai, landing truy xuất                                | Module catalog (Specification, cursor + `?page=N`, tìm không dấu), gợi ý ⌘K                                                                                                                     | Traceability (mã, QR, `/q` redirect, lượt quét), **bản đồ** (style, ghim bbox, popup, đang mở, cluster), seed 200 sản phẩm                         |
 | **S4** 23/11–29/11 | Luồng báo giá đầy đủ tới chốt, 2 tab chốt cùng lúc an toàn | Màn tạo RFQ, lời mời + form chào giá (Studio), bảng so sánh realtime, stepper                                                          | **RFQ/Bids**: state machine, ghép hộ, chào giá kín, khóa lạc quan/bi quan, idempotency, outbox, job hết hạn                                                                | SSE hub + Redis pub/sub, thông báo in-app + email, test concurrency (2 CSDL)                                                                                        |
 | **S5** 30/11–06/12 | **Đủ 100% chức năng đề bài**                               | Màn điều phối (kéo-thả, 3 phương án), Gantt tiến độ, admin dashboard, editor tin tức                                              | Orders/Allocations, 3 chiến lược chia (property test), chia lại, cập nhật tiến độ                                                                                                | News (lịch cúp điện, giá vật liệu), audit log, biểu đồ dashboard                                                                                            |
 | **S6** 07/12–13/12 | Trang web "cực kỳ nổi bật"                                          | **Hero bình gốm 3D**, scroll story, View Transitions, đóng ấn, ghim thở, chế độ Lò đêm, **widget trợ lý Cáo** (E15) | Gợi ý giá, đánh giá hộ, trang Bảo mật tài khoản (lịch sử đăng nhập, đăng xuất mọi thiết bị), MFA bắt buộc cho Admin, **module assistant + guardrail** (E15) | i18n vi/en + URL bản địa hóa, OG image động, sitemap, slug 301, tự điền địa chỉ/EXIF, đọc số thành chữ, **ingest tri thức → pgvector** (E15) |
@@ -205,7 +205,7 @@ gantt
 
 ## 5. Backlog chi tiết theo epic
 
-Ký hiệu: **[A] [B] [C]** = người phụ trách; mã FR tham chiếu [SRS.md](SRS.md).
+Ký hiệu: **[A] [B] [C]** = người phụ trách; mã FR tham chiếu [SRS.md](requirements/SRS.md).
 
 ### E0 — Nền móng (S0)
 
@@ -261,8 +261,8 @@ Ký hiệu: **[A] [B] [C]** = người phụ trách; mã FR tham chiếu [SRS.md
 
 ### E7 — Danh mục & tìm kiếm (FR-CAT)
 
-- [ ] [B] Catalog query (Specification), cursor pagination, `search_text` không dấu, gợi ý
-- [ ] [A] Trang danh mục: bộ lọc ⇄ URL (nuqs), cuộn vô hạn, skeleton, ⌘K
+- [ ] [B] Catalog query (Specification), cursor pagination + phân trang theo số trang (`?page=N`, ADR-0020), `search_text` không dấu, gợi ý
+- [ ] [A] Trang danh mục: bộ lọc ⇄ URL (nuqs), phân trang theo số trang (ADR-0020), skeleton, ⌘K
 - [ ] [A] Chi tiết sản phẩm + View Transition từ thẻ
 
 ### E8 — Bản đồ (FR-MAP)
@@ -298,7 +298,7 @@ Ký hiệu: **[A] [B] [C]** = người phụ trách; mã FR tham chiếu [SRS.md
 
 - [ ] [C] API thống kê; [A] KPI + biểu đồ + hoạt động gần đây; audit log viewer
 
-### E13 — Trải nghiệm thương hiệu (S6) — xem [BRAND §6.3](BRAND.md#63-mười-khoảnh-khắc-đặc-trưng-signature-moments)
+### E13 — Trải nghiệm thương hiệu (S6) — xem [BRAND §6.3](design/BRAND.md#63-mười-khoảnh-khắc-đặc-trưng-signature-moments)
 
 - [ ] [A] Hero bình gốm 3D (LatheGeometry nội suy 4 profile, shader men lam vẽ dần, ánh lửa nung) + poster fallback
 - [ ] [A] Lenis + ScrollTrigger: "Một ngày ở Bát Tràng" cuộn ngang
@@ -317,7 +317,7 @@ Ký hiệu: **[A] [B] [C]** = người phụ trách; mã FR tham chiếu [SRS.md
 
 > Release 2 (3 Nov 2026): back in scope after the first-release deferral (`vCRAFT-9hg.1`, `vCRAFT-9hg.7`), and the stack is OpenAI instead of Claude Haiku + Voyage AI ([ADR-19](adr/0019-assistant-on-openai.md)). Work items: #77–#82.
 
-Mục tiêu: khách (kể cả Guest) hỏi về vCraft, cách đặt hàng/RFQ, truy xuất QR, làng Bát Tràng, hộ và sản phẩm **công khai**. Cáo cũng phải trả lời tự nhiên các câu **đời thường**: chào hỏi, cảm ơn, hỏi ngày giờ, thời tiết, đường đi tới làng, "đang có xưởng nào mở cửa". Trợ lý **chỉ đọc**: không tạo RFQ, không xem dữ liệu riêng của ai, không có tool gây tác dụng phụ. Nguyên tắc: **chỉ chặn tấn công thật, không chặn người dùng thật**; câu lạc đề nhưng vô hại thì trả lời ngắn rồi khéo léo gợi ý quay về chủ đề. Mã FR-AST-01…08 bổ sung vào [SRS.md](SRS.md) khi bắt đầu epic.
+Mục tiêu: khách (kể cả Guest) hỏi về vCraft, cách đặt hàng/RFQ, truy xuất QR, làng Bát Tràng, hộ và sản phẩm **công khai**. Cáo cũng phải trả lời tự nhiên các câu **đời thường**: chào hỏi, cảm ơn, hỏi ngày giờ, thời tiết, đường đi tới làng, "đang có xưởng nào mở cửa". Trợ lý **chỉ đọc**: không tạo RFQ, không xem dữ liệu riêng của ai, không có tool gây tác dụng phụ. Nguyên tắc: **chỉ chặn tấn công thật, không chặn người dùng thật**; câu lạc đề nhưng vô hại thì trả lời ngắn rồi khéo léo gợi ý quay về chủ đề. Mã FR-AST-01…08 bổ sung vào [SRS.md](requirements/SRS.md) khi bắt đầu epic.
 
 **Định tuyến ý định** (chọn đường nhanh nhất cho mỗi loại câu)
 
@@ -359,7 +359,7 @@ worker: job assistant.ingest (outbox product/workshop/news.published|updated|del
 
 **Việc cần làm**
 
-- [ ] [A] Sinh mascot **cáo** theo brand bằng `page-mascot` (S1–S2, việc nhỏ): cáo chibi lông cam đất nung, khăn/áo **men lam**, ôm bình gốm nhỏ; 2 sprite sheet (9 hướng đầu, 9 biểu cảm: idle, chào, nghe, nghĩ, vui, bối rối, từ chối, lỗi, ngủ), WebP; bổ sung mục Mascot vào [BRAND.md](BRAND.md)
+- [ ] [A] Sinh mascot **cáo** theo brand bằng `page-mascot` (S1–S2, việc nhỏ): cáo chibi lông cam đất nung, khăn/áo **men lam**, ôm bình gốm nhỏ; 2 sprite sheet (9 hướng đầu, 9 biểu cảm: idle, chào, nghe, nghĩ, vui, bối rối, từ chối, lỗi, ngủ), WebP; bổ sung mục Mascot vào [BRAND.md](design/BRAND.md)
 - [ ] [A] `packages/ui/mascot`: `<Mascot>` thuần UI (không nghiệp vụ). Đầu nhìn theo con trỏ/ô nhập; **chớp mắt** ngẫu nhiên 3–6 giây/lần (đổi frame, ~120 ms, thỉnh thoảng chớp đôi); biểu cảm theo prop `mood`; **bong bóng suy nghĩ** (3 chấm mây nổi lên trên đầu) kèm prop `thought`. `prefers-reduced-motion` ⇒ tắt chớp mắt, xoay đầu và nhấp nhô; bong bóng hiện tĩnh
 - [ ] [A] `apps/web/src/features/assistant`: nút nổi góc dưới phải (an toàn với safe-area, không che CTA hay bottom sheet bản đồ trên mobile; ẩn ở Studio/Admin nếu vướng); panel chat (desktop: popover 380px; mobile: vaul bottom sheet); stream token; thẻ nguồn trích dẫn có link nội bộ; gợi ý câu hỏi nhanh; nút dừng/xóa hội thoại; trạng thái loading/empty/error/bị giới hạn; điều hướng bàn phím, `aria-live="polite"`, focus trap
 - [ ] [A] Trong lúc chờ token đầu tiên ⇒ cáo `mood="thinking"` + bong bóng xoay vòng **câu thú vị** (i18n vi/en, ~30 câu: chuyện làng Bát Tràng, men lam, nhiệt độ lò, mẹo dùng vCraft). Ví dụ: "Đợi tớ lục lại kho gốm một chút…", "Bạn có biết gốm Bát Tràng nung tới ~1.300°C không?". Khi stream bắt đầu ⇒ `mood="talking"`; bị guardrail chặn ⇒ `mood="refuse"` + câu từ chối thân thiện
@@ -400,7 +400,7 @@ worker: job assistant.ingest (outbox product/workshop/news.published|updated|del
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | -------------------------------------------------------------------------------- | ---------- |
 | 0:00  | **Đưa cốc gốm cho giám khảo quét QR** bằng điện thoại của họ                                                                                                                                                       | A         | Landing truy xuất, dòng thời gian lửa, "Nhật ký toàn vẹn ✓"             | 1, 3, 8    |
 | 1:30  | Trang chủ trên màn lớn: hero bình gốm thành hình theo cuộn                                                                                                                                                                   | A         | Bản sắc, chuyển động; bật reduced-motion để chứng minh tôn trọng a11y | 3          |
-| 2:30  | Danh mục: lọc, cuộn vô hạn, ⌘K "bat trang"; **mở DevTools → Network chỉ thấy Fetch JSON**; thu cửa sổ về 360px                                                                                                     | A         | AJAX/JSON/DOM, responsive, URL đồng bộ bộ lọc                               | 3, 4, 8    |
+| 2:30  | Danh mục: lọc, đổi trang (`?page=N`), ⌘K "bat trang"; **mở DevTools → Network chỉ thấy Fetch JSON**; thu cửa sổ về 360px                                                                                                     | A         | AJAX/JSON/DOM, responsive, URL đồng bộ bộ lọc                               | 3, 4, 8    |
 | 3:30  | Bản đồ: lọc "đang mở cửa", click ghim → popup, flyTo                                                                                                                                                                          | C         | Bản đồ                                                                        | 1          |
 | 4:30  | Buyer tạo RFQ "5.000 cốc in logo ĐH Công nghệ": tự điền, đọc số thành chữ, ràng buộc ngày                                                                                                                             | B         | Nhập liệu                                                                      | 1, 6       |
 | 5:30  | Hộ (trên điện thoại) nhận thông báo realtime, chào giá; Buyer thấy bid rơi vào bảng không tải lại                                                                                                                    | B         | Realtime, chào giá kín                                                        | 1, 4       |
@@ -485,7 +485,7 @@ Diễn tập: ≥ 3 lần có bấm giờ; mỗi người tập được **toàn
 
 ## 10. Bước tiếp theo ngay hôm nay
 
-1. Cả nhóm đọc [SRS.md](SRS.md) và góp ý trong 24h (đặc biệt §4 máy trạng thái).
+1. Cả nhóm đọc [SRS.md](requirements/SRS.md) và góp ý trong 24h (đặc biệt §4 máy trạng thái).
 2. Tạo GitHub Projects, nhập backlog §5 thành issue, gán người.
 3. C: `corepack use pnpm@latest && pnpm install`, khởi tạo Next/Nest vào khung có sẵn, compose chạy được; commit lockfile rồi bật CI bằng repo variable `CI_ENABLED=true`.
 4. A: moodboard + logo ấn bình bản nháp trước thứ Sáu 30/10.

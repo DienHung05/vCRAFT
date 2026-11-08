@@ -1,5 +1,6 @@
 import {
   HouseholdListResponseSchema,
+  HouseholdPageResponseSchema,
   ProductDetailResponseSchema,
   ProductListResponseSchema,
   ProductPageResponseSchema,
@@ -60,6 +61,10 @@ export const fetchProduct = (slug: string) =>
   getJson(`/products/${encodeURIComponent(slug)}`, ProductDetailResponseSchema);
 
 export const fetchHouseholds = () => getJson('/households', HouseholdListResponseSchema);
+
+/** One numbered page of the household list with its totals (GH#202). */
+export const fetchHouseholdPage = (page: number, limit: number) =>
+  getJson(`/households?page=${page}&limit=${limit}`, HouseholdPageResponseSchema);
 
 export const fetchHousehold = (slug: string) =>
   getJson(`/households/${encodeURIComponent(slug)}`, PublicHouseholdResponseSchema);

@@ -92,6 +92,7 @@ export class AccountDeletionService {
 
       user.email = `deleted-${user.id}@deleted.invalid`;
       user.fullName = null;
+      user.username = null;
       user.status = 'DELETED';
       em.create(AuditLog, {
         actorId: user.id,
@@ -210,6 +211,30 @@ export class AccountDeletionService {
           recipientIds: [request.buyer.id, request.coordinatorId],
         });
       }
+      request.revision++;
+    }
+
+    // A household's own (direct) quotations on requests that are still open go too.
+    const direct = await em.find(
+      CooperativeQuotation,
+      {
+        bidType: 'INDIVIDUAL',
+        status: 'SUBMITTED',
+        request: { status: { $in: [...OPEN_REQUESTS] } },
+      },
+      { populate: ['request'] },
+    );
+    for (const quotation of direct) {
+      const request = quotation.request;
+      if (quotation.parts[0]?.householdId !== household.id) continue;
+      quotation.status = 'WITHDRAWN';
+      await this.notifier.notify(em, {
+        kind: 'QUOTATION_WITHDRAWN',
+        requestId: request.id,
+        quotationId: quotation.id,
+        actorId: user.id,
+        recipientIds: [request.buyer.id],
+      });
       request.revision++;
     }
 

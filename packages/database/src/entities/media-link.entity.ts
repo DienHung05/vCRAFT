@@ -4,12 +4,13 @@ import { BaseEntity } from './base.entity.js';
 import { MediaAsset } from './media-asset.entity.js';
 
 /** Đối tượng được gắn tệp. Ảnh của mốc nhật ký nằm trong `JournalEntry.images` (đi vào chuỗi băm), không ở đây. */
-export const MEDIA_LINK_TARGETS = ['PRODUCT', 'HOUSEHOLD', 'NEWS'] as const;
+export const MEDIA_LINK_TARGETS = ['PRODUCT', 'HOUSEHOLD', 'NEWS', 'RFQ'] as const;
 export type MediaLinkTarget = (typeof MEDIA_LINK_TARGETS)[number];
 
 /**
  * `COVER`: ảnh đại diện (sản phẩm, tin); `PORTRAIT`/`BANNER`: ảnh thẻ và ảnh bìa của hộ; `GALLERY`: ảnh
- * trong thư viện; `DOCUMENT`: giấy tờ xác minh của hộ (tệp riêng tư, chỉ Ban quản lý xem).
+ * trong thư viện; `DOCUMENT`: giấy tờ xác minh của hộ (tệp riêng tư, chỉ Ban quản lý xem);
+ * với `RFQ` là tệp đính kèm của yêu cầu báo giá (riêng tư, ghép theo `position`).
  */
 export const MEDIA_LINK_ROLES = ['COVER', 'PORTRAIT', 'BANNER', 'GALLERY', 'DOCUMENT'] as const;
 export type MediaLinkRole = (typeof MEDIA_LINK_ROLES)[number];

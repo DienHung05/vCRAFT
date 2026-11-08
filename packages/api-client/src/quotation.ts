@@ -13,8 +13,11 @@ import {
   CreateContributionRequestSchema,
   type CreateCooperativeQuotationRequest,
   CreateCooperativeQuotationRequestSchema,
+  type CreateDirectQuotationRequest,
+  CreateDirectQuotationRequestSchema,
   type CreateRfqRequest,
   CreateRfqRequestSchema,
+  DirectQuotationResponseSchema,
   type ErrorCode,
   formatVersionTag,
   HouseholdListResponseSchema,
@@ -24,6 +27,7 @@ import {
   type ListRfqsQuery,
   MarkAllNoticesReadResponseSchema,
   MediaAssetResponseSchema,
+  MediaReadUrlResponseSchema,
   MyAllocationListSchema,
   MyInvitationListSchema,
   PriceHintResponseSchema,
@@ -164,6 +168,10 @@ export function createQuotationClient(options: QuotationClientOptions) {
     getMedia(id: string) {
       return request(`/media/${IdSchema.parse(id)}`, MediaAssetResponseSchema);
     },
+    /** Short-lived signed link to a private file, such as a request attachment. */
+    getMediaReadUrl(id: string) {
+      return request(`/media/${IdSchema.parse(id)}/read-url`, MediaReadUrlResponseSchema);
+    },
     listHouseholds() {
       return request('/households', HouseholdListResponseSchema);
     },
@@ -210,6 +218,40 @@ export function createQuotationClient(options: QuotationClientOptions) {
       return request(
         `/contributions/${IdSchema.parse(id)}/withdraw`,
         ContributionResponseSchema,
+        'POST',
+        undefined,
+        version,
+      );
+    },
+    /** FR-RFQ-04: an invited household quotes the whole request itself (no coordination). */
+    createDirectQuotation(id: string, input: CreateDirectQuotationRequest) {
+      return request(
+        `/rfqs/${IdSchema.parse(id)}/direct-quotations`,
+        DirectQuotationResponseSchema,
+        'POST',
+        CreateDirectQuotationRequestSchema.parse(input),
+      );
+    },
+    /** The household's own direct quotations on a request, newest first. */
+    listOwnDirectQuotations(id: string) {
+      return request(
+        `/rfqs/${IdSchema.parse(id)}/direct-quotations`,
+        DirectQuotationResponseSchema.array(),
+      );
+    },
+    reviseDirectQuotation(id: string, version: number, input: CreateDirectQuotationRequest) {
+      return request(
+        `/direct-quotations/${IdSchema.parse(id)}`,
+        DirectQuotationResponseSchema,
+        'PUT',
+        CreateDirectQuotationRequestSchema.parse(input),
+        version,
+      );
+    },
+    withdrawDirectQuotation(id: string, version: number) {
+      return request(
+        `/direct-quotations/${IdSchema.parse(id)}/withdraw`,
+        DirectQuotationResponseSchema,
         'POST',
         undefined,
         version,

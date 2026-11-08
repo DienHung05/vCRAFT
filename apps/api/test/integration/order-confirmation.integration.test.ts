@@ -10,7 +10,8 @@ describe('order confirmation, progress and receipt', () => {
   let stranger: { auth: string };
   let admin: { auth: string };
   let reps: Array<{ auth: string; householdId: string }>;
-  const deadline = new Date(Date.now() + 86_400_000).toISOString();
+  // At least 24 h away when submitted (SRS T1, GH#244).
+  const deadline = new Date(Date.now() + 2 * 86_400_000).toISOString();
   const completionDate = new Date(Date.now() + 10 * 86_400_000).toISOString();
   const requiredBy = new Date(Date.now() + 20 * 86_400_000).toISOString();
 
@@ -210,6 +211,31 @@ describe('order confirmation, progress and receipt', () => {
     expect(strangerRead.status).not.toBe(200);
   });
 
+  it('returns no allocations before acceptance for viewers and still hides the request from strangers', async () => {
+    const { requestId } = await freshRequest();
+    for (const viewer of [buyer, admin, representative(0)]) {
+      const view = await t.request({
+        method: 'GET',
+        url: `/rfqs/${requestId}/allocations`,
+        auth: viewer.auth,
+      });
+      expect(view.status).toBe(200);
+      expect(view.body).toEqual([]);
+    }
+    const strangerView = await t.request({
+      method: 'GET',
+      url: `/rfqs/${requestId}/allocations`,
+      auth: stranger.auth,
+    });
+    expect(strangerView.status).toBe(404);
+    const unknown = await t.request({
+      method: 'GET',
+      url: '/rfqs/00000000-0000-4000-8000-000000000000/allocations',
+      auth: buyer.auth,
+    });
+    expect(unknown.status).toBe(404);
+  });
+
   it('requires every confirmation before production starts', async () => {
     const { requestId } = await acceptFlow();
     const rep0View = await t.request({
@@ -258,7 +284,7 @@ describe('order confirmation, progress and receipt', () => {
     expect(started.body.status).toBe('IN_PRODUCTION');
   });
 
-  it('decline cancels the whole unstarted order but keeps history', async () => {
+  it('decline keeps the order and the board reallocates the declined share (GH#246)', async () => {
     const { requestId } = await acceptFlow();
     const own = await t.request({
       method: 'GET',
@@ -273,18 +299,40 @@ describe('order confirmation, progress and receipt', () => {
     });
     expect(declined.status).toBe(200);
     const read = await t.request({ method: 'GET', url: `/rfqs/${requestId}`, auth: buyer.auth });
-    expect(read.body.status).toBe('CANCELLED');
+    expect(read.body.status).toBe('ACCEPTED');
     const kept = await t.request({
       method: 'GET',
       url: `/rfqs/${requestId}/allocations`,
       auth: buyer.auth,
     });
-    expect(kept.status).toBe(200);
-    expect(kept.body).toHaveLength(2);
     expect(kept.body.map((a: { status: string }) => a.status).sort()).toEqual([
-      'CANCELLED',
       'DECLINED',
+      'PROPOSED',
     ]);
+
+    // The board sees the declined share and gives it to the other household.
+    const board = await t.request({ method: 'GET', url: '/admin/allocations', auth: admin.auth });
+    const share = board.body
+      .find((order: { requestId: string }) => order.requestId === requestId)
+      .allocations.find((a: { status: string }) => a.status === 'DECLINED');
+    expect(share.quantity).toBeGreaterThan(0);
+    const moved = await t.request({
+      method: 'POST',
+      url: `/admin/allocations/${share.id}/reallocate`,
+      auth: admin.auth,
+      headers: { 'if-match': String(share.version) },
+      body: { targets: [{ householdId: representative(0).householdId, quantity: share.quantity }] },
+    });
+    expect(moved.status).toBe(200);
+    const after = await t.request({
+      method: 'GET',
+      url: `/rfqs/${requestId}/allocations`,
+      auth: buyer.auth,
+    });
+    const total = after.body.reduce((sum: number, a: { quantity: number }) => sum + a.quantity, 0);
+    expect(total).toBe(3500);
+    const taker = after.body.find((a: { status: string }) => a.status === 'PROPOSED');
+    expect(taker.quantity).toBe(3500);
   });
 
   it('bounds progress and confirms receipt only when all done', async () => {

@@ -118,24 +118,18 @@
     "hours": "Support hours",
     "hoursValue": "Monday to Saturday, {open} to {close} (Vietnam time)",
     "rights": "© {year} vCraft. All rights reserved.",
-    "demo": "Demo build: household names, artisans and figures are sample data.",
     "credits": "Image credits",
     "privacy": "Privacy policy"
   },
   "credits": {
-    "photoBy": "Photo: {author}",
-    "source": "Source",
     "title": "Image credits",
     "lead": "The illustrative photos in this demo come from Wikimedia Commons, the open-access collections of museums and Pixabay, under licences that allow public use with attribution. We thank the authors below. Photos were cropped and compressed for the web; no other changes were made.",
-    "demoNote": "Photos are illustrative only: the pottery shown is not made by the sample households.",
     "table": "List of photos and licences",
     "colPhoto": "Photo",
     "colAuthor": "Author",
     "colLicense": "Licence",
     "colSource": "Source",
-    "viewSource": "View source",
-    "note": "Illustrative photos from Wikimedia Commons, museum open-access collections and Pixabay under licences that allow reuse, cropped and compressed for the web.",
-    "noteLink": "Image credits"
+    "viewSource": "View source"
   },
   "notFound": {
     "title": "This page hasn't come out of the kiln",
@@ -154,7 +148,9 @@
     },
     "day": {
       "title": "A day in Bat Trang",
-      "lead": "From kneading clay to opening the kiln, six steps that every piece goes through. The photos only illustrate each step in general; they are not photos of any particular piece. Swipe sideways to follow each one."
+      "lead": "From kneading clay to opening the kiln, six steps that every piece goes through. The photos only illustrate each step in general; they are not photos of any particular piece. Swipe sideways to follow each one.",
+      "railLabel": "Stages of the day",
+      "current": "Stage {index} of {total}: {name}"
     },
     "artisans": {
       "title": "The hands that keep the craft alive",
@@ -268,7 +264,7 @@
     "verifiedSeal": "vCraft verification seal",
     "integrity": {
       "demoBadge": "Demo data",
-      "demoNote": "The product, household and log on this page are sample data for the demo, not real goods.",
+      "householdVerified": "Household verified by the management board",
       "match": "This code matches a demo product from {household}.",
       "checkingTitle": "Checking the log…",
       "checkingText": "Your browser is recomputing the SHA-256 hash of every entry itself.",
@@ -297,7 +293,7 @@
     "qrLabel": "Trace seal for code {code}",
     "shortLink": "Short link encoded in the QR",
     "ctaVisit": "Visit the workshop",
-    "ctaRfq": "Order in bulk",
+    "ctaRfq": "Request a quote",
     "proofAlt": "Photo of the {stage} step",
     "corrects": "Corrects entry {n}",
     "correctedBy": "Corrected by entry {n}",
@@ -422,12 +418,16 @@
       "coveragePartial": "Partial · {percent}% ({count, number})",
       "accept": "Accept",
       "acceptBlocked": "Only a bid for the full {quantity} {unit} can be accepted.",
-      "emptyTitle": "No quotations yet"
+      "emptyTitle": "No quotations yet",
+      "direct": "Household quote",
+      "perUnit": "{price} per {unit}",
+      "note": "Household note: {note}"
     },
     "form": {
       "title": "New quote request",
       "lead": "Describe what you need. Your draft saves automatically, so you can close this page and come back.",
       "requestTitle": "Title",
+      "prefillDescription": "I am interested in the product “{product}” from {household} (trace code {code}).",
       "category": "Category",
       "chooseCategory": "Choose a category",
       "description": "Description",
@@ -443,6 +443,18 @@
       "households": "Choose households to invite",
       "householdsLoading": "Loading households…",
       "householdsFailed": "The households could not be loaded.",
+      "customRequirements": "Special requirements (optional)",
+      "customRequirementsHint": "For example: logo printing, separate packaging, glaze colour. Up to 1,000 characters.",
+      "attachments": "Attachments (optional)",
+      "attachmentsHint": "A logo or a drawing: up to 3 image or PDF files, 10 MB each. Only the invited households can see them.",
+      "attachmentsPick": "Add a file",
+      "attachmentsUploading": "Uploading…",
+      "attachmentsRemove": "Remove file {name}",
+      "attachmentsFull": "You have attached 3 files.",
+      "attachmentsErrorType": "Only JPEG, PNG, WebP, AVIF images or PDF files are accepted.",
+      "attachmentsErrorSize": "The file is too large, 10 MB at most.",
+      "attachmentsErrorUpload": "The file could not be uploaded. Please try again.",
+      "householdsMatch": "Leave empty and the system invites up to 10 households that work in the same category as the request.",
       "send": "Send request",
       "sending": "Sending…",
       "saving": "Saving draft…",
@@ -451,6 +463,7 @@
       "saveFailed": "The draft could not be saved to the server. Your text is still in this browser.",
       "sendFailed": "The request could not be sent. Please try again.",
       "emailNotVerified": "Please verify your email before sending the request.",
+      "noMatch": "No household works in this category yet. Choose specific households or ask the board to coordinate.",
       "signIn": "Sign in with a buyer account to create a request.",
       "problem": {
         "title": "Enter a title.",
@@ -461,10 +474,10 @@
         "destination": "Enter where to deliver.",
         "deadline": "The bidding deadline must be at least 24 hours after sending.",
         "requiredBy": "The delivery date must be after the bidding deadline.",
-        "budget": "The budget must be whole numbers, with the lower amount first.",
-        "households": "Choose at least one household, or ask the board to coordinate."
+        "budget": "The budget must be whole numbers, with the lower amount first."
       },
       "sentToast": "Quotation request sent. The households will receive an invitation to quote.",
+      "sentToastMatched": "Quotation request sent to {count, plural, one {# matching household} other {# matching households}}.",
       "consentRequired": "Agree to the privacy policy to send the request."
     },
     "list": {
@@ -492,7 +505,8 @@
       "cancel": "Cancel request",
       "cancelFailed": "The request could not be cancelled. The data just changed, please try again.",
       "reasonRequired": "Please give a reason.",
-      "stale": "This request was just updated. The data has been refreshed, please try again.",
+      "stale": "The data was just updated. Please try again.",
+      "closed": "This request has already been accepted",
       "description": "Description",
       "category": "Category",
       "coordinated": "Village board coordinating",
@@ -500,7 +514,13 @@
       "cancelledToast": "Quotation request cancelled.",
       "receivedToast": "Receipt confirmed. Thank you.",
       "receiveTitle": "Confirm that you received the goods?",
-      "receiveText": "Once confirmed, the order is marked as delivered. This cannot be undone."
+      "receiveText": "Once confirmed, the order is marked as delivered. This cannot be undone.",
+      "attachments": "Attachments",
+      "attachmentName": "Attachment {n}",
+      "attachmentOpen": "Open",
+      "attachmentOpenFailed": "The file could not be opened.",
+      "attachmentKindPdf": "PDF",
+      "attachmentKindImage": "Image"
     }
   },
   "admin": {
@@ -514,7 +534,73 @@
       "audit": "Audit log",
       "overview": "Overview",
       "pending": "{count} applications waiting",
-      "progress": "Order progress"
+      "progress": "Order progress",
+      "users": "Accounts"
+    },
+    "accounts": {
+      "title": "Accounts",
+      "lead": "Invite administrators or households by email, and suspend or restore accounts. Every action is written to the audit log.",
+      "signIn": "Sign in with a board account.",
+      "invite": {
+        "title": "Invite by email",
+        "lead": "The invited person gets an email with a one-time link to set a password. The role is granted when they first sign in.",
+        "email": "Email of the person to invite",
+        "role": "Role",
+        "roles": {
+          "HOUSEHOLD": "Household representative",
+          "ADMIN": "Administrator"
+        },
+        "adminNote": "A new administrator must set up two-factor authentication (6-digit code) on first sign-in before entering the admin area.",
+        "submit": "Send invitation",
+        "sending": "Sending…",
+        "sent": "Invitation sent to {email}.",
+        "emailInvalid": "Enter a valid email address.",
+        "errors": {
+          "CONFLICT_DUPLICATE": "This email already has an account.",
+          "default": "The invitation could not be sent. Try again in a few minutes."
+        },
+        "listTitle": "Recent invitations",
+        "listEmpty": "No invitations yet.",
+        "status": {
+          "PENDING": "Pending",
+          "ACCEPTED": "Accepted"
+        },
+        "by": "Invited by {name}",
+        "failed": "The invitations could not be loaded."
+      },
+      "users": {
+        "title": "Users",
+        "filters": "Filter users",
+        "search": "Search by email, name or username",
+        "role": "Role",
+        "allRoles": "All roles",
+        "status": "Status",
+        "allStatuses": "All statuses",
+        "statusValues": {
+          "ACTIVE": "Active",
+          "LOCKED": "Suspended"
+        },
+        "loading": "Loading…",
+        "failed": "The users could not be loaded.",
+        "retry": "Try again",
+        "empty": "No account matches.",
+        "noName": "No name yet",
+        "reason": "Reason: {reason}",
+        "suspend": "Suspend",
+        "unsuspend": "Restore",
+        "suspendTitle": "Suspend {name}?",
+        "suspendText": "This person is blocked from their next request and cannot refresh their session. The reason is written to the audit log.",
+        "reasonLabel": "Reason (at least 3 characters)",
+        "unsuspendTitle": "Restore {name}?",
+        "unsuspendText": "This person can sign in again right away.",
+        "cancel": "Cancel",
+        "errors": {
+          "BUSINESS_RULE_VIOLATED": "You cannot suspend your own account.",
+          "INVALID_TRANSITION": "The account status has changed. Reload the list.",
+          "NOT_FOUND": "The account was not found.",
+          "default": "That did not work. Try again in a few minutes."
+        }
+      }
     },
     "board": {
       "barTitle": "Splitting {quantity} {unit} across households",
@@ -599,7 +685,10 @@
       "receiveTitle": "Confirm that the goods were received?",
       "receiveText": "The order is marked as delivered. This cannot be undone.",
       "back": "Go back",
-      "reasonRequired": "Please give a reason."
+      "reasonRequired": "Please give a reason.",
+      "stale": "The data was just updated. Review it and try again.",
+      "startFailed": "Production could not be started. Make sure every household has confirmed its share, then try again.",
+      "actionFailed": "The action failed. Please try again."
     },
     "dashboard": {
       "title": "Overview",
@@ -625,7 +714,7 @@
         "latency": "First token (p50 / p95)",
         "latencyValue": "{p50} / {p95}",
         "ms": "{value} ms",
-        "unansweredTitle": "Questions the Fox could not answer",
+        "unansweredTitle": "Questions Fox could not answer",
         "unansweredEmpty": "No unanswered questions yet.",
         "times": "{count, plural, one {# time} other {# times}}"
       }
@@ -769,7 +858,8 @@
         "rfq": "Quote request",
         "quotation": "Cooperative quotation",
         "news": "News",
-        "app_user": "Account"
+        "app_user": "Account",
+        "account_invitation": "Invitation"
       },
       "actions": {
         "household": {
@@ -805,6 +895,14 @@
         },
         "allocation": {
           "reallocate": "Reallocate remaining pieces"
+        },
+        "access": {
+          "denied": "Blocked from changing another household’s record"
+        },
+        "user": {
+          "suspend": "Suspend account",
+          "unsuspend": "Restore account",
+          "invite": "Invite by email"
         }
       },
       "emptyHint": "Every administrator action will be recorded here.",
@@ -927,6 +1025,7 @@
         "OVERDUE": "Overdue"
       },
       "reallocate": "Reallocate the rest",
+      "declined": "Declined, needs reallocating",
       "reallocateLegend": "Give the remaining {remaining} {unit} to other households",
       "targetHousehold": "Household",
       "chooseHousehold": "Choose a household",
@@ -944,7 +1043,6 @@
     "makersLead": "Credit for making the object goes to each person for the part they did.",
     "madeBy": "Made by",
     "postedBy": "This page is posted by the administration of {household}; the poster is not credited as a maker.",
-    "illustrative": "People and households in this demonstration are illustrative.",
     "evidenceTitle": "Evidence of making",
     "evidenceText": "Every object carries a trace seal that leads to its production journal, with hashes you can check yourself.",
     "evidenceCta": "Read the journal of {product}",
@@ -954,6 +1052,12 @@
     "showroomsEmpty": "This household has no place open to visitors yet.",
     "productionTitle": "Production workshops",
     "productionNote": "Used for making only, not open to visitors.",
+    "weeklyHours": "Opening hours this week",
+    "dayClosed": "Closed",
+    "closedNow": "Closed now",
+    "reopensAt": "reopens at {time}, {day}",
+    "experienceTitle": "Experience",
+    "experienceDuration": "{minutes} min",
     "mapTitle": "Village map",
     "listTitle": "List of places",
     "listVisitable": "visitors welcome",
@@ -1019,6 +1123,38 @@
     "withdrawText": "It will no longer be used to match quotations. You can send it again before the deadline.",
     "declineTitle": "Decline this invitation?",
     "declineText": "Your household will not take part in this request. You can still send a contribution before the deadline if you change your mind."
+  },
+  "directQuotation": {
+    "title": "Quotation for {code}",
+    "lead": "This request is not coordinated by the board. Your household quotes the whole {quantity} {unit}: your unit price and completion date.",
+    "unitPrice": "Unit price (VND)",
+    "total": "Total for {quantity} {unit}: {total}",
+    "completionDate": "Completion date",
+    "note": "Note for the buyer (optional)",
+    "dateWindow": "The completion date must be after the bidding deadline {closing} and no later than the delivery date {required}.",
+    "problem": {
+      "price": "The unit price must be a whole number, 1 or more.",
+      "dateMissing": "Choose a completion date.",
+      "dateBeforeClosing": "The completion date must be after the bidding deadline {date}.",
+      "dateAfterRequired": "The completion date cannot be later than the delivery date {date}."
+    },
+    "send": "Send quotation",
+    "update": "Update quotation",
+    "sending": "Sending…",
+    "withdraw": "Withdraw quotation",
+    "withdrawTitle": "Withdraw this quotation?",
+    "withdrawText": "The buyer will no longer see it. You can send a new one before the deadline.",
+    "cancel": "Back",
+    "sendFailed": "Sending failed. Please try again later.",
+    "sentToast": "Quotation sent to the buyer.",
+    "updatedToast": "Quotation updated.",
+    "withdrawnToast": "Quotation withdrawn.",
+    "visibleToBuyer": "The buyer sees your household name, unit price, total and completion date. Other households do not.",
+    "active": "Quotation waiting for the buyer: {price} per {unit}, total {total}.",
+    "withdrawn": "Quotation withdrawn. Send it again to take part again.",
+    "accepted": "The buyer accepted your quotation. Confirm your share under Orders.",
+    "rejected": "The buyer chose another household.",
+    "lapsed": "The quotation has expired."
   },
   "order": {
     "title": "Order",
@@ -1178,7 +1314,22 @@
       "signOutAll": "Sign out of every device",
       "confirmTitle": "Sign out of every device?",
       "confirmText": "Every session of this account ends at once, this one included. You will need to sign in again.",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "current": "This device",
+      "signedOut": "Signed out",
+      "unknownBrowser": "Unknown browser",
+      "signOutOthersLead": "Keep this session and end every other session on browsers and phones.",
+      "signOutOthers": "Sign out other devices",
+      "othersTitle": "Sign out other devices?",
+      "othersText": "Every other session of this account ends at once. This session stays signed in.",
+      "othersDone": "Other devices were signed out.",
+      "othersFailed": "Other devices could not be signed out. Try again in a few minutes.",
+      "allSessions": "See all sign-in sessions"
+    },
+    "sessions": {
+      "title": "Sign-in sessions",
+      "lead": "Recent sign-ins with the browser and a rough location. If one looks unfamiliar, sign out other devices and change your password.",
+      "back": "Back to account"
     }
   },
   "villageMap": {
@@ -1214,7 +1365,19 @@
       "6": "Saturday"
     },
     "clearFilters": "Clear filters",
-    "offline": "Offline backup map"
+    "filterExperience": "Offers an experience",
+    "temporarilyClosed": "Temporarily closed",
+    "temporarilyClosedReason": "Temporarily closed: {reason}",
+    "experienceSummary": "Experience · {minutes} min · {price}",
+    "offline": "Offline backup map",
+    "directions": "Directions",
+    "closeCard": "Close the info card",
+    "legendTitle": "Legend",
+    "legendOpen": "Open now",
+    "legendClosed": "Closed now",
+    "legendProduction": "Production only",
+    "pinButton": "{name}: show details",
+    "viewOnFullMap": "View on the village map"
   },
   "catalog": {
     "filtersLabel": "Filter products",
@@ -1254,11 +1417,19 @@
     "emptyHint": "Try removing a filter or widening the price range to see more products.",
     "results": "Product results",
     "pagination": {
-      "label": "Product pages",
+      "label": {
+        "products": "Product pages",
+        "households": "Household pages",
+        "news": "News pages"
+      },
       "previous": "Previous page",
       "next": "Next page",
       "goTo": "Page {page}",
-      "showing": "Showing {from}–{to} of {total} products"
+      "showing": {
+        "products": "Showing {from}–{to} of {total} products",
+        "households": "Showing {from}–{to} of {total} households",
+        "news": "Showing {from}–{to} of {total} news items"
+      }
     }
   },
   "auth": {
@@ -1286,6 +1457,10 @@
       "ADMIN": "Coordination"
     },
     "fields": {
+      "username": "Username",
+      "usernameHint": "Use 3-30 characters: a-z, digits, dots, underscores or hyphens.",
+      "identifier": "Username or email",
+      "identifierPlaceholder": "your.username",
       "email": "Email",
       "emailPlaceholder": "name@example.com",
       "password": "Password",
@@ -1297,6 +1472,10 @@
       "optional": "optional"
     },
     "validation": {
+      "identifierRequired": "Enter your username or email.",
+      "usernameRequired": "Enter a username.",
+      "usernameInvalid": "Use 3-30 characters: a-z, digits, dots, underscores or hyphens.",
+      "usernameReserved": "This username is reserved for system accounts. Choose another.",
       "emailRequired": "Enter your email.",
       "emailInvalid": "That email does not look right, for example name@example.com.",
       "passwordRequired": "Enter your password.",
@@ -1314,8 +1493,20 @@
       "consentRequired": "Agree to the Privacy policy to create an account.",
       "idNumberInvalid": "The ID number is exactly 12 digits, without spaces."
     },
+    "username": {
+      "checking": "Checking username...",
+      "available": "This username is available.",
+      "taken": "This username is already taken. Choose another.",
+      "unavailable": "Cannot check the username right now. You can retry submitting.",
+      "title": "Choose a username",
+      "lead": "Your account needs a username. Keep using email for verification and password reset.",
+      "submit": "Save username",
+      "saving": "Saving..."
+    },
     "errors": {
-      "invalid_credentials": "The email or password is not right. Check them, or choose \"Forgot password\" to set a new one.",
+      "usernameTaken": "This username is already taken. Choose another.",
+      "usernameReserved": "This username is reserved for system accounts. Choose another.",
+      "invalid_credentials": "The username, email or password is not right. Check them, or choose \"Forgot password\" to set a new one.",
       "email_not_confirmed": "This email is not verified yet. Open the vCraft message and click the verification link, or resend it below.",
       "email_exists": "Could not create an account with this email. If you registered before, sign in or choose \"Forgot password\".",
       "rate_limited": "You are going a little fast. Wait a few minutes and try again; what you typed is still here.",
@@ -1398,7 +1589,7 @@
     },
     "invitation": {
       "title": "Welcome to vCraft",
-      "lead": "The village administration invited your household to the digital exhibition. Set a password to activate your account.",
+      "lead": "The village administration invited you to vCraft. Set a password to activate your account.",
       "submit": "Set password and enter vCraft",
       "submitting": "Activating…",
       "invalidTitle": "This invitation cannot be used",
@@ -1676,6 +1867,13 @@
       "closed": "Closed",
       "open": "Opens",
       "close": "Closes",
+      "experienceOffer": "Offers an experience to visitors",
+      "experienceDescription": "Experience description",
+      "experienceDuration": "Duration (minutes)",
+      "experiencePrice": "Experience price (VND)",
+      "temporarilyClosed": "Temporarily closed",
+      "closureReason": "Reason for the closure",
+      "closureReasonHint": "Visitors see this reason; the workshop shows as closed even if opening hours are set.",
       "capacity": "Production capacity (units per month)",
       "idNumber": {
         "title": "Citizen ID number",
@@ -1690,6 +1888,8 @@
       }
     },
     "products": {
+      "pendingHint": "You can add products once the village board has approved your household.",
+      "pendingAction": "View your household profile",
       "title": "Products",
       "add": "Add product",
       "empty": "No products in this view yet.",
@@ -1742,9 +1942,30 @@
       "withdrawReason": "Reason for withdrawing",
       "notApproved": "Your household must be approved before publishing.",
       "publishFailed": "We could not change the status. Please try again later.",
+      "publishJournalRequired": "Add at least one production-journal milestone (with a photo) before publishing.",
       "qr": "QR code",
       "qrLead": "Print this on the label under the piece. The code stays the same if the name changes.",
       "qrDownload": "Download PNG",
+      "qrDownloadSvg": "Download SVG",
+      "scans": {
+        "title": "Scans",
+        "lead": "How often customers scanned this product's QR code. Only the country and device type are recorded, never an IP address.",
+        "total": "Total scans",
+        "last30Days": "Last 30 days",
+        "chart": "Scans per day over the last 30 days",
+        "countries": "Countries (30 days)",
+        "devices": "Devices (30 days)",
+        "unknown": "Unknown",
+        "empty": "No scans in the last 30 days.",
+        "failed": "We could not load the scan numbers.",
+        "device": {
+          "mobile": "Phone",
+          "tablet": "Tablet",
+          "desktop": "Computer",
+          "bot": "Automated crawler",
+          "unknown": "Unknown"
+        }
+      },
       "labels": {
         "oneSheet": "Download QR labels to print (PDF)",
         "allPublished": "QR labels for {count, plural, one {# listed product} other {# listed products}} (PDF)",
@@ -1784,7 +2005,11 @@
       "exifFilled": "Date and time filled from the photo.",
       "exifOld": "This photo is more than 30 days old. Check the date before saving.",
       "waitingPhoto": "Waiting for the photo to process…",
-      "photoFailed": "The photo has not finished processing. Try again later or save without it.",
+      "photoFailed": "The photo has not finished processing. Try again later.",
+      "photoRequired": "Add at least one photo as evidence for this stage.",
+      "oldPhotoTitle": "Photo taken a while ago?",
+      "oldPhotoText": "This photo was taken more than 30 days ago. Save the milestone with it anyway?",
+      "oldPhotoConfirm": "Save anyway",
       "saveFailed": "We could not save this entry. Check the details and try again.",
       "correct": "Correct",
       "correctionTitle": "Correct entry {n}",
@@ -1800,7 +2025,7 @@
       "deleteText": "The milestone and its photo will be removed from the journal. This cannot be undone.",
       "deletedToast": "Milestone deleted.",
       "deleteFailed": "Could not delete the milestone. Please try again later.",
-      "emptyHint": "Each milestone is one stage with a date, a note and, if you have one, a photo. Visitors read them when they scan the QR code."
+      "emptyHint": "Each milestone is one stage with a date, a note and a photo. Visitors read them when they scan the QR code."
     },
     "invitations": {
       "title": "Quote invitations",
@@ -1820,7 +2045,10 @@
       "declined": "Declined",
       "closed": "Closed",
       "emptyHint": "When a buyer or the Management Board invites your household to quote, the invitation shows up here.",
-      "emptyAction": "Complete the household profile"
+      "emptyAction": "Complete the household profile",
+      "directActive": "Quoted: {price} per {unit}, total {total}",
+      "directAccepted": "The buyer accepted the quotation",
+      "directRejected": "The buyer chose another household"
     },
     "allocations": {
       "title": "Orders",
@@ -1877,7 +2105,6 @@
     "title": "Privacy policy",
     "lead": "What personal information you give vCraft, what it is used for, who can see it and how you stay in control of it. This page is kept short so it reads well on a phone.",
     "updated": "Last updated: 1 November 2026",
-    "demoNote": "This is a demonstration site: households, artisans and figures are sample data. The policy describes exactly how the system handles what you enter.",
     "toc": "On this page",
     "backToTop": "Back to top",
     "sections": {
@@ -1991,17 +2218,17 @@
     }
   },
   "assistant": {
-    "open": "Ask the Fox",
+    "open": "Ask Fox",
     "close": "Close the assistant",
-    "title": "The vCraft Fox",
+    "title": "Fox",
     "subtitle": "Ask about Bát Tràng pottery and using vCraft",
-    "mascotLabel": "The Fox, vCraft's assistant",
-    "welcome": "Hi! I'm the Fox. Looking for pottery, a bulk order, or the story of Bát Tràng village?",
-    "hello": "Hi there 👋 Ask the Fox anything about the pottery village!",
+    "mascotLabel": "Fox",
+    "welcome": "Hi! I'm Fox. Looking for pottery, a bulk order, or the story of Bát Tràng village?",
+    "hello": "Hi there 👋 Ask Fox anything about the pottery village!",
     "dismissHello": "Hide the greeting",
-    "log": "Conversation with the Fox",
-    "inputLabel": "Your question for the Fox",
-    "placeholder": "Ask the Fox something…",
+    "log": "Conversation with Fox",
+    "inputLabel": "Your question for Fox",
+    "placeholder": "Ask Fox something…",
     "send": "Send",
     "stop": "Stop answering",
     "stopped": "Stopped.",
@@ -2015,8 +2242,8 @@
     "historyEmpty": "No saved conversations yet.",
     "deleteConversation": "Delete conversation",
     "backToChat": "Back to chat",
-    "thinking": "The Fox is thinking…",
-    "error": "The Fox tripped up. Please try again.",
+    "thinking": "Fox is thinking…",
+    "error": "Fox tripped up. Please try again.",
     "sources": "Sources",
     "quickLabel": "Suggested questions",
     "source": {
@@ -2031,10 +2258,10 @@
       "INJECTION": "I can't do that. Shall we talk about pottery?",
       "ABUSE": "Let's keep it friendly. I'm still happy to help with Bát Tràng pottery.",
       "PRIVATE_DATA": "I can't see other people's private details. Try asking something else.",
-      "RATE_LIMITED": "That's a lot of questions! The Fox needs a short break. Try again in a few minutes.",
-      "RATE_LIMITED_WAIT": "That's a lot of questions! The Fox needs a short break. Ask again in {seconds} s.",
-      "BUDGET_EXHAUSTED": "The Fox is asleep. See you tomorrow 💤",
-      "DISABLED": "The Fox is resting. Try the FAQ or send a quote request."
+      "RATE_LIMITED": "That's a lot of questions! Fox needs a short break. Try again in a few minutes.",
+      "RATE_LIMITED_WAIT": "That's a lot of questions! Fox needs a short break. Ask again in {seconds} s.",
+      "BUDGET_EXHAUSTED": "Fox is asleep. See you tomorrow 💤",
+      "DISABLED": "Fox is resting. Try the FAQ or send a quote request."
     },
     "quick": {
       "home": [
@@ -2090,7 +2317,7 @@
       "Teapots and cups are a classic…",
       "Pieces that crack in the kiln are discarded…",
       "Masters can throw vases a metre tall…",
-      "The Fox is rummaging through the shelves…"
+      "Fox is rummaging through the shelves…"
     ]
   }
 }

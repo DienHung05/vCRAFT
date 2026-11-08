@@ -1,16 +1,20 @@
 /**
- * Tài khoản demo cố định (GH#14). File này KHÔNG import gì để script gốc (`scripts/demo-auth.mjs`) và
+ * Tài khoản demo cố định (GH#14). File này KHÔNG import gì để script gốc (`scripts/demo/auth.mjs`) và
  * Playwright đọc thẳng bằng Node (type stripping); đừng thêm import hay cú pháp chỉ có ở TypeScript
  * ngoài kiểu (enum, namespace, decorator).
  *
  * `id` = `sub` của Supabase Auth = `app_user.id` (ARCHITECTURE §7.5), nên cùng một UUID phải có mặt ở
- * cả hai nơi: seeder ghi `app_user`, `scripts/demo-auth.mjs` tạo/cập nhật người dùng Supabase Auth với đúng id này.
+ * cả hai nơi: seeder ghi `app_user`, `scripts/demo/auth.mjs` tạo/cập nhật người dùng Supabase Auth với đúng id này.
  * Mật khẩu KHÔNG nằm trong mã: đọc từ biến môi trường tên ở `passwordEnv`.
+ *
+ * `username` (GH#212): the sign-in handle of the demo account, matching the `app_user.username` the
+ * seeder writes and part of the reserved-word set of `@vcraft/domain` (`RESERVED_USERNAMES`).
  */
 export interface DemoAccount {
   readonly key: 'admin' | 'buyer' | 'household' | 'pending';
   readonly id: string;
   readonly email: string;
+  readonly username: string;
   readonly fullName: string;
   readonly role: 'ADMIN' | 'BUYER' | 'HOUSEHOLD';
   /** Tên biến môi trường giữ mật khẩu. */
@@ -22,6 +26,7 @@ export const DEMO_ACCOUNTS = {
     key: 'admin',
     id: 'd3a10000-0000-4000-8000-000000000001',
     email: 'demo.admin@example.com',
+    username: 'admin',
     fullName: 'Ban quản lý làng nghề (mẫu)',
     role: 'ADMIN',
     passwordEnv: 'DEMO_ADMIN_PASSWORD',
@@ -30,6 +35,7 @@ export const DEMO_ACCOUNTS = {
     key: 'buyer',
     id: 'd3a10000-0000-4000-8000-000000000002',
     email: 'demo.buyer@example.com',
+    username: 'buyer',
     fullName: 'Công ty Thảo Nguyên (mẫu)',
     role: 'BUYER',
     passwordEnv: 'DEMO_BUYER_PASSWORD',
@@ -38,6 +44,7 @@ export const DEMO_ACCOUNTS = {
     key: 'household',
     id: 'd3a10000-0000-4000-8000-000000000003',
     email: 'demo.household@example.com',
+    username: 'household',
     fullName: 'Lê Đức Phát (mẫu)',
     role: 'HOUSEHOLD',
     passwordEnv: 'DEMO_HOUSEHOLD_PASSWORD',
@@ -46,6 +53,7 @@ export const DEMO_ACCOUNTS = {
     key: 'pending',
     id: 'd3a10000-0000-4000-8000-000000000004',
     email: 'demo.pending@example.com',
+    username: 'pending',
     fullName: 'Đại diện hộ chờ duyệt (mẫu)',
     role: 'HOUSEHOLD',
     passwordEnv: 'DEMO_PENDING_PASSWORD',

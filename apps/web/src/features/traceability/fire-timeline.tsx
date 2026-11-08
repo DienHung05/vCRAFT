@@ -2,7 +2,6 @@ import { isJournalInProgress, missingStages } from '@vcraft/domain';
 import { Badge } from '@vcraft/ui';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { ImageSlot } from '@/components/image-slot';
-import { PhotoCredit } from '@/components/photo-credit';
 import { type LogEntryView, photoFromUrl, slotPhoto } from '@/features/catalog/view-models';
 
 /**
@@ -99,7 +98,6 @@ export async function FireTimeline({
                       sizes="(min-width: 640px) 24rem, 100vw"
                       className="mt-3 max-w-sm"
                     />
-                    <PhotoCredit id={photo?.photo?.id} credit={image.credit} />
                   </div>
                 );
               })}

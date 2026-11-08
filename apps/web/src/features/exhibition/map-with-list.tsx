@@ -22,11 +22,26 @@ export function MapWithList({
   highlight?: string;
 }) {
   const t = useTranslations('exhibition');
+  const mapT = useTranslations('villageMap');
   return (
     <div className="grid gap-6 md:grid-cols-[3fr_2fr] md:items-start">
       <VillageMiniMap
         label={t('mapTitle')}
-        pins={places.map((p) => ({ id: p.id, ...p.pin, open: p.visitable, label: p.name }))}
+        pins={places.map((p) => ({
+          id: p.id,
+          ...p.pin,
+          open: p.visitable,
+          label: p.name,
+          // Tapping a pin shows the workshop and opens it on the full village map (GH#216).
+          card: {
+            title: p.name,
+            lines: [p.household, p.address, p.visitable ? t('listVisitable') : t('listProduction')],
+            link: {
+              href: { pathname: '/ban-do', query: { xuong: p.id } },
+              label: mapT('viewOnFullMap'),
+            },
+          },
+        }))}
         {...(highlight !== undefined && { highlight })}
       />
       <div>

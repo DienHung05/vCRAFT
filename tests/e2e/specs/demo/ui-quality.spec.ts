@@ -101,7 +101,12 @@ async function openAs(
 ): Promise<Page> {
   const page = await context.newPage();
   await page.setViewportSize({ width, height });
-  await page.goto(path, { waitUntil: 'networkidle' });
+  // Not `networkidle` (GH#258): signed-in pages keep the `/me/events` SSE stream open, so the network never
+  // goes idle. Wait for the document, then for the page's first heading and the web fonts, which is when the
+  // layout these checks measure has settled.
+  await page.goto(path, { waitUntil: 'load' });
+  await page.locator('main').getByRole('heading').first().waitFor();
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
   return page;
 }
 

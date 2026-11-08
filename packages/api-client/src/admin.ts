@@ -3,6 +3,9 @@ import {
   AdminHouseholdListSchema,
   AdminNewsListSchema,
   AdminNewsSchema,
+  type AdminUserListQuery,
+  AdminUserListSchema,
+  AdminUserSchema,
   AllocationScheduleSchema,
   AssistantStatsSchema,
   AuditActorListSchema,
@@ -12,6 +15,9 @@ import {
   HouseholdDocumentListSchema,
   type HouseholdDto,
   HouseholdResponseSchema,
+  InvitationListSchema,
+  InvitationSchema,
+  type InviteAccountRequest,
   type ListAdminNewsQuery,
   MediaAssetResponseSchema,
   MediaReadUrlResponseSchema,
@@ -87,6 +93,26 @@ export function createAdminClient(options: AuthedClientOptions) {
       request(`/admin/households/${id}/documents`, HouseholdDocumentListSchema),
     documentUrl: (mediaId: string) =>
       request(`/media/${mediaId}/read-url`, MediaReadUrlResponseSchema),
+    /** Accounts for the suspension screen (FR-AUTH-10). */
+    listUsers: (filters: Partial<AdminUserListQuery> = {}) => {
+      const query = new URLSearchParams();
+      for (const [key, value] of Object.entries(filters))
+        if (value !== undefined && value !== '') query.set(key, String(value));
+      const suffix = query.size > 0 ? `?${query}` : '';
+      return request(`/admin/users${suffix}`, AdminUserListSchema);
+    },
+    /** Suspends the account and bans it on Supabase; the reason is kept in the audit log. */
+    suspendUser: (id: string, reason: string) =>
+      request(`/admin/users/${id}/suspend`, AdminUserSchema, { method: 'POST', body: { reason } }),
+    unsuspendUser: (id: string, reason?: string) =>
+      request(`/admin/users/${id}/unsuspend`, AdminUserSchema, {
+        method: 'POST',
+        body: reason ? { reason } : {},
+      }),
+    /** Invitations sent by the board (FR-AUTH-03). */
+    listInvitations: () => request('/admin/invitations', InvitationListSchema),
+    inviteAccount: (body: InviteAccountRequest) =>
+      request('/admin/invitations', InvitationSchema, { method: 'POST', body }),
     decide: (id: string, action: HouseholdAction, version: number, reason?: string) =>
       request(`/admin/households/${id}/${action}`, HouseholdResponseSchema, {
         method: 'POST',

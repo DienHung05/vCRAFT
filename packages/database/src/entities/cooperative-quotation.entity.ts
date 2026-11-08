@@ -39,4 +39,8 @@ export class CooperativeQuotation extends BaseEntity {
 
   @Property({ type: 'string', length: 20 })
   bidType: Opt<BidType> = 'COOPERATIVE';
+
+  /** Free note a household adds to its own (`INDIVIDUAL`) quotation. */
+  @Property({ type: 'string', length: 500, nullable: true })
+  note?: string | null;
 }

@@ -16,6 +16,9 @@ export interface RouteEntry {
   path: string;
   policy: RoutePolicy;
   handler: string;
+  /** The controller class and method name behind the route, for tools that read handler metadata (OpenAPI). */
+  controller: Type<unknown>;
+  methodName: string;
 }
 
 const join = (...parts: string[]) =>
@@ -77,6 +80,8 @@ export function routeInventory(root: Type<unknown>, prefix = 'api/v1'): RouteEnt
             path: join(prefix, base, sub),
             policy: policyOf(controller, handler),
             handler: `${controller.name}.${name}`,
+            controller,
+            methodName: name,
           });
     }
   }

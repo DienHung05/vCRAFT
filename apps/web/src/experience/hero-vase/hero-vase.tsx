@@ -8,15 +8,12 @@ import { scrollProgress } from './vase-profiles';
 // three.js and R3F load only here, after the decision below, never in the route's first-load JS.
 const VaseScene = dynamic(() => import('./vase-scene'), { ssr: false });
 
-/** Start loading after the first scroll or this long after hydration, whichever comes first. */
-const IDLE_START_MS = 2_500;
-
 /**
- * The 3D glaze vase over the hero's poster photo (GH#94, PLAN E13). The photo is rendered by the page and
- * stays the LCP element and the fallback: without WebGL, on phones and low-end devices, with reduced
- * motion or data saver, nothing here loads. Otherwise the scene loads after the first scroll or 2.5 s
- * after hydration, and fades in over the photo when its first frame is ready. `sectionId` is the hero
- * section whose scroll drives the morph.
+ * The 3D glaze vase that forms and turns in the home hero (GH#94, PLAN E13). The page renders the
+ * hand-drawn `VaseFigure` underneath, which is the placeholder and the fallback: without WebGL, on phones
+ * and low-end devices, with reduced motion or data saver, nothing here loads. Otherwise the scene starts
+ * loading right after hydration (GH#215) and cross-fades in over the figure when its first frame is ready,
+ * inside the same box, so nothing shifts. `sectionId` is the hero section whose scroll drives the morph.
  */
 export function HeroVase({ sectionId }: { sectionId: string }) {
   const [enabled, setEnabled] = useState(false);
@@ -24,19 +21,7 @@ export function HeroVase({ sectionId }: { sectionId: string }) {
   const progress = useRef(0);
 
   useEffect(() => {
-    if (!canRun3d(readDeviceFacts())) return;
-    let started = false;
-    const start = () => {
-      if (started) return;
-      started = true;
-      setEnabled(true);
-    };
-    const timer = window.setTimeout(start, IDLE_START_MS);
-    window.addEventListener('scroll', start, { once: true, passive: true });
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener('scroll', start);
-    };
+    if (canRun3d(readDeviceFacts())) setEnabled(true);
   }, []);
 
   useEffect(() => {

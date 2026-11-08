@@ -121,7 +121,7 @@ export function HouseholdQueue({ client: provided }: { client?: AdminClient }) {
                 className="flex min-h-14 flex-wrap items-center justify-between gap-3 py-3 hover:text-clay"
               >
                 <span className="font-medium">{row.name}</span>
-                <span className="flex items-center gap-3 text-small text-ash">
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-small text-ash">
                   <time dateTime={row.submittedAt}>
                     {format.dateTime(new Date(row.submittedAt), 'short')}
                   </time>

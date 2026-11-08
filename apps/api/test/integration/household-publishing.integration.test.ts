@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { addMilestone, createJournalPhoto } from './support/journal-photo.js';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
 
@@ -12,7 +13,7 @@ describe('Household approval and publishing', () => {
   let db: TestDatabase;
   let t: TestApp;
   let admin: { auth: string };
-  let rep: { auth: string };
+  let rep: { id: string; auth: string };
   let householdId: string;
   let householdVersion: number;
   let productId: string;
@@ -31,7 +32,7 @@ describe('Household approval and publishing', () => {
     await db?.stop();
   });
 
-  it('người đại diện nộp hồ sơ, thêm xưởng, nghệ nhân và sản phẩm nháp', async () => {
+  it('người đại diện nộp hồ sơ, thêm xưởng và nghệ nhân; chưa duyệt thì chưa đăng sản phẩm (GH#237)', async () => {
     const applied = await t.request({
       method: 'POST',
       url: '/me/household',
@@ -69,29 +70,17 @@ describe('Household approval and publishing', () => {
       ).status,
     ).toBe(201);
 
-    const product = await t.request({
+    // FR-AUTH-02: a household under review posts no products (403, nothing stored).
+    const early = await t.request({
       method: 'POST',
       url: '/me/household/products',
       auth: rep.auth,
       body: { name: 'Bình men lam vẽ sen', description: 'Bình cao 40cm' },
     });
-    expect(product.status).toBe(201);
-    expect(product.body).toMatchObject({ status: 'DRAFT', kind: 'OBJECT' });
-    expect(product.body.traceCode).toMatch(/^[2-9A-HJKMNP-Z]{8}$/);
-    expect(product.body.slug).toBe(`binh-men-lam-ve-sen-${product.body.traceCode.toLowerCase()}`);
-    productId = product.body.id;
-    traceCode = product.body.traceCode;
+    expect(early.status).toBe(403);
   });
 
-  it('hộ chưa duyệt: không xuất bản được, không có gì công khai', async () => {
-    const publish = await t.request({
-      method: 'POST',
-      url: `/products/${productId}/publish`,
-      auth: rep.auth,
-      headers: { 'if-match': '1' },
-    });
-    expect(publish.status).toBe(409);
-    expect(publish.body.code).toBe('HOUSEHOLD_NOT_APPROVED');
+  it('hộ chưa duyệt: không có gì công khai', async () => {
     expect((await t.request({ method: 'GET', url: '/households/gom-dong-hai' })).status).toBe(404);
   });
 
@@ -130,9 +119,37 @@ describe('Household approval and publishing', () => {
     expect(approved.status).toBe(200);
     expect(approved.body.status).toBe('APPROVED');
     householdVersion = approved.body.version;
+
+    const product = await t.request({
+      method: 'POST',
+      url: '/me/household/products',
+      auth: rep.auth,
+      body: { name: 'Bình men lam vẽ sen', description: 'Bình cao 40cm' },
+    });
+    expect(product.status).toBe(201);
+    expect(product.body).toMatchObject({ status: 'DRAFT', kind: 'OBJECT' });
+    expect(product.body.traceCode).toMatch(/^[2-9A-HJKMNP-Z]{8}$/);
+    expect(product.body.slug).toBe(`binh-men-lam-ve-sen-${product.body.traceCode.toLowerCase()}`);
+    productId = product.body.id;
+    traceCode = product.body.traceCode;
+  });
+
+  it('chưa có mốc nhật ký nào thì không xuất bản được (FR-PRD-03, GH#251)', async () => {
+    const refused = await t.request({
+      method: 'POST',
+      url: `/products/${productId}/publish`,
+      auth: rep.auth,
+      headers: { 'if-match': '1' },
+    });
+    expect(refused.status).toBe(409);
+    expect(refused.body.code).toBe('PRODUCT_JOURNAL_REQUIRED');
+    const mine = await t.request({ method: 'GET', url: '/me/household', auth: rep.auth });
+    expect(mine.body.products[0].status).toBe('DRAFT');
   });
 
   it('hộ đã duyệt xuất bản sản phẩm ⇒ hồ sơ công khai có xưởng và sản phẩm, QR hiện đầy đủ', async () => {
+    const milestone = await addMilestone(t, rep, productId, await createJournalPhoto(db, t, rep));
+    expect(milestone.status).toBe(201);
     const published = await t.request({
       method: 'POST',
       url: `/products/${productId}/publish`,

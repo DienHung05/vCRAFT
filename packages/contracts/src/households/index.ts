@@ -9,7 +9,7 @@ import {
 import { z } from 'zod';
 import { IdSchema, IsoDateSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
 import { JournalResponseSchema } from '../journal';
-import { MediaCreditSchema, PublicImageSchema, PublicImageVariantsSchema } from '../media';
+import { PublicCreditSchema, PublicImageSchema, PublicImageVariantsSchema } from '../media';
 
 /** Hộ sản xuất, xưởng, nghệ nhân, sản phẩm và các quyết định duyệt / xuất bản (vCRAFT-9hg.2, 9hg.3). */
 
@@ -102,6 +102,37 @@ export const AdminDashboardSchema = z.object({
 });
 export type AdminDashboardDto = z.infer<typeof AdminDashboardSchema>;
 
+/** Device classes a QR scan is bucketed into (FR-TRC-06); derived from the User-Agent, which is never stored. */
+export const SCAN_DEVICE_TYPES = ['mobile', 'tablet', 'desktop', 'bot', 'unknown'] as const;
+export const ScanDeviceTypeSchema = z.enum(SCAN_DEVICE_TYPES);
+export type ScanDeviceTypeDto = z.infer<typeof ScanDeviceTypeSchema>;
+
+/**
+ * Optional body of `POST /trace/:code/scan` (FR-TRC-06): the scanner's country (ISO 3166-1 alpha-2) and
+ * device class. Never an IP address. Old clients send no body at all.
+ */
+export const RecordScanRequestSchema = z.object({
+  country: z
+    .string()
+    .regex(/^[A-Z]{2}$/)
+    .nullish(),
+  deviceType: ScanDeviceTypeSchema.nullish(),
+});
+export type RecordScanRequest = z.infer<typeof RecordScanRequestSchema>;
+
+/** Per-product scan statistics for the owning household (FR-TRC-06); the series is the last 30 days in Vietnam time. */
+export const ProductScanStatsSchema = z.object({
+  total: z.int().nonnegative(),
+  last30Days: z.int().nonnegative(),
+  daily: z.array(z.object({ date: IsoDateSchema, count: z.int().nonnegative() })),
+  /** Last 30 days; scans recorded before country tracking are counted under `null`. */
+  byCountry: z.array(z.object({ country: z.string().nullable(), count: z.int().positive() })),
+  byDeviceType: z.array(
+    z.object({ deviceType: ScanDeviceTypeSchema.nullable(), count: z.int().positive() }),
+  ),
+});
+export type ProductScanStatsDto = z.infer<typeof ProductScanStatsSchema>;
+
 const CURRENT_YEAR_LIMIT = 2100;
 const YearSchema = z.int().min(1000, 'Năm không hợp lệ').max(CURRENT_YEAR_LIMIT);
 
@@ -169,16 +200,34 @@ export const UpdateHouseholdProfileRequestSchema = z.object({
 });
 export type UpdateHouseholdProfileRequest = z.infer<typeof UpdateHouseholdProfileRequestSchema>;
 
-export const CreateWorkshopRequestSchema = z.object({
-  name: NameSchema,
-  address: z.string().trim().min(5).max(300),
-  purpose: WorkshopPurposeSchema.default('PRODUCTION'),
-  acceptsVisitors: z.boolean().default(false),
-  visitingInfo: z.string().trim().max(2_000).optional(),
-  openingHours: z.array(OpeningIntervalSchema).max(21).optional(),
-  lat: z.number().min(-90).max(90).optional(),
-  lng: z.number().min(-180).max(180).optional(),
+/** Experience offer of a workshop (FR-ART-05): what visitors can do, for how long and at what price. */
+export const WorkshopExperienceSchema = z.object({
+  description: z.string().trim().min(5, 'Hãy mô tả trải nghiệm').max(1_000),
+  durationMinutes: z.int().min(5).max(1_440),
+  priceVnd: z.int().min(0).max(100_000_000),
 });
+export type WorkshopExperienceDto = z.infer<typeof WorkshopExperienceSchema>;
+
+export const CreateWorkshopRequestSchema = z
+  .object({
+    name: NameSchema,
+    address: z.string().trim().min(5).max(300),
+    purpose: WorkshopPurposeSchema.default('PRODUCTION'),
+    acceptsVisitors: z.boolean().default(false),
+    visitingInfo: z.string().trim().max(2_000).optional(),
+    openingHours: z.array(OpeningIntervalSchema).max(21).optional(),
+    /** Omitted or null: the workshop offers no experience. */
+    experience: WorkshopExperienceSchema.nullish(),
+    /** Temporarily closed (BR-03); needs a reason shown to visitors. */
+    temporarilyClosed: z.boolean().default(false),
+    closureReason: z.string().trim().max(300).optional(),
+    lat: z.number().min(-90).max(90).optional(),
+    lng: z.number().min(-180).max(180).optional(),
+  })
+  .refine((w) => !w.temporarilyClosed || (w.closureReason ?? '').length > 0, {
+    message: 'Hãy ghi lý do tạm đóng cửa',
+    path: ['closureReason'],
+  });
 export type CreateWorkshopRequest = z.infer<typeof CreateWorkshopRequestSchema>;
 
 export const CreateArtisanRequestSchema = z.object({
@@ -254,6 +303,10 @@ export const WorkshopResponseSchema = z.object({
   acceptsVisitors: z.boolean(),
   visitingInfo: z.string().nullable(),
   openingHours: z.array(OpeningIntervalSchema).nullable(),
+  /** Null when the workshop offers no experience. */
+  experience: WorkshopExperienceSchema.nullable(),
+  temporarilyClosed: z.boolean(),
+  closureReason: z.string().nullable(),
   lat: z.number().nullable(),
   lng: z.number().nullable(),
 });
@@ -349,7 +402,7 @@ export const PublicHouseholdResponseSchema = z.object({
       /** English description for `/en`; null falls back to `alt`. */
       altEn: z.string().nullable().default(null),
       caption: z.string().nullable(),
-      credit: MediaCreditSchema.nullable(),
+      credit: PublicCreditSchema,
     }),
   ),
   capacityByCategory: CapacitySchema,
@@ -388,8 +441,13 @@ export const TraceAvailabilityResponseSchema = z.discriminatedUnion('availabilit
     availability: z.literal('VISIBLE'),
     product: ProductResponseSchema,
     /** Credit for `product.coverUrl`; null when the cover is a photo the household uploaded. */
-    coverCredit: MediaCreditSchema.nullable(),
-    household: z.object({ name: z.string(), slug: z.string() }),
+    coverCredit: PublicCreditSchema,
+    household: z.object({
+      name: z.string(),
+      slug: z.string(),
+      /** Only APPROVED households are public, so a visible trace always carries APPROVED (FR-TRC-04). */
+      status: HouseholdStatusSchema,
+    }),
     journal: JournalResponseSchema,
     /** Số lượt quét mã QR của sản phẩm này. */
     scanCount: z.int().nonnegative(),
@@ -407,7 +465,7 @@ export type TraceAvailabilityDto = z.infer<typeof TraceAvailabilityResponseSchem
 export const ProductDetailResponseSchema = z.object({
   product: ProductResponseSchema,
   /** Credit for `product.coverUrl`; null when the cover is a photo the household uploaded. */
-  coverCredit: MediaCreditSchema.nullable(),
+  coverCredit: PublicCreditSchema,
   household: z.object({ name: z.string(), slug: z.string() }),
   journal: JournalResponseSchema,
 });
@@ -426,6 +484,11 @@ export const MapPinSchema = z.object({
   visitingInfo: z.string().nullable(),
   /** Trình duyệt tự tính "đang mở" từ đây bằng `openState` (giờ Việt Nam). */
   openingHours: z.array(OpeningIntervalSchema).nullable(),
+  /** Visitable workshops only; null otherwise. */
+  experience: WorkshopExperienceSchema.nullable(),
+  /** BR-03: a temporarily closed workshop is shown as closed with this reason. */
+  temporarilyClosed: z.boolean(),
+  closureReason: z.string().nullable(),
   lat: z.number(),
   lng: z.number(),
   household: z.object({

@@ -18,7 +18,13 @@ import {
   type VectorStore,
 } from '../../../infrastructure/vector/vector.module';
 import { ASSISTANT_KV, type KeyValueStore } from '../infrastructure/key-value';
-import { type AssistantIntent, LLM_CLIENT, type LlmClient } from '../infrastructure/llm-client';
+import {
+  type AssistantIntent,
+  type ChatMessage,
+  LLM_CLIENT,
+  type LlmChunk,
+  type LlmClient,
+} from '../infrastructure/llm-client';
 import { CatalogToolsService, type ToolResult } from './catalog-tools.service';
 import { cannedReply, fastIntent, weatherPlace } from './fast-intents';
 import {
@@ -30,6 +36,7 @@ import {
   sanitizeInput,
 } from './guardrails';
 import { chatMessages, classifierPrompt } from './prompt';
+import { siteHelpQuery } from './site-help';
 import { getCurrentDatetime, getWeather, TOOL_TIMEOUT_MS, weatherFallback } from './tools';
 
 /** Runtime settings of the assistant, read from the environment by `AssistantModule`. */
@@ -55,6 +62,9 @@ const MIN_SIMILARITY = 0.3;
 // The model has this long to start answering before the visitor gets a friendly timeout.
 const ANSWER_TIMEOUT_MS = 30_000;
 
+// A message the heuristic scanner rates at or above this is not answered speculatively.
+const SPECULATE_BELOW_SUSPICION = 0.3;
+
 const BLOCKED_INTENTS: Partial<Record<AssistantIntent, BlockReason>> = {
   injection: 'INJECTION',
   abuse: 'ABUSE',
@@ -72,6 +82,24 @@ interface Turn {
   answered: boolean;
   firstTokenMs: number | null;
   tokens: number;
+}
+
+/** An answer call already under way: its first chunk is requested, the rest is not read yet. */
+interface AnswerStream {
+  /** The prompt and token limit it was built from, to tell whether it still matches the final prompt. */
+  key: string;
+  iterator: AsyncIterator<LlmChunk>;
+  first: Promise<IteratorResult<LlmChunk>>;
+  timeout: AbortSignal;
+  discard: () => void;
+}
+
+async function* drain({ iterator, first }: AnswerStream): AsyncGenerator<LlmChunk> {
+  let step = await first;
+  while (!step.done) {
+    yield step.value;
+    step = await iterator.next();
+  }
 }
 
 const citationOf = (m: KnowledgeMatch): CitationDto => ({
@@ -170,24 +198,67 @@ export class AskAssistantService {
       return yield* blocked(budget.ok ? 'DISABLED' : budget.reason, 'budget');
     const llm = this.llm;
 
-    // Classification runs alongside retrieval: whichever is slower sets the wait.
-    const [classified, matches] = await Promise.all([
-      llm
-        .classify(
-          [
-            { role: 'system', content: classifierPrompt(suspicion) },
-            ...input.history.slice(-4).map((t) => ({ role: t.role, content: t.content })),
-            { role: 'user', content: message },
-          ],
-          signal,
-        )
-        .catch((error: unknown) => {
-          this.logger.warn(`assistant classification failed: ${String(error)}`);
-          return null;
-        }),
-      this.retrieve(message, input.locale),
-    ]);
+    const canary = `vc${randomBytes(9).toString('hex')}`;
+    const answer = (messages: ChatMessage[], maxTokens: number): AnswerStream => {
+      const controller = new AbortController();
+      const timeout = AbortSignal.timeout(ANSWER_TIMEOUT_MS);
+      const signals = [controller.signal, timeout, ...(signal ? [signal] : [])];
+      const iterator = llm
+        .stream(messages, { maxTokens, signal: AbortSignal.any(signals) })
+        [Symbol.asyncIterator]();
+      // Pulling the first chunk sends the request; nothing is read past it until the answer is committed.
+      const first = iterator.next();
+      first.catch(() => undefined);
+      return {
+        key: JSON.stringify([messages, maxTokens]),
+        iterator,
+        first,
+        timeout,
+        discard: () => {
+          controller.abort();
+          iterator.return?.()?.catch(() => undefined);
+        },
+      };
+    };
+
+    // Classification, retrieval and the page lookup run side by side. The answer call also starts now, on
+    // the generic context, so its first token does not wait for classification (NFR-PERF-08). Its output
+    // is held back: only after the classification passes, and only when the final prompt is the same, is
+    // it released through the output filter; otherwise it is aborted and discarded unseen.
+    const classifying = llm
+      .classify(
+        [
+          { role: 'system', content: classifierPrompt(suspicion) },
+          ...input.history.slice(-4).map((t) => ({ role: t.role, content: t.content })),
+          { role: 'user', content: message },
+        ],
+        signal,
+      )
+      .catch((error: unknown) => {
+        this.logger.warn(`assistant classification failed: ${String(error)}`);
+        return null;
+      });
+    const retrieving = this.retrieve(message, input.locale);
+    const pageNote = this.tools.pageContext(input.pagePath, input.locale).catch(() => null);
+    // A suspicious message is not worth a speculative answer; it waits for the classifier.
+    let discarded = suspicion >= SPECULATE_BELOW_SUSPICION;
+    const speculation: Promise<AnswerStream | null> = Promise.all([retrieving, pageNote]).then(
+      ([found, page]) =>
+        discarded
+          ? null
+          : answer(
+              chatMessages(input, message, canary, { matches: found, tools: [], page }),
+              this.config.maxAnswerTokens,
+            ),
+    );
+    const discardSpeculation = () => {
+      discarded = true;
+      void speculation.then((s) => s?.discard());
+    };
+
+    const [classified, matches, page] = await Promise.all([classifying, retrieving, pageNote]);
     if (!classified) {
+      discardSpeculation();
       yield { type: 'error', code: 'UPSTREAM' };
       await log({ intent: 'unknown', answered: false, firstTokenMs: null, tokens: 0 });
       return;
@@ -196,8 +267,14 @@ export class AskAssistantService {
     const { intent } = classified;
 
     const blockedBy = BLOCKED_INTENTS[intent];
-    if (blockedBy) return yield* blocked(blockedBy, intent);
-    if (intent === 'out_of_scope') return yield* reply(OUT_OF_SCOPE[input.locale], intent);
+    if (blockedBy) {
+      discardSpeculation();
+      return yield* blocked(blockedBy, intent);
+    }
+    if (intent === 'out_of_scope') {
+      discardSpeculation();
+      return yield* reply(OUT_OF_SCOPE[input.locale], intent);
+    }
 
     const toolResults: ToolResult[] = [];
     if (intent === 'catalog') {
@@ -208,23 +285,40 @@ export class AskAssistantService {
       const open = await this.tools.openWorkshops(new Date(), input.locale);
       if (open) toolResults.push(open);
     }
-    const context = intent === 'chitchat' ? [] : matches;
+    // Only expand after classification and blocked-intent checks. A guide question never bypasses guards.
+    const guideMatches =
+      intent === 'site_help'
+        ? await this.retrieve(
+            siteHelpQuery(message, input.pagePath, input.locale),
+            input.locale,
+            true,
+          )
+        : [];
+    const offTopic = intent === 'off_topic';
+    const context =
+      intent === 'chitchat' || offTopic ? [] : guideMatches.length ? guideMatches : matches;
     const citations = [...context.map(citationOf), ...toolResults.flatMap((t) => t.citations)]
       .filter((c, i, all) => all.findIndex((o) => o.url === c.url) === i)
       .slice(0, 8);
 
-    const canary = `vc${randomBytes(9).toString('hex')}`;
     const filter = new StreamingOutputFilter(canary, this.config.allowedOrigins);
-    const messages = chatMessages(input, message, canary, { matches: context, tools: toolResults });
-    const timeout = AbortSignal.timeout(ANSWER_TIMEOUT_MS);
-    const answerSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
+    const messages = chatMessages(input, message, canary, {
+      matches: context,
+      tools: toolResults,
+      page,
+      offTopic,
+    });
+    const maxTokens = intent === 'chitchat' || offTopic ? 150 : this.config.maxAnswerTokens;
+    // Keep the speculative answer only when it was built from exactly this prompt.
+    const early = await speculation;
+    const final = early?.key === JSON.stringify([messages, maxTokens]) ? early : null;
+    if (!final) discardSpeculation();
+    const stream = final ?? answer(messages, maxTokens);
+    const { timeout } = stream;
     let firstTokenMs: number | null = null;
     let tokens = 0;
     try {
-      for await (const chunk of llm.stream(messages, {
-        maxTokens: intent === 'chitchat' ? 150 : this.config.maxAnswerTokens,
-        signal: answerSignal,
-      })) {
+      for await (const chunk of drain(stream)) {
         if (chunk.type === 'usage') {
           tokens = chunk.tokens;
           continue;
@@ -257,7 +351,7 @@ export class AskAssistantService {
     if (citations.length) yield { type: 'citations', citations };
     const messageId = await log({
       intent,
-      answered: citations.length > 0 || intent === 'chitchat',
+      answered: citations.length > 0 || intent === 'chitchat' || offTopic,
       firstTokenMs,
       tokens: classified.tokens + tokens,
     });
@@ -272,17 +366,22 @@ export class AskAssistantService {
     await em.flush();
   }
 
-  private async retrieve(message: string, locale: 'vi' | 'en'): Promise<KnowledgeMatch[]> {
+  private async retrieve(
+    message: string,
+    locale: 'vi' | 'en',
+    guidesOnly = false,
+  ): Promise<KnowledgeMatch[]> {
     try {
       const work = (async () => {
         const [embedding] = await this.embedder.embed([message]);
-        return embedding
-          ? this.vectors.search(embedding, {
-              locale,
-              limit: RETRIEVAL_LIMIT,
-              minSimilarity: MIN_SIMILARITY,
-            })
-          : [];
+        if (!embedding) return [];
+        const found = await this.vectors.search(embedding, {
+          locale,
+          limit: RETRIEVAL_LIMIT,
+          minSimilarity: MIN_SIMILARITY,
+          ...(guidesOnly && { sourceType: 'FAQ' as const }),
+        });
+        return found;
       })();
       const timeout = new Promise<KnowledgeMatch[]>((resolve) =>
         setTimeout(() => resolve([]), TOOL_TIMEOUT_MS).unref(),
