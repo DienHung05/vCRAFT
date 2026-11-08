@@ -316,6 +316,20 @@ Variables (Settings → Secrets and variables → Actions → Variables):
 4. Confirm the first Deploy run is green (Render live, Vercel deployed, smoke checks passed).
 5. Only then turn off Render's own auto-deploy: Render → `vcraft-api` → Settings → Build & Deploy → Auto-Deploy → *Off*. `render.yaml` already sets `autoDeployTrigger: "off"`, but the live service was not created from the Blueprint sync, so its setting does not change by itself. Until this step, a push to `main` deploys on Render twice.
 
+### Daily credential check
+
+`.github/workflows/deploy-credentials.yml` (`Deploy credentials`) runs every day at 01:17 UTC, and on demand with `gh workflow run deploy-credentials.yml`. It uses the same `production` environment secrets and variables as `deploy.yml` and is skipped unless `CD_ENABLED` is `true`. `scripts/ci/check-deploy-credentials.sh` makes one read-only request per credential and expects HTTP 200: `GET /v1/services/$RENDER_SERVICE_ID` (and `$RENDER_WORKER_SERVICE_ID` when set) with `RENDER_API_KEY`, and `GET /v9/projects/$VERCEL_PROJECT_ID?teamId=$VERCEL_ORG_ID` with `VERCEL_TOKEN`. The point is to learn that a key was revoked or expired (HTTP 401) days before the next deploy, instead of during it. A failed run sends GitHub's usual failed-workflow notification.
+
+Each failure is an `::error::` annotation naming the credential and the HTTP status. 401 or 403 means the key or token was rejected; 404 means the service or project id variable is wrong. Network errors and 5xx are retried a few times before they count as a failure. The script never prints secret values, and its tests run with `pnpm test:scripts`.
+
+Rotate a rejected credential, then re-run the check:
+
+```bash
+gh secret set RENDER_API_KEY --env production    # new key: Render → Account Settings → API Keys
+gh secret set VERCEL_TOKEN --env production      # new token: Vercel → Account Settings → Tokens
+gh workflow run deploy-credentials.yml
+```
+
 ### Manual redeploy and rollback
 
 ```bash
