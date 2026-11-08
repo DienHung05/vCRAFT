@@ -36,12 +36,23 @@ export type ReportProgressRequest = z.infer<typeof ReportProgressRequestSchema>;
 
 export const AllocationStatusSchema = z.enum(ALLOCATION_STATUSES);
 
+const AllocationTimelineFields = {
+  householdName: z.string(),
+  startedAt: IsoDateTimeSchema,
+  dueAt: IsoDateTimeSchema,
+  lateness: z.enum(['DONE', 'ON_TRACK', 'BEHIND', 'OVERDUE']),
+  expectedQty: CompletedQuantitySchema,
+};
+
 /** Một phân bổ trong đơn đã chốt: số lượng được giao và số lượng đã xong. */
 export const AllocationResponseSchema = z.strictObject({
   id: IdSchema,
   version: VersionSchema,
   householdId: IdSchema,
-  quantity: AllocationQuantitySchema,
+  ...AllocationTimelineFields,
+  progressPercent: z.int().min(0).max(100),
+  // Reallocation can leave a historical share with no quantity.
+  quantity: CompletedQuantitySchema,
   completedQty: CompletedQuantitySchema,
   status: AllocationStatusSchema,
   progressLog: z.array(
@@ -80,14 +91,10 @@ export const AllocationScheduleSchema = z.array(
         id: IdSchema,
         version: VersionSchema,
         householdId: IdSchema,
-        householdName: z.string(),
-        quantity: z.int(),
-        completedQty: z.int(),
+        quantity: CompletedQuantitySchema,
+        completedQty: CompletedQuantitySchema,
         status: AllocationStatusSchema,
-        startedAt: IsoDateTimeSchema,
-        dueAt: IsoDateTimeSchema,
-        lateness: z.enum(['DONE', 'ON_TRACK', 'BEHIND', 'OVERDUE']),
-        expectedQty: z.int(),
+        ...AllocationTimelineFields,
       }),
     ),
   }),

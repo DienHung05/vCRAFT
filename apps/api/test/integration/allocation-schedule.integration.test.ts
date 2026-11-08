@@ -18,6 +18,9 @@ describe('Allocation timeline and reallocation', () => {
   let db: TestDatabase;
   let t: TestApp;
   let admin: { auth: string };
+  let buyer: { id: string; auth: string };
+  let requestId: string;
+  const representatives: { id: string; auth: string }[] = [];
   let households: Household[];
   let late: OrderAllocation;
   let quotationId: string;
@@ -28,10 +31,11 @@ describe('Allocation timeline and reallocation', () => {
     await db.migrate();
     t = await startTestApp(db);
     admin = await t.createUser('ADMIN');
-    const buyer = await t.createUser('BUYER');
+    buyer = await t.createUser('BUYER');
     households = [];
     for (const name of ['a', 'b', 'c']) {
       const rep = await t.createUser('BUYER');
+      representatives.push(rep);
       const applied = await t.request({
         method: 'POST',
         url: '/me/household',
@@ -89,6 +93,7 @@ describe('Allocation timeline and reallocation', () => {
       totalVnd: 40_800_000,
       deliveryTerms: 'INCLUDED',
     });
+    requestId = request.id;
     quotationId = quotation.id;
     late = em.create(OrderAllocation, {
       quotation,
@@ -119,6 +124,69 @@ describe('Allocation timeline and reallocation', () => {
     expect(order.allocations).toHaveLength(2);
     const a = order.allocations.find((x: { id: string }) => x.id === late.id);
     expect(a).toMatchObject({ quantity: 600, completedQty: 200, lateness: 'OVERDUE' });
+  });
+
+  it('gives the buyer the same timeline and risk as the board without quotation prices', async () => {
+    const res = await t.request({
+      method: 'GET',
+      url: `/rfqs/${requestId}/allocations`,
+      auth: buyer.auth,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(2);
+    expect(res.body.find((share: { id: string }) => share.id === late.id)).toMatchObject({
+      householdName: 'Gantt a',
+      quantity: 600,
+      completedQty: 200,
+      lateness: 'OVERDUE',
+      expectedQty: 600,
+      progressPercent: 33,
+    });
+    expect(res.body[0].startedAt).toEqual(expect.any(String));
+    expect(res.body[0].dueAt).toEqual(expect.any(String));
+    expect(res.body[0]).not.toHaveProperty('unitPriceVnd');
+  });
+
+  it('keeps household timelines private and rejects foreign buyers', async () => {
+    const own = await t.request({
+      method: 'GET',
+      url: `/rfqs/${requestId}/allocations`,
+      auth: representatives[0]?.auth,
+    });
+    expect(own.status).toBe(200);
+    expect(own.body).toHaveLength(1);
+    expect(own.body[0]).toMatchObject({ householdName: 'Gantt a', lateness: 'OVERDUE' });
+    const studio = await t.request({
+      method: 'GET',
+      url: '/me/allocations',
+      auth: representatives[0]?.auth,
+    });
+    expect(studio.status).toBe(200);
+    expect(studio.body).toHaveLength(1);
+    expect(studio.body[0]).toMatchObject({
+      householdName: 'Gantt a',
+      lateness: 'OVERDUE',
+      progressPercent: 33,
+    });
+    const foreign = await t.createUser('BUYER');
+    expect(
+      (
+        await t.request({
+          method: 'GET',
+          url: `/rfqs/${requestId}/allocations`,
+          auth: foreign.auth,
+        })
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await t.request({
+          method: 'GET',
+          url: `/rfqs/${requestId}/allocations`,
+          auth: representatives[2]?.auth,
+        })
+      ).status,
+    ).toBe(404);
   });
 
   it('refuses targets that do not cover the remaining quantity', async () => {
@@ -162,6 +230,60 @@ describe('Allocation timeline and reallocation', () => {
     expect(quotation.parts.map((p) => p.householdId)).toContain(c.id);
     const notices = await db.orm.em.fork().find(QuotationNotice, { kind: 'ALLOCATION_PROPOSED' });
     expect(notices).toHaveLength(2);
+  });
+
+  it('reports full and empty historical allocations without dividing by zero', async () => {
+    const res = await t.request({
+      method: 'GET',
+      url: `/rfqs/${requestId}/allocations`,
+      auth: buyer.auth,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.find((share: { id: string }) => share.id === late.id)).toMatchObject({
+      quantity: 200,
+      completedQty: 200,
+      progressPercent: 100,
+      lateness: 'DONE',
+    });
+    // Fixture for an allocation whose entire unfinished quantity has been reassigned.
+    await db.orm.em.fork().nativeUpdate(OrderAllocation, late.id, {
+      quantity: 0,
+      completedQty: 0,
+      status: 'CANCELLED',
+    });
+    const empty = await t.request({
+      method: 'GET',
+      url: `/rfqs/${requestId}/allocations`,
+      auth: buyer.auth,
+    });
+    expect(empty.status).toBe(200);
+    expect(empty.body.find((share: { id: string }) => share.id === late.id)).toMatchObject({
+      quantity: 0,
+      completedQty: 0,
+      progressPercent: 0,
+    });
+  });
+
+  it('preserves the shared stopping stage for invited households after cancellation', async () => {
+    await db.orm.em.fork().nativeUpdate(QuotationRequest, requestId, { status: 'CANCELLED' });
+    const detail = await t.request({
+      method: 'GET',
+      url: `/rfqs/${requestId}`,
+      auth: representatives[0]?.auth,
+    });
+    expect(detail.status).toBe(200);
+    expect(detail.body).toMatchObject({
+      status: 'CANCELLED',
+      hasBids: true,
+      invitedHouseholdIds: [households[0]?.id],
+    });
+    expect(detail.body).not.toHaveProperty('quotations');
+    const invitations = await t.request({
+      method: 'GET',
+      url: '/me/invitations',
+      auth: representatives[0]?.auth,
+    });
+    expect(invitations.body[0].request).toMatchObject({ status: 'CANCELLED', hasBids: true });
   });
 
   it('is for administrators only', async () => {

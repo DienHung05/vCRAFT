@@ -91,6 +91,8 @@ export const RfqResponseSchema = z.strictObject({
   coordinationOptIn: z.boolean(),
   /** Set only on a household representative's read of a request it was invited to. */
   declinedByMe: z.boolean().optional(),
+  /** Whether the request ever received a complete quotation, for its shared stage display. */
+  hasBids: z.boolean().optional(),
 });
 export type RfqResponse = z.infer<typeof RfqResponseSchema>;
 

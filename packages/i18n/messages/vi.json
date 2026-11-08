@@ -306,7 +306,26 @@
     "lockedTitle": "Chưa xác thực được món đồ này",
     "lockedText": "Hộ làm ra mã {code} đang bị Ban quản lý làng tạm khóa. Hãy thận trọng: món đồ này hiện không được vCraft xác nhận."
   },
+  "orderProgress": {
+    "label": "Tiến độ phần việc",
+    "percent": "Hoàn thành {percent}%",
+    "completed": "{done}/{total} {unit}",
+    "counts": "{done}/{total} {unit} · dự kiến {expected} · hẹn {due}",
+    "started": "Bắt đầu",
+    "empty": "Chưa có phân bổ.",
+    "lateness": {
+      "DONE": "Xong",
+      "ON_TRACK": "Đúng tiến độ",
+      "BEHIND": "Chậm",
+      "OVERDUE": "Quá hạn"
+    }
+  },
   "rfq": {
+    "duplicate": {
+      "action": "Nhân bản thành bản nháp",
+      "hint": "Ngày chào giá và ngày giao được đặt lại. Hãy kiểm tra nội dung và đính kèm lại tệp trước khi gửi.",
+      "failed": "Chưa nhân bản được yêu cầu. Hãy thử lại."
+    },
     "breadcrumb": "Đường dẫn trang",
     "allRequests": "Yêu cầu báo giá",
     "stepperLabel": "Tiến trình của yêu cầu báo giá",

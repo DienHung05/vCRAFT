@@ -54,6 +54,12 @@ export class RfqController {
     return this.rfqs.createRequest(actor, body);
   }
 
+  @Post(':id/duplicate')
+  @Roles('BUYER')
+  duplicate(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
+    return this.rfqs.duplicateRequest(actor, id);
+  }
+
   @Get()
   @Header('Cache-Control', 'private, no-store')
   @Roles('BUYER')

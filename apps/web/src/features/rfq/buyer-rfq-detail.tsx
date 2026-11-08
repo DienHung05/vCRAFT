@@ -10,7 +10,6 @@ import {
   Crackle,
   cn,
   SealStamp,
-  Stepper,
   stampShakeClass,
 } from '@vcraft/ui';
 import { AnimatePresence } from 'motion/react';
@@ -21,6 +20,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
 import { ListSkeleton } from '@/components/states/skeletons';
+import { AllocationTimeline } from '@/features/orders/allocation-timeline';
 import { Link } from '@/i18n/navigation';
 import { useLiveEvents } from '@/lib/api/live-events';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
@@ -28,9 +28,11 @@ import { notify } from '@/lib/notify';
 import { useMoney } from '@/lib/use-money';
 import { BidRow, CountUpMoney } from './bid-motion';
 import { DeadlineCountdown } from './deadline-countdown';
+import { DuplicateRequestButton } from './duplicate-request-button';
 import { RequestAttachments } from './rfq-attachments';
 import { buyerEvents, rfqStepperModel } from './rfq-flow';
 import { RfqForm } from './rfq-form';
+import { RfqStepper } from './rfq-stepper';
 
 const POLL_MS = 10_000;
 
@@ -188,7 +190,7 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
     events.includes('CONFIRM_DELIVERY') &&
     allocations.length > 0 &&
     allocations.every((allocation) => allocation.status === 'DONE');
-  const model = rfqStepperModel(request.status, quotations.length > 0);
+  const model = rfqStepperModel(request.status, request.hasBids ?? quotations.length > 0);
   const day = (iso: string) => format.dateTime(new Date(iso), 'long');
   const open = quotations.filter((quotation) => quotation.status === 'SUBMITTED');
   const lowest = open.length > 1 ? Math.min(...open.map((quotation) => quotation.totalVnd)) : null;
@@ -254,14 +256,12 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
         ) : null}
         <h1 className="text-h1 break-words">{request.title}</h1>
       </header>
+      {['CANCELLED', 'DELIVERED', 'EXPIRED'].includes(request.status) ? (
+        <DuplicateRequestButton requestId={request.id} client={client} />
+      ) : null}
 
       <Card className="p-5 md:p-6">
-        <Stepper
-          label={rfq('stepperLabel')}
-          current={model.current}
-          state={model.halted ? 'halted' : 'active'}
-          steps={model.steps.map((step) => ({ id: step, label: rfq(`status.${step}`) }))}
-        />
+        <RfqStepper status={request.status} hasBids={request.hasBids ?? quotations.length > 0} />
       </Card>
 
       {model.halted ? (
@@ -446,24 +446,11 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
             </ul>
           </section>
 
-          {allocations.length > 0 ? (
+          {allocations.length > 0 ||
+          ['ACCEPTED', 'IN_PRODUCTION', 'DELIVERED'].includes(request.status) ? (
             <section aria-labelledby="order-title" className="flex flex-col gap-4">
               <h2 id="order-title">{order('title')}</h2>
-              <ul className="flex flex-col gap-3">
-                {allocations.map((allocation) => (
-                  <li key={allocation.id}>
-                    <Card className="flex flex-col gap-2 p-4">
-                      <Badge className="self-start">
-                        {order(`allocation.${allocation.status}`)}
-                      </Badge>
-                      <p>
-                        {format.number(allocation.completedQty)} /{' '}
-                        {format.number(allocation.quantity)} {request.unit}
-                      </p>
-                    </Card>
-                  </li>
-                ))}
-              </ul>
+              <AllocationTimeline shares={allocations} unit={request.unit} />
             </section>
           ) : null}
         </>

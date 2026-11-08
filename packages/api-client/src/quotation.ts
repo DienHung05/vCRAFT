@@ -97,6 +97,9 @@ export function createQuotationClient(options: QuotationClientOptions) {
     recordConsent(purpose: ConsentPurposeDto, policyVersion: string) {
       return request('/me/consents', ConsentResponseSchema, 'POST', { purpose, policyVersion });
     },
+    duplicateRequest(id: string) {
+      return request(`/rfqs/${IdSchema.parse(id)}/duplicate`, RfqResponseSchema, 'POST');
+    },
     coordinate(id: string, version: number) {
       return request(
         `/rfqs/${IdSchema.parse(id)}/coordinate`,

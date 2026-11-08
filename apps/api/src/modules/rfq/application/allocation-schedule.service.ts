@@ -2,10 +2,11 @@ import { type EntityManager, MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { AllocationScheduleDto, ReallocateRequest } from '@vcraft/contracts';
 import { AuditLog, Household, OrderAllocation, type QuotationRequest } from '@vcraft/database';
-import { allocationLateness, allocationTransition, reallocate } from '@vcraft/domain';
+import { allocationTransition, reallocate } from '@vcraft/domain';
 import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
+import { allocationTimeline } from './allocation-timeline';
 import { QuotationNotifier } from './quotation-notifier';
 
 /** Shares still being made: they count in the order total and can take reallocated pieces. */
@@ -45,16 +46,7 @@ export class AllocationScheduleService {
     const byRequest = new Map<string, AllocationScheduleDto[number]>();
     for (const allocation of rows) {
       const request = allocation.quotation.request as QuotationRequest;
-      const dueAt = dueOf(allocation) ?? request.requiredBy;
-      const lateness = allocationLateness(
-        {
-          quantity: allocation.quantity,
-          completedQty: allocation.completedQty,
-          startedAt: allocation.createdAt,
-          dueAt,
-        },
-        now,
-      );
+      const timeline = allocationTimeline(allocation, now);
       const entry = byRequest.get(request.id) ?? {
         requestId: request.id,
         title: request.title ?? request.design.slice(0, 80),
@@ -66,14 +58,10 @@ export class AllocationScheduleService {
         id: allocation.id,
         version: allocation.version,
         householdId: allocation.household.id,
-        householdName: allocation.household.name,
+        ...timeline,
         quantity: allocation.quantity,
         completedQty: allocation.completedQty,
         status: allocation.status,
-        startedAt: allocation.createdAt.toISOString(),
-        dueAt: dueAt.toISOString(),
-        lateness: lateness.status,
-        expectedQty: lateness.expectedQty,
       });
       byRequest.set(request.id, entry);
     }
