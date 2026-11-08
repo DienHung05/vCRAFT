@@ -815,6 +815,8 @@
       "workshops": "Xưởng trên bản đồ",
       "noWorkshops": "Hộ chưa khai xưởng.",
       "noLocation": "Xưởng chưa khai vị trí.",
+      "workshopArea": "Khu vực: {area}",
+      "noWorkshopArea": "Chưa chọn khu vực (nhận mọi thông báo cắt điện).",
       "outsideVillage": "Ghim ngoài ranh giới xã Bát Tràng",
       "insideVillage": "Ghim trong ranh giới xã Bát Tràng",
       "mapLabel": "Ranh giới Bát Tràng và vị trí của {count} xưởng",
@@ -1073,6 +1075,8 @@
         "from": "Từ",
         "to": "Đến",
         "area": "Khu vực",
+        "areaCode": "Gửi tới",
+        "areaCodeHint": "Chỉ hộ có xưởng trong khu vực này (hoặc chưa chọn khu vực) nhận banner. Ô khu vực bên cạnh chỉ là mô tả cho người đọc.",
         "outageHint": "Studio hiện banner vào đúng ngày cắt điện.{more, plural, =0 {} other { Thông báo còn # đợt cắt khác được giữ nguyên.}}"
       }
     },
@@ -1400,6 +1404,12 @@
       "lead": "Các lần đăng nhập gần đây kèm trình duyệt và vị trí thô. Thấy phiên nào lạ thì đăng xuất các thiết bị khác rồi đổi mật khẩu.",
       "back": "Về trang tài khoản"
     }
+  },
+  "villageAreas": {
+    "BAT_TRANG": "Thôn Bát Tràng",
+    "GIANG_CAO": "Thôn Giang Cao",
+    "VILLAGE_WIDE": "Toàn xã",
+    "none": "Chưa chọn khu vực"
   },
   "villageMap": {
     "title": "Bản đồ làng nghề",
@@ -1946,6 +1956,8 @@
       "addWorkshop": "Thêm xưởng",
       "workshopName": "Tên xưởng",
       "address": "Địa chỉ",
+      "area": "Khu vực của xưởng",
+      "areaHint": "Dùng để báo cắt điện đúng khu vực của xưởng.",
       "purpose": "Mục đích",
       "purposes": {
         "PRODUCTION": "Sản xuất",
@@ -2165,7 +2177,9 @@
     "outage": {
       "title": "Hôm nay cắt điện",
       "slot": "{from}–{to} ({area})",
-      "details": "Xem thông báo"
+      "details": "Xem thông báo",
+      "areaPromptText": "Hãy chọn khu vực cho xưởng để chỉ nhận thông báo cắt điện của khu vực mình. Hiện bạn nhận mọi thông báo.",
+      "areaPromptLink": "Chọn khu vực của xưởng"
     }
   },
   "media": {

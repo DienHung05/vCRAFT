@@ -6,6 +6,7 @@ import {
   PRODUCT_CATEGORIES,
   PRODUCT_STATUSES,
   PROFILE_SECTIONS,
+  VILLAGE_AREA_CODES,
 } from '@vcraft/domain';
 import { z } from 'zod';
 import { IdSchema, IsoDateSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
@@ -23,6 +24,8 @@ export const HouseholdStatusSchema = z.enum(HOUSEHOLD_STATUSES);
 export const HouseholdReviewStateSchema = z.enum(HOUSEHOLD_REVIEW_STATES);
 export const ProductStatusSchema = z.enum(PRODUCT_STATUSES);
 export const WorkshopPurposeSchema = z.enum(['PRODUCTION', 'SHOWROOM', 'BOTH']);
+/** The hamlet of a workshop (ADR-0023). */
+export const VillageAreaCodeSchema = z.enum(VILLAGE_AREA_CODES);
 export const ProductKindSchema = z.enum(['OBJECT', 'BATCH']);
 const CategorySchema = z.enum(PRODUCT_CATEGORIES);
 
@@ -254,6 +257,8 @@ export const CreateWorkshopRequestSchema = z
     /** Temporarily closed (BR-03); needs a reason shown to visitors. */
     temporarilyClosed: z.boolean().default(false),
     closureReason: z.string().trim().max(300).optional(),
+    /** Hamlet of the workshop. On update, left out keeps the stored area and null clears it. */
+    areaCode: VillageAreaCodeSchema.nullish(),
     lat: z.number().min(-90).max(90).optional(),
     lng: z.number().min(-180).max(180).optional(),
   })
@@ -340,6 +345,8 @@ export const WorkshopResponseSchema = z.object({
   experience: WorkshopExperienceSchema.nullable(),
   temporarilyClosed: z.boolean(),
   closureReason: z.string().nullable(),
+  /** Hamlet the workshop is in; null when not set. */
+  areaCode: VillageAreaCodeSchema.nullable(),
   lat: z.number().nullable(),
   lng: z.number().nullable(),
 });

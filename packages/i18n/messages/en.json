@@ -810,6 +810,8 @@
       "workshops": "Workshops on the map",
       "noWorkshops": "No workshops declared.",
       "noLocation": "Workshop location not declared.",
+      "workshopArea": "Area: {area}",
+      "noWorkshopArea": "No area selected (receives every power-cut notice).",
       "outsideVillage": "Pinned outside Bát Tràng commune",
       "insideVillage": "Pinned inside Bát Tràng commune",
       "mapLabel": "Bát Tràng boundary and {count} workshop locations",
@@ -1068,6 +1070,8 @@
         "from": "From",
         "to": "To",
         "area": "Area",
+        "areaCode": "Send to",
+        "areaCodeHint": "Only households with a workshop in this area (or with no area selected) see the banner. The area field next to it is a description for readers.",
         "outageHint": "Studio shows a banner on the day of the cut.{more, plural, =0 {} one { One more cut in this notice is kept as is.} other { # more cuts in this notice are kept as is.}}"
       }
     },
@@ -1395,6 +1399,12 @@
       "lead": "Recent sign-ins with the browser and a rough location. If one looks unfamiliar, sign out other devices and change your password.",
       "back": "Back to account"
     }
+  },
+  "villageAreas": {
+    "BAT_TRANG": "Bát Tràng hamlet",
+    "GIANG_CAO": "Giang Cao hamlet",
+    "VILLAGE_WIDE": "Whole commune",
+    "none": "No area selected"
   },
   "villageMap": {
     "title": "Village map",
@@ -1941,6 +1951,8 @@
       "addWorkshop": "Add workshop",
       "workshopName": "Workshop name",
       "address": "Address",
+      "area": "Workshop area",
+      "areaHint": "Used to warn you about power cuts in your workshop's area.",
       "purpose": "Purpose",
       "purposes": {
         "PRODUCTION": "Production",
@@ -2160,7 +2172,9 @@
     "outage": {
       "title": "Power cut today",
       "slot": "{from}–{to} ({area})",
-      "details": "Read the notice"
+      "details": "Read the notice",
+      "areaPromptText": "Choose your workshop's area to receive only the power-cut notices for it. For now you receive every notice.",
+      "areaPromptLink": "Choose the workshop area"
     }
   },
   "media": {

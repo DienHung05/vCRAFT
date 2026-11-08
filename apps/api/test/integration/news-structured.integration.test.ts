@@ -102,8 +102,9 @@ describe('Material prices and power outage news', () => {
       visibility: 'VILLAGE',
       powerSchedule: {
         outages: [
-          { date: today, from: '13:30', to: '16:00', area: 'Giang Cao' },
-          { date: today, from: '08:00', to: '11:30', area: 'Xóm 2' },
+          // The cuts run to the end of the village day, so the test does not depend on the time it runs.
+          { date: today, from: '13:30', to: '23:59', area: 'Giang Cao' },
+          { date: today, from: '08:00', to: '23:58', area: 'Xóm 2' },
           { date: '2000-01-01', from: '08:00', to: '09:00', area: 'Quá khứ' },
         ],
       },

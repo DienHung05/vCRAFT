@@ -44,6 +44,7 @@ export function toWorkshopDto(w: Workshop): WorkshopDto {
     experience: toExperience(w),
     temporarilyClosed: w.temporarilyClosed,
     closureReason: w.closureReason ?? null,
+    areaCode: w.areaCode ?? null,
     lat: toNumber(w.lat),
     lng: toNumber(w.lng),
   };
