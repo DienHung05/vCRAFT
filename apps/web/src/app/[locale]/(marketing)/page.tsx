@@ -24,7 +24,8 @@ import {
   tintOf,
 } from '@/features/catalog/view-models';
 import { fetchNews } from '@/features/news/news-api';
-import { fetchMapPins, pinOpenState, pinStatus } from '@/features/village-map/map-model';
+import { pinOpenState, pinStatus } from '@/features/village-map/map-model';
+import { fetchMapPins } from '@/features/village-map/map-pins';
 import { VillageMiniMap } from '@/features/village-map/village-mini-map';
 import { Link } from '@/i18n/navigation';
 import type { LogStage } from '@/lib/demo/data';

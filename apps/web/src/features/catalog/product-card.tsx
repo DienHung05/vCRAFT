@@ -14,9 +14,12 @@ import { type ProductCardView, slotPhoto } from './view-models';
 export function ProductCard({
   product,
   heading: Heading = 'h3',
+  priority = false,
 }: {
   product: ProductCardView;
   heading?: 'h2' | 'h3';
+  /** Above-the-fold card (LCP candidate): its picture loads eagerly with high fetch priority. */
+  priority?: boolean;
 }) {
   const t = useTranslations('common');
   const preset = useTranslations('presetFigure');
@@ -38,6 +41,7 @@ export function ProductCard({
           ratio="4/5"
           {...slotPhoto(product.image)}
           sizes="(min-width: 768px) 25vw, 50vw"
+          priority={priority}
           className="grid place-items-center transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
         >
           {product.image ? null : (

@@ -239,16 +239,6 @@ export class MediaService {
     return new Map([...linked].map(([id, items]) => [id, items.map((item) => item.image)]));
   }
 
-  /**
-   * Credit for the product cover. Applies only while the cover is still the preset `coverUrl`: uploading
-   * photos clears `coverUrl`, but the old `media_link` stays and no longer describes the displayed image.
-   */
-  async productCoverCredit(product: Product): Promise<MediaCredit | null> {
-    if (!product.coverUrl) return null;
-    const linked = await this.linkedImages('PRODUCT', [product.id], ['COVER']);
-    return linked.get(product.id)?.[0]?.image.credit ?? null;
-  }
-
   /** Những id mà người này tải lên; dùng để chặn gắn ảnh của người khác vào hồ sơ. */
   async ownedBy(ownerId: string, ids: readonly string[]): Promise<Set<string>> {
     if (ids.length === 0) return new Set();

@@ -9,7 +9,7 @@ import { Product } from './product.entity.js';
 @Entity({ tableName: 'trace_scan' })
 @Index({ properties: ['createdAt'] })
 export class TraceScan extends BaseEntity {
-  @ManyToOne({ entity: () => Product, deleteRule: 'cascade' })
+  @ManyToOne({ entity: () => Product, deleteRule: 'cascade', index: true })
   product!: Product;
 
   @Property({ type: 'string', length: 2, nullable: true })

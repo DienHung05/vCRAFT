@@ -5,7 +5,7 @@ import { Household } from './household.entity.js';
 /** Nghệ nhân: người làm, được ghi công riêng; không cần tài khoản (vCRAFT-9hg.2). */
 @Entity({ tableName: 'artisan' })
 export class Artisan extends BaseEntity {
-  @ManyToOne({ entity: () => Household })
+  @ManyToOne({ entity: () => Household, index: true })
   household!: Household;
 
   @Property({ type: 'string', length: 160 })

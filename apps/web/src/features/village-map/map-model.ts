@@ -1,24 +1,5 @@
-import { type MapPinDto, MapPinsResponseSchema } from '@vcraft/contracts';
+import type { MapPinDto } from '@vcraft/contracts';
 import { type OpenState, workshopOpenState } from '@vcraft/domain';
-import { apiBaseUrl } from '@/features/news/news-api';
-
-export type MapPinsResult = { status: 'ok'; pins: MapPinDto[] } | { status: 'unavailable' };
-
-/** Ghim xưởng từ `GET /map/workshops`; API tắt hoặc trả sai dạng thì trang hiện lỗi kèm thử lại. */
-export async function fetchMapPins(): Promise<MapPinsResult> {
-  try {
-    const res = await fetch(`${apiBaseUrl()}/map/workshops`, {
-      headers: { accept: 'application/json' },
-      next: { revalidate: 30 },
-      signal: AbortSignal.timeout(4000),
-    });
-    if (!res.ok) return { status: 'unavailable' };
-    const parsed = MapPinsResponseSchema.safeParse(await res.json());
-    return parsed.success ? { status: 'ok', pins: parsed.data.data } : { status: 'unavailable' };
-  } catch {
-    return { status: 'unavailable' };
-  }
-}
 
 export interface LatLng {
   lat: number;

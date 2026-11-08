@@ -33,6 +33,7 @@ export interface MediaCredit {
  */
 @Entity({ tableName: 'media_asset' })
 @Index({ properties: ['ownerId', 'sha256'] })
+@Index({ properties: ['sha256'] })
 export class MediaAsset extends BaseEntity {
   /** `AppUser.id` của người tải lên. */
   @Property({ type: 'uuid' })
