@@ -33,6 +33,8 @@ export const ListProductsQuerySchema = CursorPageQuerySchema.extend({
   maxPrice: PriceSchema.optional(),
   oneOfAKind: FlagSchema.optional(),
   inStock: FlagSchema.optional(),
+  /** Only products of households with a workshop open to visitors (a showroom that accepts visitors). */
+  openWorkshop: FlagSchema.optional(),
   sort: ProductSortSchema.default('newest'),
   /** Page mode (catalog exception to cursor-only paging, see ADR-0020); cannot be combined with `cursor`. */
   page: PageNumberSchema.optional(),
@@ -118,6 +120,8 @@ export type SlugRedirectDto = z.infer<typeof SlugRedirectResponseSchema>;
 export const SearchSuggestionsSchema = z.object({
   products: z.array(z.object({ name: z.string(), slug: z.string(), household: z.string() })),
   households: z.array(z.object({ name: z.string(), slug: z.string() })),
+  /** Categories whose name matches, in either language; the web labels them in the page locale. */
+  categories: z.array(z.object({ category: ProductCategorySchema })),
   news: z.array(z.object({ title: z.string(), slug: z.string() })),
 });
 export type SearchSuggestionsDto = z.infer<typeof SearchSuggestionsSchema>;

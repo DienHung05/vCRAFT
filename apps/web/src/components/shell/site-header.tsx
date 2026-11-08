@@ -1,7 +1,9 @@
 import { Logo } from '@vcraft/ui';
 import { getTranslations } from 'next-intl/server';
 import { LazyAccountMenu } from '@/features/auth/account-menu-lazy';
+import { CommandPalette } from '@/features/catalog/command-palette';
 import { SearchBox } from '@/features/catalog/search-box';
+import { SearchPaletteButton } from '@/features/catalog/search-palette-button';
 import { LazyNotificationBell } from '@/features/notifications/notification-bell-lazy';
 import { Link } from '@/i18n/navigation';
 import { Disclosure } from './disclosure';
@@ -32,7 +34,9 @@ export async function SiteHeader() {
           <HeaderNavLinks items={items} brush />
         </nav>
         <div className="flex items-center gap-1 sm:gap-2">
-          {/* Search: inline from xl; a toggle with a popover from md to xl; inside the menu below md. */}
+          {/* Search: inline from xl; a toggle with a popover from md to xl; a button for the palette below md. */}
+          <SearchPaletteButton className="md:hidden" />
+          <CommandPalette />
           <div className="hidden xl:block">
             <SearchBox />
           </div>
@@ -59,9 +63,6 @@ export async function SiteHeader() {
               aria-label={t('label')}
               className="absolute right-0 mt-2 w-56 rounded-card bg-surface p-2 shadow-warm ring-1 ring-ink/8"
             >
-              <div className="p-1 md:hidden">
-                <SearchBox />
-              </div>
               <div className="p-1 sm:hidden">
                 <LocaleSwitcher />
               </div>

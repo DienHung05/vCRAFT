@@ -19,7 +19,8 @@ import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { ConsentCheckbox } from '@/components/consent-checkbox';
 import { EmptyState } from '@/components/states/empty-state';
-import { QR_LOGO_OPTIONS, QR_LOGO_URL, TraceQr } from '@/features/traceability/trace-qr';
+import { downloadQr } from '@/features/traceability/download-qr';
+import { TraceQr } from '@/features/traceability/trace-qr';
 import { Link, useRouter } from '@/i18n/navigation';
 import { notify } from '@/lib/notify';
 import { traceShortUrl } from '@/lib/site';
@@ -392,26 +393,6 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
       </ConfirmDialog>
     </Card>
   );
-}
-
-/** Tải mã QR PNG hoặc SVG cỡ in (FR-TRC-02); thư viện vẽ QR chỉ nạp khi bấm. */
-async function downloadQr(url: string, code: string, extension: 'png' | 'svg') {
-  const { default: QRCodeStyling } = await import('qr-code-styling');
-  const qr = new QRCodeStyling({
-    width: 1024,
-    height: 1024,
-    type: extension === 'svg' ? 'svg' : 'canvas',
-    data: url,
-    image: QR_LOGO_URL,
-    imageOptions: QR_LOGO_OPTIONS,
-    margin: 32,
-    qrOptions: { errorCorrectionLevel: 'H' },
-    dotsOptions: { type: 'rounded', color: '#1c1814' },
-    cornersSquareOptions: { type: 'extra-rounded', color: '#c2261f' },
-    cornersDotOptions: { color: '#c2261f' },
-    backgroundOptions: { color: '#ffffff' },
-  });
-  await qr.download({ name: `vcraft-qr-${code}`, extension });
 }
 
 function QrSection({ product, client }: { product: ProductDto; client: StudioClient }) {

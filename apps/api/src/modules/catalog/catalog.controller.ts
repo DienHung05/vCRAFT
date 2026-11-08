@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Header, Param, Query } from '@nestjs/common';
 import {
   type ListProductsQuery,
   ListProductsQuerySchema,
@@ -9,6 +9,8 @@ import {
 import { Public } from '../../common/auth/auth.guard';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { CatalogService } from './application/catalog.service';
+
+export const SUGGEST_CACHE_CONTROL = 'public, max-age=0, s-maxage=30, stale-while-revalidate=60';
 
 /** Danh mục công khai (FR-CAT): sản phẩm, hộ, gợi ý tìm kiếm, số liệu làng. */
 @Controller()
@@ -45,7 +47,12 @@ export class CatalogController {
     return this.catalog.listHouseholds(query);
   }
 
+  /**
+   * Short edge cache for suggestions only (FR-CAT-04, NFR-PERF-03): a suspended household's item may stay
+   * in the dropdown for up to 30 s; the page behind it is not cached and answers 404 at once.
+   */
   @Get('search/suggest')
+  @Header('Cache-Control', SUGGEST_CACHE_CONTROL)
   suggest(@Query(new ZodValidationPipe(SearchQuerySchema)) query: { q: string }) {
     return this.catalog.suggest(query.q);
   }

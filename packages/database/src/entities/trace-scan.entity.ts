@@ -8,6 +8,8 @@ import { Product } from './product.entity.js';
  */
 @Entity({ tableName: 'trace_scan' })
 @Index({ properties: ['createdAt'] })
+// The `popular` catalog sort counts a product's scans in a time window (FR-CAT-02).
+@Index({ properties: ['product', 'createdAt'] })
 export class TraceScan extends BaseEntity {
   @ManyToOne({ entity: () => Product, deleteRule: 'cascade', index: true })
   product!: Product;

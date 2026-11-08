@@ -257,7 +257,24 @@
     "dimensions": "Kích thước",
     "weight": "Khối lượng",
     "code": "Mã truy xuất",
-    "more": "Cùng hộ này làm"
+    "more": "Cùng hộ này làm",
+    "lightbox": {
+      "open": "Phóng to ảnh: {alt}",
+      "title": "Xem ảnh lớn",
+      "close": "Đóng ảnh",
+      "previous": "Ảnh trước",
+      "next": "Ảnh sau",
+      "zoomIn": "Phóng to",
+      "zoomOut": "Thu nhỏ",
+      "counter": "Ảnh {current} trên {total}"
+    },
+    "qr": {
+      "title": "Mã QR truy xuất",
+      "lead": "Quét mã bằng điện thoại để xem hành trình của món này.",
+      "label": "Mã QR truy xuất {code}",
+      "link": "Đường dẫn ngắn",
+      "download": "Tải mã QR (PNG)"
+    }
   },
   "trace": {
     "home": "Về trang chủ vCraft",
@@ -1478,6 +1495,7 @@
     "sort": "Sắp xếp",
     "oneOfAKind": "Độc bản",
     "inStock": "Còn hàng",
+    "openWorkshop": "Có xưởng đón khách",
     "clear": "Xóa bộ lọc",
     "loading": "Đang tải sản phẩm",
     "empty": "Không có sản phẩm nào khớp bộ lọc.",
@@ -1488,6 +1506,16 @@
     "groupProducts": "Sản phẩm",
     "groupHouseholds": "Hộ",
     "groupNews": "Tin tức",
+    "groupCategories": "Danh mục",
+    "palette": {
+      "open": "Mở tìm kiếm nhanh",
+      "title": "Tìm kiếm nhanh",
+      "close": "Đóng",
+      "hint": "Dùng phím mũi tên lên xuống để chọn, Enter để mở, Esc để đóng.",
+      "prompt": "Gõ để tìm sản phẩm, hộ, danh mục và tin tức.",
+      "viewAll": "Xem mọi sản phẩm khớp “{query}”",
+      "results": "Gợi ý tìm kiếm"
+    },
     "categories": {
       "VASE": "Bình, lọ",
       "TABLEWARE": "Bát đĩa",
@@ -1498,7 +1526,8 @@
     "sorts": {
       "newest": "Mới nhất",
       "price_asc": "Giá tăng dần",
-      "price_desc": "Giá giảm dần"
+      "price_desc": "Giá giảm dần",
+      "popular": "Phổ biến nhất"
     },
     "emptyHint": "Thử bỏ bớt bộ lọc hoặc đổi khoảng giá để xem thêm sản phẩm.",
     "results": "Kết quả sản phẩm",

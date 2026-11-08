@@ -86,6 +86,27 @@ export function slotPhoto(view: PhotoView | undefined) {
   };
 }
 
+/** One photo of the product gallery lightbox: the largest size on offer, and what it shows. */
+export interface GallerySlide {
+  src: string;
+  alt: string;
+}
+
+/** The lightbox slide for a photo, or undefined when there is no photo (a drawn stand-in has none to enlarge). */
+export function gallerySlide(view: PhotoView | undefined): GallerySlide | undefined {
+  if (!view) return undefined;
+  if (view.photo) {
+    const credit = PHOTO_BY_ID.get(view.photo.id);
+    if (!credit) return undefined;
+    return { src: `/images/demo/${credit.id}-${Math.max(...credit.widths)}.webp`, alt: view.alt };
+  }
+  if (!view.src) return undefined;
+  const widest = [...(view.variants ?? [])]
+    .filter((v) => v.format === 'webp')
+    .sort((a, b) => b.width - a.width)[0];
+  return { src: widest?.url ?? view.src, alt: view.alt };
+}
+
 const TINTS = ['#3f5a8a', '#b4895a', '#9a8064', '#8a5a3c', '#5f7d6e', '#a4532a', '#6b6f8a'];
 
 /** Màu nền ổn định theo mã: cùng một món luôn cùng màu khi chưa có `dominantColor` của ảnh. */
