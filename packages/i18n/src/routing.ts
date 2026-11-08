@@ -13,6 +13,7 @@ export const pathnames = {
   '/san-pham/[slug]': { vi: '/san-pham/[slug]', en: '/products/[slug]' },
   '/nghe-nhan': { vi: '/nghe-nhan', en: '/artisans' },
   '/nghe-nhan/[slug]': { vi: '/nghe-nhan/[slug]', en: '/artisans/[slug]' },
+  '/yeu-thich': { vi: '/yeu-thich', en: '/favourites' },
   '/ban-do': { vi: '/ban-do', en: '/map' },
   '/tin-tuc': { vi: '/tin-tuc', en: '/news' },
   '/tin-tuc/[slug]': { vi: '/tin-tuc/[slug]', en: '/news/[slug]' },

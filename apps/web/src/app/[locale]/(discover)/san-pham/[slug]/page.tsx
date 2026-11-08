@@ -25,9 +25,11 @@ import {
   toLogEntries,
   toProductCardView,
 } from '@/features/catalog/view-models';
+import { FavouriteButton } from '@/features/favourites/favourite-button';
 import { Link, permanentRedirect } from '@/i18n/navigation';
 import { frameRatioOf } from '@/lib/images';
 import { resolveLocale } from '@/lib/locale';
+import { optionalTextFor, textFor } from '@/lib/localized-text';
 import { jsonLd, metaDescription, pageMetadata } from '@/lib/seo/page-metadata';
 import { localizedPath } from '@/lib/seo/sitemap-entries';
 import { siteOrigin, traceShortUrl } from '@/lib/site';
@@ -46,8 +48,11 @@ export async function generateMetadata({
   return pageMetadata({
     locale,
     href: { pathname: '/san-pham/[slug]', params: { slug: product.slug } },
-    title: product.name,
-    description: metaDescription(product.description || product.name),
+    title: textFor(locale, product.name, product.nameEn),
+    description: metaDescription(
+      textFor(locale, product.description, product.descriptionEn) ||
+        textFor(locale, product.name, product.nameEn),
+    ),
   });
 }
 
@@ -82,11 +87,15 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
   const log = toLogEntries(journal);
   const first = log[0];
   const last = log.at(-1);
+  const name = textFor(locale, product.name, product.nameEn);
+  const description = textFor(locale, product.description, product.descriptionEn);
+  const material = optionalTextFor(locale, product.material, product.materialEn);
+  const dimensions = optionalTextFor(locale, product.dimensions, product.dimensionsEn);
   const sold = product.status === 'SOLD';
   const tint = tintOf(product.traceCode);
   const image = photoFromUrl(
     product.coverUrl,
-    altFor(locale, product.coverAlt ?? product.name, product.coverAltEn),
+    altFor(locale, product.coverAlt ?? name, product.coverAltEn),
     product.coverVariants,
   );
   const presetKind = presetKindOf(product.category, product.name);
@@ -128,8 +137,8 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
   // schema.org Product for search results (GH#256); the price only when the household set one.
   const productLd = jsonLd({
     '@type': 'Product',
-    name: product.name,
-    description: product.description || undefined,
+    name,
+    description: description || undefined,
     sku: product.traceCode,
     category: categories(product.category),
     brand: { '@type': 'Brand', name: household.name },
@@ -156,7 +165,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
         items={[
           { label: common('home'), href: '/' },
           { label: t('allProducts'), href: '/san-pham' },
-          { label: product.name },
+          { label: name },
         ]}
       />
 
@@ -220,7 +229,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
               ) : null}
               {sold ? <Badge tone="outline">{common('sold')}</Badge> : null}
             </div>
-            <h1 className="text-h1">{product.name}</h1>
+            <h1 className="text-h1">{name}</h1>
             <p className="text-ash">
               {t.rich('by', {
                 household: household.name,
@@ -250,7 +259,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
             </p>
           </header>
 
-          <p className="max-w-prose-vn">{product.description}</p>
+          <p className="max-w-prose-vn">{description}</p>
 
           {product.tags.length > 0 ? (
             <ul className="flex flex-wrap gap-2" aria-label={t('tags')}>
@@ -277,6 +286,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
             >
               {t('ctaWorkshop')}
             </Link>
+            <FavouriteButton productId={product.id} name={name} variant="labelled" />
           </div>
 
           {/* Nhật ký rút gọn 1 dòng ⇒ landing truy xuất (BRAND §9). */}
@@ -326,16 +336,16 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
           <ProductQr code={product.traceCode} url={traceShortUrl(product.traceCode)} />
 
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 border-ink/10 border-t pt-6 text-small">
-            {product.material ? (
+            {material ? (
               <>
                 <dt className="text-ash">{t('material')}</dt>
-                <dd>{product.material}</dd>
+                <dd>{material}</dd>
               </>
             ) : null}
-            {product.dimensions ? (
+            {dimensions ? (
               <>
                 <dt className="text-ash">{t('dimensions')}</dt>
-                <dd>{product.dimensions}</dd>
+                <dd>{dimensions}</dd>
               </>
             ) : null}
             {product.weightGrams ? (

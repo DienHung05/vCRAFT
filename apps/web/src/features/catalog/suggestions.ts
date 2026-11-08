@@ -3,6 +3,7 @@
 import type { SearchSuggestionsDto } from '@vcraft/contracts';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
 import { useEffect, useState } from 'react';
+import { textFor } from '@/lib/localized-text';
 
 /** Pause after the last keystroke before asking the API (FR-CAT-04: suggestions within 300 ms). */
 export const SUGGEST_DEBOUNCE_MS = 120;
@@ -114,13 +115,14 @@ export interface SuggestionEntry {
 export function suggestionEntries(
   results: SearchSuggestionsDto,
   categoryLabel: (category: ProductCategory) => string,
+  locale = 'vi',
 ): SuggestionEntry[] {
   return [
     ...results.products.map(
       (p): SuggestionEntry => ({
         key: `products:${p.slug}`,
         group: 'products',
-        label: p.name,
+        label: textFor(locale, p.name, p.nameEn),
         hint: p.household,
         href: { pathname: '/san-pham/[slug]', params: { slug: p.slug } },
       }),

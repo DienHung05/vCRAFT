@@ -33,6 +33,7 @@ import { TraceQr } from '@/features/traceability/trace-qr';
 import { Link } from '@/i18n/navigation';
 import { frameRatioOf } from '@/lib/images';
 import { resolveLocale } from '@/lib/locale';
+import { textFor } from '@/lib/localized-text';
 import { isTraceCode, traceShortUrl } from '@/lib/site';
 
 // Tra mã qua API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
@@ -41,11 +42,12 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({
   params,
 }: PageProps<'/[locale]/truy-xuat/[code]'>): Promise<Metadata> {
+  const locale = await resolveLocale(params);
   const { code } = await params;
   const result = await fetchTrace(code);
   // A published trace code is indexable (NFR-PERF-02); unknown, withdrawn or locked codes are not.
   if (result.status === 'ok' && result.data.availability === 'VISIBLE')
-    return { title: result.data.product.name };
+    return { title: textFor(locale, result.data.product.name, result.data.product.nameEn) };
   return { title: code, robots: { index: false } };
 }
 
@@ -76,16 +78,13 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
   const withdrawn = trace?.availability === 'UNAVAILABLE' && trace.reason === 'PRODUCT_WITHDRAWN';
   const locked = trace?.availability === 'UNAVAILABLE' && trace.reason === 'HOUSEHOLD_SUSPENDED';
   const visible = trace?.availability === 'VISIBLE' ? trace : null;
+  const productName = visible ? textFor(locale, visible.product.name, visible.product.nameEn) : '';
   const profile = visible ? await fetchHousehold(visible.household.slug) : null;
   // The product's own photo, only when it has one; there is no stand-in picture for a product.
   const image = visible
     ? photoFromUrl(
         visible.product.coverUrl,
-        altFor(
-          locale,
-          visible.product.coverAlt ?? visible.product.name,
-          visible.product.coverAltEn,
-        ),
+        altFor(locale, visible.product.coverAlt ?? productName, visible.product.coverAltEn),
         visible.product.coverVariants,
       )
     : undefined;
@@ -141,7 +140,7 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
             <section className="trace-intro mx-auto max-w-xl px-5 pt-6 lg:grid lg:max-w-none lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-center lg:gap-12">
               <div>
                 <p className="text-small text-ash">{t('scanned')}</p>
-                <h1 className="mt-1 text-h1">{visible.product.name}</h1>
+                <h1 className="mt-1 text-h1">{productName}</h1>
                 <p className="mt-2 text-ash">{visible.household.name}</p>
                 {visible.product.status === 'SOLD' ? (
                   <Badge tone="outline" className="mt-3">

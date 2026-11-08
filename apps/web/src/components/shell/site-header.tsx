@@ -23,6 +23,8 @@ const NAV = [
 export async function SiteHeader() {
   const [t, catalog] = await Promise.all([getTranslations('nav'), getTranslations('catalog')]);
   const items = NAV.map((item) => ({ href: item.href, label: t(item.key) }));
+  // The account menu links to the favourites on wide screens; the narrow-screen menu lists them here.
+  const menuItems = [...items, { href: '/yeu-thich' as const, label: t('favourites') }];
 
   return (
     <header className="sticky top-0 z-40 border-ink/8 border-b bg-paper/85 backdrop-blur-md">
@@ -70,7 +72,7 @@ export async function SiteHeader() {
                 <LocaleSwitcher />
                 <ThemeToggle />
               </div>
-              <HeaderNavLinks items={items} />
+              <HeaderNavLinks items={menuItems} />
             </nav>
           </Disclosure>
         </div>

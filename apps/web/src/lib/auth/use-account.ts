@@ -3,6 +3,7 @@
 import { createAccountClient } from '@vcraft/api-client';
 import type { MeDto } from '@vcraft/contracts';
 import { useEffect, useState } from 'react';
+import { favouritesStore } from '@/features/favourites/favourites-store';
 import { ACCOUNT_CHANGED_EVENT, hasHouseholdIntent } from './household-intent';
 import { hasAuthCookie } from './session-cookie';
 
@@ -38,6 +39,7 @@ export function useAccount(): AccountState {
     // signing in ends in a full page load (see sign-in-form), which mounts this hook again.
     if (!hasAuthCookie(document.cookie)) {
       setSession(null);
+      favouritesStore.startAsGuest();
       return;
     }
     let active = true;
@@ -48,6 +50,7 @@ export function useAccount(): AccountState {
         if (!active) return;
         if (!supabase) {
           setSession(null);
+          favouritesStore.startAsGuest();
           return;
         }
         // INITIAL_SESSION được phát ngay khi đăng ký nên không cần getSession riêng. Callback chỉ ghi
@@ -88,6 +91,8 @@ export function useAccount(): AccountState {
       setMe(null);
       return;
     }
+    // FR-CAT-07: the first time a session is seen, local favourites move to the account (once per page load).
+    void favouritesStore.startAsAccount();
     let active = true;
     void revision;
     createAccountClient({ getAccessToken: async () => token })

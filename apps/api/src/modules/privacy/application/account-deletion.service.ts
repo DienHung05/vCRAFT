@@ -19,6 +19,7 @@ import {
   OrderAllocation,
   OutboxEvent,
   Product,
+  ProductFavourite,
   ProductMaker,
   QuotationNotice,
   QuotationRequest,
@@ -330,6 +331,7 @@ export class AccountDeletionService {
       em.remove(row);
     }
     for (const row of await em.find(NotificationPreference, { userId })) em.remove(row);
+    for (const row of await em.find(ProductFavourite, { userId })) em.remove(row);
     for (const row of await em.find(ConsentRecord, { userId })) em.remove(row);
     for (const row of await em.find(LoginEvent, { userId })) em.remove(row);
 

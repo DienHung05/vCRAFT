@@ -12,6 +12,7 @@ import { VectorModule } from './infrastructure/vector/vector.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AssistantModule } from './modules/assistant/assistant.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { FavouritesModule } from './modules/favourites/favourites.module';
 import { HealthModule } from './modules/health/health.module';
 import { HouseholdsModule } from './modules/households/households.module';
 import { MediaModule } from './modules/media/media.module';
@@ -38,6 +39,7 @@ import { UsersModule } from './modules/users/users.module';
     AssistantModule,
     HouseholdsModule,
     CatalogModule,
+    FavouritesModule,
     ConsentModule,
     MediaModule,
     NewsModule,

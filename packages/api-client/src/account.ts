@@ -8,6 +8,7 @@ import {
   CreateWorkshopRequestSchema,
   DataExportSchema,
   type ErrorCode,
+  FavouritesResponseSchema,
   type FieldError,
   formatVersionTag,
   HouseholdResponseSchema,
@@ -90,14 +91,20 @@ export function createAccountClient(options: AccountClientOptions) {
   }
 
   /** For calls whose success answer has no JSON body (204). Errors are read like in {@link request}. */
-  async function requestVoid(path: string, init: { method: string; json: unknown }): Promise<void> {
+  async function requestVoid(
+    path: string,
+    init: { method: string; json?: unknown },
+  ): Promise<void> {
     const token = await options.getAccessToken();
     if (!token) throw new AccountApiError('AUTH_UNAUTHENTICATED', 401);
     const response = await fetcher(`/api/v1${path}`, {
       method: init.method,
       cache: 'no-store',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(init.json),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(init.json !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      },
+      ...(init.json !== undefined ? { body: JSON.stringify(init.json) } : {}),
     });
     if (response.ok) return;
     let data: unknown;
@@ -209,6 +216,18 @@ export function createAccountClient(options: AccountClientOptions) {
     /** Tùy chọn email của các loại thông báo vai trò hiện tại có thể nhận. */
     notificationPreferences() {
       return request('/me/notification-preferences', NotificationPreferencesResponseSchema);
+    },
+    /** The saved products that are still publicly visible, most recently saved first (FR-CAT-07). */
+    favourites() {
+      return request('/me/favourites', FavouritesResponseSchema);
+    },
+    /** Idempotent: saving a product that is already saved succeeds. */
+    addFavourite(productId: string) {
+      return requestVoid(`/me/favourites/${IdSchema.parse(productId)}`, { method: 'PUT' });
+    },
+    /** Idempotent: removing a product that is not saved succeeds. */
+    removeFavourite(productId: string) {
+      return requestVoid(`/me/favourites/${IdSchema.parse(productId)}`, { method: 'DELETE' });
     },
     saveNotificationPreferences(input: UpdateNotificationPreferencesRequest) {
       return request('/me/notification-preferences', NotificationPreferencesResponseSchema, {

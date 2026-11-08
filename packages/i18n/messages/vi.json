@@ -27,6 +27,20 @@
     "cancel": "Hủy",
     "close": "Đóng"
   },
+  "favourites": {
+    "title": "Yêu thích",
+    "lead": "Những món bạn đã lưu bằng biểu tượng trái tim. Khi đã đăng nhập, danh sách đi theo bạn trên mọi thiết bị.",
+    "label": "Yêu thích",
+    "toggle": "Lưu {name} vào yêu thích",
+    "failed": "Chưa cập nhật được danh sách yêu thích. Vui lòng thử lại.",
+    "loading": "Đang tải danh sách yêu thích",
+    "loadFailed": "Chưa tải được danh sách yêu thích.",
+    "listLabel": "Sản phẩm yêu thích",
+    "empty": "Chưa có món yêu thích",
+    "emptyHint": "Bấm vào trái tim trên một sản phẩm để giữ nó ở đây.",
+    "browse": "Xem sản phẩm",
+    "guestNote": "Lưu trong trình duyệt này. Đăng nhập để giữ trên mọi thiết bị."
+  },
   "nav": {
     "home": "Về trang chủ vCraft",
     "label": "Điều hướng chính",
@@ -40,7 +54,8 @@
     "quotes": "Yêu cầu báo giá",
     "theme": "Đổi giao diện sáng/tối",
     "themeToDark": "Chuyển sang giao diện tối",
-    "themeToLight": "Chuyển sang giao diện sáng"
+    "themeToLight": "Chuyển sang giao diện sáng",
+    "favourites": "Yêu thích"
   },
   "indexPages": {
     "demoNote": "Bản trình diễn: danh sách này lấy từ dữ liệu mẫu, không phải hộ và sản phẩm thật.",
@@ -1801,7 +1816,8 @@
       "roleLabel": "Vai trò",
       "checking": "Đang kiểm tra phiên đăng nhập",
       "area": "Vào khu làm việc",
-      "settings": "Tài khoản và thông báo"
+      "settings": "Tài khoản và thông báo",
+      "favourites": "Yêu thích"
     },
     "roles": {
       "BUYER": "Khách",
@@ -2368,6 +2384,12 @@
       },
       "newTitle": "Sản phẩm mới",
       "editTitle": "Sửa sản phẩm",
+      "englishSection": "Tiếng Anh (không bắt buộc)",
+      "englishHint": "Hiện trên các trang tiếng Anh. Để trống thì trang tiếng Anh dùng nội dung tiếng Việt.",
+      "nameEn": "Tên sản phẩm (tiếng Anh)",
+      "descriptionEn": "Mô tả (tiếng Anh)",
+      "materialEn": "Chất liệu (tiếng Anh)",
+      "dimensionsEn": "Kích thước (tiếng Anh)",
       "notFound": "Không tìm thấy sản phẩm này trong hộ của bạn.",
       "name": "Tên sản phẩm",
       "description": "Mô tả",
