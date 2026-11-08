@@ -1,4 +1,4 @@
-import { act, render } from '@testing-library/react';
+import { act, fireEvent, render } from '@testing-library/react';
 import { Mascot } from '@vcraft/ui';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -33,6 +33,10 @@ describe('Mascot blink (GH#186)', () => {
     [{ x: 0, y: 500 }, '50% 100%'],
   ])('keeps the gaze cell while blinking (look at %o)', (lookAt, cell) => {
     const { container } = render(<Mascot lookAt={lookAt} reducedMotion={false} />);
+    // Sprites load lazily; touching the mascot starts them so the blink sheet is cached before 4.5 s.
+    act(() => {
+      fireEvent.pointerEnter(container.firstElementChild as HTMLElement);
+    });
     const { directions, blink, reactions } = layers(container);
     expect(directions.style.backgroundPosition).toBe(cell);
     expect(blink.style.opacity).toBe('0');
