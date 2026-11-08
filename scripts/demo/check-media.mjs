@@ -12,7 +12,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { pathToFileURL } from 'node:url';
-import { importFrom, printResult, ROOT } from './lib/demo-common.mjs';
+import { importFrom, printResult, ROOT } from './lib/common.mjs';
 
 const MIN_INPUT_BYTES = 12 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 1.5 * 1024 * 1024;

@@ -1,4 +1,4 @@
-// Sinh tự động bởi scripts/demo-photos/build.mjs. Không sửa tay; sửa sources.json rồi chạy lại.
+// Sinh tự động bởi scripts/demo/photos/build.mjs. Không sửa tay; sửa sources.json rồi chạy lại.
 // Ảnh minh hoạ trình diễn lấy từ Wikimedia Commons, kho mở của bảo tàng và Pixabay, chỉ dùng giấy phép cho phép dùng công khai
 // kèm ghi nguồn (CC0 / công cộng / CC BY / CC BY-SA / giấy phép nội dung Pixabay).
 

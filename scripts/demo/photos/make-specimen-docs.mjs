@@ -3,8 +3,8 @@
  * Vẽ cục bộ ba giấy tờ xác minh MẪU cho hộ chờ duyệt "Gốm Bảo Châu" (packages/database/src/seeders/demo/verification-docs.ts):
  * toàn số liệu và tên giả, đóng dấu chéo "MẪU – KHÔNG CÓ GIÁ TRỊ". Không dùng giấy tờ thật của bất kỳ ai.
  *
- * Dùng: node scripts/demo-photos/make-specimen-docs.mjs
- * Ghi vào scripts/demo-photos/specimen-docs/<id>.png (đã commit; chạy lại chỉ khi muốn đổi hình).
+ * Dùng: node scripts/demo/photos/make-specimen-docs.mjs
+ * Ghi vào scripts/demo/photos/specimen-docs/<id>.png (đã commit; chạy lại chỉ khi muốn đổi hình).
  * Cần phông có chữ Việt trong hệ thống (macOS/Linux thông dụng đều có Arial hoặc DejaVu Sans).
  */
 import fs from 'node:fs';
@@ -13,7 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(here, '../..');
+const root = path.resolve(here, '../../..');
 const sharp = createRequire(path.join(root, 'apps/worker/package.json'))('sharp');
 const outDir = path.join(here, 'specimen-docs');
 fs.mkdirSync(outDir, { recursive: true });

@@ -1,6 +1,6 @@
 ## Thay đổi
 
-<!-- Mô tả ngắn, link issue/FR-ID trong docs/SRS.md -->
+<!-- Mô tả ngắn, link issue/FR-ID trong docs/requirements/SRS.md -->
 
 ## Tiêu chí chấm điểm liên quan
 

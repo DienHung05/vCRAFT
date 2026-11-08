@@ -1,5 +1,5 @@
 /*
- * Design tokens vCraft — nguồn chuẩn: docs/BRAND.md (§3 màu, §4 chữ, §5 bố cục, §6.2 chuyển động).
+ * Design tokens vCraft — nguồn chuẩn: docs/design/BRAND.md (§3 màu, §4 chữ, §5 bố cục, §6.2 chuyển động).
  * Token chuyển động cho JS (Motion/GSAP) nằm ở ../motion/tokens.ts và phải khớp các giá trị dưới đây.
  *
  * `@theme static`: phát ra mọi biến CSS kể cả khi Tailwind không thấy utility dùng tới, để

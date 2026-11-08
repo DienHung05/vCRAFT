@@ -3,7 +3,7 @@
  * Tải ảnh minh hoạ trình diễn từ Wikimedia Commons, cắt theo tỉ lệ khung, mã hoá AVIF + WebP
  * (640w, 1280w) vào apps/web/public/images/demo và sinh apps/web/src/lib/demo/photo-credits.ts.
  *
- * Dùng: node scripts/demo-photos/build.mjs [thư-mục-ảnh-gốc] [--only=id1,id2]
+ * Dùng: node scripts/demo/photos/build.mjs [thư-mục-ảnh-gốc] [--only=id1,id2]
  *
  * Mỗi ảnh trong sources.json có `file` (tên tệp trên Commons) hoặc `url` (tệp ảnh trực tiếp, vd. kho mở của bảo tàng,
  * Pixabay) kèm `title` và `sourceUrl` của trang nguồn. `ratio: "auto"` (hoặc bỏ trống) giữ nguyên tỉ lệ ảnh sau khi cắt
@@ -20,7 +20,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(here, '../..');
+const root = path.resolve(here, '../../..');
 const require = createRequire(path.join(root, 'apps/worker/package.json'));
 const sharp = require('sharp');
 
@@ -183,7 +183,7 @@ if (only) {
     if (c) credits.push(c);
   }
 }
-const body = `// Sinh tự động bởi scripts/demo-photos/build.mjs. Không sửa tay; sửa sources.json rồi chạy lại.
+const body = `// Sinh tự động bởi scripts/demo/photos/build.mjs. Không sửa tay; sửa sources.json rồi chạy lại.
 // Ảnh minh hoạ trình diễn lấy từ Wikimedia Commons, kho mở của bảo tàng và Pixabay, chỉ dùng giấy phép cho phép dùng công khai
 // kèm ghi nguồn (CC0 / công cộng / CC BY / CC BY-SA / giấy phép nội dung Pixabay).
 

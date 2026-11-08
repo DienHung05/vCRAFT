@@ -67,7 +67,7 @@ async function main(): Promise<void> {
           orm,
           storage,
           imagesDir: join(ROOT, 'apps', 'web', 'public', 'images', 'demo'),
-          specimenDir: join(ROOT, 'scripts', 'demo-photos', 'specimen-docs'),
+          specimenDir: join(ROOT, 'scripts', 'demo', 'photos', 'specimen-docs'),
           force: args.has('--force'),
           dryRun,
           log: (message) => console.log(`  ${message}`),

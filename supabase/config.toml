@@ -23,7 +23,7 @@ minimum_password_length = 8
 password_requirements = "letters_digits"
 
 # GH#122: "Tiếp tục với Google". Local dev reads the OAuth client from env; production is set in the
-# dashboard (docs/deploy.md §6). Google's authorised redirect URI is `<Supabase URL>/auth/v1/callback`.
+# dashboard (docs/operations/deploy.md §6). Google's authorised redirect URI is `<Supabase URL>/auth/v1/callback`.
 [auth.external.google]
 enabled = true
 client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"

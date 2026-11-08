@@ -106,7 +106,7 @@ apps/web      order page: "Pay deposit" → method picker → QR/bank panel with
 5. MoMo sandbox: create, IPN, return page.
 6. Administration: payments per order, manual mark-refunded, audit-log entries, notifications.
 7. E2E: a Playwright happy path per method using sandbox and signed fake webhooks; env table in
-   `docs/deploy.md`.
+   `docs/operations/deploy.md`.
 
 ### Owner decisions (GH#194, 2026-11-07)
 

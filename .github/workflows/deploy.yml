@@ -23,7 +23,7 @@
 #   - VERCEL_ORG_ID: Vercel org/team ID
 #   - VERCEL_PROJECT_ID: Vercel project ID
 #
-# One-time setup order (see docs/deploy.md §12 for details):
+# One-time setup order (see docs/operations/deploy.md §12 for details):
 #   1. Set secrets and variables in GitHub; start with CD_ENABLED unset/false
 #   2. Merge this workflow to main
 #   3. Set CD_ENABLED=true
