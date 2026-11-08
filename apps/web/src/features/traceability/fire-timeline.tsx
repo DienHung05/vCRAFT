@@ -101,22 +101,26 @@ export async function FireTimeline({
             {e.skipReason ? (
               <p className="mt-1 text-small text-ash">{t('skipped', { reason: e.skipReason })}</p>
             ) : null}
-            {e.images.map((image) => {
-              const alt = t('proofAlt', { stage: stages(`${e.stage}.name`) });
-              const photo = photoFromUrl(image.url, alt, image.variants);
-              return (
-                <div key={image.sha256}>
-                  <ImageSlot
-                    alt={alt}
-                    tint={e.tint}
-                    ratio="3/2"
-                    {...slotPhoto(photo)}
-                    sizes="(min-width: 640px) 24rem, 100vw"
-                    className="mt-3 max-w-sm"
-                  />
-                </div>
-              );
-            })}
+            {/* A photo still processing has no URL yet: nothing is shown until it is ready. */}
+            {e.images
+              .filter((image) => image.url)
+              .map((image) => {
+                const alt = t('proofAlt', { stage: stages(`${e.stage}.name`) });
+                const photo = photoFromUrl(image.url, alt, image.variants);
+                return (
+                  <div key={image.sha256}>
+                    <ImageSlot
+                      alt={alt}
+                      tint={e.tint}
+                      ratio="3/2"
+                      {...slotPhoto(photo)}
+                      thumbhash={image.thumbhash}
+                      sizes="(min-width: 640px) 24rem, 100vw"
+                      className="mt-3 max-w-sm"
+                    />
+                  </div>
+                );
+              })}
             {/* Hiển thị rút gọn cho gọn mắt; dấu băm đầy đủ 64 hex nằm ở `title`. */}
             <p
               className="mt-2 font-mono text-[0.7rem] text-ash"

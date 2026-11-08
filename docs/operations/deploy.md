@@ -223,7 +223,9 @@ curl -sI https://<domain>/q/DF6P3WZE                          # 308, Location: /
 curl -sI https://<domain>/vi | grep -i strict-transport       # có HSTS
 ```
 
-Kiểm tay một lần: đăng nhập vai hộ sản xuất và tải lên một ảnh ~9 MB (gần giới hạn 10 MB) qua Studio, hoặc gọi endpoint media của API qua `https://<domain>/api/v1/...` nếu chưa có màn hình, để chắc rewrite của Vercel không chặn body lớn (ADR-16); nếu bị chặn, xem phương án trong ADR-16.
+Kiểm tay một lần: đăng nhập vai hộ sản xuất và tải lên một ảnh ~14 MB (gần giới hạn 15 MB) qua Studio, hoặc gọi endpoint media của API qua `https://<domain>/api/v1/...` nếu chưa có màn hình, để chắc rewrite của Vercel không chặn body lớn (ADR-16); nếu bị chặn, xem phương án trong ADR-16.
+
+**Media upload limit (GH#252).** The API accepts images up to 15 MiB (`MEDIA_MAX_BYTES`) and HEIC/HEIF originals. The owner must raise the production Storage limit to 15 MiB: Supabase Dashboard → Storage → Settings (global file size limit) and, for each of the buckets `vcraft-media` and `vcraft-private`, Edit bucket → *Restrict file upload size* = 15 MB; also add `image/heic` and `image/heif` to the allowed MIME types of `vcraft-private`. `supabase/migrations/20261108151000_media_limits_15mib.sql` does the same for a local or freshly linked project. Until then, files between 10 and 15 MiB are accepted by the API but rejected by Storage.
 
 Mở `https://<domain>/vi/tin-tuc`: phải có bài (API gọi được từ server Next). Quét thử QR bằng điện thoại ở mạng 4G.
 

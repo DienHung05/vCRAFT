@@ -186,9 +186,12 @@ export class JournalService {
     return product;
   }
 
-  private async assertOwnImages(actor: Actor, images: readonly { url: string; sha256: string }[]) {
+  private async assertOwnImages(
+    actor: Actor,
+    images: readonly { url?: string | undefined; sha256: string }[],
+  ) {
     if (!(await this.media.ownsJournalImages(actor.id, images)))
-      throw forbidden('journal photos must be your own processed uploads');
+      throw forbidden('journal photos must be your own uploads that have not failed processing');
   }
 
   private async ownEntry(em: EntityManager, actor: Actor, entryId: string) {

@@ -18,10 +18,12 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { ImageSlot } from '@/components/image-slot';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
 import { TableSkeleton } from '@/components/states/skeletons';
 import { prepareImage, sendMedia } from '@/features/media/prepare-image';
+import { useMediaWatch } from '@/features/media/use-media-watch';
 import { Link } from '@/i18n/navigation';
 import { browserAccessToken } from '@/lib/api/live-session';
 import { notify } from '@/lib/notify';
@@ -29,8 +31,12 @@ import { HouseholdGate } from './household-gate';
 import { inputClass } from './workshop-editor';
 
 const OLD_PHOTO_DAYS = 30;
-const PHOTO_POLL_MS = 2000;
-const PHOTO_POLL_ATTEMPTS = 30;
+/**
+ * A courtesy wait for a fast worker, so a photo that is already `READY` is saved with its URL. It never blocks
+ * saving (GH#252): the worker can take minutes, and the journal shows a placeholder until the photo is ready.
+ */
+const PHOTO_POLL_MS = 1500;
+const PHOTO_POLL_ATTEMPTS = 5;
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
@@ -49,22 +55,35 @@ export const isOldPhoto = (captured: Date, now: Date): boolean =>
 export const noteWithTime = (note: string, time: string): string =>
   time ? `${time} · ${note.trim()}` : note.trim();
 
-/** Bản WebP rộng nhất đã xử lý xong, để ghi vào nhật ký kèm checksum ảnh gốc. */
-export function journalImageOf(asset: MediaAssetResponse) {
+/**
+ * The photo as a journal entry stores it: the checksum of the original, plus the widest WebP when the photo is
+ * already processed. A photo still processing is saved by checksum alone; the API resolves its URL later.
+ */
+export function journalImageOf(asset: Pick<MediaAssetResponse, 'sha256' | 'variants'>) {
   const variant = asset.variants
     .filter((v) => v.format === 'webp')
     .sort((a, b) => b.width - a.width)[0];
-  return variant ? { url: variant.url, sha256: asset.sha256 } : null;
+  return variant ? { url: variant.url, sha256: asset.sha256 } : { sha256: asset.sha256 };
 }
 
-async function waitForReady(client: StudioClient, mediaId: string): Promise<MediaAssetResponse> {
+/** Waits briefly for the worker. Returns the last state seen; throws only when processing failed for good. */
+async function waitBriefly(
+  client: StudioClient,
+  uploaded: MediaAssetResponse,
+): Promise<MediaAssetResponse> {
+  let asset = uploaded;
   for (let attempt = 0; attempt < PHOTO_POLL_ATTEMPTS; attempt++) {
-    const asset = await client.getMedia(mediaId);
     if (asset.status === 'READY') return asset;
-    if (asset.status === 'FAILED') break;
-    await new Promise((resolve) => setTimeout(resolve, PHOTO_POLL_MS));
+    if (asset.status === 'FAILED') throw new Error('photo-failed');
+    if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, PHOTO_POLL_MS));
+    try {
+      asset = await client.getMedia(uploaded.id);
+    } catch {
+      // The photo is saved anyway; a failed check only means we could not wait for it.
+      return asset;
+    }
   }
-  throw new Error('photo-not-ready');
+  return asset.status === 'FAILED' ? Promise.reject(new Error('photo-failed')) : asset;
 }
 
 interface FormProps {
@@ -137,9 +156,7 @@ function EntryForm({
         () => {},
         new AbortController().signal,
       );
-      const image = journalImageOf(await waitForReady(client, uploaded.id));
-      if (!image) throw new Error('photo-not-ready');
-      const images = [image];
+      const images = [journalImageOf(await waitBriefly(client, uploaded))];
       setStatus('saving');
       const updated = await client.appendJournalEntry(product.id, {
         stage,
@@ -153,7 +170,7 @@ function EntryForm({
       onSaved(updated);
     } catch (error) {
       setStatus(
-        error instanceof Error && error.message === 'photo-not-ready' ? 'photo-failed' : 'failed',
+        error instanceof Error && error.message === 'photo-failed' ? 'photo-failed' : 'failed',
       );
     }
   };
@@ -335,6 +352,18 @@ function JournalBody({ product, client }: { product: ProductDto; client: StudioC
     void load();
   }, [load]);
 
+  // Photos saved while still processing: refetch the journal when one is ready (event, else polling).
+  const pendingPhotos = (journal?.entries ?? []).flatMap((entry) =>
+    entry.images.flatMap((image) =>
+      image.status === 'PROCESSING' && image.mediaId ? [image.mediaId] : [],
+    ),
+  );
+  useMediaWatch(
+    pendingPhotos,
+    (id) => client.getMedia(id),
+    () => void load(),
+  );
+
   if (failed) {
     return <ErrorState message={common('loadFailed')} onRetry={() => void load()} />;
   }
@@ -413,6 +442,38 @@ function JournalBody({ product, client }: { product: ProductDto; client: StudioC
                   </time>
                 </div>
                 <p className="text-small">{entry.note}</p>
+                {entry.images.length > 0 ? (
+                  <ul className="flex flex-wrap gap-2" data-testid="entry-photos">
+                    {entry.images.map((image) => (
+                      <li key={image.sha256} className="w-32">
+                        {image.url ? (
+                          <ImageSlot
+                            alt={stages(`${entry.stage}.name`)}
+                            tint="#9a8064"
+                            ratio="4/3"
+                            src={image.url}
+                            variants={image.variants}
+                            thumbhash={image.thumbhash}
+                            sizes="8rem"
+                          />
+                        ) : image.status === 'FAILED' ? (
+                          <p role="alert" className="text-small text-seal">
+                            {t('photoUnavailable')}
+                          </p>
+                        ) : (
+                          <ImageSlot alt="" tint="#9a8064" ratio="4/3">
+                            <span
+                              role="status"
+                              className="absolute inset-x-0 bottom-0 bg-paper/80 p-1 text-center text-[0.7rem] text-ash"
+                            >
+                              {t('photoProcessing')}
+                            </span>
+                          </ImageSlot>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
                 {entry.supersedesSeq !== null ? (
                   <p className="text-small text-clay">
                     {t('corrects', { n: entry.supersedesSeq + 1 })}

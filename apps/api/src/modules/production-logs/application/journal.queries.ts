@@ -47,11 +47,19 @@ export async function toJournalDto(
         stage: e.stage,
         declaredDate: e.declaredDate,
         note: e.note,
-        images: e.images.map((image) => ({
-          ...image,
-          credit: images.get(image.sha256)?.credit ?? null,
-          variants: images.get(image.sha256)?.variants ?? [],
-        })),
+        images: e.images.map((image) => {
+          const media = images.get(image.sha256);
+          return {
+            // A stored URL (older entries) keeps working; newer entries resolve it once the photo is READY.
+            url: image.url ?? media?.url ?? null,
+            sha256: image.sha256,
+            credit: media?.credit ?? null,
+            variants: media?.variants ?? [],
+            mediaId: media?.mediaId ?? null,
+            status: media?.status ?? 'READY',
+            thumbhash: media?.thumbhash ?? null,
+          };
+        }),
         skipReason: e.skipReason ?? null,
         supersedesSeq: e.supersedes?.seq ?? null,
         supersededBySeq: supersededBy.get(e.seq) ?? null,

@@ -14,20 +14,32 @@ export type CertificateKind = (typeof CERTIFICATE_KINDS)[number];
 
 export type MediaVisibility = 'PUBLIC' | 'PRIVATE';
 
-/** Khớp `file_size_limit` của hai bucket (10 MB); client nén ảnh điện thoại trước khi gửi. */
-export const MEDIA_MAX_BYTES = 10 * 1024 * 1024;
+/** 15 MiB per file (NFR-SEC-05); must match `file_size_limit` of both Supabase buckets. */
+export const MEDIA_MAX_BYTES = 15 * 1024 * 1024;
 
-/** Chặn ảnh "bom giải nén": số điểm ảnh tối đa worker chịu decode. */
-export const MEDIA_MAX_PIXELS = 40_000_000;
+/** Chặn ảnh "bom giải nén": số điểm ảnh tối đa (50 MP) mà API nhận và worker chịu decode. */
+export const MEDIA_MAX_PIXELS = 50_000_000;
 
 /** Bề ngang các biến thể AVIF/WebP (ARCHITECTURE §7.1). */
 export const MEDIA_VARIANT_WIDTHS = [320, 640, 1280, 2048] as const;
 
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'] as const;
+const WEB_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'] as const;
+/**
+ * Phone photos (FR-PRD-02). Only public images are accepted in HEIC/HEIF because the worker converts them;
+ * browsers cannot show them, so private documents (never converted) stay on the web formats.
+ */
+const HEIC_TYPES = ['image/heic', 'image/heif'] as const;
+const IMAGE_TYPES = [...WEB_IMAGE_TYPES, ...HEIC_TYPES] as const;
 /** Giấy tờ chứng nhận có thể là bản scan PDF; không bao giờ có SVG (ADR-14). */
-const PRIVATE_TYPES = [...IMAGE_TYPES, 'application/pdf'] as const;
+const PRIVATE_TYPES = [...WEB_IMAGE_TYPES, 'application/pdf'] as const;
 
-export type MediaUploadErrorCode = 'MEDIA_TOO_LARGE' | 'MEDIA_UNSUPPORTED_TYPE';
+/** True for the HEIC/HEIF family, which the worker decodes with a JS decoder (sharp has no HEVC). */
+export const isHeicMime = (mime: string): boolean => /^image\/hei[cf](-sequence)?$/i.test(mime);
+
+export type MediaUploadErrorCode =
+  | 'MEDIA_TOO_LARGE'
+  | 'MEDIA_RESOLUTION_TOO_HIGH'
+  | 'MEDIA_UNSUPPORTED_TYPE';
 
 export interface MediaUploadFacts {
   readonly purpose: MediaPurpose;
@@ -36,6 +48,8 @@ export interface MediaUploadFacts {
   /** Loại dò từ magic bytes; `undefined` khi không nhận ra. */
   readonly sniffedMime: string | undefined;
   readonly sizeBytes: number;
+  /** Pixel size read from the file header, when it could be read cheaply. */
+  readonly dimensions?: { readonly width: number; readonly height: number } | undefined;
 }
 
 export interface MediaUploadPlan {
@@ -58,6 +72,10 @@ function normalizeMime(mime: string): string {
   return base === 'image/jpg' || base === 'image/pjpeg' ? 'image/jpeg' : base;
 }
 
+/** Phones declare `image/heic` for files whose brand sniffs as `image/heif` (and the other way round). */
+const sameType = (declared: string, sniffed: string) =>
+  declared === sniffed || (isHeicMime(declared) && isHeicMime(sniffed));
+
 export function checkMediaUpload(
   facts: MediaUploadFacts,
 ): Result<MediaUploadPlan, DomainError<MediaUploadErrorCode>> {
@@ -74,11 +92,21 @@ export function checkMediaUpload(
   if (facts.sizeBytes === 0 || !sniffed || !allowed.includes(sniffed)) {
     return err(new DomainError('MEDIA_UNSUPPORTED_TYPE', 'content is not an allowed type'));
   }
-  if (normalizeMime(facts.declaredMime) !== sniffed) {
+  if (!sameType(normalizeMime(facts.declaredMime), sniffed)) {
     return err(
       new DomainError('MEDIA_UNSUPPORTED_TYPE', 'declared type does not match content', {
         declared: facts.declaredMime,
         detected: sniffed,
+      }),
+    );
+  }
+  const { dimensions } = facts;
+  if (dimensions && dimensions.width * dimensions.height > MEDIA_MAX_PIXELS) {
+    return err(
+      new DomainError('MEDIA_RESOLUTION_TOO_HIGH', `image exceeds ${MEDIA_MAX_PIXELS} pixels`, {
+        maxPixels: MEDIA_MAX_PIXELS,
+        width: dimensions.width,
+        height: dimensions.height,
       }),
     );
   }

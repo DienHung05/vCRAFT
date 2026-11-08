@@ -424,6 +424,8 @@ export const ProductResponseSchema = z.object({
       mediaId: IdSchema,
       url: z.string().nullable(),
       variants: PublicImageVariantsSchema,
+      /** ThumbHash (base64) of a processed photo, for a blurred placeholder; null while it is processing. */
+      thumbhash: z.string().nullable().default(null),
       alt: z.string(),
     }),
   ),

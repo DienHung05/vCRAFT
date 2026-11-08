@@ -5,7 +5,7 @@ import { Product } from './product.entity.js';
 
 /** Ảnh minh chứng của một mốc: đường dẫn hiển thị và SHA-256 nội dung (đi vào chuỗi băm). */
 export interface JournalImage {
-  url: string;
+  url?: string;
   sha256: string;
 }
 
