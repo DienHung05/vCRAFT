@@ -10,6 +10,7 @@ import {
   biddingStillOpen,
   bidIsAcceptable,
   deliveryAfterBiddingDeadline,
+  depositPaidWhenRequired,
   emailVerified,
   noExistingBidFromArtisan,
   productionStarterPermitted,
@@ -83,7 +84,12 @@ export const RFQ_TRANSITIONS = {
     START_PRODUCTION: {
       to: 'IN_PRODUCTION',
       ref: 'T4',
-      guards: [actorIn('ADMIN', 'ARTISAN'), productionStarterPermitted, allAllocationsConfirmed],
+      guards: [
+        actorIn('ADMIN', 'ARTISAN'),
+        productionStarterPermitted,
+        allAllocationsConfirmed,
+        depositPaidWhenRequired, // ADR-0021: no production before the deposit is paid
+      ],
     },
     ADMIN_CANCEL: {
       to: 'CANCELLED',

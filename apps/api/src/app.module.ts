@@ -17,6 +17,7 @@ import { HouseholdsModule } from './modules/households/households.module';
 import { MediaModule } from './modules/media/media.module';
 import { NewsModule } from './modules/news/news.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { ConsentModule } from './modules/privacy/consent.module';
 import { PrivacyModule } from './modules/privacy/privacy.module';
 import { ProductionLogsModule } from './modules/production-logs/production-logs.module';
@@ -41,6 +42,7 @@ import { UsersModule } from './modules/users/users.module';
     MediaModule,
     NewsModule,
     NotificationsModule,
+    PaymentsModule,
     PrivacyModule,
     ProductionLogsModule,
     RfqModule,

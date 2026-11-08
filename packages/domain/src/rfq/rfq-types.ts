@@ -52,6 +52,7 @@ export type RfqGuardCode =
   | 'ACCEPT_WINDOW_CLOSED'
   | 'PRODUCTION_START_NOT_PERMITTED'
   | 'ALLOCATIONS_NOT_CONFIRMED'
+  | 'PAYMENT_DEPOSIT_REQUIRED'
   | 'ALLOCATIONS_NOT_DONE'
   | 'REASON_REQUIRED'
   | 'NOT_YET_EXPIRED';
@@ -82,6 +83,13 @@ export interface RfqContext {
    * hộ/nghệ nhân đang đăng nhập). Chỉ có nghĩa khi `householdCount = 1`.
    */
   readonly actorOwnsSoleAllocation?: boolean | undefined;
+  /**
+   * START_PRODUCTION: production waits for a paid deposit in this deployment (ADR-0021). When it is not
+   * required, or the flag is left out, the order is not gated on payment.
+   */
+  readonly depositRequired?: boolean | undefined;
+  /** START_PRODUCTION: the order's deposit payment is `PAID`. Read only when `depositRequired` is set. */
+  readonly depositPaid?: boolean | undefined;
   /** CANCEL / ADMIN_CANCEL: lý do bắt buộc. */
   readonly reason?: string | undefined;
 }

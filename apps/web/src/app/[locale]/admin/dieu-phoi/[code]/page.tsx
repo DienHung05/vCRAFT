@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import { AdminOrderPayments } from '@/features/admin/admin-order-payments';
 import { LiveCoordination } from '@/features/admin/live-coordination';
 import { isRfqUuid } from '@/lib/api/rfq-id';
 import { resolveLocale } from '@/lib/locale';
@@ -35,6 +36,7 @@ export default async function CoordinationPage({
         ]}
       />
       <LiveCoordination rfqId={code} />
+      <AdminOrderPayments orderId={code} />
     </article>
   );
 }

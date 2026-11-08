@@ -28,6 +28,8 @@ import {
   COORDINATION_CHECK_EVERY_MS,
   IDEMPOTENCY_PURGE_EVERY_MS,
   IDEMPOTENCY_PURGE_JOB,
+  PAYMENT_EXPIRE_EVERY_MS,
+  PAYMENT_EXPIRE_SWEEP_JOB,
   RFQ_COORDINATION_CHECK_JOB,
   RFQ_EXPIRE_SWEEP_JOB,
   RFQ_SWEEP_EVERY_MS,
@@ -183,6 +185,11 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       IDEMPOTENCY_PURGE_JOB,
       { every: IDEMPOTENCY_PURGE_EVERY_MS },
       { name: IDEMPOTENCY_PURGE_JOB },
+    );
+    await scheduler.upsertJobScheduler(
+      PAYMENT_EXPIRE_SWEEP_JOB,
+      { every: PAYMENT_EXPIRE_EVERY_MS },
+      { name: PAYMENT_EXPIRE_SWEEP_JOB },
     );
     this.closables.push(...workers, media, mail, qrLabels, scheduler, assistant, outbox, {
       close: async () => mailDeps.transport.close(),

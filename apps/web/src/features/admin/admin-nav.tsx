@@ -39,6 +39,7 @@ export function AdminNav() {
   const onCoordination = pathname.startsWith('/admin/dieu-phoi');
   const onProgress = pathname.startsWith('/admin/tien-do');
   const onAudit = pathname.startsWith('/admin/nhat-ky');
+  const onPayments = pathname.startsWith('/admin/thanh-toan');
   const onNews = pathname.startsWith('/admin/tin-tuc');
   const onAccounts = pathname.startsWith('/admin/nguoi-dung');
 
@@ -88,6 +89,15 @@ export function AdminNav() {
             className={linkClass(onProgress)}
           >
             {t('progress')}
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/admin/thanh-toan"
+            aria-current={onPayments ? 'page' : undefined}
+            className={linkClass(onPayments)}
+          >
+            {t('payments')}
           </Link>
         </li>
         <li>

@@ -1,13 +1,13 @@
 import type { EntityManager } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import { Notification, OutboxEvent } from '@vcraft/database';
-import { type HouseholdNoticeKind, noticeRecipients } from '@vcraft/domain';
+import { type HouseholdNoticeKind, noticeRecipients, type PaymentNoticeKind } from '@vcraft/domain';
 
 /** Sự kiện outbox mà worker đổi thành một thư SMTP cho mỗi thông báo (bảng `notification`). */
 export const NOTIFICATION_CREATED_EVENT = 'notification.created';
 
 export interface NotificationInput {
-  type: HouseholdNoticeKind;
+  type: HouseholdNoticeKind | PaymentNoticeKind;
   /** Đối tượng liên quan (vd. mã hộ). */
   subjectId?: string | null;
   /** Người gây ra sự kiện; không tự nhận thông báo của chính mình. */
