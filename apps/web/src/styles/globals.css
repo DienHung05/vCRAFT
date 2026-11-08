@@ -693,3 +693,28 @@ li:last-child > .journey-dot .journey-dot-label {
     mask-image: none;
   }
 }
+
+/*
+ * Scroll reveal for public sections (GH#301, experience/motion/reveal.tsx): a block far below the fold
+ * rests slightly sunk and quiet (`reveal-armed`) and rises to rest (`reveal-in`) the first time it
+ * enters the view. Opacity and transform only — the box never changes size, so layout and CLS stay
+ * untouched. The armed state is set by JS only when the block starts below the fold and motion is
+ * allowed, so no-JS and reduced-motion visitors see the resting state directly.
+ */
+.reveal-armed {
+  opacity: 0;
+  transform: translateY(1.25rem);
+}
+.reveal-in {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--duration-base) var(--ease-clay),
+    transform var(--duration-base) var(--ease-clay);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal-armed {
+    opacity: 1;
+    transform: none;
+  }
+}
