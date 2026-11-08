@@ -306,7 +306,21 @@
     "lockedTitle": "We cannot verify this piece",
     "lockedText": "The household behind code {code} is locked by the village board. Please be careful: vCraft does not currently vouch for this piece."
   },
+  "orderProgress": {
+    "label": "Allocation progress",
+    "percent": "{percent}% complete",
+    "completed": "{done}/{total} {unit}",
+    "counts": "{done}/{total} {unit} · expected {expected} · promised {due}",
+    "started": "Started",
+    "empty": "No allocations yet.",
+    "lateness": { "DONE": "Done", "ON_TRACK": "On track", "BEHIND": "Behind", "OVERDUE": "Overdue" }
+  },
   "rfq": {
+    "duplicate": {
+      "action": "Duplicate as draft",
+      "hint": "Bidding and delivery dates are reset. Review the content and attach files again before sending.",
+      "failed": "The request could not be duplicated. Please try again."
+    },
     "breadcrumb": "Breadcrumb",
     "allRequests": "Quote requests",
     "stepperLabel": "Progress of the quote request",

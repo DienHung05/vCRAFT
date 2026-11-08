@@ -19,6 +19,7 @@ import { notify } from '@/lib/notify';
 import { ContributionForm, type ContributionFormValues } from './contribution-form';
 import { DirectQuotationForm } from './direct-quotation-form';
 import { RequestAttachments } from './rfq-attachments';
+import { RfqStepper } from './rfq-stepper';
 
 type State =
   | { kind: 'loading' }
@@ -182,6 +183,7 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
     <div className="flex flex-col gap-4">
       <h1 className="text-h2">{request.title}</h1>
       <p className="break-words whitespace-pre-wrap text-ash">{request.design}</p>
+      <RfqStepper status={request.status} hasBids={request.hasBids ?? Boolean(quotation)} />
       {request.customRequirements ? (
         <div>
           <h2 className="text-small font-semibold">{summary('customization')}</h2>

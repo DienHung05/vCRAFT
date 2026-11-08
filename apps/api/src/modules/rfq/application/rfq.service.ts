@@ -53,6 +53,7 @@ import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
 import { MediaService } from '../../media/application/media.service';
 import { ConsentService } from '../../privacy/application/consent.service';
+import { allocationTimeline } from './allocation-timeline';
 import { QuotationNotifier } from './quotation-notifier';
 
 /** All plan/input writes lock the request first, so changes cannot race with composition. */
@@ -78,6 +79,48 @@ export class RfqService {
       await em.flush();
       await this.setAttachments(em, actor, request, input.attachments);
       return toRfqResponse(request, await this.attachmentsOf(em, request.id));
+    });
+  }
+
+  /**
+   * FR-RFQ-13 (vCRAFT-bda.5): the buyer copies an owned request into a fresh draft of their own
+   * (GH#248 s4-12). Only editable content is copied: title, category, description, budget, special
+   * requirements, quantity, unit, destination, delivery target and the invitation/coordination
+   * preferences. Everything that belongs to the workflow stays behind — status, quotations, offers,
+   * allocations, notices, audit trail, decline marks, the cancel reason and the flag timestamps —
+   * so the copy is a brand-new request the buyer reviews before submitting. The dates are re-armed
+   * to fresh draft defaults because the old ones have often expired, which would block the first
+   * submit (T1). Attachments must be selected again on the new draft; file links are not copied.
+   */
+  async duplicateRequest(actor: Actor, id: string): Promise<RfqResponse> {
+    if (actor.locked) throw forbidden();
+    // The copy carries the same delivery address, so the consent rule applies again (NFR-SEC-07).
+    await this.consents.require(actor.id, 'RFQ_CONTACT');
+    return this.orm.em.fork().transactional(async (em) => {
+      const original = await this.request(em, id);
+      if (original.buyer.id !== actor.id) throw notFound();
+      const now = new Date();
+      const copy = em.create(QuotationRequest, {
+        buyer: em.getReference(AppUser, actor.id),
+        title: original.title,
+        category: original.category,
+        design: original.design,
+        customRequirements: original.customRequirements,
+        quantity: original.quantity,
+        unit: original.unit,
+        destination: original.destination,
+        budgetMinVnd: original.budgetMinVnd,
+        budgetMaxVnd: original.budgetMaxVnd,
+        // Fresh defaults (the same shape the web form proposes), so the draft can be reviewed,
+        // edited and submitted later even when the original's dates have expired.
+        biddingClosesAt: new Date(now.getTime() + 7 * 86_400_000),
+        requiredBy: new Date(now.getTime() + 30 * 86_400_000),
+        invitedHouseholdIds: [...(original.invitedHouseholdIds ?? [])],
+        coordinationOptIn: original.coordinationOptIn,
+      });
+      await em.flush();
+      // Attachments must be selected again so a new draft cannot revive expired or removed files.
+      return toRfqResponse(copy, []);
     });
   }
 
@@ -158,6 +201,7 @@ export class RfqService {
     const request = await this.request(em, id);
     await this.canRead(em, actor, request);
     const response = toRfqResponse(request, await this.attachmentsOf(em, request.id));
+    response.hasBids = (await em.count(CooperativeQuotationEntity, { request })) > 0;
     if (actor.role === 'HOUSEHOLD') {
       const household = await this.ownHousehold(em, actor, false);
       response.invitedHouseholdIds = [household.id];
@@ -192,6 +236,15 @@ export class RfqService {
     ))
       if (ownsDirectQuotation(quotation, household.id) && !direct.has(quotation.request.id))
         direct.set(quotation.request.id, quotation);
+    const withBids = new Set(
+      (
+        await em.find(
+          CooperativeQuotationEntity,
+          { request: { $in: requests.map((request) => request.id) } },
+          { fields: ['request'] },
+        )
+      ).map((quotation) => quotation.request.id),
+    );
     const isOpen = (request: QuotationRequest) =>
       (request.status === 'SENT' || request.status === 'BIDDING') && !requestExpired(request);
     return requests
@@ -204,7 +257,11 @@ export class RfqService {
         const offer = byRequest.get(request.id);
         const quotation = direct.get(request.id);
         return {
-          request: { ...toRfqResponse(request), invitedHouseholdIds: [household.id] },
+          request: {
+            ...toRfqResponse(request),
+            invitedHouseholdIds: [household.id],
+            hasBids: withBids.has(request.id),
+          },
           contribution: offer ? toContributionDto(offer) : null,
           declined: (request.declinedHouseholdIds ?? []).includes(household.id),
           directQuotation: quotation ? toDirectQuotationDto(quotation) : null,
@@ -936,7 +993,7 @@ export class RfqService {
     const allocations = await em.find(
       OrderAllocationEntity,
       { quotation: accepted },
-      { populate: ['household'], orderBy: { createdAt: 'asc' } },
+      { populate: ['household', 'quotation.request'], orderBy: { createdAt: 'asc' } },
     );
     if (actor.role === 'HOUSEHOLD') {
       const household = await this.ownHousehold(em, actor, false);
@@ -1699,6 +1756,7 @@ function toAllocationDto(allocation: OrderAllocationEntity): AllocationDto {
     id: allocation.id,
     version: allocation.version,
     householdId: allocation.household.id,
+    ...allocationTimeline(allocation),
     quantity: allocation.quantity,
     completedQty: allocation.completedQty,
     status: allocation.status,

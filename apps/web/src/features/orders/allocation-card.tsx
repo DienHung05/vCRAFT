@@ -8,6 +8,7 @@ import { type ReactNode, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { prepareImage, sendMedia } from '@/features/media/prepare-image';
 import { browserAccessToken } from '@/lib/api/live-session';
+import { AllocationTimeline } from './allocation-timeline';
 
 const PHOTO_POLL_MS = 1500;
 const PHOTO_POLL_ATTEMPTS = 20;
@@ -97,11 +98,7 @@ export function AllocationCard({
   return (
     <Card className="flex flex-col gap-3 p-4" data-testid="allocation-card">
       {children}
-      <p className="tabular-nums">
-        {format.number(allocation.completedQty)} / {format.number(allocation.quantity)}
-        {unit ? ` ${unit}` : ''}
-      </p>
-      <p>{t(`status.${allocation.status}`)}</p>
+      <AllocationTimeline shares={[allocation]} unit={unit ?? ''} />
       {allocation.status === 'PROPOSED' ? (
         <div className="flex gap-2">
           <Button

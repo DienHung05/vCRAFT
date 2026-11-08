@@ -2,32 +2,19 @@
 
 import type { AdminClient } from '@vcraft/api-client';
 import type { AllocationScheduleDto } from '@vcraft/contracts';
-import { Badge, Button, Card } from '@vcraft/ui';
+import { Button, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
 import { ListSkeleton } from '@/components/states/skeletons';
+import { AllocationTimeline } from '@/features/orders/allocation-timeline';
 import { inputClass } from '@/features/studio/workshop-editor';
 import { notify } from '@/lib/notify';
 import { useAdminClient } from './admin-dashboard';
 
 type Order = AllocationScheduleDto[number];
 type Share = Order['allocations'][number];
-
-const TONE = {
-  DONE: 'neutral',
-  ON_TRACK: 'celadon',
-  BEHIND: 'lacquer',
-  OVERDUE: 'seal',
-} as const;
-
-/** Position of a date on the order's axis, as a percentage. */
-function scale(from: number, to: number) {
-  const span = Math.max(1, to - from);
-  return (date: string | number) =>
-    `${Math.min(100, Math.max(0, ((new Date(date).getTime() - from) / span) * 100))}%`;
-}
 
 /**
  * Admin Gantt of running orders (PLAN E10): one bar per household from when its share started to the
@@ -90,18 +77,7 @@ function OrderTimeline({
 }) {
   const t = useTranslations('admin.progress');
   const format = useFormatter();
-  const now = Date.now();
-  const from = Math.min(...order.allocations.map((a) => new Date(a.startedAt).getTime()));
-  const to = Math.max(
-    now,
-    new Date(order.requiredBy).getTime(),
-    ...order.allocations.map((a) => new Date(a.dueAt).getTime()),
-  );
-  const at = scale(from, to);
   const [open, setOpen] = useState<string | null>(null);
-  const day = (date: string | number) =>
-    format.dateTime(new Date(date), { day: '2-digit', month: '2-digit' });
-
   return (
     <Card className="flex flex-col gap-3 p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -110,73 +86,38 @@ function OrderTimeline({
           {t('requiredBy', { date: format.dateTime(new Date(order.requiredBy), 'short') })}
         </span>
       </div>
-      <div className="flex justify-between text-[0.7rem] text-ash" aria-hidden="true">
-        <span>{day(from)}</span>
-        <span>{day(to)}</span>
-      </div>
-      <ul className="flex flex-col gap-3">
-        {order.allocations.map((share) => (
-          <li key={share.id} className="flex flex-col gap-1">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-small">
-              <span className="font-medium">{share.householdName}</span>
-              <span className="flex items-center gap-2 text-ash">
-                {t('counts', {
-                  done: format.number(share.completedQty),
-                  total: format.number(share.quantity),
-                  expected: format.number(share.expectedQty),
-                  unit: order.unit,
-                  due: day(share.dueAt),
-                })}
-                {share.status === 'DECLINED' ? (
-                  <Badge tone="seal">{t('declined')}</Badge>
-                ) : (
-                  <Badge tone={TONE[share.lateness]}>{t(`lateness.${share.lateness}`)}</Badge>
-                )}
-              </span>
-            </div>
-            {/* The bar is decorative; the line above says the same in words. */}
-            <div aria-hidden="true" className="relative h-3 rounded-chip bg-ink/6">
-              <div
-                className="absolute inset-y-0 rounded-chip bg-ink/12"
-                style={{ left: at(share.startedAt), right: `calc(100% - ${at(share.dueAt)})` }}
-              >
-                <div
-                  className="h-full rounded-chip bg-clay"
-                  style={{ width: `${(share.completedQty / Math.max(1, share.quantity)) * 100}%` }}
-                />
-              </div>
-              <div className="absolute -inset-y-1 w-px bg-glaze" style={{ left: at(now) }} />
-            </div>
-            {/* A late share in production, or a share a household declined before production (GH#246). */}
-            {(share.status === 'IN_PROGRESS' &&
-              (share.lateness === 'BEHIND' || share.lateness === 'OVERDUE')) ||
-            (share.status === 'DECLINED' && share.quantity > 0) ? (
-              open === share.id ? (
-                <ReallocateForm
-                  share={share}
-                  unit={order.unit}
-                  client={client}
-                  onDone={(orders) => {
-                    setOpen(null);
-                    onChanged(orders);
-                  }}
-                  onCancel={() => setOpen(null)}
-                />
-              ) : (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="self-start"
-                  onClick={() => setOpen(share.id)}
-                >
-                  {t('reallocate')}
-                </Button>
-              )
-            ) : null}
-          </li>
-        ))}
-      </ul>
+      <AllocationTimeline
+        shares={order.allocations}
+        unit={order.unit}
+        renderAction={(share) => {
+          const canReallocate =
+            (share.status === 'IN_PROGRESS' && ['BEHIND', 'OVERDUE'].includes(share.lateness)) ||
+            (share.status === 'DECLINED' && share.quantity > 0);
+          if (!canReallocate) return null;
+          return open === share.id ? (
+            <ReallocateForm
+              share={share}
+              unit={order.unit}
+              client={client}
+              onDone={(orders) => {
+                setOpen(null);
+                onChanged(orders);
+              }}
+              onCancel={() => setOpen(null)}
+            />
+          ) : (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="self-start"
+              onClick={() => setOpen(share.id)}
+            >
+              {t('reallocate')}
+            </Button>
+          );
+        }}
+      />
     </Card>
   );
 }
