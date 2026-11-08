@@ -39,10 +39,18 @@ export async function startTestDatabase(options: TestDatabaseOptions = {}): Prom
   let env: Record<string, string>;
 
   if (testDriver === 'mysql') {
+    // Test-only durability tuning (in-memory data dir, no binlog, relaxed fsync); production config is untouched.
     const mysql = await new MySqlContainer('mysql:8.4')
       .withDatabase(DB_NAME)
       .withUsername('vcraft')
       .withUserPassword(DB_PASSWORD)
+      .withTmpFs({ '/var/lib/mysql': 'rw' })
+      .withCommand([
+        '--skip-log-bin',
+        '--innodb-flush-log-at-trx-commit=0',
+        '--innodb-doublewrite=OFF',
+        '--sync-binlog=0',
+      ])
       .start();
     container = mysql;
     env = {
@@ -54,10 +62,21 @@ export async function startTestDatabase(options: TestDatabaseOptions = {}): Prom
       DB_PASSWORD,
     };
   } else {
+    // Test-only durability tuning (in-memory data dir, no fsync); production config is untouched.
     const postgres = await new PostgreSqlContainer('postgres:17-alpine')
       .withDatabase(DB_NAME)
       .withUsername('postgres')
       .withPassword(DB_PASSWORD)
+      .withTmpFs({ '/var/lib/postgresql/data': 'rw' })
+      .withCommand([
+        'postgres',
+        '-c',
+        'fsync=off',
+        '-c',
+        'synchronous_commit=off',
+        '-c',
+        'full_page_writes=off',
+      ])
       .start();
     container = postgres;
     env = {
