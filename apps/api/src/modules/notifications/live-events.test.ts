@@ -74,7 +74,7 @@ describe('liveStream media updates (GH#252)', () => {
       { check: 1, heartbeat: 1_000, max: 5_000 },
       async () => {
         const batch = batches[Math.min(i++, batches.length - 1)];
-        if (batch === 'boom') throw new Error('db down');
+        if (batch === undefined || batch === 'boom') throw new Error('db down');
         return [...batch];
       },
     )) {
