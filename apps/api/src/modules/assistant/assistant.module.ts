@@ -68,6 +68,8 @@ const origins = (raw = '') =>
       },
     },
   ],
+  // The household story suggestion (FR-ART-08) reuses the same chat model.
+  exports: [LLM_CLIENT],
 })
 export class AssistantModule implements OnApplicationShutdown {
   constructor(@Inject(ASSISTANT_KV) private readonly kv: KeyValueStore) {}

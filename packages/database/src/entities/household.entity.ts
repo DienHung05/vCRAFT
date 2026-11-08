@@ -1,6 +1,6 @@
 import { type Opt } from '@mikro-orm/core';
 import { Entity, Index, ManyToOne, Property, Unique } from '@mikro-orm/decorators/legacy';
-import type { HouseholdStatus, ProductCategory } from '@vcraft/domain';
+import type { CraftCategory, HouseholdStatus, ProductCategory } from '@vcraft/domain';
 import { normalizeSearchText } from '@vcraft/utils';
 import { AppUser } from './app-user.entity.js';
 import { BaseEntity } from './base.entity.js';
@@ -17,8 +17,19 @@ export interface HouseholdTimelineEvent {
 export interface HouseholdCertification {
   name: string;
   issuer: string;
+  /** Always set: derived from `issuedOn` when the household gave a date, the legacy year otherwise. */
   year: number;
+  /** Issue date, `YYYY-MM-DD`. */
+  issuedOn?: string | null;
+  /** Optional photo of the certificate (a public image asset). */
+  photo?: HouseholdPhoto | null;
   verified: boolean;
+}
+
+/** A photo of the household's own (cover, portrait, seal, certificate): a media asset and its description. */
+export interface HouseholdPhoto {
+  mediaId: string;
+  alt: string;
 }
 
 /** Ảnh xưởng: tải lên (`mediaId`) hoặc ảnh có sẵn của dữ liệu mẫu (`url`); `alt` luôn bắt buộc. */
@@ -55,6 +66,22 @@ export class Household extends BaseEntity {
   /** Nghề của hộ (lọc trên bản đồ, FR-MAP-03), văn bản ngắn do hộ khai. */
   @Property({ type: 'string', length: 160, nullable: true })
   craft?: string | null;
+
+  /** Craft category from a fixed list (FR-ART-01); null for households that only have legacy `craft` text. */
+  @Property({ type: 'string', length: 20, nullable: true })
+  craftCategory?: CraftCategory | null;
+
+  /** Own cover photo (FR-ART-01); outranks `coverUrl` and the linked banner. */
+  @Property({ type: 'json', nullable: true })
+  coverPhoto?: HouseholdPhoto | null;
+
+  /** Own portrait of the artisan, shown next to the story. */
+  @Property({ type: 'json', nullable: true })
+  portraitPhoto?: HouseholdPhoto | null;
+
+  /** Personal seal or signature, shown near the end of the story. */
+  @Property({ type: 'json', nullable: true })
+  sealPhoto?: HouseholdPhoto | null;
 
   /** Ảnh bìa (đường dẫn tương đối hoặc URL công khai); không có thì giao diện dùng hình thay thế. */
   @Property({ type: 'string', length: 500, nullable: true })

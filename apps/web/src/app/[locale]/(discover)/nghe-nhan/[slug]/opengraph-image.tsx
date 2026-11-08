@@ -1,3 +1,4 @@
+import { storyPlainText } from '@vcraft/domain';
 import { getTranslations } from 'next-intl/server';
 import { fetchHousehold } from '@/features/catalog/exhibition-api';
 import { resolveLocale } from '@/lib/locale';
@@ -26,7 +27,11 @@ export default async function Image({ params }: Params) {
   ]);
   return renderOgCard(
     result.status === 'ok'
-      ? { eyebrow: t('artisans'), title: result.data.name, subtitle: result.data.history }
+      ? {
+          eyebrow: t('artisans'),
+          title: result.data.name,
+          subtitle: storyPlainText(result.data.history),
+        }
       : { eyebrow: t('artisans'), title: 'vCraft' },
   );
 }

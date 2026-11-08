@@ -31,6 +31,17 @@ const PENDING = {
   history: 'Hồ sơ khai.',
   village: 'Bát Tràng',
   craft: 'men lam',
+  craftCategory: 'MEN',
+  certifications: [
+    {
+      name: 'OCOP 4 sao',
+      issuer: 'UBND Hà Nội',
+      year: 2023,
+      issuedOn: '2023-06-30',
+      photo: null,
+      verified: false,
+    },
+  ],
   foundedYear: 1990,
   artisans: [],
   workshops: [
@@ -286,6 +297,49 @@ describe('HouseholdReview', () => {
     confirmDialog('Mở khóa hộ');
     expect(await screen.findByRole('alert')).toBeTruthy();
     expect(api.getHousehold).toHaveBeenCalledTimes(2);
+  });
+
+  it('lets the board mark a certification verified and remove the mark again', async () => {
+    const setCertificationVerified = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ...PENDING,
+        version: 5,
+        certifications: [{ ...PENDING.certifications[0], verified: true }],
+      })
+      .mockResolvedValueOnce({ ...PENDING, version: 6 });
+    renderVi(<HouseholdReview householdId={ID} client={client({ setCertificationVerified })} />);
+    const card = await screen.findByTestId('review-certifications');
+    expect(within(card).getByText('OCOP 4 sao')).toBeTruthy();
+    expect(within(card).getByText(/30\/06\/2023/)).toBeTruthy();
+    expect(within(card).getByText('Chưa xác minh')).toBeTruthy();
+
+    fireEvent.click(
+      within(card).getByRole('button', { name: 'Đánh dấu “OCOP 4 sao” đã xác minh' }),
+    );
+    await waitFor(() => expect(setCertificationVerified).toHaveBeenLastCalledWith(ID, 0, 4, true));
+    expect(await within(card).findByText('Đã xác minh')).toBeTruthy();
+
+    fireEvent.click(within(card).getByRole('button', { name: 'Bỏ xác minh “OCOP 4 sao”' }));
+    await waitFor(() => expect(setCertificationVerified).toHaveBeenLastCalledWith(ID, 0, 5, false));
+    expect(await within(card).findByText('Chưa xác minh')).toBeTruthy();
+  });
+
+  it('reloads and warns when the certification update hits a stale version', async () => {
+    const setCertificationVerified = vi.fn(async () => {
+      throw new ApiError('STALE_VERSION', 409);
+    });
+    const getHousehold = vi.fn(async () => PENDING);
+    renderVi(
+      <HouseholdReview
+        householdId={ID}
+        client={client({ setCertificationVerified, getHousehold })}
+      />,
+    );
+    const card = await screen.findByTestId('review-certifications');
+    fireEvent.click(within(card).getByRole('button', { name: /Đánh dấu/ }));
+    expect(await within(card).findByRole('alert')).toBeTruthy();
+    expect(getHousehold).toHaveBeenCalledTimes(2);
   });
 
   it('không tìm thấy hộ', async () => {

@@ -280,7 +280,11 @@ export class AccountDeletionService {
     household.idNumberEnc = null;
     household.village = null;
     household.craft = null;
+    household.craftCategory = null;
     household.coverUrl = null;
+    household.coverPhoto = null;
+    household.portraitPhoto = null;
+    household.sealPhoto = null;
     household.foundedYear = null;
     household.generations = null;
     household.timeline = null;

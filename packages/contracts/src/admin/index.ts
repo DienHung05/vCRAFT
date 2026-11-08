@@ -17,6 +17,8 @@ export const AUDIT_ACTIONS = [
   'household.suspend',
   'household.reinstate',
   'household.reveal_id_number',
+  'household.certification_verify',
+  'household.certification_unverify',
   'product.publish',
   'product.withdraw',
   'product.republish',
