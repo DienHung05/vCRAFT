@@ -206,14 +206,6 @@
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
     },
     {
-      "id": "news-dat-set",
-      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2699.JPG",
-      "ratio": "3/2",
-      "author": "松岡明芳 (Akiyoshi Matsuoka)",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
       "id": "ong-gom-lam-may",
       "file": "Tube for papers, Bat Trang ceramic - Nguyen dynasty, 19th century AD - Vietnam National Museum of Fine Arts - Hanoi, Vietnam - DSC05329.JPG",
       "ratio": "3/4",
@@ -1046,14 +1038,6 @@
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
     },
     {
-      "id": "news-dong-hang",
-      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2725.JPG",
-      "ratio": "3/2",
-      "author": "松岡明芳 (Akiyoshi Matsuoka)",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
-    },
-    {
       "id": "news-got-bat",
       "file": "Bat-Trang-Ceramic-Village13.jpg",
       "ratio": "3/2",
@@ -1070,14 +1054,6 @@
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
     },
     {
-      "id": "news-dinh-tet",
-      "file": "Bat Trang communal house (2018) 06.jpg",
-      "ratio": "3/2",
-      "author": "Donald Trung",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
-    },
-    {
       "id": "news-khach-tham",
       "file": "Ceramika vendejo en vilaĝo Bát Tràng (Vjetnamio) 01.jpg",
       "ratio": "3/2",
@@ -1086,26 +1062,50 @@
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
     },
     {
-      "id": "news-coc-in-hinh",
-      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 83.jpg",
+      "id": "news-am-chen",
+      "file": "Bát Tràng DSC 0098.JPG",
+      "ratio": "3/2",
+      "author": "Greenknight dv",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "news-dinh-cong",
+      "file": "Bat Trang communal house (2018) 01.jpg",
       "ratio": "3/2",
       "author": "Donald Trung",
       "license": "CC BY-SA 4.0",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
     },
     {
-      "id": "news-lo-binh-moc",
-      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2730.JPG",
+      "id": "news-dinh-chinh",
+      "file": "Bat Trang communal house (2018) 05.jpg",
       "ratio": "3/2",
-      "author": "松岡明芳 (Akiyoshi Matsuoka)",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
     },
     {
-      "id": "news-am-chen",
-      "file": "Bát Tràng DSC 0098.JPG",
+      "id": "news-pho-gom",
+      "file": "Bat Trang porcelain marketplace in 2014.jpg",
       "ratio": "3/2",
-      "author": "Greenknight dv",
+      "author": "Vuong Tri Binh",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "news-nha-co",
+      "file": "Nha trung bay gom Bat Trang.JPG",
+      "ratio": "3/2",
+      "author": "Hoangvantoanajc",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/"
+    },
+    {
+      "id": "news-am-trang-moc",
+      "file": "Bat-Trang-Ceramic-Village5.jpg",
+      "ratio": "3/2",
+      "author": "Steven C. Price",
       "license": "CC BY-SA 4.0",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
     }
