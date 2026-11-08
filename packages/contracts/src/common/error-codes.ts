@@ -94,8 +94,13 @@ export const ERROR_CATALOG = {
   RFQ_QUANTITY_MISMATCH: { status: 422, title: 'Offered quantity does not match' },
   /** BR-L6: Σ allocation.quantity phải bằng order.quantity. */
   RFQ_ALLOCATION_SUM_MISMATCH: { status: 422, title: 'Allocation quantities do not add up' },
-  /** BR-L6: allocation vượt năng lực còn trống của hộ. */
+  /**
+   * BR-L6: a contribution, direct quotation, cooperative share or reallocated share above the capacity
+   * the household declared for the request's category (FR-ART-06).
+   */
   RFQ_CAPACITY_EXCEEDED: { status: 422, title: 'Artisan capacity exceeded' },
+  /** A cooperative share above the maximum quantity the household offered for this request. */
+  RFQ_OFFER_QUANTITY_EXCEEDED: { status: 409, title: 'Quantity is above the household offer' },
 
   // --- IDEMPOTENCY: BR-L5 ---
   IDEMPOTENCY_KEY_REQUIRED: { status: 400, title: 'Idempotency-Key header required' },

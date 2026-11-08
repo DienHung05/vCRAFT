@@ -212,3 +212,38 @@ describe('assembleDirectQuotation', () => {
     expect(!free.ok && free.error.code).toBe('QUOTATION_INPUT_INVALID');
   });
 });
+
+describe('household capacity (BR-L6)', () => {
+  it('rejects a share above the household declared capacity even within its offered maximum', () => {
+    const offers = [{ ...contributions[0], capacity: 1500 }, contributions[1], contributions[2]];
+    const result = assembleCooperativeQuotation({ ...validDraft, contributions: offers });
+    expect(!result.ok && result.error.code).toBe('RFQ_CAPACITY_EXCEEDED');
+  });
+
+  it('accepts shares at exactly the declared capacity and ignores an undeclared one', () => {
+    const exact = assembleCooperativeQuotation({
+      ...validDraft,
+      contributions: [
+        { ...contributions[0], capacity: 2000 },
+        { ...contributions[1], capacity: null },
+        contributions[2],
+      ],
+    });
+    expect(exact.ok).toBe(true);
+  });
+
+  it('rejects a direct quotation for a quantity above the declared capacity', () => {
+    const draft = {
+      requiredQuantity: 5000,
+      biddingClosesAt: deadline,
+      requiredBy,
+      householdId: 'household-a',
+      unitPriceVnd: 30_000,
+      completionDate: new Date('2027-02-01T00:00:00.000Z'),
+    };
+    const over = assembleDirectQuotation({ ...draft, capacity: 1000 });
+    expect(!over.ok && over.error.code).toBe('RFQ_CAPACITY_EXCEEDED');
+    expect(assembleDirectQuotation({ ...draft, capacity: 5000 }).ok).toBe(true);
+    expect(assembleDirectQuotation({ ...draft, capacity: null }).ok).toBe(true);
+  });
+});

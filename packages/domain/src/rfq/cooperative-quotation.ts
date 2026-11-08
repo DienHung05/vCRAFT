@@ -1,4 +1,4 @@
-import { checkAllocationPlan } from '../allocation/allocation-plan';
+import { checkAllocationPlan, isWithinCapacity } from '../allocation/allocation-plan';
 import { DomainError } from '../shared/domain-error';
 import { err, ok, type Result } from '../shared/result';
 
@@ -8,6 +8,8 @@ export interface ContributionOffer {
   readonly unitPriceVnd: number;
   readonly completionDate: Date;
   readonly version: number;
+  /** The household's declared capacity for the request's category (BR-L6); null/undefined when none. */
+  readonly capacity?: number | null | undefined;
 }
 
 export interface CooperativeQuotationPart {
@@ -49,6 +51,8 @@ export type QuotationErrorCode =
   | 'CONTRIBUTION_PRICE_MISMATCH'
   | 'CONTRIBUTION_DATE_MISMATCH'
   | 'CONTRIBUTION_VERSION_MISMATCH'
+  /** BR-L6: a share or bid above the household's declared capacity. Same code as the API error catalog. */
+  | 'RFQ_CAPACITY_EXCEEDED'
   | 'COMPLETION_DATE_INVALID';
 
 const isWhole = (value: number, minimum: number) => Number.isSafeInteger(value) && value >= minimum;
@@ -98,6 +102,7 @@ export function assembleCooperativeQuotation(
     if (!isWhole(offer.maxQuantity, 1) || part.quantity > offer.maxQuantity) {
       return fail('CONTRIBUTION_QUANTITY_EXCEEDED');
     }
+    if (!isWithinCapacity(part.quantity, offer.capacity)) return fail('RFQ_CAPACITY_EXCEEDED');
     if (part.unitPriceVnd !== offer.unitPriceVnd) return fail('CONTRIBUTION_PRICE_MISMATCH');
     if (part.completionDate.getTime() !== offer.completionDate.getTime()) {
       return fail('CONTRIBUTION_DATE_MISMATCH');
@@ -151,6 +156,8 @@ export interface DirectQuotationDraft {
   readonly householdId: string;
   readonly unitPriceVnd: number;
   readonly completionDate: Date;
+  /** The household's declared capacity for the request's category (BR-L6); null/undefined when none. */
+  readonly capacity?: number | null | undefined;
 }
 
 /**
@@ -172,6 +179,8 @@ export function assembleDirectQuotation(
   if (!isCompletionDateValid(draft.completionDate, draft.biddingClosesAt, draft.requiredBy)) {
     return fail('COMPLETION_DATE_INVALID');
   }
+  if (!isWithinCapacity(draft.requiredQuantity, draft.capacity))
+    return fail('RFQ_CAPACITY_EXCEEDED');
   const totalVnd = draft.requiredQuantity * draft.unitPriceVnd;
   if (!isWhole(totalVnd, 0)) return fail('QUOTATION_INPUT_INVALID');
   return ok({

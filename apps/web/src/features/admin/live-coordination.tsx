@@ -210,6 +210,10 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
         setRefresh((value) => value + 1);
         throw new Error(t('stale'));
       }
+      if (error instanceof QuotationApiError && error.code === 'RFQ_CAPACITY_EXCEEDED')
+        throw new Error(t('capacityExceeded'));
+      if (error instanceof QuotationApiError && error.code === 'RFQ_OFFER_QUANTITY_EXCEEDED')
+        throw new Error(t('offerExceeded'));
       throw new Error(t('loadFailed'));
     }
   };
@@ -302,6 +306,7 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
             name: offer.householdName,
             tint: 'var(--color-clay)',
             maxQuantity: offer.maxQuantity,
+            capacity: offer.householdCapacity ?? null,
             unitPriceVnd: offer.unitPriceVnd,
             completionDate: offer.completionDate,
             contributionVersion: offer.version,

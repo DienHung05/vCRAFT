@@ -630,11 +630,32 @@
         "short": "Còn thiếu {count} {unit}.",
         "excess": "Đang chia thừa {count} {unit}.",
         "over": "{name} vượt mức tối đa hộ đã khai ({capacity}).",
+        "overCapacity": "{name} vượt năng lực hộ đã khai ({capacity}).",
         "invalid": "Số lượng của mỗi hộ phải là số nguyên từ 0 trở lên.",
         "date": "Ngày hoàn thành phải sau hạn chào giá và không muộn hơn hạn giao.",
         "charge": "Phụ phí giao hàng phải là số nguyên từ 0 trở lên."
       },
       "partMeta": "Tối đa {max} · đơn giá {price} · hoàn thành {date}",
+      "partCapacity": "năng lực khai {capacity}",
+      "strategy": {
+        "label": "Đề xuất chia tự động",
+        "hint": "Chọn một cách chia để điền sẵn bảng bên dưới. Bạn vẫn chỉnh tay từng hộ được trước khi gửi.",
+        "CAPACITY": {
+          "name": "Theo năng lực",
+          "about": "Chia theo tỉ lệ năng lực của từng hộ; phần dư thuộc về hộ có số dư lớn nhất."
+        },
+        "CHEAPEST": {
+          "name": "Giá thấp trước",
+          "about": "Hộ có đơn giá thấp nhất nhận trước, tới mức tối đa của hộ rồi chuyển sang hộ kế tiếp."
+        },
+        "BALANCED": {
+          "name": "Cân bằng",
+          "about": "Chia đều cho các hộ; hộ nào chạm mức tối đa thì phần còn lại chia cho các hộ khác."
+        },
+        "applied": "Đã đề xuất theo \"{strategy}\": {sum} / {quantity} {unit}, tiền hàng {price}, dự kiến xong {date}.",
+        "shortfall": "Các hộ chỉ nhận được tối đa {count} {unit} cho yêu cầu này, còn thiếu {missing} {unit}.",
+        "excluded": "Không dùng được đề xuất của {names}: ngày hoàn thành ngoài khoảng cho phép hoặc hộ không còn mức nhận."
+      },
       "slider": "Số lượng giao cho {name}",
       "quantityOf": "Nhập số lượng cho {name}",
       "stat": {
@@ -643,6 +664,8 @@
         "excess": "Đang thừa",
         "charge": "Phụ phí giao hàng",
         "terms": "Vận chuyển",
+        "production": "Tiền hàng",
+        "completion": "Dự kiến hoàn thành",
         "total": "Tổng cho bên mua"
       },
       "send": "Gửi chào giá liên kết",
@@ -653,8 +676,8 @@
         "title": "Đã mô phỏng (chưa lưu, không gửi thông báo)",
         "text": "Phương án chia đơn cho yêu cầu {code} chỉ chạy thử trên trình duyệt này. Chưa có chào giá nào tới bên mua và chưa hộ nào nhận thông báo."
       },
-      "manualTitle": "Chia đơn thủ công",
-      "manualLead": "Bạn tự chia số lượng cho từng hộ theo đúng đề xuất tham gia của họ. Không có phương án tự động và không có ngày hoàn thành suy đoán: từng hộ giữ đúng ngày và đơn giá hộ đã khai.",
+      "manualTitle": "Chia đơn",
+      "manualLead": "Chọn một cách chia để đề xuất phương án, hoặc tự chia số lượng cho từng hộ. Phần của mỗi hộ nằm trong mức hộ đã đề xuất và năng lực hộ đã khai; ngày hoàn thành dự kiến là ngày muộn nhất trong các hộ có phần, và từng hộ giữ đúng ngày và đơn giá đã khai.",
       "chargeOf": "Phụ phí giao hàng",
       "terms": {
         "included": "Đã gồm vận chuyển",
@@ -707,6 +730,8 @@
       "back": "Quay lại",
       "reasonRequired": "Hãy ghi lý do.",
       "stale": "Dữ liệu vừa được cập nhật. Hãy soát lại rồi thử lại.",
+      "capacityExceeded": "Có hộ được chia vượt năng lực đã khai cho nhóm hàng này. Hãy giảm phần của hộ đó rồi gửi lại.",
+      "offerExceeded": "Có hộ được chia vượt mức tối đa đã khai trong đề xuất. Hãy soát lại bảng chia rồi gửi lại.",
       "startFailed": "Chưa thể bắt đầu sản xuất. Hãy chắc chắn mọi hộ đã xác nhận phần việc của mình rồi thử lại.",
       "actionFailed": "Thao tác không thành công. Hãy thử lại."
     },
@@ -1143,6 +1168,7 @@
     "withdraw": "Rút đề xuất",
     "withdrawn": "Đề xuất đã rút. Gửi lại để tham gia lại.",
     "sendFailed": "Gửi không thành công. Bạn thử lại sau.",
+    "capacityExceeded": "Số lượng vượt năng lực bạn đã khai cho nhóm hàng này. Hãy giảm số lượng hoặc cập nhật năng lực trong hồ sơ rồi gửi lại.",
     "demoNote": "Bản trình diễn: thao tác chỉ chạy trên trình duyệt của bạn, chưa lưu, chưa gửi lên máy chủ.",
     "liveNote": "Đề xuất sẽ gửi lên máy chủ qua API, kèm phiên đăng nhập của bạn. Thông tin này riêng giữa hộ và Ban quản lý, bên mua không thấy.",
     "privacyNote": "Mức tối đa, đơn giá và ngày hoàn thành là thông tin riêng giữa hộ và Ban quản lý; bên mua chỉ thấy hộ, phần chia và ngày hoàn thành.",
@@ -1281,6 +1307,7 @@
       "QUOTATION_ACCEPTED": "Chào giá đã được người mua chấp nhận.",
       "ALLOCATION_PROPOSED": "Bạn có phần sản xuất cần xác nhận.",
       "ALLOCATION_CONFIRMED": "Một hộ đã xác nhận phân bổ.",
+      "ALLOCATION_REASSIGNED": "Ban quản lý đã chuyển phần việc còn lại của bạn cho hộ khác.",
       "ORDER_CANCELLED": "Đơn hàng đã bị hủy.",
       "PRODUCTION_STARTED": "Đơn hàng đã bắt đầu sản xuất.",
       "PROGRESS_REPORTED": "Có cập nhật tiến độ sản xuất.",

@@ -1,6 +1,14 @@
 'use client';
 
-import { assembleCooperativeQuotation, isCompletionDateValid } from '@vcraft/domain';
+import {
+  assembleCooperativeQuotation,
+  isCompletionDateValid,
+  proposeSplit,
+  SPLIT_STRATEGIES,
+  type SplitProposal,
+  type SplitStrategy,
+  splitCeiling,
+} from '@vcraft/domain';
 import { Button, Card, Crackle, cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useId, useMemo, useState } from 'react';
@@ -19,6 +27,8 @@ export interface BoardContribution {
   tint: string;
   /** Mức tối đa hộ khai. */
   maxQuantity: number;
+  /** Năng lực hộ đã khai cho danh mục của yêu cầu (BR-L6); không có thì không giới hạn thêm. */
+  capacity?: number | null;
   /** Đơn giá hộ khai (VND) — thông tin nội bộ, không bao giờ hiện cho bên mua. */
   unitPriceVnd: number;
   /** Ngày hoàn thành hộ hứa, tuyệt đối (ISO). Không suy ra từ số ngày. */
@@ -56,7 +66,7 @@ export interface AllocationBoardProps {
   biddingClosesAt: string;
   requiredBy: string;
   contributions: readonly BoardContribution[];
-  /** Giá trị nháp khởi điểm (khôi phục bản soạn); không có thì bắt đầu bằng 0 — không tự đề xuất. */
+  /** Giá trị nháp khởi điểm (khôi phục bản soạn); không có thì bắt đầu bằng 0 — chỉ chia khi Admin chọn chiến lược. */
   initialQuantities?: readonly number[];
   /** Restored draft values for the extra charge and delivery terms (with `initialQuantities`). */
   initialAdditionalCharge?: number;
@@ -78,9 +88,12 @@ type SubmitState =
   | { kind: 'error'; message: string };
 
 /**
- * Bảng Chia đơn thủ công (GH#10, BRAND §6.3 #9 "Chia đơn như chia đất"): thanh tổng là một khối đất
- * chia thành đoạn theo hộ; Admin tự chia tay, không có phương án tự động và không có ngày hoàn thành
- * suy đoán — từng hộ giữ đúng ngày hoàn thành và đơn giá hộ đã khai (không thể viết lại). Σ phải
+ * Bảng Chia đơn (GH#10, BRAND §6.3 #9 "Chia đơn như chia đất"): thanh tổng là một khối đất chia thành
+ * đoạn theo hộ. Admin chọn chiến lược (BR-06: theo năng lực, giá thấp trước, cân bằng) để điền sẵn bảng
+ * bằng `proposeSplit` của domain, rồi chỉnh tay như thường (GH#247) — hoặc tự chia từ đầu. Ngày hoàn
+ * thành dự kiến là ngày muộn nhất trong các hộ có phần; từng hộ giữ đúng ngày hoàn thành và đơn giá
+ * hộ đã khai (không thể viết lại). Mức trần của mỗi hộ là mức tối đa đã khai, hạ xuống năng lực khai
+ * của danh mục nếu có (BR-L6). Σ phải
  * đúng bằng số lượng yêu cầu; hộ vượt mức tối đa khai thì bị tô đỏ. Ngày hoàn thành của mỗi phần là
  * ngày tuyệt đối của hộ, phải sau hạn chào giá và không muộn hơn hạn giao. Kiểm cục bộ bằng
  * `assembleCooperativeQuotation` của domain — cùng hàm backend dùng khi cưỡng chế.
@@ -118,6 +131,8 @@ export function AllocationBoard({
     initialError ? { kind: 'error', message: initialError } : { kind: 'idle' },
   );
   const [confirming, setConfirming] = useState(false);
+  // The last proposal that filled the board; any hand edit drops it (the plan is then the admin's).
+  const [applied, setApplied] = useState<SplitProposal | null>(null);
 
   const parsed = useMemo(
     () =>
@@ -163,6 +178,7 @@ export function AllocationBoard({
       contributions: contributions.map((c) => ({
         householdId: c.householdId,
         maxQuantity: c.maxQuantity,
+        capacity: c.capacity,
         unitPriceVnd: c.unitPriceVnd,
         completionDate: new Date(c.completionDate),
         version: c.contributionVersion,
@@ -180,15 +196,38 @@ export function AllocationBoard({
   const over = new Set(
     contributions.flatMap((c, i) => {
       const q = parsed[i];
-      return q !== undefined && q !== null && q > c.maxQuantity ? [i] : [];
+      return q !== undefined && q !== null && q > splitCeiling(c) ? [i] : [];
     }),
   );
   const ready = assembled !== null && datesValid && !anyInvalid && !disabled;
   const demo = onSubmit === undefined;
 
+  const locked = submit.kind === 'sending' || submit.kind === 'sent';
+
   const setPart = (index: number, raw: string) => {
-    if (submit.kind === 'sending' || submit.kind === 'sent') return;
+    if (locked) return;
     setQuantities((prev) => prev.map((q, i) => (i === index ? raw : q)));
+    setApplied(null);
+    setSubmit({ kind: 'idle' });
+  };
+
+  // BR-06: fill the board with the proposed split. The admin can still edit every share by hand.
+  const applyStrategy = (strategy: SplitStrategy) => {
+    if (locked || disabled) return;
+    const result = proposeSplit(
+      strategy,
+      { quantity, biddingClosesAt: closing, requiredBy: deadline },
+      contributions.map((c) => ({
+        householdId: c.householdId,
+        maxQuantity: c.maxQuantity,
+        capacity: c.capacity,
+        unitPriceVnd: c.unitPriceVnd,
+        completionDate: new Date(c.completionDate),
+      })),
+    );
+    if (!result.ok) return;
+    setQuantities(result.value.allocations.map((a) => String(a.quantity)));
+    setApplied(result.value);
     setSubmit({ kind: 'idle' });
   };
 
@@ -220,17 +259,25 @@ export function AllocationBoard({
   const money = useMoney();
   const num = (v: number) => format.number(v);
   const barTotal = Math.max(quantity, sum);
-  const total =
-    assembled !== null
-      ? assembled.totalVnd
-      : parts.reduce((acc, p) => acc + p.quantity * p.unitPriceVnd, 0);
+  const productionTotal = parts.reduce((acc, p) => acc + p.quantity * p.unitPriceVnd, 0);
+  const total = assembled !== null ? assembled.totalVnd : productionTotal;
+  // FR-ORD-03: the order is ready when its slowest household is, so show the latest date among the shares.
+  const estimatedCompletion = parts.reduce<Date | null>((latest, part) => {
+    const date = new Date(part.completionDate);
+    return Number.isNaN(date.getTime()) || (latest !== null && date <= latest) ? latest : date;
+  }, null);
+
+  const overMessage = (c: BoardContribution) =>
+    c.capacity !== null && c.capacity !== undefined && c.capacity < c.maxQuantity
+      ? t('problem.overCapacity', { name: c.name, capacity: num(c.capacity) })
+      : t('problem.over', { name: c.name, capacity: num(c.maxQuantity) });
 
   const problems: string[] = [];
   if (remaining > 0) problems.push(t('problem.short', { count: num(remaining), unit }));
   if (remaining < 0) problems.push(t('problem.excess', { count: num(-remaining), unit }));
   for (const i of over) {
     const c = contributions[i];
-    if (c) problems.push(t('problem.over', { name: c.name, capacity: num(c.maxQuantity) }));
+    if (c) problems.push(overMessage(c));
   }
   if (anyInvalid) problems.push(t('problem.invalid'));
   if (!datesValid) problems.push(t('problem.date'));
@@ -240,6 +287,63 @@ export function AllocationBoard({
 
   return (
     <div className="flex flex-col gap-8">
+      <section aria-labelledby={`${groupId}-strategy`} className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 id={`${groupId}-strategy`} className="font-sans text-body font-semibold text-ink">
+            {t('strategy.label')}
+          </h2>
+          <p className="text-small text-ash">{t('strategy.hint')}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {SPLIT_STRATEGIES.map((strategy) => (
+            <Button
+              key={strategy}
+              variant={applied?.strategy === strategy ? 'primary' : 'secondary'}
+              aria-pressed={applied?.strategy === strategy}
+              disabled={locked || disabled || contributions.length === 0}
+              onClick={() => applyStrategy(strategy)}
+            >
+              {t(`strategy.${strategy}.name`)}
+            </Button>
+          ))}
+        </div>
+        {applied ? (
+          <div aria-live="polite" className="flex flex-col gap-1 text-small">
+            <p className="text-ink/85">{t(`strategy.${applied.strategy}.about`)}</p>
+            <p className="font-medium text-ink">
+              {t('strategy.applied', {
+                strategy: t(`strategy.${applied.strategy}.name`),
+                sum: num(applied.totalQuantity),
+                quantity: num(quantity),
+                unit,
+                price: money(applied.productionTotalVnd),
+                date: applied.estimatedCompletion
+                  ? format.dateTime(applied.estimatedCompletion, 'short')
+                  : '—',
+              })}
+            </p>
+            {applied.shortfall > 0 ? (
+              <p role="alert" className="font-medium text-seal">
+                {t('strategy.shortfall', {
+                  count: num(applied.totalQuantity),
+                  missing: num(applied.shortfall),
+                  unit,
+                })}
+              </p>
+            ) : null}
+            {applied.excluded.length > 0 ? (
+              <p className="text-ash">
+                {t('strategy.excluded', {
+                  names: applied.excluded
+                    .map((id) => contributions.find((c) => c.householdId === id)?.name ?? id)
+                    .join(', '),
+                })}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
       {/* Khối đất: thanh tổng chia thành đoạn theo hộ. Sai tổng ⇒ men rạn đỏ phủ lên. */}
       <section aria-labelledby={`${groupId}-bar`} className="flex flex-col gap-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -343,11 +447,12 @@ export function AllocationBoard({
                       price: money(c.unitPriceVnd),
                       date: format.dateTime(new Date(c.completionDate), 'short'),
                     })}
+                    {c.capacity !== null && c.capacity !== undefined
+                      ? ` · ${t('partCapacity', { capacity: num(c.capacity) })}`
+                      : ''}
                   </p>
                   {over.has(i) ? (
-                    <p className="text-small font-medium text-seal">
-                      {t('problem.over', { name: c.name, capacity: num(c.maxQuantity) })}
-                    </p>
+                    <p className="text-small font-medium text-seal">{overMessage(c)}</p>
                   ) : null}
                   {q === null ? (
                     <p className="text-small font-medium text-seal">{t('problem.invalid')}</p>
@@ -357,7 +462,7 @@ export function AllocationBoard({
                   <input
                     type="range"
                     min={0}
-                    max={c.maxQuantity}
+                    max={splitCeiling(c)}
                     step={STEP}
                     value={q ?? 0}
                     disabled={submit.kind === 'sending' || submit.kind === 'sent'}
@@ -403,6 +508,12 @@ export function AllocationBoard({
               )}
             >
               {num(Math.abs(remaining))} {unit}
+            </dd>
+            <dt className="text-ash">{t('stat.production')}</dt>
+            <dd className="text-right tabular-nums">{money(productionTotal)}</dd>
+            <dt className="text-ash">{t('stat.completion')}</dt>
+            <dd className="text-right tabular-nums">
+              {estimatedCompletion ? format.dateTime(estimatedCompletion, 'short') : '—'}
             </dd>
             <dt className="text-ash">{t('stat.charge')}</dt>
             <dd>

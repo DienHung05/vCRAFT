@@ -4,6 +4,15 @@ export interface AllocationPlanPart {
   readonly capacity: number;
 }
 
+/**
+ * BR-L6: whether a quantity fits a household's declared capacity. A household that declared none
+ * (null/undefined) is not capped here; one that declared 0 opted out and takes nothing.
+ */
+export function isWithinCapacity(quantity: number, capacity: number | null | undefined): boolean {
+  if (capacity === null || capacity === undefined) return true;
+  return Number.isFinite(capacity) && quantity <= capacity;
+}
+
 export interface AllocationPlanCheck {
   /** Σ số lượng các phần. */
   readonly sum: number;
