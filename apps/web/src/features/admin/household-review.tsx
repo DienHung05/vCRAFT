@@ -179,6 +179,7 @@ export function HouseholdReview({
   const t = useTranslations('admin.review');
   const nav = useTranslations('admin.nav');
   const statuses = useTranslations('studio.home.statuses');
+  const areas = useTranslations('villageAreas');
   const format = useFormatter();
   const { client, loading } = useAdminClient(provided);
   const [household, setHousehold] = useState<HouseholdDto | null>(null);
@@ -344,6 +345,11 @@ export function HouseholdReview({
                 <li key={w.id} className="min-w-0">
                   <span className="font-medium">{w.name}</span> ·{' '}
                   <span className="break-words">{w.address}</span>
+                  <span className="block text-ash">
+                    {w.areaCode
+                      ? t('workshopArea', { area: areas(w.areaCode) })
+                      : t('noWorkshopArea')}
+                  </span>
                   {w.lat !== null && w.lng !== null ? (
                     <>
                       <span className="block font-mono text-[0.75rem] text-ash">

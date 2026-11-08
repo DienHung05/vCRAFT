@@ -2,6 +2,7 @@
 
 import type { StudioClient } from '@vcraft/api-client';
 import type { CreateWorkshopRequest, OpeningIntervalDto, WorkshopDto } from '@vcraft/contracts';
+import { VILLAGE_AREA_CODES } from '@vcraft/domain';
 import { Button, Card } from '@vcraft/ui';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
@@ -23,6 +24,8 @@ export const inputClass = 'w-full rounded-input border border-ink/20 bg-surface 
 interface Draft {
   name: string;
   address: string;
+  /** Hamlet code, or empty while not chosen (ADR-0023). */
+  areaCode: WorkshopDto['areaCode'];
   purpose: WorkshopDto['purpose'];
   acceptsVisitors: boolean;
   visitingInfo: string;
@@ -41,6 +44,7 @@ interface Draft {
 const toDraft = (w: WorkshopDto | null): Draft => ({
   name: w?.name ?? '',
   address: w?.address ?? '',
+  areaCode: w?.areaCode ?? null,
   purpose: w?.purpose ?? 'BOTH',
   acceptsVisitors: w?.acceptsVisitors ?? false,
   visitingInfo: w?.visitingInfo ?? '',
@@ -59,6 +63,7 @@ export function toWorkshopRequest(draft: Draft): CreateWorkshopRequest {
   return {
     name: draft.name.trim(),
     address: draft.address.trim(),
+    areaCode: draft.areaCode,
     purpose: draft.purpose,
     acceptsVisitors: draft.acceptsVisitors,
     ...(draft.visitingInfo.trim() ? { visitingInfo: draft.visitingInfo.trim() } : {}),
@@ -102,6 +107,7 @@ export function WorkshopEditor({
   const t = useTranslations('studio.profile');
   const common = useTranslations('studio');
   const days = useTranslations('villageMap.days');
+  const areas = useTranslations('villageAreas');
   const [draft, setDraft] = useState(() => toDraft(workshop));
   const [status, setStatus] = useState<'idle' | 'saving' | 'failed' | 'denied'>('idle');
   const patch = (change: Partial<Draft>) => setDraft((current) => ({ ...current, ...change }));
@@ -170,6 +176,24 @@ export function WorkshopEditor({
           onChange={(event) => patch({ address: event.target.value })}
           className={inputClass}
         />
+      </label>
+      <label className="flex flex-col gap-1 text-small">
+        {t('area')}
+        <select
+          value={draft.areaCode ?? ''}
+          onChange={(event) =>
+            patch({ areaCode: (event.target.value || null) as Draft['areaCode'] })
+          }
+          className={inputClass}
+        >
+          <option value="">{areas('none')}</option>
+          {VILLAGE_AREA_CODES.map((code) => (
+            <option key={code} value={code}>
+              {areas(code)}
+            </option>
+          ))}
+        </select>
+        <span className="text-ash">{t('areaHint')}</span>
       </label>
 
       <div className="flex flex-col gap-2">

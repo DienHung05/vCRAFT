@@ -1,3 +1,5 @@
+import { type OutageAreaCode, VILLAGE_WIDE, type VillageAreaCode } from '../village/areas';
+
 /**
  * Structured content of two news categories (PLAN E11, FR-NEWS): material prices, charted on the news page,
  * and power outage schedules, shown as a banner in Studio on the affected day.
@@ -13,9 +15,20 @@ export interface MaterialPriceData {
   prices: ReadonlyArray<{ material: Material; unit: string; priceVnd: number }>;
 }
 
-/** `POWER_SCHEDULE` news: planned cuts, each on one local day (YYYY-MM-DD) between two HH:MM times. */
+/** One planned cut: one local day (YYYY-MM-DD) between two HH:MM times, `from` before `to`. */
+export interface Outage {
+  date: string;
+  from: string;
+  to: string;
+  /** Human description of the affected streets; never used to decide who is warned. */
+  area: string;
+  /** Who is warned (ADR-0023). Absent on legacy notices, which count as `VILLAGE_WIDE`. */
+  areaCode?: OutageAreaCode;
+}
+
+/** `POWER_SCHEDULE` news: planned cuts. */
 export interface PowerScheduleData {
-  outages: ReadonlyArray<{ date: string; from: string; to: string; area: string }>;
+  outages: ReadonlyArray<Outage>;
 }
 
 export interface PricePoint {
@@ -82,4 +95,49 @@ export function outagesOn(
 /** Today's date (YYYY-MM-DD) in the village's time zone. */
 export function villageToday(now = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(now);
+}
+
+/** Time of day (HH:MM) in the village's time zone. */
+export function villageTimeOfDay(now = new Date()): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(now);
+}
+
+/** The audience of a cut: its area code, or the whole village for a legacy cut without one (ADR-0023). */
+export const outageAudience = (outage: Pick<Outage, 'areaCode'>): OutageAreaCode =>
+  outage.areaCode ?? VILLAGE_WIDE;
+
+/**
+ * Whether a household is warned about a cut (ADR-0023): the cut is village-wide, or one of the household's
+ * workshops is in its area. A household without any workshop area gets every cut (warn too much rather than miss one).
+ */
+export function outageReachesHousehold(
+  outage: Pick<Outage, 'areaCode'>,
+  workshopAreas: readonly (VillageAreaCode | null | undefined)[],
+): boolean {
+  const audience = outageAudience(outage);
+  if (audience === VILLAGE_WIDE) return true;
+  const known = workshopAreas.filter((area): area is VillageAreaCode => !!area);
+  return known.length === 0 || known.includes(audience);
+}
+
+/**
+ * The cuts to show at `now` (ADR-0023): those of the village date, from 00:00 until the end time (not
+ * included), earliest first. Cuts stay within one date, so none carries over midnight. `workshopAreas` is the
+ * household's, or `null` for an administrator, who sees every cut.
+ */
+export function activeOutages(
+  schedules: readonly PowerScheduleData[],
+  now: Date,
+  workshopAreas: readonly (VillageAreaCode | null | undefined)[] | null,
+): Outage[] {
+  const time = villageTimeOfDay(now);
+  return outagesOn(schedules, villageToday(now)).filter(
+    (outage) =>
+      time < outage.to && (workshopAreas === null || outageReachesHousehold(outage, workshopAreas)),
+  );
 }

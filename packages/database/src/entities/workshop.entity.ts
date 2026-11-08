@@ -1,6 +1,6 @@
 import { type Opt } from '@mikro-orm/core';
 import { Entity, Index, ManyToOne, Property } from '@mikro-orm/decorators/legacy';
-import type { OpeningInterval, WorkshopPurpose } from '@vcraft/domain';
+import type { OpeningInterval, VillageAreaCode, WorkshopPurpose } from '@vcraft/domain';
 import { BaseEntity } from './base.entity.js';
 import { Household } from './household.entity.js';
 
@@ -60,6 +60,10 @@ export class Workshop extends BaseEntity {
 
   @Property({ type: 'string', length: 300, nullable: true })
   closureReason?: string | null;
+
+  /** Hamlet the workshop is in; decides which outage notices warn the household (ADR-0023). Null = not set. */
+  @Property({ type: 'string', length: 20, nullable: true })
+  areaCode?: VillageAreaCode | null;
 
   @Property({ type: 'decimal', precision: 9, scale: 6, nullable: true })
   lat?: string | null;

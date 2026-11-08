@@ -320,6 +320,8 @@ export class HouseholdsService {
       workshop.experiencePriceVnd = input.experience?.priceVnd ?? null;
       workshop.temporarilyClosed = input.temporarilyClosed;
       workshop.closureReason = input.temporarilyClosed ? (input.closureReason ?? null) : null;
+      // Left out keeps the stored hamlet, so a client that does not know the field cannot clear it (ADR-0023).
+      if (input.areaCode !== undefined) workshop.areaCode = input.areaCode;
       workshop.lat = input.lat === undefined ? null : input.lat.toFixed(6);
       workshop.lng = input.lng === undefined ? null : input.lng.toFixed(6);
       await em.flush();
@@ -343,6 +345,7 @@ export class HouseholdsService {
         experiencePriceVnd: input.experience?.priceVnd ?? null,
         temporarilyClosed: input.temporarilyClosed,
         closureReason: input.temporarilyClosed ? (input.closureReason ?? null) : null,
+        areaCode: input.areaCode ?? null,
         lat: input.lat === undefined ? null : input.lat.toFixed(6),
         lng: input.lng === undefined ? null : input.lng.toFixed(6),
       });

@@ -192,6 +192,28 @@ describe('HouseholdReview', () => {
     expect(flags[0]?.closest('li')?.textContent).toContain('Xưởng Hoàn Kiếm');
   });
 
+  it('shows the hamlet of each workshop, or that none is set (GH#294)', async () => {
+    const [workshop] = PENDING.workshops;
+    const household = {
+      ...PENDING,
+      workshops: [
+        { ...workshop, id: `${ID}c`, name: 'Xưởng Giang Cao', areaCode: 'GIANG_CAO' },
+        { ...workshop, id: `${ID}d`, name: 'Xưởng chưa chọn', areaCode: null },
+      ],
+    } as HouseholdDto;
+    renderVi(
+      <HouseholdReview
+        householdId={ID}
+        client={client({ getHousehold: vi.fn(async () => household) })}
+      />,
+    );
+    const columns = await screen.findByTestId('review-columns');
+    expect(within(columns).getByText('Khu vực: Thôn Giang Cao')).toBeTruthy();
+    expect(
+      within(columns).getByText(/Chưa chọn khu vực \(nhận mọi thông báo cắt điện\)/),
+    ).toBeTruthy();
+  });
+
   it('shows the citizen ID masked and reveals the full number only on request', async () => {
     const api = client();
     renderVi(<HouseholdReview householdId={ID} client={api} />);

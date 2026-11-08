@@ -229,6 +229,7 @@ const NO_OFFER = {
   experiencePrice: '',
   temporarilyClosed: false,
   closureReason: '',
+  areaCode: null,
 };
 
 describe('toWorkshopRequest', () => {
@@ -251,7 +252,24 @@ describe('toWorkshopRequest', () => {
       acceptsVisitors: true,
       openingHours: [{ day: 1, open: '08:00', close: '17:00' }],
       temporarilyClosed: false,
+      areaCode: null,
     });
+  });
+
+  it('sends the hamlet code, or null to clear it', () => {
+    const base = {
+      name: 'Lò',
+      address: 'Xóm 3',
+      purpose: 'BOTH' as const,
+      acceptsVisitors: false,
+      visitingInfo: '',
+      lat: null,
+      lng: null,
+      hours: [],
+      ...NO_OFFER,
+    };
+    expect(toWorkshopRequest({ ...base, areaCode: 'GIANG_CAO' }).areaCode).toBe('GIANG_CAO');
+    expect(toWorkshopRequest({ ...base, areaCode: null }).areaCode).toBeNull();
   });
 
   it('sends the experience offer and the closure reason only while their flags are on', () => {
@@ -270,6 +288,7 @@ describe('toWorkshopRequest', () => {
       experiencePrice: '250000',
       temporarilyClosed: true,
       closureReason: ' Nghỉ Tết ',
+      areaCode: null,
     };
     expect(toWorkshopRequest(draft)).toMatchObject({
       experience: { description: 'Nặn gốm cùng nghệ nhân', durationMinutes: 90, priceVnd: 250000 },

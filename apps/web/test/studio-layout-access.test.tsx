@@ -18,7 +18,16 @@ vi.mock('@/i18n/navigation', () => ({
 const outageClient = vi.hoisted(() => ({
   todayOutages: vi.fn(async () => ({
     date: '2026-11-03',
-    outages: [{ from: '08:00', to: '11:30', area: 'Xóm 2', newsSlug: 'lich-cat-dien' }],
+    outages: [
+      {
+        from: '08:00',
+        to: '11:30',
+        area: 'Xóm 2',
+        areaCode: 'GIANG_CAO',
+        newsSlug: 'lich-cat-dien',
+      },
+    ],
+    needsWorkshopArea: false,
   })),
 }));
 vi.mock('@/lib/api/live-session', () => ({

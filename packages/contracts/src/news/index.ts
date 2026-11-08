@@ -1,4 +1,10 @@
-import { MATERIALS, NEWS_CATEGORIES, NEWS_STATUSES, NEWS_VISIBILITIES } from '@vcraft/domain';
+import {
+  MATERIALS,
+  NEWS_CATEGORIES,
+  NEWS_STATUSES,
+  NEWS_VISIBILITIES,
+  OUTAGE_AREA_CODES,
+} from '@vcraft/domain';
 import { z } from 'zod';
 import {
   CursorPageQuerySchema,
@@ -68,7 +74,14 @@ export const MaterialPriceDataSchema = z.object({
 });
 export type MaterialPriceDataDto = z.infer<typeof MaterialPriceDataSchema>;
 
-/** Planned cuts in a `POWER_SCHEDULE` item (PLAN E11), shown as a banner in Studio on the day. */
+/** Who a cut warns (ADR-0023): one hamlet, or `VILLAGE_WIDE`. */
+export const OutageAreaCodeSchema = z.enum(OUTAGE_AREA_CODES);
+export type OutageAreaCodeDto = z.infer<typeof OutageAreaCodeSchema>;
+
+/**
+ * Planned cuts in a `POWER_SCHEDULE` item (PLAN E11), shown as a banner in Studio on the day. `areaCode`
+ * decides who is warned; a cut without one (legacy) counts as `VILLAGE_WIDE`. `area` stays free text for readers.
+ */
 export const PowerScheduleDataSchema = z.object({
   outages: z
     .array(
@@ -78,6 +91,7 @@ export const PowerScheduleDataSchema = z.object({
           from: LocalTimeSchema,
           to: LocalTimeSchema,
           area: z.string().trim().min(1).max(160),
+          areaCode: OutageAreaCodeSchema.optional(),
         })
         .refine((o) => o.from < o.to, {
           message: 'The cut must end after it starts',
@@ -101,7 +115,11 @@ export const MaterialPriceSeriesResponseSchema = z.object({
 });
 export type MaterialPriceSeriesDto = z.infer<typeof MaterialPriceSeriesResponseSchema>;
 
-/** `GET /news/village/outages`: today's planned power cuts for the Studio banner. */
+/**
+ * `GET /news/village/outages`: the planned power cuts that affect the caller and have not ended yet
+ * (ADR-0023). `needsWorkshopArea` is true for a household none of whose workshops has an area, which is
+ * therefore warned about every cut.
+ */
 export const TodayOutagesResponseSchema = z.object({
   date: LocalDateSchema,
   outages: z.array(
@@ -109,9 +127,11 @@ export const TodayOutagesResponseSchema = z.object({
       from: z.string(),
       to: z.string(),
       area: z.string(),
+      areaCode: OutageAreaCodeSchema,
       newsSlug: z.string(),
     }),
   ),
+  needsWorkshopArea: z.boolean(),
 });
 export type TodayOutagesDto = z.infer<typeof TodayOutagesResponseSchema>;
 

@@ -9,8 +9,14 @@ import type {
   PublicImageDto,
   TodayOutagesDto,
 } from '@vcraft/contracts';
-import { Household, News } from '@vcraft/database';
-import { materialPriceSeries, type NewsVisibility, outagesOn, villageToday } from '@vcraft/domain';
+import { Household, News, Workshop } from '@vcraft/database';
+import {
+  activeOutages,
+  materialPriceSeries,
+  type NewsVisibility,
+  outageAudience,
+  villageToday,
+} from '@vcraft/domain';
 import type { Actor } from '../../../common/auth/auth.guard';
 import { AppError, notFound } from '../../../common/errors/app-error';
 import { MediaService } from '../../media/application/media.service';
@@ -181,13 +187,17 @@ export class NewsService {
   }
 
   /**
-   * Today's planned power cuts (village time) for the Studio banner (PLAN E11): published
-   * `POWER_SCHEDULE` items of either visibility, read by approved households and administrators.
+   * Planned power cuts that still matter to the caller (PLAN E11, ADR-0023): published `POWER_SCHEDULE`
+   * items of either visibility, for the village date from 00:00 until each cut ends. An approved household
+   * gets the cuts of its workshops' areas plus village-wide ones, or every cut while no workshop has an area;
+   * an administrator gets every cut.
    */
   async todayOutages(actor: Actor, now = new Date()): Promise<TodayOutagesDto> {
     const em = this.orm.em.fork();
-    await this.assertVillageMember(em, actor);
-    const date = villageToday(now);
+    const household = await this.assertVillageMember(em, actor);
+    const workshopAreas = household
+      ? (await em.find(Workshop, { household })).map((workshop) => workshop.areaCode ?? null)
+      : null;
     const rows = await em.find(
       News,
       {
@@ -200,13 +210,23 @@ export class NewsService {
     const outages = rows.flatMap((news) => {
       const schedule = newsDataOf(news).powerSchedule;
       return schedule
-        ? outagesOn([schedule], date).map((outage) => ({ ...outage, newsSlug: news.slug }))
+        ? activeOutages([schedule], now, workshopAreas).map((outage) => ({
+            ...outage,
+            newsSlug: news.slug,
+          }))
         : [];
     });
     outages.sort((a, b) => a.from.localeCompare(b.from));
     return {
-      date,
-      outages: outages.map(({ from, to, area, newsSlug }) => ({ from, to, area, newsSlug })),
+      date: villageToday(now),
+      outages: outages.map((outage) => ({
+        from: outage.from,
+        to: outage.to,
+        area: outage.area,
+        areaCode: outageAudience(outage),
+        newsSlug: outage.newsSlug,
+      })),
+      needsWorkshopArea: workshopAreas ? workshopAreas.every((area) => area === null) : false,
     };
   }
 
@@ -242,13 +262,15 @@ export class NewsService {
     return this.detail(em, news);
   }
 
-  private async assertVillageMember(em: EntityManager, actor: Actor) {
-    if (actor.role === 'ADMIN') return;
+  /** The caller's approved household, or null for an administrator; anyone else gets a 404. */
+  private async assertVillageMember(em: EntityManager, actor: Actor): Promise<Household | null> {
+    if (actor.role === 'ADMIN') return null;
     const household = await em.findOne(Household, {
       representative: actor.id,
       status: 'APPROVED',
     });
     if (!household) throw notFound();
+    return household;
   }
 
   private async detail(em: EntityManager, news: News): Promise<NewsDetailDto> {
