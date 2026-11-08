@@ -49,7 +49,7 @@ jobs:
   # Test dựng CSDL thật bằng Testcontainers nên cần Docker daemon (ubuntu-latest có sẵn).
   # Suite rỗng KHÔNG còn được coi là xanh: không có file test thì bước này thất bại.
   # Runs in parallel with quality (no `needs`) and splits each database into 4 shards to cut wall-clock time.
-  integration:
+  integration-shard:
     name: integration (${{ matrix.db }} ${{ matrix.shard }}/4)
     if: vars.CI_ENABLED != 'false'
     runs-on: ubuntu-latest
@@ -67,6 +67,16 @@ jobs:
       - run: pnpm --filter @vcraft/api test:integration --shard=${{ matrix.shard }}/4
         env:
           DB_DRIVER: ${{ matrix.db }}
+
+  # The single required status check for integration: branch protection names `integration`, so the shard
+  # count can change without touching it. `always()` makes it run (and fail) when a shard fails or is cancelled.
+  integration:
+    name: integration
+    needs: integration-shard
+    if: always() && vars.CI_ENABLED != 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - run: test "${{ needs.integration-shard.result }}" = success
 
   e2e:
     if: vars.CI_ENABLED != 'false'
