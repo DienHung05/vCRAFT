@@ -57,6 +57,7 @@ export const pathnames = {
   '/admin/nhat-ky': { vi: '/admin/nhat-ky', en: '/admin/audit-log' },
   '/admin/nguoi-dung': { vi: '/admin/nguoi-dung', en: '/admin/users' },
   '/admin/dieu-phoi': { vi: '/admin/dieu-phoi', en: '/admin/coordination' },
+  '/admin/dieu-phoi/moi': { vi: '/admin/dieu-phoi/moi', en: '/admin/coordination/new' },
   '/admin/tien-do': { vi: '/admin/tien-do', en: '/admin/progress' },
   '/admin/thanh-toan': { vi: '/admin/thanh-toan', en: '/admin/payments' },
   '/admin/dieu-phoi/[code]': { vi: '/admin/dieu-phoi/[code]', en: '/admin/coordination/[code]' },

@@ -46,6 +46,27 @@ export const LocaleSchema = z.enum(LOCALES);
 export type Locale = z.infer<typeof LocaleSchema>;
 export const DEFAULT_LOCALE: Locale = 'vi';
 
+/**
+ * A Vietnamese phone number: mobile (03x, 05x, 07x, 08x, 09x) or landline (02xx), with `0` or `+84` as the
+ * prefix. Spaces, dots, dashes and brackets are allowed for readability and ignored by the check.
+ */
+const VIETNAM_PHONE_PATTERN = /^(?:\+84|0)(?:[35789]\d{8}|2\d{9})$/;
+
+/** A phone number without the separators people put between its digits. */
+export function compactPhone(value: string): string {
+  return value.replace(/[\s.\-()]/g, '');
+}
+
+export const VietnamPhoneSchema = z
+  .string()
+  .trim()
+  .max(20)
+  .refine(
+    (value) => VIETNAM_PHONE_PATTERN.test(compactPhone(value)),
+    'Not a valid Vietnamese phone number',
+  );
+export type VietnamPhone = z.infer<typeof VietnamPhoneSchema>;
+
 /** Số phiên bản khóa lạc quan (BR-L1). */
 export const VersionSchema = z.int().min(0);
 export type Version = z.infer<typeof VersionSchema>;

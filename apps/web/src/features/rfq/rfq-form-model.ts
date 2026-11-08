@@ -1,4 +1,4 @@
-import type { CreateRfqRequest, RfqResponse } from '@vcraft/contracts';
+import { type CreateRfqRequest, OnBehalfOfSchema, type RfqResponse } from '@vcraft/contracts';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
 
 /** A file the buyer attached: the uploaded media id and what the form needs to list it. */
@@ -25,6 +25,10 @@ export interface RfqFormValues {
   destination: string;
   coordinate: boolean;
   householdIds: string[];
+  /** The off-platform customer an administrator makes the request for (FR-ORD-10); unused for a buyer. */
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
 }
 
 export type RfqFormField =
@@ -36,7 +40,10 @@ export type RfqFormField =
   | 'destination'
   | 'deadline'
   | 'requiredBy'
-  | 'budget';
+  | 'budget'
+  | 'customerName'
+  | 'customerPhone'
+  | 'customerEmail';
 export type RfqFormProblems = Partial<Record<RfqFormField, true>>;
 
 /** Fields a link (for example a product's trace page) may seed on a new form. */
@@ -57,7 +64,15 @@ export const EMPTY_RFQ_FORM: RfqFormValues = {
   destination: '',
   coordinate: true,
   householdIds: [],
+  customerName: '',
+  customerPhone: '',
+  customerEmail: '',
 };
+
+/** How the form is used: a buyer's own request, or an administrator's request for an off-platform customer. */
+export interface RfqFormMode {
+  onBehalf?: boolean;
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -73,7 +88,11 @@ const wholeNumber = (raw: string) => {
 };
 
 /** What the buyer must fix before the request can be saved or sent. */
-export function rfqFormProblems(values: RfqFormValues, now = new Date()): RfqFormProblems {
+export function rfqFormProblems(
+  values: RfqFormValues,
+  now = new Date(),
+  mode: RfqFormMode = {},
+): RfqFormProblems {
   const problems: RfqFormProblems = {};
   if (!values.title.trim()) problems.title = true;
   if (!values.category) problems.category = true;
@@ -93,11 +112,29 @@ export function rfqFormProblems(values: RfqFormValues, now = new Date()): RfqFor
   const max = values.budgetMax.trim() ? wholeNumber(values.budgetMax) : undefined;
   if (min === null || max === null || (min !== undefined && max !== undefined && min > max))
     problems.budget = true;
+  if (mode.onBehalf) {
+    // The same rules the API applies: a name, a Vietnamese phone number and an optional valid email.
+    const customer = OnBehalfOfSchema.safeParse(customerOf(values));
+    if (!customer.success)
+      for (const issue of customer.error.issues) {
+        if (issue.path[0] === 'name') problems.customerName = true;
+        else if (issue.path[0] === 'phone') problems.customerPhone = true;
+        else if (issue.path[0] === 'email') problems.customerEmail = true;
+      }
+  }
   // No chosen household and no coordination is fine: the system matches households of the category (BR-05).
   return problems;
 }
 
-export function rfqFormPayload(values: RfqFormValues): CreateRfqRequest {
+function customerOf(values: RfqFormValues) {
+  return {
+    name: values.customerName.trim(),
+    phone: values.customerPhone.trim(),
+    ...(values.customerEmail.trim() ? { email: values.customerEmail.trim() } : {}),
+  };
+}
+
+export function rfqFormPayload(values: RfqFormValues, mode: RfqFormMode = {}): CreateRfqRequest {
   return {
     title: values.title.trim(),
     ...(values.category ? { category: values.category } : {}),
@@ -111,8 +148,10 @@ export function rfqFormPayload(values: RfqFormValues): CreateRfqRequest {
     destination: values.destination.trim(),
     requiredBy: endOfDay(values.requiredBy).toISOString(),
     biddingClosesAt: endOfDay(values.deadline).toISOString(),
-    invitedHouseholdIds: values.coordinate ? [] : values.householdIds,
-    coordinationOptIn: values.coordinate,
+    // An administrator's request is always coordinated by them and may still invite households up front.
+    invitedHouseholdIds: values.coordinate && !mode.onBehalf ? [] : values.householdIds,
+    coordinationOptIn: mode.onBehalf ? true : values.coordinate,
+    ...(mode.onBehalf ? { onBehalfOf: customerOf(values) } : {}),
     ...(values.budgetMin.trim() ? { budgetMinVnd: Number(values.budgetMin) } : {}),
     ...(values.budgetMax.trim() ? { budgetMaxVnd: Number(values.budgetMax) } : {}),
   };
@@ -140,6 +179,9 @@ export function rfqFormValues(request: RfqResponse): RfqFormValues {
     destination: request.destination,
     coordinate: request.coordinationOptIn,
     householdIds: request.invitedHouseholdIds,
+    customerName: request.onBehalfOf?.name ?? '',
+    customerPhone: request.onBehalfOf?.phone ?? '',
+    customerEmail: request.onBehalfOf?.email ?? '',
   };
 }
 

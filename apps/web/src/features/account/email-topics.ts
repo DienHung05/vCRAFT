@@ -22,6 +22,7 @@ const TOPIC_OF: Record<NotificationTypeDto, EmailTopic> = {
   ALLOCATION_PROPOSED: 'order',
   ALLOCATION_CONFIRMED: 'order',
   ALLOCATION_REASSIGNED: 'order',
+  RFQ_NOT_SELECTED: 'quotation',
   ORDER_CANCELLED: 'order',
   PRODUCTION_STARTED: 'order',
   PROGRESS_REPORTED: 'order',

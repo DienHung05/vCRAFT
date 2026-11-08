@@ -45,6 +45,10 @@ const COPY: Record<NotificationType, { subject: string; body: string }> = {
     subject: 'Một phần việc của bạn đã được chuyển cho hộ khác',
     body: 'Ban quản lý đã chuyển phần việc còn lại của bạn trong đơn hàng cho hộ khác để kịp tiến độ. Phần bạn đã làm xong vẫn được ghi nhận.',
   },
+  RFQ_NOT_SELECTED: {
+    subject: 'Người mua đã chọn một chào giá khác',
+    body: 'Người mua đã chọn một chào giá khác cho yêu cầu báo giá mà hộ bạn được mời. Cảm ơn bạn đã quan tâm và tham gia.',
+  },
   ORDER_CANCELLED: {
     subject: 'Đơn hàng đã bị hủy',
     body: 'Đơn hàng đã bị hủy; các phân bổ còn hiệu lực không được tiếp tục.',

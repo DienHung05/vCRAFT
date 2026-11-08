@@ -69,6 +69,7 @@ import { MediaService } from '../../media/application/media.service';
 import { NotificationPublisher } from '../../notifications/application/notification-publisher';
 import { ConsentService } from '../../privacy/application/consent.service';
 import { loadJournal } from '../../production-logs/application/journal.queries';
+import { NO_RATINGS, ratingSummaries } from '../household-rating-stats';
 import {
   type HouseholdParts,
   productMediaIds,
@@ -1074,6 +1075,7 @@ export class HouseholdsService {
       media,
       linked: linked.get(household.id) ?? [],
       productCovers: await this.media.productCoverImages(products),
+      rating: (await ratingSummaries(em, [household.id])).get(household.id) ?? NO_RATINGS,
     };
   }
 

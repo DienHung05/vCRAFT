@@ -520,11 +520,26 @@
         "destination": "Enter where to deliver.",
         "deadline": "The bidding deadline must be at least 24 hours after sending.",
         "requiredBy": "The delivery date must be after the bidding deadline.",
-        "budget": "The budget must be whole numbers, with the lower amount first."
+        "budget": "The budget must be whole numbers, with the lower amount first.",
+        "customerName": "Enter the customer's name (up to 120 characters).",
+        "customerPhone": "Enter a valid Vietnamese phone number, for example 0912 345 678.",
+        "customerEmail": "The email address is not valid."
       },
       "sentToast": "Quotation request sent. The households will receive an invitation to quote.",
       "sentToastMatched": "Quotation request sent to {count, plural, one {# matching household} other {# matching households}}.",
-      "consentRequired": "Agree to the privacy policy to send the request."
+      "consentRequired": "Agree to the privacy policy to send the request.",
+      "signInAdmin": "Sign in with a management board account to create a request for a customer.",
+      "onBehalf": {
+        "title": "Create a request for a customer",
+        "lead": "For customers who order by phone and have no account. You coordinate the request and accept quotations, confirm receipt and rate the households on the customer's behalf.",
+        "customer": "Off-platform customer",
+        "name": "Customer name",
+        "phone": "Phone number",
+        "email": "Email (optional)",
+        "coordinated": "You coordinate this request. Choose the households to invite to quote.",
+        "householdsHint": "Choose the households invited to quote; the best-rated households come first.",
+        "sentToast": "The request was sent for the customer. You are coordinating it."
+      }
     },
     "list": {
       "allStatuses": "All statuses",
@@ -760,7 +775,20 @@
       "capacityExceeded": "A household was given more than the capacity it declared for this category. Lower its share and send again.",
       "offerExceeded": "A household was given more than the maximum it offered. Review the board and send again.",
       "startFailed": "Production could not be started. Make sure every household has confirmed its share, then try again.",
-      "actionFailed": "The action failed. Please try again."
+      "actionFailed": "The action failed. Please try again.",
+      "onBehalfBadge": "Off-platform customer",
+      "customerName": "Customer",
+      "customerPhone": "Phone",
+      "customerEmail": "Email",
+      "onBehalfLead": "You made this request for the customer, so you accept the quotation, confirm receipt and rate the households on their behalf.",
+      "quotationsTitle": "Quotations awaiting the customer's decision",
+      "noQuotations": "There is no quotation to accept yet.",
+      "quotationTotal": "Total {total}",
+      "accept": "Accept for the customer",
+      "acceptTitle": "Accept this quotation for the customer?",
+      "acceptText": "Accept {quantity} {unit} for a total of {total}. The other quotations will be rejected. This cannot be undone.",
+      "acceptedToast": "The quotation was accepted for the customer. The households are being told.",
+      "acceptFailed": "Could not accept. The data changed or the quotation is no longer valid."
     },
     "dashboard": {
       "title": "Overview",
@@ -935,7 +963,11 @@
       "emptyHint": "When a buyer asks the Management Board to coordinate a request, it shows up here.",
       "emptyAction": "Back to overview",
       "claimedToast": "You are now coordinating this request.",
-      "detail": "Request"
+      "detail": "Request",
+      "createForCustomer": "Create a request for a customer",
+      "offPlatform": "Off-platform customer",
+      "customer": "Customer",
+      "customerPhone": "Phone"
     },
     "audit": {
       "title": "Audit log",
@@ -1427,6 +1459,24 @@
       "allOrders": "All requests"
     }
   },
+  "rating": {
+    "title": "Rate the households",
+    "lead": "The order is delivered. Rate each household that worked on it; you can change a rating for 30 days.",
+    "star": "{count, plural, one {# star} other {# stars}}",
+    "group": "Stars for {household}",
+    "comment": "Comment on {household} (optional)",
+    "commentHint": "Up to 1,000 characters.",
+    "save": "Save rating",
+    "saving": "Saving…",
+    "saved": "Rating saved.",
+    "editableUntil": "You can change it until {date}.",
+    "needStars": "Choose a number of stars.",
+    "saveFailed": "The rating could not be saved. Please try again.",
+    "windowClosed": "This rating can no longer be changed because 30 days have passed.",
+    "summary": "{average} / 5 · {count, plural, one {# rating} other {# ratings}}",
+    "summaryLabel": "Average {average} out of 5 from {count, plural, one {# rating} other {# ratings}}",
+    "none": "Not rated yet"
+  },
   "order": {
     "title": "Order",
     "loading": "Loading the order…",
@@ -1512,6 +1562,7 @@
       "ALLOCATION_PROPOSED": "You have a production share to confirm.",
       "ALLOCATION_CONFIRMED": "A household confirmed its allocation.",
       "ALLOCATION_REASSIGNED": "The management board moved the rest of your share to another household.",
+      "RFQ_NOT_SELECTED": "The buyer chose another offer. Thank you for taking part.",
       "ORDER_CANCELLED": "The order was cancelled.",
       "PRODUCTION_STARTED": "The order has entered production.",
       "PROGRESS_REPORTED": "Production progress was updated.",

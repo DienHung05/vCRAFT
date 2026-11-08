@@ -21,6 +21,7 @@ import {
   EMPTY_RFQ_FORM,
   type RfqAttachmentValue,
   type RfqFormField,
+  type RfqFormMode,
   type RfqFormPrefill,
   type RfqFormValues,
   readStoredDraft,
@@ -29,33 +30,45 @@ import {
   rfqFormValues,
   writeStoredDraft,
 } from './rfq-form-model';
+import { RatingSummary } from './star-rating';
 
 const AUTOSAVE_MS = 800;
 const inputClass = 'w-full rounded-input border border-ink/20 bg-surface px-3 py-2 text-body';
+
+/** Best-rated households first; households with the same rating keep the order the API returned. */
+function byRating(households: readonly HouseholdSummaryDto[]): HouseholdSummaryDto[] {
+  return [...households].sort((a, b) => (b.ratingAverage ?? 0) - (a.ratingAverage ?? 0));
+}
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'local' | 'failed';
 
 /**
  * Create form for a quotation request (FR-RFQ-01, 02). `draft` continues a saved server draft;
  * `prefill` seeds a new form (for example from a product's trace page) and wins over a browser-kept one.
+ * `onBehalf` is the administrator's variant (FR-ORD-10): it asks for the off-platform customer, needs no
+ * consent, is always coordinated by the administrator and is sent in one step with no browser-kept draft.
  */
 export function RfqForm({
   client: provided,
   draft,
   prefill,
   upload,
+  onBehalf = false,
 }: {
   client?: QuotationClient;
   draft?: RfqResponse;
   prefill?: RfqFormPrefill;
   /** Sends one attachment; replaced in tests. */
   upload?: (file: File) => Promise<RfqAttachmentValue>;
+  onBehalf?: boolean;
 }) {
   const t = useTranslations('rfq.form');
   const { client, loading } = useQuotationClient(provided);
   if (loading) return <FormSkeleton label={t('saving')} />;
-  if (!client) return <p className="px-gutter pt-8">{t('signIn')}</p>;
-  return <Form client={client} draft={draft} prefill={prefill} upload={upload} />;
+  if (!client) return <p className="px-gutter pt-8">{t(onBehalf ? 'signInAdmin' : 'signIn')}</p>;
+  return (
+    <Form client={client} draft={draft} prefill={prefill} upload={upload} onBehalf={onBehalf} />
+  );
 }
 
 function Form({
@@ -63,24 +76,30 @@ function Form({
   draft,
   prefill,
   upload,
+  onBehalf,
 }: {
   client: QuotationClient;
   draft?: RfqResponse | undefined;
   prefill?: RfqFormPrefill | undefined;
   upload?: ((file: File) => Promise<RfqAttachmentValue>) | undefined;
+  onBehalf: boolean;
 }) {
   const t = useTranslations('rfq.form');
   const categories = useTranslations('catalog.categories');
   const rfq = useTranslations('rfq');
   const common = useTranslations('common');
+  const adminNav = useTranslations('admin.nav');
+  const queue = useTranslations('admin.coordinationQueue');
   const router = useRouter();
+  const mode: RfqFormMode = { onBehalf };
   const [values, setValues] = useState<RfqFormValues>(() =>
     draft ? rfqFormValues(draft) : { ...EMPTY_RFQ_FORM, ...prefill },
   );
   const destinationListId = useId();
   const destinationSuggestions = useAddressSuggestions(values.destination);
-  // A saved draft already went through consent when it was first created.
-  const [consent, setConsent] = useState(draft !== undefined);
+  // A saved draft already went through consent when it was first created. An administrator's request for a
+  // customer records none: the customer has no account to consent from.
+  const [consent, setConsent] = useState(draft !== undefined || onBehalf);
   const [touched, setTouched] = useState(false);
   const [showProblems, setShowProblems] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>('idle');
@@ -98,7 +117,7 @@ function Form({
 
   // A new form restores what this browser kept, including the server draft it belongs to.
   useEffect(() => {
-    if (draft || prefill) return;
+    if (draft || prefill || onBehalf) return;
     const stored = readStoredDraft();
     if (!stored) return;
     setValues(stored.values);
@@ -114,15 +133,16 @@ function Form({
         }
       })
       .catch(() => clearStoredDraft());
-  }, [client, draft, prefill]);
+  }, [client, draft, prefill, onBehalf]);
 
   const saveToServer = useCallback(
     (current: RfqFormValues) => {
       // Saves run one after another, so each one sends the version the previous one returned.
       saving.current = saving.current.then(async () => {
-        const payload = rfqFormPayload(current);
+        const payload = rfqFormPayload(current, { onBehalf });
         // The request carries a delivery address: the consent is recorded before the first save.
-        if (!saved.current) await client.recordConsent('RFQ_CONTACT', PRIVACY_POLICY_VERSION);
+        if (!saved.current && !onBehalf)
+          await client.recordConsent('RFQ_CONTACT', PRIVACY_POLICY_VERSION);
         const response = saved.current
           ? await client.updateRequest(saved.current.id, saved.current.version, payload)
           : await client.createRequest(payload);
@@ -130,11 +150,12 @@ function Form({
       });
       return saving.current;
     },
-    [client],
+    [client, onBehalf],
   );
 
   useEffect(() => {
-    if (!touched) return;
+    // An administrator's request is sent in one step, so no half-finished draft is left on the server.
+    if (!touched || onBehalf) return;
     const timer = window.setTimeout(() => {
       if (!draft) writeStoredDraft({ id: saved.current?.id ?? null, values });
       // Nothing personal (the delivery address) leaves this browser before the buyer consents.
@@ -155,22 +176,23 @@ function Form({
         });
     }, AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
-  }, [values, touched, consent, draft, saveToServer]);
+  }, [values, touched, consent, draft, saveToServer, onBehalf]);
 
+  const showHouseholds = onBehalf || !values.coordinate;
   useEffect(() => {
-    if (values.coordinate || households !== null) return;
+    if (!showHouseholds || households !== null) return;
     client
       .listHouseholds()
       .then((list) => setHouseholds(list.data))
       .catch(() => setHouseholdsFailed(true));
-  }, [values.coordinate, households, client]);
+  }, [showHouseholds, households, client]);
 
   const set = <K extends keyof RfqFormValues>(key: K, value: RfqFormValues[K]) => {
     setTouched(true);
     setValues((current) => ({ ...current, [key]: value }));
   };
 
-  const problems = rfqFormProblems(values);
+  const problems = rfqFormProblems(values, new Date(), mode);
   const problem = (field: RfqFormField) =>
     showProblems && problems[field] ? (
       <span id={`rfq-${field}-problem`} role="alert" className="text-small text-seal">
@@ -197,11 +219,14 @@ function Form({
       clearStoredDraft();
       // With no chosen household the system matched some: the buyer is told how many (FR-RFQ-03).
       notify.success(
-        sent.invitedHouseholdIds.length > 0
-          ? t('sentToastMatched', { count: sent.invitedHouseholdIds.length })
-          : t('sentToast'),
+        onBehalf
+          ? t('onBehalf.sentToast')
+          : sent.invitedHouseholdIds.length > 0
+            ? t('sentToastMatched', { count: sent.invitedHouseholdIds.length })
+            : t('sentToast'),
       );
-      router.push({ pathname: '/yeu-cau-bao-gia/[code]', params: { code: sent.id } });
+      if (onBehalf) router.push({ pathname: '/admin/dieu-phoi/[code]', params: { code: sent.id } });
+      else router.push({ pathname: '/yeu-cau-bao-gia/[code]', params: { code: sent.id } });
     } catch (error) {
       saving.current = Promise.resolve();
       setSendError(
@@ -240,7 +265,20 @@ function Form({
         void send();
       }}
     >
-      {draft ? null : (
+      {draft ? null : onBehalf ? (
+        <header className="flex flex-col gap-2">
+          <Breadcrumbs
+            className="mb-2"
+            items={[
+              { label: adminNav('overview'), href: '/admin' },
+              { label: queue('title'), href: '/admin/dieu-phoi' },
+              { label: t('onBehalf.title') },
+            ]}
+          />
+          <h1 className="text-h1">{t('onBehalf.title')}</h1>
+          <p className="text-ash">{t('onBehalf.lead')}</p>
+        </header>
+      ) : (
         <header className="flex flex-col gap-2">
           <Breadcrumbs
             className="mb-2"
@@ -254,6 +292,52 @@ function Form({
           <p className="text-ash">{t('lead')}</p>
         </header>
       )}
+      {onBehalf ? (
+        <fieldset className="flex flex-col gap-4 rounded-card border border-ink/15 p-4">
+          <legend className="px-1 font-medium">{t('onBehalf.customer')}</legend>
+          <label className="flex flex-col gap-1">
+            {t('onBehalf.name')}
+            <input
+              value={values.customerName}
+              maxLength={120}
+              autoComplete="off"
+              onChange={(event) => set('customerName', event.target.value)}
+              className={inputClass}
+              {...invalid('customerName')}
+            />
+            {problem('customerName')}
+          </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="flex flex-col gap-1">
+              {t('onBehalf.phone')}
+              <input
+                type="tel"
+                inputMode="tel"
+                value={values.customerPhone}
+                maxLength={20}
+                autoComplete="off"
+                onChange={(event) => set('customerPhone', event.target.value)}
+                className={inputClass}
+                {...invalid('customerPhone')}
+              />
+              {problem('customerPhone')}
+            </label>
+            <label className="flex flex-col gap-1">
+              {t('onBehalf.email')}
+              <input
+                type="email"
+                value={values.customerEmail}
+                maxLength={254}
+                autoComplete="off"
+                onChange={(event) => set('customerEmail', event.target.value)}
+                className={inputClass}
+                {...invalid('customerEmail')}
+              />
+              {problem('customerEmail')}
+            </label>
+          </div>
+        </fieldset>
+      ) : null}
       <label className="flex flex-col gap-1">
         {t('requestTitle')}
         <input
@@ -405,29 +489,35 @@ function Form({
           </datalist>
           {problem('destination')}
         </label>
-        <label className="flex items-start gap-2">
-          <input
-            type="checkbox"
-            checked={values.coordinate}
-            onChange={(event) => set('coordinate', event.target.checked)}
-            className="mt-1"
-          />
-          <span className="flex flex-col">
-            {t('coordinate')}
-            <span className="text-small text-ash">{t('coordinateHint')}</span>
-          </span>
-        </label>
-        {values.coordinate ? null : (
+        {onBehalf ? (
+          <p className="text-small text-ash">{t('onBehalf.coordinated')}</p>
+        ) : (
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={values.coordinate}
+              onChange={(event) => set('coordinate', event.target.checked)}
+              className="mt-1"
+            />
+            <span className="flex flex-col">
+              {t('coordinate')}
+              <span className="text-small text-ash">{t('coordinateHint')}</span>
+            </span>
+          </label>
+        )}
+        {!showHouseholds ? null : (
           <fieldset className="flex flex-col gap-2">
             <legend>{t('households')}</legend>
-            <p className="text-small text-ash">{t('householdsMatch')}</p>
+            <p className="text-small text-ash">
+              {t(onBehalf ? 'onBehalf.householdsHint' : 'householdsMatch')}
+            </p>
             {householdsFailed ? (
               <p role="alert">{t('householdsFailed')}</p>
             ) : households === null ? (
               <p role="status">{t('householdsLoading')}</p>
             ) : (
-              households.map((household) => (
-                <label key={household.id} className="flex items-center gap-2">
+              byRating(households).map((household) => (
+                <label key={household.id} className="flex flex-wrap items-center gap-2">
                   <input
                     type="checkbox"
                     checked={values.householdIds.includes(household.id)}
@@ -441,22 +531,25 @@ function Form({
                     }
                   />
                   {household.name}
+                  <RatingSummary average={household.ratingAverage} count={household.ratingCount} />
                 </label>
               ))
             )}
           </fieldset>
         )}
       </Reveal>
-      <ConsentCheckbox
-        id="rfq-consent"
-        purpose="quote"
-        checked={consent}
-        onChange={(event) => {
-          setTouched(true);
-          setConsent(event.target.checked);
-        }}
-        error={showProblems && !consent ? t('consentRequired') : undefined}
-      />
+      {onBehalf ? null : (
+        <ConsentCheckbox
+          id="rfq-consent"
+          purpose="quote"
+          checked={consent}
+          onChange={(event) => {
+            setTouched(true);
+            setConsent(event.target.checked);
+          }}
+          error={showProblems && !consent ? t('consentRequired') : undefined}
+        />
+      )}
       <div className="flex flex-wrap items-center gap-4">
         <Button type="submit" disabled={sending || uploading}>
           {t(sending ? 'sending' : 'send')}

@@ -22,6 +22,7 @@ import {
 import { MakerCredits } from '@/features/exhibition/maker-credits';
 import { StoryText } from '@/features/exhibition/story-text';
 import { VisitSection } from '@/features/exhibition/visit-section';
+import { RatingSummary } from '@/features/rfq/star-rating';
 import { Link, permanentRedirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/lib/locale';
 import { jsonLd, metaDescription, pageMetadata } from '@/lib/seo/page-metadata';
@@ -165,6 +166,11 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
               .filter(Boolean)
               .join(' · ')}
           </p>
+          <RatingSummary
+            average={household.ratingAverage}
+            count={household.ratingCount}
+            className="mt-2 text-paper/85"
+          />
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/yeu-cau-bao-gia" className={buttonVariants({ size: 'lg' })}>
               {t('ctaRfq')}

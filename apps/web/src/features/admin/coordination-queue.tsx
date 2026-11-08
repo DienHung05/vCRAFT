@@ -65,6 +65,9 @@ export function CoordinationQueue({ client: provided }: { client?: AdminClient }
       <header className="flex flex-col gap-2">
         <h1 className="text-h2">{t('title')}</h1>
         <p className="text-ash">{t('lead')}</p>
+        <Link href="/admin/dieu-phoi/moi" className={buttonVariants({ className: 'self-start' })}>
+          {t('createForCustomer')}
+        </Link>
       </header>
       {claimFailed ? <p role="alert">{t('claimFailed')}</p> : null}
       {failed ? (
@@ -91,9 +94,15 @@ export function CoordinationQueue({ client: provided }: { client?: AdminClient }
                   <p className="font-medium break-words">{row.design}</p>
                   <dl className="flex flex-wrap gap-x-6 gap-y-1 text-small">
                     <div className="flex gap-2">
-                      <dt className="text-ash">{t('buyer')}</dt>
+                      <dt className="text-ash">{t(row.onBehalfOf ? 'customer' : 'buyer')}</dt>
                       <dd>{row.buyerName}</dd>
                     </div>
+                    {row.onBehalfOf ? (
+                      <div className="flex gap-2">
+                        <dt className="text-ash">{t('customerPhone')}</dt>
+                        <dd>{row.onBehalfOf.phone}</dd>
+                      </div>
+                    ) : null}
                     <div className="flex gap-2">
                       <dt className="text-ash">{t('quantity')}</dt>
                       <dd>
@@ -119,6 +128,7 @@ export function CoordinationQueue({ client: provided }: { client?: AdminClient }
                   </dl>
                   <p className="flex flex-wrap items-center gap-2 text-small text-ash">
                     <Badge tone="outline">{statuses(row.status)}</Badge>
+                    {row.onBehalfOf ? <Badge tone="clay">{t('offPlatform')}</Badge> : null}
                     <span>{t('offers', { count: row.contributionCount })}</span>
                   </p>
                 </div>

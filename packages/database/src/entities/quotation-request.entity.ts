@@ -64,6 +64,20 @@ export class QuotationRequest extends BaseEntity {
   @Property({ type: 'boolean' })
   coordinationOptIn: Opt<boolean> = false;
 
+  /**
+   * The off-platform customer an administrator made this request for (FR-ORD-10, GH#248 s5-10). All three
+   * stay null on a buyer's own request. The administrator is `buyer` and the coordinator; only administrators
+   * read these columns, and the customer has no account.
+   */
+  @Property({ type: 'string', length: 120, nullable: true })
+  onBehalfName?: string | null;
+
+  @Property({ type: 'string', length: 20, nullable: true })
+  onBehalfPhone?: string | null;
+
+  @Property({ type: 'string', length: 254, nullable: true })
+  onBehalfEmail?: string | null;
+
   @Property({ type: 'string', length: 20 })
   status: Opt<RfqStatus> = 'DRAFT';
 

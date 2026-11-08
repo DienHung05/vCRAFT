@@ -86,6 +86,9 @@ export const HouseholdSummarySchema = z.object({
   coverAltEn: z.string().nullable().default(null),
   representative: z.string().nullable(),
   productCount: z.int().nonnegative(),
+  /** Mean of the buyers' 1-5 star ratings with one decimal (FR-ORD-11); null until the first rating. */
+  ratingAverage: z.number().min(1).max(5).nullable(),
+  ratingCount: z.int().min(0),
   /** Giờ của nơi đón khách đầu tiên; `null` là hộ không có nơi đón khách. */
   openingHours: z.array(OpeningIntervalSchema).nullable(),
 });
