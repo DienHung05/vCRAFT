@@ -193,7 +193,7 @@ finish() {
 
 # ──────────────────────────────────────────────────────────────────────────
 # STAGES: the owner-only release steps for vCraft (bead vCRAFT-83g.38).
-# Run: scripts/release-wizard.sh   (see docs/deploy.md, "Release wizard").
+# Run: scripts/release-wizard.sh   (see docs/operations/deploy.md, "Release wizard").
 # State lives outside the repo ($WIZARD_STATE_FILE, default ~/.vcraft-release-wizard.state)
 # and holds only step ids and non-secret values, so a re-run skips finished steps.
 # Secrets are read with read -s, sent to APIs over stdin (never argv) and never printed.
@@ -647,7 +647,7 @@ stage_render_paid() {
       pause "Press Enter after doing it by hand"
     }
   else
-    pause "Do the upgrade by hand (docs/deploy.md, section 'Moving back to the starter Blueprint'), then press Enter"
+    pause "Do the upgrade by hand (docs/operations/deploy.md, section 'Moving back to the starter Blueprint'), then press Enter"
   fi
   printf '\n'; say "Verifying..."
   http render GET "$RENDER_API/services/$RENDER_SERVICE_ID" || true

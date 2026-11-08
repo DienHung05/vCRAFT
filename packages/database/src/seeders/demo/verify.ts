@@ -58,7 +58,7 @@ export interface VerifyDemoOptions {
 
 /**
  * Kiểm dữ liệu demo "còn nguyên" (pre-exam check trên dữ liệu đóng băng), chỉ đọc. Dùng trong
- * `pnpm demo:verify` và test tích hợp. Không kiểm Supabase Auth (xem `scripts/demo-auth.mjs --check`).
+ * `pnpm demo:verify` và test tích hợp. Không kiểm Supabase Auth (xem `scripts/demo/auth.mjs --check`).
  */
 export async function verifyDemoData(
   em: EntityManager,

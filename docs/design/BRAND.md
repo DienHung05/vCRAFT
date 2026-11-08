@@ -2,7 +2,7 @@
 
 > Phiên bản 1.0 · 27/10/2026 · Phục vụ tiêu chí chấm (3) *Giao diện: responsive, đẹp, hiện đại, có bản sắc, đặc trưng nhận dạng thương hiệu nổi bật* (hệ số 0.2 — lớn thứ hai).
 > Mọi token ở đây được cài trong `packages/ui/src/tokens` và `packages/ui/src/motion`.
-> Moodboard: [docs/design/moodboard.html](design/moodboard.html)
+> Moodboard: [docs/design/moodboard.html](moodboard.html)
 
 ---
 
@@ -178,7 +178,7 @@ Riêng trợ lý Cáo (§10) xưng **"tớ"**, gọi người dùng là "bạn",
 
 ## 10. Mascot — Cáo
 
-Trợ lý hỏi đáp của vCraft (FR-AST, [SRS §3.13](SRS.md#313-trợ-lý-cáo-chatbot--fr-ast)) là một chú **cáo con ở làng gốm**.
+Trợ lý hỏi đáp của vCraft (FR-AST, [SRS §3.13](../requirements/SRS.md#313-trợ-lý-cáo-chatbot--fr-ast)) là một chú **cáo con ở làng gốm**.
 
 | | |
 |---|---|

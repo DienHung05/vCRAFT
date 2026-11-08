@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 /** Thư mục gốc monorepo. */
-export const ROOT = join(dirname(new URL(import.meta.url).pathname), '..', '..');
+export const ROOT = join(dirname(new URL(import.meta.url).pathname), '..', '..', '..');
 
 /**
  * Nạp một dependency theo vị trí của workspace khác (pnpm không hoist lên gốc), vd.

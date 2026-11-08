@@ -15,13 +15,7 @@
  * Demo sign-in does NOT go through this script: the web/API sign in with the username
  * (`DEMO_ADMIN_USERNAME`, default `admin`) via `POST /api/v1/auth/sign-in`; the script never reads it.
  */
-import {
-  envOf,
-  importFrom,
-  loadDemoAccounts,
-  printResult,
-  requireEnv,
-} from './lib/demo-common.mjs';
+import { envOf, importFrom, loadDemoAccounts, printResult, requireEnv } from './lib/common.mjs';
 
 const checkOnly = process.argv.includes('--check');
 

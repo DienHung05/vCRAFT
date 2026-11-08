@@ -2,8 +2,8 @@
 
 > **Tinh hoa làng nghề, muôn phương lan tỏa**
 > Phiên bản 1.1 · 08/11/2026 (bản 1.0: 27/10/2026) · INT3306 – Phát triển ứng dụng web (Fall 2026)
-> Nguồn yêu cầu gốc: [requirements/vCraft.pdf](requirements/vCraft.pdf)
-> Tài liệu liên quan: [ARCHITECTURE.md](ARCHITECTURE.md) · [PLAN.md](PLAN.md) · [BRAND.md](BRAND.md) · [quotation-workflow.md](quotation-workflow.md) · [ADR-0020](adr/0020-catalog-page-based-pagination.md)
+> Nguồn yêu cầu gốc: [requirements/vCraft.pdf](vCraft.pdf)
+> Tài liệu liên quan: [ARCHITECTURE.md](../ARCHITECTURE.md) · [PLAN.md](../PLAN.md) · [BRAND.md](../design/BRAND.md) · [quotation-workflow.md](../api/quotation-workflow.md) · [ADR-0020](../adr/0020-catalog-page-based-pagination.md)
 
 **Lịch sử sửa đổi.** Mã FR/NFR/BR giữ nguyên qua các phiên bản; dòng đã đổi nội dung ghi chú _"Cập nhật 2026-11"_.
 
@@ -114,7 +114,7 @@ Làng nghề gặp ba vấn đề: (1) sản phẩm thật bị trà trộn hàn
 - A2 — Hộ có điện thoại chụp ảnh và kết nối 4G.
 - A3 — Dữ liệu địa giới dùng mô hình **2 cấp (Tỉnh/Thành → Xã/Phường)** sau sắp xếp đơn vị hành chính có hiệu lực 01/07/2025.
 - A4 — Ảnh seed lấy từ nguồn có giấy phép phù hợp, ghi công đầy đủ.
-- A5 — Danh tính người dùng do **Supabase Auth** (project `aaltayglwiusqybuiycd`) cấp. CSDL nghiệp vụ chạy trên Postgres của cùng project ([ADR-15](adr/0015-business-db-on-supabase.md)) nhưng chỉ tham chiếu `user.id` (UUID), không khóa ngoại sang `auth.users`, để vẫn chạy được trên MySQL.
+- A5 — Danh tính người dùng do **Supabase Auth** (project `aaltayglwiusqybuiycd`) cấp. CSDL nghiệp vụ chạy trên Postgres của cùng project ([ADR-15](../adr/0015-business-db-on-supabase.md)) nhưng chỉ tham chiếu `user.id` (UUID), không khóa ngoại sang `auth.users`, để vẫn chạy được trên MySQL.
 
 ---
 
@@ -122,7 +122,7 @@ Làng nghề gặp ba vấn đề: (1) sản phẩm thật bị trà trộn hàn
 
 ### 3.1 Xác thực, phiên & tài khoản — `FR-AUTH`
 
-Xác thực dùng **Supabase Auth** làm nhà cung cấp danh tính (IdP) bên ngoài. vCraft **không lưu mật khẩu**; backend chỉ kiểm chứng JWT do Supabase ký và tự quản lý **hồ sơ, vai trò, trạng thái** người dùng trong CSDL của mình (xem [ARCHITECTURE §7.5](ARCHITECTURE.md#75-xác-thực-với-supabase-auth)).
+Xác thực dùng **Supabase Auth** làm nhà cung cấp danh tính (IdP) bên ngoài. vCraft **không lưu mật khẩu**; backend chỉ kiểm chứng JWT do Supabase ký và tự quản lý **hồ sơ, vai trò, trạng thái** người dùng trong CSDL của mình (xem [ARCHITECTURE §7.5](../ARCHITECTURE.md#75-xác-thực-với-supabase-auth)).
 
 | ID         | Yêu cầu                                                                                                                                                                                                                                         | Ưu tiên | Tiêu chí chấp nhận                                                                       |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------- |
@@ -134,7 +134,7 @@ Xác thực dùng **Supabase Auth** làm nhà cung cấp danh tính (IdP) bên n
 | FR-AUTH-06 | Quên mật khẩu qua email (Supabase recovery); đổi mật khẩu ⇒ đăng xuất các thiết bị khác.                                                                                                                                                        | M       | —                                                                                        |
 | FR-AUTH-07 | Chống dò mật khẩu: giới hạn tần suất của Supabase Auth + **CAPTCHA (Cloudflare Turnstile)** trên form đăng ký/đăng nhập/quên mật khẩu.                                                                                                          | S       | Thông báo lỗi không tiết lộ email có tồn tại hay không.                                  |
 | FR-AUTH-08 | **MFA TOTP** (Supabase MFA): bắt buộc với Admin — API từ chối route Admin nếu JWT chưa đạt `aal2`.                                                                                                                                              | S       | Admin đăng nhập phải nhập mã 6 số.                                                       |
-| FR-AUTH-09 | Phân quyền theo vai trò **và** quyền sở hữu (RBAC + ABAC). Vai trò và trạng thái lấy từ CSDL vCraft (nguồn sự thật), **không** tin vào dữ liệu client gửi lên. Ma trận ở [ARCHITECTURE §8.3](ARCHITECTURE.md#83-ma-trận-phân-quyền-rbac--abac). | M       | Gọi API sửa sản phẩm của hộ khác ⇒ 403.                                                  |
+| FR-AUTH-09 | Phân quyền theo vai trò **và** quyền sở hữu (RBAC + ABAC). Vai trò và trạng thái lấy từ CSDL vCraft (nguồn sự thật), **không** tin vào dữ liệu client gửi lên. Ma trận ở [ARCHITECTURE §8.3](../ARCHITECTURE.md#83-ma-trận-phân-quyền-rbac--abac). | M       | Gọi API sửa sản phẩm của hộ khác ⇒ 403.                                                  |
 | FR-AUTH-10 | Admin **tạm khóa** người dùng: cập nhật trạng thái trong CSDL vCraft (chặn ngay ở API) **và** cấm tài khoản trên Supabase (`ban_duration`) để không làm mới được phiên.                                                                         | S       | Người bị khóa nhận 403 ngay ở request kế tiếp.                                           |
 
 ### 3.2 Kiểm duyệt hộ — `FR-ADM`
@@ -276,7 +276,7 @@ Xác thực dùng **Supabase Auth** làm nhà cung cấp danh tính (IdP) bên n
 
 ### 3.13 Trợ lý Cáo (chatbot) — `FR-AST`
 
-Trợ lý hỏi đáp có mascot cáo ở góc dưới bên phải trang công khai. Trợ lý **chỉ đọc** và chỉ dùng dữ liệu công khai. Thiết kế ở [ARCHITECTURE §7.6](ARCHITECTURE.md#76-trợ-lý-cáo-rag--guardrail), quyết định lưu vector ở [ADR-13](adr/0013-assistant-vector-store-supabase.md).
+Trợ lý hỏi đáp có mascot cáo ở góc dưới bên phải trang công khai. Trợ lý **chỉ đọc** và chỉ dùng dữ liệu công khai. Thiết kế ở [ARCHITECTURE §7.6](../ARCHITECTURE.md#76-trợ-lý-cáo-rag--guardrail), quyết định lưu vector ở [ADR-13](../adr/0013-assistant-vector-store-supabase.md).
 
 | ID        | Yêu cầu                                                                                                                                                                                                                                       | Ưu tiên | Tiêu chí chấp nhận                                                                                                   |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
@@ -404,7 +404,7 @@ Yêu cầu chung UI: trạng thái loading (skeleton), rỗng (minh họa + lờ
 - **SSE** `/api/v1/events/stream` cho thông báo/realtime.
 - **Supabase Auth** (GoTrue): đăng ký, đăng nhập, OAuth Google, MFA TOTP, khôi phục mật khẩu, mời người dùng; backend kiểm chứng JWT qua JWKS bằng `@supabase/server`.
 - Bản đồ: MapLibre GL JS + vector tiles (OpenFreeMap; dự phòng tệp PMTiles tự host cho khu vực Bát Tràng).
-- Object storage: **Supabase Storage** qua giao thức S3 (cùng project với Auth, [ADR-14](adr/0014-object-storage-supabase.md)); ổ đĩa cục bộ khi test/offline. SMTP cho email.
+- Object storage: **Supabase Storage** qua giao thức S3 (cùng project với Auth, [ADR-14](../adr/0014-object-storage-supabase.md)); ổ đĩa cục bộ khi test/offline. SMTP cho email.
 - Dữ liệu đơn vị hành chính Việt Nam 2 cấp (tệp JSON tĩnh đóng gói cùng app).
 - Tùy chọn: Claude API cho gợi ý/dịch câu chuyện (FR-ART-08).
 - Trợ lý Cáo (FR-AST): OpenAI (`OPENAI_CHAT_MODEL`) để trả lời và phân loại; OpenAI `OPENAI_EMBEDDING_MODEL` (1024 chiều) để sinh embedding đa ngữ (ADR-19); **Supabase Postgres + pgvector** làm chỉ mục tri thức (tách khỏi CSDL nghiệp vụ, ADR-13); Open-Meteo (thời tiết, geocoding) không cần khóa API.
@@ -493,7 +493,7 @@ HTTPS (TLS 1.2+), HTTP/2 hoặc HTTP/3 qua reverse proxy Caddy; nén zstd/gzip.
 
 ## 7. Yêu cầu dữ liệu
 
-Thực thể chính (chi tiết thuộc tính, quan hệ, chỉ mục ở [ARCHITECTURE §6](ARCHITECTURE.md#6-mô-hình-dữ-liệu)):
+Thực thể chính (chi tiết thuộc tính, quan hệ, chỉ mục ở [ARCHITECTURE §6](../ARCHITECTURE.md#6-mô-hình-dữ-liệu)):
 
 `User` (hồ sơ + vai trò, khóa chính = id người dùng Supabase), `LoginEvent`, `ArtisanProfile`, `VerificationDocument`, `FamilyHistoryEvent`, `Certification`, `Workshop`, `ProductionCapacity`, `Category`, `StageTemplate`, `Product`, `ProductMedia`, `ProductionLogEntry`, `TraceScan`, `MediaAsset`, `QuoteRequest`, `QuoteInvitation`, `Bid`, `BidRevision`, `Order`, `Allocation`, `AllocationProgress`, `News`, `MaterialPrice`, `PowerOutage`, `Notification`, `AuditLog`, `OutboxEvent`, `IdempotencyKey`, `AssistantMessageLog`. Ngoài CSDL nghiệp vụ: `knowledge_chunks` (Supabase pgvector, dữ liệu dẫn xuất dựng lại được).
 
@@ -508,11 +508,11 @@ Yêu cầu lưu trữ:
 
 | #   | Tiêu chí (hệ số)                           | Yêu cầu đáp ứng                                                              | Bằng chứng khi demo                                                                                                                                          |
 | --- | ------------------------------------------ | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | Chức năng & features (0.35)                | Toàn bộ FR-AUTH…FR-AST mức M + S; nhóm C làm điểm cộng                       | Kịch bản demo 3 vai trò ([PLAN §6](PLAN.md#6-kịch-bản-demo-vấn-đáp))                                                                                         |
+| 1   | Chức năng & features (0.35)                | Toàn bộ FR-AUTH…FR-AST mức M + S; nhóm C làm điểm cộng                       | Kịch bản demo 3 vai trò ([PLAN §6](../PLAN.md#6-kịch-bản-demo-vấn-đáp))                                                                                         |
 | 2   | Thiết kế: logic, dễ dùng (0.1)             | FR-RFQ-12, NFR-UX-04/05/06, §5.1                                             | Stepper trạng thái, hành động theo ngữ cảnh, wizard, kết quả SUS                                                                                             |
-| 3   | Giao diện: responsive, đẹp, bản sắc (0.2)  | NFR-UX-01/02/03, [BRAND.md](BRAND.md)                                        | Hero 3D bình gốm, hiệu ứng ấn triện, landing truy xuất; thu nhỏ trình duyệt về 360px                                                                         |
+| 3   | Giao diện: responsive, đẹp, bản sắc (0.2)  | NFR-UX-01/02/03, [BRAND.md](../design/BRAND.md)                                        | Hero 3D bình gốm, hiệu ứng ấn triện, landing truy xuất; thu nhỏ trình duyệt về 360px                                                                         |
 | 4   | Hiệu năng: fetch/AJAX, JSON, DOM (0.1)     | NFR-PERF-01…07, FR-CAT-02/03, FR-RFQ-07, FR-NOTI-01, FR-MAP-04               | DevTools Network: chỉ Fetch/XHR JSON khi lọc/đổi trang/chào giá; Lighthouse                                                                                       |
-| 5   | Phong cách lập trình (0.05)                | NFR-MAIN-01…05, [ARCHITECTURE §4, §5](ARCHITECTURE.md)                       | Cây monorepo, design patterns có tên, domain thuần, JSDoc                                                                                                    |
+| 5   | Phong cách lập trình (0.05)                | NFR-MAIN-01…05, [ARCHITECTURE §4, §5](../ARCHITECTURE.md)                       | Cây monorepo, design patterns có tên, domain thuần, JSDoc                                                                                                    |
 | 6   | Xử lý nhập liệu (0.05)                     | FR-AUTH-02, FR-ART-01/05, FR-PRD-03/04, FR-RFQ-01/11, FR-MEDIA-02, FR-CAT-04 | Kiểm tra realtime, tự điền EXIF/địa chỉ/mẫu công đoạn, gợi ý giá, đọc số thành chữ, định dạng tiền                                                           |
 | 7   | An ninh (0.05)                             | FR-AUTH-01…10, NFR-SEC-01…09, FR-AST-07                                      | Đăng nhập Admin có MFA, đăng xuất mọi thiết bị, giải mã JWT trên jwt.io và giải thích kiểm chứng JWKS, thử truy cập trái phép ⇒ 403, CCCD đã mã hóa trong DB |
 | 8   | Viết lại / định tuyến URL (0.05)           | §5.1, FR-TRC-03, NFR-I18N-01/02                                              | `/q/<code>` 308 → URL bản địa hóa; slug tiếng Việt; slug cũ 301 sang slug mới                                                                                |

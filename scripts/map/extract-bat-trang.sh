@@ -6,7 +6,7 @@
 # SUPABASE_SECRET_KEY for the upload. Run it from the repository root:
 #   scripts/map/extract-bat-trang.sh                # extract, then upload
 #   SKIP_UPLOAD=1 scripts/map/extract-bat-trang.sh  # extract only
-# Then set NEXT_PUBLIC_MAP_PMTILES_URL to the printed URL on Vercel and redeploy (docs/deploy.md §5.1).
+# Then set NEXT_PUBLIC_MAP_PMTILES_URL to the printed URL on Vercel and redeploy (docs/operations/deploy.md §5.1).
 set -euo pipefail
 
 # Bát Tràng and the river bank around it (west,south,east,north); zoom 16 keeps the file around a few MB.

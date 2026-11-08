@@ -1,6 +1,6 @@
 // Hand-maintained single source of the demo photo manifest (the old export script that generated it from the
 // web's static demo data is retired). Licensed photos (Wikimedia Commons, museum open access, Pixabay; CC0 / public
-// domain / CC BY / CC BY-SA / Pixabay licence) live in apps/web/public/images/demo; `scripts/demo-photos/sources.json`
+// domain / CC BY / CC BY-SA / Pixabay licence) live in apps/web/public/images/demo; `scripts/demo/photos/sources.json`
 // has their origin and `pnpm demo:media` publishes them.
 //
 // Rule for this file: a photo may be attached to an object only when it shows that kind of object with the

@@ -1,5 +1,5 @@
 {
-  "note": "Nguồn ảnh minh hoạ trình diễn. Chạy `node scripts/demo-photos/build.mjs` để xử lý.",
+  "note": "Nguồn ảnh minh hoạ trình diễn. Chạy `node scripts/demo/photos/build.mjs` để xử lý.",
   "widths": [640, 1280],
   "photos": [
     {

@@ -1,5 +1,5 @@
 # Render Blueprint cho vCraft (ADR-16): API (web service) + worker (background worker) + Key Value (Redis).
-# Web chạy trên Vercel (apps/web/vercel.json); CSDL, Auth, Storage ở Supabase. Hướng dẫn từng bước: docs/deploy.md.
+# Web chạy trên Vercel (apps/web/vercel.json); CSDL, Auth, Storage ở Supabase. Hướng dẫn từng bước: docs/operations/deploy.md.
 #
 # Cách dùng: Render Dashboard -> New -> Blueprint -> chọn repo này, nhánh `main`. Render hỏi giá trị cho mọi biến
 # `sync: false` ngay lúc tạo (chỉ hỏi một lần; sửa sau ở tab Environment của từng service).
