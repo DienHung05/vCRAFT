@@ -38,6 +38,7 @@ import {
   RfqListResponseSchema,
   RfqResponseSchema,
 } from '@vcraft/contracts';
+import { fallbackErrorCode } from './http/fallback-error-code';
 
 export class QuotationApiError extends Error {
   constructor(
@@ -80,12 +81,12 @@ export function createQuotationClient(options: QuotationClientOptions) {
     try {
       data = await response.json();
     } catch {
-      throw new QuotationApiError('INTERNAL_ERROR', response.status);
+      throw new QuotationApiError(fallbackErrorCode(response.status), response.status);
     }
     if (!response.ok) {
       const problem = ProblemDetailsSchema.safeParse(data);
       throw new QuotationApiError(
-        problem.success ? problem.data.code : 'INTERNAL_ERROR',
+        problem.success ? problem.data.code : fallbackErrorCode(response.status),
         response.status,
       );
     }

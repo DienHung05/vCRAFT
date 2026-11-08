@@ -31,6 +31,8 @@ export default defineConfig({
   },
   test: {
     include: ['test/integration/**/*.test.ts'],
+    // Suites fire hundreds of requests from one address; the global limiter has its own unit test.
+    env: { API_RATE_LIMIT_ENABLED: 'false' },
     testTimeout: 60_000,
     hookTimeout: 240_000, // kéo image + khởi động container + chạy migration
     // Mỗi file dựng container riêng; chạy tuần tự để CI nhỏ không bị cạn bộ nhớ

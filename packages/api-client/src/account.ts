@@ -26,6 +26,7 @@ import {
   UpdateNotificationPreferencesRequestSchema,
   WorkshopResponseSchema,
 } from '@vcraft/contracts';
+import { fallbackErrorCode } from './http/fallback-error-code';
 
 /** Lỗi API của nhóm tài khoản: mã ổn định để giao diện tra i18n, kèm lỗi theo field (nếu có). */
 export class AccountApiError extends Error {
@@ -76,13 +77,13 @@ export function createAccountClient(options: AccountClientOptions) {
     try {
       data = await response.json();
     } catch {
-      throw new AccountApiError('INTERNAL_ERROR', response.status);
+      throw new AccountApiError(fallbackErrorCode(response.status), response.status);
     }
     if (!response.ok) {
       const problem = ProblemDetailsSchema.safeParse(data);
       throw problem.success
         ? new AccountApiError(problem.data.code, response.status, problem.data.errors)
-        : new AccountApiError('INTERNAL_ERROR', response.status);
+        : new AccountApiError(fallbackErrorCode(response.status), response.status);
     }
     return schema.parse(data);
   }
@@ -102,12 +103,12 @@ export function createAccountClient(options: AccountClientOptions) {
     try {
       data = await response.json();
     } catch {
-      throw new AccountApiError('INTERNAL_ERROR', response.status);
+      throw new AccountApiError(fallbackErrorCode(response.status), response.status);
     }
     const problem = ProblemDetailsSchema.safeParse(data);
     throw problem.success
       ? new AccountApiError(problem.data.code, response.status, problem.data.errors)
-      : new AccountApiError('INTERNAL_ERROR', response.status);
+      : new AccountApiError(fallbackErrorCode(response.status), response.status);
   }
 
   return {
