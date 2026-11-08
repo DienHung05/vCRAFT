@@ -11,6 +11,9 @@ import { useAssistant } from './use-assistant';
 
 const MOBILE = '(max-width: 639px)';
 
+/** The map page flags its phone bottom sheet on the root element (GH#297); the Fox must not cover it. */
+const MAP_SHEET_HIDDEN = '[html[data-map-sheet=open]_&]:hidden';
+
 function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(false);
   useEffect(() => {
@@ -179,24 +182,23 @@ export function AssistantWidget() {
     />
   );
 
-  // Above the map's bottom sheet on the map page, above the sticky call-to-action bar of the QR trace page,
-  // above the Studio tab bar on phones (GH#257), and above the iOS home bar everywhere.
+  // Above the sticky call-to-action bar of the QR trace page, above the Studio tab bar on phones (GH#257),
+  // and above the iOS home bar everywhere. The map page uses the normal corner (GH#297); while its phone
+  // bottom sheet is open the launcher and the hello bubble hide instead (see `MAP_SHEET_HIDDEN`).
   const studio = /^\/(vi|en)\/studio(\/|$)/.test(pathname);
   const lift =
-    page === 'map'
-      ? 'bottom-[calc(env(safe-area-inset-bottom)+7rem)]'
-      : page === 'trace'
-        ? 'bottom-[calc(env(safe-area-inset-bottom)+6.5rem)]'
-        : studio
-          ? 'bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] md:bottom-[calc(env(safe-area-inset-bottom)+1rem)]'
-          : 'bottom-[calc(env(safe-area-inset-bottom)+1rem)]';
+    page === 'trace'
+      ? 'bottom-[calc(env(safe-area-inset-bottom)+6.5rem)]'
+      : studio
+        ? 'bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] md:bottom-[calc(env(safe-area-inset-bottom)+1rem)]'
+        : 'bottom-[calc(env(safe-area-inset-bottom)+1rem)]';
 
   return (
     <>
       {hello && !open && (
         <div
           role="status"
-          className={`fixed right-4 z-40 flex max-w-64 items-start gap-2 rounded-card bg-surface p-3 text-small shadow-warm ring-1 ring-ink/8 ${lift} mb-20`}
+          className={`fixed right-4 z-40 flex max-w-64 items-start gap-2 rounded-card bg-surface p-3 text-small shadow-warm ring-1 ring-ink/8 ${lift} ${MAP_SHEET_HIDDEN} mb-20`}
         >
           <p className="flex-1">{t('hello')}</p>
           <button
@@ -217,7 +219,7 @@ export function AssistantWidget() {
         aria-haspopup="dialog"
         aria-label={open ? t('close') : t('open')}
         onClick={toggle}
-        className={`fixed right-4 z-40 size-16 items-center justify-center rounded-full bg-surface shadow-warm ring-1 ring-ink/10 transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-clay ${lift} ${open ? 'hidden' : 'flex'}`}
+        className={`fixed right-4 z-40 size-16 items-center justify-center rounded-full bg-surface shadow-warm ring-1 ring-ink/10 transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-clay ${lift} ${MAP_SHEET_HIDDEN} ${open ? 'hidden' : 'flex'}`}
       >
         <Mascot
           mood={open ? 'listen' : mood}
@@ -259,7 +261,7 @@ export function AssistantWidget() {
             aria-label={t('title')}
             onKeyDown={(event) => trapFocus(event, close)}
             style={{
-              maxHeight: `calc(100dvh - env(safe-area-inset-bottom) - ${page === 'map' ? '13rem' : '7rem'})`,
+              maxHeight: 'calc(100dvh - env(safe-area-inset-bottom) - 7rem)',
             }}
             className={`fixed right-4 z-50 flex h-[36rem] w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-card bg-paper shadow-warm ring-1 ring-ink/10 ${lift}`}
           >
