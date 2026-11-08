@@ -45,7 +45,10 @@ function Values({ values, empty }: { values: AuditEntryDto['before']; empty: str
 function Target({ entry }: { entry: AuditEntryDto }) {
   const t = useTranslations('admin.audit');
   const key = `entity.${entry.entity}` as Parameters<typeof t>[0];
-  const label = t.has(key) ? t(key) : entry.entity;
+  // The readable label comes from the server (snapshot or lookup); the kind and the stable id stay
+  // visible for diagnosis even when the target was deleted or the entry predates labels.
+  const kind = t.has(key) ? t(key) : entry.entity;
+  const name = entry.targetLabel ?? kind;
   const code = <span className="font-mono text-[0.7rem] break-all">{entry.entityId}</span>;
   if (entry.entity === 'household')
     return (
@@ -53,13 +56,13 @@ function Target({ entry }: { entry: AuditEntryDto }) {
         href={{ pathname: '/admin/duyet-ho/[id]', params: { id: entry.entityId } }}
         className="flex flex-col hover:text-clay"
       >
-        <span>{label}</span>
+        <span>{name}</span>
         {code}
       </Link>
     );
   return (
     <span className="flex flex-col">
-      <span>{label}</span>
+      <span>{name}</span>
       {code}
     </span>
   );

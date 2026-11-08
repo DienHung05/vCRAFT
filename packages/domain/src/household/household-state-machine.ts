@@ -91,3 +91,23 @@ export const isHouseholdTerminal = householdMachine.isTerminal;
 export function isHouseholdPublic(status: HouseholdStatus): boolean {
   return status === 'APPROVED';
 }
+
+export const HOUSEHOLD_REVIEW_STATES = ['NEW', 'AWAITING_APPLICANT', 'RESUBMITTED'] as const;
+export type HouseholdReviewState = (typeof HOUSEHOLD_REVIEW_STATES)[number];
+
+/**
+ * Review state derived from the household's status, the active statusReason and the explicit
+ * resubmission marker (vCRAFT-8my.2). `NEW` - pending with no open information request and no
+ * resubmission yet. `AWAITING_APPLICANT` - the board's information request is active (`statusReason`
+ * set); an old resubmission marker is history. `RESUBMITTED` - the applicant explicitly resubmitted
+ * after the last request; the active reason was cleared at resubmission and lives on in the audit log.
+ */
+export function householdReviewState(
+  status: HouseholdStatus,
+  statusReason: string | null | undefined,
+  resubmittedAt: Date | null | undefined,
+): HouseholdReviewState {
+  if (status !== 'PENDING_REVIEW') return 'NEW';
+  if (statusReason && statusReason.trim().length > 0) return 'AWAITING_APPLICANT';
+  return resubmittedAt ? 'RESUBMITTED' : 'NEW';
+}

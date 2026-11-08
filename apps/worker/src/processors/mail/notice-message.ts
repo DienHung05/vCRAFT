@@ -81,6 +81,10 @@ const COPY: Record<NotificationType, { subject: string; body: string }> = {
     subject: 'Hồ sơ hộ của bạn cần bổ sung thông tin',
     body: 'Ban quản lý cần thêm thông tin để xét hồ sơ hộ của bạn. Xem yêu cầu trong trang trạng thái hồ sơ.',
   },
+  HOUSEHOLD_RESUBMITTED: {
+    subject: 'Hồ sơ hộ đã được bổ sung và gửi lại',
+    body: 'Một hộ vừa bổ sung thông tin theo yêu cầu và gửi lại hồ sơ. Hãy xem xét trong hàng đợi duyệt hộ.',
+  },
   HOUSEHOLD_SUSPENDED: {
     subject: 'Hộ của bạn tạm ngừng trưng bày',
     body: 'Ban quản lý đã tạm ngừng trưng bày hộ của bạn. Xem lý do trong trang trạng thái hồ sơ.',
@@ -100,6 +104,7 @@ const PAGE_PATH: Record<NotificationTargetPage, string> = {
   BUYER_RFQ: 'yeu-cau-bao-gia/{id}',
   STUDIO_CONTRIBUTION: 'studio/de-xuat-tham-gia/{id}',
   ADMIN_COORDINATION: 'admin/dieu-phoi/{id}',
+  ADMIN_HOUSEHOLD_REVIEW: 'admin/duyet-ho/{id}',
   STUDIO_APPLICATION: 'studio/ho-so',
   NEWS_ARTICLE: 'tin-tuc/{id}',
 };

@@ -99,6 +99,14 @@ export class MyHouseholdController {
     return this.households.updateProfile(actor, version, body);
   }
 
+  /** Explicit resubmission after edits (vCRAFT-8my.2); `If-Match` guards against stale writes. */
+  @Post('resubmit')
+  @HttpCode(200)
+  @Roles('HOUSEHOLD')
+  resubmit(@CurrentActor() actor: Actor, @IfMatchVersion() version: number) {
+    return this.households.resubmit(actor, version);
+  }
+
   @Put('id-number')
   @Roles('HOUSEHOLD')
   setIdNumber(

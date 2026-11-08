@@ -9,6 +9,7 @@ import {
   DataExportSchema,
   type ErrorCode,
   type FieldError,
+  formatVersionTag,
   HouseholdResponseSchema,
   IdSchema,
   LoginEventListSchema,
@@ -19,6 +20,7 @@ import {
   NotificationPreferencesResponseSchema,
   NotificationResponseSchema,
   ProblemDetailsSchema,
+  ResubmitHouseholdResponseSchema,
   UnreadCountResponseSchema,
   type UpdateNotificationPreferencesRequest,
   UpdateNotificationPreferencesRequestSchema,
@@ -53,7 +55,7 @@ export function createAccountClient(options: AccountClientOptions) {
   async function request<T>(
     path: string,
     schema: { parse: (data: unknown) => T },
-    init: { method?: string; json?: unknown; form?: FormData } = {},
+    init: { method?: string; json?: unknown; form?: FormData; version?: number } = {},
   ): Promise<T> {
     const token = await options.getAccessToken();
     if (!token) throw new AccountApiError('AUTH_UNAUTHENTICATED', 401);
@@ -64,6 +66,8 @@ export function createAccountClient(options: AccountClientOptions) {
         Authorization: `Bearer ${token}`,
         // Multipart tự đặt Content-Type kèm boundary, nên chỉ JSON mới khai báo.
         ...(init.json !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        // Optimistic concurrency: endpoints that require `If-Match` (vCRAFT-8my.2 resubmit).
+        ...(init.version !== undefined ? { 'If-Match': formatVersionTag(init.version) } : {}),
       },
       ...(init.json !== undefined ? { body: JSON.stringify(init.json) } : {}),
       ...(init.form ? { body: init.form } : {}),
@@ -135,11 +139,23 @@ export function createAccountClient(options: AccountClientOptions) {
         json: CreateWorkshopRequestSchema.parse(input),
       });
     },
+    /** Explicit resubmission after edits (vCRAFT-8my.2); `If-Match` guards a stale write. */
+    resubmitHousehold(version: number) {
+      return request('/me/household/resubmit', ResubmitHouseholdResponseSchema, {
+        method: 'POST',
+        version,
+      });
+    },
     /** Giấy tờ xác minh: đi vào bucket riêng tư, chỉ Ban quản lý xem được. */
-    uploadCertificate(file: Blob, filename: string) {
+    uploadCertificate(
+      file: Blob,
+      filename: string,
+      kind?: 'IDENTITY' | 'RESIDENCE' | 'WORKSHOP' | 'UNKNOWN',
+    ) {
       const form = new FormData();
       form.append('file', file, filename);
-      return request('/media?purpose=CERTIFICATE', MediaAssetResponseSchema, {
+      const suffix = kind ? `&kind=${kind}` : '';
+      return request(`/media?purpose=CERTIFICATE${suffix}`, MediaAssetResponseSchema, {
         method: 'POST',
         form,
       });

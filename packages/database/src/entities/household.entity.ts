@@ -98,6 +98,10 @@ export class Household extends BaseEntity {
   @Property({ type: 'string', length: 500, nullable: true })
   statusReason?: string | null;
 
+  /** Explicit marker: the representative resubmitted the application at this time (vCRAFT-8my.2). */
+  @Property({ type: 'datetime', length: 3, nullable: true })
+  resubmittedAt?: Date | null;
+
   @Property({ type: 'datetime', length: 3, nullable: true })
   approvedAt?: Date | null;
 

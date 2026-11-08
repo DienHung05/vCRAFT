@@ -54,6 +54,8 @@ const pendingHousehold: MeDto['household'] = {
   slug: 'gom-bao-chau',
   status: 'PENDING_REVIEW',
   statusReason: null,
+  reviewState: 'NEW',
+  resubmittedAt: null,
 };
 
 async function outcome(run: () => Promise<unknown>): Promise<unknown> {

@@ -1,4 +1,4 @@
-import { AuditLog, OutboxEvent } from '@vcraft/database';
+import { AuditLog, Household, OutboxEvent, Product, TraceScan } from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { addMilestone, createJournalPhoto } from './support/journal-photo.js';
 import { startTestApp, type TestApp } from './support/test-app.js';
@@ -9,6 +9,8 @@ const PDF = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n
 /**
  * Issue #35 — Tổng quan Ban quản lý và duyệt hộ (FR-ADM-01 … 04, 06, FR-MEDIA-04): số liệu, hàng đợi
  * có lọc, giấy tờ qua URL ký chỉ Admin đọc được, các quyết định ghi audit và xếp email.
+ * vCRAFT-8my.4: the QR trend aggregates persisted `trace_scan` rows per Vietnam calendar date over a
+ * bounded window, zero-filled — never invented history.
  */
 describe('Admin dashboard and household approval', () => {
   let db: TestDatabase;
@@ -72,13 +74,26 @@ describe('Admin dashboard and household approval', () => {
   it('chỉ Admin vào được; số liệu đếm hồ sơ chờ', async () => {
     const denied = await t.request({ method: 'GET', url: '/admin/dashboard', auth: buyer.auth });
     expect(denied.status).toBe(403);
-    expect(await dashboard()).toEqual({
+    const body = await dashboard();
+    expect(body).toEqual({
       activeHouseholds: 0,
       pendingApplications: 1,
       openRfqs: 0,
       ordersInProduction: 0,
       qrScans30Days: 0,
+      trend: expect.any(Array),
     });
+    // The trend covers the last 30 Vietnam calendar dates including today, oldest first, zero-filled.
+    expect(body.trend).toHaveLength(30);
+    const dates: string[] = body.trend.map((point: { date: string }) => point.date);
+    const today = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    expect(dates[29]).toBe(today);
+    for (let i = 1; i < dates.length; i++) {
+      expect(Date.parse(`${dates[i]}T00:00:00Z`) - Date.parse(`${dates[i - 1]}T00:00:00Z`)).toBe(
+        24 * 60 * 60 * 1000,
+      );
+    }
+    expect(body.trend.every((point: { count: number }) => point.count === 0)).toBe(true);
   });
 
   it('hàng đợi lọc theo trạng thái và ngày nộp', async () => {
@@ -164,7 +179,15 @@ describe('Admin dashboard and household approval', () => {
 
     expect((await t.request({ method: 'POST', url: `/trace/${code}/scan` })).status).toBe(204);
     expect((await t.request({ method: 'POST', url: '/trace/ZZZZZZZZ/scan' })).status).toBe(204);
-    expect((await dashboard()).qrScans30Days).toBe(1);
+    const body = await dashboard();
+    expect(body.qrScans30Days).toBe(1);
+    // The scan lands in today's Vietnam calendar bucket; every other date stays zero.
+    const today = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const todayPoint = body.trend.find((point: { date: string }) => point.date === today);
+    expect(todayPoint?.count).toBe(1);
+    expect(body.trend.reduce((sum: number, point: { count: number }) => sum + point.count, 0)).toBe(
+      body.qrScans30Days,
+    );
     const visible = await t.request({ method: 'GET', url: `/trace/${code}` });
     expect(visible.body.scanCount).toBe(1);
 
@@ -181,4 +204,55 @@ describe('Admin dashboard and household approval', () => {
     expect(unlocked.status).toBe(200);
     expect(await catalog()).toBe(1);
   });
+
+  it('counts the trend by Vietnam calendar date, including a scan at the window edge (vCRAFT-8my.4)', async () => {
+    // Self-contained: approve the household if an earlier test has not, then create a product.
+    const em = db.orm.em.fork();
+    await em.nativeUpdate(Household, { slug: 'gom-cho-duyet' }, { status: 'APPROVED' });
+    const created = await t.request({
+      method: 'POST',
+      url: '/me/household/products',
+      auth: rep.auth,
+      body: { name: 'Bình biên ngày', category: 'VASE' },
+    });
+    expect(created.status).toBe(201);
+
+    const before = await dashboard();
+    const countAt = (body: Awaited<ReturnType<typeof dashboard>>, date: string) =>
+      (body.trend as { date: string; count: number }[]).find((p) => p.date === date)?.count ?? 0;
+    const firstDate = trendFirstDate();
+    const today = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    // A scan one minute before the first window's Vietnam midnight sits outside the window; one
+    // minute inside it and one now prove the UTC+7 bucketing, independent of the server's zone.
+    const windowStart = new Date(Date.parse(`${firstDate}T00:00:00+07:00`));
+    const scans: Date[] = [
+      new Date(windowStart.getTime() - 60_000),
+      new Date(windowStart.getTime() + 60_000),
+      new Date(),
+    ];
+    const product = await em.findOneOrFail(Product, { traceCode: created.body.traceCode });
+    for (const createdAt of scans) {
+      const scan = em.create(TraceScan, { product, country: null, deviceType: null });
+      scan.createdAt = createdAt;
+    }
+    await em.flush();
+
+    const body = await dashboard();
+    // The scan before the window stays out; the two in-window scans land in their Vietnam buckets.
+    expect(body.qrScans30Days).toBe(before.qrScans30Days + 2);
+    expect(countAt(body, firstDate)).toBe(countAt(before, firstDate) + 1);
+    expect(countAt(body, today)).toBe(countAt(before, today) + 1);
+    expect(body.trend.reduce((sum: number, point: { count: number }) => sum + point.count, 0)).toBe(
+      body.qrScans30Days,
+    );
+  });
 });
+
+/** First date of the dashboard trend window: today's Vietnam date minus 29 days. */
+function trendFirstDate(): string {
+  const today = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  return new Date(Date.parse(`${today}T00:00:00Z`) - 29 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+}

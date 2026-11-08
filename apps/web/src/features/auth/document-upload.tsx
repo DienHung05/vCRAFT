@@ -1,7 +1,7 @@
 'use client';
 
 import { MEDIA_MAX_BYTES, PRIVACY_POLICY_VERSION } from '@vcraft/domain';
-import { Button, buttonVariants, cn } from '@vcraft/ui';
+import { Badge, Button, buttonVariants, cn } from '@vcraft/ui';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
 import { ConsentCheckbox } from '@/components/consent-checkbox';
@@ -21,9 +21,16 @@ const ACCEPTED_TYPES = [
 
 type ItemStatus = 'queued' | 'uploading' | 'done' | 'error';
 
+/** What the file evidences, picked by the applicant and stored on the private asset (vCRAFT-8my.3). */
+const KINDS = ['IDENTITY', 'RESIDENCE', 'WORKSHOP'] as const;
+export type DocumentKind = (typeof KINDS)[number];
+/** The stored kind read back from the asset; legacy files answer UNKNOWN. */
+type StoredKind = DocumentKind | 'UNKNOWN';
+
 interface UploadItem {
   readonly id: string;
   readonly file: File;
+  readonly kind: StoredKind;
   readonly status: ItemStatus;
   readonly error?: AuthErrorKey;
 }
@@ -40,7 +47,7 @@ export function precheckDocument(file: Pick<File, 'type' | 'size'>): AuthErrorKe
  * FR-MEDIA-04). Mỗi tệp có trạng thái riêng, lỗi một tệp không chặn tệp khác, thử lại được.
  * Bước này chỉ cho nộp hồ sơ khi có ít nhất một tệp đã tải xong và không còn tệp đang chạy.
  */
-export function DocumentUpload() {
+export function DocumentUpload({ embedded = false }: { embedded?: boolean } = {}) {
   const t = useTranslations('auth.wizard.documents');
   const errors = useTranslations('auth.errors');
   const format = useFormatter();
@@ -49,6 +56,11 @@ export function DocumentUpload() {
   const [submitting, setSubmitting] = useState(false);
   // Identity papers are only collected after the representative agrees to the privacy policy.
   const [consent, setConsent] = useState(false);
+  /** What the picked files evidence; applied to every file added while it is selected. */
+  const [kind, setKind] = useState<DocumentKind>('IDENTITY');
+  const kindRef = useRef<DocumentKind>('IDENTITY');
+  // Keep the ref in sync during render so `add` always reads the selected kind.
+  kindRef.current = kind;
   const input = useRef<HTMLInputElement>(null);
   // The API refuses identity papers without a recorded consent, so it is recorded once, before the first file.
   const consentRecorded = useRef<Promise<unknown> | null>(null);
@@ -73,8 +85,17 @@ export function DocumentUpload() {
         consentRecorded.current = null;
         throw failure;
       });
-      await browserAccountClient().uploadCertificate(item.file, item.file.name);
-      patch(item.id, { status: 'done' });
+      // The answer carries the stored kind back; the server may keep a previous classification
+      // when identical bytes were uploaded before (vCRAFT-8my.3).
+      const asset = await browserAccountClient().uploadCertificate(
+        item.file,
+        item.file.name,
+        item.kind,
+      );
+      patch(item.id, {
+        status: 'done',
+        kind: (asset.certificateKind ?? 'UNKNOWN') as StoredKind,
+      });
     } catch (failure) {
       patch(item.id, { status: 'error', error: authErrorKey(failure) });
     }
@@ -82,11 +103,14 @@ export function DocumentUpload() {
 
   const add = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    // Read through the ref so a file picked before a re-render still carries the selected kind.
+    const kind = kindRef.current;
     const fresh: UploadItem[] = Array.from(files).map((file) => {
       const problem = precheckDocument(file);
       return {
         id: crypto.randomUUID(),
         file,
+        kind,
         status: problem ? 'error' : 'queued',
         ...(problem ? { error: problem } : {}),
       };
@@ -119,6 +143,20 @@ export function DocumentUpload() {
         onChange={(event) => setConsent(event.target.checked)}
       />
       <div className="flex flex-col items-start gap-2">
+        <label className="flex flex-col gap-1 text-small">
+          {t('kind')}
+          <select
+            value={kind}
+            onChange={(event) => setKind(event.target.value as DocumentKind)}
+            className="rounded-input border border-ink/20 bg-surface px-2 py-1.5"
+          >
+            {KINDS.map((value) => (
+              <option key={value} value={value}>
+                {t(`kindOption.${value}`)}
+              </option>
+            ))}
+          </select>
+        </label>
         <label
           className={cn(
             buttonVariants({ variant: 'secondary' }),
@@ -157,6 +195,7 @@ export function DocumentUpload() {
                     : `${format.number(item.file.size / 1024 / 1024, { maximumFractionDigits: 1 })} MB`}
                 </span>
               </span>
+              <Badge tone="outline">{t(`kindOption.${item.kind}`)}</Badge>
               <span
                 className={cn(
                   'text-small',
@@ -189,15 +228,17 @@ export function DocumentUpload() {
         </ul>
       )}
 
-      {done === 0 && !busy ? (
+      {!embedded && done === 0 && !busy ? (
         <FormAlert tone="info">{t('needOne')}</FormAlert>
       ) : busy ? (
         <FormAlert tone="info">{t('waitUploads')}</FormAlert>
       ) : null}
 
-      <Button type="button" size="lg" onClick={submit} disabled={!canSubmit}>
-        {submitting ? t('submitting') : t('submit')}
-      </Button>
+      {!embedded ? (
+        <Button type="button" size="lg" onClick={submit} disabled={!canSubmit}>
+          {submitting ? t('submitting') : t('submit')}
+        </Button>
+      ) : null}
     </div>
   );
 }

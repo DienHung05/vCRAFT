@@ -19,6 +19,8 @@ const household = (status: NonNullable<MeDto['household']>['status']): MeDto['ho
   slug: 'gom-bao-chau',
   status,
   statusReason: null,
+  reviewState: 'NEW',
+  resubmittedAt: null,
 });
 
 describe('resolveWizardStart: nối lại đúng bước dang dở (FR-AUTH-02)', () => {

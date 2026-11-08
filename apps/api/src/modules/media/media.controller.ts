@@ -46,7 +46,12 @@ export class MediaController {
       if (isFileTooLarge(error)) throw new AppError('MEDIA_TOO_LARGE');
       throw error;
     }
-    return this.media.upload(actor, query.purpose, { declaredMime, bytes: new Uint8Array(bytes) });
+    return this.media.upload(
+      actor,
+      query.purpose,
+      { declaredMime, bytes: new Uint8Array(bytes) },
+      query.kind,
+    );
   }
 
   @Get(':id')

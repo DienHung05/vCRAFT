@@ -118,16 +118,23 @@ export function HouseholdQueue({ client: provided }: { client?: AdminClient }) {
             <li key={row.id} className="border-ink/10 border-b last:border-b-0">
               <Link
                 href={{ pathname: '/admin/duyet-ho/[id]', params: { id: row.id } }}
-                className="flex min-h-14 flex-wrap items-center justify-between gap-3 py-3 hover:text-clay"
+                className="flex min-h-14 min-w-0 flex-wrap items-center justify-between gap-3 py-3 hover:text-clay"
               >
-                <span className="font-medium">{row.name}</span>
-                <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-small text-ash">
+                <span className="min-w-0 flex-1 basis-40 truncate font-medium">{row.name}</span>
+                <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-small text-ash">
                   <time dateTime={row.submittedAt}>
                     {format.dateTime(new Date(row.submittedAt), 'short')}
                   </time>
                   <Badge tone={row.status === 'PENDING_REVIEW' ? 'lacquer' : 'outline'}>
                     {statuses(row.status)}
                   </Badge>
+                  {row.status === 'PENDING_REVIEW' &&
+                  row.reviewState &&
+                  row.reviewState !== 'NEW' ? (
+                    <Badge tone={row.reviewState === 'RESUBMITTED' ? 'celadon' : 'clay'}>
+                      {t(`reviewState.${row.reviewState}`)}
+                    </Badge>
+                  ) : null}
                 </span>
               </Link>
             </li>

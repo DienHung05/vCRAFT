@@ -1,6 +1,7 @@
 import { CONSENT_PURPOSES } from '@vcraft/domain';
 import { z } from 'zod';
 import { IdSchema, IsoDateTimeSchema } from '../common';
+import { CertificateKindSchema } from '../media';
 
 /**
  * Personal data rights (NFR-SEC-07, Vietnam Decree 13/2023/ND-CP): recorded consent, a download of
@@ -52,6 +53,8 @@ export const ExportedMediaSchema = z.strictObject({
   mimeType: z.string(),
   sizeBytes: z.int().nonnegative(),
   sha256: z.string(),
+  /** What a private CERTIFICATE file evidences (vCRAFT-8my.3); `UNKNOWN` for unclassified files. */
+  certificateKind: CertificateKindSchema.default('UNKNOWN'),
   createdAt: IsoDateTimeSchema,
   url: z.string().nullable(),
   urlExpiresAt: IsoDateTimeSchema.nullable(),

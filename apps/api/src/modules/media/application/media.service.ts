@@ -20,7 +20,7 @@ import {
   type Product,
   QuotationRequest,
 } from '@vcraft/database';
-import { checkMediaUpload, type MediaPurpose } from '@vcraft/domain';
+import { type CertificateKind, checkMediaUpload, type MediaPurpose } from '@vcraft/domain';
 import { LocalObjectStorage, type ObjectStorage, PRESIGN_TTL_SECONDS } from '@vcraft/storage';
 import { fileTypeFromBuffer } from 'file-type';
 import type { Actor } from '../../../common/auth/auth.guard';
@@ -67,12 +67,17 @@ export class MediaService {
     actor: Actor,
     purpose: MediaPurpose,
     file: UploadedFile,
+    kind?: CertificateKind,
   ): Promise<MediaAssetResponse> {
     if (actor.locked) throw forbidden();
     // A buyer has no profile or catalogue to illustrate: only request attachments (FR-RFQ-01).
     if (actor.role === 'BUYER' && purpose !== 'RFQ_ATTACHMENT') throw forbidden();
     // Identity papers are only collected after the person consented to the privacy policy (NFR-SEC-07).
     if (purpose === 'CERTIFICATE') await this.consents.require(actor.id, 'ID_DOCUMENT');
+    // vCRAFT-8my.3: only a private CERTIFICATE document is classified; other purposes ignore `kind`
+    // and store UNKNOWN, so JOURNAL/PRODUCT/RFQ uploads keep their old behaviour.
+    const certificateKind =
+      purpose === 'CERTIFICATE' && kind !== undefined ? kind : ('UNKNOWN' as const);
     const sniffed = await fileTypeFromBuffer(file.bytes);
     const plan = unwrap(
       checkMediaUpload({
@@ -84,19 +89,35 @@ export class MediaService {
     );
     const sha256 = createHash('sha256').update(file.bytes).digest('hex');
 
-    // FR-MEDIA-05: cùng người, cùng mục đích, cùng nội dung ⇒ dùng lại tệp cũ.
-    const existing = await this.orm.em.fork().findOne(MediaAsset, {
+    // FR-MEDIA-05: cùng người, cùng mục đích, cùng nội dung ⇒ dùng lại tệp cũ. The dedupe key stays
+    // (ownerId, purpose, sha256), so classification never duplicates a binary asset. When a previous
+    // upload is reused: an UNKNOWN (legacy) private certificate is upgraded to the kind the owner just
+    // picked; a stored known kind wins over a differing request — the client reads the returned kind
+    // instead of assuming the upload succeeded with the requested one (vCRAFT-8my.3).
+    const em = this.orm.em.fork();
+    const existing = await em.findOne(MediaAsset, {
       ownerId: actor.id,
       purpose,
       sha256,
       status: { $ne: 'FAILED' },
     });
-    if (existing) return this.toResponse(existing);
+    if (existing) {
+      if (
+        purpose === 'CERTIFICATE' &&
+        existing.certificateKind === 'UNKNOWN' &&
+        certificateKind !== 'UNKNOWN'
+      ) {
+        existing.certificateKind = certificateKind;
+        await em.flush();
+      }
+      return this.toResponse(existing);
+    }
 
     return this.orm.em.fork().transactional(async (em) => {
       const asset = em.create(MediaAsset, {
         ownerId: actor.id,
         purpose,
+        certificateKind,
         visibility: plan.visibility,
         status: plan.convert ? 'PROCESSING' : 'READY',
         mimeType: plan.mime,
@@ -283,6 +304,7 @@ export class MediaService {
         mimeType: asset.mimeType,
         sizeBytes: asset.sizeBytes,
         sha256: asset.sha256,
+        certificateKind: asset.certificateKind ?? 'UNKNOWN',
         createdAt: asset.createdAt.toISOString(),
         url,
         urlExpiresAt,
@@ -384,6 +406,7 @@ export class MediaService {
       height: asset.height ?? null,
       thumbhash: asset.thumbhash ?? null,
       dominantColor: asset.dominantColor ?? null,
+      certificateKind: asset.certificateKind ?? 'UNKNOWN',
       variants: published ? this.publicVariants(asset) : [],
       createdAt: asset.createdAt.toISOString(),
     };

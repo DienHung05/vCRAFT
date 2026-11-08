@@ -105,7 +105,12 @@ function DocumentRow({ doc, client }: { doc: HouseholdDocumentDto; client: Admin
   };
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 border-ink/10 border-b py-2 last:border-b-0">
-      <span className="text-small">{doc.caption ?? doc.mimeType}</span>
+      <span
+        className="min-w-0 flex-1 basis-48 truncate text-small"
+        title={doc.caption ?? undefined}
+      >
+        {doc.caption ?? doc.mimeType}
+      </span>
       <Button
         type="button"
         variant="secondary"
@@ -121,6 +126,41 @@ function DocumentRow({ doc, client }: { doc: HouseholdDocumentDto; client: Admin
         </p>
       ) : null}
     </li>
+  );
+}
+
+/** Review groups in a fixed order; legacy uploads without a classification come last (vCRAFT-8my.3). */
+const DOCUMENT_KIND_ORDER = ['IDENTITY', 'RESIDENCE', 'WORKSHOP', 'UNKNOWN'] as const;
+
+/** Group identity, residence and workshop evidence, with unclassified legacy files last. */
+function DocumentGroups({
+  documents,
+  client,
+}: {
+  documents: readonly HouseholdDocumentDto[];
+  client: AdminClient;
+}) {
+  const t = useTranslations('admin.review');
+  const groups = DOCUMENT_KIND_ORDER.map((kind) => ({
+    kind,
+    docs: documents.filter((doc) => (doc.certificateKind ?? 'UNKNOWN') === kind),
+  })).filter((group) => group.docs.length > 0);
+  return (
+    <div className="flex flex-col gap-4" data-testid="review-documents">
+      {groups.map((group) => (
+        <section key={group.kind} className="flex min-w-0 flex-col gap-1">
+          <h3 className="text-small font-semibold">
+            {t(`documentKind.${group.kind}`)}{' '}
+            <span className="font-normal text-ash">({group.docs.length})</span>
+          </h3>
+          <ul>
+            {group.docs.map((doc) => (
+              <DocumentRow key={doc.id} doc={doc} client={client} />
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
   );
 }
 
@@ -239,64 +279,85 @@ export function HouseholdReview({
         </p>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-3" data-testid="review-columns">
-        <Card className="flex flex-col gap-3 p-5">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-3" data-testid="review-columns">
+        <Card className="flex min-w-0 flex-col gap-3 p-5">
           <h2 className="text-h3">{t('declared')}</h2>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-small">
+          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-small">
             <dt className="text-ash">{t('craft')}</dt>
-            <dd>{household.craft ?? '—'}</dd>
+            <dd className="min-w-0 break-words">{household.craft ?? '—'}</dd>
             <dt className="text-ash">{t('village')}</dt>
-            <dd>{household.village ?? '—'}</dd>
+            <dd className="min-w-0 break-words">{household.village ?? '—'}</dd>
             <dt className="text-ash">{t('foundedYear')}</dt>
-            <dd>{household.foundedYear ?? '—'}</dd>
+            <dd className="min-w-0 break-words">{household.foundedYear ?? '—'}</dd>
             <IdNumberRow household={household} client={client} />
             <dt className="text-ash">{t('artisans')}</dt>
-            <dd>{household.artisans.map((a) => a.name).join(', ') || '—'}</dd>
+            <dd className="min-w-0 break-words">
+              {household.artisans.map((a) => a.name).join(', ') || '—'}
+            </dd>
             {household.approvedAt ? (
               <>
                 <dt className="text-ash">{t('approvedAt')}</dt>
-                <dd>{format.dateTime(new Date(household.approvedAt), 'short')}</dd>
+                <dd className="min-w-0 break-words">
+                  {format.dateTime(new Date(household.approvedAt), 'short')}
+                </dd>
               </>
             ) : null}
           </dl>
           <p className="whitespace-pre-line text-small">{household.history}</p>
         </Card>
 
-        <Card className="flex flex-col gap-3 p-5">
+        <Card className="flex min-w-0 flex-col gap-3 p-5">
           <h2 className="text-h3">{t('documents')}</h2>
           <p className="text-small text-ash">{t('documentsHint')}</p>
           {documents.length === 0 ? (
             <p className="text-small text-ash">{t('noDocuments')}</p>
           ) : (
-            <ul data-testid="review-documents">
-              {documents.map((doc) => (
-                <DocumentRow key={doc.id} doc={doc} client={client} />
-              ))}
-            </ul>
+            <DocumentGroups documents={documents} client={client} />
           )}
         </Card>
 
-        <Card className="flex flex-col gap-3 p-5">
+        <Card className="flex min-w-0 flex-col gap-3 p-5">
           <h2 className="text-h3">{t('workshops')}</h2>
           {household.workshops.some((w) => w.lat !== null) ? (
-            <div ref={map} aria-hidden="true" className="h-56 overflow-hidden rounded-input">
-              <WorkshopReviewMap workshops={household.workshops} />
-            </div>
+            <>
+              {/* The map is an illustration next to the workshop list below, which carries the same
+                  facts; its wrapper is not hidden from assistive tech, and the boundary status of
+                  each pin is announced by the list entries (vCRAFT-8my.1 a11y review). */}
+              <div
+                ref={map}
+                role="img"
+                aria-label={t('mapLabel', {
+                  count: household.workshops.filter((w) => w.lat !== null).length,
+                })}
+                className="h-56 min-w-0 overflow-hidden rounded-input"
+              >
+                <WorkshopReviewMap workshops={household.workshops} />
+              </div>
+              <p className="text-small text-ash">{t('mapHint')}</p>
+            </>
           ) : null}
           {household.workshops.length === 0 ? (
             <p className="text-small text-ash">{t('noWorkshops')}</p>
           ) : (
-            <ul className="flex flex-col gap-1 text-small">
+            <ul className="flex min-w-0 flex-col gap-1 text-small">
               {household.workshops.map((w) => (
-                <li key={w.id}>
-                  <span className="font-medium">{w.name}</span> · {w.address}
+                <li key={w.id} className="min-w-0">
+                  <span className="font-medium">{w.name}</span> ·{' '}
+                  <span className="break-words">{w.address}</span>
                   {w.lat !== null && w.lng !== null ? (
                     <>
                       <span className="block font-mono text-[0.75rem] text-ash">
                         {w.lat}, {w.lng}
                       </span>
-                      {isInBatTrang({ lat: w.lat, lng: w.lng }) ? null : (
-                        <Badge tone="clay" className="mt-1">
+                      {isInBatTrang({ lat: w.lat, lng: w.lng }) ? (
+                        <Badge
+                          tone="celadon"
+                          className="mt-1 max-w-full whitespace-normal text-left"
+                        >
+                          {t('insideVillage')}
+                        </Badge>
+                      ) : (
+                        <Badge tone="clay" className="mt-1 max-w-full whitespace-normal text-left">
                           {t('outsideVillage')}
                         </Badge>
                       )}

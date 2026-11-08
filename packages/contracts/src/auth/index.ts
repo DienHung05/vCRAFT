@@ -1,7 +1,7 @@
 import { type AccountRole, isValidUsername, normalizeUsername } from '@vcraft/domain';
 import { z } from 'zod';
 import { IdSchema, IsoDateTimeSchema } from '../common';
-import { HouseholdStatusSchema } from '../households';
+import { HouseholdReviewStateSchema, HouseholdStatusSchema } from '../households';
 
 /** Canonical login name. Reserved names are checked by the application for public registration. */
 export const UsernameSchema = z.string().transform(normalizeUsername).refine(isValidUsername);
@@ -43,6 +43,9 @@ export const MeResponseSchema = z.object({
       slug: z.string(),
       status: HouseholdStatusSchema,
       statusReason: z.string().nullable(),
+      /** Derived review state (vCRAFT-8my.2): NEW, AWAITING_APPLICANT (a request is active) or RESUBMITTED. */
+      reviewState: HouseholdReviewStateSchema.default('NEW'),
+      resubmittedAt: IsoDateTimeSchema.nullable().default(null),
     })
     .nullable(),
 });
