@@ -33,9 +33,23 @@ const ENTRY: AuditEntryDto = {
   action: 'household.reject',
   entity: 'household',
   entityId: '00000000-0000-4000-8000-000000000004',
+  targetLabel: 'Gốm Hồng',
   before: { status: 'PENDING_REVIEW' },
   after: { status: 'REJECTED', reason: 'Missing documents' },
   createdAt: '2026-10-30T03:00:00.000Z',
+};
+
+/** A legacy entry: no snapshot label and no resolvable row — the kind plus the id remain. */
+const LEGACY: AuditEntryDto = {
+  ...ENTRY,
+  id: '00000000-0000-4000-8000-000000000006',
+  actorName: null,
+  action: 'news.delete',
+  entity: 'news',
+  entityId: '00000000-0000-4000-8000-000000000007',
+  targetLabel: null,
+  before: null,
+  after: null,
 };
 
 const asClient = (methods: Partial<AdminClient>) => methods as unknown as AdminClient;
@@ -79,16 +93,22 @@ describe('CoordinationQueue', () => {
 
 describe('AuditLogView', () => {
   it('shows who, what, when, target and before/after, and passes filters to the API', async () => {
-    const auditLog = vi.fn().mockResolvedValue({ data: [ENTRY], nextCursor: null });
+    const auditLog = vi.fn().mockResolvedValue({ data: [ENTRY, LEGACY], nextCursor: null });
     const auditActors = vi.fn().mockResolvedValue([{ id: ENTRY.actorId, name: 'Admin One' }]);
     renderVi(<AuditLogView client={asClient({ auditLog, auditActors })} />);
 
     const table = await screen.findByTestId('audit-log');
     expect(within(table).getByText('Admin One')).toBeTruthy();
     expect(within(table).getByText('Từ chối hộ')).toBeTruthy();
+    expect(within(table).getByText('Gốm Hồng')).toBeTruthy();
     expect(within(table).getByText(ENTRY.entityId)).toBeTruthy();
     expect(within(table).getByText('PENDING_REVIEW')).toBeTruthy();
     expect(within(table).getByText('Missing documents')).toBeTruthy();
+    // A legacy entry without a label keeps the localized kind above the stable id, and the deleted
+    // actor's name is gone.
+    expect(within(table).getByText('Tài khoản không còn tồn tại')).toBeTruthy();
+    expect(within(table).getByText('Tin tức')).toBeTruthy();
+    expect(within(table).getByText(LEGACY.entityId)).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText('Hành động'), { target: { value: 'rfq.claim' } });
     await waitFor(() =>

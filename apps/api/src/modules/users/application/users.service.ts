@@ -2,6 +2,7 @@ import { MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { LoginEventListDto, MeDto } from '@vcraft/contracts';
 import { AppUser, Household, LoginEvent } from '@vcraft/database';
+import { householdReviewState } from '@vcraft/domain';
 import { type Actor, needsSecondFactor } from '../../../common/auth/auth.guard';
 import { AuthAdmin } from '../../../common/auth/auth-admin';
 import { notFound } from '../../../common/errors/app-error';
@@ -36,6 +37,12 @@ export class UsersService {
             slug: household.slug,
             status: household.status,
             statusReason: household.statusReason ?? null,
+            reviewState: householdReviewState(
+              household.status,
+              household.statusReason,
+              household.resubmittedAt,
+            ),
+            resubmittedAt: household.resubmittedAt?.toISOString() ?? null,
           }
         : null,
     };

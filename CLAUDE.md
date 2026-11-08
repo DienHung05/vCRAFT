@@ -1,7 +1,3 @@
-## Language
-
-Talk to the user in Vietnamese. Write everything recorded on the repo in English: code comments, test names, docs, commit messages, PR titles and bodies, and GitHub issue and PR comments. This applies even where the surrounding code, docs or PR template are in Vietnamese. Don't rewrite existing Vietnamese text unless asked.
-
 ## Agent skills
 
 ### Issue tracker

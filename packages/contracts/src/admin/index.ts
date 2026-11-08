@@ -61,6 +61,12 @@ export const AuditEntrySchema = z.object({
   action: z.string(),
   entity: z.string(),
   entityId: IdSchema,
+  /**
+   * Readable, safe target label: the name/title stored in the event's snapshot, or one bulk lookup per
+   * page for a household/news row that still exists. `null` for a legacy entry without a label in its
+   * snapshot and for a deleted row whose snapshot has no name; `entityId` always stays for tracing.
+   */
+  targetLabel: z.string().nullable().optional(),
   before: z.record(z.string(), z.unknown()).nullable(),
   after: z.record(z.string(), z.unknown()).nullable(),
   createdAt: IsoDateTimeSchema,

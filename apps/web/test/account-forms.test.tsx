@@ -38,7 +38,7 @@ function fillPasswords(current: string, next: string, confirm = next) {
 describe('ChangePasswordForm', () => {
   it('verifies the current password, updates it, then signs the other devices out', async () => {
     renderVi(<ChangePasswordForm email="ban@vidu.vn" />);
-    fillPasswords('mat-khau-cu-1', 'mat-khau-moi-2');
+    fillPasswords('mat-khau-cu-1', 'Mat-khau-moi-2');
     await waitFor(() =>
       expect(notifySuccess).toHaveBeenCalledWith(
         expect.stringContaining('Các thiết bị khác đã được đăng xuất'),
@@ -49,7 +49,7 @@ describe('ChangePasswordForm', () => {
       password: 'mat-khau-cu-1',
       options: {},
     });
-    expect(updateUser).toHaveBeenCalledWith({ password: 'mat-khau-moi-2' });
+    expect(updateUser).toHaveBeenCalledWith({ password: 'Mat-khau-moi-2' });
     expect(signOut).toHaveBeenCalledWith({ scope: 'others' });
     expect(signInWithPassword.mock.invocationCallOrder[0]).toBeLessThan(
       updateUser.mock.invocationCallOrder[0] ?? 0,
@@ -67,7 +67,7 @@ describe('ChangePasswordForm', () => {
       }),
     });
     renderVi(<ChangePasswordForm email="ban@vidu.vn" />);
-    fillPasswords('sai-mat-khau-1', 'mat-khau-moi-2');
+    fillPasswords('sai-mat-khau-1', 'Mat-khau-moi-2');
     expect((await screen.findByRole('alert')).textContent).toContain('Mật khẩu hiện tại chưa đúng');
     expect(updateUser).not.toHaveBeenCalled();
     expect(signOut).not.toHaveBeenCalled();
@@ -78,17 +78,34 @@ describe('ChangePasswordForm', () => {
       error: Object.assign(new Error('same'), { code: 'same_password', status: 422 }),
     });
     renderVi(<ChangePasswordForm email="ban@vidu.vn" />);
-    fillPasswords('mat-khau-cu-1', 'mat-khau-cu-1');
+    fillPasswords('Mat-khau-cu-1', 'Mat-khau-cu-1');
     expect((await screen.findByRole('alert')).textContent).toContain(
       'phải khác mật khẩu đang dùng',
     );
     expect(signOut).not.toHaveBeenCalled();
   });
 
+  it.each(['Abcdefgh1', 'abcdefghij1', 'ABCDEFGHIJ1', 'Abcdefghijk'])(
+    'rejects invalid new password %s before reauthentication',
+    async (password) => {
+      renderVi(<ChangePasswordForm email="ban@vidu.vn" />);
+      fillPasswords('123', password);
+      expect(
+        await screen.findByText(
+          password.length < 10
+            ? 'Mật khẩu cần ít nhất 10 ký tự.'
+            : 'Mật khẩu cần có chữ hoa, chữ thường và số.',
+        ),
+      ).toBeTruthy();
+      expect(signInWithPassword).not.toHaveBeenCalled();
+      expect(updateUser).not.toHaveBeenCalled();
+    },
+  );
+
   it('validates the new password before calling Supabase', async () => {
     renderVi(<ChangePasswordForm email="ban@vidu.vn" />);
     fillPasswords('mat-khau-cu-1', 'ngan1');
-    expect(await screen.findByText('Mật khẩu cần ít nhất 8 ký tự.')).toBeTruthy();
+    expect(await screen.findByText('Mật khẩu cần ít nhất 10 ký tự.')).toBeTruthy();
     expect(signInWithPassword).not.toHaveBeenCalled();
   });
 });

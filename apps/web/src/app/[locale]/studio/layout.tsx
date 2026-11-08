@@ -8,13 +8,13 @@ import { resolveLocale } from '@/lib/locale';
 // trang trạng thái hồ sơ `/studio/ho-so`; mọi trang Studio khác chuyển về đó.
 export default async function StudioLayout({ children, params }: LayoutProps<'/[locale]/studio'>) {
   const locale = await resolveLocale(params);
-  await requireArea('studio', locale);
+  const viewer = await requireArea('studio', locale);
   return (
     // The phone tab bar is fixed to the bottom edge; this keeps the footer clear of it.
     <div className="pb-16 md:pb-0">
       <PublicShell>
         <StudioNav />
-        <OutageBanner />
+        {viewer.household?.status === 'APPROVED' ? <OutageBanner /> : null}
         {children}
       </PublicShell>
     </div>

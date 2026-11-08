@@ -8,6 +8,10 @@ import { err, ok, type Result } from '../shared/result';
 export const MEDIA_PURPOSES = ['JOURNAL', 'PRODUCT', 'CERTIFICATE', 'RFQ_ATTACHMENT'] as const;
 export type MediaPurpose = (typeof MEDIA_PURPOSES)[number];
 
+/** What a private CERTIFICATE document evidences (vCRAFT-8my.3). */
+export const CERTIFICATE_KINDS = ['IDENTITY', 'RESIDENCE', 'WORKSHOP', 'UNKNOWN'] as const;
+export type CertificateKind = (typeof CERTIFICATE_KINDS)[number];
+
 export type MediaVisibility = 'PUBLIC' | 'PRIVATE';
 
 /** Khớp `file_size_limit` của hai bucket (10 MB); client nén ảnh điện thoại trước khi gửi. */

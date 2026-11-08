@@ -10,6 +10,7 @@ import type {
 } from '@vcraft/contracts';
 import type { Artisan, Household, Product, ProductMaker, Workshop } from '@vcraft/database';
 import {
+  householdReviewState,
   isVisitable,
   POSTED_BY_ADMINISTRATION,
   profileCompleteness,
@@ -275,6 +276,8 @@ export function toHouseholdDto(h: Household, parts: HouseholdParts): HouseholdDt
     version: h.version,
     status: h.status,
     statusReason: h.statusReason ?? null,
+    reviewState: householdReviewState(h.status, h.statusReason, h.resubmittedAt),
+    resubmittedAt: h.resubmittedAt?.toISOString() ?? null,
     approvedAt: h.approvedAt?.toISOString() ?? null,
     idNumberMasked: parts.idNumberMasked ?? null,
     completeness: profileCompleteness({

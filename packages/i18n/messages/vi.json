@@ -72,6 +72,7 @@
       "filteredBy": "Đang xem tin của {name}.",
       "clearFilter": "Xem mọi tin",
       "more": "Xem thêm tin",
+      "categoryFilter": "Phân loại tin",
       "categories": {
         "HOUSEHOLD_UPDATE": "Từ hộ làng nghề",
         "VILLAGE_EVENT": "Sự kiện làng",
@@ -701,6 +702,13 @@
       "openRfqs": "Yêu cầu báo giá đang mở",
       "ordersInProduction": "Đơn đang sản xuất",
       "qrScans30Days": "Lượt quét QR 30 ngày",
+      "trendTitle": "Lượt quét QR theo ngày",
+      "trendPeriod": "30 ngày qua, giờ Việt Nam",
+      "trendEmpty": "30 ngày qua chưa có lượt quét QR nào.",
+      "trendTableCaption": "Lượt quét QR theo ngày trong 30 ngày qua, cũ nhất trước",
+      "trendDate": "Ngày",
+      "trendCount": "Lượt quét",
+      "trendChart": "Biểu đồ cột lượt quét QR theo ngày trong 30 ngày qua",
       "reviewCta": "Duyệt {count} hồ sơ đang chờ",
       "assistant": {
         "title": "Trợ lý Cáo",
@@ -733,7 +741,12 @@
       "empty": "Không có hồ sơ nào khớp bộ lọc.",
       "emptyHint": "Thử đổi bộ lọc trạng thái hoặc khoảng ngày để xem các hồ sơ khác.",
       "showAll": "Xem mọi trạng thái",
-      "showPending": "Xem hồ sơ đang chờ"
+      "showPending": "Xem hồ sơ đang chờ",
+      "reviewState": {
+        "NEW": "Hồ sơ mới",
+        "AWAITING_APPLICANT": "Chờ hộ bổ sung",
+        "RESUBMITTED": "Đã bổ sung và nộp lại"
+      }
     },
     "review": {
       "back": "Về hàng đợi",
@@ -759,6 +772,15 @@
       "noWorkshops": "Hộ chưa khai xưởng.",
       "noLocation": "Xưởng chưa khai vị trí.",
       "outsideVillage": "Ghim ngoài ranh giới xã Bát Tràng",
+      "insideVillage": "Ghim trong ranh giới xã Bát Tràng",
+      "mapLabel": "Ranh giới Bát Tràng và vị trí của {count} xưởng",
+      "mapHint": "Vùng tô và đường viền thể hiện ranh giới làng. Mỗi xưởng bên dưới ghi rõ ghim nằm trong hay ngoài ranh giới.",
+      "documentKind": {
+        "IDENTITY": "Căn cước công dân",
+        "RESIDENCE": "Xác nhận cư trú",
+        "WORKSHOP": "Ảnh xưởng",
+        "UNKNOWN": "Giấy tờ chưa phân loại"
+      },
       "decision": "Quyết định",
       "reason": "Lý do",
       "sealed": "Đã duyệt và đóng ấn.",
@@ -1250,6 +1272,7 @@
       "HOUSEHOLD_APPROVED": "Hồ sơ hộ của bạn đã được chấp nhận.",
       "HOUSEHOLD_REJECTED": "Hồ sơ hộ của bạn chưa được chấp nhận.",
       "HOUSEHOLD_INFO_REQUESTED": "Hồ sơ hộ của bạn cần bổ sung thông tin.",
+      "HOUSEHOLD_RESUBMITTED": "Một hồ sơ hộ đã bổ sung thông tin theo yêu cầu và chờ xem xét lại.",
       "HOUSEHOLD_SUSPENDED": "Hộ của bạn đang tạm ngừng trưng bày.",
       "HOUSEHOLD_REINSTATED": "Hộ của bạn được trưng bày trở lại.",
       "NEWS_PUBLISHED": "Ban quản lý vừa đăng một tin quan trọng."
@@ -1464,7 +1487,7 @@
       "email": "Email",
       "emailPlaceholder": "ten@vidu.vn",
       "password": "Mật khẩu",
-      "passwordHint": "Ít nhất 8 ký tự, gồm cả chữ và số.",
+      "passwordHint": "Ít nhất 10 ký tự, gồm chữ hoa, chữ thường và số.",
       "newPassword": "Mật khẩu mới",
       "confirmPassword": "Nhập lại mật khẩu mới",
       "showPassword": "Hiện",
@@ -1479,8 +1502,8 @@
       "emailRequired": "Nhập email của bạn.",
       "emailInvalid": "Email chưa đúng dạng, ví dụ ten@vidu.vn.",
       "passwordRequired": "Nhập mật khẩu.",
-      "passwordShort": "Mật khẩu cần ít nhất 8 ký tự.",
-      "passwordWeak": "Mật khẩu cần có cả chữ và số.",
+      "passwordShort": "Mật khẩu cần ít nhất 10 ký tự.",
+      "passwordWeak": "Mật khẩu cần có chữ hoa, chữ thường và số.",
       "confirmMismatch": "Hai mật khẩu chưa giống nhau, hãy nhập lại cho khớp.",
       "nameShort": "Tên hộ cần ít nhất 2 ký tự.",
       "slugRequired": "Đường dẫn trang không được để trống.",
@@ -1668,6 +1691,13 @@
         "title": "Giấy tờ xác minh",
         "lead": "Tải lên giấy phép kinh doanh, giấy chứng nhận làng nghề hoặc giấy tờ tương đương. Tệp nằm trong kho riêng tư, chỉ Ban quản lý xem được.",
         "pick": "Chọn tệp",
+        "kind": "Giấy tờ này là",
+        "kindOption": {
+          "IDENTITY": "Giấy tờ tùy thân (CCCD/hộ chiếu)",
+          "RESIDENCE": "Giấy tờ cư trú / hộ khẩu",
+          "WORKSHOP": "Giấy phép xưởng / giấy chứng nhận làng nghề",
+          "UNKNOWN": "Chưa phân loại"
+        },
         "drop": "Ảnh JPG, PNG, WebP, AVIF hoặc PDF, mỗi tệp tối đa 10 MB.",
         "empty": "Chưa chọn tệp nào.",
         "listLabel": "Tệp giấy tờ đã chọn",
@@ -1715,6 +1745,21 @@
         "lead": "Trang công khai của hộ tạm ẩn, các bản ghi riêng của bạn vẫn còn nguyên."
       },
       "reason": "Lý do từ Ban quản lý",
+      "pendingEditor": {
+        "title": "Chỉnh sửa hồ sơ đăng ký",
+        "saved": "Đã lưu thay đổi hồ sơ.",
+        "village": "Làng",
+        "moreDocuments": "Giấy tờ bổ sung",
+        "moreDocumentsHint": "Chọn loại giấy tờ trước khi tải lên. Lưu các thay đổi trước khi gửi lại hồ sơ."
+      },
+      "resubmit": {
+        "title": "Đã bổ sung xong?",
+        "lead": "Bạn có thể sửa hồ sơ ở các khu bên dưới rồi gửi lại cho Ban quản lý xem xét.",
+        "submit": "Gửi lại hồ sơ",
+        "submitting": "Đang gửi lại…",
+        "stale": "Hồ sơ vừa có cập nhật từ Ban quản lý. Hãy tải lại trang rồi quyết định tiếp.",
+        "failed": "Chưa gửi lại được hồ sơ. Hãy thử lại."
+      },
       "publicPage": "Xem trang công khai của hộ",
       "stepsLabel": "Tiến trình hồ sơ",
       "steps": {
@@ -1818,7 +1863,12 @@
       "story": "Câu chuyện",
       "storyLabel": "Câu chuyện của hộ",
       "craft": "Nghề",
+      "village": "Làng",
       "foundedYear": "Năm thành lập",
+      "save": "Lưu thay đổi",
+      "saving": "Đang lưu…",
+      "staleVersion": "Hồ sơ vừa có cập nhật. Hãy tải lại trang rồi lưu tiếp.",
+      "failed": "Chưa lưu được hồ sơ. Bạn thử lại.",
       "generations": "Số đời làm nghề",
       "timeline": "Dòng thời gian gia đình",
       "addEvent": "Thêm sự kiện",

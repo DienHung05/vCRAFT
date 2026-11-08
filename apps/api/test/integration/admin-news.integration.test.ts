@@ -1,4 +1,10 @@
-import { News, Notification, notifyDueImportantNews, OutboxEvent } from '@vcraft/database';
+import {
+  AuditLog,
+  News,
+  Notification,
+  notifyDueImportantNews,
+  OutboxEvent,
+} from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
@@ -269,12 +275,42 @@ describe('Admin news', () => {
     ]);
     expect(entries[0]).toMatchObject({ actorId: admin.id, after: null });
     expect(entries[0].before.title).toBe('Audited 2');
+    // vCRAFT-8my.5: the deleted news keeps its title from the delete event's before snapshot.
+    expect(entries[0].targetLabel).toBe('Audited 2');
     const gone = await t.request({
       method: 'GET',
       url: `/admin/news/${item.id}`,
       auth: admin.auth,
     });
     expect(gone.status).toBe(404);
+  });
+
+  it('audits a legacy entry without a snapshot label as null while the id stays', async () => {
+    const em = db.orm.em.fork();
+    const legacyId = '00000000-0000-4000-8000-0000000000e5';
+    em.create(AuditLog, {
+      actorId: admin.id,
+      action: 'news.delete',
+      entity: 'news',
+      entityId: legacyId,
+      before: null,
+      after: null,
+    });
+    await em.flush();
+    const res = await t
+      .request({
+        method: 'GET',
+        url: `/admin/audit-log?limit=100&cursor=${Buffer.from(
+          JSON.stringify({ t: new Date().toISOString(), id: legacyId }),
+        ).toString('base64url')}`,
+        auth: admin.auth,
+      })
+      .then((page) =>
+        page.body.data.filter((entry: { entityId: string }) => entry.entityId === legacyId),
+      );
+    const row = res[0];
+    expect(row).toMatchObject({ entity: 'news', targetLabel: null });
+    expect(row.entityId).toBe(legacyId);
   });
 
   it('refuses a cover the administrator does not own', async () => {

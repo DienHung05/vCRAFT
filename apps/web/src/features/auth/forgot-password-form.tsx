@@ -56,17 +56,15 @@ export function ForgotPasswordForm() {
           email,
           captcha.options,
         );
-        if (failure) {
-          captcha.reset();
-          return failWith(authErrorKey(failure));
-        }
-        // The form swaps to the "sent" panel, so there is no stamp: just clear the card.
-        kiln.reset();
-        setSentTo(email);
+        if (failure) throw failure;
       } catch (failure) {
         captcha.reset();
-        failWith(authErrorKey(failure));
+        const key = authErrorKey(failure);
+        // Email quotas can reveal whether an account exists. Keep the generic recovery outcome.
+        if (key !== 'rate_limited') return failWith(key);
       }
+      kiln.reset();
+      setSentTo(email);
     },
     () => kiln.fail('invalid'),
   );

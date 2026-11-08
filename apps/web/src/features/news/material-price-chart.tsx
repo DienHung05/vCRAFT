@@ -35,7 +35,7 @@ export function MaterialPriceChart({ series }: { series: Series }) {
   if (series.length === 0) return null;
   const months = [...new Set(series.flatMap((s) => s.points.map((p) => p.month)))].sort();
   const label = (month: string) =>
-    format.dateTime(new Date(`${month}-01T00:00:00`), { month: 'short', year: '2-digit' });
+    format.dateTime(new Date(`${month}-01T00:00:00`), { month: 'short', year: 'numeric' });
   const rows = months.map((month) => {
     const row: Record<string, number | string> = { month: label(month) };
     for (const s of series) {
@@ -97,32 +97,34 @@ export function MaterialPriceChart({ series }: { series: Series }) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <table id={tableId} className="sr-only">
-        <caption>{t('tableCaption')}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{t('month')}</th>
-            {series.map((s) => (
-              <th key={s.material} scope="col">
-                {t(`materials.${s.material}`)} ({s.unit})
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {months.map((month) => (
-            <tr key={month}>
-              <th scope="row">{label(month)}</th>
-              {series.map((s) => {
-                const point = s.points.find((p) => p.month === month);
-                return (
-                  <td key={s.material}>{point ? format.number(point.priceVnd, 'vnd') : '–'}</td>
-                );
-              })}
+      <div className="sr-only">
+        <table id={tableId}>
+          <caption>{t('tableCaption')}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{t('month')}</th>
+              {series.map((s) => (
+                <th key={s.material} scope="col">
+                  {t(`materials.${s.material}`)} ({s.unit})
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {months.map((month) => (
+              <tr key={month}>
+                <th scope="row">{label(month)}</th>
+                {series.map((s) => {
+                  const point = s.points.find((p) => p.month === month);
+                  return (
+                    <td key={s.material}>{point ? format.number(point.priceVnd, 'vnd') : '–'}</td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <ul className="flex flex-wrap gap-x-6 gap-y-1 text-small text-ash">
         {series.map((s) => {
           const last = s.points.at(-1);

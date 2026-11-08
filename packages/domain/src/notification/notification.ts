@@ -11,6 +11,7 @@ import { QUOTATION_NOTICE_KINDS, type QuotationNoticeKind } from '../rfq/quotati
  * | `HOUSEHOLD_APPROVED`   | Đại diện hộ vừa được chấp nhận       |
  * | `HOUSEHOLD_REJECTED`   | Đại diện hộ bị từ chối               |
  * | `HOUSEHOLD_INFO_REQUESTED` | Đại diện hộ cần bổ sung hồ sơ     |
+ * | `HOUSEHOLD_RESUBMITTED`| Ban quản lý nhận lại hồ sơ đã bổ sung |
  * | `HOUSEHOLD_SUSPENDED`  | Đại diện hộ bị tạm ngừng trưng bày   |
  * | `HOUSEHOLD_REINSTATED` | Đại diện hộ được khôi phục trưng bày |
  */
@@ -18,6 +19,7 @@ export const HOUSEHOLD_NOTICE_KINDS = [
   'HOUSEHOLD_APPROVED',
   'HOUSEHOLD_REJECTED',
   'HOUSEHOLD_INFO_REQUESTED',
+  'HOUSEHOLD_RESUBMITTED',
   'HOUSEHOLD_SUSPENDED',
   'HOUSEHOLD_REINSTATED',
 ] as const;
@@ -66,6 +68,7 @@ export const NOTIFICATION_TYPES_BY_ROLE: Record<AccountRole, readonly Notificati
     'HOUSEHOLD_APPROVED',
     'HOUSEHOLD_REJECTED',
     'HOUSEHOLD_INFO_REQUESTED',
+    'HOUSEHOLD_RESUBMITTED',
     'HOUSEHOLD_SUSPENDED',
     'HOUSEHOLD_REINSTATED',
     'RFQ_INVITED',
@@ -80,6 +83,7 @@ export const NOTIFICATION_TYPES_BY_ROLE: Record<AccountRole, readonly Notificati
   ADMIN: [
     'CONTRIBUTION_RECEIVED',
     'COORDINATION_NEEDED',
+    'HOUSEHOLD_RESUBMITTED',
     'QUOTATION_WITHDRAWN',
     'QUOTATION_ACCEPTED',
     'ALLOCATION_CONFIRMED',
@@ -97,6 +101,8 @@ export const NOTIFICATION_TARGET_PAGES = [
   'STUDIO_CONTRIBUTION',
   /** Admin: màn điều phối của yêu cầu. */
   'ADMIN_COORDINATION',
+  /** Admin: the review screen of one household (the resubmission signal, vCRAFT-8my.2). */
+  'ADMIN_HOUSEHOLD_REVIEW',
   /** Hộ: trạng thái hồ sơ đã nộp (kết quả duyệt). */
   'STUDIO_APPLICATION',
   /** News article, addressed by the news id. */
@@ -126,6 +132,10 @@ export function notificationTarget(
   role: AccountRole,
   subjectId: string | null | undefined,
 ): NotificationTarget | null {
+  // The board's resubmission signal points at the review screen of the household (vCRAFT-8my.2).
+  if (type === 'HOUSEHOLD_RESUBMITTED' && role === 'ADMIN') {
+    return { page: 'ADMIN_HOUSEHOLD_REVIEW', id: subjectId ?? null };
+  }
   if ((HOUSEHOLD_NOTICE_KINDS as readonly string[]).includes(type)) {
     return { page: 'STUDIO_APPLICATION', id: null };
   }

@@ -37,7 +37,7 @@ export function isValidationKey(value: unknown): value is ValidationKey {
 
 const key = (k: ValidationKey) => k;
 
-export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MIN_LENGTH = 10;
 
 const emailSchema = z
   .string()
@@ -45,12 +45,15 @@ const emailSchema = z
   .min(1, key('emailRequired'))
   .pipe(z.email(key('emailInvalid')));
 
-/** Mật khẩu mới: tối thiểu 8 ký tự, có cả chữ và số (cấu hình Supabase phải khớp, xem supabase/config.toml). */
+/** New passwords match Supabase's minimum length and lower_upper_letters_digits policy. */
 const newPasswordSchema = z
   .string()
   .min(1, key('passwordRequired'))
   .min(PASSWORD_MIN_LENGTH, key('passwordShort'))
-  .refine((value) => /\p{L}/u.test(value) && /\d/.test(value), key('passwordWeak'));
+  .refine(
+    (value) => /[a-z]/.test(value) && /[A-Z]/.test(value) && /[0-9]/.test(value),
+    key('passwordWeak'),
+  );
 
 /** Đăng nhập chỉ cần có nhập: luật mật khẩu mới không được chặn người dùng mật khẩu cũ. */
 export const signInSchema = z.object({

@@ -41,6 +41,8 @@ const HOUSEHOLD: HouseholdDto = {
   products: [],
   status: 'PENDING_REVIEW',
   statusReason: null,
+  reviewState: 'NEW',
+  resubmittedAt: null,
   approvedAt: null,
   idNumberMasked: '••••••••4567',
   completeness: { percent: 25, missing: ['story', 'timeline'] },

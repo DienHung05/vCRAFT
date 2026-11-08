@@ -1,4 +1,4 @@
-import { MEDIA_PURPOSES } from '@vcraft/domain';
+import { CERTIFICATE_KINDS, MEDIA_PURPOSES } from '@vcraft/domain';
 import { z } from 'zod';
 import { IdSchema, IsoDateTimeSchema, VersionSchema } from '../common';
 
@@ -6,8 +6,12 @@ import { IdSchema, IsoDateTimeSchema, VersionSchema } from '../common';
 
 export const MediaPurposeSchema = z.enum(MEDIA_PURPOSES);
 
+export const CertificateKindSchema = z.enum(CERTIFICATE_KINDS);
+
+/** Optional so older clients that do not classify still work; the API stores `UNKNOWN` without it. */
 export const UploadMediaQuerySchema = z.strictObject({
   purpose: MediaPurposeSchema,
+  kind: CertificateKindSchema.optional(),
 });
 export type UploadMediaQuery = z.infer<typeof UploadMediaQuerySchema>;
 
@@ -38,6 +42,8 @@ export const MediaAssetResponseSchema = z.strictObject({
   height: z.int().positive().nullable(),
   thumbhash: z.string().nullable(),
   dominantColor: z.string().nullable(),
+  /** What a private CERTIFICATE file evidences (vCRAFT-8my.3); `UNKNOWN` for unclassified files. */
+  certificateKind: CertificateKindSchema.default('UNKNOWN'),
   variants: z.array(MediaVariantResponseSchema),
   createdAt: IsoDateTimeSchema,
 });

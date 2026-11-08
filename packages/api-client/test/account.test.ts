@@ -98,6 +98,8 @@ describe('account HTTP client', () => {
           products: [],
           status: 'PENDING_REVIEW',
           statusReason: null,
+          reviewState: 'NEW',
+          resubmittedAt: null,
           approvedAt: null,
           idNumberMasked: '••••••••4567',
           completeness: { percent: 0, missing: [] },

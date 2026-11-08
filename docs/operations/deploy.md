@@ -150,6 +150,21 @@ The sign-in, sign-up, password recovery and change-password forms show Turnstile
 5. Check: `/vi/dang-nhap` shows the widget; signing in works; with the widget not done, the form says to complete the check.
 6. Local or CI: Cloudflare's test pair (site key `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`) always passes.
 
+### Auth audit follow-up (GH#238, Beads vCRAFT-b2q)
+
+The web and API require new passwords to have at least 10 characters, with ASCII uppercase and lowercase letters and a digit. `supabase/config.toml` records `minimum_password_length = 10`, `password_requirements = "lower_upper_letters_digits"` and `jwt_expiry = 900`. These repository values do not update hosted Auth settings. Existing passwords remain usable for sign-in.
+
+An owner with Cloudflare, Vercel, Supabase and SMTP access must apply the hosted settings tracked in `vCRAFT-b2q.2`:
+
+1. Record sanitized current Auth settings, then update only the intended settings. Do not push the whole local config, which contains localhost URLs and disables CAPTCHA for local development.
+2. Deploy the matching Turnstile site key on Vercel before enabling server enforcement with its secret in Supabase, as described in section 6.2. Use production keys and the production hostname.
+3. Set the hosted minimum password length to 10 and require uppercase, lowercase and digits. Enable leaked-password protection if the current provider plan supports it. If unavailable, record the plan limitation and an explicit maintainer decision in `vCRAFT-b2q.2`; the client policy does not check breached-password lists.
+4. Set access-token lifetime to 900 seconds. Keep refresh-token rotation and verify that an existing session refreshes successfully.
+5. Configure Supabase custom SMTP with a verified sender and confirm delivery of verification and recovery messages. Worker SMTP configuration does not configure Supabase Auth mail.
+6. With an owner-controlled test account, verify that missing or invalid CAPTCHA tokens fail at Supabase, valid tokens permit the auth flows, weak passwords fail for sign-up and password updates, and `exp - iat` equals 900 for a fresh access token. Record only the lifetime, never the token. Check the three public auth pages in a real browser at 360 px and 1440 px.
+
+Password recovery uses the same generic UI outcome for success and quota errors, including HTTP 429. The browser still calls Supabase `/auth/v1/recover` directly, so a caller can inspect the provider status and error code. Custom SMTP reduces quota exhaustion but does not prove that the provider prevents account enumeration. Compare direct provider responses for existing and unknown owner-controlled addresses after configuration. If responses still differ, keep `vCRAFT-b2q.2` and the parent audit open for a provider mitigation or an architecture decision. UI masking alone does not satisfy that network-level requirement.
+
 ### 6.3 Admin two-factor authentication (GH#83)
 
 Every admin route of the API needs an `aal2` session, meaning the admin has passed a TOTP code. With only a password (`aal1`) the API answers `403 AUTH_MFA_REQUIRED`. Instead of the admin pages, the web shows a screen to scan a QR code on first use, or to enter the 6-digit code on later sign-ins.

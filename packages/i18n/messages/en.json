@@ -72,6 +72,7 @@
       "filteredBy": "Showing news from {name}.",
       "clearFilter": "Show all news",
       "more": "Load more news",
+      "categoryFilter": "News categories",
       "categories": {
         "HOUSEHOLD_UPDATE": "From a household",
         "VILLAGE_EVENT": "Village event",
@@ -701,6 +702,13 @@
       "openRfqs": "Open quotation requests",
       "ordersInProduction": "Orders in production",
       "qrScans30Days": "QR scans, last 30 days",
+      "trendTitle": "QR scans per day",
+      "trendPeriod": "Last 30 days, Vietnam time",
+      "trendEmpty": "No QR scans in the last 30 days.",
+      "trendTableCaption": "QR scans per day over the last 30 days, oldest first",
+      "trendDate": "Date",
+      "trendCount": "Scans",
+      "trendChart": "Bar chart of QR scans per day over the last 30 days",
       "reviewCta": "Review {count} waiting applications",
       "assistant": {
         "title": "Fox assistant",
@@ -733,7 +741,12 @@
       "empty": "No applications match these filters.",
       "emptyHint": "Try another status filter or date range to see other applications.",
       "showAll": "Show all statuses",
-      "showPending": "Show pending applications"
+      "showPending": "Show pending applications",
+      "reviewState": {
+        "NEW": "New application",
+        "AWAITING_APPLICANT": "Waiting for applicant",
+        "RESUBMITTED": "Resubmitted for review"
+      }
     },
     "review": {
       "back": "Back to queue",
@@ -759,6 +772,15 @@
       "noWorkshops": "No workshops declared.",
       "noLocation": "Workshop location not declared.",
       "outsideVillage": "Pinned outside Bát Tràng commune",
+      "insideVillage": "Pinned inside Bát Tràng commune",
+      "mapLabel": "Bát Tràng boundary and {count} workshop locations",
+      "mapHint": "The shaded outline marks the village boundary. Each workshop below states whether its pin is inside or outside it.",
+      "documentKind": {
+        "IDENTITY": "Citizen identity document",
+        "RESIDENCE": "Residence confirmation",
+        "WORKSHOP": "Workshop photos",
+        "UNKNOWN": "Unclassified documents"
+      },
       "decision": "Decision",
       "reason": "Reason",
       "sealed": "Approved and sealed.",
@@ -1250,6 +1272,7 @@
       "HOUSEHOLD_APPROVED": "Your household application was approved.",
       "HOUSEHOLD_REJECTED": "Your household application was not approved.",
       "HOUSEHOLD_INFO_REQUESTED": "Your household application needs more information.",
+      "HOUSEHOLD_RESUBMITTED": "A household application was completed as requested and is waiting for review again.",
       "HOUSEHOLD_SUSPENDED": "Your household is suspended from the exhibition.",
       "HOUSEHOLD_REINSTATED": "Your household is back in the exhibition.",
       "NEWS_PUBLISHED": "The management board published important news."
@@ -1464,7 +1487,7 @@
       "email": "Email",
       "emailPlaceholder": "name@example.com",
       "password": "Password",
-      "passwordHint": "At least 8 characters, with both letters and digits.",
+      "passwordHint": "At least 10 characters, with uppercase and lowercase letters and a digit.",
       "newPassword": "New password",
       "confirmPassword": "Repeat the new password",
       "showPassword": "Show",
@@ -1479,8 +1502,8 @@
       "emailRequired": "Enter your email.",
       "emailInvalid": "That email does not look right, for example name@example.com.",
       "passwordRequired": "Enter your password.",
-      "passwordShort": "The password needs at least 8 characters.",
-      "passwordWeak": "The password needs both letters and digits.",
+      "passwordShort": "The password needs at least 10 characters.",
+      "passwordWeak": "The password needs uppercase and lowercase letters and a digit.",
       "confirmMismatch": "The two passwords differ. Type them again so they match.",
       "nameShort": "The household name needs at least 2 characters.",
       "slugRequired": "The page address cannot be empty.",
@@ -1668,6 +1691,13 @@
         "title": "Verification documents",
         "lead": "Upload a business licence, a craft village certificate or an equivalent document. Files go to a private store that only the village administration can open.",
         "pick": "Choose files",
+        "kind": "This document is",
+        "kindOption": {
+          "IDENTITY": "Identity paper (ID card / passport)",
+          "RESIDENCE": "Residence paper / household register",
+          "WORKSHOP": "Workshop licence / craft village certificate",
+          "UNKNOWN": "Unclassified"
+        },
         "drop": "JPG, PNG, WebP, AVIF images or PDF, up to 10 MB each.",
         "empty": "No file chosen yet.",
         "listLabel": "Chosen document files",
@@ -1715,6 +1745,21 @@
         "lead": "The household public page is hidden for now; your own records remain untouched."
       },
       "reason": "Reason from the village administration",
+      "pendingEditor": {
+        "title": "Edit your application",
+        "saved": "Application changes saved.",
+        "village": "Village",
+        "moreDocuments": "Additional application evidence",
+        "moreDocumentsHint": "Choose what each file shows before uploading. Save your edits before resubmitting."
+      },
+      "resubmit": {
+        "title": "Finished your edits?",
+        "lead": "Edit your application in the sections below, then send it back to the village administration for review.",
+        "submit": "Resubmit application",
+        "submitting": "Resubmitting…",
+        "stale": "The application just changed on the administration side. Reload the page and decide again.",
+        "failed": "The application could not be resubmitted. Try again."
+      },
       "publicPage": "View the household public page",
       "stepsLabel": "Application progress",
       "steps": {
@@ -1818,7 +1863,12 @@
       "story": "Story",
       "storyLabel": "Your household story",
       "craft": "Craft",
+      "village": "Village",
       "foundedYear": "Founding year",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "staleVersion": "The profile just changed. Reload the page and save again.",
+      "failed": "The profile could not be saved. Try again.",
       "generations": "Generations in the craft",
       "timeline": "Family timeline",
       "addEvent": "Add event",

@@ -1,4 +1,5 @@
 import {
+  HOUSEHOLD_REVIEW_STATES,
   HOUSEHOLD_STATUSES,
   ID_NUMBER_PATTERN,
   isValidOpeningInterval,
@@ -9,11 +10,17 @@ import {
 import { z } from 'zod';
 import { IdSchema, IsoDateSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
 import { JournalResponseSchema } from '../journal';
-import { PublicCreditSchema, PublicImageSchema, PublicImageVariantsSchema } from '../media';
+import {
+  CertificateKindSchema,
+  PublicCreditSchema,
+  PublicImageSchema,
+  PublicImageVariantsSchema,
+} from '../media';
 
 /** Hộ sản xuất, xưởng, nghệ nhân, sản phẩm và các quyết định duyệt / xuất bản (vCRAFT-9hg.2, 9hg.3). */
 
 export const HouseholdStatusSchema = z.enum(HOUSEHOLD_STATUSES);
+export const HouseholdReviewStateSchema = z.enum(HOUSEHOLD_REVIEW_STATES);
 export const ProductStatusSchema = z.enum(PRODUCT_STATUSES);
 export const WorkshopPurposeSchema = z.enum(['PRODUCTION', 'SHOWROOM', 'BOTH']);
 export const ProductKindSchema = z.enum(['OBJECT', 'BATCH']);
@@ -62,6 +69,14 @@ export const HouseholdDecisionRequestSchema = z.object({
 });
 export type HouseholdDecisionRequest = z.infer<typeof HouseholdDecisionRequestSchema>;
 
+/** `POST /me/household/resubmit`: the representative explicitly resubmits the application after edits (vCRAFT-8my.2). */
+export const ResubmitHouseholdResponseSchema = z.object({
+  version: VersionSchema,
+  resubmittedAt: IsoDateTimeSchema,
+  reviewState: HouseholdReviewStateSchema,
+});
+export type ResubmitHouseholdDto = z.infer<typeof ResubmitHouseholdResponseSchema>;
+
 export const ListHouseholdsQuerySchema = z.object({
   status: HouseholdStatusSchema.optional(),
   /** Ngày nộp hồ sơ, tính cả hai đầu. */
@@ -75,6 +90,8 @@ export const AdminHouseholdSchema = z.object({
   version: VersionSchema,
   name: z.string(),
   status: HouseholdStatusSchema,
+  reviewState: HouseholdReviewStateSchema,
+  resubmittedAt: IsoDateTimeSchema.nullable().default(null),
   submittedAt: IsoDateTimeSchema,
 });
 export type AdminHouseholdDto = z.infer<typeof AdminHouseholdSchema>;
@@ -86,19 +103,35 @@ export const HouseholdDocumentSchema = z.object({
   mimeType: z.string(),
   /** What the document is (for example "Căn cước công dân"); null when the file has no caption. */
   caption: z.string().nullable().default(null),
+  /** What the document evidences (vCRAFT-8my.3); `UNKNOWN` for uploads made before classification. */
+  certificateKind: CertificateKindSchema.default('UNKNOWN'),
   sizeBytes: z.int().nonnegative(),
   createdAt: IsoDateTimeSchema,
 });
 export type HouseholdDocumentDto = z.infer<typeof HouseholdDocumentSchema>;
 export const HouseholdDocumentListSchema = z.object({ data: z.array(HouseholdDocumentSchema) });
 
-/** Số liệu tổng quan của Ban quản lý (FR-ADM-06). */
+/** One Vietnam calendar date (`YYYY-MM-DD`) of the dashboard's QR-scan trend. */
+export const AdminDashboardTrendPointSchema = z.object({
+  /** `YYYY-MM-DD`, a Vietnam calendar date (UTC+7). */
+  date: IsoDateSchema,
+  count: z.int().nonnegative(),
+});
+export type AdminDashboardTrendPointDto = z.infer<typeof AdminDashboardTrendPointSchema>;
+
+/** Overview figures of the village board (FR-ADM-06). */
 export const AdminDashboardSchema = z.object({
   activeHouseholds: z.int().nonnegative(),
   pendingApplications: z.int().nonnegative(),
   openRfqs: z.int().nonnegative(),
   ordersInProduction: z.int().nonnegative(),
   qrScans30Days: z.int().nonnegative(),
+  /**
+   * QR scans per day over the last 30 Vietnam calendar dates (UTC+7) including today, oldest first.
+   * Counts only persisted `trace_scan` rows and zero-fills the dates without scans — historical
+   * totals are never invented from present ones.
+   */
+  trend: z.array(AdminDashboardTrendPointSchema).optional(),
 });
 export type AdminDashboardDto = z.infer<typeof AdminDashboardSchema>;
 
@@ -422,6 +455,9 @@ export const HouseholdResponseSchema = PublicHouseholdResponseSchema.extend({
   version: VersionSchema,
   status: HouseholdStatusSchema,
   statusReason: z.string().nullable(),
+  /** Derived review state (vCRAFT-8my.2); an active `statusReason` outranks the resubmission marker. */
+  reviewState: HouseholdReviewStateSchema,
+  resubmittedAt: IsoDateTimeSchema.nullable().default(null),
   approvedAt: IsoDateTimeSchema.nullable(),
   /** `••••••••1234`, or null when no citizen ID number is on record. Never the full number. */
   idNumberMasked: z.string().nullable(),

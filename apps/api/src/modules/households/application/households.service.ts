@@ -14,6 +14,7 @@ import type {
   ProductScanStatsDto,
   PublicHouseholdDto,
   RecordScanRequest,
+  ResubmitHouseholdDto,
   RevealedIdNumberDto,
   SetIdNumberRequest,
   SetProductMakersRequest,
@@ -36,6 +37,7 @@ import {
   ProductMaker,
   QuotationRequest,
   queueKnowledgeChange,
+  resolveDbDriver,
   TraceScan,
   Workshop,
 } from '@vcraft/database';
@@ -44,6 +46,7 @@ import {
   type HouseholdEvent,
   type HouseholdStatus,
   householdNoticeKind,
+  householdReviewState,
   householdTransition,
   isHouseholdPublic,
   maskIdNumber,
@@ -70,6 +73,13 @@ import {
   toPublicHouseholdDto,
   toWorkshopDto,
 } from '../households.mapper';
+import {
+  DAY_MS,
+  last30VietnamDates,
+  type ScanDayRow,
+  vietnamDayStartUtc,
+  zeroFilledTrend,
+} from './dashboard-trend';
 import { retireSlug, slugRetiredByOther } from './slug-redirects';
 import { generateTraceCode } from './trace-code';
 
@@ -93,6 +103,11 @@ export class HouseholdsService {
     private readonly consents: ConsentService,
     private readonly cipher: FieldCipher,
   ) {}
+
+  /** Database driver in use: `postgresql` or `mysql` (ADR-05); picks the GROUP BY date expression. */
+  private get driver(): 'postgresql' | 'mysql' {
+    return resolveDbDriver(process.env);
+  }
 
   // --- Người đại diện hộ ---
 
@@ -226,6 +241,61 @@ export class HouseholdsService {
     const em = this.orm.em.fork();
     const household = await em.findOneOrFail(Household, updated);
     return toHouseholdDto(household, await this.parts(em, household, false));
+  }
+
+  /**
+   * Explicit resubmission after the applicant answered an information request (vCRAFT-8my.2).
+   * Optimistic concurrency: `assertVersion` rejects a write based on a stale read with 409
+   * `STALE_VERSION`; because `decide` bumps the same version inside its own transaction, a resubmit
+   * racing a board decision fails on flush instead of silently overwriting it. The active reason is
+   * cleared here and kept as history in the audit log; the marker makes the queue show RESUBMITTED
+   * until the board writes a new reason or decides.
+   */
+  async resubmit(actor: Actor, expectedVersion: number): Promise<ResubmitHouseholdDto> {
+    return this.orm.em.fork().transactional(async (em) => {
+      const household = await this.ownWritableHousehold(em, actor);
+      assertVersion(household, expectedVersion);
+      if (household.status !== 'PENDING_REVIEW') {
+        throw new AppError('INVALID_TRANSITION', 'only a pending application can be resubmitted');
+      }
+      // Only an open information request can be answered; this also blocks repeated submissions,
+      // because a resubmit clears the active reason (the old text stays in the audit log).
+      const activeReason = household.statusReason?.trim() ?? '';
+      if (activeReason.length === 0) {
+        throw new AppError('INVALID_TRANSITION', 'no information request to answer');
+      }
+      const now = new Date();
+      household.statusReason = null;
+      household.resubmittedAt = now;
+      em.create(AuditLog, {
+        actorId: actor.id,
+        action: 'household.resubmit',
+        entity: 'household',
+        entityId: household.id,
+        before: { status: household.status, reason: activeReason },
+        after: { status: household.status, reason: null, resubmittedAt: now.toISOString() },
+      });
+      // An actionable signal for the board (FR-ADM-03): the application was answered and sent back.
+      this.notifications.publish(em, {
+        type: 'HOUSEHOLD_RESUBMITTED',
+        subjectId: household.id,
+        actorId: actor.id,
+        recipientIds: (
+          await em.find(AppUser, { role: 'ADMIN', status: 'ACTIVE' }, { fields: ['id'] })
+        ).map((admin) => admin.id),
+        email: false,
+      });
+      await em.flush();
+      return {
+        version: household.version,
+        resubmittedAt: now.toISOString(),
+        reviewState: householdReviewState(
+          household.status,
+          household.statusReason,
+          household.resubmittedAt,
+        ),
+      };
+    });
   }
 
   async updateWorkshop(
@@ -488,6 +558,8 @@ export class HouseholdsService {
       version: h.version,
       name: h.name,
       status: h.status,
+      reviewState: householdReviewState(h.status, h.statusReason, h.resubmittedAt),
+      resubmittedAt: h.resubmittedAt ? h.resubmittedAt.toISOString() : null,
       submittedAt: h.createdAt.toISOString(),
     }));
   }
@@ -522,6 +594,7 @@ export class HouseholdsService {
         id: a.id,
         mimeType: a.mimeType,
         caption: caption.get(a.id) ?? null,
+        certificateKind: a.certificateKind ?? 'UNKNOWN',
         sizeBytes: a.sizeBytes,
         createdAt: a.createdAt.toISOString(),
       })),
@@ -530,16 +603,54 @@ export class HouseholdsService {
 
   async dashboard(): Promise<AdminDashboardDto> {
     const em = this.orm.em.fork();
-    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const [activeHouseholds, pendingApplications, openRfqs, ordersInProduction, qrScans30Days] =
+    const dates = last30VietnamDates();
+    const since = vietnamDayStartUtc(dates[0] ?? '');
+    // Bounded time window (from the window start to the day after its last date) instead of every scan.
+    const [activeHouseholds, pendingApplications, openRfqs, ordersInProduction, daily] =
       await Promise.all([
         em.count(Household, { status: 'APPROVED' }),
         em.count(Household, { status: 'PENDING_REVIEW' }),
         em.count(QuotationRequest, { status: { $in: ['SENT', 'BIDDING'] } }),
         em.count(QuotationRequest, { status: 'IN_PRODUCTION' }),
-        em.count(TraceScan, { createdAt: { $gte: since } }),
+        this.scanTrend(em, since, dates[dates.length - 1] ?? ''),
       ]);
-    return { activeHouseholds, pendingApplications, openRfqs, ordersInProduction, qrScans30Days };
+    const trend = zeroFilledTrend(dates, daily);
+    return {
+      activeHouseholds,
+      pendingApplications,
+      openRfqs,
+      ordersInProduction,
+      // The same 30-day Vietnam window as `trend`, so the total equals the sum of the daily points.
+      qrScans30Days: trend.reduce((sum, point) => sum + point.count, 0),
+      trend,
+    };
+  }
+
+  /**
+   * Aggregated scans per Vietnam calendar date over the bounded window: one GROUP BY query answering
+   * at most 30 rows, never one row per scan. The date expression is driver-specific and always yields
+   * an ISO `YYYY-MM-DD` string (`to_char(...)` on PostgreSQL, `date_format(...)` on MySQL — the
+   * columns are UTC), while the window bounds travel as parameters so the plan keeps using the
+   * `trace_scan.created_at` index.
+   */
+  private scanTrend(em: EntityManager, since: Date, lastDate: string): Promise<ScanDayRow[]> {
+    const until = new Date(vietnamDayStartUtc(lastDate).getTime() + DAY_MS);
+    const dayExpr =
+      this.driver === 'mysql'
+        ? "date_format(date_add(created_at, interval 7 hour), '%Y-%m-%d')"
+        : "to_char(created_at at time zone 'Asia/Ho_Chi_Minh', 'YYYY-MM-DD')";
+    const sql =
+      `select ${dayExpr} as day, count(*) as count from trace_scan` +
+      ' where created_at >= ? and created_at < ? group by 1';
+    return em
+      .getConnection()
+      .execute(sql, [since, until])
+      .then((rows) =>
+        (rows as ScanDayRow[]).map((row) => ({
+          day: String(row.day).slice(0, 10),
+          count: Number(row.count),
+        })),
+      );
   }
 
   /**

@@ -18,6 +18,11 @@ vi.mock('@/lib/notify', () => ({
 }));
 
 const ID = '00000000-0000-4000-8000-000000000001';
+/** 30 zero/one counts, oldest first — the shape the API's zero-filled trend arrives in. */
+const TREND = Array.from({ length: 30 }, (_, i) => ({
+  date: `2026-10-${String(i + 1).padStart(2, '0')}`,
+  count: i,
+}));
 const PENDING = {
   id: ID,
   version: 4,
@@ -44,6 +49,8 @@ const PENDING = {
   ],
   status: 'PENDING_REVIEW',
   statusReason: null,
+  reviewState: 'NEW',
+  resubmittedAt: null,
   approvedAt: null,
   idNumberMasked: '••••••••4567',
 } as unknown as HouseholdDto;
@@ -56,6 +63,7 @@ function client(overrides: Partial<AdminClient> = {}): AdminClient {
       openRfqs: 5,
       ordersInProduction: 2,
       qrScans30Days: 37,
+      trend: TREND,
     })),
     listHouseholds: vi.fn(async () => [
       {
@@ -95,14 +103,44 @@ describe('AdminDashboard', () => {
     expect(screen.getByText(/1 hồ sơ/)).toBeTruthy();
   });
 
-  it('lỗi có thử lại', async () => {
-    const dashboard = vi.fn().mockRejectedValueOnce(new Error('mạng')).mockResolvedValueOnce({
+  it('vẽ xu hướng quét QR kèm bảng cho trình đọc màn hình', async () => {
+    renderVi(<AdminDashboard client={client()} />);
+    const chart = await screen.findByRole('img', {
+      name: 'Biểu đồ cột lượt quét QR theo ngày trong 30 ngày qua',
+    });
+    expect(chart.querySelectorAll('div')).toHaveLength(30);
+    expect(chart.querySelector('div[title^="2026-10-30"]')).toBeTruthy();
+    const table = screen.getByRole('table', { hidden: true });
+    expect(within(table).getAllByRole('row')).toHaveLength(31); // header + 30 dates
+    expect(within(table).getByText('Lượt quét')).toBeTruthy();
+  });
+
+  it('nêu rõ khi 30 ngày không có lượt quét nào', async () => {
+    const dashboard = vi.fn().mockResolvedValue({
       activeHouseholds: 1,
       pendingApplications: 0,
       openRfqs: 0,
       ordersInProduction: 0,
       qrScans30Days: 0,
+      trend: TREND.map((point) => ({ ...point, count: 0 })),
     });
+    renderVi(<AdminDashboard client={client({ dashboard })} />);
+    expect(await screen.findByText('30 ngày qua chưa có lượt quét QR nào.')).toBeTruthy();
+    expect(screen.queryByRole('img')).toBeNull();
+  });
+
+  it('lỗi có thử lại', async () => {
+    const dashboard = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('mạng'))
+      .mockResolvedValueOnce({
+        activeHouseholds: 1,
+        pendingApplications: 0,
+        openRfqs: 0,
+        ordersInProduction: 0,
+        qrScans30Days: 0,
+        trend: TREND.map((point) => ({ ...point, count: 0 })),
+      });
     renderVi(<AdminDashboard client={client({ dashboard })} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Thử lại' }));
     expect(await screen.findByTestId('admin-metrics')).toBeTruthy();
