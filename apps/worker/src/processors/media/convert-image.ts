@@ -1,3 +1,4 @@
+/// <reference path="../../heic-decode.d.ts" />
 import { createHash } from 'node:crypto';
 import { MEDIA_MAX_PIXELS, planVariantWidths } from '@vcraft/domain';
 import decodeHeic from 'heic-decode';
