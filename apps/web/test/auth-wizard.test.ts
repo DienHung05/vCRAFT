@@ -71,7 +71,7 @@ describe('luật kiểm tra form tài khoản (khóa i18n, không phải câu ch
     expect(signInSchema.safeParse({ identifier: 'a@b.vn', password: '123' }).success).toBe(true);
   });
 
-  it('đăng ký: tối thiểu 8 ký tự và có cả chữ lẫn số', () => {
+  it('registration requires at least 10 characters with uppercase, lowercase and a digit', () => {
     const base = { username: 'pottery.buyer', email: 'a@b.vn', consent: true };
     expect(messageOf(registerSchema.safeParse({ ...base, password: 'abc1' }))).toContain(
       'passwordShort',
@@ -82,11 +82,11 @@ describe('luật kiểm tra form tài khoản (khóa i18n, không phải câu ch
     expect(messageOf(registerSchema.safeParse({ ...base, password: '1234567890' }))).toContain(
       'passwordWeak',
     );
-    expect(registerSchema.safeParse({ ...base, password: 'matkhau2026' }).success).toBe(true);
+    expect(registerSchema.safeParse({ ...base, password: 'Matkhau2026' }).success).toBe(true);
   });
 
   it('đăng ký: bắt buộc đồng ý chính sách quyền riêng tư', () => {
-    const values = { username: 'pottery.buyer', email: 'a@b.vn', password: 'password123' };
+    const values = { username: 'pottery.buyer', email: 'a@b.vn', password: 'Password123' };
     expect(messageOf(registerSchema.safeParse({ ...values, consent: false }))).toContain(
       'consentRequired',
     );
@@ -94,7 +94,7 @@ describe('luật kiểm tra form tài khoản (khóa i18n, không phải câu ch
   });
 
   it('đặt mật khẩu: hai ô phải khớp', () => {
-    const result = setPasswordSchema.safeParse({ password: 'matkhau2026', confirm: 'matkhau2027' });
+    const result = setPasswordSchema.safeParse({ password: 'Matkhau2026', confirm: 'Matkhau2027' });
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]).toMatchObject({
       path: ['confirm'],

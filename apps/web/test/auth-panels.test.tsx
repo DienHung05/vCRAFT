@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { messages } from '@vcraft/i18n';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CheckEmailPanel } from '@/features/auth/check-email-panel';
 import { ForgotPasswordForm } from '@/features/auth/forgot-password-form';
@@ -26,7 +27,82 @@ vi.mock('@/lib/auth/supabase-browser', () => ({
   browserSupabase: () => ({ auth: { resetPasswordForEmail, resend: vi.fn() } }),
 }));
 
-beforeEach(() => resetPasswordForEmail.mockReset());
+const kiln = vi.hoisted(() => ({ fire: vi.fn(), reset: vi.fn(), fail: vi.fn() }));
+vi.mock('@/features/auth/kiln/kiln-feedback', () => ({ useKilnFeedback: () => kiln }));
+
+beforeEach(() => {
+  resetPasswordForEmail.mockReset();
+  kiln.fire.mockClear();
+  kiln.reset.mockClear();
+  kiln.fail.mockClear();
+});
+
+const recoveryOutcomes = [
+  { name: 'success', error: null, throws: false },
+  {
+    name: 'email quota',
+    error: { code: 'over_email_send_rate_limit', status: 429 },
+    throws: false,
+  },
+  { name: 'HTTP 429', error: { status: 429 }, throws: false },
+  {
+    name: 'thrown email quota',
+    error: { code: 'over_email_send_rate_limit', status: 429 },
+    throws: true,
+  },
+];
+
+describe.each(['vi', 'en'] as const)('password recovery privacy in %s', (locale) => {
+  const render = locale === 'vi' ? renderVi : renderEn;
+  const copy = messages[locale].auth;
+
+  it.each(recoveryOutcomes)(
+    'uses the generic panel for $name for existing and unknown emails',
+    async ({ error, throws }) => {
+      for (const email of ['existing@example.com', 'unknown@example.com']) {
+        kiln.fail.mockClear();
+        kiln.reset.mockClear();
+        if (throws) resetPasswordForEmail.mockRejectedValue(error);
+        else resetPasswordForEmail.mockResolvedValue({ error });
+        const { unmount } = render(<ForgotPasswordForm />);
+        fireEvent.change(screen.getByLabelText(copy.fields.email), { target: { value: email } });
+        fireEvent.click(screen.getByRole('button', { name: copy.forgot.submit }));
+        const heading = await screen.findByRole('heading', {
+          level: 2,
+          name: copy.forgot.sentTitle,
+        });
+        expect(screen.getByText(copy.forgot.sent.replace('{email}', email))).toBeTruthy();
+        expect(screen.queryByRole('alert')).toBeNull();
+        await waitFor(() => expect(document.activeElement).toBe(heading));
+        expect(kiln.fail).not.toHaveBeenCalled();
+        expect(kiln.reset).toHaveBeenCalledOnce();
+        expect(resetPasswordForEmail).toHaveBeenLastCalledWith(email, {});
+        unmount();
+      }
+    },
+  );
+
+  it.each([
+    {
+      name: 'CAPTCHA',
+      error: { code: 'captcha_failed', status: 400 },
+      key: 'captcha',
+      throws: false,
+    },
+    { name: 'network', error: new TypeError('Failed to fetch'), key: 'network', throws: true },
+  ] as const)('keeps $name failures actionable', async ({ error, key, throws }) => {
+    if (throws) resetPasswordForEmail.mockRejectedValue(error);
+    else resetPasswordForEmail.mockResolvedValue({ error });
+    render(<ForgotPasswordForm />);
+    fireEvent.change(screen.getByLabelText(copy.fields.email), {
+      target: { value: 'buyer@example.com' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: copy.forgot.submit }));
+    expect((await screen.findByRole('alert')).textContent).toBe(copy.errors[key]);
+    expect(kiln.fail).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull();
+  });
+});
 
 describe('panels that replace an account form', () => {
   it('check-email: focus moves to the heading, and the panel is not a pre-filled live region', () => {
