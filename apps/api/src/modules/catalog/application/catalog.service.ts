@@ -1,4 +1,10 @@
-import { type EntityManager, type FilterQuery, MikroORM } from '@mikro-orm/core';
+import {
+  type EntityManager,
+  type FilterQuery,
+  MikroORM,
+  type QueryOrderMap,
+  raw,
+} from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import {
   DEFAULT_PAGE_LIMIT,
@@ -23,10 +29,16 @@ import {
   ProductMaker,
   SlugRedirect,
   type SlugRedirectKind,
+  TraceScan,
   Workshop,
 } from '@vcraft/database';
-import { isVisitable } from '@vcraft/domain';
-import { searchTerms } from '@vcraft/utils';
+import {
+  isVisitable,
+  PRODUCT_CATEGORIES,
+  PRODUCT_CATEGORY_LABELS,
+  type ProductCategory,
+} from '@vcraft/domain';
+import { normalizeSearchText, searchTerms } from '@vcraft/utils';
 import { AppError, notFound } from '../../../common/errors/app-error';
 import {
   type CoverImage,
@@ -39,31 +51,74 @@ import { MediaService, type PublicMedia } from '../../media/application/media.se
 import { loadJournal } from '../../production-logs/application/journal.queries';
 
 interface ProductCursor {
-  /** Giá trị khóa sắp xếp: ISO của `publishedAt` hoặc giá. */
+  /** Sort key value: ISO of `publishedAt` (newest), the price, or the 30-day scan count (popular). */
   v: string | number;
   id: string;
+  /** Popular only: `publishedAt` of the last row (the tie-break) and the window start the counts used. */
+  at?: string;
+  since?: string;
 }
 
 const SUGGESTION_LIMIT = 5;
+/** Window of the `popular` sort: trace QR scans in the last 30 days. */
+const POPULAR_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 
-function encodeCursor(product: Product, sort: ProductSort): string {
-  const cursor: ProductCursor = {
-    v: sort === 'newest' ? (product.publishedAt as Date).toISOString() : product.priceVnd,
-    id: product.id,
-  };
+const isDate = (value: unknown): value is string =>
+  typeof value === 'string' && !Number.isNaN(Date.parse(value));
+
+/**
+ * Number of trace scans of the product since `since`, as a correlated subquery on `trace_scan` (index
+ * `product_id, created_at`), so one statement ranks the whole page of products with no query per row.
+ */
+const scanCount = (since: Date) =>
+  raw(
+    (alias) =>
+      `(select count(*) from trace_scan ts where ts.product_id = ${alias}.id and ts.created_at >= ?)`,
+    [since],
+  );
+
+/** Households with at least one workshop that welcomes visitors (the SQL twin of `isVisitable`). */
+const visitableWorkshops = () =>
+  raw(
+    (alias) =>
+      `(select count(*) from workshop w where w.household_id = ${alias}.household_id and w.accepts_visitors = true and w.purpose <> 'PRODUCTION')`,
+  );
+
+function encodeCursor(
+  product: Product,
+  sort: ProductSort,
+  popular?: { count: number; since: Date },
+): string {
+  const publishedAt = (product.publishedAt as Date).toISOString();
+  let cursor: ProductCursor;
+  if (sort === 'popular') {
+    if (!popular) throw new Error('popular cursor needs its window');
+    cursor = {
+      v: popular.count,
+      id: product.id,
+      at: publishedAt,
+      since: popular.since.toISOString(),
+    };
+  } else {
+    cursor = { v: sort === 'newest' ? publishedAt : product.priceVnd, id: product.id };
+  }
   return Buffer.from(JSON.stringify(cursor)).toString('base64url');
 }
 
-function decodeCursor(raw: string, sort: ProductSort): ProductCursor {
+function decodeCursor(encoded: string, sort: ProductSort): ProductCursor {
   try {
     const value = JSON.parse(
-      Buffer.from(raw, 'base64url').toString('utf8'),
+      Buffer.from(encoded, 'base64url').toString('utf8'),
     ) as Partial<ProductCursor>;
     const validKey =
       sort === 'newest'
-        ? typeof value.v === 'string' && !Number.isNaN(Date.parse(value.v))
-        : typeof value.v === 'number';
-    if (validKey && typeof value.id === 'string') return { v: value.v as string, id: value.id };
+        ? isDate(value.v)
+        : sort === 'popular'
+          ? typeof value.v === 'number' && isDate(value.at) && isDate(value.since)
+          : typeof value.v === 'number';
+    if (validKey && typeof value.id === 'string') {
+      return { v: value.v as string, id: value.id, at: value.at, since: value.since };
+    }
   } catch {
     // rơi xuống lỗi bên dưới
   }
@@ -78,16 +133,66 @@ function afterCursor(cursor: ProductCursor, sort: ProductSort): FilterQuery<Prod
       $or: [{ publishedAt: { $lt: at } }, { publishedAt: at, id: { $lt: cursor.id } }],
     };
   }
+  if (sort === 'popular') {
+    const scans = scanCount(new Date(cursor.since as string));
+    const count = cursor.v as number;
+    const at = new Date(cursor.at as string);
+    return {
+      $or: [
+        { [scans as unknown as string]: { $lt: count } },
+        { [scans as unknown as string]: count, publishedAt: { $lt: at } },
+        { [scans as unknown as string]: count, publishedAt: at, id: { $lt: cursor.id } },
+      ],
+    };
+  }
   const price = cursor.v as number;
   const beyond = sort === 'price_asc' ? { $gt: price } : { $lt: price };
   return { $or: [{ priceVnd: beyond }, { priceVnd: price, id: { $gt: cursor.id } }] };
 }
 
-const ORDER_BY = {
-  newest: { publishedAt: 'desc', id: 'desc' },
-  price_asc: { priceVnd: 'asc', id: 'asc' },
-  price_desc: { priceVnd: 'desc', id: 'asc' },
-} as const;
+/** Sort keys of one request; `popular` ranks by scans since `since`, newest first among equals. */
+function orderByFor(
+  sort: ProductSort,
+  since: Date,
+): QueryOrderMap<Product> | QueryOrderMap<Product>[] {
+  switch (sort) {
+    case 'newest':
+      return { publishedAt: 'desc', id: 'desc' };
+    case 'price_asc':
+      return { priceVnd: 'asc', id: 'asc' };
+    case 'price_desc':
+      return { priceVnd: 'desc', id: 'asc' };
+    case 'popular':
+      return [
+        { [scanCount(since) as unknown as string]: 'desc' },
+        { publishedAt: 'desc' },
+        { id: 'desc' },
+      ];
+  }
+}
+
+/** Categories whose name, in either language, contains the whole search phrase (`do tho` finds `Đồ thờ`). */
+function categoriesMatching(terms: readonly string[]): ProductCategory[] {
+  const phrase = terms.join(' ');
+  if (!phrase) return [];
+  return PRODUCT_CATEGORIES.filter((category) => {
+    const { vi, en } = PRODUCT_CATEGORY_LABELS[category];
+    return [vi, en].some((label) => normalizeSearchText(label).includes(phrase));
+  });
+}
+
+/**
+ * Filter for a search phrase on products: every term appears in the accent-free `searchText`, or the
+ * phrase names a category (so `do tho` lists the altar pieces too).
+ */
+function productSearch(terms: readonly string[]): FilterQuery<Product>[] {
+  if (terms.length === 0) return [];
+  const matching = terms.map((term) => ({ searchText: { $like: `%${term}%` } }));
+  const categories = categoriesMatching(terms);
+  return categories.length > 0
+    ? [{ $or: [{ $and: matching }, { category: { $in: categories } }] }]
+    : matching;
+}
 
 function toCardDto(
   p: Product,
@@ -142,7 +247,7 @@ export class CatalogService {
           ...(query.household !== undefined && { slug: query.household }),
         },
       },
-      ...searchTerms(query.q ?? '').map((term) => ({ searchText: { $like: `%${term}%` } })),
+      ...productSearch(searchTerms(query.q ?? '')),
     ];
     if (query.category) and.push({ category: query.category });
     if (query.minPrice !== undefined) and.push({ priceVnd: { $gte: query.minPrice } });
@@ -158,6 +263,14 @@ export class CatalogService {
           : { $or: [{ status: 'SOLD' }, { stock: 0 }] },
       );
     }
+    if (query.openWorkshop !== undefined) {
+      const visitable = visitableWorkshops() as unknown as string;
+      and.push({ [visitable]: query.openWorkshop ? { $gt: 0 } : 0 });
+    }
+    // One window start per request, so the ranking and the cursors of a scroll agree.
+    const cursor = query.cursor ? decodeCursor(query.cursor, query.sort) : undefined;
+    const since = cursor?.since ? new Date(cursor.since) : new Date(Date.now() - POPULAR_WINDOW_MS);
+    const orderBy = orderByFor(query.sort, since);
 
     // Page-based mode (catalog exception, see ADR-0020)
     if (query.page !== undefined) {
@@ -168,7 +281,7 @@ export class CatalogService {
           { $and: and },
           {
             populate: ['household'],
-            orderBy: ORDER_BY[query.sort],
+            orderBy,
             offset: (pageNumber - 1) * limit,
             limit,
           },
@@ -196,14 +309,14 @@ export class CatalogService {
     }
 
     // Cursor-based mode (default, backward compatible)
-    if (query.cursor) and.push(afterCursor(decodeCursor(query.cursor, query.sort), query.sort));
+    if (cursor) and.push(afterCursor(cursor, query.sort));
 
     const rows = await em.find(
       Product,
       { $and: and },
       {
         populate: ['household'],
-        orderBy: ORDER_BY[query.sort],
+        orderBy,
         limit: query.limit + 1,
       },
     );
@@ -215,7 +328,19 @@ export class CatalogService {
     ]);
     return {
       data: page.map((product) => toCardDto(product, media, covers.get(product.id))),
-      nextCursor: rows.length > query.limit && last ? encodeCursor(last, query.sort) : null,
+      nextCursor:
+        rows.length > query.limit && last
+          ? encodeCursor(
+              last,
+              query.sort,
+              query.sort === 'popular'
+                ? {
+                    count: await em.count(TraceScan, { product: last, createdAt: { $gte: since } }),
+                    since,
+                  }
+                : undefined,
+            )
+          : null,
     };
   }
 
@@ -336,24 +461,29 @@ export class CatalogService {
 
   async suggest(q: string): Promise<SearchSuggestionsDto> {
     const terms = searchTerms(q);
-    if (terms.length === 0) return { products: [], households: [], news: [] };
+    if (terms.length === 0) return { products: [], households: [], categories: [], news: [] };
     const em = this.orm.em.fork();
     const matching = terms.map((term) => ({ searchText: { $like: `%${term}%` } }));
+    // Only the columns the dropdown shows: descriptions, images and article bodies stay in the database.
     const [products, households, news] = await Promise.all([
       em.find(
         Product,
         {
           $and: [
             { status: { $in: ['PUBLISHED', 'SOLD'] }, household: { status: 'APPROVED' } },
-            ...matching,
+            ...productSearch(terms),
           ],
         },
-        { populate: ['household'], orderBy: { name: 'asc' }, limit: SUGGESTION_LIMIT },
+        {
+          fields: ['name', 'slug', 'household.name'],
+          orderBy: { name: 'asc' },
+          limit: SUGGESTION_LIMIT,
+        },
       ),
       em.find(
         Household,
         { $and: [{ status: 'APPROVED' }, ...matching] },
-        { orderBy: { name: 'asc' }, limit: SUGGESTION_LIMIT },
+        { fields: ['name', 'slug'], orderBy: { name: 'asc' }, limit: SUGGESTION_LIMIT },
       ),
       em.find(
         News,
@@ -365,7 +495,7 @@ export class CatalogService {
             ...matching,
           ],
         },
-        { orderBy: { publishedAt: 'desc' }, limit: SUGGESTION_LIMIT },
+        { fields: ['title', 'slug'], orderBy: { publishedAt: 'desc' }, limit: SUGGESTION_LIMIT },
       ),
     ]);
     return {
@@ -375,6 +505,9 @@ export class CatalogService {
         household: p.household.name,
       })),
       households: households.map((h) => ({ name: h.name, slug: h.slug })),
+      categories: categoriesMatching(terms)
+        .slice(0, SUGGESTION_LIMIT)
+        .map((category) => ({ category })),
       news: news.map((n) => ({ title: n.title, slug: n.slug })),
     };
   }

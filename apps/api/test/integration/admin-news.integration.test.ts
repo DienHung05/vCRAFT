@@ -301,7 +301,8 @@ describe('Admin news', () => {
       .request({
         method: 'GET',
         url: `/admin/audit-log?limit=100&cursor=${Buffer.from(
-          JSON.stringify({ t: new Date().toISOString(), id: legacyId }),
+          // A second ahead, so an entry written in the same millisecond is still before the cursor.
+          JSON.stringify({ t: new Date(Date.now() + 1000).toISOString(), id: legacyId }),
         ).toString('base64url')}`,
         auth: admin.auth,
       })

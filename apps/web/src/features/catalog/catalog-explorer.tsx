@@ -259,6 +259,14 @@ export function CatalogExplorer({
           />
           {t('inStock')}
         </label>
+        <label className="flex items-center gap-2 py-2 text-small">
+          <input
+            type="checkbox"
+            checked={filters.openWorkshop}
+            onChange={(event) => apply({ openWorkshop: event.target.checked })}
+          />
+          {t('openWorkshop')}
+        </label>
         {hasFilters ? (
           <button
             type="button"

@@ -257,7 +257,24 @@
     "dimensions": "Dimensions",
     "weight": "Weight",
     "code": "Trace code",
-    "more": "Also from this household"
+    "more": "Also from this household",
+    "lightbox": {
+      "open": "Enlarge photo: {alt}",
+      "title": "Large photo",
+      "close": "Close photo",
+      "previous": "Previous photo",
+      "next": "Next photo",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "counter": "Photo {current} of {total}"
+    },
+    "qr": {
+      "title": "Trace QR code",
+      "lead": "Scan the code with your phone to see this piece's journey.",
+      "label": "Trace QR code {code}",
+      "link": "Short link",
+      "download": "Download QR code (PNG)"
+    }
   },
   "trace": {
     "home": "Back to the vCraft home page",
@@ -1473,6 +1490,7 @@
     "sort": "Sort by",
     "oneOfAKind": "One of a kind",
     "inStock": "In stock",
+    "openWorkshop": "Workshop open to visitors",
     "clear": "Clear filters",
     "loading": "Loading products",
     "empty": "No products match these filters.",
@@ -1483,6 +1501,16 @@
     "groupProducts": "Products",
     "groupHouseholds": "Households",
     "groupNews": "News",
+    "groupCategories": "Categories",
+    "palette": {
+      "open": "Open quick search",
+      "title": "Quick search",
+      "close": "Close",
+      "hint": "Use the up and down arrow keys to choose, Enter to open, Esc to close.",
+      "prompt": "Type to find products, households, categories and news.",
+      "viewAll": "See every product matching “{query}”",
+      "results": "Search suggestions"
+    },
     "categories": {
       "VASE": "Vases and jars",
       "TABLEWARE": "Tableware",
@@ -1493,7 +1521,8 @@
     "sorts": {
       "newest": "Newest",
       "price_asc": "Price: low to high",
-      "price_desc": "Price: high to low"
+      "price_desc": "Price: high to low",
+      "popular": "Most popular"
     },
     "emptyHint": "Try removing a filter or widening the price range to see more products.",
     "results": "Product results",

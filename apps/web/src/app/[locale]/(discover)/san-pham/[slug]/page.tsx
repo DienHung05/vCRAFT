@@ -11,8 +11,12 @@ import { fetchProduct, fetchProducts, fetchSlugRedirect } from '@/features/catal
 import { JourneyCard } from '@/features/catalog/journey-card';
 import { presetKindOf } from '@/features/catalog/preset-figure';
 import { ProductCard, productImageTransition } from '@/features/catalog/product-card';
+import { GalleryTrigger, ProductGallery } from '@/features/catalog/product-gallery';
+import { ProductQr } from '@/features/catalog/product-qr';
 import {
   altFor,
+  type GallerySlide,
+  gallerySlide,
   photoFromUrl,
   slotPhoto,
   tintOf,
@@ -24,7 +28,7 @@ import { frameRatioOf } from '@/lib/images';
 import { resolveLocale } from '@/lib/locale';
 import { jsonLd, metaDescription, pageMetadata } from '@/lib/seo/page-metadata';
 import { localizedPath } from '@/lib/seo/sitemap-entries';
-import { siteOrigin } from '@/lib/site';
+import { siteOrigin, traceShortUrl } from '@/lib/site';
 
 // Dữ liệu lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
 export const dynamic = 'force-dynamic';
@@ -85,10 +89,36 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
   const entryPhotos = log
     .slice(1, 5)
     .flatMap((e) => e.images.slice(0, 1).map((image) => ({ e, image })));
+  // Slides of the lightbox: the cover when it is a real photo, then the journal photos, in page order.
+  const coverSlide = gallerySlide(image);
+  const entrySlides = entryPhotos.map(({ e, image: own }) =>
+    gallerySlide(photoFromUrl(own.url, stages(`${e.stage}.name`), own.variants)),
+  );
+  const slides: GallerySlide[] = [coverSlide, ...entrySlides].filter(
+    (slide): slide is GallerySlide => slide !== undefined,
+  );
+  const thumbOffset = coverSlide ? 1 : 0;
   const more =
     siblings.status === 'ok'
       ? siblings.data.data.filter((p) => p.slug !== product.slug).slice(0, 4)
       : [];
+
+  const cover = (
+    <ImageSlot
+      alt={image?.alt ?? preset(presetKind)}
+      tint={tint}
+      ratio={image?.variants ? frameRatioOf(image.variants) : '4/5'}
+      fit="contain"
+      {...slotPhoto(image)}
+      priority
+      sizes="(min-width: 768px) 58vw, 100vw"
+      className="grid place-items-center"
+    >
+      {image ? null : (
+        <ProductFigure kind={presetKind} className="h-3/5" body="var(--color-paper)" band={tint} />
+      )}
+    </ImageSlot>
+  );
 
   // schema.org Product for search results (GH#256); the price only when the household set one.
   const productLd = jsonLd({
@@ -127,38 +157,26 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
 
       <div className="grid gap-10 md:grid-cols-12 md:gap-14">
         <div className="md:col-span-7">
-          <div className="md:sticky md:top-24">
-            <ViewTransition
-              name={productImageTransition(product.slug)}
-              share="product-morph"
-              default="none"
-            >
-              <ImageSlot
-                alt={image?.alt ?? preset(presetKind)}
-                tint={tint}
-                ratio={image?.variants ? frameRatioOf(image.variants) : '4/5'}
-                fit="contain"
-                {...slotPhoto(image)}
-                priority
-                sizes="(min-width: 768px) 58vw, 100vw"
-                className="grid place-items-center"
+          <ProductGallery slides={slides}>
+            <div className="md:sticky md:top-24">
+              <ViewTransition
+                name={productImageTransition(product.slug)}
+                share="product-morph"
+                default="none"
               >
-                {image ? null : (
-                  <ProductFigure
-                    kind={presetKind}
-                    className="h-3/5"
-                    body="var(--color-paper)"
-                    band={tint}
-                  />
+                {coverSlide ? (
+                  <GalleryTrigger index={0} alt={coverSlide.alt}>
+                    {cover}
+                  </GalleryTrigger>
+                ) : (
+                  cover
                 )}
-              </ImageSlot>
-            </ViewTransition>
-            {entryPhotos.length > 0 ? (
-              <ul className="mt-4 grid grid-cols-4 gap-3" aria-label={t('gallery')}>
-                {entryPhotos.map(({ e, image: own }) => {
-                  const alt = stages(`${e.stage}.name`);
-                  return (
-                    <li key={e.hash}>
+              </ViewTransition>
+              {entryPhotos.length > 0 ? (
+                <ul className="mt-4 grid grid-cols-4 gap-3" aria-label={t('gallery')}>
+                  {entryPhotos.map(({ e, image: own }, i) => {
+                    const alt = stages(`${e.stage}.name`);
+                    const thumb = (
                       <ImageSlot
                         alt={alt}
                         tint={e.tint}
@@ -166,12 +184,23 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
                         {...slotPhoto(photoFromUrl(own.url, alt, own.variants))}
                         sizes="(min-width: 768px) 14vw, 22vw"
                       />
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : null}
-          </div>
+                    );
+                    return (
+                      <li key={e.hash}>
+                        {entrySlides[i] ? (
+                          <GalleryTrigger index={thumbOffset + i} alt={alt}>
+                            {thumb}
+                          </GalleryTrigger>
+                        ) : (
+                          thumb
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+            </div>
+          </ProductGallery>
         </div>
 
         <div className="flex flex-col gap-8 md:col-span-5">
@@ -247,6 +276,8 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
 
           {/* Nhật ký rút gọn 1 dòng ⇒ landing truy xuất (BRAND §9). */}
           <JourneyCard entries={log} traceCode={product.traceCode} />
+
+          <ProductQr code={product.traceCode} url={traceShortUrl(product.traceCode)} />
 
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 border-ink/10 border-t pt-6 text-small">
             {product.material ? (
