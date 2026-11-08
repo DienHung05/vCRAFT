@@ -331,7 +331,7 @@ describe('Demo seed and guarded reset', () => {
     const productCovers = DEMO_PHOTO_LINKS.filter(
       (l) => l.target === 'PRODUCT' && l.role === 'COVER',
     );
-    expect(productCovers.length).toBeGreaterThanOrEqual(76);
+    expect(productCovers.length).toBeGreaterThanOrEqual(208);
     const covered = await db.orm.em
       .fork()
       .find(Product, { traceCode: { $in: productCovers.map((l) => l.key) } });
@@ -341,9 +341,12 @@ describe('Demo seed and guarded reset', () => {
       expect(product.coverAlt, product.traceCode).toBeTruthy();
       expect(product.coverAltEn, product.traceCode).toMatch(/^[\x20-\x7e]+$/);
     }
-    // HX2M9KQD's photo had no recorded author or licence, so it shows the illustration again (GH#204).
+    // HX2M9KQD (a blue lotus bowl) keeps its photo although the licence is unknown: it matches the product (GH#204).
     const bowl = await db.orm.em.fork().findOneOrFail(Product, { traceCode: 'HX2M9KQD' });
-    expect(bowl.coverUrl).toBeNull();
+    expect(bowl.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
+    // A photo left out because it does not match its product shows the illustration.
+    const noCover = await db.orm.em.fork().findOneOrFail(Product, { traceCode: 'KKVB8B28' });
+    expect(noCover.coverUrl).toBeNull();
     const lamNgoc = await db.orm.em.fork().findOneOrFail(Household, { slug: 'gom-lam-ngoc' });
     expect(lamNgoc.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
     // Gốm Minh Hải's old kiln banner was retired (Commons does not confirm it is in Bát Tràng); it now has a
