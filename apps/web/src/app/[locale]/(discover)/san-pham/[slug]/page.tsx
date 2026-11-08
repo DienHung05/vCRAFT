@@ -7,6 +7,7 @@ import { Breadcrumbs } from '@/components/breadcrumbs';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { UsdRateNote, UsdReference } from '@/components/usd-reference';
+import { Reveal, staggerDelay } from '@/experience/motion/reveal';
 import { fetchProduct, fetchProducts, fetchSlugRedirect } from '@/features/catalog/exhibition-api';
 import { JourneyCard } from '@/features/catalog/journey-card';
 import { presetKindOf } from '@/features/catalog/preset-figure';
@@ -143,7 +144,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
   });
 
   return (
-    <article className="mx-auto max-w-editorial px-gutter pt-8">
+    <article className="mx-auto max-w-editorial px-gutter pt-8 pb-block">
       {/* biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD from our own data, `<` escaped. */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: productLd }} />
       <Breadcrumbs
@@ -315,16 +316,16 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
       </div>
 
       {more.length > 0 ? (
-        <section className="pt-section" aria-labelledby="more-title">
+        <Reveal as="section" className="pt-block" aria-labelledby="more-title">
           <h2 id="more-title">{t('more')}</h2>
           <ul className="mt-8 grid grid-cols-2 gap-6 md:grid-cols-4">
-            {more.map((p) => (
-              <li key={p.slug}>
+            {more.map((p, index) => (
+              <Reveal as="li" key={p.slug} delay={staggerDelay(index)}>
                 <ProductCard product={toProductCardView(p, locale)} />
-              </li>
+              </Reveal>
             ))}
           </ul>
-        </section>
+        </Reveal>
       ) : null}
     </article>
   );

@@ -28,7 +28,7 @@ export default async function VillageMapPage({
   const [t, result] = await Promise.all([getTranslations('villageMap'), fetchMapPins()]);
 
   return (
-    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section">
+    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-block">
       <header className="flex max-w-prose-vn flex-col gap-3">
         <h1 className="text-h1">{t('title')}</h1>
         <p className="text-ash">{t('lead')}</p>

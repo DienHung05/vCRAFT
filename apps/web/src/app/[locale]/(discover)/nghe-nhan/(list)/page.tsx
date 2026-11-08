@@ -5,6 +5,7 @@ import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { EmptyState } from '@/components/states/empty-state';
 import { UrlPagination } from '@/components/url-pagination';
+import { Reveal, staggerDelay } from '@/experience/motion/reveal';
 import { fetchHouseholdPage } from '@/features/catalog/exhibition-api';
 import { altFor, photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
@@ -45,21 +46,21 @@ export default async function ArtisansIndexPage({
   const households = result.data.data;
 
   return (
-    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section">
+    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-block">
       <header className="flex max-w-prose-vn flex-col gap-3">
         <h1 className="text-h1">{t('title')}</h1>
         <p className="text-ash">{t('lead')}</p>
         <p className="text-small text-ash">{t('count', { count: result.data.total })}</p>
       </header>
       {households.length > 0 ? (
-        <ul className="mt-10 grid gap-8 sm:grid-cols-2 md:grid-cols-3">
+        <ul className="mt-10 grid gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {households.map((h, index) => {
             // What the cover really shows; a household without a photo gets an illustration label.
             const coverAlt = h.coverUrl
               ? altFor(locale, h.coverAlt ?? '', h.coverAltEn) || preset('household')
               : preset('household');
             return (
-              <li key={h.slug}>
+              <Reveal as="li" key={h.slug} delay={staggerDelay(index, 4)}>
                 <Link
                   href={{ pathname: '/nghe-nhan/[slug]', params: { slug: h.slug } }}
                   className="group block"
@@ -69,7 +70,7 @@ export default async function ArtisansIndexPage({
                     tint={tintOf(h.slug)}
                     ratio="3/4"
                     {...slotPhoto(photoFromUrl(h.coverUrl, coverAlt, h.coverVariants))}
-                    sizes="(min-width: 768px) 30vw, (min-width: 640px) 50vw, 100vw"
+                    sizes="(min-width: 1024px) 22vw, (min-width: 768px) 30vw, (min-width: 640px) 50vw, 100vw"
                     priority={index < 2}
                     className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
                   />
@@ -81,7 +82,7 @@ export default async function ArtisansIndexPage({
                     {t('productCount', { count: h.productCount })}
                   </p>
                 </Link>
-              </li>
+              </Reveal>
             );
           })}
         </ul>

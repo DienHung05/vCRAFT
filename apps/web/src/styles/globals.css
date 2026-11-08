@@ -693,3 +693,31 @@ li:last-child > .journey-dot .journey-dot-label {
     mask-image: none;
   }
 }
+
+/*
+ * Scroll reveal (GH#301, experience/motion/reveal.tsx): a block below the fold starts transparent and
+ * 1.25rem low, then settles when it scrolls into view. Opacity and transform only (composite-only, no
+ * layout shift); `--reveal-delay` staggers siblings. Reduced motion: never hidden.
+ */
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 1.25rem, 0);
+}
+.reveal-in {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--duration-slow) var(--ease-clay) var(--reveal-delay, 0ms),
+    transform var(--duration-slow) var(--ease-clay) var(--reveal-delay, 0ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Vertical rhythm for short blocks: about half of the `section` step, so a few cards do not float in 10rem. */
+@theme {
+  --spacing-block: clamp(2.5rem, 1.6rem + 4vw, 5rem);
+}

@@ -1,11 +1,13 @@
 import { Badge, buttonVariants, Card, cn, SealMark, VaseFigure, WaveDivider } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getTranslations } from 'next-intl/server';
+import { getFormatter, getTranslations } from 'next-intl/server';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { EmptyState } from '@/components/states/empty-state';
+import { CountUp } from '@/experience/motion/count-up';
+import { Reveal, staggerDelay } from '@/experience/motion/reveal';
 import { fetchHousehold, fetchSlugRedirect } from '@/features/catalog/exhibition-api';
 import { ProductCard } from '@/features/catalog/product-card';
 import {
@@ -18,6 +20,7 @@ import {
   toVisitWorkshops,
 } from '@/features/catalog/view-models';
 import { MakerCredits } from '@/features/exhibition/maker-credits';
+import { pullQuote } from '@/features/exhibition/pull-quote';
 import { VisitSection } from '@/features/exhibition/visit-section';
 import { Link, permanentRedirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/lib/locale';
@@ -86,6 +89,14 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
     : undefined;
   const featured = household.products[0];
   const story = household.history.split(/\n{2,}/).filter(Boolean);
+  const format = await getFormatter({ locale });
+  // Real counts only, shown as a count-up strip when at least two of them exist.
+  const stats = [
+    { label: t('statProducts'), value: household.products.length },
+    { label: t('statArtisans'), value: household.artisans.length },
+    { label: t('statCerts'), value: household.certifications.length },
+  ].filter((s) => s.value > 0);
+  const quote = story.length >= 2 ? pullQuote(story[1] ?? '') : null;
   const gallery = household.gallery.flatMap((item) => (item.url ? [item] : []));
   const capacities = Object.entries(household.capacityByCategory) as [
     keyof typeof household.capacityByCategory,
@@ -169,8 +180,9 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
       {cover ? <div className="mx-auto max-w-editorial px-gutter"></div> : null}
 
       {/* Bento: câu chuyện, đời thứ N, chứng nhận. */}
-      <section
-        className="mx-auto grid max-w-editorial gap-5 px-gutter py-section md:grid-cols-6"
+      <Reveal
+        as="section"
+        className="mx-auto grid max-w-editorial gap-5 px-gutter py-block md:grid-cols-6"
         aria-label={t('bentoLabel')}
       >
         <Card className="p-8 md:col-span-4 md:row-span-2">
@@ -234,11 +246,32 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
             </ul>
           </Card>
         ) : null}
-      </section>
+        {stats.length >= 2 ? (
+          <Card className="md:col-span-6">
+            <dl className="grid grid-cols-3 divide-x divide-ink/10">
+              {stats.map((s) => (
+                <div key={s.label} className="px-4 py-6 text-center md:py-8">
+                  <dd className="font-display text-h2 text-clay type-soft">
+                    <CountUp text={format.number(s.value)} locale={locale} />
+                  </dd>
+                  <dt className="mt-1 text-small text-ash">{s.label}</dt>
+                </div>
+              ))}
+            </dl>
+          </Card>
+        ) : null}
+        {quote ? (
+          <figure className="rounded-card bg-clay/8 p-8 md:col-span-6 md:px-16 md:py-10">
+            <blockquote className="mx-auto max-w-prose-vn text-center font-display text-h3 text-ink/90 italic">
+              “{quote}”
+            </blockquote>
+          </figure>
+        ) : null}
+      </Reveal>
 
       {/* Timeline gia đình nằm ngang, kéo được (FR-ART-02). */}
       {household.timeline.length > 0 ? (
-        <section className="pb-section" aria-labelledby="timeline-title">
+        <Reveal as="section" className="pb-block" aria-labelledby="timeline-title">
           <div className="mx-auto max-w-editorial px-gutter">
             <h2 id="timeline-title">{t('timeline')}</h2>
             <p className="mt-2 text-small text-ash">{t('timelineHint')}</p>
@@ -279,13 +312,14 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
               </li>
             ))}
           </ol>
-        </section>
+        </Reveal>
       ) : null}
 
       {/* Thư viện ảnh xưởng kiểu masonry (FR-ART-04). */}
       {gallery.length > 0 ? (
-        <section
-          className="cv-auto mx-auto max-w-editorial px-gutter pb-section"
+        <Reveal
+          as="section"
+          className="cv-auto mx-auto max-w-editorial px-gutter pb-block"
           aria-labelledby="gallery-title"
         >
           <h2 id="gallery-title">{t('gallery')}</h2>
@@ -308,27 +342,28 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
               );
             })}
           </div>
-        </section>
+        </Reveal>
       ) : null}
 
       <MakerCredits
-        className="mx-auto max-w-editorial px-gutter pb-section"
+        className="mx-auto max-w-editorial px-gutter pb-block"
         household={household.name}
         makers={household.artisans.map((a) => ({ name: a.name, detail: a.craftRole ?? '' }))}
       />
 
       <WaveDivider />
-      <section
-        className="mx-auto max-w-editorial px-gutter pt-section"
+      <Reveal
+        as="section"
+        className="mx-auto max-w-editorial px-gutter pt-block"
         aria-labelledby="products-title"
       >
         <h2 id="products-title">{t('products')}</h2>
         {household.products.length > 0 ? (
           <ul className="mt-8 grid grid-cols-2 gap-6 md:grid-cols-4">
-            {household.products.map((p) => (
-              <li key={p.slug}>
+            {household.products.map((p, index) => (
+              <Reveal as="li" key={p.slug} delay={staggerDelay(index)}>
                 <ProductCard product={toProductCardView({ ...p, household }, locale)} />
-              </li>
+              </Reveal>
             ))}
           </ul>
         ) : (
@@ -344,12 +379,13 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
             }
           />
         )}
-      </section>
+      </Reveal>
 
       {/* Bằng chứng: nhật ký sản xuất của món đồ tiêu biểu, đọc ở trang truy xuất. */}
       {featured ? (
-        <section
-          className="mx-auto max-w-editorial px-gutter pt-section"
+        <Reveal
+          as="section"
+          className="mx-auto max-w-editorial px-gutter pt-block"
           aria-labelledby="evidence-title"
         >
           <Card className="flex flex-col items-start gap-4 p-8 md:flex-row md:items-center md:justify-between">
@@ -373,17 +409,18 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
               {ex('evidenceCta', { product: featured.name })}
             </Link>
           </Card>
-        </section>
+        </Reveal>
       ) : null}
 
       <VisitSection
-        className="mx-auto max-w-editorial px-gutter pt-section"
+        className="mx-auto max-w-editorial px-gutter pt-block"
         household={household.name}
         workshops={toVisitWorkshops(household.workshops)}
       />
 
-      <section
-        className="mx-auto max-w-editorial px-gutter py-section"
+      <Reveal
+        as="section"
+        className="mx-auto max-w-editorial px-gutter py-block"
         aria-labelledby="wholesale-title"
       >
         <div className="rounded-card bg-clay p-8 text-paper md:p-12">
@@ -411,7 +448,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
             {t('ctaRfq')}
           </Link>
         </div>
-      </section>
+      </Reveal>
     </article>
   );
 }

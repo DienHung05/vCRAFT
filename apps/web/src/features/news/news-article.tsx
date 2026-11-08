@@ -14,7 +14,7 @@ export function NewsArticleView({ article }: { article: NewsDetailDto }) {
   const format = useFormatter();
   const locale = useLocale();
   return (
-    <article className="mx-auto flex max-w-prose-vn flex-col gap-6 px-gutter pt-12 pb-section">
+    <article className="mx-auto flex max-w-prose-vn flex-col gap-6 px-gutter pt-12 pb-block">
       <Breadcrumbs
         items={[
           { label: common('home'), href: '/' },
