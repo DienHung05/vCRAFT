@@ -1,7 +1,7 @@
 # ADR-14 — Object storage đặt trên Supabase Storage, truy cập qua giao thức S3
 
 - Trạng thái: **Chấp nhận** (27/10/2026)
-- Liên quan: FR-MEDIA ([SRS §3](../SRS.md)), FR-MEDIA-04, NFR-SEC-03, NFR-PORT-03, ADR-09, ADR-11, ADR-13, epic E4 trong [PLAN](../PLAN.md)
+- Liên quan: FR-MEDIA ([SRS §3](../requirements/SRS.md)), FR-MEDIA-04, NFR-SEC-03, NFR-PORT-03, ADR-09, ADR-11, ADR-13, epic E4 trong [PLAN](../PLAN.md)
 
 ## Bối cảnh
 

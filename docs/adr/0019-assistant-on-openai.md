@@ -3,7 +3,7 @@
 - Status: **Accepted** (3 Nov 2026)
 - Amends: [ADR-13](0013-assistant-vector-store-supabase.md) (the model and embedding provider only; the vector store decision stands)
 - Reverses: the deferral of the assistant in decisions `vCRAFT-9hg.1` and `vCRAFT-9hg.7` (no assistant module, no Claude/Voyage at runtime, no weather tool)
-- Related: FR-AST-01 … 08 ([SRS §3.13](../SRS.md#313-trợ-lý-cáo-chatbot--fr-ast)), [ARCHITECTURE §7.6](../ARCHITECTURE.md#76-trợ-lý-cáo-rag--guardrail), epic E15 in [PLAN](../PLAN.md), GitHub #76
+- Related: FR-AST-01 … 08 ([SRS §3.13](../requirements/SRS.md#313-trợ-lý-cáo-chatbot--fr-ast)), [ARCHITECTURE §7.6](../ARCHITECTURE.md#76-trợ-lý-cáo-rag--guardrail), epic E15 in [PLAN](../PLAN.md), GitHub #76
 
 ## Context
 

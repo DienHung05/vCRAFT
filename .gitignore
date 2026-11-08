@@ -54,4 +54,4 @@ apps/web/public/map/
 supabase/.temp/
 
 # Demo data
-scripts/demo-photos/photos-all/
+scripts/demo/photos/photos-all/

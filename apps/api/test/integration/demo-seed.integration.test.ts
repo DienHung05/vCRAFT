@@ -182,7 +182,7 @@ describe('Demo seed and guarded reset', () => {
       await writeFile(join(imagesDir, name), small);
     }
     const specimenDir = fileURLToPath(
-      new URL('../../../../scripts/demo-photos/specimen-docs', import.meta.url),
+      new URL('../../../../scripts/demo/photos/specimen-docs', import.meta.url),
     );
     const publish = async () => {
       const uploaded = await publishDemoMedia({

@@ -176,7 +176,7 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
   it('giấy tờ mẫu có tệp và nằm riêng tư (ba loại, mô tả ghi rõ là bản mẫu)', () => {
     expect(DEMO_VERIFICATION_DOCS).toHaveLength(3);
     for (const doc of DEMO_VERIFICATION_DOCS) {
-      expect(existsSync(repoPath(`scripts/demo-photos/specimen-docs/${doc.id}.png`)), doc.id).toBe(
+      expect(existsSync(repoPath(`scripts/demo/photos/specimen-docs/${doc.id}.png`)), doc.id).toBe(
         true,
       );
       expect(doc.altText).toMatch(/MẪU – KHÔNG CÓ GIÁ TRỊ/);

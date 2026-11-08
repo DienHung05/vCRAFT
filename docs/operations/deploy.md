@@ -1,7 +1,7 @@
 # Triển khai production: Vercel (web) + Render (API, worker) + Supabase
 
-> Quyết định và lý do: [ADR-16](adr/0016-deploy-vercel-render.md). Mã đã sẵn sàng; tài liệu này là việc **chỉ người** làm được (tạo tài khoản, kết nối repo, dán biến môi trường, trỏ domain). Không có bí mật nào trong repo.
-> Tài liệu demo và dự phòng: [docs/demo/README.md](demo/README.md).
+> Quyết định và lý do: [ADR-16](../adr/0016-deploy-vercel-render.md). Mã đã sẵn sàng; tài liệu này là việc **chỉ người** làm được (tạo tài khoản, kết nối repo, dán biến môi trường, trỏ domain). Không có bí mật nào trong repo.
+> Tài liệu demo và dự phòng: [docs/demo/README.md](../demo/README.md).
 
 ## 0. Sơ đồ và nguyên tắc
 

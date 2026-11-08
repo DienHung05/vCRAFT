@@ -8,4 +8,4 @@ pre-commit:
 commit-msg:
   commands:
     conventional:
-      run: sh infra/scripts/check-commit-msg.sh {1}
+      run: sh scripts/ci/check-commit-msg.sh {1}

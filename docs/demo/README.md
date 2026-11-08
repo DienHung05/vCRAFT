@@ -10,7 +10,7 @@
 - **Ảnh có giấy phép đã nằm trong CSDL và Supabase Storage** (GH#26, §1B): `pnpm demo:media` tải ảnh minh hoạ lên `vcraft-media`, giấy tờ mẫu lên `vcraft-private` và nối vào seed kèm ghi công (`media_link`, mô tả vi/en). `demo:media` cũng đặt `coverUrl`/`coverAlt`/`coverAltEn` của 76 sản phẩm (`BT7K2QXM`, `84PZKVJU` và 74 sản phẩm có ảnh riêng `pp-<mã>`) và `coverUrl` của 4 hộ về URL trong bucket nên API công khai (GH#47) trả ảnh Supabase. Nhật ký không còn ảnh nào (xem quy tắc bên dưới).
 - **Trang công khai của `apps/web` đọc API thật** (trang chủ, sản phẩm, nghệ nhân, truy xuất, bản đồ, tin tức). `apps/web/src/lib/demo/data.ts` chỉ còn phục vụ các màn yêu cầu báo giá và điều phối đang dùng dữ liệu minh họa.
 - Một số bước chưa có màn hình (duyệt hộ của Admin, xuất bản của hộ): kịch bản e2e gọi thẳng API bằng đúng phiên đã đăng nhập và ghi chú ở từng bước.
-- **Triển khai production (GH#39):** web trên Vercel, API + worker + Redis trên Render, CSDL/Auth/Storage ở Supabase ([ADR-16](../adr/0016-deploy-vercel-render.md)); cấu hình nằm trong repo (`render.yaml`, `apps/web/vercel.json`, `next.config.ts`), các bước tạo project và dán biến môi trường ở [docs/deploy.md](../deploy.md). Đã chạy thử local: build production và khởi động API/worker bằng đúng lệnh start, rewrite `/api/*`. **Chưa** chạy trên Vercel/Render thật vì cần tài khoản của nhóm.
+- **Triển khai production (GH#39):** web trên Vercel, API + worker + Redis trên Render, CSDL/Auth/Storage ở Supabase ([ADR-16](../adr/0016-deploy-vercel-render.md)); cấu hình nằm trong repo (`render.yaml`, `apps/web/vercel.json`, `next.config.ts`), các bước tạo project và dán biến môi trường ở [docs/operations/deploy.md](../operations/deploy.md). Đã chạy thử local: build production và khởi động API/worker bằng đúng lệnh start, rewrite `/api/*`. **Chưa** chạy trên Vercel/Render thật vì cần tài khoản của nhóm.
 - **Chưa kiểm chứng được ở máy phát triển:** chạy trên URL đã triển khai, Lighthouse, tạo người dùng trên Supabase Auth thật, dựng Supabase cục bộ. Các mục này nằm trong checklist §7 để làm một lần trước ngày thi.
 
 ## 1. Dữ liệu mẫu
@@ -106,7 +106,7 @@ pnpm demo:auth -- --check
 
 **Ảnh bìa đang dùng ngay:** `demo:media` ghi đè `product.cover_url`/`cover_alt`/`cover_alt_en` (76 sản phẩm) và `household.cover_url` (ảnh bìa 4 hộ) bằng URL biến thể WebP 1280 trong bucket; API công khai của GH#47 trả đúng hai cột này nên không cần sửa API. **The API reads everything else (galleries, portraits, news covers, credits) from `media_link` (GH#54):** household/product/news images = `media_link` by (`target_type`, `target_id`, `role`, `position`) → `media_asset.variants` (URL = `MEDIA_PUBLIC_BASE_URL` + `key`), `credit`, `alt_text` (`media_link.alt_text` takes priority). `GET /households/{slug}` returns `portrait`, `banner`, `gallery`; `GET /news` and `GET /news/{slug}` return `cover`; `GET /products/{slug}` and `GET /trace/{code}` return `coverCredit`. Journal entry images: `journal_entry.images[].url` is already a public URL; `credit` is looked up by `images[].sha256` = `media_asset.sha256`. `DOCUMENT` files, private files and files that are not `READY` never reach the public API.
 
-**Giấy tờ mẫu:** ba ảnh vẽ cục bộ bằng `scripts/demo-photos/make-specimen-docs.mjs` (căn cước, xác nhận cư trú, ảnh xưởng), toàn dữ liệu giả và đóng dấu chéo "MẪU – KHÔNG CÓ GIÁ TRỊ"; không bao giờ dùng giấy tờ thật. Chỉ nằm ở `vcraft-private`: Admin đọc qua `GET /media/{id}/read-url` (URL ký 5 phút), người khác bị từ chối, không có biến thể công khai.
+**Giấy tờ mẫu:** ba ảnh vẽ cục bộ bằng `scripts/demo/photos/make-specimen-docs.mjs` (căn cước, xác nhận cư trú, ảnh xưởng), toàn dữ liệu giả và đóng dấu chéo "MẪU – KHÔNG CÓ GIÁ TRỊ"; không bao giờ dùng giấy tờ thật. Chỉ nằm ở `vcraft-private`: Admin đọc qua `GET /media/{id}/read-url` (URL ký 5 phút), người khác bị từ chối, không có biến thể công khai.
 
 ```bash
 APP_ENV=demo pnpm demo:media                 # tải lên + nối vào seed; chạy lại được
@@ -227,7 +227,7 @@ Thiếu `E2E_BASE_URL` hoặc thông tin đăng nhập thì cả kịch bản t�
 ## 5. Chiếc cốc và URL ổn định
 
 - QR dán lên cốc: `https://<DOMAIN>/q/DF6P3WZE`. Domain phải là domain thật dùng cả khi thi (cũng là domain của Cloudflare Tunnel dự phòng, xem §8), vì mã QR in ra không đổi được.
-- `NEXT_PUBLIC_SITE_URL` được nhúng vào mã QR hiển thị trên web lúc **build**: build bản triển khai với đúng domain. Trên Vercel đặt biến này ở Environment Variables rồi Redeploy ([deploy.md §4](../deploy.md#4-vercel-tạo-project)).
+- `NEXT_PUBLIC_SITE_URL` được nhúng vào mã QR hiển thị trên web lúc **build**: build bản triển khai với đúng domain. Trên Vercel đặt biến này ở Environment Variables rồi Redeploy ([deploy.md §4](../operations/deploy.md#4-vercel-tạo-project)).
 - Ngày thi: thử quét bằng ít nhất một iPhone và một Android khác máy của nhóm, ở mạng 4G (không dùng Wi-Fi nhà).
 
 ## 6. Sao lưu và khôi phục
@@ -302,7 +302,7 @@ Kiểm tra máy không làm thay được, cần người: đọc thử mô tả
 
 ## 8. Phương án dự phòng khi mất dịch vụ tại địa điểm thi
 
-Nguyên tắc: **nếu dịch vụ ngoài lỗi thì mở bản local + tunnel trước**, không sửa sự cố ngay trước mặt giám khảo. Hạ tầng chính: Vercel (web) + Render (API, worker, Redis) + Supabase (Auth, Postgres, Storage) + SMTP ([ADR-16](../adr/0016-deploy-vercel-render.md), [deploy.md](../deploy.md)); dự phòng: Cloudflare Tunnel. ~~1 VPS + Caddy~~ là kế hoạch cũ, đã bị ADR-16 thay thế.
+Nguyên tắc: **nếu dịch vụ ngoài lỗi thì mở bản local + tunnel trước**, không sửa sự cố ngay trước mặt giám khảo. Hạ tầng chính: Vercel (web) + Render (API, worker, Redis) + Supabase (Auth, Postgres, Storage) + SMTP ([ADR-16](../adr/0016-deploy-vercel-render.md), [deploy.md](../operations/deploy.md)); dự phòng: Cloudflare Tunnel. ~~1 VPS + Caddy~~ là kế hoạch cũ, đã bị ADR-16 thay thế.
 
 Cây quyết định:
 

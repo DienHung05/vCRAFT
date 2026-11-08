@@ -42,7 +42,7 @@ Out of scope for this version: online payment, shipping integration, native mobi
 Undecided: whether any live village pilot follows the defense, and which village and households would join it.
 
 ## Brand Commitments
-Name vCraft, tagline "Tinh hoa làng nghề, muôn phương lan tỏa". Concept "the maker's imprint" and the trace seal are binding. Voice is warm, respectful, short, addressing the reader as bạn, with no hard-sell language. The Fox assistant speaks as tớ and is slightly playful but stays short and states business facts plainly. Full visual tokens live in docs/BRAND.md and packages/ui; they are not repeated here. No binding aesthetic direction beyond what the user already pinned in BRAND.md.
+Name vCraft, tagline "Tinh hoa làng nghề, muôn phương lan tỏa". Concept "the maker's imprint" and the trace seal are binding. Voice is warm, respectful, short, addressing the reader as bạn, with no hard-sell language. The Fox assistant speaks as tớ and is slightly playful but stays short and states business facts plainly. Full visual tokens live in docs/design/BRAND.md and packages/ui; they are not repeated here. No binding aesthetic direction beyond what the user already pinned in BRAND.md.
 
 ## Evidence on Hand
 None in hand. No confirmed households, no licensed Bat Trang photos, no testimonials, no village permissions. All exhibition content still needs sourcing. Future work must not invent households, makers, reviews, prices, or certifications. Seed targets from the spec are at least 20 households, at least 200 products with 4 to 7 journal entries each, at least 10 quotation requests across all states, and at least 15 news items, but none of this exists as sourced content today. Photos must come from clearly licensed sources with full credit.

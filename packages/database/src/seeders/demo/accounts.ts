@@ -1,10 +1,10 @@
 /**
- * Tài khoản demo cố định (GH#14). File này KHÔNG import gì để script gốc (`scripts/demo-auth.mjs`) và
+ * Tài khoản demo cố định (GH#14). File này KHÔNG import gì để script gốc (`scripts/demo/auth.mjs`) và
  * Playwright đọc thẳng bằng Node (type stripping); đừng thêm import hay cú pháp chỉ có ở TypeScript
  * ngoài kiểu (enum, namespace, decorator).
  *
  * `id` = `sub` của Supabase Auth = `app_user.id` (ARCHITECTURE §7.5), nên cùng một UUID phải có mặt ở
- * cả hai nơi: seeder ghi `app_user`, `scripts/demo-auth.mjs` tạo/cập nhật người dùng Supabase Auth với đúng id này.
+ * cả hai nơi: seeder ghi `app_user`, `scripts/demo/auth.mjs` tạo/cập nhật người dùng Supabase Auth với đúng id này.
  * Mật khẩu KHÔNG nằm trong mã: đọc từ biến môi trường tên ở `passwordEnv`.
  *
  * `username` (GH#212): the sign-in handle of the demo account, matching the `app_user.username` the
