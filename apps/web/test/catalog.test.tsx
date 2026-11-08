@@ -38,6 +38,8 @@ function card(id: string, overrides: Partial<ProductCardDto> = {}): ProductCardD
     category: 'VASE',
     priceVnd: 100_000,
     stock: 3,
+    status: 'PUBLISHED',
+    tags: [],
     coverUrl: null,
     coverVariants: [],
     coverAlt: null,

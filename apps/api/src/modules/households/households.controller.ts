@@ -22,6 +22,8 @@ import {
   CreateWorkshopRequestSchema,
   HouseholdDecisionRequestSchema,
   ListHouseholdsQuerySchema,
+  type PriceSuggestionQuery,
+  PriceSuggestionQuerySchema,
   type RecordScanRequest,
   RecordScanRequestSchema,
   type SetIdNumberRequest,
@@ -166,6 +168,24 @@ export class MyHouseholdController {
     return this.households.scanStats(actor, id);
   }
 
+  /** FR-PRD-07: median price of published products in a category; declared before `products/:id`. */
+  @Get('products/price-suggestion')
+  @Header('Cache-Control', 'private, no-store')
+  @Roles('HOUSEHOLD')
+  priceSuggestion(
+    @CurrentActor() actor: Actor,
+    @Query(new ZodValidationPipe(PriceSuggestionQuerySchema)) query: PriceSuggestionQuery,
+  ) {
+    return this.households.priceSuggestion(actor, query.category);
+  }
+
+  /** FR-PRD-06: a DRAFT copy without the production journal. */
+  @Post('products/:id/duplicate')
+  @Roles('HOUSEHOLD')
+  duplicateProduct(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
+    return this.households.duplicateProduct(actor, id);
+  }
+
   @Patch('products/:id')
   @Roles('HOUSEHOLD')
   updateProduct(
@@ -212,6 +232,28 @@ export class ProductPublicationController {
     @IfMatchVersion() version: number,
   ) {
     return this.households.changeProduct(actor, id, 'REPUBLISH', version);
+  }
+
+  /** One-of-a-kind products only: PUBLISHED to SOLD (FR-PRD-01). */
+  @Post('mark-sold')
+  @HttpCode(200)
+  markSold(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+  ) {
+    return this.households.changeProduct(actor, id, 'MARK_SOLD', version);
+  }
+
+  /** Undo a sale: SOLD back to PUBLISHED. */
+  @Post('back-on-sale')
+  @HttpCode(200)
+  backOnSale(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+  ) {
+    return this.households.changeProduct(actor, id, 'BACK_ON_SALE', version);
   }
 
   @Post('withdraw')

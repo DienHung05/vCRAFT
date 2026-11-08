@@ -49,6 +49,9 @@ export const ProductCardSchema = z.object({
   category: ProductCategorySchema,
   priceVnd: z.int().nonnegative(),
   stock: z.int().nonnegative(),
+  /** `SOLD` cards stay in the catalog with a "sold" badge and never count as in stock. */
+  status: z.enum(['PUBLISHED', 'SOLD']).default('PUBLISHED'),
+  tags: z.array(z.string()).default([]),
   coverUrl: z.string().nullable(),
   coverVariants: PublicImageVariantsSchema,
   coverAlt: z.string().nullable(),

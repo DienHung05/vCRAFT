@@ -57,6 +57,11 @@ export function ProductCard({
               {t('oneOfAKind')}
             </Badge>
           ) : null}
+          {product.sold ? (
+            <Badge tone="outline" className="absolute top-3 right-3 bg-paper">
+              {t('sold')}
+            </Badge>
+          ) : null}
         </ImageSlot>
       </ViewTransition>
       <div className="mt-3 flex items-baseline justify-between gap-3">
