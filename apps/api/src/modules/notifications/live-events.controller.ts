@@ -3,6 +3,7 @@ import { Controller, Get, Req, Res } from '@nestjs/common';
 import type { LiveEvent } from '@vcraft/contracts';
 import { type Actor, CurrentActor, Roles } from '../../common/auth/auth.guard';
 import type { HttpReply, HttpRequest } from '../../common/http/http-types';
+import { MediaService } from '../media/application/media.service';
 import { NotificationsService } from './application/notifications.service';
 
 /** How often the stream looks for changes, keeps the proxy awake, and hands the client back to reconnect. */
@@ -33,11 +34,14 @@ const sleep = (ms: number, signal: AbortSignal) =>
  * the account's notices change, with a comment line as heartbeat. It checks the database every few
  * seconds, so it sees notices written by any API instance or by the worker, and ends after `LIVE_MAX_MS`
  * so connections recycle; the client reconnects right away, with backoff only after failures.
+ * `media` (optional) is asked on every check for photos that finished processing: each becomes a
+ * `media.updated` event (GH#252). Like `pulse`, a failing call is skipped until the next check.
  */
 export async function* liveStream(
   pulse: () => Promise<{ unread: number; latest: string | null }>,
   signal: AbortSignal,
   timing = { check: LIVE_CHECK_MS, heartbeat: LIVE_HEARTBEAT_MS, max: LIVE_MAX_MS },
+  media?: () => Promise<LiveEvent[]>,
 ): AsyncGenerator<string> {
   const line = (event: LiveEvent) => `data: ${JSON.stringify(event)}\n\n`;
   const started = Date.now();
@@ -59,6 +63,10 @@ export async function* liveStream(
       sent = true;
     }
     last = next;
+    for (const event of (await media?.().catch(() => [])) ?? []) {
+      yield line(event);
+      sent = true;
+    }
     quiet = sent ? 0 : quiet + timing.check;
     if (quiet >= timing.heartbeat) {
       yield ': ping\n\n';
@@ -71,18 +79,26 @@ export async function* liveStream(
 @Controller('me/events')
 @Roles('BUYER', 'ADMIN', 'HOUSEHOLD')
 export class LiveEventsController {
-  constructor(private readonly notifications: NotificationsService) {}
+  constructor(
+    private readonly notifications: NotificationsService,
+    private readonly media: MediaService,
+  ) {}
 
   @Get()
   stream(@CurrentActor() actor: Actor, @Req() request: StreamRequest, @Res() reply: HttpReply) {
     const aborted = new AbortController();
     request.raw.once('close', () => aborted.abort());
     const body = Readable.from(
-      liveStream(() => this.notifications.pulse(actor), aborted.signal, {
-        check: LIVE_CHECK_MS,
-        heartbeat: LIVE_HEARTBEAT_MS,
-        max: liveMaxMs(),
-      }),
+      liveStream(
+        () => this.notifications.pulse(actor),
+        aborted.signal,
+        {
+          check: LIVE_CHECK_MS,
+          heartbeat: LIVE_HEARTBEAT_MS,
+          max: liveMaxMs(),
+        },
+        this.media.liveUpdates(actor.id),
+      ),
     );
     return reply
       .status(200)

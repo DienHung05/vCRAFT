@@ -147,15 +147,15 @@ describe('luật kiểm tra form tài khoản (khóa i18n, không phải câu ch
 });
 
 describe('precheckDocument (giấy tờ xác minh)', () => {
-  it('nhận ảnh và PDF trong giới hạn 10 MB', () => {
+  it('nhận ảnh và PDF trong giới hạn 15 MB', () => {
     expect(precheckDocument({ type: 'application/pdf', size: 1024 })).toBeNull();
-    expect(precheckDocument({ type: 'image/jpeg', size: 10 * 1024 * 1024 })).toBeNull();
+    expect(precheckDocument({ type: 'image/jpeg', size: 15 * 1024 * 1024 })).toBeNull();
   });
 
   it('từ chối loại lạ và tệp quá lớn bằng thông điệp cụ thể', () => {
     expect(precheckDocument({ type: 'image/svg+xml', size: 10 })).toBe('mediaUnsupported');
     expect(precheckDocument({ type: 'application/zip', size: 10 })).toBe('mediaUnsupported');
-    expect(precheckDocument({ type: 'image/png', size: 10 * 1024 * 1024 + 1 })).toBe(
+    expect(precheckDocument({ type: 'image/png', size: 15 * 1024 * 1024 + 1 })).toBe(
       'mediaTooLarge',
     );
   });

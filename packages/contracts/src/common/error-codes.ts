@@ -112,6 +112,8 @@ export const ERROR_CATALOG = {
   // --- MEDIA: upload (NFR-SEC-05) ---
   MEDIA_UNSUPPORTED_TYPE: { status: 415, title: 'Unsupported media type' },
   MEDIA_TOO_LARGE: { status: 413, title: 'Media too large' },
+  /** An image above 50 megapixels, refused at upload from its header instead of failing in the worker. */
+  MEDIA_RESOLUTION_TOO_HIGH: { status: 422, title: 'Image resolution too high' },
 
   // --- PRIVACY: đồng ý, xuất và xóa dữ liệu cá nhân (NFR-SEC-07) ---
   /** The action collects personal data and no consent for the current policy version is on record. */

@@ -1,6 +1,10 @@
+import decodeHeic from 'heic-decode';
 import sharp from 'sharp';
-import { describe, expect, it } from 'vitest';
-import { convertImage } from '../src/processors/media/convert-image';
+import { describe, expect, it, vi } from 'vitest';
+import { convertImage, convertImageInPhases } from '../src/processors/media/convert-image';
+
+// sharp's prebuilt libvips cannot read HEVC, so HEIC goes through a JS decoder; the tests feed it raw pixels.
+vi.mock('heic-decode', () => ({ default: vi.fn() }));
 
 /** Ảnh "điện thoại": dải màu + nhiễu nhẹ, chụp dọc (EXIF Orientation 6), có GPS. */
 async function phonePhoto(width: number, height: number): Promise<Buffer> {
@@ -67,5 +71,57 @@ describe('convertImage', () => {
 
   it('nội dung không decode được thì ném lỗi', async () => {
     await expect(convertImage(new Uint8Array([0xff, 0xd8, 0xff, 0x00, 1, 2, 3]))).rejects.toThrow();
+  });
+
+  it('returns the WebP sizes before the slow AVIF phase (GH#252)', async () => {
+    const input = await phonePhoto(1000, 1400);
+    const phased = await convertImageInPhases(new Uint8Array(input));
+    expect(phased.webp.map((v) => `${v.width}.${v.format}`)).toEqual([
+      '320.webp',
+      '640.webp',
+      '1280.webp',
+    ]);
+    expect(phased.thumbhash.length).toBeGreaterThan(10);
+    const avif = await phased.encodeAvif();
+    expect(avif.map((v) => `${v.width}.${v.format}`)).toEqual([
+      '320.avif',
+      '640.avif',
+      '1280.avif',
+    ]);
+  });
+
+  it('decodes HEIC with the JS decoder and converts it like any other photo', async () => {
+    const width = 800;
+    const height = 600;
+    const data = new Uint8ClampedArray(width * height * 4);
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = (i / 4) % 255;
+      data[i + 1] = 120;
+      data[i + 2] = 60;
+      data[i + 3] = 255;
+    }
+    vi.mocked(decodeHeic).mockResolvedValueOnce({ width, height, data });
+
+    const result = await convertImage(new Uint8Array([0, 0, 0, 24]), { heic: true });
+
+    expect({ width: result.width, height: result.height }).toEqual({ width, height });
+    expect(result.variants.map((v) => `${v.width}.${v.format}`)).toEqual([
+      '320.avif',
+      '320.webp',
+      '640.avif',
+      '640.webp',
+    ]);
+    expect((await sharp(result.variants[1]?.bytes).metadata()).format).toBe('webp');
+  });
+
+  it('refuses a HEIC above the pixel limit before converting it', async () => {
+    vi.mocked(decodeHeic).mockResolvedValueOnce({
+      width: 8000,
+      height: 7000,
+      data: new Uint8ClampedArray(0),
+    });
+    await expect(convertImage(new Uint8Array([0, 0, 0, 24]), { heic: true })).rejects.toThrow(
+      /pixels/,
+    );
   });
 });

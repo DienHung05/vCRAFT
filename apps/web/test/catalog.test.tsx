@@ -146,6 +146,9 @@ describe('view models', () => {
       url: 'https://cdn.test/nung.webp',
       variants: [],
       sha256: 'a'.repeat(64),
+      mediaId: null,
+      status: 'READY' as const,
+      thumbhash: null,
       credit: {
         title: 'File:Nung.jpg',
         author: 'Tác giả ảnh',

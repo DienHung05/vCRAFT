@@ -3,6 +3,7 @@ import { MikroORM } from '@mikro-orm/core';
 import { Inject, Injectable } from '@nestjs/common';
 import type {
   ExportedMediaDto,
+  LiveEvent,
   MediaAssetResponse,
   MediaReadUrlResponse,
   MediaVariantResponse,
@@ -20,7 +21,12 @@ import {
   type Product,
   QuotationRequest,
 } from '@vcraft/database';
-import { type CertificateKind, checkMediaUpload, type MediaPurpose } from '@vcraft/domain';
+import {
+  type CertificateKind,
+  checkMediaUpload,
+  type MediaPurpose,
+  readImageSize,
+} from '@vcraft/domain';
 import { LocalObjectStorage, type ObjectStorage, PRESIGN_TTL_SECONDS } from '@vcraft/storage';
 import { fileTypeFromBuffer } from 'file-type';
 import type { Actor } from '../../../common/auth/auth.guard';
@@ -44,7 +50,26 @@ export interface LinkedImage {
 export interface PublicMedia {
   url: string;
   variants: MediaVariantResponse[];
+  thumbhash: string | null;
 }
+
+/** What a journal entry shows of one of its photos (see {@link MediaService.entryImages}). */
+export interface EntryImage {
+  mediaId: string;
+  status: 'PROCESSING' | 'READY' | 'FAILED';
+  /** The ~1280 px WebP; null until the photo is `READY`. */
+  url: string | null;
+  thumbhash: string | null;
+  credit: MediaCredit | null;
+  variants: MediaVariantResponse[];
+}
+
+/** The `media.updated` live event (see `LiveEventSchema`). */
+export type MediaUpdatedEvent = Extract<LiveEvent, { type: 'media.updated' }>;
+
+/** How far back the first live check looks, and how far behind the newest row later ones stay. */
+const LIVE_REPLAY_MS = 60_000;
+const LIVE_CLOCK_SKEW_MS = 5_000;
 
 export interface UploadedFile {
   readonly declaredMime: string;
@@ -85,6 +110,8 @@ export class MediaService {
         declaredMime: file.declaredMime,
         sniffedMime: sniffed?.mime,
         sizeBytes: file.bytes.byteLength,
+        // Header-only read: a huge image is refused here instead of failing in the worker minutes later.
+        dimensions: readImageSize(file.bytes),
       }),
     );
     const sha256 = createHash('sha256').update(file.bytes).digest('hex');
@@ -155,34 +182,91 @@ export class MediaService {
       .find(MediaAsset, { id: { $in: [...ids] }, status: 'READY', visibility: 'PUBLIC' });
     for (const asset of assets) {
       const url = this.displayUrl(asset);
-      if (url) found.set(asset.id, { url, variants: this.publicVariants(asset) });
+      if (url)
+        found.set(asset.id, {
+          url,
+          variants: this.publicVariants(asset),
+          thumbhash: asset.thumbhash ?? null,
+        });
     }
     return found;
   }
 
   /**
-   * Credit and sizes of public files, keyed by `sha256`: journal entries store only an image URL and hash,
-   * not a file id. Files that are not (yet) public and processed are absent.
+   * The public file behind each journal photo, keyed by `sha256`: journal entries store only the checksum (and,
+   * for older entries, an image URL), not a file id. A photo still `PROCESSING` or `FAILED` is reported with its
+   * status and no sizes, so a journal saved before the worker finished never breaks (GH#252). When several files
+   * share a checksum, a `READY` one wins.
    */
-  async entryImages(
-    checksums: readonly string[],
-  ): Promise<Map<string, { credit: MediaCredit | null; variants: MediaVariantResponse[] }>> {
-    const found = new Map<
-      string,
-      { credit: MediaCredit | null; variants: MediaVariantResponse[] }
-    >();
+  async entryImages(checksums: readonly string[]): Promise<Map<string, EntryImage>> {
+    const found = new Map<string, EntryImage>();
     const unique = [...new Set(checksums)];
     if (unique.length === 0) return found;
     const assets = await this.orm.em
       .fork()
-      .find(MediaAsset, { sha256: { $in: unique }, status: 'READY', visibility: 'PUBLIC' });
+      .find(MediaAsset, { sha256: { $in: unique }, visibility: 'PUBLIC' });
+    const rank: Record<string, number> = { READY: 0, PROCESSING: 1, FAILED: 2 };
+    assets.sort((a, b) => (rank[a.status] ?? 3) - (rank[b.status] ?? 3));
     for (const asset of assets) {
+      if (found.has(asset.sha256)) continue;
+      const ready = asset.status === 'READY';
       found.set(asset.sha256, {
+        mediaId: asset.id,
+        status: asset.status as EntryImage['status'],
+        url: ready ? (this.displayUrl(asset) ?? null) : null,
+        thumbhash: asset.thumbhash ?? null,
         credit: publicCredit(asset.credit),
-        variants: this.publicVariants(asset),
+        variants: ready ? this.publicVariants(asset) : [],
       });
     }
     return found;
+  }
+
+  /**
+   * Live `media.updated` events for the person's public photos (GH#252). Each call returns the photos that
+   * turned `READY` or `FAILED` since the last one, once each. The first call also replays the last minute, so a
+   * photo finished while the stream was reconnecting (every ~25 s) is not missed.
+   */
+  liveUpdates(ownerId: string, now: () => number = Date.now): () => Promise<MediaUpdatedEvent[]> {
+    const sent = new Set<string>();
+    let since = now() - LIVE_REPLAY_MS;
+    return async () => {
+      const assets = await this.orm.em.fork().find(
+        MediaAsset,
+        {
+          ownerId,
+          visibility: 'PUBLIC',
+          status: { $in: ['READY', 'FAILED'] },
+          updatedAt: { $gte: new Date(since) },
+        },
+        { orderBy: { updatedAt: 'asc' }, limit: 50 },
+      );
+      const events: MediaUpdatedEvent[] = [];
+      for (const asset of assets) {
+        const key = `${asset.id}:${asset.status}`;
+        if (sent.has(key)) continue;
+        sent.add(key);
+        events.push(this.toUpdatedEvent(asset));
+      }
+      // Stay a little behind the newest row seen: the worker's clock may trail the API's.
+      const newest = assets.at(-1)?.updatedAt.getTime();
+      since = Math.max(since, (newest ?? now()) - LIVE_CLOCK_SKEW_MS);
+      return events;
+    };
+  }
+
+  private toUpdatedEvent(asset: MediaAsset): MediaUpdatedEvent {
+    const ready = asset.status === 'READY';
+    return {
+      type: 'media.updated',
+      id: asset.id,
+      status: ready ? 'READY' : 'FAILED',
+      url: ready ? (this.displayUrl(asset) ?? null) : null,
+      variants: ready ? this.publicVariants(asset) : [],
+      thumbhash: ready ? (asset.thumbhash ?? null) : null,
+      width: asset.width ?? null,
+      height: asset.height ?? null,
+    };
   }
 
   /** Processed public images linked to the targets, keyed by `targetId`, each role ordered by `position`. */
@@ -249,24 +333,28 @@ export class MediaService {
   }
 
   /**
-   * GH#237: every journal photo must be one of the person's own processed uploads, named by its checksum and
-   * one of its public variant URLs, so the hash chain never covers a made-up checksum or someone else's file.
+   * GH#237: every journal photo must be one of the person's own public uploads, named by its checksum, so the
+   * hash chain never covers a made-up checksum or someone else's file. A photo still `PROCESSING` is accepted
+   * (GH#252: the worker can take minutes, and the journal shows a placeholder until it is `READY`); a `FAILED`
+   * one is not. A `url`, when given, must be one of the photo's public variants.
    */
   async ownsJournalImages(
     ownerId: string,
-    images: readonly { url: string; sha256: string }[],
+    images: readonly { url?: string | undefined; sha256: string }[],
   ): Promise<boolean> {
     if (images.length === 0) return true;
     const assets = await this.orm.em.fork().find(MediaAsset, {
       ownerId,
-      status: 'READY',
+      visibility: 'PUBLIC',
+      status: { $in: ['READY', 'PROCESSING'] },
       sha256: { $in: [...new Set(images.map((image) => image.sha256))] },
     });
     return images.every((image) =>
       assets.some(
         (asset) =>
           asset.sha256 === image.sha256 &&
-          this.publicVariants(asset).some((variant) => variant.url === image.url),
+          (image.url === undefined ||
+            this.publicVariants(asset).some((variant) => variant.url === image.url)),
       ),
     );
   }

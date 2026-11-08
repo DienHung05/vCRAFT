@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import type { DemoPhotoRef } from '@/lib/demo/data';
 import { PHOTO_BY_ID } from '@/lib/demo/photo-credits';
 import { aboveTheFoldUrl, buildResponsiveImage, type ImageVariant } from '@/lib/images';
+import { thumbhashDataUrl } from '@/lib/thumbhash';
 
 export interface ImageSlotProps {
   /** Mô tả ảnh (alt), bắt buộc như ảnh thật (FR-ART-04). Khi có `photo`, dùng alt của ảnh. */
@@ -18,6 +19,8 @@ export interface ImageSlotProps {
   photo?: DemoPhotoRef | undefined;
   /** Ảnh ở URL công khai khác (kho media), không thuộc bộ ảnh có giấy phép. */
   src?: string | undefined;
+  /** ThumbHash (base64) of the `src` image: painted blurred behind it until the optimized file has loaded. */
+  thumbhash?: string | null | undefined;
   /** Sizes of the `src` image from the API (AVIF + WebP, several widths); without them `src` is a single file. */
   variants?: readonly ImageVariant[] | undefined;
   /** `sizes` cho `<picture>`: chiều rộng ảnh theo viewport. */
@@ -45,6 +48,7 @@ export function ImageSlot({
   photo,
   src,
   variants,
+  thumbhash,
   sizes = DEFAULT_SIZES,
   priority = false,
   fit = 'cover',
@@ -63,6 +67,7 @@ export function ImageSlot({
   const [rw = 1, rh = 1] = (ratio ?? credit?.ratio ?? '1/1').split('/').map(Number);
   const responsive = buildResponsiveImage(variants, priority ? aboveTheFoldUrl : undefined);
   const fitClass = fit === 'contain' ? 'object-contain' : 'object-cover';
+  const blurred = src && !credit ? thumbhashDataUrl(thumbhash) : undefined;
 
   return (
     <div
@@ -76,7 +81,9 @@ export function ImageSlot({
         aspectRatio: ratio,
         background: credit
           ? credit.tint
-          : `radial-gradient(120% 90% at 30% 20%, color-mix(in oklch, ${tint} 55%, var(--color-paper)), ${tint} 70%, color-mix(in oklch, ${tint} 80%, var(--color-ink)))`,
+          : blurred
+            ? `center / cover no-repeat url(${blurred})`
+            : `radial-gradient(120% 90% at 30% 20%, color-mix(in oklch, ${tint} 55%, var(--color-paper)), ${tint} 70%, color-mix(in oklch, ${tint} 80%, var(--color-ink)))`,
       }}
     >
       {credit && photo ? (
