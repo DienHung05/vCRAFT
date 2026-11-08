@@ -53,7 +53,7 @@ export default async function ArtisansIndexPage({
       </header>
       {households.length > 0 ? (
         <ul className="mt-10 grid gap-8 sm:grid-cols-2 md:grid-cols-3">
-          {households.map((h) => {
+          {households.map((h, index) => {
             // What the cover really shows; a household without a photo gets an illustration label.
             const coverAlt = h.coverUrl
               ? altFor(locale, h.coverAlt ?? '', h.coverAltEn) || preset('household')
@@ -70,6 +70,7 @@ export default async function ArtisansIndexPage({
                     ratio="3/4"
                     {...slotPhoto(photoFromUrl(h.coverUrl, coverAlt, h.coverVariants))}
                     sizes="(min-width: 768px) 30vw, (min-width: 640px) 50vw, 100vw"
+                    priority={index < 2}
                     className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
                   />
                   <h2 className="mt-4 text-h3 transition-colors group-hover:text-clay">{h.name}</h2>

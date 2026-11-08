@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { DataUnavailable } from '@/components/data-unavailable';
-import { fetchMapPins } from '@/features/village-map/map-model';
+import { fetchMapPins } from '@/features/village-map/map-pins';
 import { VillageMapExplorer } from '@/features/village-map/village-map-explorer';
 import { resolveLocale } from '@/lib/locale';
 

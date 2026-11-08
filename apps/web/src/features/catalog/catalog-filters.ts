@@ -1,5 +1,9 @@
-import { PRODUCT_SORTS, type ProductSort } from '@vcraft/contracts';
-import { PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
+import {
+  PRODUCT_CATEGORIES,
+  PRODUCT_SORTS,
+  type ProductCategory,
+  type ProductSort,
+} from '@vcraft/domain';
 import { parsePageParam } from '@/lib/page-param';
 import type { ProductFilters } from './exhibition-query';
 

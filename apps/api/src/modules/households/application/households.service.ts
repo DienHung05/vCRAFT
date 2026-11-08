@@ -793,23 +793,26 @@ export class HouseholdsService {
           product.household.status === 'SUSPENDED' ? 'HOUSEHOLD_SUSPENDED' : 'PRODUCT_WITHDRAWN',
       };
     }
-    const covers = await this.media.productCoverImages([product]);
+    // Independent reads run together: sequential awaits cost one database round trip each (GH#255).
+    const [covers, makers, media, journal, scanCount] = await Promise.all([
+      this.media.productCoverImages([product]),
+      this.makersOf(em, [product]),
+      this.media.publicMedia(productMediaIds([product])),
+      loadJournal(em, product, this.media),
+      em.count(TraceScan, { product }),
+    ]);
     return {
       availability,
-      product: toProductDto(
-        product,
-        (await this.makersOf(em, [product])).get(product.id),
-        await this.media.publicMedia(productMediaIds([product])),
-        covers.get(product.id),
-      ),
-      coverCredit: await this.media.productCoverCredit(product),
+      product: toProductDto(product, makers.get(product.id), media, covers.get(product.id)),
+      // The cover credit is the first linked cover image's: the same row set `productCoverImages` just read.
+      coverCredit: covers.get(product.id)?.[0]?.credit ?? null,
       household: {
         name: product.household.name,
         slug: product.household.slug,
         status: product.household.status,
       },
-      journal: await loadJournal(em, product, this.media),
-      scanCount: await em.count(TraceScan, { product }),
+      journal,
+      scanCount,
     };
   }
 
@@ -883,23 +886,24 @@ export class HouseholdsService {
         orderBy: { createdAt: 'asc' },
       }),
     ]);
-    const linked = await this.media.linkedImages(
-      'HOUSEHOLD',
-      [household.id],
-      ['PORTRAIT', 'BANNER', 'GALLERY'],
-    );
     const mediaIds = [
       ...(household.gallery ?? []).flatMap((item) => (item.mediaId ? [item.mediaId] : [])),
       ...(household.timeline ?? []).flatMap((e) => (e.photo ? [e.photo.mediaId] : [])),
       ...productMediaIds(products),
     ];
+    // Three independent reads: together they cost one round trip instead of three (GH#255).
+    const [linked, makers, media] = await Promise.all([
+      this.media.linkedImages('HOUSEHOLD', [household.id], ['PORTRAIT', 'BANNER', 'GALLERY']),
+      this.makersOf(em, products),
+      this.media.publicMedia(mediaIds),
+    ]);
     return {
       artisans,
       workshops,
       products,
       idNumberMasked: this.maskedIdNumber(household),
-      makers: await this.makersOf(em, products),
-      media: await this.media.publicMedia(mediaIds),
+      makers,
+      media,
       linked: linked.get(household.id) ?? [],
     };
   }

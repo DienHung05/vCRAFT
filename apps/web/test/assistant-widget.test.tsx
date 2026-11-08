@@ -284,18 +284,19 @@ describe('AssistantWidget position', () => {
     expect(launcher().className).toContain(HIDE_FOR_SHEET);
   });
 
-  it('gives the open desktop panel the same height limit on the map page as elsewhere', () => {
+  it('gives the open desktop panel the same height limit on the map page as elsewhere', async () => {
     stubViewport(false);
-    const heights = ['/vi', '/vi/ban-do'].map((path) => {
+    const heights: string[] = [];
+    for (const path of ['/vi', '/vi/ban-do']) {
       nav.pathname = path;
       const { unmount } = renderVi(<AssistantWidget />);
       fireEvent.click(launcher());
-      const dialog = screen.getByRole('dialog');
-      const { maxHeight } = dialog.style;
+      // The panel is loaded on the first tap (GH#255), so it appears asynchronously.
+      const dialog = await screen.findByRole('dialog');
       expect(dialog.className).toContain(CORNER);
+      heights.push(dialog.style.maxHeight);
       unmount();
-      return maxHeight;
-    });
+    }
     expect(heights[1]).toBe(heights[0]);
     expect(heights[1]).toContain('7rem');
   });

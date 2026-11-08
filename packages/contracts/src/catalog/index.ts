@@ -1,4 +1,4 @@
-import { PRODUCT_CATEGORIES } from '@vcraft/domain';
+import { PRODUCT_CATEGORIES, PRODUCT_SORTS } from '@vcraft/domain';
 import { z } from 'zod';
 import {
   CursorPageQuerySchema,
@@ -18,7 +18,7 @@ import { PublicImageVariantsSchema } from '../media';
 export const ProductCategorySchema = z.enum(PRODUCT_CATEGORIES);
 export type ProductCategoryDto = z.infer<typeof ProductCategorySchema>;
 
-export const PRODUCT_SORTS = ['newest', 'price_asc', 'price_desc'] as const;
+export { PRODUCT_SORTS };
 export const ProductSortSchema = z.enum(PRODUCT_SORTS);
 export type ProductSort = z.infer<typeof ProductSortSchema>;
 

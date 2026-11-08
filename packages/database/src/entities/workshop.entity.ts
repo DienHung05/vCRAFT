@@ -18,7 +18,7 @@ export const WORKSHOP_PURPOSES = [
 @Entity({ tableName: 'workshop' })
 @Index({ properties: ['lat', 'lng'] })
 export class Workshop extends BaseEntity {
-  @ManyToOne({ entity: () => Household })
+  @ManyToOne({ entity: () => Household, index: true })
   household!: Household;
 
   @Property({ type: 'string', length: 160 })

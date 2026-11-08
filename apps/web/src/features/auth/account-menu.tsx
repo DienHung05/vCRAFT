@@ -7,7 +7,6 @@ import { Link } from '@/i18n/navigation';
 import { workspacePath } from '@/lib/auth/access';
 import { hasUnfinishedHouseholdRegistration } from '@/lib/auth/household-intent';
 import { clearRememberPreference } from '@/lib/auth/remember';
-import { browserSupabase } from '@/lib/auth/supabase-browser';
 import { useAccount } from '@/lib/auth/use-account';
 
 /**
@@ -85,6 +84,8 @@ export function AccountMenu({
   const signOut = async () => {
     setSigningOut(true);
     try {
+      // Loaded on demand: the Supabase SDK is only needed once the visitor is signed in and leaves.
+      const { browserSupabase } = await import('@/lib/auth/supabase-browser');
       await browserSupabase()?.auth.signOut();
       clearRememberPreference();
     } finally {

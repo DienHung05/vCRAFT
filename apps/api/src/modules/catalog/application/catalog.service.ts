@@ -240,22 +240,19 @@ export class CatalogService {
       { populate: ['household'] },
     );
     if (!product) throw notFound();
-    const makers = await em.find(
-      ProductMaker,
-      { product },
-      { populate: ['artisan'], orderBy: { position: 'asc' } },
-    );
-    const covers = await this.media.productCoverImages([product]);
+    // Independent reads run together: sequential awaits cost one database round trip each (GH#255).
+    const [makers, covers, media, journal] = await Promise.all([
+      em.find(ProductMaker, { product }, { populate: ['artisan'], orderBy: { position: 'asc' } }),
+      this.media.productCoverImages([product]),
+      this.media.publicMedia(productMediaIds([product])),
+      loadJournal(em, product, this.media),
+    ]);
     return {
-      product: toProductDto(
-        product,
-        makers,
-        await this.media.publicMedia(productMediaIds([product])),
-        covers.get(product.id),
-      ),
-      coverCredit: await this.media.productCoverCredit(product),
+      product: toProductDto(product, makers, media, covers.get(product.id)),
+      // The cover credit is the first linked cover image's: the same row set `productCoverImages` just read.
+      coverCredit: covers.get(product.id)?.[0]?.credit ?? null,
       household: { name: product.household.name, slug: product.household.slug },
-      journal: await loadJournal(em, product, this.media),
+      journal,
     };
   }
 

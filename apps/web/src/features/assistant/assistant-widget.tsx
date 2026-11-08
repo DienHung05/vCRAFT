@@ -1,11 +1,11 @@
 'use client';
 
 import { Mascot, type MascotMood, useMascotPoke } from '@vcraft/ui';
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Drawer } from 'vaul';
-import { AssistantPanel } from './assistant-panel';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { AssistantPanelProps } from './assistant-panel';
 import { freshThoughts, HELLO_DELAY_MS, HELLO_KEY, HELLO_PAGES, pageKind } from './conversation';
 import { useAssistant } from './use-assistant';
 
@@ -13,6 +13,12 @@ const MOBILE = '(max-width: 639px)';
 
 /** The map page flags its phone bottom sheet on the root element (GH#297); the Fox must not cover it. */
 const MAP_SHEET_HIDDEN = '[html[data-map-sheet=open]_&]:hidden';
+/**
+ * The panel, the bottom sheet (vaul, radix) and the focus trap load on the first tap on the Fox, not with
+ * the launcher: most visitors never open the assistant.
+ */
+const loadSheet = () => import('./assistant-sheet');
+const AssistantSheet = dynamic(() => loadSheet().then((m) => m.AssistantSheet), { ssr: false });
 
 function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(false);
@@ -55,30 +61,6 @@ const writeFlag = (key: string) => {
   }
 };
 
-/** Tab and Shift+Tab stay inside the open desktop panel; Esc closes it. */
-function trapFocus(event: KeyboardEvent<HTMLElement>, close: () => void) {
-  if (event.key === 'Escape') {
-    event.stopPropagation();
-    close();
-    return;
-  }
-  if (event.key !== 'Tab') return;
-  const focusable = [
-    ...event.currentTarget.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]), input:not([disabled])',
-    ),
-  ];
-  const first = focusable[0];
-  const last = focusable.at(-1);
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last?.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first?.focus();
-  }
-}
-
 /**
  * The Fox in the bottom-right corner of public pages (FR-AST-01, 06, PLAN E15 UX): a launcher that opens a
  * 380 px popover on desktop or a bottom sheet on phones. The Fox thinks with rotating fun facts while it
@@ -91,12 +73,15 @@ export function AssistantWidget() {
   const page = pageKind(pathname);
   const mobile = useMediaQuery(MOBILE);
   const [open, setOpen] = useState(false);
+  // Stays true after the first open so the sheet keeps its close animation and the chat state.
+  const [sheetLoaded, setSheetLoaded] = useState(false);
   const [hello, setHello] = useState(false);
   const launcher = useRef<HTMLButtonElement>(null);
   const wasOpen = useRef(false);
   useEffect(() => {
     if (wasOpen.current && !open) launcher.current?.focus();
     wasOpen.current = open;
+    if (open) setSheetLoaded(true);
   }, [open]);
   const viewportHeight = useVisualViewportHeight(open && mobile);
   const assistant = useAssistant({ locale, pagePath: pathname });
@@ -143,44 +128,42 @@ export function AssistantWidget() {
     setOpen((o) => !o);
   };
 
-  const panel = (
-    <AssistantPanel
-      archive={assistant.archive}
-      onHistory={assistant.refreshArchive}
-      onRestore={assistant.restore}
-      onDelete={assistant.removeFromArchive}
-      messages={messages}
-      busy={busy}
-      page={page}
-      onSend={assistant.send}
-      onStop={assistant.stop}
-      onRetry={assistant.retry}
-      onReset={assistant.reset}
-      onRate={assistant.rate}
-      onClose={close}
-      mascot={
-        // Pointer only (GH#211): the panel's tab order and focus trap stay as they were; keyboard users poke
-        // the Fox through the launcher.
-        <button
-          type="button"
-          onClick={poke}
-          tabIndex={-1}
-          aria-hidden="true"
-          className="block rounded-full"
-        >
-          <Mascot
-            mood={mood}
-            reaction={reaction}
-            size={96}
-            lookAt="pointer"
-            label={t('mascotLabel')}
-            thought={waiting ? thoughtIndices.map((i) => allThoughts[i] ?? '') : undefined}
-            thoughtPortal
-          />
-        </button>
-      }
-    />
-  );
+  const panel: AssistantPanelProps = {
+    archive: assistant.archive,
+    onHistory: assistant.refreshArchive,
+    onRestore: assistant.restore,
+    onDelete: assistant.removeFromArchive,
+    messages,
+    busy,
+    page,
+    onSend: assistant.send,
+    onStop: assistant.stop,
+    onRetry: assistant.retry,
+    onReset: assistant.reset,
+    onRate: assistant.rate,
+    onClose: close,
+    mascot: (
+      // Pointer only (GH#211): the panel's tab order and focus trap stay as they were; keyboard users poke
+      // the Fox through the launcher.
+      <button
+        type="button"
+        onClick={poke}
+        tabIndex={-1}
+        aria-hidden="true"
+        className="block rounded-full"
+      >
+        <Mascot
+          mood={mood}
+          reaction={reaction}
+          size={96}
+          lookAt="pointer"
+          label={t('mascotLabel')}
+          thought={waiting ? thoughtIndices.map((i) => allThoughts[i] ?? '') : undefined}
+          thoughtPortal
+        />
+      </button>
+    ),
+  };
 
   // Above the sticky call-to-action bar of the QR trace page, above the Studio tab bar on phones (GH#257),
   // and above the iOS home bar everywhere. The map page uses the normal corner (GH#297); while its phone
@@ -219,6 +202,8 @@ export function AssistantWidget() {
         aria-haspopup="dialog"
         aria-label={open ? t('close') : t('open')}
         onClick={toggle}
+        onPointerEnter={() => void loadSheet()}
+        onFocus={() => void loadSheet()}
         className={`fixed right-4 z-40 size-16 items-center justify-center rounded-full bg-surface shadow-warm ring-1 ring-ink/10 transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-clay ${lift} ${MAP_SHEET_HIDDEN} ${open ? 'hidden' : 'flex'}`}
       >
         <Mascot
@@ -230,44 +215,16 @@ export function AssistantWidget() {
         />
       </button>
 
-      {mobile ? (
-        <Drawer.Root open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
-          <Drawer.Portal>
-            <Drawer.Overlay className="fixed inset-0 z-50 bg-ink/30" />
-            <Drawer.Content
-              onCloseAutoFocus={(event) => {
-                event.preventDefault();
-                launcher.current?.focus();
-              }}
-              aria-describedby={undefined}
-              className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-card bg-paper pb-[env(safe-area-inset-bottom)] outline-none"
-              style={{
-                height: viewportHeight ? `${Math.round(viewportHeight * 0.88)}px` : '85dvh',
-              }}
-            >
-              <Drawer.Title className="sr-only">{t('title')}</Drawer.Title>
-              <div
-                className="mx-auto mt-2 h-1.5 w-12 shrink-0 rounded-full bg-ink/15"
-                aria-hidden
-              />
-              {panel}
-            </Drawer.Content>
-          </Drawer.Portal>
-        </Drawer.Root>
-      ) : (
-        open && (
-          <div
-            role="dialog"
-            aria-label={t('title')}
-            onKeyDown={(event) => trapFocus(event, close)}
-            style={{
-              maxHeight: 'calc(100dvh - env(safe-area-inset-bottom) - 7rem)',
-            }}
-            className={`fixed right-4 z-50 flex h-[36rem] w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-card bg-paper shadow-warm ring-1 ring-ink/10 ${lift}`}
-          >
-            {panel}
-          </div>
-        )
+      {sheetLoaded && (
+        <AssistantSheet
+          open={open}
+          mobile={mobile}
+          onOpenChange={setOpen}
+          panel={panel}
+          lift={lift}
+          viewportHeight={viewportHeight}
+          launcher={launcher}
+        />
       )}
     </>
   );
