@@ -40,6 +40,7 @@ import {
 } from '@vcraft/domain';
 import { normalizeSearchText, searchTerms } from '@vcraft/utils';
 import { AppError, notFound } from '../../../common/errors/app-error';
+import { ratingSummaries } from '../../households/household-rating-stats';
 import {
   type CoverImage,
   productCover,
@@ -430,11 +431,12 @@ export class CatalogService {
   ): Promise<HouseholdListDto['data']> {
     if (households.length === 0) return [];
     const ids = households.map((h) => h.id);
-    const [artisans, workshops, products, banners] = await Promise.all([
+    const [artisans, workshops, products, banners, ratings] = await Promise.all([
       em.find(Artisan, { household: { $in: ids } }, { orderBy: { createdAt: 'asc' } }),
       em.find(Workshop, { household: { $in: ids } }, { orderBy: { createdAt: 'asc' } }),
       em.find(Product, { household: { $in: ids }, status: 'PUBLISHED' }, { fields: ['household'] }),
       this.media.linkedImages('HOUSEHOLD', ids, ['BANNER']),
+      ratingSummaries(em, ids),
     ]);
     return households.map((h) => {
       const hours = workshops.find((w) => w.household.id === h.id && isVisitable(w));
@@ -454,6 +456,8 @@ export class CatalogService {
         coverAltEn: banner?.image.altEn ?? null,
         representative: artisans.find((a) => a.household.id === h.id)?.name ?? null,
         productCount: products.filter((p) => p.household.id === h.id).length,
+        ratingAverage: ratings.get(h.id)?.average ?? null,
+        ratingCount: ratings.get(h.id)?.count ?? 0,
         openingHours: hours?.openingHours ?? null,
       };
     });

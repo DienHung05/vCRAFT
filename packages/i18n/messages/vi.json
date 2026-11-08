@@ -525,11 +525,26 @@
         "destination": "Hãy nhập nơi giao hàng.",
         "deadline": "Hạn chào giá phải sau thời điểm gửi ít nhất 24 giờ.",
         "requiredBy": "Ngày cần hàng phải sau hạn chào giá.",
-        "budget": "Ngân sách phải là số nguyên, và mức từ không lớn hơn mức đến."
+        "budget": "Ngân sách phải là số nguyên, và mức từ không lớn hơn mức đến.",
+        "customerName": "Hãy nhập tên khách hàng (tối đa 120 ký tự).",
+        "customerPhone": "Hãy nhập số điện thoại Việt Nam hợp lệ, ví dụ 0912 345 678.",
+        "customerEmail": "Email không hợp lệ."
       },
       "sentToast": "Đã gửi yêu cầu báo giá. Các hộ sẽ nhận được lời mời chào giá.",
       "sentToastMatched": "Đã gửi yêu cầu báo giá tới {count, plural, other {# hộ phù hợp}}.",
-      "consentRequired": "Hãy đồng ý với chính sách quyền riêng tư để gửi yêu cầu."
+      "consentRequired": "Hãy đồng ý với chính sách quyền riêng tư để gửi yêu cầu.",
+      "signInAdmin": "Đăng nhập bằng tài khoản Ban quản lý để tạo yêu cầu cho khách hàng.",
+      "onBehalf": {
+        "title": "Tạo yêu cầu cho khách hàng",
+        "lead": "Dành cho khách đặt hàng qua điện thoại và chưa có tài khoản. Bạn là người điều phối yêu cầu và thay khách chốt chào giá, xác nhận nhận hàng và đánh giá các hộ.",
+        "customer": "Khách hàng ngoài nền tảng",
+        "name": "Tên khách hàng",
+        "phone": "Số điện thoại",
+        "email": "Email (không bắt buộc)",
+        "coordinated": "Yêu cầu này do bạn điều phối. Hãy chọn các hộ muốn mời chào giá.",
+        "householdsHint": "Chọn các hộ được mời chào giá; hộ có điểm đánh giá cao hiện trước.",
+        "sentToast": "Đã gửi yêu cầu cho khách hàng. Bạn đang phụ trách điều phối."
+      }
     },
     "list": {
       "allStatuses": "Tất cả trạng thái",
@@ -765,7 +780,20 @@
       "capacityExceeded": "Có hộ được chia vượt năng lực đã khai cho nhóm hàng này. Hãy giảm phần của hộ đó rồi gửi lại.",
       "offerExceeded": "Có hộ được chia vượt mức tối đa đã khai trong đề xuất. Hãy soát lại bảng chia rồi gửi lại.",
       "startFailed": "Chưa thể bắt đầu sản xuất. Hãy chắc chắn mọi hộ đã xác nhận phần việc của mình rồi thử lại.",
-      "actionFailed": "Thao tác không thành công. Hãy thử lại."
+      "actionFailed": "Thao tác không thành công. Hãy thử lại.",
+      "onBehalfBadge": "Khách ngoài nền tảng",
+      "customerName": "Khách hàng",
+      "customerPhone": "Điện thoại",
+      "customerEmail": "Email",
+      "onBehalfLead": "Bạn tạo yêu cầu này cho khách nên bạn chốt chào giá, xác nhận nhận hàng và đánh giá các hộ thay họ.",
+      "quotationsTitle": "Chào giá chờ khách quyết định",
+      "noQuotations": "Chưa có chào giá nào để chốt.",
+      "quotationTotal": "Tổng {total}",
+      "accept": "Chốt thay khách",
+      "acceptTitle": "Chốt chào giá này thay khách?",
+      "acceptText": "Chốt {quantity} {unit} với tổng {total}. Các chào giá khác sẽ bị từ chối. Không thể hoàn tác.",
+      "acceptedToast": "Đã chốt chào giá thay khách. Các hộ sẽ được báo ngay.",
+      "acceptFailed": "Không chốt được. Dữ liệu vừa thay đổi hoặc chào giá không còn hiệu lực."
     },
     "dashboard": {
       "title": "Tổng quan",
@@ -940,7 +968,11 @@
       "emptyHint": "Khi người mua nhờ Ban quản lý điều phối một yêu cầu, nó sẽ hiện ở đây.",
       "emptyAction": "Về tổng quan",
       "claimedToast": "Đã nhận điều phối yêu cầu này.",
-      "detail": "Yêu cầu"
+      "detail": "Yêu cầu",
+      "createForCustomer": "Tạo yêu cầu cho khách hàng",
+      "offPlatform": "Khách ngoài nền tảng",
+      "customer": "Khách hàng",
+      "customerPhone": "Điện thoại"
     },
     "audit": {
       "title": "Nhật ký kiểm toán",
@@ -1432,6 +1464,24 @@
       "allOrders": "Tất cả yêu cầu"
     }
   },
+  "rating": {
+    "title": "Đánh giá các hộ",
+    "lead": "Đơn đã được giao. Hãy cho điểm từng hộ đã làm hàng cho đơn này; bạn có thể sửa đánh giá trong 30 ngày.",
+    "star": "{count, plural, other {# sao}}",
+    "group": "Số sao dành cho {household}",
+    "comment": "Nhận xét về {household} (không bắt buộc)",
+    "commentHint": "Tối đa 1.000 ký tự.",
+    "save": "Lưu đánh giá",
+    "saving": "Đang lưu…",
+    "saved": "Đã lưu đánh giá.",
+    "editableUntil": "Bạn có thể sửa đến {date}.",
+    "needStars": "Hãy chọn số sao.",
+    "saveFailed": "Không lưu được đánh giá. Vui lòng thử lại.",
+    "windowClosed": "Đã quá 30 ngày nên không sửa được đánh giá này.",
+    "summary": "{average} / 5 · {count, plural, other {# đánh giá}}",
+    "summaryLabel": "Điểm trung bình {average} trên 5 từ {count, plural, other {# đánh giá}}",
+    "none": "Chưa có đánh giá"
+  },
   "order": {
     "title": "Đơn hàng",
     "loading": "Đang tải đơn hàng…",
@@ -1517,6 +1567,7 @@
       "ALLOCATION_PROPOSED": "Bạn có phần sản xuất cần xác nhận.",
       "ALLOCATION_CONFIRMED": "Một hộ đã xác nhận phân bổ.",
       "ALLOCATION_REASSIGNED": "Ban quản lý đã chuyển phần việc còn lại của bạn cho hộ khác.",
+      "RFQ_NOT_SELECTED": "Người mua đã chọn một chào giá khác. Cảm ơn bạn đã tham gia.",
       "ORDER_CANCELLED": "Đơn hàng đã bị hủy.",
       "PRODUCTION_STARTED": "Đơn hàng đã bắt đầu sản xuất.",
       "PROGRESS_REPORTED": "Có cập nhật tiến độ sản xuất.",

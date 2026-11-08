@@ -87,6 +87,8 @@ export const NOTIFICATION_TYPES_BY_ROLE: Record<AccountRole, readonly Notificati
     'PAYMENT_PAID',
     'PAYMENT_EXPIRED',
     'PAYMENT_REFUNDED',
+    // The coordinator confirms receipt on the buyer's behalf (GH#248 s5-12).
+    'ORDER_RECEIVED',
   ],
   HOUSEHOLD: [
     'HOUSEHOLD_APPROVED',
@@ -100,6 +102,7 @@ export const NOTIFICATION_TYPES_BY_ROLE: Record<AccountRole, readonly Notificati
     'RFQ_EXPIRED',
     'ALLOCATION_PROPOSED',
     'ALLOCATION_REASSIGNED',
+    'RFQ_NOT_SELECTED',
     'ORDER_CANCELLED',
     'PRODUCTION_STARTED',
     'ORDER_RECEIVED',
@@ -116,6 +119,11 @@ export const NOTIFICATION_TYPES_BY_ROLE: Record<AccountRole, readonly Notificati
     'PROGRESS_REPORTED',
     'ORDER_RECEIVED',
     'PAYMENT_PAID',
+    // An administrator who owns a request made for an off-platform customer is its buyer too (GH#248 s5-10).
+    'QUOTATION_RECEIVED',
+    'BIDDING_CLOSED',
+    'RFQ_EXPIRED',
+    'PRODUCTION_STARTED',
   ],
 };
 

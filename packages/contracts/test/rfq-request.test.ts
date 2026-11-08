@@ -17,6 +17,41 @@ const valid = {
   coordinationOptIn: true,
 };
 
+describe('GH#248 contracts: request made for an off-platform customer', () => {
+  const customer = { name: 'Nguyen Van An', phone: '0912 345 678' };
+
+  it('accepts a named customer with a Vietnamese phone and an optional email', () => {
+    for (const phone of ['0912345678', '+84 912 345 678', '091-234-5678', '024 3825 1234']) {
+      expect(
+        CreateRfqRequestSchema.safeParse({ ...valid, onBehalfOf: { ...customer, phone } }).success,
+        phone,
+      ).toBe(true);
+    }
+    expect(
+      CreateRfqRequestSchema.safeParse({
+        ...valid,
+        onBehalfOf: { ...customer, email: 'an@example.com' },
+      }).success,
+    ).toBe(true);
+  });
+
+  it('refuses a blank or long name, a foreign or malformed phone and a bad email', () => {
+    const refused = (onBehalfOf: object) =>
+      CreateRfqRequestSchema.safeParse({ ...valid, onBehalfOf }).success === false;
+    expect(refused({ ...customer, name: '  ' })).toBe(true);
+    expect(refused({ ...customer, name: 'x'.repeat(121) })).toBe(true);
+    for (const phone of ['', '12345', '0112345678', '+1 202 555 0100', 'call me maybe']) {
+      expect(refused({ ...customer, phone }), phone).toBe(true);
+    }
+    expect(refused({ ...customer, email: 'nope' })).toBe(true);
+    expect(refused({ ...customer, extra: 1 })).toBe(true);
+  });
+
+  it('stays optional, so a buyer request is unchanged', () => {
+    expect(CreateRfqRequestSchema.safeParse(valid).success).toBe(true);
+  });
+});
+
 describe('GH#9 contracts: request creation', () => {
   it('accepts full valid request with invites + coordination opt-in', () => {
     expect(CreateRfqRequestSchema.safeParse(valid).success).toBe(true);

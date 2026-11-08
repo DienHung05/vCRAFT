@@ -13,6 +13,17 @@ describe('selectMatchingHouseholds', () => {
     ).toEqual(['b', 'a', 'c']);
   });
 
+  it('breaks capacity and catalogue ties by rating, then by id', () => {
+    expect(
+      selectMatchingHouseholds([
+        { householdId: 'a', publishedProducts: 2 },
+        { householdId: 'b', publishedProducts: 2, ratingAverage: 3.5 },
+        { householdId: 'c', publishedProducts: 2, ratingAverage: 4.8 },
+        { householdId: 'd', publishedProducts: 3, ratingAverage: 1 },
+      ]),
+    ).toEqual(['d', 'c', 'b', 'a']);
+  });
+
   it('drops a household that declared zero capacity for the category', () => {
     expect(
       selectMatchingHouseholds([{ householdId: 'a', declaredCapacity: 0, publishedProducts: 5 }]),

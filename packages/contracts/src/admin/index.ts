@@ -7,7 +7,7 @@ import {
   IsoDateTimeSchema,
   MAX_PAGE_LIMIT,
 } from '../common';
-import { RfqStatusSchema } from '../rfq/create-rfq';
+import { OnBehalfOfSchema, RfqStatusSchema } from '../rfq/create-rfq';
 
 /** Every action written to the audit log. The screen offers these as the action filter. */
 export const AUDIT_ACTIONS = [
@@ -103,6 +103,8 @@ export const CoordinationQueueItemSchema = z.object({
   coordinatorName: z.string().nullable(),
   claimed: z.boolean(),
   claimedByMe: z.boolean(),
+  /** Set when the request was made by an administrator for an off-platform customer (FR-ORD-10). */
+  onBehalfOf: OnBehalfOfSchema.nullable().optional(),
 });
 export type CoordinationQueueItemDto = z.infer<typeof CoordinationQueueItemSchema>;
 export const CoordinationQueueSchema = z.array(CoordinationQueueItemSchema);

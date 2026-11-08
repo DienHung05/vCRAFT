@@ -201,8 +201,8 @@ describe('order confirmation, progress and receipt', () => {
       headers: { 'if-match': String(read.body.version) },
       body: { quotationId: quotations.body[0].id },
     });
-    // Vai trò ADMIN bị AuthGuard chặn ở @Roles('BUYER') trước khi tới service.
-    expect(forbiddenAccept.status).toBe(403);
+    // An administrator may accept only for a request they made for a customer (GH#248 s5-10); this one belongs to a buyer.
+    expect(forbiddenAccept.status).toBe(404);
     const strangerRead = await t.request({
       method: 'GET',
       url: `/rfqs/${requestId}/allocations`,

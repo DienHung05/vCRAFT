@@ -1,3 +1,4 @@
+export * from './household-rating';
 export * from './household-state-machine';
 export * from './product-category';
 export * from './product-price';

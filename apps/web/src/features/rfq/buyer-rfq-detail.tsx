@@ -30,6 +30,7 @@ import { useMoney } from '@/lib/use-money';
 import { BidRow, CountUpMoney } from './bid-motion';
 import { DeadlineCountdown } from './deadline-countdown';
 import { DuplicateRequestButton } from './duplicate-request-button';
+import { HouseholdRatings } from './household-ratings';
 import { RequestAttachments } from './rfq-attachments';
 import { buyerEvents, rfqStepperModel } from './rfq-flow';
 import { RfqForm } from './rfq-form';
@@ -457,6 +458,15 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
 
           {['ACCEPTED', 'IN_PRODUCTION', 'DELIVERED'].includes(request.status) ? (
             <OrderPaymentPanel orderId={request.id} orderStatus={request.status} />
+          ) : null}
+          {request.status === 'DELIVERED' ? (
+            <HouseholdRatings
+              client={client}
+              requestId={request.id}
+              shares={allocations}
+              ratings={request.ratings ?? []}
+              onSaved={() => void load()}
+            />
           ) : null}
         </>
       )}

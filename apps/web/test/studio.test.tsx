@@ -28,6 +28,8 @@ const HOUSEHOLD: HouseholdDto = {
   craftCategory: 'MEN',
   coverUrl: null,
   coverVariants: [],
+  ratingAverage: null,
+  ratingCount: 0,
   portrait: null,
   banner: null,
   seal: null,

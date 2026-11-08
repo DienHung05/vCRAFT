@@ -21,6 +21,7 @@ import {
   type ErrorCode,
   formatVersionTag,
   HouseholdListResponseSchema,
+  HouseholdRatingSchema,
   IdSchema,
   InternalQuotationResponseSchema,
   InviteHouseholdsRequestSchema,
@@ -33,6 +34,8 @@ import {
   PriceHintResponseSchema,
   ProblemDetailsSchema,
   QuotationNoticeResponseSchema,
+  type RateHouseholdRequest,
+  RateHouseholdRequestSchema,
   type ReportProgressRequest,
   ReportProgressRequestSchema,
   RfqListResponseSchema,
@@ -210,6 +213,22 @@ export function createQuotationClient(options: QuotationClientOptions) {
       return request(
         `/rfqs/${IdSchema.parse(id)}/quotations`,
         BuyerQuotationResponseSchema.array(),
+      );
+    },
+    /** The quotations of a request as the coordinating administrator sees them (with household names). */
+    listInternalQuotations(id: string) {
+      return request(
+        `/rfqs/${IdSchema.parse(id)}/quotations`,
+        InternalQuotationResponseSchema.array(),
+      );
+    },
+    /** FR-ORD-11: the owner rates one household of a delivered request (creates or replaces the rating). */
+    rateHousehold(id: string, householdId: string, input: RateHouseholdRequest) {
+      return request(
+        `/rfqs/${IdSchema.parse(id)}/ratings/${IdSchema.parse(householdId)}`,
+        HouseholdRatingSchema,
+        'PUT',
+        RateHouseholdRequestSchema.parse(input),
       );
     },
     /** Suggested unit price range for the signed-in household's offer (PLAN E9). */

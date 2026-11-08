@@ -25,6 +25,7 @@ import {
   isVisitable,
   POSTED_BY_ADMINISTRATION,
   profileCompleteness,
+  type RatingSummary,
   splitWorkshops,
 } from '@vcraft/domain';
 import type { LinkedImage, PublicLinkRole, PublicMedia } from '../media/application/media.service';
@@ -197,6 +198,8 @@ export interface HouseholdParts {
   productCovers?: ReadonlyMap<string, readonly CoverImage[]>;
   /** Masked citizen ID number for the owner and admin views (never the full number). */
   idNumberMasked?: string | null;
+  /** The buyers' rating summary (FR-ORD-11); absent means no ratings yet. */
+  rating?: RatingSummary;
 }
 
 const linkedOf = (parts: HouseholdParts, role: PublicLinkRole) =>
@@ -318,6 +321,8 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
     // Chưa chọn bìa riêng thì dùng ảnh xưởng đầu tiên đã xử lý xong.
     coverUrl,
     coverVariants: variantsOfUrl(coverUrl, [...(banner ? [banner] : []), ...gallery]),
+    ratingAverage: parts.rating?.average ?? null,
+    ratingCount: parts.rating?.count ?? 0,
     portrait: toOwnPublicImage(h.portraitPhoto, parts) ?? linkedOf(parts, 'PORTRAIT')[0] ?? null,
     banner: banner ?? null,
     seal: toOwnPublicImage(h.sealPhoto, parts),

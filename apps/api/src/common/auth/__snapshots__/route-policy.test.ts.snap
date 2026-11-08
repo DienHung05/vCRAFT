@@ -117,10 +117,10 @@ GET /api/v1/products/:slug PUBLIC
 GET /api/v1/redirects/households/:slug PUBLIC
 GET /api/v1/redirects/products/:slug PUBLIC
 GET /api/v1/rfqs ROLES(BUYER)
-POST /api/v1/rfqs ROLES(BUYER)
+POST /api/v1/rfqs ROLES(ADMIN,BUYER)
 GET /api/v1/rfqs/:id AUTHENTICATED
 PUT /api/v1/rfqs/:id ROLES(BUYER)
-POST /api/v1/rfqs/:id/accept ROLES(BUYER)
+POST /api/v1/rfqs/:id/accept ROLES(ADMIN,BUYER)
 GET /api/v1/rfqs/:id/allocations ROLES(ADMIN,BUYER,HOUSEHOLD)
 POST /api/v1/rfqs/:id/cancel ROLES(ADMIN,BUYER)
 GET /api/v1/rfqs/:id/contributions ROLES(ADMIN,HOUSEHOLD)
@@ -135,9 +135,10 @@ POST /api/v1/rfqs/:id/invitations ROLES(ADMIN)
 GET /api/v1/rfqs/:id/price-hint ROLES(HOUSEHOLD)
 GET /api/v1/rfqs/:id/quotations ROLES(ADMIN,BUYER)
 POST /api/v1/rfqs/:id/quotations ROLES(ADMIN)
+PUT /api/v1/rfqs/:id/ratings/:householdId ROLES(ADMIN,BUYER)
 POST /api/v1/rfqs/:id/receive ROLES(ADMIN,BUYER)
 POST /api/v1/rfqs/:id/start-production ROLES(ADMIN,HOUSEHOLD)
-POST /api/v1/rfqs/:id/submit ROLES(BUYER)
+POST /api/v1/rfqs/:id/submit ROLES(ADMIN,BUYER)
 GET /api/v1/search/suggest PUBLIC
 GET /api/v1/trace/:code PUBLIC
 POST /api/v1/trace/:code/scan PUBLIC

@@ -527,6 +527,9 @@ export const PublicHouseholdResponseSchema = z.object({
   coverUrl: z.string().nullable(),
   /** Sizes of `coverUrl` when it is a processed media-store image; empty otherwise. */
   coverVariants: PublicImageVariantsSchema,
+  /** Mean of the buyers' 1-5 star ratings with one decimal (FR-ORD-11); null until the first rating. */
+  ratingAverage: z.number().min(1).max(5).nullable(),
+  ratingCount: z.int().min(0),
   /** Portrait and banner linked through `media_link`. */
   portrait: PublicImageSchema.nullable(),
   banner: PublicImageSchema.nullable(),

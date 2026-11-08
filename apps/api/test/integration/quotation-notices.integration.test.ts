@@ -310,10 +310,13 @@ describe('quotation notices: in-app inbox and mail outbox', () => {
         {
           repA: ['ALLOCATION_PROPOSED'],
           repB: ['ALLOCATION_PROPOSED'],
+          // Invited but not in the accepted quotation (GH#248 s4-11).
+          repC: ['RFQ_NOT_SELECTED'],
           admin: ['QUOTATION_ACCEPTED'],
         },
       ),
-    ).toBe(2);
+      // One outbox event per notice kind: proposed, not selected, accepted.
+    ).toBe(3);
 
     for (const party of ['repA', 'repB'] as const) {
       await step(
@@ -380,7 +383,10 @@ describe('quotation notices: in-app inbox and mail outbox', () => {
 
     // Người lạ (và hộ chưa tham gia đơn) không thấy gì của đơn này.
     expect(await inbox('stranger')).toEqual([]);
-    expect((await inbox('repC')).map((n) => n.kind)).toEqual(['RFQ_INVITED']);
+    expect((await inbox('repC')).map((n) => n.kind).sort()).toEqual([
+      'RFQ_INVITED',
+      'RFQ_NOT_SELECTED',
+    ]);
   });
 
   async function acceptedOrder() {

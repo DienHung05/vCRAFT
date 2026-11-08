@@ -28,6 +28,8 @@ import {
   InviteHouseholdsRequestSchema,
   type ListRfqsQuery,
   ListRfqsQuerySchema,
+  type RateHouseholdRequest,
+  RateHouseholdRequestSchema,
   type ReallocateRequest,
   ReallocateRequestSchema,
   type ReportProgressRequest,
@@ -46,9 +48,10 @@ import { RfqService } from './application/rfq.service';
 export class RfqController {
   constructor(private readonly rfqs: RfqService) {}
 
+  /** A buyer creates their own request; an administrator creates one for an off-platform customer (FR-ORD-10). */
   @Post()
   @Idempotent()
-  @Roles('BUYER')
+  @Roles('BUYER', 'ADMIN')
   create(
     @CurrentActor() actor: Actor,
     @Body(new ZodValidationPipe(CreateRfqRequestSchema)) body: CreateRfqRequest,
@@ -98,7 +101,7 @@ export class RfqController {
   @Post(':id/submit')
   @Idempotent()
   @HttpCode(200)
-  @Roles('BUYER')
+  @Roles('BUYER', 'ADMIN')
   submit(
     @CurrentActor() actor: Actor,
     @Param('id', new UuidPipe()) id: string,
@@ -217,7 +220,7 @@ export class RfqController {
   @Post(':id/accept')
   @Idempotent()
   @HttpCode(200)
-  @Roles('BUYER')
+  @Roles('BUYER', 'ADMIN')
   accept(
     @CurrentActor() actor: Actor,
     @Param('id', new UuidPipe()) id: string,
@@ -259,6 +262,21 @@ export class RfqController {
     @IfMatchVersion() version: number,
   ) {
     return this.rfqs.confirmReceipt(actor, id, version);
+  }
+
+  /**
+   * FR-ORD-11: the owning buyer (or the administrator who owns a request made for a customer) rates one
+   * household of a delivered request. Creates the rating or replaces it while the edit window is open.
+   */
+  @Put(':id/ratings/:householdId')
+  @Roles('BUYER', 'ADMIN')
+  rateHousehold(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @Param('householdId', new UuidPipe()) householdId: string,
+    @Body(new ZodValidationPipe(RateHouseholdRequestSchema)) body: RateHouseholdRequest,
+  ) {
+    return this.rfqs.rateHousehold(actor, id, householdId, body);
   }
 
   /** The owning buyer or the coordinator cancels. A reason is required. */

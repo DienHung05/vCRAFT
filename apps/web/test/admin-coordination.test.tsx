@@ -55,6 +55,25 @@ const LEGACY: AuditEntryDto = {
 const asClient = (methods: Partial<AdminClient>) => methods as unknown as AdminClient;
 
 describe('CoordinationQueue', () => {
+  it('marks a request made for an off-platform customer and shows the customer', async () => {
+    const coordinationQueue = vi.fn().mockResolvedValue([
+      ROW,
+      {
+        ...ROW,
+        id: '00000000-0000-4000-8000-000000000009',
+        buyerName: 'Nguyen Van An',
+        onBehalfOf: { name: 'Nguyen Van An', phone: '0912345678' },
+      },
+    ]);
+    renderVi(<CoordinationQueue client={asClient({ coordinationQueue })} />);
+
+    expect(await screen.findByText('Nguyen Van An')).toBeTruthy();
+    expect(screen.getByText('0912345678')).toBeTruthy();
+    // Only the customer's request carries the badge.
+    expect(screen.getAllByText('Khách ngoài nền tảng')).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'Tạo yêu cầu cho khách hàng' })).toBeTruthy();
+  });
+
   it('claims an unclaimed request with its current version, then reloads', async () => {
     const coordinationQueue = vi
       .fn()

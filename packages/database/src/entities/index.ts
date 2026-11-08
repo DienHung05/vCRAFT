@@ -8,6 +8,7 @@ export * from './consent-record.entity.js';
 export * from './contribution-offer.entity.js';
 export * from './cooperative-quotation.entity.js';
 export * from './household.entity.js';
+export * from './household-rating.entity.js';
 export * from './idempotency-key.entity.js';
 export * from './journal-entry.entity.js';
 export * from './login-event.entity.js';
