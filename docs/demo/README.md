@@ -197,6 +197,17 @@ Bị từ chối thì in **mọi** lý do, ghi "Không có dữ liệu nào bị
 
 Lỗi thường gặp: `self-signed certificate in certificate chain` (thiếu `DB_SSL_CA_FILE`, §1A); `Dữ liệu demo đã tồn tại` (dùng `demo:reset`, đừng dùng `db:seed`); `Thiếu cột/bảng` (chưa `pnpm db:migrate`; migration `*_quotation_notice_inbox` và `*_media_asset` cần được áp).
 
+### Refreshing the text of an existing demo database (GH#298)
+
+`pnpm demo:refresh-text [-- --dry-run]` brings the text of a live demo database in line with the current seed without a reset. It rewrites only text columns: `household.history` and `artisan.bio` (the seed's stories and bios, matched by household name; artisans by creation order, using each row's own name and craft role), the body of the news items that come from the seed's news pool, and it strips the old "[Dữ liệu mẫu]" tag and any sentence that calls the data fictional or for demonstration from news titles, summaries and bodies and from product descriptions and artisan notes. It also drops the old " (mẫu)" suffix from `app_user.full_name` (the four fixed demo accounts get their current seed names). Rows that are not in the seed are only stripped, never given invented text. Media, users, ids, slugs and prices are not touched, so there is no destructive guard; the command prints the target database first. It runs in one transaction and is idempotent: a second run reports `changed: 0`.
+
+```bash
+pnpm demo:refresh-text -- --dry-run   # prints counts per table and the household slugs it would change; writes nothing
+pnpm demo:refresh-text                # applies the change
+pnpm assistant:reindex                # then rebuild the Fox assistant's knowledge chunks so it reads the new text
+pnpm demo:verify -- --offline         # the check "No demo disclaimer text" must pass
+```
+
 ## 4. Ma trận nghiệm thu
 
 Một dòng một bước. Cột "Giám khảo thấy gì" là điều để kiểm bằng mắt; cột cuối nói thật điều gì đã có.
@@ -387,6 +398,7 @@ Sau khi chuyển sang local, nhớ: dữ liệu local độc lập với Supabas
 | `pnpm demo:reset` | Xóa bảng nghiệp vụ và nạp lại dữ liệu mẫu (có cổng chặn, §3) |
 | `pnpm demo:media [-- --force \| --check]` | Tải ảnh có giấy phép + giấy tờ mẫu lên Storage và nối vào seed (cần `APP_ENV=demo`; chạy sau mỗi `demo:reset`, §1B) |
 | `pnpm demo:verify [-- --offline]` | Kiểm dữ liệu demo còn nguyên, gồm ảnh và giấy tờ (chỉ đọc; `--offline` bỏ HEAD tới URL ảnh) |
+| `pnpm demo:refresh-text [-- --dry-run]` | Rewrite household stories, artisan bios and news text in place and strip the old sample-data disclaimers (text only, §3); then `pnpm assistant:reindex` |
 | `pnpm demo:auth [-- --check]` | Tạo/kiểm 4 người dùng Supabase Auth với id cố định |
 | `pnpm demo:e2e` | Kịch bản QR → biên nhận trên `E2E_BASE_URL` (làm bẩn dữ liệu, reset sau) |
 | `pnpm demo:e2e:preexam` | WCAG, đáp ứng, không nạp lại trang, bàn phím (đặt `DEMO_PREEXAM=1` tự động) |

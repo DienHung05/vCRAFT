@@ -7,8 +7,12 @@ export interface HouseholdSeed {
   owner: string;
   craft: string;
   /**
-   * The household's story on its page (GH#204): a few plain sentences that match its craft. `{address}` is
-   * replaced by the address of its first workshop. Invented, but never claims awards or real people.
+   * The household's story on its page (GH#204, GH#298): a warm Vietnamese narrative of about 90 to 150 words
+   * that reads as true and matches the entry's name, owner, craft and number of generations. It covers how the
+   * family came to the craft, who works in the workshop now, what and how they make, one sensory detail and what
+   * a visitor sees. `{address}` appears exactly once and is replaced by the address of its first workshop (see
+   * `householdStory`). It is invented, so it must never name real living people, claim real awards or titles,
+   * cite real brands or institutions, or say that it is sample, fictional or demo data.
    */
   story: string;
 }
@@ -20,140 +24,140 @@ export const HOUSEHOLDS: readonly HouseholdSeed[] = [
     owner: 'Nguyễn Minh Hải',
     craft: 'men lam',
     story:
-      'Xưởng của hộ nằm ở {address}, nơi ông Hải và các con vẫn giữ lò men lam từ thời cha ông. Mỗi món đều được vẽ tay bằng bút lông trên nền men trắng, rồi nung ở nhiệt độ cao để màu lam chìm vào men. Họa tiết quen thuộc của hộ là cành tre, hoa cúc và sóng nước. Khách ghé xưởng có thể ngồi xem thợ vẽ ngay bên bàn xoay.',
+      'Ông Hải học nghề men lam từ người cha, người đã nhóm cái lò đầu tiên của gia đình tại {address}; đến nay nhà ông làm gốm được hai đời. Sáng nào ông cũng là người đứng lò, còn việc vẽ và tráng men chia cho những người thợ đã gắn bó với xưởng hơn chục năm. Đất sét được ủ kỹ trước khi vuốt, rồi cành tre, hoa cúc và sóng nước được vẽ tay bằng bút lông trên nền men trắng. Khi lò nguội, sắc lam chìm hẳn vào men, sâu và êm. Khách đến xưởng được ngồi cạnh bàn xoay, hít mùi đất ẩm lẫn khói củi và xem thợ đưa những nét bút đầu tiên.',
   },
   {
     name: 'Gốm Lam Ngọc',
     owner: 'Trần Thị Ngọc',
     craft: 'men ngọc và men rạn',
     story:
-      'Bà Ngọc cùng con gái làm men ngọc và men rạn trong một xưởng nhỏ ở {address}. Lớp men ngọc được pha nhiều lần cho đến khi lên sắc xanh trong như nước hồ. Những món men rạn được để nguội chậm sau khi ra lò để vết rạn tỏa đều khắp thân. Hộ thường làm bình nhỏ, đĩa và chén uống trà.',
+      'Ba đời nhà bà Ngọc theo nghề gốm, nhưng riêng bà mới là người say men ngọc và men rạn. Xưởng nhỏ ở {address} giờ do bà cùng cô con gái giữ, hai mẹ con thay nhau pha men, thử nhiệt và ghi từng mẻ vào cuốn sổ bìa đã sờn. Men ngọc được pha đi pha lại cho đến khi lên sắc xanh trong như mặt hồ buổi sớm. Món men rạn thì để nguội thật chậm, và đêm mở lò người ta nghe men tách khẽ như tiếng sương rơi. Khách ghé xưởng thường được mời một chén trà, rồi cầm chiếc chén vừa ra lò lên xem đường rạn dưới ánh sáng.',
   },
   {
     name: 'Lò Đức Phát',
     owner: 'Lê Đức Phát',
     craft: 'đồ gia dụng, cốc và bát in logo',
     story:
-      'Lò Đức Phát ở {address} chuyên đồ gia dụng: cốc, bát và đĩa dùng hằng ngày. Hộ nhận in logo cho quán cà phê, nhà hàng và công ty, mỗi mẻ từ vài chục đến vài trăm chiếc. Anh Phát quản lý lò, còn vợ anh lo khâu kiểm hàng và đóng gói. Dáng cốc được giữ đơn giản để dễ xếp chồng và dễ rửa.',
+      'Lò Đức Phát đã qua bốn đời làm đồ gốm dùng hằng ngày, từ thời ông cố nung chén bát cho cả xóm ăn cơm. Anh Phát nay trông lò ở {address}, còn vợ anh đứng khâu kiểm hàng và đóng gói, lật từng chiếc cốc dưới đèn như lật một trang sách. Cốc, bát, đĩa của lò có dáng gọn, thành vừa dày để cầm không nóng tay, dễ xếp chồng và dễ rửa. Quán cà phê, nhà hàng đặt mỗi lần từ vài chục đến vài trăm chiếc, in tên hoặc biểu tượng riêng của mình. Ghé xưởng buổi sáng, khách sẽ thấy cả dãy cốc trắng xếp thẳng hàng trên giá, chờ vào lò.',
   },
   {
     name: 'Gốm Hạnh Thủy',
     owner: 'Phạm Hạnh Thủy',
     craft: 'vẽ tay hoa sen, chim lạc',
     story:
-      'Chị Thủy mở xưởng vẽ tay ở {address} sau nhiều năm làm thợ vẽ cho các lò trong làng. Hoa sen và chim lạc là hai đề tài chị vẽ nhiều nhất, mỗi nét đều đi bằng tay chứ không in dán. Xưởng nhận vẽ theo yêu cầu cho bộ quà tặng nhỏ. Vào buổi chiều, khách thường gặp chị đang vẽ bên cửa sổ.',
+      'Chị Thủy lớn lên giữa tiếng bàn xoay; nhà chị làm gốm đã năm đời, nhưng chị chọn cây bút thay cho cái lò. Sau nhiều năm làm thợ vẽ cho các xưởng trong làng, chị mở xưởng riêng ở {address} để được vẽ theo ý mình. Hoa sen và chim lạc là hai đề tài chị yêu nhất, mỗi nét đều đi bằng tay chứ không in, không dán, nên chẳng có hai chiếc nào trùng nhau. Chị nhận vẽ riêng cho những bộ quà nhỏ, có khi chỉ ba bốn chiếc. Chiều xuống, nắng chéo qua cửa sổ rọi lên mặt men còn ướt, và khách ghé vào thường bắt gặp chị đang lặng lẽ kéo nét cuối cùng của một cánh sen.',
   },
   {
     name: 'Gốm Thanh Tùng',
     owner: 'Vũ Thanh Tùng',
     craft: 'bình hoa, lục bình',
     story:
-      'Hộ anh Tùng làm bình hoa và lục bình ở {address}, từ cỡ để bàn đến cỡ đặt sàn. Những chiếc lục bình cao được vuốt thành nhiều khúc rồi ghép lại khi đất còn ẩm. Anh Tùng chú ý nhất đến dáng cổ và vai bình sao cho cân đối. Men thường dùng là men lam và men nâu da lươn.',
+      'Anh Tùng là đời thứ hai của một nhà làm gốm, và là người đầu tiên trong nhà dám vuốt những chiếc lục bình cao ngang ngực. Xưởng ở {address} có vài người thợ cùng anh làm bình hoa, từ cỡ để bàn đến cỡ đặt sàn. Thân bình cao được vuốt thành từng khúc, ghép lại khi đất còn ẩm, rồi anh miết bằng ngón tay cho mối nối biến mất. Anh dành nhiều thời gian nhất cho đường cổ và vai bình, bởi theo anh dáng bình đẹp hay không là ở chỗ ấy. Men lam và men nâu da lươn là hai màu quen của xưởng. Khách đến thường đứng rất lâu trước hàng lục bình mới ra lò, lặng lẽ ngước nhìn.',
   },
   {
     name: 'Gốm Bích Hợp',
     owner: 'Đỗ Thị Bích Hợp',
     craft: 'ấm chén men nâu',
     story:
-      'Bà Hợp làm ấm chén men nâu ở {address} đã ngót ba mươi năm. Đất làm ấm được lọc kỹ để thân ấm mỏng mà vẫn giữ nhiệt tốt. Nắp và vòi được mài khít bằng tay sau khi nung. Người trong làng hay tìm đến hộ để đặt bộ ấm dùng hằng ngày.',
+      'Gần ba mươi năm nay, bà Hợp làm ấm chén men nâu trong căn xưởng mái ngói ở {address}, nối nghề của mẹ và bà ngoại, ba đời liền. Đất làm ấm được bà lọc kỹ nhiều lần để thân ấm mỏng mà giữ nóng lâu. Sau khi nung, nắp và vòi còn được mài khít bằng tay; bà đặt nắp lên, xoay nhẹ, nghe tiếng cạch khẽ vừa đủ mới chịu. Một người thợ trẻ phụ bà vuốt ấm, còn phần hoàn thiện bà giữ cho riêng mình. Người trong làng vẫn tìm đến bà đặt bộ ấm dùng hằng ngày, còn khách xa thích ngồi uống thử một ấm trà ngay tại xưởng.',
   },
   {
     name: 'Lò Hải Yến',
     owner: 'Hoàng Hải Yến',
     craft: 'đồ thờ, lư hương',
     story:
-      'Lò Hải Yến ở {address} chuyên đồ thờ: lư hương, bát hương, đôi đèn và chân nến. Chị Yến chọn men vàng đồng và men lam, hai màu được ưa chuộng trên ban thờ gia đình. Mỗi chiếc bát hương được kiểm kỹ vành miệng và đáy trước khi giao. Hộ nhận làm theo kích thước của từng ban thờ.',
+      'Bốn đời nhà chị Yến làm đồ thờ, và với họ mỗi chiếc lư hương là món đồ phải làm trong sự tĩnh lặng. Lò ở {address} chuyên lư hương, bát hương, đôi đèn và chân nến cho ban thờ gia đình. Chị Yến chọn men vàng đồng và men lam, hai màu trầm ấm hợp với làn khói hương. Trước khi giao, chị tự tay kiểm vành miệng và đáy từng chiếc, miết ngón tay một vòng để chắc không còn chỗ sắc. Xưởng nhận làm đúng kích thước từng ban thờ, kể cả những ban thờ nhỏ trong căn hộ chật. Khách vào xưởng thường nói khẽ, như thể bước vào gian thờ của một gia đình.',
   },
   {
     name: 'Gốm Quang Vinh',
     owner: 'Nguyễn Quang Vinh',
     craft: 'men rạn cổ',
     story:
-      'Anh Vinh theo đuổi men rạn cổ tại xưởng ở {address}. Anh pha men theo cách làng vẫn truyền, rồi xoa mực vào vết rạn để đường rạn hiện rõ. Bình, lọ và chóe là những món anh làm nhiều nhất. Mỗi mẻ men rạn cho ra vết rạn khác nhau, nên không có hai món giống hệt.',
+      'Anh Vinh là đời thứ năm trong dòng họ làm gốm, và anh dành riêng nghề mình cho men rạn cổ. Công thức men ở xưởng {address} được truyền từ ông nội, ghi bằng những ký hiệu chỉ người nhà đọc hiểu. Sau khi ra lò, anh chờ men nguội hẳn rồi xoa mực vào các đường rạn để mạng vân hiện lên như gân lá. Bình, lọ và chóe là những món anh làm nhiều nhất, cái nào cũng dày dặn, nặng tay. Mỗi mẻ men cho một kiểu rạn khác nhau nên không có hai món giống hệt, và anh bảo chính điều đó khiến anh còn mê nghề. Khách đến được gõ nhẹ vào thành bình để nghe tiếng ngân.',
   },
   {
     name: 'Gốm Thu Hằng',
     owner: 'Bùi Thu Hằng',
     craft: 'đĩa, tô men trắng ngà',
     story:
-      'Chị Hằng làm đĩa và tô men trắng ngà ở {address}. Lớp men trắng ngà ấm hơn men trắng sứ, hợp với món ăn Việt. Hộ làm theo bộ cho gia đình và nhà hàng nhỏ, có thể thêm một đường viền lam mảnh. Đĩa được nung xếp từng chiếc để mặt men không bị dính.',
+      'Chị Hằng mới là đời thứ hai làm gốm trong nhà, nhưng đôi tay chị đã quen với đĩa và tô men trắng ngà đến mức nhắm mắt cũng biết chiếc nào lệch. Xưởng ở {address} làm theo bộ cho gia đình và các nhà hàng nhỏ. Men trắng ngà của chị ấm hơn men trắng sứ, đặt món ăn Việt lên trông gần gũi hơn, có bộ còn thêm một đường viền lam mảnh. Khi nung, đĩa được xếp từng chiếc, cách nhau một đốt ngón tay để mặt men không dính vào nhau. Buổi trưa, mùi cơm từ bếp nhà chị lan sang xưởng, và khách ghé vào đôi khi được mời thử bộ bát đĩa mới bên mâm cơm giản dị.',
   },
   {
     name: 'Gốm Đại Phong',
     owner: 'Phan Đại Phong',
     craft: 'tượng và chậu cây',
     story:
-      'Hộ ông Phong ở {address} làm tượng và chậu cây, phần lớn là đồ đặt ngoài sân vườn. Tượng được nặn bằng tay hoặc in khuôn rồi sửa lại từng chi tiết. Chậu có lỗ thoát nước và men chịu nắng mưa. Sân xưởng lúc nào cũng xếp đầy chậu đang phơi.',
+      'Ông Phong còn nhớ lần đầu được ông nội cho nặn một con nghê nhỏ bằng chỗ đất thừa, và từ đó nghề tượng gốm theo ông đến tận bây giờ, qua ba đời. Xưởng ở {address} làm tượng và chậu cây, phần lớn là đồ đặt ngoài sân vườn nên men phải chịu được nắng mưa. Tượng được nặn tay hoặc in khuôn, rồi ông ngồi sửa lại từng chi tiết, từ nếp áo đến đôi mắt. Chậu có lỗ thoát nước và đáy dày để không nứt khi trời trở lạnh. Sân xưởng lúc nào cũng la liệt chậu đang phơi, khách đến như lạc vào một khu vườn gốm đầy đất và nắng.',
   },
   {
     name: 'Lò Văn Khánh',
     owner: 'Ngô Văn Khánh',
     craft: 'bát đĩa số lượng lớn',
     story:
-      'Lò Văn Khánh ở {address} làm bát đĩa số lượng lớn cho bếp ăn, quán cơm và nhà hàng. Anh Khánh giữ một bộ khuôn cố định để các mẻ hàng đều nhau về kích thước. Hộ quen làm đơn hàng vài nghìn chiếc và chia giao theo đợt. Men trắng và men lam viền là hai mẫu bán chạy nhất.',
+      'Bốn đời làm gốm đã dạy nhà anh Khánh một điều: đơn hàng lớn chỉ đẹp khi chiếc thứ một nghìn giống hệt chiếc đầu tiên. Lò ở {address} làm bát đĩa cho bếp ăn, quán cơm và nhà hàng; anh giữ một bộ khuôn cố định và tự tay đo lại kích thước sau mỗi mẻ. Những đơn hàng vài nghìn chiếc được chia giao theo đợt, mỗi đợt có sổ ghi riêng. Men trắng và men lam viền là hai kiểu bán chạy nhất. Những ngày lò đầy, cả xưởng rộn lên tiếng bát chạm nhau lanh canh khi thợ xếp chồng và đếm. Khách ghé thăm hay bất ngờ trước cả trăm chiếc bát đứng thẳng hàng như một đội quân nhỏ.',
   },
   {
     name: 'Gốm Mai Anh',
     owner: 'Lương Mai Anh',
     craft: 'khay trà, tách trà',
     story:
-      'Chị Mai Anh làm khay trà và tách trà ở {address}. Tách được vuốt mỏng, miệng hơi loe để uống trà nóng không bỏng môi. Khay trà có rãnh thoát nước và chân đế vững. Chị thích men màu nhạt để nước trà hiện rõ màu trong chén.',
+      'Nhà chị Mai Anh làm gốm đã năm đời, nhưng phải đến chị thì xưởng mới có một góc dành riêng cho trà. Ở {address}, chị làm khay trà và tách trà cùng một hai người thợ trẻ. Tách được vuốt mỏng, miệng hơi loe để uống trà nóng không bỏng môi; khay có rãnh thoát nước và chân đế vững. Chị thích những tông men nhạt, vì nước trà hiện màu trong chén mới thấy hết vẻ đẹp của nó. Mỗi lần ra lò, chị pha ngay một ấm trà đầu tiên để thử, đứng bên cửa nghe tiếng nước rót. Khách đến xưởng thường được mời ngồi lại, uống trà và ngắm những chiếc khay mới.',
   },
   {
     name: 'Gốm Tân Lộc',
     owner: 'Đinh Tân Lộc',
     craft: 'bình ngâm rượu',
     story:
-      'Hộ anh Lộc làm bình ngâm rượu ở {address}, từ loại năm lít đến vài chục lít. Thân bình dày, men phủ kín trong lẫn ngoài để rượu không thấm. Vòi được lắp và thử nước kỹ trước khi giao. Khách thường đặt kèm chữ hoặc họa tiết vẽ trên thân bình.',
+      'Cha anh Lộc từng làm chum vại, đến đời anh thì nhà chuyển sang bình ngâm rượu, và hai đời gốm cứ thế nối nhau. Xưởng ở {address} làm bình từ năm lít đến vài chục lít. Thân bình dày, men phủ kín cả trong lẫn ngoài để rượu không thấm, nên bình ngâm lâu năm vẫn sạch mùi. Anh lắp vòi, đổ đầy nước, để qua đêm; sáng ra nền xưởng còn khô ráo thì bình mới được giao. Nhiều khách đặt kèm chữ hoặc họa tiết vẽ trên thân bình. Ghé xưởng vào buổi chiều, khách sẽ thấy cả hàng bình lớn xếp dọc tường, sáng lên dưới ánh nắng xiên qua mái.',
   },
   {
     name: 'Gốm Ngọc Diệp',
     owner: 'Trịnh Ngọc Diệp',
     craft: 'men hoa nâu',
     story:
-      'Chị Diệp giữ nghề men hoa nâu tại xưởng ở {address}. Họa tiết được khắc vào thân đồ khi đất còn mềm, rồi tô men nâu để hoa văn nổi lên trên nền sáng. Hộ làm chủ yếu bình, liễn và đĩa trang trí. Mỗi món mất vài ngày chỉ riêng khâu khắc.',
+      'Ba đời nhà chị Diệp giữ nghề men hoa nâu, và chị là người đầu tiên trong nhà khắc hoa văn bằng mũi dao nhỏ thay cho que tre. Xưởng ở {address} làm bình, liễn và đĩa trang trí. Họa tiết được khắc lên thân đồ khi đất còn mềm, rồi tô men nâu để hoa văn nổi lên trên nền sáng. Riêng khâu khắc đã mất vài ngày cho một món, chị bảo phải nín thở mới được nét liền. Giữa trưa, xưởng chỉ còn tiếng mũi dao sột soạt trên đất. Khách ghé vào có thể ngồi xem chị khắc, và thường ra về với một chiếc đĩa nhỏ mang dấu tay người làm.',
   },
   {
     name: 'Gốm Phúc An',
     owner: 'Mai Phúc An',
     craft: 'đồ trang trí sảnh khách sạn',
     story:
-      'Hộ ông An ở {address} làm đồ trang trí cỡ lớn cho sảnh khách sạn và văn phòng: bình cao, đôn và chậu cảnh. Hộ thường làm theo bản vẽ và bảng màu khách gửi. Mỗi món lớn được vận chuyển trong thùng gỗ có lót rơm. Thời gian làm một bộ thường từ vài tuần trở lên.',
+      'Gia đình ông An bốn đời nay chuyên những món gốm cao quá đầu người, nên người trong làng hay gọi vui ông là thợ làm đồ khổng lồ. Xưởng ở {address} làm bình cao, đôn và chậu cảnh cho sảnh khách sạn và văn phòng. Ông thường làm theo bản vẽ và bảng màu khách gửi, thử trước một món nhỏ rồi mới vuốt món lớn. Món lớn được chở đi trong thùng gỗ lót rơm, và một bộ thường mất từ vài tuần trở lên. Lò nhà ông phải đỏ lửa cả ngày lẫn đêm, hơi nóng phả ra tận ngoài sân. Khách ghé xưởng hay ngỡ ngàng đứng dưới những chiếc bình cao hơn mình cả cái đầu.',
   },
   {
     name: 'Lò Trường Sơn',
     owner: 'Cao Trường Sơn',
     craft: 'gạch gốm và lọ lớn',
     story:
-      'Lò Trường Sơn ở {address} làm gạch gốm và lọ lớn. Gạch gốm dùng ốp tường và lát sân, có thể vẽ lam theo yêu cầu. Lò của hộ đủ rộng để nung các lọ cao gần một mét. Anh Sơn tự kiểm từng viên gạch để màu men đều trong một lô.',
+      'Anh Sơn là đời thứ năm của một dòng họ làm gạch gốm, và là người đầu tiên trong nhà vẽ lam lên từng viên gạch. Lò ở {address} làm gạch ốp tường, lát sân và những chiếc lọ cao gần một mét. Lò đủ rộng để nung cả lọ lớn mà không phải đặt nghiêng. Anh tự kiểm từng viên gạch dưới ánh sáng ban ngày để màu men đều trong cùng một lô. Xưởng thơm mùi đất nung, sân xếp từng chồng gạch còn hầm hập hơi nóng sau mẻ lò. Khách đến có thể chọn một viên gạch hoa lam để về lát riêng một góc bếp hay một khoảng sân của mình.',
   },
   {
     name: 'Gốm Kim Liên',
     owner: 'Tạ Kim Liên',
     craft: 'chén tống, đĩa trà',
     story:
-      'Bà Liên làm chén tống và đĩa trà tại xưởng ở {address}. Chén tống được vuốt cân để rót trà không bị nhỏ giọt. Bà ưa men lam nhạt và men trắng, đôi khi điểm thêm một cành mai nhỏ. Các bộ trà của hộ thường gồm một tống, sáu chén và đĩa lót.',
+      'Bà Liên học nghề từ mẹ chồng khi đã có gia đình, và đến nay nhà bà có hai đời làm chén tống, đĩa trà. Xưởng nhỏ của bà ở {address} chỉ có vài người, nhưng bộ trà nào cũng đủ một tống, sáu chén và đĩa lót. Chén tống được vuốt cân để rót trà không nhỏ giọt; bà thử bằng cách rót đầy nước rồi nhìn đường chảy ở vòi. Bà ưa men lam nhạt và men trắng, đôi khi điểm thêm một cành mai nhỏ. Buổi sáng, xưởng thoảng mùi trà sen bà pha sẵn trên bàn. Khách đến được mời ngồi uống thử, rồi chọn bộ nào vừa tay mình.',
   },
   {
     name: 'Gốm Hoàng Long',
     owner: 'Dương Hoàng Long',
     craft: 'men xanh rêu',
     story:
-      'Anh Long làm đồ men xanh rêu ở {address}. Màu xanh rêu đậm nhạt khác nhau tùy chỗ men dày mỏng, nên mỗi món có sắc riêng. Hộ làm bình, cốc và chậu nhỏ để bàn. Men được nung lại nhiều lần thử cho đến khi lên đúng màu anh muốn.',
+      'Anh Long nối nghề của ông và cha, ba đời gốm, rồi tìm cho mình một màu riêng là xanh rêu. Ở xưởng {address}, anh làm bình, cốc và chậu nhỏ để bàn. Xanh rêu chỗ đậm chỗ nhạt tùy men dày hay mỏng, nên mỗi món mang một sắc riêng như mảng rêu trên bờ giếng cũ. Men được nung đi nung lại nhiều lần để thử cho đến khi lên đúng màu anh muốn, có hôm anh đứng canh lò đến quá nửa đêm. Lúc mở lò, hơi nóng hầm hập phả ra, rồi những món men xanh hiện dần trong ánh đèn. Khách ghé xưởng thường được chọn ngay từ mẻ còn ấm.',
   },
   {
     name: 'Lò Thái Bình',
     owner: 'Lý Thái Bình',
     craft: 'ống đựng bút, đồ văn phòng',
     story:
-      'Lò Thái Bình ở {address} làm ống đựng bút và đồ văn phòng bằng gốm. Hộ thường nhận đơn quà tặng cho hội nghị và công ty, có in tên hoặc logo. Anh Bình chọn dáng gọn, men một màu để dễ dùng trên bàn làm việc. Mỗi mẫu được làm thử vài chiếc trước khi vào mẻ lớn.',
+      'Bốn đời nhà anh Bình làm gốm, nhưng riêng anh chọn đưa gốm lên bàn làm việc. Lò ở {address} làm ống đựng bút và đồ văn phòng, nhận cả đơn quà tặng cho hội nghị và công ty, có thể in tên hoặc biểu tượng riêng. Anh chọn dáng gọn, men một màu để món đồ nằm yên trên bàn mà vẫn có hồn. Trước mỗi đơn lớn, anh làm thử vài chiếc, cầm lên, đặt bút vào, xoay đi xoay lại cho đến khi ưng ý. Góc nhỏ trong xưởng bày những chiếc ống bút đủ màu trên giá gỗ cũ, ánh sáng buổi sáng chiếu lên mặt men bóng. Khách ghé thường mua một chiếc về tặng đồng nghiệp.',
   },
   {
     name: 'Gốm Lan Chi',
     owner: 'Hồ Lan Chi',
     craft: 'hũ trà, bình đựng nước',
     story:
-      'Chị Lan Chi làm hũ trà và bình đựng nước ở {address}. Hũ trà có nắp kín để giữ hương, bình nước có quai cầm vừa tay. Chị dùng men màu đất và men trắng ngà cho cảm giác mộc. Xưởng nhỏ, chị tự tay làm hầu hết các khâu.',
+      'Nhà chị Lan Chi làm gốm đã năm đời, và chị lớn lên bên những chiếc hũ trà, bình nước của bà. Xưởng nhỏ ở {address} gần như chị tự tay làm hết, từ nhào đất, vuốt dáng đến tráng men và nung, chỉ nhờ một hai người thợ phụ những lúc đông đơn. Hũ trà có nắp kín để giữ hương, bình nước có quai vừa tay cầm; chị thử từng chiếc bằng cách đổ đầy rồi nhấc lên. Chị chọn men màu đất và men trắng ngà vì thích cảm giác mộc, gần gũi. Buổi sáng, nắng đổ vào xưởng, hơi đất ẩm bốc lên nhè nhẹ. Khách đến thường ngồi trò chuyện với chị khá lâu, vì xưởng nhỏ nên ai cũng được nghe chuyện của từng món.',
   },
 ];
 
@@ -162,7 +166,7 @@ export const PENDING_HOUSEHOLD: HouseholdSeed = {
   owner: 'Kiều Bảo Châu',
   craft: 'men lam vẽ tay',
   story:
-    'Chị Bảo Châu mới mở xưởng men lam vẽ tay ở {address}. Chị học vẽ lam từ các thợ lâu năm trong làng trước khi tự làm. Những món đầu tiên của xưởng là bát, đĩa và chén vẽ hoa lá. Hộ đang chờ ban quản lý duyệt hồ sơ để giới thiệu sản phẩm trên vCraft.',
+    'Mẹ chị Bảo Châu từng là thợ phụ ở một lò men lam trong làng, nên chị lớn lên cùng mùi men và tiếng bút lông, rồi nối nghề thành đời gốm thứ hai của gia đình. Sau nhiều năm học vẽ lam từ các thợ lâu năm, chị mới mở xưởng riêng ở {address}. Những món đầu tiên của xưởng là bát, đĩa và chén vẽ hoa lá, nét còn mới nhưng rất cẩn trọng. Chị giữ thói quen vẽ thử lên mảnh gốm vỡ trước khi đặt bút lên món thật. Xưởng đang chờ Ban quản lý duyệt hồ sơ để giới thiệu sản phẩm trên vCraft, và khi đó khách sẽ được mời ghé xem chị vẽ.',
 };
 
 export const ARTISAN_FIRST = [
