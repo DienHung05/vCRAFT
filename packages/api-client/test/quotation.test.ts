@@ -170,3 +170,81 @@ describe('direct quotation calls', () => {
     ).toThrow();
   });
 });
+
+describe('Idempotency-Key on state-changing RFQ calls (BR-L5)', () => {
+  const rfq = {
+    id: requestId,
+    version: 2,
+    revision: 0,
+    status: 'DRAFT',
+    title: 'Logo cups',
+    category: null,
+    budgetMinVnd: null,
+    budgetMaxVnd: null,
+    cancelReason: null,
+    createdAt: '2027-02-01T00:00:00.000Z',
+    design: '100 cups',
+    quantity: 100,
+    unit: 'cup',
+    destination: 'Hanoi',
+    requiredBy: '2027-03-01T00:00:00.000Z',
+    biddingClosesAt: '2027-02-10T00:00:00.000Z',
+    invitedHouseholdIds: [],
+    coordinationOptIn: true,
+  };
+  const create = {
+    title: 'Logo cups',
+    design: '100 cups',
+    quantity: 100,
+    unit: 'cup',
+    destination: 'Hanoi',
+    requiredBy: '2027-03-01T00:00:00.000Z',
+    biddingClosesAt: '2027-02-10T00:00:00.000Z',
+    coordinationOptIn: true,
+    invitedHouseholdIds: [],
+    attachments: [],
+  };
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+  function recordingClient() {
+    const keys: Array<string | null> = [];
+    const client = createQuotationClient({
+      getAccessToken: async () => 'session-token',
+      fetch: async (url, options) => {
+        keys.push(new Request(`https://vcraft.test${url}`, options).headers.get('idempotency-key'));
+        return Response.json(rfq);
+      },
+    });
+    return { client, keys };
+  }
+
+  it('sends a fresh UUID with create, submit, accept, cancel and receive', async () => {
+    const { client, keys } = recordingClient();
+    await client.createRequest(create);
+    await client.submitRequest(requestId, 1);
+    await client.acceptQuotation(requestId, 1, { quotationId: requestId });
+    await client.cancelOrder(requestId, 1, { reason: 'Plans changed' });
+    await client.confirmReceipt(requestId, 1);
+
+    expect(keys).toHaveLength(5);
+    for (const key of keys) expect(key).toMatch(uuid);
+    expect(new Set(keys).size).toBe(5);
+  });
+
+  it('sends the key the caller holds for the user action, so a retry reuses it', async () => {
+    const { client, keys } = recordingClient();
+    await client.createRequest(create, { idempotencyKey: 'action-1' });
+    await client.createRequest(create, { idempotencyKey: 'action-1' });
+    await client.submitRequest(requestId, 1, { idempotencyKey: 'action-2' });
+
+    expect(keys).toEqual(['action-1', 'action-1', 'action-2']);
+  });
+
+  it('sends no key with reads or with the calls that are not retried by the user', async () => {
+    const { client, keys } = recordingClient();
+    await client.getRequest(requestId);
+    await client.coordinate(requestId, 1);
+
+    expect(keys).toEqual([null, null]);
+  });
+});

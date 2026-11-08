@@ -26,6 +26,8 @@ import {
   ASSISTANT_LOG_PURGE_EVERY_MS,
   ASSISTANT_LOG_PURGE_JOB,
   COORDINATION_CHECK_EVERY_MS,
+  IDEMPOTENCY_PURGE_EVERY_MS,
+  IDEMPOTENCY_PURGE_JOB,
   RFQ_COORDINATION_CHECK_JOB,
   RFQ_EXPIRE_SWEEP_JOB,
   RFQ_SWEEP_EVERY_MS,
@@ -176,6 +178,11 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       ASSISTANT_LOG_PURGE_JOB,
       { every: ASSISTANT_LOG_PURGE_EVERY_MS },
       { name: ASSISTANT_LOG_PURGE_JOB },
+    );
+    await scheduler.upsertJobScheduler(
+      IDEMPOTENCY_PURGE_JOB,
+      { every: IDEMPOTENCY_PURGE_EVERY_MS },
+      { name: IDEMPOTENCY_PURGE_JOB },
     );
     this.closables.push(...workers, media, mail, qrLabels, scheduler, assistant, outbox, {
       close: async () => mailDeps.transport.close(),

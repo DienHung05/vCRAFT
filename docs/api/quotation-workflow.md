@@ -13,6 +13,15 @@ All endpoints below use `/api/v1` and require the authenticated user's bearer to
 
 Coordination consent permits administrative coordination. It does not invite every household. Representatives can access only requests addressed to their household. Requests return their version through the response body and `ETag` header.
 
+### Retrying a state-changing call (`Idempotency-Key`)
+
+Every `POST` in the endpoints below accepts an optional `Idempotency-Key` header (BR-L5): 1 to 255 printable ASCII characters, any other value answers 422 `VALIDATION_FAILED`. The web client sends a fresh UUID with create, submit, accept, cancel and receive. Without the header a call behaves as before.
+
+- The key is scoped to the caller and the route (method and path, with the ids). The first call runs and its 2xx response (status and body) is stored; errors are not stored, so the same key can be retried after a failure.
+- The same key with the same body from the same caller replays the stored response without running anything again, and adds `Idempotent-Replayed: true`. Two `POST /rfqs` with one key create one request.
+- The same key with a different body answers 422 `IDEMPOTENCY_KEY_REUSED`. A repeat that arrives while the first call is still running answers 409 `IDEMPOTENCY_IN_PROGRESS`; retry it.
+- Keys are kept for 24 hours (table `idempotency_keys`); the worker purges older rows every hour.
+
 ### Custom requirements and attachments
 
 `CreateRfqRequestSchema` also takes `customRequirements` (text, at most 1,000 characters, for example logo printing) and `attachments` (at most three media IDs, for example a logo or a drawing). Attachments are the buyer's own uploads made with `POST /media?purpose=RFQ_ATTACHMENT`: images or PDFs in the private bucket, linked to the request as `media_link` rows of target `RFQ`. A buyer may upload that purpose only. The buyer, the administrators and, once the request is sent, the invited households can read an attachment through `GET /media/:id/read-url`; nobody else can.

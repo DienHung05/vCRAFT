@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { IdempotencyModule } from '../../common/idempotency/idempotency.module';
 import { MediaModule } from '../media/media.module';
 import { ConsentModule } from '../privacy/consent.module';
 import { AllocationScheduleService } from './application/allocation-schedule.service';
@@ -17,7 +18,7 @@ import {
 } from './rfq.controller';
 
 @Module({
-  imports: [MediaModule, ConsentModule],
+  imports: [MediaModule, ConsentModule, IdempotencyModule],
   controllers: [
     RfqController,
     AdminCoordinationController,
