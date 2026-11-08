@@ -20,6 +20,12 @@ import {
   THOUGHT_MS,
 } from './mascot-model';
 import { MascotThought } from './mascot-thought';
+import {
+  attachMascotSprites,
+  type MascotSpriteStage,
+  requestMascotSprites,
+  useMascotSpriteStage,
+} from './sprite-loader';
 
 export interface MascotProps {
   mood?: MascotMood;
@@ -107,6 +113,39 @@ function useGaze(
   return gaze;
 }
 
+/**
+ * Lazy sprite loading (see `sprite-loader.ts`): registers this mascot with the shared loader and lets the
+ * sheets start loading as soon as the pointer enters it, it is pressed, or its closest focusable ancestor
+ * (the assistant launcher button) takes focus. Idle and global input triggers live in the loader itself.
+ */
+function useSpriteStage(
+  ref: React.RefObject<HTMLDivElement | null>,
+  urls: { directions: string; reactions: string; blinks: string },
+): MascotSpriteStage {
+  const stage = useMascotSpriteStage();
+  const { directions, reactions, blinks } = urls;
+  useEffect(
+    () => attachMascotSprites({ directions, reactions, blinks }),
+    [directions, reactions, blinks],
+  );
+  const waiting = stage === 'none';
+  useEffect(() => {
+    const wrapper = ref.current;
+    if (!waiting || !wrapper) return;
+    const focusable = wrapper.closest<HTMLElement>('button, a, [tabindex]');
+    const trigger = () => requestMascotSprites();
+    wrapper.addEventListener('pointerenter', trigger, { once: true });
+    wrapper.addEventListener('pointerdown', trigger, { once: true });
+    focusable?.addEventListener('focus', trigger, { once: true });
+    return () => {
+      wrapper.removeEventListener('pointerenter', trigger);
+      wrapper.removeEventListener('pointerdown', trigger);
+      focusable?.removeEventListener('focus', trigger);
+    };
+  }, [waiting, ref]);
+  return stage;
+}
+
 /** Random blinks every 3–6 s, sometimes double; none under reduced motion. */
 function useBlink(enabled: boolean) {
   const [blinking, setBlinking] = useState(false);
@@ -176,9 +215,13 @@ function useThought(lines: readonly string[], reduced: boolean) {
 
 /**
  * The Fox, vCraft's assistant mascot (BRAND §10): uses the original page-mascot fox sprite sheets
- * (fox-directions.webp and fox-reactions.webp) unchanged, plus fox-directions-blink.webp (the same nine
+ * (fox-directions.webp and fox-reactions.webp), plus fox-directions-blink.webp (the same nine
  * gaze cells with the eyes closed), rendered via three stacked CSS background layers. A blink swaps the
  * gaze cell for its closed-eye twin, so the head keeps facing where it looks (GH#186).
+ *
+ * The sheets are not part of the server markup: they load lazily once the page is idle or the user
+ * interacts, and the blink sheet comes last (see `sprite-loader.ts`). Until the base sheets have arrived
+ * a faint placeholder fills the same fixed-size box, so the layout never shifts.
  *
  * The component blinks at random, breathes 2 px on a 3 s cycle, turns its head toward the pointer or a
  * point, dozes off when left idle, and shows a thought bubble whose three small clouds rise in turn before
@@ -204,6 +247,11 @@ export function Mascot({
   const systemReduced = useReducedMotion();
   const reduced = reducedMotion ?? systemReduced;
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const stage = useSpriteStage(wrapperRef, { directions, reactions, blinks });
+  const baseUrls = stage !== 'none';
+  // The placeholder stays until the base sheets have arrived, so the box is never empty.
+  const sheetsLoaded = stage === 'ready' || stage === 'all';
+  const blinkReady = stage === 'all';
   const id = useId().replace(/:/g, '');
   const dozing = useDozing(mood === 'idle', dozeAfterMs);
   const shown: MascotMood = dozing ? 'sleep' : mood;
@@ -219,8 +267,9 @@ export function Mascot({
   // Reactions layer: only for reaction-based moods. Blinking never touches it (GH#186).
   const reactionMood = reaction ?? moodReaction(shown);
   const showReaction = reactionMood !== null;
-  // Blink layer: the closed-eye twin of the current gaze cell, shown instantly while blinking.
-  const showBlink = blinking && !showReaction;
+  // Blink layer: the closed-eye twin of the current gaze cell, shown instantly while blinking. Never
+  // before its sheet is cached, or the fox would vanish for a frame.
+  const showBlink = blinking && !showReaction && blinkReady;
 
   // Directions layer: use a fixed direction for think/refuse, otherwise gaze-driven.
   const fixedDir = moodFixedDirection(shown);
@@ -267,34 +316,48 @@ export function Mascot({
             : {}),
         }}
       >
-        {/* Directions layer — always mounted so the sheet is preloaded; hidden when reaction is active */}
+        {/* Placeholder until the base sheets have loaded: a faint disc in the same box, so nothing shifts. */}
+        {sheetsLoaded ? null : (
+          <span
+            data-placeholder=""
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: '10%',
+              borderRadius: '9999px',
+              background: 'currentColor',
+              opacity: 0.06,
+            }}
+          />
+        )}
+        {/* Directions layer — URL set from `base` on; hidden when a reaction is active */}
         <span
           data-layer="directions"
           style={{
             ...LAYER_BASE,
-            backgroundImage: `url(${directions})`,
+            ...(baseUrls ? { backgroundImage: `url(${directions})` } : {}),
             ...cellStyle(dirIdx),
             opacity: showReaction ? 0 : 1,
             transition: motion ? 'opacity 60ms' : undefined,
           }}
         />
-        {/* Blink layer — always mounted so the sheet is preloaded; same cell as the directions layer.
+        {/* Blink layer — URL set last (`all`, once the sheet is cached); same cell as the directions layer.
             No transition: a blink is an instant swap, never a cross-fade between two poses. */}
         <span
           data-layer="blink"
           style={{
             ...LAYER_BASE,
-            backgroundImage: `url(${blinks})`,
+            ...(blinkReady ? { backgroundImage: `url(${blinks})` } : {}),
             ...cellStyle(dirIdx),
             opacity: showBlink ? 1 : 0,
           }}
         />
-        {/* Reactions layer — always mounted so the sheet is preloaded; shown for mood reactions */}
+        {/* Reactions layer — URL set from `base` on; shown for mood reactions */}
         <span
           data-layer="reactions"
           style={{
             ...LAYER_BASE,
-            backgroundImage: `url(${reactions})`,
+            ...(baseUrls ? { backgroundImage: `url(${reactions})` } : {}),
             ...cellStyle(reactIdx),
             opacity: showReaction ? 1 : 0,
             transition: motion ? 'opacity 60ms' : undefined,

@@ -90,11 +90,12 @@ describe('<Mascot>', () => {
     expect(html96).toContain('width:96px');
   });
 
-  it('mounts all three sprite layers so sheets are preloaded', () => {
+  it('mounts all three sprite layers without fetching the sheets during SSR', () => {
     const html = renderToStaticMarkup(<Mascot />);
-    expect(html).toContain('fox-directions.webp');
-    expect(html).toContain('fox-reactions.webp');
-    expect(html).toContain('fox-directions-blink.webp');
+    for (const layer of ['directions', 'blink', 'reactions']) {
+      expect(html).toContain(`data-layer="${layer}"`);
+    }
+    expect(html).not.toMatch(/\.webp|url\(/);
   });
 
   it('the hidden blink layer sits on the same cell as the directions layer (GH#186)', () => {
@@ -105,12 +106,11 @@ describe('<Mascot>', () => {
     expect(position('blink')).toBe(position('directions'));
   });
 
-  it('accepts custom directions and reactions URLs', () => {
+  it('keeps custom sheet URLs out of the SSR markup too', () => {
     const html = renderToStaticMarkup(
       <Mascot directions="/custom/dir.webp" reactions="/custom/react.webp" />,
     );
-    expect(html).toContain('/custom/dir.webp');
-    expect(html).toContain('/custom/react.webp');
+    expect(html).not.toContain('/custom/');
   });
 
   it('sets data-mood on the root element', () => {
