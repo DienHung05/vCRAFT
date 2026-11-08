@@ -15,8 +15,9 @@ export interface ProductImage {
   alt: string;
 }
 
+// Tags come before the description so the 700-character cap never cuts them off.
 const productSearchText = (p: Product) =>
-  normalizeSearchText(`${p.name} ${p.traceCode} ${p.description}`, 700);
+  normalizeSearchText(`${p.name} ${(p.tags ?? []).join(' ')} ${p.traceCode} ${p.description}`, 700);
 
 /**
  * Sản phẩm: một vật hoặc một lô do đúng một hộ chịu trách nhiệm, có nhật ký và mã QR riêng.
@@ -89,6 +90,10 @@ export class Product extends BaseEntity {
 
   @Property({ type: 'json', nullable: true })
   images?: ProductImage[] | null;
+
+  /** Free-text tags (FR-PRD-01): at most 10, 1 to 30 characters each, diacritics kept for display. */
+  @Property({ type: 'json', nullable: true })
+  tags?: string[] | null;
 
   /** Tên, mô tả, mã đã bỏ dấu cho tìm kiếm (FR-CAT-04); tự tính lại mỗi lần ghi. */
   @Property({

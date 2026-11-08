@@ -73,6 +73,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
     fetchProducts({ household: household.slug, limit: 5 }),
   ]);
   const log = toLogEntries(journal);
+  const sold = product.status === 'SOLD';
   const tint = tintOf(product.traceCode);
   const image = photoFromUrl(
     product.coverUrl,
@@ -104,7 +105,9 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
         price: product.priceVnd,
         priceCurrency: 'VND',
         availability:
-          product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+          product.stock > 0 && !sold
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
       },
     }),
   });
@@ -181,6 +184,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
                   {common('oneOfAKind')}
                 </Badge>
               ) : null}
+              {sold ? <Badge tone="outline">{common('sold')}</Badge> : null}
             </div>
             <h1 className="text-h1">{product.name}</h1>
             <p className="text-ash">
@@ -204,16 +208,35 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
             </p>
             <UsdRateNote />
             <p className="text-small text-ash">
-              {product.stock > 0 ? t('stock', { count: product.stock }) : t('soldOut')}
+              {sold
+                ? t('soldNote')
+                : product.stock > 0
+                  ? t('stock', { count: product.stock })
+                  : t('soldOut')}
             </p>
           </header>
 
           <p className="max-w-prose-vn">{product.description}</p>
 
+          {product.tags.length > 0 ? (
+            <ul className="flex flex-wrap gap-2" aria-label={t('tags')}>
+              {product.tags.map((tag) => (
+                <li key={tag}>
+                  <Badge tone="outline" className="normal-case">
+                    {tag}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
           <div className="flex flex-wrap gap-3">
-            <Link href="/yeu-cau-bao-gia" className={buttonVariants({ size: 'lg' })}>
-              {t('ctaRfq')}
-            </Link>
+            {/* A sold piece cannot start a new quotation request. */}
+            {sold ? null : (
+              <Link href="/yeu-cau-bao-gia" className={buttonVariants({ size: 'lg' })}>
+                {t('ctaRfq')}
+              </Link>
+            )}
             <Link
               href={{ pathname: '/nghe-nhan/[slug]', params: { slug: household.slug } }}
               className={buttonVariants({ variant: 'secondary', size: 'lg' })}

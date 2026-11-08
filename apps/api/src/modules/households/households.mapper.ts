@@ -129,6 +129,7 @@ export function toProductDto(
     dimensions: p.dimensions ?? null,
     weightGrams: p.weightGrams ?? null,
     artisanNote: p.artisanNote ?? null,
+    tags: p.tags ?? [],
     coverUrl: cover.url,
     coverVariants: cover.variants,
     coverAlt: cover.alt,

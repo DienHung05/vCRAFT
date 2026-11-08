@@ -5,7 +5,7 @@ import type {
   ProductCardDto,
   WorkshopDto,
 } from '@vcraft/contracts';
-import type { ChainEntry, JournalStage } from '@vcraft/domain';
+import type { ChainEntry, JournalStage, ProductStatus } from '@vcraft/domain';
 import type { ProductFigureKind } from '@vcraft/ui';
 import { PHOTO_BY_ID } from '@/lib/demo/photo-credits';
 import type { ImageVariant } from '@/lib/images';
@@ -104,10 +104,15 @@ export interface ProductCardView {
   /** `0` là chưa niêm yết giá. */
   price: number;
   oneOfAKind: boolean;
+  /** A sold one-of-a-kind piece stays listed with a "sold" badge. */
+  sold?: boolean;
   image?: PhotoView | undefined;
 }
 
-export function toProductCardView(dto: ProductCardDto, locale = 'vi'): ProductCardView {
+/** A card DTO, or a product of a household page (whose status is the full lifecycle). */
+type ProductCardSource = Omit<ProductCardDto, 'status'> & { status: ProductStatus };
+
+export function toProductCardView(dto: ProductCardSource, locale = 'vi'): ProductCardView {
   return {
     slug: dto.slug,
     name: dto.name,
@@ -115,6 +120,7 @@ export function toProductCardView(dto: ProductCardDto, locale = 'vi'): ProductCa
     tint: tintOf(dto.traceCode),
     price: dto.priceVnd,
     oneOfAKind: dto.kind === 'OBJECT',
+    sold: dto.status === 'SOLD',
     image: photoFromUrl(
       dto.coverUrl,
       altFor(locale, dto.coverAlt ?? dto.name, dto.coverAltEn),

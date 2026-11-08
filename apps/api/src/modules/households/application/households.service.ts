@@ -10,6 +10,7 @@ import type {
   HouseholdDocumentDto,
   HouseholdDto,
   MapPinsDto,
+  PriceSuggestionDto,
   ProductDto,
   ProductScanStatsDto,
   PublicHouseholdDto,
@@ -50,9 +51,12 @@ import {
   householdTransition,
   isHouseholdPublic,
   maskIdNumber,
+  normalizeTags,
+  type ProductCategory,
   type ProductEvent,
   productTransition,
   publicProductAvailability,
+  suggestProductPrice,
 } from '@vcraft/domain';
 import { slugify } from '@vcraft/utils';
 import type { Actor } from '../../../common/auth/auth.guard';
@@ -389,10 +393,67 @@ export class HouseholdsService {
         dimensions: input.dimensions ?? null,
         weightGrams: input.weightGrams ?? null,
         artisanNote: input.artisanNote ?? null,
+        tags: normalizeTags(input.tags ?? []),
       });
       await em.flush();
       return toProductDto(product);
     });
+  }
+
+  /**
+   * FR-PRD-06: a DRAFT copy of one of the household's products. It carries the descriptive fields, price,
+   * tags, category and photo references, but not the production journal, the makers' credits or the scan
+   * history, and it gets its own trace code and slug.
+   */
+  async duplicateProduct(actor: Actor, productId: string): Promise<ProductDto> {
+    return this.orm.em.fork().transactional(async (em) => {
+      const household = await this.ownApprovedHousehold(em, actor);
+      const source = await this.ownProduct(em, actor, household, productId);
+      const traceCode = await this.uniqueTraceCode(em);
+      const copy = em.create(Product, {
+        household,
+        name: source.name,
+        slug: productSlug(source.name, traceCode),
+        traceCode,
+        description: source.description,
+        kind: source.kind,
+        batchSize: source.batchSize ?? null,
+        category: source.category,
+        priceVnd: source.priceVnd,
+        stock: source.stock,
+        material: source.material ?? null,
+        dimensions: source.dimensions ?? null,
+        weightGrams: source.weightGrams ?? null,
+        artisanNote: source.artisanNote ?? null,
+        tags: [...(source.tags ?? [])],
+        coverUrl: source.coverUrl ?? null,
+        coverAlt: source.coverAlt ?? null,
+        coverAltEn: source.coverAltEn ?? null,
+        images: (source.images ?? []).map((image) => ({ ...image })),
+      });
+      await em.flush();
+      return toProductDto(copy);
+    });
+  }
+
+  /**
+   * FR-PRD-07: the median listed price of published products in a category, as a hint for the product
+   * editor. Null when fewer than 3 comparable products exist; it never writes a price.
+   */
+  async priceSuggestion(actor: Actor, category: ProductCategory): Promise<PriceSuggestionDto> {
+    const em = this.orm.em.fork();
+    await this.ownHousehold(em, actor);
+    const comparable = await em.find(
+      Product,
+      {
+        status: 'PUBLISHED',
+        household: { status: 'APPROVED' },
+        category,
+        priceVnd: { $gt: 0 },
+      },
+      { fields: ['priceVnd'], orderBy: { publishedAt: 'desc' }, limit: 500 },
+    );
+    return { category, suggestion: suggestProductPrice(comparable.map((p) => p.priceVnd)) };
   }
 
   /** Chủ hộ sửa thông tin và ảnh sản phẩm; ảnh chỉ được gắn khi chính họ đã tải lên. */
@@ -435,6 +496,7 @@ export class HouseholdsService {
       if (input.dimensions !== undefined) product.dimensions = input.dimensions || null;
       if (input.weightGrams !== undefined) product.weightGrams = input.weightGrams;
       if (input.artisanNote !== undefined) product.artisanNote = input.artisanNote || null;
+      if (input.tags !== undefined) product.tags = normalizeTags(input.tags);
       queueKnowledgeChange(em, 'PRODUCT', product.id);
       await em.flush();
       return product.id;
@@ -448,7 +510,7 @@ export class HouseholdsService {
     );
   }
 
-  /** Xuất bản / rút / xuất bản lại một sản phẩm; Ban quản lý chỉ được rút. */
+  /** Publish, withdraw (archive), republish, mark sold or put back on sale; the board may only withdraw. */
   async changeProduct(
     actor: Actor,
     productId: string,
@@ -471,6 +533,7 @@ export class HouseholdsService {
         isOwner,
         householdStatus: household.status,
         reason,
+        kind: product.kind,
       });
       if (!next.ok && next.error.code === 'HOUSEHOLD_NOT_APPROVED') {
         throw new AppError('HOUSEHOLD_NOT_APPROVED');
@@ -492,6 +555,9 @@ export class HouseholdsService {
       } else if (product.status === 'WITHDRAWN') {
         product.withdrawnReason = reason ?? null;
       }
+      // A one-of-a-kind piece has one unit: selling it empties the stock, undoing the sale restores it.
+      if (event === 'MARK_SOLD') product.stock = 0;
+      else if (event === 'BACK_ON_SALE' && product.stock === 0) product.stock = 1;
       if (actor.role === 'ADMIN') {
         em.create(AuditLog, {
           actorId: actor.id,
@@ -885,9 +951,13 @@ export class HouseholdsService {
     const [artisans, workshops, products] = await Promise.all([
       em.find(Artisan, { household }, { orderBy: { createdAt: 'asc' } }),
       em.find(Workshop, { household }, { orderBy: { createdAt: 'asc' } }),
-      em.find(Product, publicOnly ? { household, status: 'PUBLISHED' } : { household }, {
-        orderBy: { createdAt: 'asc' },
-      }),
+      em.find(
+        Product,
+        publicOnly ? { household, status: { $in: ['PUBLISHED', 'SOLD'] } } : { household },
+        {
+          orderBy: { createdAt: 'asc' },
+        },
+      ),
     ]);
     const mediaIds = [
       ...(household.gallery ?? []).flatMap((item) => (item.mediaId ? [item.mediaId] : [])),

@@ -3,6 +3,8 @@ import {
   HOUSEHOLD_STATUSES,
   ID_NUMBER_PATTERN,
   isValidOpeningInterval,
+  MAX_PRODUCT_TAG_LENGTH,
+  MAX_PRODUCT_TAGS,
   PRODUCT_CATEGORIES,
   PRODUCT_STATUSES,
   PROFILE_SECTIONS,
@@ -279,6 +281,11 @@ export type CreateArtisanRequest = z.infer<typeof CreateArtisanRequestSchema>;
 export const MAX_PRODUCT_IMAGES = 12;
 const ProductImageInputSchema = z.object({ mediaId: IdSchema, alt: AltSchema });
 
+/** FR-PRD-01: up to 10 tags of 1 to 30 characters; the server also drops case-insensitive duplicates. */
+export const ProductTagsSchema = z
+  .array(z.string().trim().min(1, 'Thẻ không được để trống').max(MAX_PRODUCT_TAG_LENGTH))
+  .max(MAX_PRODUCT_TAGS);
+
 export const CreateProductRequestSchema = z
   .object({
     name: z.string().trim().min(2, 'Tên cần ít nhất 2 ký tự').max(200),
@@ -292,6 +299,7 @@ export const CreateProductRequestSchema = z
     dimensions: z.string().trim().max(200).optional(),
     weightGrams: z.int().positive().max(1_000_000).optional(),
     artisanNote: z.string().trim().max(2_000).optional(),
+    tags: ProductTagsSchema.optional(),
   })
   .refine((p) => (p.kind === 'BATCH') === (p.batchSize !== undefined), {
     message: 'Lô sản xuất cần số lượng vật trong lô; vật đơn chiếc thì không',
@@ -311,10 +319,26 @@ export const UpdateProductRequestSchema = z.object({
   weightGrams: z.int().positive().max(1_000_000).nullable().optional(),
   artisanNote: z.string().trim().max(2_000).optional(),
   images: z.array(ProductImageInputSchema).max(MAX_PRODUCT_IMAGES).optional(),
+  tags: ProductTagsSchema.optional(),
 });
 export type UpdateProductRequest = z.infer<typeof UpdateProductRequestSchema>;
 
 export const WithdrawProductRequestSchema = z.object({ reason: ReasonSchema });
+
+/** `GET /me/household/products/price-suggestion?category=...` (FR-PRD-07). */
+export const PriceSuggestionQuerySchema = z.object({ category: CategorySchema });
+export type PriceSuggestionQuery = z.infer<typeof PriceSuggestionQuerySchema>;
+
+/**
+ * Median unit price of the published products in the category, with the number of products it is based
+ * on; `suggestion` is null when fewer than 3 comparable products exist. It is only a hint: the price
+ * is never filled in automatically.
+ */
+export const PriceSuggestionResponseSchema = z.object({
+  category: CategorySchema,
+  suggestion: z.object({ medianVnd: z.int().positive(), count: z.int().min(3) }).nullable(),
+});
+export type PriceSuggestionDto = z.infer<typeof PriceSuggestionResponseSchema>;
 
 /** Ghi công người làm cho sản phẩm (thay toàn bộ danh sách, theo thứ tự hiển thị). */
 export const SetProductMakersRequestSchema = z.object({
@@ -386,6 +410,8 @@ export const ProductResponseSchema = z.object({
   dimensions: z.string().nullable(),
   weightGrams: z.int().nullable(),
   artisanNote: z.string().nullable(),
+  /** Free-text tags (FR-PRD-01), at most 10, in the order the household wrote them. */
+  tags: z.array(z.string()).default([]),
   coverUrl: z.string().nullable(),
   /** Sizes of the cover when it is an uploaded photo; empty for a preset cover. */
   coverVariants: PublicImageVariantsSchema,

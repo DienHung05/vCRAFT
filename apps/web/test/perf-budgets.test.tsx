@@ -33,6 +33,8 @@ function card(id: string): ProductCardDto {
     category: 'VASE',
     priceVnd: 100_000,
     stock: 3,
+    status: 'PUBLISHED',
+    tags: [],
     coverUrl: `https://cdn.test/cover-${id}.webp`,
     coverVariants: [],
     coverAlt: `Cover ${id}`,

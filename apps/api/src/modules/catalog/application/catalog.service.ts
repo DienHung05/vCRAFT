@@ -104,6 +104,8 @@ function toCardDto(
     category: p.category,
     priceVnd: p.priceVnd,
     stock: p.stock,
+    status: p.status === 'SOLD' ? 'SOLD' : 'PUBLISHED',
+    tags: p.tags ?? [],
     coverUrl: cover.url,
     coverVariants: cover.variants,
     coverAlt: cover.alt,
@@ -133,7 +135,8 @@ export class CatalogService {
     const em = this.orm.em.fork();
     const and: FilterQuery<Product>[] = [
       {
-        status: 'PUBLISHED',
+        // A sold one-of-a-kind piece stays in the catalog with a "sold" badge (FR-PRD-01).
+        status: { $in: ['PUBLISHED', 'SOLD'] },
         household: {
           status: 'APPROVED',
           ...(query.household !== undefined && { slug: query.household }),
@@ -148,7 +151,12 @@ export class CatalogService {
       and.push({ kind: query.oneOfAKind ? 'OBJECT' : 'BATCH' });
     }
     if (query.inStock !== undefined) {
-      and.push({ stock: query.inStock ? { $gt: 0 } : 0 });
+      // A sold piece is never in stock, whatever its stock column says.
+      and.push(
+        query.inStock
+          ? { status: 'PUBLISHED', stock: { $gt: 0 } }
+          : { $or: [{ status: 'SOLD' }, { stock: 0 }] },
+      );
     }
 
     // Page-based mode (catalog exception, see ADR-0020)
@@ -224,7 +232,7 @@ export class CatalogService {
       kind === 'PRODUCT'
         ? await em.findOne(Product, {
             id: row.targetId,
-            status: 'PUBLISHED',
+            status: { $in: ['PUBLISHED', 'SOLD'] },
             household: { status: 'APPROVED' },
           })
         : await em.findOne(Household, { id: row.targetId, status: 'APPROVED' });
@@ -236,7 +244,7 @@ export class CatalogService {
     const em = this.orm.em.fork();
     const product = await em.findOne(
       Product,
-      { slug, status: 'PUBLISHED', household: { status: 'APPROVED' } },
+      { slug, status: { $in: ['PUBLISHED', 'SOLD'] }, household: { status: 'APPROVED' } },
       { populate: ['household'] },
     );
     if (!product) throw notFound();
@@ -334,7 +342,12 @@ export class CatalogService {
     const [products, households, news] = await Promise.all([
       em.find(
         Product,
-        { $and: [{ status: 'PUBLISHED', household: { status: 'APPROVED' } }, ...matching] },
+        {
+          $and: [
+            { status: { $in: ['PUBLISHED', 'SOLD'] }, household: { status: 'APPROVED' } },
+            ...matching,
+          ],
+        },
         { populate: ['household'], orderBy: { name: 'asc' }, limit: SUGGESTION_LIMIT },
       ),
       em.find(

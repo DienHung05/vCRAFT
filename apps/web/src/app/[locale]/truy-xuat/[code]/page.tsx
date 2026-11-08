@@ -62,10 +62,11 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
   // Mã sai định dạng (BR-04) là đường dẫn sai ⇒ 404; mã đúng định dạng mà không có trong hệ thống
   // thì hiện cảnh báo hàng không xác thực bên dưới (FR-TRC-08).
   if (!isTraceCode(code)) notFound();
-  const [t, ex, preset] = await Promise.all([
+  const [t, ex, preset, common] = await Promise.all([
     getTranslations('trace'),
     getTranslations('exhibition'),
     getTranslations('presetFigure'),
+    getTranslations('common'),
   ]);
   const result = await fetchTrace(code);
   if (result.status === 'unavailable') return <DataUnavailable />;
@@ -138,6 +139,11 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
               <p className="text-small text-ash">{t('scanned')}</p>
               <h1 className="mt-1 text-h1">{visible.product.name}</h1>
               <p className="mt-2 text-ash">{visible.household.name}</p>
+              {visible.product.status === 'SOLD' ? (
+                <Badge tone="outline" className="mt-3">
+                  {common('sold')}
+                </Badge>
+              ) : null}
               {image ? (
                 <figure className="mt-5 max-w-xs">
                   <ImageSlot
@@ -269,15 +275,18 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
               <a href="#workshop" className={`${buttonVariants({ size: 'lg' })} ${CTA_FIT}`}>
                 {t('ctaVisit')}
               </a>
-              <Link
-                href={{
-                  pathname: '/yeu-cau-bao-gia/moi',
-                  query: { product: visible.product.traceCode },
-                }}
-                className={`${buttonVariants({ variant: 'secondary', size: 'lg' })} ${CTA_FIT}`}
-              >
-                {t('ctaRfq')}
-              </Link>
+              {/* A sold piece cannot start a new quotation request. */}
+              {visible.product.status === 'SOLD' ? null : (
+                <Link
+                  href={{
+                    pathname: '/yeu-cau-bao-gia/moi',
+                    query: { product: visible.product.traceCode },
+                  }}
+                  className={`${buttonVariants({ variant: 'secondary', size: 'lg' })} ${CTA_FIT}`}
+                >
+                  {t('ctaRfq')}
+                </Link>
+              )}
             </nav>
           </>
         )}

@@ -96,7 +96,13 @@ export function ProductList({ client }: { client?: StudioClient }) {
                           ? format.number(product.priceVnd, 'vnd')
                           : common('priceOnRequest')}
                         <UsdReference vnd={product.priceVnd} />
-                        <Badge tone={product.status === 'PUBLISHED' ? 'lacquer' : 'outline'}>
+                        <Badge
+                          tone={
+                            product.status === 'PUBLISHED' || product.status === 'SOLD'
+                              ? 'lacquer'
+                              : 'outline'
+                          }
+                        >
                           {t(`statuses.${product.status}`)}
                         </Badge>
                       </span>
