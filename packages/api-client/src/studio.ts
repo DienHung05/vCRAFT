@@ -16,6 +16,8 @@ import {
   QrLabelsResponseSchema,
   type SetIdNumberRequest,
   type SetProductMakersRequest,
+  SlugAvailabilityResponseSchema,
+  StorySuggestionResponseSchema,
   type UpdateHouseholdProfileRequest,
   type UpdateProductRequest,
   WorkshopResponseSchema,
@@ -38,6 +40,15 @@ export function createStudioClient(options: AuthedClientOptions) {
       request('/me/household/id-number', HouseholdResponseSchema, { method: 'PUT', body }),
     updateProfile: (version: number, body: UpdateHouseholdProfileRequest) =>
       request('/me/household', HouseholdResponseSchema, { method: 'PATCH', body, version }),
+    /** FR-ART-01: is this page address free (the household's own address counts as free)? */
+    slugAvailability: (slug: string) =>
+      request(
+        `/households/slug-availability?slug=${encodeURIComponent(slug)}`,
+        SlugAvailabilityResponseSchema,
+      ),
+    /** FR-ART-08: a suggested story (Vietnamese and English); 503 when the model is not configured. */
+    storySuggestion: () =>
+      request('/me/household/story-suggestion', StorySuggestionResponseSchema, { method: 'POST' }),
     addWorkshop: (body: CreateWorkshopRequest) =>
       request('/me/household/workshops', WorkshopResponseSchema, { method: 'POST', body }),
     updateWorkshop: (id: string, version: number, body: CreateWorkshopRequest) =>

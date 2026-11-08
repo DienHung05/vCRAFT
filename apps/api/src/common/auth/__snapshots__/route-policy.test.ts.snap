@@ -11,6 +11,7 @@ GET /api/v1/admin/dashboard ROLES(ADMIN)
 GET /api/v1/admin/households ROLES(ADMIN)
 GET /api/v1/admin/households/:id ROLES(ADMIN)
 POST /api/v1/admin/households/:id/:action ROLES(ADMIN)
+PUT /api/v1/admin/households/:id/certifications/:index/verification ROLES(ADMIN)
 GET /api/v1/admin/households/:id/documents ROLES(ADMIN)
 GET /api/v1/admin/households/:id/id-number ROLES(ADMIN)
 GET /api/v1/admin/invitations ROLES(ADMIN)
@@ -44,6 +45,7 @@ GET /api/v1/health PUBLIC
 GET /api/v1/health/ready PUBLIC
 GET /api/v1/households PUBLIC
 GET /api/v1/households/:slug PUBLIC
+GET /api/v1/households/slug-availability AUTHENTICATED
 DELETE /api/v1/journal-entries/:id ROLES(HOUSEHOLD)
 PATCH /api/v1/journal-entries/:id ROLES(HOUSEHOLD)
 GET /api/v1/map/workshops PUBLIC
@@ -70,6 +72,7 @@ GET /api/v1/me/household/products/price-suggestion ROLES(HOUSEHOLD)
 POST /api/v1/me/household/qr-labels ROLES(HOUSEHOLD)
 GET /api/v1/me/household/qr-labels/:requestId ROLES(HOUSEHOLD)
 POST /api/v1/me/household/resubmit ROLES(HOUSEHOLD)
+POST /api/v1/me/household/story-suggestion ROLES(HOUSEHOLD)
 POST /api/v1/me/household/workshops ROLES(HOUSEHOLD)
 PUT /api/v1/me/household/workshops/:id ROLES(HOUSEHOLD)
 GET /api/v1/me/invitations ROLES(HOUSEHOLD)

@@ -1,4 +1,6 @@
 import {
+  CRAFT_CATEGORIES,
+  certificationYear,
   HOUSEHOLD_REVIEW_STATES,
   HOUSEHOLD_STATUSES,
   ID_NUMBER_PATTERN,
@@ -204,11 +206,52 @@ export const TimelineEventResponseSchema = z.object({
 });
 export type TimelineEventDto = z.infer<typeof TimelineEventResponseSchema>;
 
-const CertificationInputSchema = z.object({
-  name: z.string().trim().min(2, 'Hãy ghi tên chứng nhận').max(160),
-  issuer: z.string().trim().min(2, 'Hãy ghi đơn vị cấp').max(160),
-  year: YearSchema,
+/** A photo the household uploaded itself: the media asset and what it shows. */
+const OwnPhotoInputSchema = z.object({ mediaId: IdSchema, alt: AltSchema });
+
+/** A photo as read back: its processed URL (null while still processing) and every size. */
+export const ProfilePhotoResponseSchema = z.object({
+  mediaId: IdSchema,
+  url: z.string().nullable(),
+  variants: PublicImageVariantsSchema,
+  alt: z.string(),
 });
+export type ProfilePhotoDto = z.infer<typeof ProfilePhotoResponseSchema>;
+
+/**
+ * A certification as the household sends it (FR-ART-03): name, issuer, issue date and an optional photo.
+ * Legacy entries have only a year; when a date is given the stored year is derived from it.
+ */
+const CertificationInputSchema = z
+  .object({
+    name: z.string().trim().min(2, 'Hãy ghi tên chứng nhận').max(160),
+    issuer: z.string().trim().min(2, 'Hãy ghi đơn vị cấp').max(160),
+    year: YearSchema.optional(),
+    issuedOn: IsoDateSchema.optional(),
+    photo: OwnPhotoInputSchema.nullable().optional(),
+  })
+  .refine((c) => certificationYear(c) !== null, {
+    message: 'Hãy nhập ngày cấp',
+    path: ['issuedOn'],
+  })
+  .refine(
+    (c) => {
+      const year = certificationYear(c);
+      return year === null || (year >= 1000 && year <= CURRENT_YEAR_LIMIT);
+    },
+    { message: 'Năm không hợp lệ', path: ['issuedOn'] },
+  );
+
+/** A certification as read back; `verified` is only ever set by the village board. */
+export const CertificationResponseSchema = z.object({
+  name: z.string(),
+  issuer: z.string(),
+  year: z.int(),
+  issuedOn: IsoDateSchema.nullable().default(null),
+  photo: ProfilePhotoResponseSchema.nullable().default(null),
+  verified: z.boolean(),
+});
+export type CertificationDto = z.infer<typeof CertificationResponseSchema>;
 
 /** Hộ chỉ gắn ảnh mình đã tải lên, hoặc giữ lại ảnh có sẵn trong bộ ảnh mẫu. */
 const GalleryInputSchema = z.union([
@@ -226,8 +269,18 @@ const CapacitySchema = z.partialRecord(z.enum(PRODUCT_CATEGORIES), z.int().min(0
 export const UpdateHouseholdProfileRequestSchema = z.object({
   /** A new public URL slug; the old one keeps answering with a permanent redirect (PLAN E5). */
   slug: SlugSchema.optional(),
+  /** The story as a restricted Markdown subset (`parseStoryMarkdown` in `@vcraft/domain`). */
   history: z.string().trim().max(10_000).optional(),
+  /** Free-text detail of the craft ("men lam"); the category below is the fixed-list choice. */
   craft: z.string().trim().max(160).optional(),
+  craftCategory: z.enum(CRAFT_CATEGORIES).nullable().optional(),
+  /** Own cover photo, portrait and personal seal (FR-ART-01); null removes one. Alt text is required for the first two. */
+  coverPhoto: OwnPhotoInputSchema.nullable().optional(),
+  portraitPhoto: OwnPhotoInputSchema.nullable().optional(),
+  sealPhoto: z
+    .object({ mediaId: IdSchema, alt: z.string().trim().max(300).default('') })
+    .nullable()
+    .optional(),
   village: z.string().trim().max(160).optional(),
   foundedYear: YearSchema.nullable().optional(),
   generations: z.int().min(1).max(50).nullable().optional(),
@@ -237,6 +290,29 @@ export const UpdateHouseholdProfileRequestSchema = z.object({
   capacityByCategory: CapacitySchema.optional(),
 });
 export type UpdateHouseholdProfileRequest = z.infer<typeof UpdateHouseholdProfileRequestSchema>;
+
+/** `GET /households/slug-availability?slug=`: a live check while the household types its address (FR-ART-01). */
+export const SlugAvailabilityQuerySchema = z.object({ slug: SlugSchema });
+export type SlugAvailabilityQuery = z.infer<typeof SlugAvailabilityQuerySchema>;
+export const SlugAvailabilityResponseSchema = z.object({
+  available: z.boolean(),
+  /** A free alternative, only when the asked slug is taken. */
+  suggestion: SlugSchema.optional(),
+});
+export type SlugAvailabilityDto = z.infer<typeof SlugAvailabilityResponseSchema>;
+
+/** `PUT /admin/households/:id/certifications/:index/verification`: the board marks a certification verified or not. */
+export const SetCertificationVerificationRequestSchema = z.strictObject({ verified: z.boolean() });
+export type SetCertificationVerificationRequest = z.infer<
+  typeof SetCertificationVerificationRequestSchema
+>;
+
+/**
+ * `POST /me/household/story-suggestion` (FR-ART-08): a suggested story in Vietnamese and its English
+ * translation. Only a suggestion: the household copies it into the editor and saves it itself.
+ */
+export const StorySuggestionResponseSchema = z.object({ vi: z.string(), en: z.string() });
+export type StorySuggestionDto = z.infer<typeof StorySuggestionResponseSchema>;
 
 /** Experience offer of a workshop (FR-ART-05): what visitors can do, for how long and at what price. */
 export const WorkshopExperienceSchema = z.object({
@@ -444,17 +520,22 @@ export const PublicHouseholdResponseSchema = z.object({
   slug: z.string(),
   history: z.string(),
   village: z.string().nullable(),
+  /** Free-text detail of the craft, as the household wrote it. */
   craft: z.string().nullable(),
+  /** The stored category, or one inferred from legacy `craft` text; null when the household has neither. */
+  craftCategory: z.enum(CRAFT_CATEGORIES).nullable().default(null),
   coverUrl: z.string().nullable(),
   /** Sizes of `coverUrl` when it is a processed media-store image; empty otherwise. */
   coverVariants: PublicImageVariantsSchema,
   /** Portrait and banner linked through `media_link`. */
   portrait: PublicImageSchema.nullable(),
   banner: PublicImageSchema.nullable(),
+  /** Personal seal or signature of the artisan, shown near the story. */
+  seal: PublicImageSchema.nullable().default(null),
   foundedYear: z.int().nullable(),
   generations: z.int().nullable(),
   timeline: z.array(TimelineEventResponseSchema),
-  certifications: z.array(CertificationInputSchema.extend({ verified: z.boolean() })),
+  certifications: z.array(CertificationResponseSchema),
   /**
    * Public: `media_link` images (by `position`), then the household's own. The private profile has only
    * the household's own, since a household may resubmit only its own media. `url` is null while an image
@@ -494,6 +575,10 @@ export const HouseholdResponseSchema = PublicHouseholdResponseSchema.extend({
   reviewState: HouseholdReviewStateSchema,
   resubmittedAt: IsoDateTimeSchema.nullable().default(null),
   approvedAt: IsoDateTimeSchema.nullable(),
+  /** The household's own photos as saved, even while still processing (Studio editor; admin review). */
+  coverPhoto: ProfilePhotoResponseSchema.nullable().default(null),
+  portraitPhoto: ProfilePhotoResponseSchema.nullable().default(null),
+  sealPhoto: ProfilePhotoResponseSchema.nullable().default(null),
   /** `••••••••1234`, or null when no citizen ID number is on record. Never the full number. */
   idNumberMasked: z.string().nullable(),
   completeness: z.object({

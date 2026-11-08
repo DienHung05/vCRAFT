@@ -2,12 +2,14 @@
 
 import { ApiError, type StudioClient } from '@vcraft/api-client';
 import type { HouseholdDto, UpdateHouseholdProfileRequest } from '@vcraft/contracts';
-import { isValidIdNumber } from '@vcraft/domain';
+import { type CraftCategory, isValidIdNumber } from '@vcraft/domain';
 import { Button, Card } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { DocumentUpload } from '@/features/auth/document-upload';
+import { CraftFields } from '@/features/studio/craft-fields';
 import { HouseholdGate } from '@/features/studio/household-gate';
+import { StoryEditor } from '@/features/studio/story-editor';
 import { inputClass, WorkshopEditor } from '@/features/studio/workshop-editor';
 
 import { notify } from '@/lib/notify';
@@ -48,6 +50,9 @@ function ApplicationFields({
   const profile = useTranslations('auth.profile');
   const [history, setHistory] = useState(household.history);
   const [craft, setCraft] = useState(household.craft ?? '');
+  const [craftCategory, setCraftCategory] = useState<CraftCategory | ''>(
+    household.craftCategory ?? '',
+  );
   const [village, setVillage] = useState(household.village ?? '');
   const [foundedYear, setFoundedYear] = useState(household.foundedYear?.toString() ?? '');
   const [idNumber, setIdNumber] = useState('');
@@ -59,6 +64,7 @@ function ApplicationFields({
       const body: UpdateHouseholdProfileRequest = {
         history,
         craft,
+        craftCategory: craftCategory || null,
         village,
         foundedYear: foundedYear ? Number(foundedYear) : null,
       };
@@ -79,24 +85,14 @@ function ApplicationFields({
   return (
     <Card className="flex min-w-0 flex-col gap-4 p-5">
       <h2 className="text-h3">{profile('pendingEditor.title')}</h2>
-      <label className="flex flex-col gap-1 text-small">
-        {t('storyLabel')}
-        <textarea
-          rows={5}
-          value={history}
-          onChange={(event) => setHistory(event.target.value)}
-          className={inputClass}
+      <StoryEditor value={history} label={t('storyLabel')} onChange={setHistory} />
+      <div className="grid gap-4 md:grid-cols-2">
+        <CraftFields
+          category={craftCategory}
+          detail={craft}
+          onCategory={setCraftCategory}
+          onDetail={setCraft}
         />
-      </label>
-      <div className="grid gap-4 md:grid-cols-3">
-        <label className="flex flex-col gap-1 text-small">
-          {t('craft')}
-          <input
-            value={craft}
-            onChange={(event) => setCraft(event.target.value)}
-            className={inputClass}
-          />
-        </label>
         <label className="flex flex-col gap-1 text-small">
           {profile('pendingEditor.village')}
           <input

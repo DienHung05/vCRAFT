@@ -1,15 +1,26 @@
 import type {
   ArtisanDto,
+  CertificationDto,
   HouseholdDto,
   MakerCreditDto,
   MapPinDto,
   MediaVariantResponse,
   ProductDto,
+  ProfilePhotoDto,
   PublicHouseholdDto,
+  PublicImageDto,
   WorkshopDto,
 } from '@vcraft/contracts';
-import type { Artisan, Household, Product, ProductMaker, Workshop } from '@vcraft/database';
+import type {
+  Artisan,
+  Household,
+  HouseholdPhoto,
+  Product,
+  ProductMaker,
+  Workshop,
+} from '@vcraft/database';
 import {
+  effectiveCraftCategory,
   householdReviewState,
   isVisitable,
   POSTED_BY_ADMINISTRATION,
@@ -211,6 +222,53 @@ function toTimelineDto(h: Household, parts: HouseholdParts) {
   });
 }
 
+/** One of the household's own photos with its processed URL, or null URL while it is still processing. */
+function toProfilePhoto(
+  photo: HouseholdPhoto | null | undefined,
+  parts: HouseholdParts,
+): ProfilePhotoDto | null {
+  if (!photo) return null;
+  const media = parts.media?.get(photo.mediaId);
+  return {
+    mediaId: photo.mediaId,
+    url: media?.url ?? null,
+    variants: media?.variants ?? [],
+    alt: photo.alt,
+  };
+}
+
+/** The household's own photo as a public image; null until its processed file exists. */
+function toOwnPublicImage(
+  photo: HouseholdPhoto | null | undefined,
+  parts: HouseholdParts,
+): PublicImageDto | null {
+  const own = toProfilePhoto(photo, parts);
+  if (!own?.url) return null;
+  return {
+    mediaId: own.mediaId,
+    url: own.url,
+    width: null,
+    height: null,
+    variants: own.variants,
+    alt: own.alt,
+    altEn: null,
+    caption: null,
+    credit: null,
+  };
+}
+
+/** Certifications with the photo resolved; `verified` is the board's mark and nothing else. */
+function toCertificationsDto(h: Household, parts: HouseholdParts): CertificationDto[] {
+  return (h.certifications ?? []).map((c) => ({
+    name: c.name,
+    issuer: c.issuer,
+    year: c.year,
+    issuedOn: c.issuedOn ?? null,
+    photo: toProfilePhoto(c.photo, parts),
+    verified: c.verified === true,
+  }));
+}
+
 /** Images the household attached itself in Studio. */
 function toGalleryDto(h: Household, parts: HouseholdParts) {
   return (h.gallery ?? []).map((item) => ({
@@ -244,8 +302,11 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
     credit: image.credit,
   }));
   const gallery = [...linkedGallery, ...toGalleryDto(h, parts)];
-  const [banner] = linkedOf(parts, 'BANNER');
-  const coverUrl = h.coverUrl ?? banner?.url ?? gallery.find((item) => item.url)?.url ?? null;
+  // The household's own uploads outrank the images the village board linked.
+  const ownCover = toOwnPublicImage(h.coverPhoto, parts);
+  const banner = ownCover ?? linkedOf(parts, 'BANNER')[0];
+  const coverUrl =
+    ownCover?.url ?? h.coverUrl ?? banner?.url ?? gallery.find((item) => item.url)?.url ?? null;
   return {
     id: h.id,
     name: h.name,
@@ -253,15 +314,17 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
     history: h.history,
     village: h.village ?? null,
     craft: h.craft ?? null,
+    craftCategory: effectiveCraftCategory(h.craftCategory, h.craft),
     // Chưa chọn bìa riêng thì dùng ảnh xưởng đầu tiên đã xử lý xong.
     coverUrl,
     coverVariants: variantsOfUrl(coverUrl, [...(banner ? [banner] : []), ...gallery]),
-    portrait: linkedOf(parts, 'PORTRAIT')[0] ?? null,
+    portrait: toOwnPublicImage(h.portraitPhoto, parts) ?? linkedOf(parts, 'PORTRAIT')[0] ?? null,
     banner: banner ?? null,
+    seal: toOwnPublicImage(h.sealPhoto, parts),
     foundedYear: h.foundedYear ?? null,
     generations: h.generations ?? null,
     timeline: toTimelineDto(h, parts),
-    certifications: h.certifications ?? [],
+    certifications: toCertificationsDto(h, parts),
     gallery,
     capacityByCategory: h.capacityByCategory ?? {},
     artisans: parts.artisans.map(toArtisanDto),
@@ -286,6 +349,9 @@ export function toHouseholdDto(h: Household, parts: HouseholdParts): HouseholdDt
     reviewState: householdReviewState(h.status, h.statusReason, h.resubmittedAt),
     resubmittedAt: h.resubmittedAt?.toISOString() ?? null,
     approvedAt: h.approvedAt?.toISOString() ?? null,
+    coverPhoto: toProfilePhoto(h.coverPhoto, parts),
+    portraitPhoto: toProfilePhoto(h.portraitPhoto, parts),
+    sealPhoto: toProfilePhoto(h.sealPhoto, parts),
     idNumberMasked: parts.idNumberMasked ?? null,
     completeness: profileCompleteness({
       history: h.history,

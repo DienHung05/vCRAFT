@@ -113,6 +113,17 @@ export function createAdminClient(options: AuthedClientOptions) {
     listInvitations: () => request('/admin/invitations', InvitationListSchema),
     inviteAccount: (body: InviteAccountRequest) =>
       request('/admin/invitations', InvitationSchema, { method: 'POST', body }),
+    /** FR-ART-03: mark one certification verified, or remove the mark (audited). */
+    setCertificationVerified: (id: string, index: number, version: number, verified: boolean) =>
+      request(
+        `/admin/households/${id}/certifications/${index}/verification`,
+        HouseholdResponseSchema,
+        {
+          method: 'PUT',
+          version,
+          body: { verified },
+        },
+      ),
     decide: (id: string, action: HouseholdAction, version: number, reason?: string) =>
       request(`/admin/households/${id}/${action}`, HouseholdResponseSchema, {
         method: 'POST',

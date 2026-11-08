@@ -18,6 +18,7 @@ it('groups classified and legacy evidence and describes the workshop boundary wi
       name: 'Application',
       status: 'PENDING_REVIEW',
       history: '',
+      certifications: [],
       artisans: [],
       statusReason: null,
       workshops: [

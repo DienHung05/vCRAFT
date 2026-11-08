@@ -9,6 +9,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { ConsentCheckbox } from '@/components/consent-checkbox';
+import { SlugAvailabilityNote } from '@/features/studio/slug-availability-note';
+import { useSlugAvailability } from '@/features/studio/use-slug-availability';
 import { getPathname } from '@/i18n/navigation';
 import { ACCOUNT_CHANGED_EVENT } from '@/lib/auth/household-intent';
 import { browserAccountClient } from '@/lib/auth/supabase-browser';
@@ -63,6 +65,10 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
     defaultValues: { name: '', slug: '', village: '', idNumber: '', history: '' },
   });
   const slug = useWatch({ control, name: 'slug' });
+  // FR-ART-01: tell the applicant right away when the address is already taken.
+  const slugCheck = useSlugAvailability(slug, (value) =>
+    browserAccountClient().slugAvailability(value),
+  );
 
   const slugRegistration = register('slug');
   const nameRegistration = register('name', {
@@ -134,19 +140,38 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
         error={message(errors.name)}
         {...nameRegistration}
       />
-      <TextField
-        label={t('wizard.household.slug')}
-        hint={t('wizard.household.slugHint', { path: pagePath })}
-        autoComplete="off"
-        autoCapitalize="none"
-        spellCheck={false}
-        error={message(errors.slug)}
-        {...slugRegistration}
-        onChange={(event) => {
-          slugEdited.current = true;
-          return slugRegistration.onChange(event);
-        }}
-      />
+      <div className="flex flex-col gap-2">
+        <TextField
+          label={t('wizard.household.slug')}
+          hint={t('wizard.household.slugHint', { path: pagePath })}
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          error={message(errors.slug)}
+          {...slugRegistration}
+          onChange={(event) => {
+            slugEdited.current = true;
+            return slugRegistration.onChange(event);
+          }}
+        />
+        <SlugAvailabilityNote
+          state={slugCheck}
+          labels={{
+            checking: t('wizard.household.slugChecking'),
+            available: t('wizard.household.slugAvailable'),
+            taken: t('wizard.household.slugTaken'),
+            takenSuggest: (suggestion) =>
+              t('wizard.household.slugTakenSuggest', { slug: suggestion }),
+            applySuggestion: (suggestion) =>
+              t('wizard.household.slugUseSuggestion', { slug: suggestion }),
+            failed: t('wizard.household.slugCheckFailed'),
+          }}
+          onUseSuggestion={(suggestion) => {
+            slugEdited.current = true;
+            setValue('slug', suggestion, { shouldValidate: true });
+          }}
+        />
+      </div>
       <TextField
         label={t('wizard.household.village')}
         optionalLabel={t('fields.optional')}

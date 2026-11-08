@@ -19,6 +19,7 @@ import type {
   RevealedIdNumberDto,
   SetIdNumberRequest,
   SetProductMakersRequest,
+  SlugAvailabilityDto,
   TraceAvailabilityDto,
   UpdateHouseholdProfileRequest,
   UpdateProductRequest,
@@ -43,6 +44,7 @@ import {
   Workshop,
 } from '@vcraft/database';
 import {
+  certificationYear,
   checkMakerCredits,
   type HouseholdEvent,
   type HouseholdStatus,
@@ -86,6 +88,18 @@ import {
 } from './dashboard-trend';
 import { retireSlug, slugRetiredByOther } from './slug-redirects';
 import { generateTraceCode } from './trace-code';
+
+/** A placeholder owner id for a caller with no household yet: matches no redirect row. */
+const NO_HOUSEHOLD_ID = '00000000-0000-0000-0000-000000000000';
+
+/** What makes a certification the same piece of evidence: a verified mark does not outlive a change to it. */
+const certificationKey = (c: {
+  name: string;
+  issuer: string;
+  year: number;
+  issuedOn?: string | null | undefined;
+  photo?: { mediaId: string } | null | undefined;
+}) => `${c.name}|${c.issuer}|${c.year}|${c.issuedOn ?? ''}|${c.photo?.mediaId ?? ''}`;
 
 /** `<name>-<trace code>`: readable, and unique because the trace code is. */
 function productSlug(name: string, traceCode: string): string {
@@ -202,16 +216,35 @@ export class HouseholdsService {
         if (ids.some((id) => !owned.has(id))) throw forbidden('gallery media is not yours');
         household.gallery = input.gallery.map((item) => ({ ...item }));
       }
+      // Own photos (cover, portrait, seal, certificate pictures) must be uploads of this household's account.
+      const photoIds = [
+        input.coverPhoto?.mediaId,
+        input.portraitPhoto?.mediaId,
+        input.sealPhoto?.mediaId,
+        ...(input.certifications ?? []).map((c) => c.photo?.mediaId),
+      ].filter((id): id is string => id !== undefined);
+      if (photoIds.length > 0) {
+        const owned = await this.media.ownedBy(actor.id, photoIds);
+        if (photoIds.some((id) => !owned.has(id))) throw forbidden('profile media is not yours');
+      }
+      if (input.coverPhoto !== undefined) household.coverPhoto = input.coverPhoto;
+      if (input.portraitPhoto !== undefined) household.portraitPhoto = input.portraitPhoto;
+      if (input.sealPhoto !== undefined) household.sealPhoto = input.sealPhoto;
       if (input.certifications) {
+        // The board's "verified" mark survives only while the household keeps the evidence unchanged.
         const verified = new Set(
-          (household.certifications ?? [])
-            .filter((c) => c.verified)
-            .map((c) => `${c.name}|${c.issuer}|${c.year}`),
+          (household.certifications ?? []).filter((c) => c.verified).map(certificationKey),
         );
-        household.certifications = input.certifications.map((c) => ({
-          ...c,
-          verified: verified.has(`${c.name}|${c.issuer}|${c.year}`),
-        }));
+        household.certifications = input.certifications.map((c) => {
+          const entry = {
+            name: c.name,
+            issuer: c.issuer,
+            year: certificationYear(c) ?? 0,
+            issuedOn: c.issuedOn ?? null,
+            photo: c.photo ?? null,
+          };
+          return { ...entry, verified: verified.has(certificationKey(entry)) };
+        });
       }
       if (input.slug !== undefined && input.slug !== household.slug) {
         const taken =
@@ -223,6 +256,7 @@ export class HouseholdsService {
       }
       if (input.history !== undefined) household.history = input.history;
       if (input.craft !== undefined) household.craft = input.craft || null;
+      if (input.craftCategory !== undefined) household.craftCategory = input.craftCategory;
       if (input.village !== undefined) household.village = input.village || null;
       if (input.foundedYear !== undefined) household.foundedYear = input.foundedYear;
       if (input.generations !== undefined) household.generations = input.generations;
@@ -245,6 +279,63 @@ export class HouseholdsService {
     const em = this.orm.em.fork();
     const household = await em.findOneOrFail(Household, updated);
     return toHouseholdDto(household, await this.parts(em, household, false));
+  }
+
+  /**
+   * Live check of a household slug while it is typed (FR-ART-01). The household's own slug (and one it
+   * retired earlier) counts as free, so the editor shows no false conflict. A taken slug comes back with the
+   * first free `-2` … `-9` variant. The save still enforces uniqueness, so this is advice, not a lock.
+   */
+  async slugAvailability(actor: Actor, slug: string): Promise<SlugAvailabilityDto> {
+    const em = this.orm.em.fork();
+    const own = await em.findOne(Household, { representative: actor.id });
+    const isFree = async (candidate: string) =>
+      (await em.count(Household, {
+        slug: candidate,
+        ...(own ? { id: { $ne: own.id } } : {}),
+      })) === 0 &&
+      !(await slugRetiredByOther(em, 'HOUSEHOLD', candidate, own?.id ?? NO_HOUSEHOLD_ID));
+    if (await isFree(slug)) return { available: true };
+    for (let suffix = 2; suffix <= 9; suffix++) {
+      const candidate = `${slug.slice(0, 160 - 2)}-${suffix}`;
+      if (await isFree(candidate)) return { available: false, suggestion: candidate };
+    }
+    return { available: false };
+  }
+
+  /**
+   * FR-ART-03: the village board marks one certification of a household verified, or removes the mark.
+   * Audited like the other board decisions; `If-Match` guards the index against a concurrent edit.
+   */
+  async setCertificationVerified(
+    actor: Actor,
+    householdId: string,
+    index: number,
+    expectedVersion: number,
+    verified: boolean,
+  ): Promise<HouseholdDto> {
+    return this.orm.em.fork().transactional(async (em) => {
+      const household = await em.findOne(Household, householdId);
+      if (!household) throw notFound();
+      assertVersion(household, expectedVersion);
+      const certifications = household.certifications ?? [];
+      const target = certifications[index];
+      if (!target) throw notFound('this certification does not exist');
+      household.certifications = certifications.map((c, i) =>
+        i === index ? { ...c, verified } : c,
+      );
+      em.create(AuditLog, {
+        actorId: actor.id,
+        action: verified ? 'household.certification_verify' : 'household.certification_unverify',
+        entity: 'household',
+        entityId: household.id,
+        before: { certification: target.name, issuer: target.issuer, verified: target.verified },
+        after: { certification: target.name, issuer: target.issuer, verified },
+      });
+      queueKnowledgeChange(em, 'HOUSEHOLD', household.id);
+      await em.flush();
+      return toHouseholdDto(household, await this.parts(em, household, false));
+    });
   }
 
   /**
@@ -960,6 +1051,10 @@ export class HouseholdsService {
       ),
     ]);
     const mediaIds = [
+      ...[household.coverPhoto, household.portraitPhoto, household.sealPhoto].flatMap((photo) =>
+        photo ? [photo.mediaId] : [],
+      ),
+      ...(household.certifications ?? []).flatMap((c) => (c.photo ? [c.photo.mediaId] : [])),
       ...(household.gallery ?? []).flatMap((item) => (item.mediaId ? [item.mediaId] : [])),
       ...(household.timeline ?? []).flatMap((e) => (e.photo ? [e.photo.mediaId] : [])),
       ...productMediaIds(products),

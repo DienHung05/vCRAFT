@@ -21,6 +21,7 @@ import {
   NotificationResponseSchema,
   ProblemDetailsSchema,
   ResubmitHouseholdResponseSchema,
+  SlugAvailabilityResponseSchema,
   UnreadCountResponseSchema,
   type UpdateNotificationPreferencesRequest,
   UpdateNotificationPreferencesRequestSchema,
@@ -126,6 +127,13 @@ export function createAccountClient(options: AccountClientOptions) {
     },
     getMyHousehold() {
       return request('/me/household', HouseholdResponseSchema);
+    },
+    /** FR-ART-01: is this page address free? Used while the sign-up wizard's address is typed. */
+    slugAvailability(slug: string) {
+      return request(
+        `/households/slug-availability?slug=${encodeURIComponent(slug)}`,
+        SlugAvailabilityResponseSchema,
+      );
     },
     /** Nộp hồ sơ hộ (`PENDING_REVIEW`); tài khoản trở thành người đại diện hộ. */
     applyHousehold(input: ApplyHouseholdRequest) {

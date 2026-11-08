@@ -180,6 +180,7 @@ export function HouseholdReview({
   const nav = useTranslations('admin.nav');
   const statuses = useTranslations('studio.home.statuses');
   const areas = useTranslations('villageAreas');
+  const crafts = useTranslations('catalog.craftCategories');
   const format = useFormatter();
   const { client, loading } = useAdminClient(provided);
   const [household, setHousehold] = useState<HouseholdDto | null>(null);
@@ -189,6 +190,9 @@ export function HouseholdReview({
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<HouseholdAction | null>(null);
   const [result, setResult] = useState<'sealed' | 'done' | 'stale' | 'failed' | null>(null);
+  // FR-ART-03: the certification being toggled, and how the last toggle ended.
+  const [certBusy, setCertBusy] = useState<number | null>(null);
+  const [certResult, setCertResult] = useState<'stale' | 'failed' | null>(null);
   // The review map is decorative (the workshop list below has the same facts); keep it out of the tab order.
   const map = useUntabbable<HTMLDivElement>(household);
 
@@ -250,6 +254,26 @@ export function HouseholdReview({
     }
   };
 
+  const setVerified = async (index: number, verified: boolean) => {
+    setCertBusy(index);
+    setCertResult(null);
+    try {
+      setHousehold(
+        await client.setCertificationVerified(household.id, index, household.version, verified),
+      );
+      notify.success(t('certSaved'));
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        await load();
+        setCertResult('stale');
+      } else {
+        setCertResult('failed');
+      }
+    } finally {
+      setCertBusy(null);
+    }
+  };
+
   const actions = ACTIONS[household.status];
   const reasonOk = reason.trim().length >= 3;
 
@@ -285,7 +309,11 @@ export function HouseholdReview({
           <h2 className="text-h3">{t('declared')}</h2>
           <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-small">
             <dt className="text-ash">{t('craft')}</dt>
-            <dd className="min-w-0 break-words">{household.craft ?? '—'}</dd>
+            <dd className="min-w-0 break-words">
+              {[household.craftCategory ? crafts(household.craftCategory) : null, household.craft]
+                .filter(Boolean)
+                .join(' · ') || '—'}
+            </dd>
             <dt className="text-ash">{t('village')}</dt>
             <dd className="min-w-0 break-words">{household.village ?? '—'}</dd>
             <dt className="text-ash">{t('foundedYear')}</dt>
@@ -377,6 +405,71 @@ export function HouseholdReview({
           )}
         </Card>
       </div>
+
+      <Card className="flex min-w-0 flex-col gap-3 p-5" data-testid="review-certifications">
+        <h2 className="text-h3">{t('certifications')}</h2>
+        <p className="text-small text-ash">{t('certificationsHint')}</p>
+        {household.certifications.length === 0 ? (
+          <p className="text-small text-ash">{t('noCertifications')}</p>
+        ) : (
+          <ul className="flex flex-col">
+            {household.certifications.map((cert, index) => (
+              <li
+                // biome-ignore lint/suspicious/noArrayIndexKey: the API addresses a certification by its position.
+                key={index}
+                className="flex flex-wrap items-center justify-between gap-3 border-ink/10 border-b py-3 last:border-b-0"
+              >
+                <div className="min-w-0 flex-1 basis-56">
+                  <p className="break-words font-medium">{cert.name}</p>
+                  <p className="text-small text-ash">
+                    {t('certMeta', {
+                      issuer: cert.issuer,
+                      date: cert.issuedOn
+                        ? format.dateTime(new Date(`${cert.issuedOn}T00:00:00Z`), {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            timeZone: 'UTC',
+                          })
+                        : String(cert.year),
+                    })}
+                  </p>
+                  {cert.photo?.url ? (
+                    <a
+                      href={cert.photo.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-small text-clay underline"
+                    >
+                      {t('certPhoto')}
+                    </a>
+                  ) : null}
+                </div>
+                <Badge tone={cert.verified ? 'lacquer' : 'outline'}>
+                  {cert.verified ? t('certVerified') : t('certUnverified')}
+                </Badge>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={cert.verified ? 'secondary' : 'primary'}
+                  disabled={certBusy !== null}
+                  aria-label={t(cert.verified ? 'removeVerificationNamed' : 'markVerifiedNamed', {
+                    name: cert.name,
+                  })}
+                  onClick={() => void setVerified(index, !cert.verified)}
+                >
+                  {t(cert.verified ? 'removeVerification' : 'markVerified')}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {certResult ? (
+          <p role="alert" className="text-small text-seal">
+            {t(certResult === 'stale' ? 'certStale' : 'certFailed')}
+          </p>
+        ) : null}
+      </Card>
 
       {actions.length > 0 ? (
         <Card className="flex flex-col gap-4 p-5">
