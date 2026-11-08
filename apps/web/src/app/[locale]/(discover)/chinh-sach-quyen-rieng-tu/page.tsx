@@ -55,7 +55,7 @@ export default async function PrivacyPolicyPage({
   const email = privacyContactEmail();
 
   return (
-    <article className="mx-auto flex max-w-prose-vn flex-col gap-8 px-gutter pt-10 pb-section">
+    <article className="mx-auto flex max-w-prose-vn flex-col gap-8 px-gutter pt-10 pb-section-tail">
       <Breadcrumbs items={[{ label: common('home'), href: '/' }, { label: t('title') }]} />
       <header className="flex flex-col gap-3">
         <h1 className="text-h1">{t('title')}</h1>

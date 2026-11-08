@@ -20,7 +20,7 @@ export default async function ImageCreditsPage({ params }: PageProps<'/[locale]/
   const t = await getTranslations('credits');
 
   return (
-    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section">
+    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section-tail">
       <header className="flex max-w-prose-vn flex-col gap-3">
         <h1 className="text-h1">{t('title')}</h1>
         <p className="text-ash">{t('lead')}</p>

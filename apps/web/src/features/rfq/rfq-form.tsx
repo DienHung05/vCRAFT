@@ -10,6 +10,7 @@ import { AmountInWords } from '@/components/amount-in-words';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ConsentCheckbox } from '@/components/consent-checkbox';
 import { FormSkeleton } from '@/components/states/skeletons';
+import { Reveal } from '@/experience/motion/reveal';
 import { useRouter } from '@/i18n/navigation';
 import { useAddressSuggestions } from '@/lib/address/use-address-suggestions';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
@@ -232,7 +233,7 @@ function Form({
       className={
         draft
           ? 'flex flex-col gap-5'
-          : 'mx-auto flex max-w-prose-vn flex-col gap-5 px-gutter pt-12 pb-section'
+          : 'mx-auto flex max-w-prose-vn flex-col gap-5 px-gutter pt-12 pb-section-tail'
       }
       onSubmit={(event) => {
         event.preventDefault();
@@ -361,89 +362,91 @@ function Form({
         </div>
       </div>
       {problem('budget')}
-      <div className="grid gap-5 sm:grid-cols-2">
+      <Reveal className="flex flex-col gap-5">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <label className="flex flex-col gap-1">
+            {t('deadline')}
+            <input
+              type="date"
+              value={values.deadline}
+              onChange={(event) => set('deadline', event.target.value)}
+              className={inputClass}
+              {...invalid('deadline')}
+            />
+            {problem('deadline')}
+          </label>
+          <label className="flex flex-col gap-1">
+            {t('requiredBy')}
+            <input
+              type="date"
+              value={values.requiredBy}
+              onChange={(event) => set('requiredBy', event.target.value)}
+              className={inputClass}
+              {...invalid('requiredBy')}
+            />
+            {problem('requiredBy')}
+          </label>
+        </div>
         <label className="flex flex-col gap-1">
-          {t('deadline')}
+          {t('destination')}
           <input
-            type="date"
-            value={values.deadline}
-            onChange={(event) => set('deadline', event.target.value)}
+            value={values.destination}
+            maxLength={300}
+            list={destinationListId}
+            autoComplete="off"
+            onChange={(event) => set('destination', event.target.value)}
             className={inputClass}
-            {...invalid('deadline')}
+            {...invalid('destination')}
           />
-          {problem('deadline')}
+          <datalist id={destinationListId}>
+            {destinationSuggestions.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+          {problem('destination')}
         </label>
-        <label className="flex flex-col gap-1">
-          {t('requiredBy')}
+        <label className="flex items-start gap-2">
           <input
-            type="date"
-            value={values.requiredBy}
-            onChange={(event) => set('requiredBy', event.target.value)}
-            className={inputClass}
-            {...invalid('requiredBy')}
+            type="checkbox"
+            checked={values.coordinate}
+            onChange={(event) => set('coordinate', event.target.checked)}
+            className="mt-1"
           />
-          {problem('requiredBy')}
+          <span className="flex flex-col">
+            {t('coordinate')}
+            <span className="text-small text-ash">{t('coordinateHint')}</span>
+          </span>
         </label>
-      </div>
-      <label className="flex flex-col gap-1">
-        {t('destination')}
-        <input
-          value={values.destination}
-          maxLength={300}
-          list={destinationListId}
-          autoComplete="off"
-          onChange={(event) => set('destination', event.target.value)}
-          className={inputClass}
-          {...invalid('destination')}
-        />
-        <datalist id={destinationListId}>
-          {destinationSuggestions.map((option) => (
-            <option key={option} value={option} />
-          ))}
-        </datalist>
-        {problem('destination')}
-      </label>
-      <label className="flex items-start gap-2">
-        <input
-          type="checkbox"
-          checked={values.coordinate}
-          onChange={(event) => set('coordinate', event.target.checked)}
-          className="mt-1"
-        />
-        <span className="flex flex-col">
-          {t('coordinate')}
-          <span className="text-small text-ash">{t('coordinateHint')}</span>
-        </span>
-      </label>
-      {values.coordinate ? null : (
-        <fieldset className="flex flex-col gap-2">
-          <legend>{t('households')}</legend>
-          <p className="text-small text-ash">{t('householdsMatch')}</p>
-          {householdsFailed ? (
-            <p role="alert">{t('householdsFailed')}</p>
-          ) : households === null ? (
-            <p role="status">{t('householdsLoading')}</p>
-          ) : (
-            households.map((household) => (
-              <label key={household.id} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={values.householdIds.includes(household.id)}
-                  onChange={(event) =>
-                    set(
-                      'householdIds',
-                      event.target.checked
-                        ? [...values.householdIds, household.id]
-                        : values.householdIds.filter((id) => id !== household.id),
-                    )
-                  }
-                />
-                {household.name}
-              </label>
-            ))
-          )}
-        </fieldset>
-      )}
+        {values.coordinate ? null : (
+          <fieldset className="flex flex-col gap-2">
+            <legend>{t('households')}</legend>
+            <p className="text-small text-ash">{t('householdsMatch')}</p>
+            {householdsFailed ? (
+              <p role="alert">{t('householdsFailed')}</p>
+            ) : households === null ? (
+              <p role="status">{t('householdsLoading')}</p>
+            ) : (
+              households.map((household) => (
+                <label key={household.id} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={values.householdIds.includes(household.id)}
+                    onChange={(event) =>
+                      set(
+                        'householdIds',
+                        event.target.checked
+                          ? [...values.householdIds, household.id]
+                          : values.householdIds.filter((id) => id !== household.id),
+                      )
+                    }
+                  />
+                  {household.name}
+                </label>
+              ))
+            )}
+          </fieldset>
+        )}
+      </Reveal>
       <ConsentCheckbox
         id="rfq-consent"
         purpose="quote"

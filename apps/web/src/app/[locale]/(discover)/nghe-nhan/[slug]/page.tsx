@@ -6,6 +6,7 @@ import { Breadcrumbs } from '@/components/breadcrumbs';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { EmptyState } from '@/components/states/empty-state';
+import { Reveal } from '@/experience/motion/reveal';
 import { fetchHousehold, fetchSlugRedirect } from '@/features/catalog/exhibition-api';
 import { ProductCard } from '@/features/catalog/product-card';
 import {
@@ -169,72 +170,74 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
       {cover ? <div className="mx-auto max-w-editorial px-gutter"></div> : null}
 
       {/* Bento: câu chuyện, đời thứ N, chứng nhận. */}
-      <section
-        className="mx-auto grid max-w-editorial gap-5 px-gutter py-section md:grid-cols-6"
-        aria-label={t('bentoLabel')}
-      >
-        <Card className="p-8 md:col-span-4 md:row-span-2">
-          {portrait ? (
-            <figure className="mb-6 sm:float-right sm:mb-2 sm:ml-6 sm:w-44">
-              <ImageSlot
-                alt={portraitAlt}
-                tint={tintOf(portrait.url)}
-                ratio="4/5"
-                {...slotPhoto(portraitPhoto)}
-                // Below 640px the card is the page width minus gutters and padding; 80vw keeps 1.75x phones on the 640w file.
-                sizes="(min-width: 640px) 11rem, 80vw"
+      <Reveal>
+        <section
+          className="mx-auto grid max-w-editorial gap-5 px-gutter py-section md:grid-cols-6"
+          aria-label={t('bentoLabel')}
+        >
+          <Card className="p-8 md:col-span-4 md:row-span-2">
+            {portrait ? (
+              <figure className="mb-6 sm:float-right sm:mb-2 sm:ml-6 sm:w-44">
+                <ImageSlot
+                  alt={portraitAlt}
+                  tint={tintOf(portrait.url)}
+                  ratio="4/5"
+                  {...slotPhoto(portraitPhoto)}
+                  // Below 640px the card is the page width minus gutters and padding; 80vw keeps 1.75x phones on the 640w file.
+                  sizes="(min-width: 640px) 11rem, 80vw"
+                />
+              </figure>
+            ) : null}
+            <h2 className="text-h3">{t('story')}</h2>
+            {story.map((paragraph) => (
+              <p key={paragraph.slice(0, 24)} className="mt-4 max-w-prose-vn">
+                {paragraph}
+              </p>
+            ))}
+          </Card>
+          {household.generations && household.foundedYear ? (
+            <Card className="relative flex flex-col justify-between overflow-hidden bg-glaze p-8 text-paper md:col-span-2">
+              <VaseFigure
+                className="absolute -right-6 -bottom-4 h-40 opacity-25"
+                body="var(--color-paper)"
+                band="var(--color-glaze)"
               />
-            </figure>
+              <p className="text-small text-paper/75">{t('lineage')}</p>
+              <p className="font-display text-display leading-none text-paper type-wonk">
+                {household.generations}
+              </p>
+              <p className="text-small text-paper/85">
+                {t('lineageText', { n: household.generations, year: household.foundedYear })}
+              </p>
+            </Card>
           ) : null}
-          <h2 className="text-h3">{t('story')}</h2>
-          {story.map((paragraph) => (
-            <p key={paragraph.slice(0, 24)} className="mt-4 max-w-prose-vn">
-              {paragraph}
-            </p>
-          ))}
-        </Card>
-        {household.generations && household.foundedYear ? (
-          <Card className="relative flex flex-col justify-between overflow-hidden bg-glaze p-8 text-paper md:col-span-2">
-            <VaseFigure
-              className="absolute -right-6 -bottom-4 h-40 opacity-25"
-              body="var(--color-paper)"
-              band="var(--color-glaze)"
-            />
-            <p className="text-small text-paper/75">{t('lineage')}</p>
-            <p className="font-display text-display leading-none text-paper type-wonk">
-              {household.generations}
-            </p>
-            <p className="text-small text-paper/85">
-              {t('lineageText', { n: household.generations, year: household.foundedYear })}
-            </p>
-          </Card>
-        ) : null}
-        {household.certifications.length > 0 ? (
-          <Card className="p-8 md:col-span-2">
-            <h2 className="text-h3">{t('certs')}</h2>
-            <ul className="mt-4 space-y-4">
-              {household.certifications.map((c) => (
-                <li key={`${c.name}-${c.year}`} className="flex items-start gap-3">
-                  {c.verified ? (
-                    <SealMark size={24} bleed={false} />
-                  ) : (
-                    <span className="size-6 shrink-0 rounded-sm border border-ink/25 border-dashed" />
-                  )}
-                  <div>
-                    <p className="font-medium">{c.name}</p>
-                    <p className="text-small text-ash">
-                      {c.issuer} · {c.year}
-                    </p>
-                    <Badge tone={c.verified ? 'lacquer' : 'outline'} className="mt-1">
-                      {c.verified ? common('verified') : common('unverified')}
-                    </Badge>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        ) : null}
-      </section>
+          {household.certifications.length > 0 ? (
+            <Card className="p-8 md:col-span-2">
+              <h2 className="text-h3">{t('certs')}</h2>
+              <ul className="mt-4 space-y-4">
+                {household.certifications.map((c) => (
+                  <li key={`${c.name}-${c.year}`} className="flex items-start gap-3">
+                    {c.verified ? (
+                      <SealMark size={24} bleed={false} />
+                    ) : (
+                      <span className="size-6 shrink-0 rounded-sm border border-ink/25 border-dashed" />
+                    )}
+                    <div>
+                      <p className="font-medium">{c.name}</p>
+                      <p className="text-small text-ash">
+                        {c.issuer} · {c.year}
+                      </p>
+                      <Badge tone={c.verified ? 'lacquer' : 'outline'} className="mt-1">
+                        {c.verified ? common('verified') : common('unverified')}
+                      </Badge>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ) : null}
+        </section>
+      </Reveal>
 
       {/* Timeline gia đình nằm ngang, kéo được (FR-ART-02). */}
       {household.timeline.length > 0 ? (
@@ -312,7 +315,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
       ) : null}
 
       <MakerCredits
-        className="mx-auto max-w-editorial px-gutter pb-section"
+        className="mx-auto max-w-editorial px-gutter pb-section-tail"
         household={household.name}
         makers={household.artisans.map((a) => ({ name: a.name, detail: a.craftRole ?? '' }))}
       />

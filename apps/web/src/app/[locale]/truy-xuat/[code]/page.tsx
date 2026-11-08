@@ -13,6 +13,7 @@ import { getTranslations } from 'next-intl/server';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
+import { Reveal } from '@/experience/motion/reveal';
 import { fetchHousehold, fetchTrace } from '@/features/catalog/exhibition-api';
 import {
   altFor,
@@ -95,7 +96,9 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
   const householdImage = householdPhoto?.view && { ...householdPhoto.view, alt: householdAlt };
 
   return (
-    <div className="mx-auto min-h-svh max-w-xl bg-paper">
+    <div
+      className={`mx-auto min-h-svh bg-paper ${visible ? 'trace-notebook max-w-6xl' : 'max-w-xl'}`}
+    >
       <header className="flex items-center justify-between px-5 py-4">
         <Link href="/" aria-label={t('home')}>
           <Logo size={26} />
@@ -135,15 +138,17 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
           </section>
         ) : (
           <>
-            <section className="px-5 pt-6">
-              <p className="text-small text-ash">{t('scanned')}</p>
-              <h1 className="mt-1 text-h1">{visible.product.name}</h1>
-              <p className="mt-2 text-ash">{visible.household.name}</p>
-              {visible.product.status === 'SOLD' ? (
-                <Badge tone="outline" className="mt-3">
-                  {common('sold')}
-                </Badge>
-              ) : null}
+            <section className="trace-intro mx-auto max-w-xl px-5 pt-6 lg:grid lg:max-w-none lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-center lg:gap-12">
+              <div>
+                <p className="text-small text-ash">{t('scanned')}</p>
+                <h1 className="mt-1 text-h1">{visible.product.name}</h1>
+                <p className="mt-2 text-ash">{visible.household.name}</p>
+                {visible.product.status === 'SOLD' ? (
+                  <Badge tone="outline" className="mt-3">
+                    {common('sold')}
+                  </Badge>
+                ) : null}
+              </div>
               {image ? (
                 <figure className="mt-5 max-w-xs">
                   <ImageSlot
@@ -166,13 +171,15 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
               household={visible.household.name}
               householdVerified={visible.household.status === 'APPROVED'}
             />
-            <p className="mx-5 mt-3 text-small text-ash">
+            <p className="mt-3 px-5 text-small text-ash">
               {t('scans', { count: visible.scanCount })}
             </p>
 
-            <section aria-labelledby="journey-title" className="px-5 pt-12">
-              <h2 id="journey-title">{t('timelineTitle')}</h2>
-              <p className="mt-2 mb-8 text-small text-ash">{t('timelineLead')}</p>
+            <section aria-labelledby="journey-title" className="trace-journey px-5 pt-12">
+              <Reveal>
+                <h2 id="journey-title">{t('timelineTitle')}</h2>
+                <p className="mt-2 mb-8 text-small text-ash">{t('timelineLead')}</p>
+              </Reveal>
               <FireTimeline
                 entries={toLogEntries(visible.journal)}
                 household={visible.household.name}
@@ -193,35 +200,37 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
 
             {/* Đi ngược về món đồ và hộ làm ra nó. */}
             <section aria-labelledby="household-title" className="px-5 pt-12">
-              <h2 id="household-title">{ex('householdTitle')}</h2>
-              <ImageSlot
-                alt={householdAlt}
-                tint={tintOf(visible.household.slug)}
-                ratio="3/2"
-                {...slotPhoto(householdImage)}
-                sizes="(min-width: 640px) 32rem, 100vw"
-                className="mt-6 grid place-items-center"
-              >
-                {householdImage ? null : (
-                  <ProductFigure
-                    kind="generic"
-                    className="h-1/2"
-                    body="var(--color-paper)"
-                    band={tintOf(visible.household.slug)}
-                  />
-                )}
-              </ImageSlot>
-              {visible.product.artisanNote ? (
-                <blockquote className="mt-6 font-display text-h3 leading-snug text-ink type-soft">
-                  “{visible.product.artisanNote}”
-                </blockquote>
-              ) : null}
-              <Link
-                href={{ pathname: '/nghe-nhan/[slug]', params: { slug: visible.household.slug } }}
-                className={`${buttonVariants({ variant: 'secondary' })} mt-6`}
-              >
-                {ex('householdCta', { household: visible.household.name })}
-              </Link>
+              <Reveal>
+                <h2 id="household-title">{ex('householdTitle')}</h2>
+                <ImageSlot
+                  alt={householdAlt}
+                  tint={tintOf(visible.household.slug)}
+                  ratio="3/2"
+                  {...slotPhoto(householdImage)}
+                  sizes="(min-width: 640px) 32rem, 100vw"
+                  className="mt-6 grid place-items-center"
+                >
+                  {householdImage ? null : (
+                    <ProductFigure
+                      kind="generic"
+                      className="h-1/2"
+                      body="var(--color-paper)"
+                      band={tintOf(visible.household.slug)}
+                    />
+                  )}
+                </ImageSlot>
+                {visible.product.artisanNote ? (
+                  <blockquote className="mt-6 font-display text-h3 leading-snug text-ink type-soft">
+                    “{visible.product.artisanNote}”
+                  </blockquote>
+                ) : null}
+                <Link
+                  href={{ pathname: '/nghe-nhan/[slug]', params: { slug: visible.household.slug } }}
+                  className={`${buttonVariants({ variant: 'secondary' })} mt-6`}
+                >
+                  {ex('householdCta', { household: visible.household.name })}
+                </Link>
+              </Reveal>
             </section>
 
             <VisitSection
