@@ -1,6 +1,7 @@
 import type { MikroORM } from '@mikro-orm/core';
 import {
   dueRequestIds,
+  expireDuePayments,
   expireRequest,
   flagRequestsNeedingCoordination,
   purgeAssistantLogs,
@@ -15,12 +16,15 @@ export const RFQ_COORDINATION_CHECK_JOB = 'rfq.coordination-check';
 export const ASSISTANT_LOG_PURGE_JOB = 'assistant.purge-logs';
 /** Deletes idempotency keys older than 24 hours (BR-L5). */
 export const IDEMPOTENCY_PURGE_JOB = 'idempotency.purge-keys';
+/** Expires pending payments past their expiry time and tells the buyers (ADR-0021). */
+export const PAYMENT_EXPIRE_SWEEP_JOB = 'payment.expire-sweep';
 
 /** How often the safety sweep and the coordination check run. */
 export const RFQ_SWEEP_EVERY_MS = 60_000;
 export const COORDINATION_CHECK_EVERY_MS = 15 * 60_000;
 export const ASSISTANT_LOG_PURGE_EVERY_MS = 24 * 60 * 60_000;
 export const IDEMPOTENCY_PURGE_EVERY_MS = 60 * 60_000;
+export const PAYMENT_EXPIRE_EVERY_MS = 60_000;
 
 export interface RfqExpireJob {
   requestId: string;
@@ -48,6 +52,8 @@ export async function runSchedulerJob(
       return purgeAssistantLogs(orm, now);
     case IDEMPOTENCY_PURGE_JOB:
       return purgeIdempotencyKeys(orm, now);
+    case PAYMENT_EXPIRE_SWEEP_JOB:
+      return expireDuePayments(orm, now);
     default:
       throw new Error(`unknown scheduler job: ${name}`);
   }

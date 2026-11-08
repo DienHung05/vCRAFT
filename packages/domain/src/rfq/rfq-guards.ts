@@ -168,6 +168,23 @@ export const allAllocationsConfirmed: RfqGuard = (ctx) => {
       });
 };
 
+/**
+ * T4 / ADR-0021: where payment is switched on, production starts only after the deposit is `PAID`. Without
+ * `depositRequired` the guard passes, so deployments that keep payment offline are unaffected.
+ */
+export const depositPaidWhenRequired: RfqGuard = (ctx) => {
+  if (!ctx.depositRequired) return undefined;
+  return ctx.depositPaid === true
+    ? undefined
+    : new DomainError(
+        'PAYMENT_DEPOSIT_REQUIRED',
+        'The deposit must be paid before production starts',
+        {
+          rule: 'T4',
+        },
+      );
+};
+
 /** T5: có ít nhất một Phân bổ và mọi Phân bổ `DONE`. */
 export const allAllocationsDone: RfqGuard = (ctx) => {
   if (ctx.allocationStatuses === undefined) return missing('allocationStatuses');

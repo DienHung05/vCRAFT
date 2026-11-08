@@ -25,12 +25,33 @@ export const HOUSEHOLD_NOTICE_KINDS = [
 ] as const;
 export type HouseholdNoticeKind = (typeof HOUSEHOLD_NOTICE_KINDS)[number];
 
+/**
+ * Payment notices (ADR-0021, GH#205). The subject is the order (the quotation request id).
+ *
+ * | Loại                | Người nhận                                         |
+ * | ------------------- | -------------------------------------------------- |
+ * | `PAYMENT_PAID`      | Người mua (money confirmed), admin điều phối       |
+ * | `PAYMENT_EXPIRED`   | Người mua (the payment ran out of time)            |
+ * | `PAYMENT_REFUNDED`  | Người mua (an administrator marked it refunded)    |
+ */
+export const PAYMENT_NOTICE_KINDS = [
+  'PAYMENT_PAID',
+  'PAYMENT_EXPIRED',
+  'PAYMENT_REFUNDED',
+] as const;
+export type PaymentNoticeKind = (typeof PAYMENT_NOTICE_KINDS)[number];
+
 export const NOTIFICATION_TYPES = [
   ...QUOTATION_NOTICE_KINDS,
   ...HOUSEHOLD_NOTICE_KINDS,
+  ...PAYMENT_NOTICE_KINDS,
   'NEWS_PUBLISHED',
 ] as const;
-export type NotificationType = QuotationNoticeKind | HouseholdNoticeKind | 'NEWS_PUBLISHED';
+export type NotificationType =
+  | QuotationNoticeKind
+  | HouseholdNoticeKind
+  | PaymentNoticeKind
+  | 'NEWS_PUBLISHED';
 
 export function isNotificationType(value: unknown): value is NotificationType {
   return (NOTIFICATION_TYPES as readonly unknown[]).includes(value);
@@ -63,6 +84,9 @@ export const NOTIFICATION_TYPES_BY_ROLE: Record<AccountRole, readonly Notificati
     'ORDER_CANCELLED',
     'PRODUCTION_STARTED',
     'PROGRESS_REPORTED',
+    'PAYMENT_PAID',
+    'PAYMENT_EXPIRED',
+    'PAYMENT_REFUNDED',
   ],
   HOUSEHOLD: [
     'HOUSEHOLD_APPROVED',
@@ -91,6 +115,7 @@ export const NOTIFICATION_TYPES_BY_ROLE: Record<AccountRole, readonly Notificati
     'ORDER_CANCELLED',
     'PROGRESS_REPORTED',
     'ORDER_RECEIVED',
+    'PAYMENT_PAID',
   ],
 };
 

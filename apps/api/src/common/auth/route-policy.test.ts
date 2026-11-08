@@ -17,6 +17,10 @@ const PUBLIC_WRITES = new Set([
   // The Fox assistant answers guests (PLAN E15): rate limited per hashed IP, logged anonymously.
   'POST /api/v1/assistant/messages',
   'POST /api/v1/assistant/messages/:id/feedback',
+  // Provider callbacks of online payment (ADR-0021): not signed-in users, so each is checked by the provider's own
+  // credential (SePay API key header) or HMAC signature (MoMo IPN) and applied idempotently.
+  'POST /api/v1/payments/webhooks/sepay',
+  'POST /api/v1/payments/webhooks/momo',
 ]);
 
 /**

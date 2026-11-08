@@ -9,6 +9,7 @@
  * - media/        Luật upload (loại thật theo magic bytes, kích thước, bucket) và mốc biến thể ảnh
  * - news/         Phân loại và trạng thái tin tức làng nghề
  * - notification/ Loại thông báo in-app, người nhận theo vai trò và trang đích
+ * - payment/    Thanh toán đơn hàng (ADR-0021): máy trạng thái, tiền cọc 30 %, mã tham chiếu, VietQR
  * - privacy/      Mục đích và phiên bản chính sách của sự đồng ý xử lý dữ liệu cá nhân (NFR-SEC-07)
  * - village/      Ranh giới xã Bát Tràng (GeoJSON tĩnh) và kiểm tra điểm trong đa giác
  * - shared/     DomainError, Result, helper máy trạng thái; (sau này) Money, GeoPoint, OpeningHours
@@ -22,6 +23,7 @@ export * from './matching';
 export * from './media';
 export * from './news';
 export * from './notification';
+export * from './payment';
 export * from './privacy';
 export * from './rfq';
 export * from './shared';

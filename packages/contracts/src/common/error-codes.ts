@@ -102,6 +102,18 @@ export const ERROR_CATALOG = {
   /** A cooperative share above the maximum quantity the household offered for this request. */
   RFQ_OFFER_QUANTITY_EXCEEDED: { status: 409, title: 'Quantity is above the household offer' },
 
+  // --- PAYMENT: online payment of orders (ADR-0021, GH#205) ---
+  /** The method is switched off or not configured in this deployment (VNPay and MoMo are sandbox-only behind a flag). */
+  PAYMENT_METHOD_UNAVAILABLE: { status: 409, title: 'Payment method is not available' },
+  /** The order is not in a state that takes this payment (deposit before production, balance until delivery). */
+  PAYMENT_ORDER_NOT_PAYABLE: { status: 409, title: 'Order cannot take this payment now' },
+  /** The deposit or the balance of this order is already paid. */
+  PAYMENT_ALREADY_PAID: { status: 409, title: 'Payment is already paid' },
+  /** Production (or the balance) waits for a paid deposit. */
+  PAYMENT_DEPOSIT_REQUIRED: { status: 409, title: 'The deposit must be paid first' },
+  /** The provider webhook did not carry valid credentials or a valid signature. */
+  PAYMENT_WEBHOOK_REJECTED: { status: 401, title: 'Payment webhook rejected' },
+
   // --- IDEMPOTENCY: BR-L5 ---
   IDEMPOTENCY_KEY_REQUIRED: { status: 400, title: 'Idempotency-Key header required' },
   /** Cùng key nhưng payload khác (so `requestHash`). */
