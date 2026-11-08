@@ -218,3 +218,134 @@ it('sends only the selected households when their quantities cover the whole req
     onSubmit.mock.calls[0]?.[0].parts.map((part: { householdId: string }) => part.householdId),
   ).toEqual(['hh-a', 'hh-b']);
 });
+
+/** GH#247, SRS BR-06 / FR-ORD-03 / AC-3: the admin picks a strategy and the board is filled. */
+describe('AllocationBoard strategy picker', () => {
+  const value = (name: string) =>
+    Number((screen.getByLabelText(`Nhập số lượng cho ${name}`) as HTMLInputElement).value);
+  const pick = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
+
+  // Capacities 2.000 / 1.500 / 1.200 / 1.000 from AC-3.
+  const ac3 = [
+    ['hh-1', 'Hộ Một', 2000, 30_000, '2026-12-20T00:00:00.000Z'],
+    ['hh-2', 'Hộ Hai', 1500, 32_000, '2026-12-22T00:00:00.000Z'],
+    ['hh-3', 'Hộ Ba', 1200, 34_000, '2026-12-28T00:00:00.000Z'],
+    ['hh-4', 'Hộ Bốn', 1000, 36_000, '2026-12-24T00:00:00.000Z'],
+  ].map(([householdId, name, capacity, unitPriceVnd, completionDate], i) => ({
+    householdId: householdId as string,
+    name: name as string,
+    tint: '#8a5a3c',
+    maxQuantity: capacity as number,
+    capacity: capacity as number,
+    unitPriceVnd: unitPriceVnd as number,
+    completionDate: completionDate as string,
+    contributionVersion: i + 1,
+  }));
+
+  it('offers the three strategies of BR-06 and none is applied at first', () => {
+    renderVi(<AllocationBoard {...props()} />);
+    for (const name of ['Theo năng lực', 'Giá thấp trước', 'Cân bằng'])
+      expect(screen.getByRole('button', { name }).getAttribute('aria-pressed')).toBe('false');
+    expect(value('Gốm Minh Hải')).toBe(0);
+  });
+
+  it('AC-3: "Theo năng lực" proposes 1754 / 1316 / 1053 / 877, then 900 for the fourth blocks sending', () => {
+    renderVi(<AllocationBoard {...props({ quantity: 5000, contributions: ac3 })} />);
+    pick('Theo năng lực');
+    expect([value('Hộ Một'), value('Hộ Hai'), value('Hộ Ba'), value('Hộ Bốn')]).toEqual([
+      1754, 1316, 1053, 877,
+    ]);
+    expect(submitButton().disabled).toBe(false);
+    expect(screen.getByText(/Đã chia đủ 5\.000 bát/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Theo năng lực' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+
+    set('Hộ Bốn', '900');
+    expect(submitButton().disabled).toBe(true);
+    expect(screen.getByText(/Đang chia thừa 23 bát/)).toBeTruthy();
+    // A hand edit makes the plan the admin's own: the strategy is no longer marked as applied.
+    expect(screen.getByRole('button', { name: 'Theo năng lực' }).getAttribute('aria-pressed')).toBe(
+      'false',
+    );
+  });
+
+  it('"Giá thấp trước" fills the cheapest household up to its maximum first', () => {
+    renderVi(<AllocationBoard {...props()} />);
+    pick('Giá thấp trước');
+    // Lam Ngọc 54.000 (max 900), Minh Hải 58.000 (max 1.200), Đức Phát 61.000 takes the last 900.
+    expect([value('Gốm Minh Hải'), value('Gốm Lam Ngọc'), value('Lò Đức Phát')]).toEqual([
+      1200, 900, 900,
+    ]);
+    expect(submitButton().disabled).toBe(false);
+  });
+
+  it('"Cân bằng" shares equally and lets a small household cap out', () => {
+    renderVi(<AllocationBoard {...props()} />);
+    pick('Cân bằng');
+    // 1.000 each, but Lam Ngọc offered at most 900: the 100 left is shared by the other two.
+    expect([value('Gốm Minh Hải'), value('Gốm Lam Ngọc'), value('Lò Đức Phát')]).toEqual([
+      1050, 900, 1050,
+    ]);
+  });
+
+  it('shows the resulting total, price and expected completion date', () => {
+    renderVi(<AllocationBoard {...props()} />);
+    pick('Giá thấp trước');
+    // 1.200 × 58.000 + 900 × 54.000 + 900 × 61.000; the latest date is the one of Lò Đức Phát.
+    expect(screen.getByText(/Đã đề xuất theo "Giá thấp trước": 3\.000 \/ 3\.000 bát/)).toBeTruthy();
+    expect(screen.getByText(/dự kiến xong 30\/12\/2026/)).toBeTruthy();
+    expect(screen.getByText('Dự kiến hoàn thành').nextElementSibling?.textContent).toMatch(
+      /30\/12\/2026/,
+    );
+    expect(screen.getByText('Tiền hàng')).toBeTruthy();
+  });
+
+  it('lets the admin edit the proposal by hand and keeps the sum check', () => {
+    renderVi(<AllocationBoard {...props()} />);
+    pick('Cân bằng');
+    set('Gốm Minh Hải', '1100');
+    expect(value('Gốm Minh Hải')).toBe(1100);
+    expect(submitButton().disabled).toBe(true);
+    expect(screen.getByText(/Đang chia thừa 50 bát/)).toBeTruthy();
+    set('Gốm Minh Hải', '1050');
+    expect(submitButton().disabled).toBe(false);
+  });
+
+  it('flags a shortfall when the households cannot cover the request together', () => {
+    renderVi(<AllocationBoard {...props({ quantity: 5000 })} />);
+    pick('Theo năng lực');
+    expect(screen.getByRole('alert').textContent).toMatch(/tối đa 3\.600 bát.*thiếu 1\.400 bát/);
+    expect(value('Gốm Minh Hải') + value('Gốm Lam Ngọc') + value('Lò Đức Phát')).toBe(3600);
+    expect(submitButton().disabled).toBe(true);
+  });
+
+  it('never proposes above a declared capacity lower than the offered maximum', () => {
+    const capped = contributions.map((c, i) => ({ ...c, capacity: i === 2 ? 800 : null }));
+    renderVi(<AllocationBoard {...props({ quantity: 2000, contributions: capped })} />);
+    pick('Giá thấp trước');
+    expect(value('Lò Đức Phát')).toBeLessThanOrEqual(800);
+    expect(value('Gốm Minh Hải') + value('Gốm Lam Ngọc') + value('Lò Đức Phát')).toBe(2000);
+  });
+
+  it('flags a hand-typed share above the declared capacity (BR-L6)', () => {
+    const capped = [{ ...contributions[0], maxQuantity: 5000, capacity: 1000 }, contributions[1]];
+    renderVi(<AllocationBoard {...props({ quantity: 1900, contributions: capped })} />);
+    set('Gốm Minh Hải', '1000');
+    set('Gốm Lam Ngọc', '900');
+    expect(submitButton().disabled).toBe(false);
+    set('Gốm Minh Hải', '1001');
+    set('Gốm Lam Ngọc', '899');
+    expect(submitButton().disabled).toBe(true);
+    expect(
+      screen.getAllByText(/Gốm Minh Hải vượt năng lực hộ đã khai \(1\.000\)/).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it('disables the picker while the request is closed', () => {
+    renderVi(<AllocationBoard {...props({ disabled: true })} />);
+    expect((screen.getByRole('button', { name: 'Cân bằng' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+  });
+});

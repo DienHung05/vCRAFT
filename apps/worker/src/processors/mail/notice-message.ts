@@ -41,6 +41,10 @@ const COPY: Record<NotificationType, { subject: string; body: string }> = {
     subject: 'Một hộ đã xác nhận phân bổ',
     body: 'Một hộ vừa xác nhận phần sản xuất của mình trong đơn hàng.',
   },
+  ALLOCATION_REASSIGNED: {
+    subject: 'Một phần việc của bạn đã được chuyển cho hộ khác',
+    body: 'Ban quản lý đã chuyển phần việc còn lại của bạn trong đơn hàng cho hộ khác để kịp tiến độ. Phần bạn đã làm xong vẫn được ghi nhận.',
+  },
   ORDER_CANCELLED: {
     subject: 'Đơn hàng đã bị hủy',
     body: 'Đơn hàng đã bị hủy; các phân bổ còn hiệu lực không được tiếp tục.',

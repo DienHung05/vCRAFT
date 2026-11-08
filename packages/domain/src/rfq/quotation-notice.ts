@@ -11,6 +11,7 @@
  * | `QUOTATION_ACCEPTED`    | Admin điều phối                                     |
  * | `ALLOCATION_PROPOSED`   | Đại diện hộ có phần trong đơn                       |
  * | `ALLOCATION_CONFIRMED`  | Người mua, admin điều phối                          |
+ * | `ALLOCATION_REASSIGNED` | Đại diện hộ bị chuyển bớt phần việc trễ (GH#247)    |
  * | `ORDER_CANCELLED`       | Mọi bên của đơn                                     |
  * | `PRODUCTION_STARTED`    | Người mua, các hộ có phần                           |
  * | `PROGRESS_REPORTED`     | Người mua, admin điều phối                          |
@@ -29,6 +30,7 @@ export const QUOTATION_NOTICE_KINDS = [
   'QUOTATION_ACCEPTED',
   'ALLOCATION_PROPOSED',
   'ALLOCATION_CONFIRMED',
+  'ALLOCATION_REASSIGNED',
   'ORDER_CANCELLED',
   'PRODUCTION_STARTED',
   'PROGRESS_REPORTED',

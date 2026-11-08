@@ -54,6 +54,7 @@ import { AppError, forbidden, notFound } from '../../../common/errors/app-error'
 import { MediaService } from '../../media/application/media.service';
 import { ConsentService } from '../../privacy/application/consent.service';
 import { allocationTimeline } from './allocation-timeline';
+import { assertWithinCapacity, declaredCapacity } from './household-capacity';
 import { QuotationNotifier } from './quotation-notifier';
 
 /** All plan/input writes lock the request first, so changes cannot race with composition. */
@@ -436,6 +437,7 @@ export class RfqService {
       contributions: offers.map((offer) => ({
         ...toContributionDto(offer),
         householdName: offer.household.name,
+        householdCapacity: declaredCapacity(offer.household, request.category) ?? null,
       })),
     };
   }
@@ -452,6 +454,7 @@ export class RfqService {
       if (!request.invitedHouseholdIds.includes(household.id)) throw notFound();
       if (household.status !== 'APPROVED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
       this.completion(input.completionDate, request);
+      assertWithinCapacity(household, request.category, input.maxQuantity);
       request.declinedHouseholdIds = (request.declinedHouseholdIds ?? []).filter(
         (id) => id !== household.id,
       );
@@ -566,7 +569,10 @@ export class RfqService {
       assertVersion(offer, version);
       this.open(request);
       if (input && household.status !== 'APPROVED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
-      if (input) this.completion(input.completionDate, request);
+      if (input) {
+        this.completion(input.completionDate, request);
+        assertWithinCapacity(household, request.category, input.maxQuantity);
+      }
       offer.history = [
         ...offer.history,
         {
@@ -648,7 +654,7 @@ export class RfqService {
       if (household.status !== 'APPROVED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
       const existing = await this.activeDirectQuotation(em, request, household.id);
       if (existing) throw new AppError('RFQ_BID_ALREADY_EXISTS');
-      const plan = this.directPlan(request, household.id, input);
+      const plan = this.directPlan(request, household, input);
       if (request.status === 'SENT')
         request.status = unwrap(
           transition(request.status, 'RECEIVE_BID', {
@@ -738,7 +744,7 @@ export class RfqService {
       );
       if (input) {
         if (household.status !== 'APPROVED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
-        const plan = this.directPlan(request, household.id, input);
+        const plan = this.directPlan(request, household, input);
         quotation.parts = plan.parts;
         quotation.productionTotalVnd = plan.productionTotalVnd;
         quotation.totalVnd = plan.totalVnd;
@@ -760,7 +766,7 @@ export class RfqService {
   /** The stored shape of a household's quotation for the whole request, checked by the domain. */
   private directPlan(
     request: QuotationRequest,
-    householdId: string,
+    household: Household,
     input: CreateDirectQuotationRequest,
   ) {
     this.completion(input.completionDate, request);
@@ -769,9 +775,10 @@ export class RfqService {
         requiredQuantity: request.quantity,
         biddingClosesAt: request.biddingClosesAt,
         requiredBy: request.requiredBy,
-        householdId,
+        householdId: household.id,
         unitPriceVnd: input.unitPriceVnd,
         completionDate: new Date(input.completionDate),
+        capacity: declaredCapacity(household, request.category),
       }),
     );
     return {
@@ -818,6 +825,7 @@ export class RfqService {
             unitPriceVnd: offer.unitPriceVnd,
             completionDate: offer.completionDate,
             version: offer.version,
+            capacity: declaredCapacity(offer.household, request.category),
           })),
           parts: input.parts.map((part) => ({
             ...part,
