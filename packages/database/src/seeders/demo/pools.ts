@@ -336,182 +336,254 @@ export const VILLAGE_PARTS = [
 export interface NewsSeed {
   /** Khóa ổn định để sinh id (UUID v5). */
   key: string;
-  category: 'HOUSEHOLD_UPDATE' | 'VILLAGE_EVENT' | 'CRAFT_STORY';
-  /** Chỉ số trong HOUSEHOLDS; `null` = tin chung của làng. */
+  category: 'HOUSEHOLD_UPDATE' | 'VILLAGE_EVENT' | 'CRAFT_STORY' | 'SUPPORT_POLICY' | 'GENERAL';
+  /** Chỉ số trong HOUSEHOLDS; `null` = tin chung của làng (tin của hộ là tùy chọn, GH#314). */
   h: number | null;
   title: string;
   summary: string;
-  /** Văn bản thuần; `{hộ}` được thay bằng tên hộ. */
+  /** Plain text, our own paraphrase of the original story; `{hộ}` is replaced by the household name. */
   body: string;
-  /** Số ngày trước mốc đóng băng. */
-  daysAgo: number;
+  /** Số ngày trước mốc đóng băng. Bỏ qua khi có `publishedAt`. */
+  daysAgo?: number;
+  /** Real publish date of the story on this site (ISO 8601). When present it replaces `daysAgo`. */
+  publishedAt?: string;
+  /** Publisher of the original story, e.g. "VnExpress". Required for real stories (checked by `demo:verify`). */
+  sourceName?: string;
+  /** https link to the original story. */
+  sourceUrl?: string;
+  /** Original publication date (ISO 8601); defaults to `publishedAt`. */
+  sourcePublishedAt?: string;
+  /** English paraphrase of the story. Reserved: the news table has no English columns yet, so it is not stored. */
+  en?: { title: string; summary: string; body: string };
   pinned?: boolean;
 }
 
-/** 18 tin mẫu (6 tin chung của làng, 12 tin của hộ). Văn bản thuần, hư cấu, không phải tin thật. */
+/**
+ * Real published stories about Bát Tràng (GH#314). `title` is the original headline, `summary` and `body` (vi and
+ * `en`) are our own paraphrase of the article, and `sourceName` / `sourceUrl` / `sourcePublishedAt` point back to
+ * the original, which the site shows as a source line. Every story was read in full before it was added.
+ */
 export const NEWS: readonly NewsSeed[] = [
   {
-    key: 'village-lantern',
+    key: 'bt-creative-craft-network',
     category: 'VILLAGE_EVENT',
     h: null,
-    title: 'Chợ gốm đêm Bát Tràng trở lại vào cuối tuần',
-    summary: 'Hơn hai chục hộ mở xưởng buổi tối, khách được tự tay vuốt thử một chiếc cốc.',
-    body: 'Chợ gốm đêm mở cửa từ 17:00 đến 21:30 vào thứ Sáu và thứ Bảy hằng tuần. Mỗi hộ tham gia dựng một quầy nhỏ trước xưởng, có hướng dẫn vuốt gốm cho khách mới và bàn tô men miễn phí cho trẻ em.\n\nKhách nên đi bộ từ cổng làng để dễ tìm chỗ gửi xe. Thông tin từng xưởng xem ở trang hồ sơ của hộ.',
-    daysAgo: 2,
+    title: 'Làng Bát Tràng, Vạn Phúc gia nhập mạng lưới các thành phố thủ công sáng tạo',
+    summary:
+      'Tối 14/2/2025 tại Hoàng thành Thăng Long, Bát Tràng và Vạn Phúc được đón nhận là thành viên của mạng lưới thủ công sáng tạo thế giới.',
+    body: 'Buổi lễ diễn ra tại Hoàng thành Thăng Long vào tối 14/2/2025, trao chứng nhận thành viên mạng lưới các thành phố thủ công sáng tạo cho đại diện hai làng nghề: làng gốm Bát Tràng và làng lụa Vạn Phúc. Chủ tịch Hội đồng Thủ công Thế giới đến dự và khen ngợi sự tinh xảo của gốm Bát Tràng và lụa Vạn Phúc.\n\nChương trình có phần biểu diễn nghệ thuật, lễ rước tổ nghề và triển lãm, trình diễn sản phẩm thủ công Hà Nội. Bài báo cho biết Hà Nội có khoảng 1.350 làng nghề và làng có nghề, phủ 47 trong 52 nghề truyền thống của cả nước.\n\nTheo báo, toàn mạng lưới lúc này có 68 làng nghề của 28 quốc gia, và việc gia nhập được xem là minh chứng cho nỗ lực giữ giá trị truyền thống song song với nhu cầu hiện đại.',
+    en: {
+      title: 'Bát Tràng and Vạn Phúc villages join the network of creative craft cities',
+      summary:
+        'On the evening of 14 February 2025 at the Thăng Long Imperial Citadel, Bát Tràng and Vạn Phúc were welcomed as members of the World Crafts Council network.',
+      body: "The ceremony took place at the Thăng Long Imperial Citadel on the evening of 14 February 2025, handing membership certificates of the creative craft cities network to the pottery village of Bát Tràng and the silk village of Vạn Phúc. The president of the World Crafts Council attended and praised the refinement of Bát Tràng ceramics and Vạn Phúc silk.\n\nThe programme included a stage performance, a procession honouring the craft ancestor and an exhibition with demonstrations of Hanoi handicrafts. The report notes that Hanoi has about 1,350 craft villages and villages with crafts, covering 47 of the country's 52 traditional crafts.\n\nAccording to the paper the network now counts 68 craft villages from 28 countries, and joining it is presented as proof of efforts to keep traditional values while meeting modern demand.",
+    },
+    publishedAt: '2025-02-15T08:37:00+07:00',
+    sourceName: 'Báo Nông nghiệp và Môi trường',
+    sourceUrl:
+      'https://nongnghiepmoitruong.vn/lang-bat-trang-van-phuc-gia-nhap-mang-luoi-cac-thanh-pho-thu-cong-sang-tao-d421126.html',
+    sourcePublishedAt: '2025-02-15T08:37:00+07:00',
+  },
+  {
+    key: 'bt-festival-heritage-2025',
+    category: 'VILLAGE_EVENT',
+    h: null,
+    title: 'Công bố lễ hội làng Bát Tràng là Di sản văn hóa phi vật thể quốc gia',
+    summary:
+      'Tối 12/3/2025 tại đình làng, huyện Gia Lâm công bố quyết định công nhận lễ hội làng và khai mạc lễ hội truyền thống năm 2025.',
+    body: 'Tối 12/3/2025, tại đình làng Bát Tràng, UBND huyện Gia Lâm tổ chức lễ công bố quyết định của Bộ Văn hóa, Thể thao và Du lịch đưa lễ hội làng Bát Tràng vào danh mục di sản văn hóa phi vật thể quốc gia, đồng thời khai mạc lễ hội truyền thống năm 2025. Bộ công nhận lễ hội từ ngày 10/12/2024.\n\nLễ hội có các nghi thức dâng hương, tam sinh, rước kiệu, cấp thủy, nhập thủy và tế thần, cùng các hoạt động như thi nấu cỗ truyền thống, giao lưu với các làng khác, thả đèn hoa đăng, bắn pháo hoa, thưởng trà và trò chơi dân gian.\n\nBài báo nhắc rằng nghề gốm Bát Tràng đã vào danh mục di sản quốc gia từ năm 2023, làng có hai Nghệ nhân Nhân dân và sáu Nghệ nhân Ưu tú, nhiều sản phẩm đạt OCOP 3 đến 5 sao.',
+    en: {
+      title: 'Bát Tràng village festival announced as national intangible cultural heritage',
+      summary:
+        'On the evening of 12 March 2025 at the communal house, Gia Lâm district announced the decision recognising the village festival and opened the 2025 traditional festival.',
+      body: "On the evening of 12 March 2025, at the Bát Tràng communal house, the Gia Lâm District People's Committee held a ceremony announcing the Ministry of Culture, Sports and Tourism's decision to list the Bát Tràng village festival as national intangible cultural heritage, and opened the 2025 traditional festival. The ministry recognised the festival on 10 December 2024.\n\nThe festival includes rites of incense offering, the three-animal offering, the palanquin procession, water-drawing and water-entering, and the sacrifice to the deities, along with a traditional feast cooking contest, exchanges with other villages, a floating-lantern ceremony, fireworks, tea tasting and folk games.\n\nThe article recalls that Bát Tràng pottery joined the national heritage list in 2023, that the village has two People's Artisans and six Meritorious Artisans, and that many products hold OCOP ratings of 3 to 5 stars.",
+    },
+    publishedAt: '2025-03-13T08:53:00+07:00',
+    sourceName: 'Báo Nhân Dân',
+    sourceUrl:
+      'https://nhandan.vn/cong-bo-le-hoi-lang-bat-trang-la-di-san-van-hoa-phi-vat-the-quoc-gia-post864820.html',
+    sourcePublishedAt: '2025-03-13T08:53:00+07:00',
+  },
+  {
+    key: 'bt-green-kilns-policy',
+    category: 'SUPPORT_POLICY',
+    h: null,
+    title: "Doanh nghiệp làng nghề khó chuyển đổi 'xanh'",
+    summary:
+      'Bài báo nói về khó khăn giữ môi trường của các làng nghề Hà Nội, trong đó Bát Tràng đã chuyển gần 1.000 hộ sang lò gas hóa lỏng, và các đề xuất hỗ trợ của Sở Công Thương.',
+    body: 'Hà Nội có khoảng 1.350 làng nghề và làng có nghề, trong đó 327 làng được thành phố công nhận. Các chuyên gia cho rằng làng nghề phải bảo vệ môi trường nhưng phần lớn là cơ sở nhỏ theo hộ gia đình nên chuyển đổi xanh không dễ.\n\nVới gốm Bát Tràng, bài báo cho biết các cơ sở đã bỏ lò than và lò gas cũ để dùng lò khí gas hóa lỏng, hiện gần 1.000 hộ áp dụng. Lò mới giúp giảm hẳn sản phẩm lỗi, tiết kiệm năng lượng và hiệu quả hơn. Chủ tịch xã nói làng giữ cách làm truyền thống nhưng tinh chỉnh quy trình để bớt bụi và ô nhiễm.\n\nMục tiêu đến năm 2030 là mọi làng nghề được công nhận đều đạt yêu cầu môi trường. Sở Công Thương đề xuất quy hoạch kết hợp sản xuất với du lịch, cụm công nghiệp nhỏ và vừa ở nông thôn, miễn giảm thuế phí cho cơ sở tuân thủ quy định và hỗ trợ vốn từ quỹ bảo vệ môi trường; bài báo trình bày đây là các đề xuất, chưa nói đề xuất nào đã được áp dụng.',
+    en: {
+      title: 'Craft village businesses find the green transition difficult',
+      summary:
+        'The article looks at how hard it is for Hanoi craft villages to protect the environment, including Bát Tràng moving nearly 1,000 households to LPG kilns, and the support measures proposed by the Department of Industry and Trade.',
+      body: 'Hanoi has about 1,350 craft villages and villages with crafts, 327 of them officially recognised by the city. Experts say craft villages must protect the environment, but most are small household operations, so a green transition is not easy.\n\nFor Bát Tràng ceramics, the article reports that producers have dropped coal kilns and older gas kilns for liquefied-gas (LPG) kilns, now used by nearly 1,000 households. The new kilns sharply cut defective pieces, save energy and improve efficiency. The commune chairman says the village keeps its traditional methods while refining processes to reduce dust and pollution.\n\nBy 2030 the goal is for every recognised craft village to meet environmental requirements. The Department of Industry and Trade proposes spatial planning that combines production with tourism, small and medium industrial clusters in rural areas, tax and fee reductions for compliant establishments and capital support from an environmental protection fund; the article presents these as proposals and does not say which have been adopted.',
+    },
+    publishedAt: '2025-04-16T13:04:00+07:00',
+    sourceName: 'Báo Đại Đoàn Kết',
+    sourceUrl: 'https://daidoanket.vn/doanh-nghiep-lang-nghe-kho-chuyen-doi-xanh-10303748.html',
+    sourcePublishedAt: '2025-04-16T13:04:00+07:00',
+  },
+  {
+    key: 'bt-feast-heritage',
+    category: 'CRAFT_STORY',
+    h: null,
+    title: "Đến Bát Tràng ăn 'cỗ quốc gia'",
+    summary:
+      'Sau khi tri thức nấu cỗ Bát Tràng được đưa vào danh mục di sản phi vật thể quốc gia, một phóng viên đặt bữa cỗ tại nhà nghệ nhân trong làng.',
+    body: 'Ngày 18/8/2025, Bộ Văn hóa, Thể thao và Du lịch đưa "tri thức nấu cỗ Bát Tràng" vào danh mục di sản văn hóa phi vật thể quốc gia. Bài báo kể về bữa cỗ đặt qua nghệ nhân Nguyễn Thị Thu Hằng, con dâu nghệ nhân Nguyễn Thị Lâm, trong một ngôi nhà kiểu Pháp trăm năm tuổi; phải đặt trước 10 đến 15 ngày và mức giá khoảng 350.000 đồng một người.\n\nMón đặc trưng là canh măng mực. Măng khô lấy từ Yên Bái được luộc nhiều lần, mực được ngâm rượu gừng, nướng than rồi mới xào; đổi thứ tự nấu là vị đổi theo. Cách bày mâm cũng có ý nghĩa: bốn bát sáu đĩa là đầy đủ, sáu bát tám đĩa của ngày Tết gọi là cỗ bát trân.\n\nNgày xưa cỗ chỉ dành cho lễ tết, việc lớn trong nhà, nay được phục vụ hằng ngày cho khách du lịch, nhiều đoàn khách nước ngoài đến để "ăn" văn hóa của làng.',
+    en: {
+      title: "Eating Bát Tràng's 'national feast'",
+      summary:
+        "After the knowledge of cooking the Bát Tràng feast was added to the national intangible heritage list, a reporter books a feast at an artisan's home in the village.",
+      body: 'On 18 August 2025 the Ministry of Culture, Sports and Tourism added "the knowledge of cooking Bát Tràng feasts" to the national intangible cultural heritage list. The article describes a feast booked through artisan Nguyễn Thị Thu Hằng, daughter-in-law of artisan Nguyễn Thị Lâm, in a century-old French-style house; bookings are needed 10 to 15 days ahead and the price is about 350,000 VND per person.\n\nThe signature dish is bamboo shoot and squid soup. Dried bamboo shoots from Yên Bái are boiled several times and the squid is soaked in ginger wine and grilled over charcoal before stir-frying; change the order of the steps and the taste changes. The tray layout carries meaning too: four bowls and six plates mean completeness, while the six bowls and eight plates of Tết are called the "bát trân" feast.\n\nFeasts were once kept for festivals and big family occasions but are now served daily to visitors, and many foreign groups come to "eat" the culture of the village.',
+    },
+    publishedAt: '2025-08-29T06:24:00+07:00',
+    sourceName: 'Báo điện tử Tiền Phong',
+    sourceUrl: 'https://tienphong.vn/den-bat-trang-an-co-quoc-gia-post1773636.html',
+    sourcePublishedAt: '2025-08-29T06:24:00+07:00',
+  },
+  {
+    key: 'bt-young-artisans',
+    category: 'CRAFT_STORY',
+    h: null,
+    title: 'Young artisans revive Bát Tràng pottery craft',
+    summary:
+      'Những người trẻ học đại học ở Hà Nội quay về Bát Tràng nối nghề gốm của gia đình và đem theo cách làm mới.',
+    body: 'Bài báo giới thiệu hai bạn trẻ trở về làng. Nguyễn Minh Quang, 25 tuổi, học một trường đại học mỹ thuật và thiết kế ở Hà Nội, khôi phục xưởng gốm của gia đình đã ngừng hoạt động từ lâu; anh làm men rạn và men ngọc, được giải ba cuộc thi "Bàn tay vàng" của làng năm 2023. Tô Minh Hoàng, 24 tuổi, tốt nghiệp một trường đại học ngoại ngữ ở Hà Nội, dùng ngoại ngữ để kể với du khách về giá trị gốm Bát Tràng.\n\nQuang cho rằng nhồi đất phải học ít nhất sáu tháng và vuốt gốm cần cỡ 10.000 giờ luyện tập, còn nhiệt độ nung là bí quyết phải thử hàng trăm lần mới nắm được.\n\nCác nghệ nhân lớn tuổi nhận xét số thợ trẻ đang tăng, và hội nghệ nhân của làng tổ chức thi, triển lãm để họ giao lưu và được biết đến.',
+    en: {
+      title: 'Young artisans revive Bát Tràng pottery craft',
+      summary:
+        "Young people who studied at universities in Hanoi are returning to Bát Tràng to carry on their families' pottery trade and bring new ways of working.",
+      body: "The article profiles two young people who came home. Nguyễn Minh Quang, 25, studied at an art and design university in Hanoi and revived his family's long-idle pottery workshop; he makes crackle and emerald glazes and took third place in the village's \"Golden Hands\" contest in 2023. Tô Minh Hoàng, 24, a graduate of a foreign languages university in Hanoi, uses his languages to explain the value of Bát Tràng pottery to visitors.\n\nQuang says kneading clay takes at least six months to learn and wheel-throwing around 10,000 hours of practice, while kiln temperatures are a closely guarded secret that takes hundreds of trials to master.\n\nOlder artisans note that the number of young potters is growing, and the village artisans' association holds contests and exhibitions so they can meet each other and be seen.",
+    },
+    publishedAt: '2025-10-09T11:08:00+07:00',
+    sourceName: 'Viet Nam News',
+    sourceUrl:
+      'https://vietnamnews.vn/society/1726872/young-artisans-revive-bat-trang-pottery-craft.html',
+    sourcePublishedAt: '2025-10-09T11:08:00+07:00',
+  },
+  {
+    key: 'bt-ocop-five-star',
+    category: 'GENERAL',
+    h: null,
+    title: 'Đẳng cấp của những sản phẩm gốm OCOP 5 sao ở Bát Tràng',
+    summary:
+      'Hai đơn vị ở Bát Tràng có sản phẩm đạt OCOP 5 sao: HTX Gốm sứ Tân Thịnh với dòng men Suối Ngọc và Công ty Gốm sứ Quang Vinh.',
+    body: 'HTX Sản xuất Kinh doanh Gốm sứ Tân Thịnh, thành lập năm 2013, phát triển dòng men Suối Ngọc từ nguyên liệu trong nước, cho năm gam màu riêng, nung ở 1.250 đến 1.300 độ C; bộ sản phẩm được hội đồng quốc gia chấm 5 sao năm 2023.\n\nCông ty TNHH Gốm sứ Quang Vinh có bốn sản phẩm 5 sao, đều là bộ bát đĩa hoặc ấm chén hoa văn sen, chim én, rồng phượng. Bà Hà Thị Vinh, giám đốc công ty và Chủ tịch Hiệp hội Làng nghề, nghề thủ công Hà Nội, cho biết phần lớn sản phẩm xuất sang hơn 30 nước.\n\nBài báo cũng nhắc đến Trung tâm Tinh hoa Làng nghề Việt do bà Vinh sáng lập, nơi triển lãm, sáng tạo và đón hàng trăm nghìn lượt khách.',
+    en: {
+      title: "The prestige of Bát Tràng's 5-star OCOP ceramic products",
+      summary:
+        'Two Bát Tràng units hold 5-star OCOP products: the Tân Thịnh Ceramics Cooperative with its Suối Ngọc glaze line and Quang Vinh Ceramics Company.',
+      body: 'The Tân Thịnh Ceramics Production and Trading Cooperative, founded in 2013, developed the Suối Ngọc glaze from domestic materials, giving five distinctive colours fired at 1,250 to 1,300 degrees Celsius; the set was rated 5 stars by the national jury in 2023.\n\nQuang Vinh Ceramics Co. Ltd. has four 5-star products, all bowl-and-plate or tea sets with lotus, swallow and dragon-phoenix motifs. Hà Thị Vinh, its director and chair of the Hanoi Association of Handicrafts and Craft Villages, says most of its output is exported to more than 30 countries.\n\nThe article also mentions the Vietnam Craft Village Essence Center that Ms Vinh founded, a place for exhibitions, creative work and tourism that has drawn hundreds of thousands of visitors.',
+    },
+    publishedAt: '2025-10-19T19:20:00+07:00',
+    sourceName: 'Báo Nông nghiệp và Môi trường',
+    sourceUrl:
+      'https://nongnghiepmoitruong.vn/dang-cap-cua-nhung-san-pham-gom-ocop-5-sao-o-bat-trang-d784589.html',
+    sourcePublishedAt: '2025-10-19T19:20:00+07:00',
+  },
+  {
+    key: 'bt-imports-workshop',
+    category: 'GENERAL',
+    h: null,
+    title: 'Gốm sứ Bát Tràng đẩy lùi hàng nhập ngoại',
+    summary:
+      'Tại hội thảo ngày 16/12/2025, các đại biểu cho biết gốm trang trí Bát Tràng đã chiếm lại thị trường trong nước và nêu những thách thức khi làng lớn mạnh.',
+    body: 'Ngày 16/12/2025, xã Bát Tràng tổ chức hội thảo về bảo tồn, phát triển làng nghề gắn với du lịch và chuyển đổi số. Bà Hà Thị Vinh nhận định những năm gần đây gốm trang trí nhập ngoại xuất hiện ít dần vì gốm Bát Tràng đã chiếm lĩnh thị trường nội địa.\n\nXã có ba làng gốm truyền thống là Bát Tràng, Giang Cao và Kim Lan, với hơn 300 nghệ nhân, gần 200 doanh nghiệp, khoảng 1.200 hộ sản xuất, việc làm ổn định cho hơn 20.000 lao động thu nhập 8 đến 9 triệu đồng mỗi tháng, và giá trị sản xuất, kinh doanh ước trên 2.500 tỷ đồng một năm.\n\nĐại diện Bộ Nông nghiệp và Môi trường nêu cơ hội về thương hiệu và thị trường khó tính, đồng thời chỉ ra thách thức: giữ kỹ thuật và men truyền thống khi mở rộng sản xuất, chuyển lò từ than sang gas hoặc điện, phát triển du lịch xanh và đào tạo thế hệ kế cận.',
+    en: {
+      title: 'Bát Tràng ceramics push back against imports',
+      summary:
+        'At a workshop on 16 December 2025, speakers said Bát Tràng decorative ceramics have taken back the domestic market, and set out the challenges of a growing village.',
+      body: 'On 16 December 2025 Bát Tràng commune held a workshop on preserving and developing craft villages alongside tourism and digital transformation. Hà Thị Vinh observed that imported decorative ceramics have appeared less and less in recent years because Bát Tràng ceramics have taken over the domestic market.\n\nThe commune has three traditional pottery villages, Bát Tràng, Giang Cao and Kim Lan, with more than 300 artisans, nearly 200 enterprises, about 1,200 household businesses, steady jobs for over 20,000 workers earning 8 to 9 million VND a month, and output and trade worth an estimated 2,500 billion VND a year.\n\nA representative of the Ministry of Agriculture and Environment pointed to opportunities in branding and demanding markets, and to challenges: keeping traditional techniques and glazes while scaling up, moving kilns from coal to gas or electricity, developing green tourism and training the next generation.',
+    },
+    publishedAt: '2025-12-16T16:53:00+07:00',
+    sourceName: 'Báo Nông nghiệp và Môi trường',
+    sourceUrl:
+      'https://nongnghiepmoitruong.vn/gom-su-bat-trang-day-lui-hang-nhap-ngoai-d789697.html',
+    sourcePublishedAt: '2025-12-16T16:53:00+07:00',
+  },
+  {
+    key: 'bt-livestream-ocop',
+    category: 'VILLAGE_EVENT',
+    h: null,
+    title: 'Gốm Bát Tràng lan tỏa trong không gian số',
+    summary:
+      'Nghệ nhân Vũ Như Quỳnh của thương hiệu Gốm Vạn An Lộc mở màn ngày hội livestream OCOP tại Hoàng thành Thăng Long.',
+    body: 'Ngày hội livestream OCOP diễn ra tại Hoàng thành Thăng Long trong lễ khai mạc Festival OCOP Việt Nam 2025, do Bộ Nông nghiệp và Môi trường và UBND thành phố Hà Nội tổ chức, có TikTok Shop đồng hành. Các nghệ nhân kể chuyện nghề, giới thiệu sản phẩm và mở thêm kênh bán hàng cho đồ thủ công truyền thống.\n\nNghệ nhân Vũ Như Quỳnh, chủ thương hiệu Gốm Vạn An Lộc, thế hệ thứ 16 của một dòng họ làm gốm ở Bát Tràng, là người mở màn buổi livestream và chia sẻ cách đưa gốm làng đến khách hàng cả nước và quốc tế qua nền tảng số. Chị cũng xây dựng một kênh TikTok riêng về nghề gốm, cách phân biệt gốm thật và gốm kém chất lượng.\n\nBài báo nhận xét khi nghệ nhân livestream, nghề được nhiều người biết đến hơn và giá trị truyền thống được lưu giữ.',
+    en: {
+      title: 'Bát Tràng ceramics reach audiences in the digital space',
+      summary:
+        'Artisan Vũ Như Quỳnh of the Gốm Vạn An Lộc brand opened the OCOP livestream day at the Thăng Long Imperial Citadel.',
+      body: "The OCOP livestream day was held at the Thăng Long Imperial Citadel during the opening of Festival OCOP Việt Nam 2025, organised by the Ministry of Agriculture and Environment and the Hanoi People's Committee with TikTok Shop as a partner. Craft artisans told the story of their trade, presented products and opened new sales channels for traditional handicrafts.\n\nArtisan Vũ Như Quỳnh, owner of the Gốm Vạn An Lộc brand and a 16th-generation member of a Bát Tràng pottery family, hosted the opening livestream and shared how the village can reach customers nationwide and abroad through digital platforms. She also runs her own TikTok channel about pottery, including how to tell genuine ware from poor-quality pieces.\n\nThe article argues that when artisans livestream, the craft becomes better known and its traditional values are kept alive.",
+    },
+    publishedAt: '2025-12-23T20:32:00+07:00',
+    sourceName: 'Tạp chí Kinh tế - Tài chính',
+    sourceUrl:
+      'https://thuehaiquan.tapchikinhtetaichinh.vn/gom-bat-trang-lan-toa-trong-khong-gian-so-134368.html',
+    sourcePublishedAt: '2025-12-23T20:32:00+07:00',
+  },
+  {
+    key: 'bt-festival-2026',
+    category: 'VILLAGE_EVENT',
+    h: null,
+    title: 'Lễ hội làng gốm Bát Tràng tiếp nối sứ mệnh gìn giữ văn hóa làng cổ',
+    summary:
+      'Lễ hội xuân Bính Ngọ 2026 khai hội bằng nghi lễ đánh trống sáng 31/3 và kéo dài bốn ngày tại đình Bát Tràng.',
+    body: 'Lễ hội xuân Bính Ngọ 2026 của làng gốm Bát Tràng khai hội sáng 31/3 bằng nghi thức đánh trống, kéo dài bốn ngày đến 3/4 tại đình làng. Chương trình văn hóa, nghệ thuật diễn ra từ chiều 1/4 đến 3/4 và kết thúc bằng lễ phóng đăng trên sông Hồng tối 3/4.\n\nĐình thờ sáu vị thần có công giúp nước, gồm Bạch Mã Đại Vương, Phan Đại Tướng và các vị khác. Các nghi lễ gồm dâng hương, tam sinh, rước kiệu, cấp thủy trên sông Hồng, nhập thủy và tế thần; cảnh kiệu quay thu hút nhiều du khách. Ban tổ chức có 79 thành viên, dân làng bắt tay chuẩn bị ngay sau Tết Nguyên đán.\n\nPhó chủ tịch Vũ Văn Đoàn cho biết lễ hội cầu thời tiết thuận hòa, nghề gốm hưng thịnh, tri ân thành hoàng, tổ nghề và các thế hệ trước, đồng thời gắn bảo tồn di sản với du lịch.',
+    en: {
+      title:
+        'Bát Tràng pottery village festival carries on the mission of keeping the old village culture',
+      summary:
+        'The spring 2026 (Bính Ngọ) festival opened with a drum ceremony on the morning of 31 March and ran for four days at the Bát Tràng communal house.',
+      body: 'The spring Bính Ngọ 2026 festival of Bát Tràng pottery village opened on the morning of 31 March with a drum ceremony and ran for four days until 3 April at the communal house. Cultural and art programmes ran from the afternoon of 1 April to 3 April, and the festival closed with a lantern release on the Red River on the evening of 3 April.\n\nThe communal house worships six deities credited with helping the country, among them Bạch Mã Đại Vương and Phan Đại Tướng. The rites include incense offering, the three-animal offering, the palanquin procession, water-drawing on the Red River, water-entering and the sacrifice to the deities; the spinning palanquins draw many visitors. The organising committee has 79 members and villagers began preparing right after the Lunar New Year.\n\nVice chair Vũ Văn Đoàn said the festival prays for good weather and a thriving pottery trade, honours the guardian deity, the craft ancestors and earlier generations, and links heritage conservation with tourism.',
+    },
+    publishedAt: '2026-04-01T14:55:00+07:00',
+    sourceName: 'Báo Nông nghiệp và Môi trường',
+    sourceUrl:
+      'https://nongnghiepmoitruong.vn/le-hoi-lang-gom-bat-trang-tiep-noi-su-menh-gin-giu-van-hoa-lang-co-d804150.html',
+    sourcePublishedAt: '2026-04-01T14:55:00+07:00',
     pinned: true,
   },
   {
-    key: 'village-cooperative',
-    category: 'VILLAGE_EVENT',
+    key: 'bt-digital-village',
+    category: 'GENERAL',
     h: null,
-    title: 'Báo giá chung: nhiều hộ cùng nhận một đơn lớn',
-    summary: 'Ban quản lý giới thiệu cách các hộ chia số lượng khi khách đặt đơn vài nghìn món.',
-    body: 'Khi một đơn quá lớn cho một xưởng, Ban quản lý mời các hộ phù hợp cùng đề xuất số lượng và giá. Khách nhận một bản chào giá chung, mỗi hộ chỉ làm phần mình đã xác nhận.\n\nMọi hộ đều thấy rõ phần của mình trước khi đơn bắt đầu sản xuất, và tiến độ được báo theo từng hộ.',
-    daysAgo: 9,
+    title: 'Bát Tràng phát huy giá trị truyền thống thông qua định hình làng nghề số',
+    summary:
+      'Bát Tràng đặt mục tiêu thành làng nghề số: mọi hộ làm gốm đã có logo nhận diện sản phẩm, khoảng 20% cơ sở thường xuyên bán qua livestream.',
+    body: 'Bát Tràng đang chuyển đổi số để nâng giá trị, thương hiệu và sức cạnh tranh cho sản phẩm, kết hợp công nghệ với việc giữ gìn văn hóa và nghề truyền thống. Bài báo gắn việc này với các nghị quyết của Đảng về văn hóa và về khoa học công nghệ.\n\nTheo số liệu nêu trong bài, làng có khoảng 814 doanh nghiệp và 2.805 hộ kinh doanh, hơn 1.350 hộ làm nghề ở Bát Tràng, Giang Cao và Kim Lan. Mọi hộ làm gốm đã có logo nhận diện sản phẩm, khoảng 20% cơ sở bán hàng bằng livestream thường xuyên, 70 sản phẩm OCOP 3 đến 5 sao gắn tem truy xuất QR, và lò nung đã chuyển từ than sang gas hoặc điện.\n\nLãnh đạo địa phương đề nghị thành phố hỗ trợ cơ sở dữ liệu nghề, số hóa sản phẩm, nghệ nhân và di sản, thương mại điện tử, bảo hộ sở hữu trí tuệ; về lâu dài làng hướng tới mô hình làng nghề số, du lịch thông minh và bảo tàng số.',
+    en: {
+      title: 'Bát Tràng builds on its traditions by shaping a digital craft village',
+      summary:
+        'Bát Tràng aims to become a digital craft village: every pottery household has a product identity logo and about 20% of establishments sell by livestream regularly.',
+      body: 'Bát Tràng is going digital to raise the value, brand and competitiveness of its products, combining technology with the preservation of culture and the traditional craft. The article ties this to the Party resolutions on culture and on science and technology.\n\nAccording to the figures in the piece, the village has about 814 enterprises and 2,805 business households, with more than 1,350 households practising the craft across Bát Tràng, Giang Cao and Kim Lan. Every pottery household has a product identity logo, about 20% of establishments livestream regularly, 70 OCOP products rated 3 to 5 stars carry QR traceability stamps, and kilns have moved from coal to gas or electricity.\n\nLocal leaders asked the city for support with a digital craft database, digitisation of products, artisans and heritage, e-commerce and intellectual property protection; in the long run the village aims for a digital craft village model, smart tourism and a digital museum.',
+    },
+    publishedAt: '2026-08-27T17:32:00+07:00',
+    sourceName: 'VietnamPlus',
+    sourceUrl:
+      'https://www.vietnamplus.vn/bat-trang-phat-huy-gia-tri-truyen-thong-thong-qua-dinh-hinh-lang-nghe-so-post1132289.vnp',
+    sourcePublishedAt: '2026-08-27T17:32:00+07:00',
     pinned: true,
   },
   {
-    key: 'village-trace',
+    key: 'bt-tan-thinh-ip',
     category: 'CRAFT_STORY',
     h: null,
-    title: 'Quét mã QR để xem nhật ký làm ra chiếc bát',
-    summary: 'Mỗi món có một mã riêng dẫn tới các công đoạn từ nắn đất đến ra lò.',
-    body: 'Mã QR in dưới chân sản phẩm mở ra nhật ký sản xuất: ngày vuốt, ngày phơi, ngày vẽ, ngày nung và người làm. Các mốc được ghi nối tiếp và không sửa được về sau, chỉ có thể thêm mốc đính chính.\n\nNhờ vậy người mua biết chiếc bát mình cầm do hộ nào làm và làm như thế nào.',
-    daysAgo: 16,
-  },
-  {
-    key: 'village-kiln-safety',
-    category: 'VILLAGE_EVENT',
-    h: null,
-    title: 'Tập huấn an toàn lò nung cho các hộ',
-    summary: 'Buổi tập huấn ngắn về kiểm tra ống khói, bình chữa cháy và lối thoát hiểm.',
-    body: 'Cuối tuần trước, các hộ có lò nung tham dự buổi tập huấn tại nhà văn hóa làng. Nội dung gồm kiểm tra định kỳ ống khói, vị trí bình chữa cháy và cách sơ tán khách khi xưởng đông người.\n\nCác hộ sẽ nhận bảng kiểm để dán tại xưởng.',
-    daysAgo: 24,
-  },
-  {
-    key: 'village-clay-month',
-    category: 'CRAFT_STORY',
-    h: null,
-    title: 'Vì sao gốm Bát Tràng cần ủ đất nhiều tháng',
-    summary: 'Đất được ủ, nhào và lọc nhiều lần để gốm không nứt khi vào lò.',
-    body: 'Đất sét được ngâm, lọc cặn rồi ủ trong hố nhiều tháng. Đất ủ lâu dẻo hơn và ít bọt khí, nên thành phẩm ít nứt khi nung.\n\nNhiều thợ cả vẫn chọn mua đất ủ sẵn trong làng thay vì trộn mới để giữ chất đất quen thuộc.',
-    daysAgo: 33,
-  },
-  {
-    key: 'village-spring-fair',
-    category: 'VILLAGE_EVENT',
-    h: null,
-    title: 'Hội làng mùa xuân: thi vuốt gốm và trưng bày mới',
-    summary: 'Các hộ trưng bày mẫu mới và thi vuốt gốm trong ba ngày hội làng.',
-    body: 'Hội làng diễn ra ba ngày với phần thi vuốt gốm cho nghệ nhân trẻ, khu trưng bày mẫu mới của các hộ và buổi giao lưu với khách đặt hàng số lượng lớn.\n\nLịch chi tiết được đăng tại nhà văn hóa làng và trên trang này.',
-    daysAgo: 48,
-  },
-  {
-    key: 'h0-blue-glaze',
-    category: 'CRAFT_STORY',
-    h: 0,
-    title: 'Men lam của {hộ}: nung thử ba mươi lần mới chọn được màu',
-    summary: 'Chủ hộ kể về những mẻ men lam thất bại trước khi ra màu xanh hiện nay.',
-    body: 'Hộ {hộ} thử nhiều tỉ lệ men và nhiệt độ lò khác nhau. Mẻ đầu ngả xám, mẻ sau chảy men. Sau ba mươi lần, màu lam sâu và đều mới được giữ lại làm mẫu chuẩn.\n\nNhững chiếc bình hút lộc men lam của hộ đều dùng công thức này.',
-    daysAgo: 5,
-  },
-  {
-    key: 'h0-open-kiln',
-    category: 'HOUSEHOLD_UPDATE',
-    h: 0,
-    title: '{hộ} mở lò cho khách xem mẻ nung',
-    summary: 'Sáng thứ Bảy, khách có thể đứng xem lúc mở lò và chọn sản phẩm ngay tại xưởng.',
-    body: 'Hộ {hộ} mở lò vào 8:00 sáng thứ Bảy. Khách xem được cách thợ lấy từng món ra khỏi lò, kiểm men và loại món lỗi. Số chỗ có hạn nên nên báo trước qua điện thoại của xưởng.',
-    daysAgo: 12,
-  },
-  {
-    key: 'h1-crackle',
-    category: 'CRAFT_STORY',
-    h: 1,
-    title: 'Men rạn của {hộ} nứt thành tiếng trong lò',
-    summary: 'Vết rạn trên men xuất hiện khi gốm nguội và được nhuộm trà để lộ đường vân.',
-    body: 'Men rạn nứt khi gốm nguội dần, thợ nghe được những tiếng tách nhỏ trong lò. Hộ {hộ} nhuộm trà lên mặt men để đường rạn hiện rõ, mỗi chiếc có một mạng vân riêng.',
-    daysAgo: 7,
-  },
-  {
-    key: 'h2-logo-cup',
-    category: 'HOUSEHOLD_UPDATE',
-    h: 2,
-    title: '{hộ} nhận thêm đơn cốc quai in logo cho doanh nghiệp',
-    summary: 'Hộ mở thêm ca vuốt buổi chiều để kịp các đơn quà tặng số lượng lớn.',
-    body: 'Hộ {hộ} vừa tăng thêm một ca làm buổi chiều. Cốc men trắng quai tròn in logo được kiểm từng chiếc trước khi đóng gói. Doanh nghiệp muốn đặt riêng có thể gửi yêu cầu báo giá trên hệ thống để hộ đề xuất số lượng và giá.',
-    daysAgo: 4,
-  },
-  {
-    key: 'h2-batch-code',
-    category: 'CRAFT_STORY',
-    h: 2,
-    title: 'Mỗi lô cốc của {hộ} có một mã truy xuất riêng',
-    summary: 'Lô 300 chiếc được ghi nhật ký chung: ngày vuốt, ngày nung và người làm.',
-    body: 'Với lô cốc nhiều chiếc, hộ {hộ} ghi một nhật ký chung cho cả lô thay vì từng chiếc. Người mua quét mã QR dưới đáy cốc là xem được các công đoạn và tên nghệ nhân.',
-    daysAgo: 19,
-  },
-  {
-    key: 'h3-lotus',
-    category: 'CRAFT_STORY',
-    h: 3,
-    title: 'Hoa sen vẽ tay của {hộ}: một nét một hơi thở',
-    summary: 'Nghệ nhân vẽ lam từng cánh sen bằng cọ lông mềm, không dùng khuôn.',
-    body: 'Mỗi cánh sen được vẽ bằng một nét cọ liền. Hộ {hộ} cho biết thợ vẽ phải tập nhiều tháng để nét đều tay. Men lam hơi nhạt khi vẽ nhưng đậm lại sau khi nung.',
-    daysAgo: 11,
-  },
-  {
-    key: 'h4-vase',
-    category: 'HOUSEHOLD_UPDATE',
-    h: 4,
-    title: '{hộ} ra mắt dòng lục bình cao một mét',
-    summary: 'Lục bình lớn được vuốt hai đoạn rồi ghép, phù hợp sảnh khách sạn và nhà hàng.',
-    body: 'Hộ {hộ} vuốt thân lục bình thành hai đoạn rồi ghép khi đất còn ẩm để chịu lửa tốt. Mẫu mới cao khoảng một mét, có thể đặt riêng men và họa tiết theo yêu cầu.',
-    daysAgo: 21,
-  },
-  {
-    key: 'h5-teaset',
-    category: 'HOUSEHOLD_UPDATE',
-    h: 5,
-    title: 'Bộ ấm chén men nâu của {hộ} có thêm phiên bản quà Tết',
-    summary: 'Hộp gỗ đóng sẵn, có thể khắc tên người nhận theo đơn đặt trước.',
-    body: 'Hộ {hộ} chuẩn bị bộ ấm chén men nâu đóng hộp cho mùa Tết. Khách đặt trước có thể khắc tên lên đáy ấm. Đơn số lượng lớn nên gửi qua báo giá chung để các hộ cùng chia việc.',
-    daysAgo: 27,
-  },
-  {
-    key: 'h6-altar',
-    category: 'CRAFT_STORY',
-    h: 6,
-    title: 'Lư hương của {hộ}: vì sao chân đế phải dày',
-    summary: 'Đồ thờ cần vững và nặng tay, thợ để lại độ dày chân đế theo kinh nghiệm nhiều đời.',
-    body: 'Lư hương là đồ thờ nên phải đứng vững và chịu nhiệt. Hộ {hộ} giữ chân đế dày hơn gốm dân dụng và nung thêm một lần để men không bong.',
-    daysAgo: 35,
-  },
-  {
-    key: 'h7-class',
-    category: 'HOUSEHOLD_UPDATE',
-    h: 7,
-    title: '{hộ} mở lớp học vuốt gốm cho người mới',
-    summary: 'Lớp ba giờ mỗi sáng Chủ nhật, mang về một sản phẩm tự làm sau khi nung.',
-    body: 'Lớp học của hộ {hộ} nhận tối đa tám người mỗi buổi. Học viên vuốt một chiếc bát, xưởng nung giúp và gửi lại sau hai tuần. Đăng ký trước qua số điện thoại ghi tại hồ sơ hộ.',
-    daysAgo: 14,
-  },
-  {
-    key: 'h8-white-plate',
-    category: 'CRAFT_STORY',
-    h: 8,
-    title: 'Men trắng ngà của {hộ} cho món ăn lên màu đẹp',
-    summary: 'Đĩa và tô men trắng ngà được nhiều quán ăn chọn vì nền men ấm, ít chói.',
-    body: 'Men trắng ngà của hộ {hộ} hơi ngả vàng nhẹ nên món ăn nhìn ấm hơn so với men trắng tinh. Các nhà hàng thường đặt theo bộ có cùng độ dày thành để xếp chồng gọn.',
-    daysAgo: 30,
-  },
-  {
-    key: 'h12-wine-jar',
-    category: 'HOUSEHOLD_UPDATE',
-    h: 12,
-    title: '{hộ} hoàn thiện lứa bình ngâm rượu men nâu',
-    summary: 'Lứa mới có nắp gốm khít và kiểm kín nước trước khi giao.',
-    body: 'Hộ {hộ} thử kín từng bình bằng cách đổ đầy nước và để qua đêm. Bình rò sẽ bị loại. Lứa này có nắp gốm cùng men, khít hơn nắp gỗ trước đây.',
-    daysAgo: 40,
+    title: 'HTX Gốm sứ Tân Thịnh: Từ giữ nghề bằng đôi tay đến bảo vệ bằng tài sản trí tuệ',
+    summary:
+      'HTX Tân Thịnh kết hợp máy móc với tay nghề thợ và đăng ký bảo hộ nhãn hiệu cho các dòng men đặc trưng gắn với nhãn hiệu tập thể Gốm sứ Bát Tràng.',
+    body: 'HTX Gốm sứ Tân Thịnh thành lập năm 2013 với 11 nghệ nhân, nay có hơn 300 lao động và làm ra hơn 50.000 sản phẩm mỗi năm. Từ năm 2021, hợp tác xã đầu tư máy cho các khâu như trộn đất, nghiền, tạo hình, in hoa văn và lò nung; lò chuyển từ than, củi sang gas và điện nên kiểm soát nhiệt tốt hơn, ít khói hơn. Chủ nhiệm, nghệ nhân Trần Đức Tân, nói máy làm việc nặng và lặp lại, còn khâu cần óc phán đoán và sáng tạo vẫn do thợ làm.\n\nMen Suối Ngọc được nghiên cứu khoảng năm năm từ nguyên liệu trong nước, nung quanh 1.250 độ C; mỗi mẻ lại có khác biệt nhỏ, vừa là nét nghệ thuật vừa là thách thức kiểm soát. Bộ Suối Ngọc đạt OCOP 5 sao năm 2023.\n\nHợp tác xã đã đăng ký bảo hộ nhãn hiệu cho các dòng men chủ lực, gắn với nhãn hiệu tập thể Gốm sứ Bát Tràng, vì một bộ sản phẩm mới thường mất 6 đến 12 tháng nghiên cứu. Năm 2026 đơn vị muốn mở rộng thị trường quốc tế, trong đó có Ấn Độ.',
+    en: {
+      title:
+        'Tân Thịnh Ceramics Cooperative: from keeping the craft by hand to protecting it with intellectual property',
+      summary:
+        'The Tân Thịnh cooperative pairs machines with skilled hands and has registered trademarks for its signature glaze lines, linked to the collective mark Gốm sứ Bát Tràng.',
+      body: 'The Tân Thịnh Ceramics Cooperative was founded in 2013 with 11 artisans and now has more than 300 workers and makes over 50,000 products a year. Since 2021 it has invested in machines for steps such as clay mixing, grinding, forming, pattern printing and the kilns; kilns moved from coal and wood to gas and electricity, giving better heat control and less smoke. Chairman and artisan Trần Đức Tân says machines take the heavy, repetitive work while the steps that need judgment and creativity stay with the artisans.\n\nThe Suối Ngọc glaze took about five years to develop from domestic materials and is fired at around 1,250 degrees Celsius; each firing varies slightly, which is both an artistic feature and a control challenge. The Suối Ngọc set earned OCOP 5 stars in 2023.\n\nThe cooperative has registered trademarks for its main glaze lines, tied to the collective mark Gốm sứ Bát Tràng, since a new product set usually takes 6 to 12 months to develop. In 2026 it aims to widen its international markets, including India.',
+    },
+    publishedAt: '2026-09-15T08:23:00+07:00',
+    sourceName: 'VnBusiness',
+    sourceUrl:
+      'https://vnbusiness.vn/htx-gom-su-tan-thinh-tu-giu-nghe-bang-doi-tay-den-bao-ve-bang-tai-san-tri-tue.html',
+    sourcePublishedAt: '2026-09-15T08:23:00+07:00',
   },
 ];

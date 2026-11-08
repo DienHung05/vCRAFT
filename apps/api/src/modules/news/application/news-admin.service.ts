@@ -74,6 +74,7 @@ export class NewsAdminService {
     const em = this.orm.em.fork();
     const now = new Date();
     const and: FilterQuery<News>[] = [];
+    if (query.origin) and.push({ origin: query.origin });
     if (query.state === 'DRAFT') and.push({ status: 'DRAFT' });
     if (query.state === 'SCHEDULED') and.push({ status: 'PUBLISHED', publishedAt: { $gt: now } });
     if (query.state === 'PUBLISHED') and.push({ status: 'PUBLISHED', publishedAt: { $lte: now } });
@@ -206,6 +207,7 @@ export class NewsAdminService {
       summary: input.summary,
       body,
       bodyHtml,
+      ...sourceOf(input),
       ...(data === undefined ? {} : { data }),
     };
   }
@@ -335,6 +337,22 @@ function dataOf(input: SaveNewsRequest): News['data'] | undefined {
     : null;
 }
 
+/**
+ * The original story (GH#314). A link needs a publisher, so a visitor never sees a bare URL. `undefined`
+ * leaves what is stored; `null` clears. Clearing the name clears the link too.
+ */
+function sourceOf(input: SaveNewsRequest) {
+  if (input.sourceUrl && !input.sourceName)
+    throw new AppError('VALIDATION_FAILED', 'sourceUrl needs sourceName');
+  const out: Partial<Pick<News, 'sourceName' | 'sourceUrl' | 'sourcePublishedAt'>> = {};
+  if (input.sourceName !== undefined) out.sourceName = input.sourceName;
+  if (input.sourceUrl !== undefined) out.sourceUrl = input.sourceUrl;
+  else if (input.sourceName === null) out.sourceUrl = null;
+  if (input.sourcePublishedAt !== undefined)
+    out.sourcePublishedAt = input.sourcePublishedAt ? new Date(input.sourcePublishedAt) : null;
+  return out;
+}
+
 function toAdminDto(news: News, cover: AdminNewsDto['cover'], now: Date): AdminNewsDto {
   return {
     id: news.id,
@@ -352,6 +370,10 @@ function toAdminDto(news: News, cover: AdminNewsDto['cover'], now: Date): AdminN
     cover,
     householdName: news.household?.name ?? null,
     updatedAt: news.updatedAt.toISOString(),
+    sourceName: news.sourceName ?? null,
+    sourceUrl: news.sourceUrl ?? null,
+    sourcePublishedAt: news.sourcePublishedAt?.toISOString() ?? null,
+    origin: news.origin,
     ...newsDataOf(news),
   };
 }

@@ -6,7 +6,7 @@
 ## 0. Hiện trạng thật (đọc trước)
 
 - **Đã có và đã chạy thử:** seeder dữ liệu mẫu, `pnpm demo:reset` có cổng chặn, `pnpm demo:verify`, bộ kiểm tra `demo-seed.integration.test.ts` (chạy qua API thật trên cả PostgreSQL và MySQL), script tạo tài khoản Supabase Auth, script đo ảnh 12 MB, script đua hai tab.
-- **Tin tức đã có:** entity `News`, API công khai `GET /api/v1/news` (+ `/news/:slug`) và trang `/vi/tin-tuc` (EN: `/en/news`). Trang này đọc API thật phía server qua `API_INTERNAL_URL` (xem `.env.example`; API không gọi được thì trang hiện thông báo, không lỗi). Seed nạp 18 tin.
+- **Tin tức đã có:** entity `News`, API công khai `GET /api/v1/news` (+ `/news/:slug`) và trang `/vi/tin-tuc` (EN: `/en/news`). Trang này đọc API thật phía server qua `API_INTERNAL_URL` (xem `.env.example`; API không gọi được thì trang hiện thông báo, không lỗi). Seed loads 11 real village stories with their sources (GH#314).
 - **Ảnh có giấy phép đã nằm trong CSDL và Supabase Storage** (GH#26, §1B): `pnpm demo:media` tải ảnh minh hoạ lên `vcraft-media`, giấy tờ mẫu lên `vcraft-private` và nối vào seed kèm ghi công (`media_link`, mô tả vi/en). `demo:media` cũng đặt `coverUrl`/`coverAlt`/`coverAltEn` của 208 sản phẩm (`BT7K2QXM`, `84PZKVJU` và 206 sản phẩm có ảnh riêng `pp-<mã>`) và `coverUrl` của 4 hộ về URL trong bucket nên API công khai (GH#47) trả ảnh Supabase. Nhật ký không còn ảnh nào (xem quy tắc bên dưới).
 - **Trang công khai của `apps/web` đọc API thật** (trang chủ, sản phẩm, nghệ nhân, truy xuất, bản đồ, tin tức). `apps/web/src/lib/demo/data.ts` chỉ còn phục vụ các màn yêu cầu báo giá và điều phối đang dùng dữ liệu minh họa.
 - Một số bước chưa có màn hình (duyệt hộ của Admin, xuất bản của hộ): kịch bản e2e gọi thẳng API bằng đúng phiên đã đăng nhập và ghi chú ở từng bước.
@@ -208,6 +208,19 @@ pnpm assistant:reindex                # then rebuild the Fox assistant's knowled
 pnpm demo:verify -- --offline         # the check "No demo disclaimer text" must pass
 ```
 
+### Swapping the seed news for the real stories on a live database (GH#314)
+
+`pnpm demo:reset` wipes every business table, so a live database gets the real stories with `pnpm news:swap` instead. The command is keyed on the stable news ids (UUID v5 of the seed key in `pools.ts`), idempotent and non-destructive: it creates or updates the `news` rows of the seed pool (text, publish date, publisher, link and original date), links their covers from `photo-manifest.ts` with Vietnamese and English alt text, and sets the old invented stories (`LEGACY_NEWS_KEYS` in `news-seed.ts`) that are no longer in the pool back to draft. It never deletes a row and writes nothing outside `news`, the news cover rows of `media_link` and the outbox event that makes the assistant reindex. Stories of a household that does not exist in the target database are skipped and counted.
+
+```bash
+pnpm demo:media -- --only=media        # uploads the cover photos and registers their credits (additive; needs APP_ENV=demo)
+NEWS_SWAP_CONFIRM=<host>:<port>/<name> pnpm news:swap -- --dry-run   # prints created/updated/unchanged/retired counts, writes nothing
+NEWS_SWAP_CONFIRM=<host>:<port>/<name> pnpm news:swap                # applies the change; a second run reports only `unchanged`
+pnpm assistant:reindex                 # the Fox assistant reads the new news
+```
+
+`NEWS_SWAP_CONFIRM` must equal the `host:port/name` the command prints for the target, so a copied `.env` cannot hit the wrong database. Photos imported by the worker (see "Automatic news import" in [deploy.md](../operations/deploy.md)) are credited on `/ghi-nhan-anh` from `media_asset.credit` through `GET /api/v1/media/credits`.
+
 ## 4. Ma trận nghiệm thu
 
 Một dòng một bước. Cột "Giám khảo thấy gì" là điều để kiểm bằng mắt; cột cuối nói thật điều gì đã có.
@@ -218,7 +231,7 @@ Một dòng một bước. Cột "Giám khảo thấy gì" là điều để ki�
 | 2 | Duyệt hộ | Hàng đợi có "Gốm Bảo Châu"; sau duyệt hộ thành `APPROVED`, ghi nhật ký thao tác | Admin | Có API; **chưa có màn hình** (nav Admin ghi "Hàng đợi duyệt: sắp có"). E2E gọi API |
 | 3 | Hộ xuất bản sản phẩm | Điện thoại hộ: sản phẩm nháp chuyển `PUBLISHED`, trang QR của nó mở được thay vì "không tìm thấy" | Hộ (điện thoại) | Có API và 2 bản nháp 7 mốc sẵn sàng; **chưa có màn hình** |
 | 4 | Khám phá xưởng | Trang hộ Lò Đức Phát, bản đồ làng có ghim xưởng, giờ mở cửa | Giám khảo / Buyer | Trang web dùng dữ liệu tĩnh; API `/households/lo-duc-phat`, `/map/workshops` có dữ liệu seed |
-| 5 | Tin tức | Trang tin có 15+ bài, gồm tin chung của làng và tin theo từng hộ | Buyer | Có màn `/vi/tin-tuc` đọc API thật, 18 tin seed (tin chung + tin theo hộ, không có bảng giá); lọc theo hộ qua `?household=<slug>` |
+| 5 | Tin tức | Trang tin có 15+ bài, gồm tin chung của làng và tin theo từng hộ | Buyer | Có màn `/vi/tin-tuc` đọc API thật, 11 real village stories with sources (GH#314; no household stories, no price table); lọc theo hộ qua `?household=<slug>` |
 | 6 | Buyer báo giá | `/vi/yeu-cau-bao-gia/<biddingToAccept>`: chào giá chia 4 hộ, tổng tiền, phụ phí, điều khoản vận chuyển; sau khi chốt, đơn "Đã chốt" và 4 phân bổ chờ xác nhận | Buyer (Chrome) | Có màn xem và nút "Chốt chào giá này" (mở hộp thoại xác nhận); E2E thao tác qua UI |
 | 7 | Admin điều phối | `/vi/admin/dieu-phoi/<sentOptIn>`: nút "Nhận điều phối" biến mất sau khi nhận; yêu cầu `sentCoordinated` hiện các đề xuất hộ | Admin (Edge) | Có màn (`LiveCoordination`) |
 | 8 | Hộ xác nhận phân bổ | `/vi/studio/de-xuat-tham-gia/<acceptedConfirm>`: "Chờ xác nhận" → bấm "Xác nhận" → "Đã xác nhận"; Admin bấm "Bắt đầu sản xuất", đơn thành "Đang sản xuất" | Hộ (điện thoại), rồi Admin | Có màn |

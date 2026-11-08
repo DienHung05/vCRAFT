@@ -54,6 +54,14 @@ export class MediaController {
     );
   }
 
+  /** Credits of the licensed photos on published news; declared before `:id`. */
+  @Get('credits')
+  @Public()
+  @Header('Cache-Control', 'public, max-age=300')
+  async credits() {
+    return { data: await this.media.newsCredits() };
+  }
+
   @Get(':id')
   @Header('Cache-Control', 'private, no-store')
   @Roles('HOUSEHOLD', 'ADMIN', 'BUYER')

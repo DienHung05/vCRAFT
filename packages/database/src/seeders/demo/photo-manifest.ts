@@ -290,19 +290,6 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
     widths: [640, 1280],
   },
   {
-    id: 'news-dat-set',
-    alt: 'Đống đất sét nâu đỏ chất cao trong nhà kho rộng, phía sau là hàng ngói đất nung',
-    credit: {
-      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2699.JPG',
-      author: '松岡明芳 (Akiyoshi Matsuoka)',
-      license: 'CC BY-SA 3.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
-      sourceUrl:
-        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2699.JPG',
-    },
-    widths: [640, 1280],
-  },
-  {
     id: 'ong-gom-lam-may',
     alt: 'Chiếc ống gốm Bát Tràng hình trụ cao, thân màu ngà vẽ lam hình mây cuộn, quanh miệng có một dải hoa văn hình học',
     credit: {
@@ -3129,19 +3116,6 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
     widths: [640, 1280],
   },
   {
-    id: 'news-dong-hang',
-    alt: 'Nhiều thợ cùng ngồi trên nền xưởng sửa những chiếc bình và chậu mộc cho một lô hàng lớn',
-    credit: {
-      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2725.JPG',
-      author: '松岡明芳 (Akiyoshi Matsuoka)',
-      license: 'CC BY-SA 3.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
-      sourceUrl:
-        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2725.JPG',
-    },
-    widths: [640, 1280],
-  },
-  {
     id: 'news-got-bat',
     alt: 'Người thợ đội mũ lưỡi trai dùng dao gọt chân một chiếc bát mộc trên bàn xoay',
     credit: {
@@ -3167,18 +3141,6 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
     widths: [640, 1280],
   },
   {
-    id: 'news-dinh-tet',
-    alt: 'Mái đình làng gốm cổ Bát Tràng treo băng chữ chúc mừng năm mới',
-    credit: {
-      title: 'File:Bat Trang communal house (2018) 06.jpg',
-      author: 'Donald Trung',
-      license: 'CC BY-SA 4.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
-      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bat_Trang_communal_house_(2018)_06.jpg',
-    },
-    widths: [640, 1280],
-  },
-  {
     id: 'news-khach-tham',
     alt: 'Một nhóm khách bước lên bậc thềm vào một cửa hàng gốm có chậu men lam bày hai bên',
     credit: {
@@ -3192,32 +3154,6 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
     widths: [640, 1280],
   },
   {
-    id: 'news-coc-in-hinh',
-    alt: 'Những rổ nhựa đựng cốc sứ trắng in hình, bày cạnh tượng chó bằng gốm',
-    credit: {
-      title: 'File:Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 83.jpg',
-      author: 'Donald Trung',
-      license: 'CC BY-SA 4.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
-      sourceUrl:
-        'https://commons.wikimedia.org/wiki/File:Ceramics_shop_in_B%C3%A1t_Tr%C3%A0ng,_Hanoi_(1_March_2018)_83.jpg',
-    },
-    widths: [640, 1280],
-  },
-  {
-    id: 'news-lo-binh-moc',
-    alt: 'Thợ ngồi giữa hàng trăm chiếc bình mộc cùng một kiểu, sửa từng chiếc trước khi nung',
-    credit: {
-      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2730.JPG',
-      author: '松岡明芳 (Akiyoshi Matsuoka)',
-      license: 'CC BY-SA 3.0',
-      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
-      sourceUrl:
-        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2730.JPG',
-    },
-    widths: [640, 1280],
-  },
-  {
     id: 'news-am-chen',
     alt: 'Kệ kính nhiều tầng bày các bộ ấm chén men nâu, đen và vẽ hoa',
     credit: {
@@ -3226,6 +3162,67 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
       license: 'CC BY-SA 4.0',
       licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:B%C3%A1t_Tr%C3%A0ng_DSC_0098.JPG',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'news-dinh-cong',
+    alt: 'Cổng và sân đình làng Bát Tràng, nơi diễn ra lễ hội làng',
+    credit: {
+      title: 'File:Bat Trang communal house (2018) 01.jpg',
+      author: 'Donald Trung',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bat_Trang_communal_house_(2018)_01.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'news-dinh-chinh',
+    alt: 'Gian đình chính của đình làng Bát Tràng với mái ngói đỏ và băng rôn chào mừng',
+    credit: {
+      title: 'File:Bat Trang communal house (2018) 05.jpg',
+      author: 'Donald Trung',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bat_Trang_communal_house_(2018)_05.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'news-pho-gom',
+    alt: 'Dãy cửa hàng gốm sứ ở chợ gốm Bát Tràng năm 2014',
+    credit: {
+      title: 'File:Bat Trang porcelain marketplace in 2014.jpg',
+      author: 'Vuong Tri Binh',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:Bat_Trang_porcelain_marketplace_in_2014.jpg',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'news-nha-co',
+    alt: 'Ngôi nhà gỗ mái ngói cổ ở Bát Tràng, nay dùng làm nơi trưng bày gốm',
+    credit: {
+      title: 'File:Nha trung bay gom Bat Trang.JPG',
+      author: 'Hoangvantoanajc',
+      license: 'CC BY 3.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by/3.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Nha_trung_bay_gom_Bat_Trang.JPG',
+    },
+    widths: [640, 1280],
+  },
+  {
+    id: 'news-am-trang-moc',
+    alt: 'Những chiếc ấm sứ trắng mộc xếp chồng lên nhau trong một xưởng gốm ở Bát Tràng',
+    credit: {
+      title: 'File:Bat-Trang-Ceramic-Village5.jpg',
+      author: 'Steven C. Price',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bat-Trang-Ceramic-Village5.jpg',
     },
     widths: [640, 1280],
   },
@@ -3446,95 +3443,6 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
     alt: 'Chiếc ống gốm Bát Tràng hình trụ cao, thân màu ngà vẽ lam hình mây cuộn, quanh miệng có một dải hoa văn hình học',
     altEn:
       'A tall cylindrical Bat Trang ceramic vessel with a cobalt-blue cloud pattern on a cream body and a geometric band around the rim',
-  },
-  {
-    photo: 'ban-xoay-xuong',
-    target: 'NEWS',
-    key: 'h7-class',
-    role: 'COVER',
-    position: 0,
-    alt: 'Những bàn xoay gỗ thấp đặt rải rác trên nền gạch đỏ trong một xưởng gốm',
-    altEn: "Many low wooden potter's wheels scattered over the red-brick floor of a pottery studio",
-  },
-  {
-    photo: 'news-dat-set',
-    target: 'NEWS',
-    key: 'village-clay-month',
-    role: 'COVER',
-    position: 0,
-    alt: 'Đống đất sét nâu đỏ chất cao trong nhà kho rộng, phía sau là hàng ngói đất nung',
-    altEn:
-      'A large pile of red-brown clay in a big warehouse, with orange roof tiles stacked behind it',
-  },
-  {
-    photo: 'binh-hoa-lam',
-    target: 'NEWS',
-    key: 'h0-blue-glaze',
-    role: 'COVER',
-    position: 0,
-    alt: 'Hai chiếc bình sứ trắng vẽ men lam: một bình có cảnh nhà bên sông, một bình dáng lục giác',
-    altEn:
-      'Two white porcelain vases painted in cobalt blue: one with a riverside house, one hexagonal',
-  },
-  {
-    photo: 'ln-hu-men-ngoc',
-    target: 'NEWS',
-    key: 'h1-crackle',
-    role: 'COVER',
-    position: 0,
-    alt: 'Chiếc hũ gốm men xanh ngọc nhạt phủ kín vết rạn mảnh, thân tròn, quai cung phía trên',
-    altEn:
-      'A pale jade-green jar covered in fine crackle, with a round body and an arched handle on top',
-  },
-  {
-    photo: 'pp-mf52jtdn',
-    target: 'NEWS',
-    key: 'h3-lotus',
-    role: 'COVER',
-    position: 0,
-    alt: 'Chiếc đĩa sứ trắng vẽ tay bằng men lam một bó hoa sen ở giữa và dây hoa quanh viền',
-    altEn:
-      'A white porcelain plate hand-painted in blue with a lotus bouquet at the centre and a floral border',
-  },
-  {
-    photo: 'khuon-binh-lon',
-    target: 'NEWS',
-    key: 'h4-vase',
-    role: 'COVER',
-    position: 0,
-    alt: 'Các khuôn thạch cao cao gần hai mét, buộc dây, dựng trong một xưởng đúc bình lớn',
-    altEn:
-      'Plaster moulds almost two metres tall, tied with rope, standing in a workshop that casts large vases',
-  },
-  {
-    photo: 'pp-a2sbgf7h',
-    target: 'NEWS',
-    key: 'h6-altar',
-    role: 'COVER',
-    position: 0,
-    alt: 'Chiếc lư hương ba chân miệng rộng, men nâu đen bóng, đứng vững trên ba chân đế',
-    altEn:
-      'A wide-mouthed tripod incense burner in a glossy brown-black glaze, standing on three sturdy feet',
-  },
-  {
-    photo: 'pp-e8uzvyg4',
-    target: 'NEWS',
-    key: 'h8-white-plate',
-    role: 'COVER',
-    position: 0,
-    alt: 'Chiếc đĩa tròn men trắng ngà ngả xám, lòng khắc chìm hoa văn cuộn, viền có một vết nứt đã gắn lại',
-    altEn:
-      'A round ivory-grey glazed dish with an incised scroll design and an old repaired crack at the rim',
-  },
-  {
-    photo: 'pp-bu4ymz85',
-    target: 'NEWS',
-    key: 'h12-wine-jar',
-    role: 'COVER',
-    position: 0,
-    alt: 'Chiếc hũ gốm thấp bè miệng rộng, bốn quai vòng, phủ men nâu ô liu loang',
-    altEn:
-      'A squat stoneware jar with a wide mouth and four loop handles in a mottled olive-brown glaze',
   },
   {
     photo: 'pp-fwmhfyfk',
@@ -5763,78 +5671,114 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
     altEn: 'Painters at a long table decorating white porcelain cups by hand',
   },
   {
-    photo: 'news-dong-hang',
+    photo: 'news-am-trang-moc',
     target: 'NEWS',
-    key: 'village-cooperative',
+    key: 'bt-creative-craft-network',
     role: 'COVER',
     position: 0,
-    alt: 'Nhiều thợ cùng ngồi trên nền xưởng sửa những chiếc bình và chậu mộc cho một lô hàng lớn',
+    alt: 'Những chiếc ấm sứ trắng mộc xếp chồng lên nhau trong một xưởng gốm ở Bát Tràng; ảnh gốm Bát Tràng nói chung, không phải ảnh buổi lễ gia nhập mạng lưới',
     altEn:
-      'Several workers on a workshop floor finishing unfired vases and planters for a large batch',
+      'Stacked unglazed white porcelain teapots in a Bat Trang pottery workshop; a general photo of Bat Trang ware, not a photo of the network ceremony',
   },
   {
-    photo: 'news-got-bat',
+    photo: 'news-dinh-cong',
     target: 'NEWS',
-    key: 'village-trace',
+    key: 'bt-festival-heritage-2025',
     role: 'COVER',
     position: 0,
-    alt: 'Người thợ đội mũ lưỡi trai dùng dao gọt chân một chiếc bát mộc trên bàn xoay',
-    altEn: 'A potter in a cap trimming the foot of an unfired bowl on a wheel with a blade',
+    alt: 'Cổng và sân đình làng Bát Tràng, nơi diễn ra lễ hội làng; ảnh chụp năm 2018, không phải ảnh buổi lễ công bố năm 2025',
+    altEn:
+      'The gate and courtyard of the Bat Trang communal house where the village festival is held; photographed in 2018, not at the 2025 announcement ceremony',
   },
   {
     photo: 'news-trong-lo',
     target: 'NEWS',
-    key: 'village-kiln-safety',
+    key: 'bt-green-kilns-policy',
     role: 'COVER',
     position: 0,
-    alt: 'Bên trong một lò nung lót bông chịu nhiệt, những chiếc bình mộc xếp hàng trên sàn lò',
-    altEn: 'Inside a kiln lined with ceramic fibre, rows of unfired vases on the kiln floor',
-  },
-  {
-    photo: 'news-dinh-tet',
-    target: 'NEWS',
-    key: 'village-spring-fair',
-    role: 'COVER',
-    position: 0,
-    alt: 'Mái đình làng gốm cổ Bát Tràng treo băng chữ chúc mừng năm mới',
-    altEn: 'The tiled roof of the Bat Trang communal house hung with a New Year greeting banner',
-  },
-  {
-    photo: 'news-khach-tham',
-    target: 'NEWS',
-    key: 'h0-open-kiln',
-    role: 'COVER',
-    position: 0,
-    alt: 'Một nhóm khách bước lên bậc thềm vào một cửa hàng gốm có chậu men lam bày hai bên',
+    alt: 'Bên trong một lò nung lót bông chịu nhiệt ở Bát Tràng, những chiếc bình mộc xếp hàng trên sàn lò; ảnh lò nung của làng, không phải lò gas nêu trong bài',
     altEn:
-      'A group of visitors climbing the steps into a pottery shop with blue-and-white planters on either side',
+      'Inside a kiln lined with ceramic fibre in Bat Trang, rows of unfired vases on the kiln floor; a photo of kiln firing in the village, not of the gas kilns named in the article',
   },
   {
-    photo: 'news-coc-in-hinh',
+    photo: 'news-nha-co',
     target: 'NEWS',
-    key: 'h2-logo-cup',
+    key: 'bt-feast-heritage',
     role: 'COVER',
     position: 0,
-    alt: 'Những rổ nhựa đựng cốc sứ trắng in hình, bày cạnh tượng chó bằng gốm',
-    altEn: 'Plastic baskets of printed white porcelain mugs, set beside ceramic dog figures',
+    alt: 'Ngôi nhà gỗ mái ngói cổ ở Bát Tràng, nay dùng làm nơi trưng bày gốm; ảnh một ngôi nhà cổ trong làng, không phải nơi dọn bữa cỗ trong bài',
+    altEn:
+      'An old wooden house with a tiled roof in Bat Trang, now used as a ceramics showroom; a photo of a traditional house in the village, not the house where the feast in the article is served',
   },
   {
-    photo: 'news-lo-binh-moc',
+    photo: 'news-got-bat',
     target: 'NEWS',
-    key: 'h2-batch-code',
+    key: 'bt-young-artisans',
     role: 'COVER',
     position: 0,
-    alt: 'Thợ ngồi giữa hàng trăm chiếc bình mộc cùng một kiểu, sửa từng chiếc trước khi nung',
-    altEn: 'Workers among hundreds of identical unfired vases, finishing each one before firing',
+    alt: 'Người thợ đội mũ lưỡi trai dùng dao gọt chân một chiếc bát mộc trên bàn xoay ở Bát Tràng; ảnh thợ gốm làng, không phải hai bạn trẻ trong bài',
+    altEn:
+      'A potter in a cap trimming the foot of an unfired bowl on a wheel in Bat Trang; a photo of a village potter at work, not of the two young artisans in the article',
   },
   {
     photo: 'news-am-chen',
     target: 'NEWS',
-    key: 'h5-teaset',
+    key: 'bt-ocop-five-star',
     role: 'COVER',
     position: 0,
-    alt: 'Kệ kính nhiều tầng bày các bộ ấm chén men nâu, đen và vẽ hoa',
-    altEn: 'Glass shelves holding tea sets in brown, black and flower-painted glazes',
+    alt: 'Kệ kính nhiều tầng bày các bộ ấm chén men nâu, đen và vẽ hoa trong một cửa hàng ở Bát Tràng; ảnh gốm Bát Tràng nói chung, không phải bộ sản phẩm OCOP 5 sao trong bài',
+    altEn:
+      'Glass shelves holding tea sets in brown, black and flower-painted glazes in a Bat Trang shop; a general photo of Bat Trang ware, not the 5-star OCOP sets in the article',
+  },
+  {
+    photo: 'news-pho-gom',
+    target: 'NEWS',
+    key: 'bt-imports-workshop',
+    role: 'COVER',
+    position: 0,
+    alt: 'Dãy cửa hàng gốm sứ ở chợ gốm Bát Tràng năm 2014; ảnh chợ gốm của làng, không phải hội thảo ngày 16/12/2025',
+    altEn:
+      'A row of ceramics shops in the Bat Trang porcelain market in 2014; a photo of the village market, not of the 16 December 2025 workshop',
+  },
+  {
+    photo: 'ht-ve-chen',
+    target: 'NEWS',
+    key: 'bt-livestream-ocop',
+    role: 'COVER',
+    position: 0,
+    alt: 'Thợ ngồi quanh bàn dài vẽ hoa văn lên những chiếc chén sứ trắng; ảnh thợ vẽ gốm ở Bát Tràng, không phải buổi livestream trong bài',
+    altEn:
+      'Painters at a long table decorating white porcelain cups by hand in Bat Trang; a photo of ceramic painters at work, not of the livestream in the article',
+  },
+  {
+    photo: 'news-dinh-chinh',
+    target: 'NEWS',
+    key: 'bt-festival-2026',
+    role: 'COVER',
+    position: 0,
+    alt: 'Gian đình chính của đình làng Bát Tràng với mái ngói đỏ và băng rôn chào mừng; ảnh chụp năm 2018, không phải ảnh lễ hội xuân 2026',
+    altEn:
+      'The main hall of the Bat Trang communal house with its red tiled roof and a greeting banner; photographed in 2018, not at the spring 2026 festival',
+  },
+  {
+    photo: 'news-khach-tham',
+    target: 'NEWS',
+    key: 'bt-digital-village',
+    role: 'COVER',
+    position: 0,
+    alt: 'Một nhóm khách bước lên bậc thềm vào một cửa hàng gốm có chậu men lam bày hai bên ở Bát Tràng; ảnh khách tham quan làng gốm, không phải ảnh về chuyển đổi số',
+    altEn:
+      'A group of visitors climbing the steps into a pottery shop with blue-and-white planters on either side in Bat Trang; a photo of visitors in the pottery village, not of its digital programme',
+  },
+  {
+    photo: 'binh-hoa-lam',
+    target: 'NEWS',
+    key: 'bt-tan-thinh-ip',
+    role: 'COVER',
+    position: 0,
+    alt: 'Hai chiếc bình sứ trắng vẽ men lam: một bình có cảnh nhà bên sông, một bình dáng lục giác; ảnh gốm men lam Bát Tràng nói chung, không phải men Suối Ngọc của hợp tác xã',
+    altEn:
+      'Two white porcelain vases painted in cobalt blue: one with a house-by-the-river scene, one hexagonal; a general photo of Bat Trang blue-and-white ware, not the glaze line of the cooperative in the article',
   },
 ];
 
@@ -5878,6 +5822,12 @@ export const RETIRED_DEMO_PHOTO_IDS: readonly string[] = [
   'bat-ve-sen-men-trong',
   'coc-men-trang-quai-tron',
   'news-cho-gom',
+  // Covers of the invented stories replaced by real news (GH#314); no real story uses them any more:
+  'news-dat-set',
+  'news-dong-hang',
+  'news-dinh-tet',
+  'news-coc-in-hinh',
+  'news-lo-binh-moc',
   'dp-bat-xep-rom',
   'tl-clay',
   'tl-throw',

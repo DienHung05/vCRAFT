@@ -45,6 +45,9 @@ const page: NewsListDto = {
       publishedAt: '2026-08-30T03:00:00.000Z',
       householdName: null,
       householdSlug: null,
+      sourceName: null,
+      sourceUrl: null,
+      sourcePublishedAt: null,
       cover: {
         mediaId: '00000000-0000-4000-8000-000000000001',
         url: 'https://cdn.test/cho-gom.webp',
@@ -72,6 +75,9 @@ const page: NewsListDto = {
       publishedAt: '2026-08-27T03:00:00.000Z',
       householdName: 'Gốm Minh Hải',
       householdSlug: 'gom-minh-hai',
+      sourceName: null,
+      sourceUrl: null,
+      sourcePublishedAt: null,
       cover: null,
     },
   ],
@@ -115,6 +121,34 @@ describe('NewsView', () => {
     expect(items[0]?.querySelector('time')?.getAttribute('datetime')).toBe(
       '2026-08-30T03:00:00.000Z',
     );
+  });
+
+  it('shows a source line linking to the original story, and nothing for items without a source', () => {
+    const sourced: NewsListDto = {
+      ...page,
+      data: [
+        {
+          ...(page.data[0] as NewsListDto['data'][number]),
+          sourceName: 'Hà Nội Mới',
+          sourceUrl: 'https://hanoimoi.vn/bai-viet',
+          sourcePublishedAt: '2026-08-29T05:00:00.000Z',
+        },
+        page.data[1] as NewsListDto['data'][number],
+      ],
+    };
+    renderVi(<NewsView result={{ status: 'ok', page: sourced }} />);
+    const items = within(screen.getByRole('list', { name: 'Danh sách tin tức' })).getAllByRole(
+      'listitem',
+    );
+    const link = within(items[0] as HTMLElement).getByRole('link', {
+      name: /^Nguồn: Hà Nội Mới, /,
+    });
+    expect(link.getAttribute('href')).toBe('https://hanoimoi.vn/bai-viet');
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toBe('noopener nofollow');
+    expect(within(items[1] as HTMLElement).queryByText(/Nguồn:/)).toBeNull();
+    // The admin-only origin never reaches visitors.
+    expect(document.body.textContent).not.toMatch(/IMPORTED|GENERATED|Nhập tự động|Bài tự sinh/);
   });
 
   it('links to the next page by cursor, keeping the household filter', () => {

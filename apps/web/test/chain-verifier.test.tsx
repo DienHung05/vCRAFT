@@ -24,7 +24,7 @@ describe('ChainVerifier (FR-TRC-05)', () => {
     await waitFor(() => expect(document.querySelector('[data-state="ok"]')).not.toBeNull());
     expect(screen.getByRole('heading', { name: 'Nhật ký toàn vẹn' })).toBeTruthy();
     expect(screen.getByText(/Chuỗi nhật ký toàn vẹn · 8 mốc/)).toBeTruthy();
-    expect(screen.getByText('Dữ liệu minh họa')).toBeTruthy();
+    expect(screen.queryByText(/minh họa|demo/i)).toBeNull();
     expect(
       screen.getByText(/^Toàn vẹn nhật ký: nhật ký này không bị âm thầm thay đổi/),
     ).toBeTruthy();

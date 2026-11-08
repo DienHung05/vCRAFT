@@ -96,7 +96,7 @@ describe('Demo seed and guarded reset', () => {
     expect(await em.count(Household, { status: 'APPROVED' })).toBeGreaterThanOrEqual(20);
     expect(await em.count(Product)).toBeGreaterThanOrEqual(200);
     expect(await em.count(QuotationRequest)).toBe(12);
-    expect(await em.count(News, { status: 'PUBLISHED' })).toBeGreaterThanOrEqual(15);
+    expect(await em.count(News, { status: 'PUBLISHED' })).toBeGreaterThanOrEqual(6);
     const statuses = new Set((await em.find(QuotationRequest, {})).map((r) => r.status));
     expect(statuses).toEqual(
       new Set([
@@ -482,7 +482,7 @@ describe('Demo seed and guarded reset', () => {
     }
   });
 
-  it('tin tức công khai có ≥ 15 tin, tin ghim đứng đầu, gồm cả tin chung và tin của hộ', async () => {
+  it('tin tức công khai có ≥ 15 tin, tin ghim đứng đầu, toàn tin chung của làng (tin thật, GH#314)', async () => {
     const list = await t.request({ method: 'GET', url: '/news?limit=100' });
     expect(list.status).toBe(200);
     expect(list.body.data.length).toBeGreaterThanOrEqual(15);
@@ -491,8 +491,9 @@ describe('Demo seed and guarded reset', () => {
     expect(
       list.body.data.some((n: { householdSlug: string | null }) => n.householdSlug === null),
     ).toBe(true);
+    // GH#314: every seeded story is real village news, so none belongs to a household.
     expect(
-      list.body.data.some((n: { householdSlug: string | null }) => n.householdSlug !== null),
+      list.body.data.every((n: { householdSlug: string | null }) => n.householdSlug === null),
     ).toBe(true);
   });
 

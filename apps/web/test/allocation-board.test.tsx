@@ -195,13 +195,13 @@ describe('AllocationBoard (chia đơn thủ công, GH#10)', () => {
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2));
   });
 
-  it('không có callback thì mô phỏng cục bộ và ghi nhãn demo rõ ràng', async () => {
+  it('không có callback thì chỉ xem trước cục bộ và nói rõ là chưa lưu', async () => {
     renderVi(<AllocationBoard {...props()} />);
     set('Gốm Minh Hải', '1200');
     set('Gốm Lam Ngọc', '900');
     set('Lò Đức Phát', '900');
     fireEvent.click(submitButton());
-    expect(screen.getByText('Đã mô phỏng (chưa lưu, không gửi thông báo)')).toBeTruthy();
+    expect(screen.getByText('Đã xem trước (chưa lưu, không gửi thông báo)')).toBeTruthy();
     expect(screen.getByText(/chưa lưu, chưa gửi lên máy chủ/)).toBeTruthy();
   });
 });

@@ -17,6 +17,7 @@ import {
   MediaLink,
   type MediaLinkRole,
   type MediaLinkTarget,
+  News,
   OutboxEvent,
   type Product,
   QuotationRequest,
@@ -164,6 +165,32 @@ export class MediaService {
       await em.flush();
       return this.toResponse(asset);
     });
+  }
+
+  /**
+   * Credits of the licensed photos used by published news (GH#314), one per source file. Photos from the
+   * automatic import are credited here because they are not in the web app's static credit list.
+   */
+  async newsCredits(): Promise<MediaCredit[]> {
+    const em = this.orm.em.fork();
+    const news = await em.find(
+      News,
+      { status: 'PUBLISHED', publishedAt: { $lte: new Date() } },
+      { fields: ['id'], limit: 1000 },
+    );
+    if (news.length === 0) return [];
+    const links = await em.find(
+      MediaLink,
+      { targetType: 'NEWS', targetId: { $in: news.map((n) => n.id) } },
+      { populate: ['media'] },
+    );
+    const byTitle = new Map<string, MediaCredit>();
+    for (const link of links) {
+      const credit = publicCredit(link.media.credit);
+      if (credit && link.media.status === 'READY' && link.media.visibility === 'PUBLIC')
+        byTitle.set(credit.title, credit);
+    }
+    return [...byTitle.values()].sort((a, b) => a.title.localeCompare(b.title));
   }
 
   /** URL công khai bản WebP phù hợp (gần 1280 px) của các tệp đã xử lý xong, theo id. */

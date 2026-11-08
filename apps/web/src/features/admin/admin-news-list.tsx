@@ -2,6 +2,7 @@
 
 import type { AdminClient } from '@vcraft/api-client';
 import type { AdminNewsDto, ListAdminNewsQuery } from '@vcraft/contracts';
+import { NEWS_ORIGINS } from '@vcraft/domain';
 import { Badge, Button, buttonVariants, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
@@ -22,6 +23,7 @@ export function AdminNewsList({ client: provided }: { client?: AdminClient }) {
   const format = useFormatter();
   const { client, loading } = useAdminClient(provided);
   const [state, setState] = useState<ListAdminNewsQuery['state']>();
+  const [origin, setOrigin] = useState<ListAdminNewsQuery['origin']>();
   const [rows, setRows] = useState<readonly AdminNewsDto[] | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -33,13 +35,16 @@ export function AdminNewsList({ client: provided }: { client?: AdminClient }) {
     if (!client) return;
     setFailed(false);
     try {
-      const page = await client.listNews(state ? { state } : {});
+      const page = await client.listNews({
+        ...(state ? { state } : {}),
+        ...(origin ? { origin } : {}),
+      });
       setRows(page.data);
       setCursor(page.nextCursor);
     } catch {
       setFailed(true);
     }
-  }, [client, state]);
+  }, [client, state, origin]);
 
   useEffect(() => {
     void load();
@@ -51,7 +56,11 @@ export function AdminNewsList({ client: provided }: { client?: AdminClient }) {
     if (!client || !cursor || busy) return;
     setBusy(true);
     try {
-      const page = await client.listNews({ ...(state ? { state } : {}), cursor });
+      const page = await client.listNews({
+        ...(state ? { state } : {}),
+        ...(origin ? { origin } : {}),
+        cursor,
+      });
       setRows((current) => [...(current ?? []), ...page.data]);
       setCursor(page.nextCursor);
     } catch {
@@ -114,6 +123,23 @@ export function AdminNewsList({ client: provided }: { client?: AdminClient }) {
           ))}
         </select>
       </label>
+      <label className="flex max-w-xs flex-col gap-1 text-small">
+        {t('originFilter')}
+        <select
+          value={origin ?? ''}
+          onChange={(event) =>
+            setOrigin((event.target.value || undefined) as ListAdminNewsQuery['origin'])
+          }
+          className="rounded-input border border-ink/20 bg-surface px-2 py-1.5"
+        >
+          <option value="">{t('allOrigins')}</option>
+          {NEWS_ORIGINS.map((value) => (
+            <option key={value} value={value}>
+              {t(`origin.${value}`)}
+            </option>
+          ))}
+        </select>
+      </label>
       {failed ? (
         <ErrorState message={t('failed')} onRetry={() => void load()} />
       ) : rows === null ? (
@@ -150,6 +176,9 @@ export function AdminNewsList({ client: provided }: { client?: AdminClient }) {
                     <span>{categories(row.category)}</span>
                     {row.pinned ? <Badge tone="seal">{t('pinned')}</Badge> : null}
                     {row.important ? <Badge tone="lacquer">{t('important')}</Badge> : null}
+                    {row.origin !== 'MANUAL' ? (
+                      <Badge tone="outline">{t(`origin.${row.origin}`)}</Badge>
+                    ) : null}
                     {dateLabel(row) ? <span>{dateLabel(row)}</span> : null}
                   </p>
                 </div>

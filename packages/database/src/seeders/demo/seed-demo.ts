@@ -41,6 +41,7 @@ import {
   DEMO_REQUEST_IDS,
 } from './accounts.js';
 import { artisanBio, householdStory } from './demo-text.js';
+import { newsSeedFields } from './news-seed.js';
 import {
   ARTISAN_FIRST,
   ARTISAN_LAST,
@@ -944,20 +945,15 @@ export async function seedDemoData(
   for (const [order, item] of NEWS.entries()) {
     const owner = item.h === null ? null : (households[item.h] as Household);
     const ownerName = owner?.name ?? '';
-    const publishedAt = new Date(FROZEN_ANCHOR.getTime() - item.daysAgo * DAY + order * HOUR);
+    const fields = newsSeedFields(item, order, FROZEN_ANCHOR, ownerName);
     em.create(News, {
+      ...fields,
       id: idOf('news', item.key),
-      slug: slugify(item.title.replaceAll('{hộ}', ownerName)),
-      title: item.title.replaceAll('{hộ}', ownerName),
-      summary: item.summary,
-      body: item.body.replaceAll('{hộ}', ownerName),
-      category: item.category,
+      slug: slugify(fields.title),
       household: owner,
       status: 'PUBLISHED',
-      publishedAt,
-      pinned: item.pinned ?? false,
-      createdAt: publishedAt,
-      updatedAt: publishedAt,
+      createdAt: fields.publishedAt,
+      updatedAt: fields.publishedAt,
     });
     summary.news++;
   }

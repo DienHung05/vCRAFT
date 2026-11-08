@@ -66,6 +66,10 @@ export const MediaCreditSchema = z.object({
 });
 export type MediaCreditDto = z.infer<typeof MediaCreditSchema>;
 
+/** `GET /media/credits`: credits of the licensed photos on published news, for the photo-credits page (GH#314). */
+export const NewsPhotoCreditsResponseSchema = z.object({ data: z.array(MediaCreditSchema) });
+export type NewsPhotoCreditsDto = z.infer<typeof NewsPhotoCreditsResponseSchema>;
+
 /**
  * Credit as clients read it from public responses (GH#230): a credit without a usable licence or source URL
  * (an unknown licence is stored with empty URLs) reads as no credit, so one bad record never makes the whole

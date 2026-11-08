@@ -101,12 +101,12 @@ describe('ContributionForm (đề xuất tham gia, GH#10)', () => {
     await waitFor(() => expect(onWithdraw).toHaveBeenCalledTimes(1));
   });
 
-  it('không có callback thì ghi nhãn demo rõ ràng: mô phỏng, chưa lưu', () => {
+  it('không có callback thì nói rõ là chỉ xem trước, chưa lưu', () => {
     renderVi(<ContributionForm {...props()} />);
     expect(screen.getByText(/chưa lưu, chưa gửi lên máy chủ/)).toBeTruthy();
     fill('1200', '58000', '2026-12-20');
     fireEvent.click(sendButton());
-    expect(screen.getByText(/Đã mô phỏng \(chưa lưu/)).toBeTruthy();
+    expect(screen.getByText(/Đã xem trước \(chưa lưu/)).toBeTruthy();
     expect(screen.getByText(/riêng giữa hộ và Ban quản lý/)).toBeTruthy();
   });
 

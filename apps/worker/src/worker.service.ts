@@ -19,6 +19,9 @@ import { createNoticeLoader } from './processors/mail/load-notice';
 import { type HouseholdMailJob, sendHouseholdMail } from './processors/mail/send-household-mail';
 import { sendNoticeMail } from './processors/mail/send-notice-mail';
 import { processMediaAsset } from './processors/media/process-media';
+import { newsImportConfigFromEnv, newsImportEnabled } from './processors/news-import/config';
+import { runNewsImport } from './processors/news-import/import-news';
+import { llmFromEnv } from './processors/news-import/llm';
 import { createOutboxDispatcher } from './processors/outbox/dispatch';
 import { relayOutbox } from './processors/outbox/relay-outbox';
 import { generateQrLabels, type QrLabelsJob } from './processors/qr-labels/generate-qr-labels';
@@ -28,6 +31,7 @@ import {
   COORDINATION_CHECK_EVERY_MS,
   IDEMPOTENCY_PURGE_EVERY_MS,
   IDEMPOTENCY_PURGE_JOB,
+  NEWS_IMPORT_JOB,
   PAYMENT_EXPIRE_EVERY_MS,
   PAYMENT_EXPIRE_SWEEP_JOB,
   RFQ_COORDINATION_CHECK_JOB,
@@ -106,6 +110,7 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       appUrl: process.env.APP_URL ?? 'http://localhost:8080',
     };
 
+    const newsImportConfig = newsImportConfigFromEnv();
     const workers = [
       new Worker<MediaJob>(
         MEDIA_QUEUE,
@@ -148,10 +153,20 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
         connection,
         concurrency: 1,
       }),
-      new Worker(SCHEDULER_QUEUE, (job) => runSchedulerJob(this.orm, job.name, job.data), {
-        connection,
-        concurrency: 1,
-      }),
+      new Worker(
+        SCHEDULER_QUEUE,
+        (job) =>
+          job.name === NEWS_IMPORT_JOB
+            ? runNewsImport({
+                orm: this.orm,
+                storage: this.storage,
+                llm: llmFromEnv(),
+                config: newsImportConfig,
+                logger: this.logger,
+              })
+            : runSchedulerJob(this.orm, job.name, job.data),
+        { connection, concurrency: 1 },
+      ),
       new Worker(
         OUTBOX_QUEUE,
         async () => {
@@ -191,6 +206,20 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       { every: PAYMENT_EXPIRE_EVERY_MS },
       { name: PAYMENT_EXPIRE_SWEEP_JOB },
     );
+    if (newsImportEnabled(newsImportConfig)) {
+      await scheduler.upsertJobScheduler(
+        NEWS_IMPORT_JOB,
+        { every: newsImportConfig.everyMinutes * 60_000 },
+        { name: NEWS_IMPORT_JOB },
+      );
+      this.logger.log(
+        `news import on: ${newsImportConfig.feeds.length} feed(s), every ${newsImportConfig.everyMinutes} min`,
+      );
+    } else {
+      // A schedule left over from an earlier configuration must not keep running.
+      await scheduler.removeJobScheduler(NEWS_IMPORT_JOB);
+      this.logger.log('news import off: NEWS_IMPORT_FEEDS has no valid feed');
+    }
     this.closables.push(...workers, media, mail, qrLabels, scheduler, assistant, outbox, {
       close: async () => mailDeps.transport.close(),
     });

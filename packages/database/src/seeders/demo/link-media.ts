@@ -90,7 +90,7 @@ export async function loadTargetResolver(
   };
 }
 
-async function loadAssets(em: EntityManager, ids: Map<string, string>, what: string) {
+export async function loadAssets(em: EntityManager, ids: Map<string, string>, what: string) {
   const found = await em.find(MediaAsset, { id: { $in: [...ids.values()] } });
   const byId = new Map(found.map((a) => [a.id, a]));
   const out = new Map<string, MediaAsset>();

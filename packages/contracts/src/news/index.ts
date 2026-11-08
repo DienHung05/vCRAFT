@@ -1,6 +1,7 @@
 import {
   MATERIALS,
   NEWS_CATEGORIES,
+  NEWS_ORIGINS,
   NEWS_STATUSES,
   NEWS_VISIBILITIES,
   OUTAGE_AREA_CODES,
@@ -49,6 +50,10 @@ export const NewsSummaryResponseSchema = z.object({
   householdSlug: z.string().nullable(),
   /** Null when the news item has no cover. */
   cover: PublicImageSchema.nullable(),
+  /** Publisher and link of the original story (GH#314); all null when the item has no source. */
+  sourceName: z.string().nullable(),
+  sourceUrl: z.string().nullable(),
+  sourcePublishedAt: IsoDateTimeSchema.nullable(),
 });
 export type NewsSummaryDto = z.infer<typeof NewsSummaryResponseSchema>;
 
@@ -138,6 +143,11 @@ export type TodayOutagesDto = z.infer<typeof TodayOutagesResponseSchema>;
 export const NewsVisibilitySchema = z.enum(NEWS_VISIBILITIES);
 export type NewsVisibilityDto = z.infer<typeof NewsVisibilitySchema>;
 
+export const NewsOriginSchema = z.enum(NEWS_ORIGINS);
+export type NewsOriginDto = z.infer<typeof NewsOriginSchema>;
+
+const NewsSourceUrlSchema = z.url({ protocol: /^https$/ }).max(500);
+
 export const NewsDetailResponseSchema = NewsSummaryResponseSchema.extend({
   body: z.string(),
   /** Null on items written before the editor existed; the page then shows `body` as text. */
@@ -177,6 +187,10 @@ export const SaveNewsRequestSchema = z.strictObject({
   /** A processed image uploaded by this administrator. `null` removes the cover. */
   coverMediaId: IdSchema.nullable().optional(),
   coverAlt: z.string().trim().max(500).optional(),
+  /** Original story (GH#314). `null` clears; left out keeps what is stored. A URL needs a publisher. */
+  sourceName: z.string().trim().min(1).max(120).nullable().optional(),
+  sourceUrl: NewsSourceUrlSchema.nullable().optional(),
+  sourcePublishedAt: IsoDateTimeSchema.nullable().optional(),
   /** Only with category `MATERIAL_PRICES`; null clears it. */
   materialPrices: MaterialPriceDataSchema.nullable().optional(),
   /** Only with category `POWER_SCHEDULE`; null clears it. */
@@ -186,6 +200,8 @@ export type SaveNewsRequest = z.infer<typeof SaveNewsRequestSchema>;
 
 export const ListAdminNewsQuerySchema = CursorPageQuerySchema.extend({
   state: z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED']).optional(),
+  /** Admin-only filter on where the item came from (GH#314). */
+  origin: NewsOriginSchema.optional(),
 });
 export type ListAdminNewsQuery = z.infer<typeof ListAdminNewsQuerySchema>;
 
@@ -205,6 +221,10 @@ export const AdminNewsSchema = z.object({
   cover: PublicImageSchema.nullable(),
   householdName: z.string().nullable(),
   updatedAt: IsoDateTimeSchema,
+  sourceName: z.string().nullable(),
+  sourceUrl: z.string().nullable(),
+  sourcePublishedAt: IsoDateTimeSchema.nullable(),
+  origin: NewsOriginSchema,
   materialPrices: MaterialPriceDataSchema.nullable(),
   powerSchedule: PowerScheduleDataSchema.nullable(),
 });

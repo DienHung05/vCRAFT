@@ -162,15 +162,6 @@ export interface DemoContribution {
   contributionVersion: number;
 }
 
-export interface NewsItem {
-  slug: string;
-  title: string;
-  date: string;
-  tag: string;
-  tint: string;
-  photo?: DemoPhotoRef;
-}
-
 export interface VillageStats {
   households: number;
   products: number;
@@ -641,38 +632,6 @@ function rel(days: number, hour = 17): string {
   return d.toISOString();
 }
 
-const news: NewsItem[] = [
-  {
-    slug: 'hoi-cho-gom-mua-dong',
-    title: 'Hội chợ gốm mùa đông mở cửa từ 15/11',
-    date: '2026-10-25',
-    tag: 'Sự kiện',
-    tint: '#a8482a',
-  },
-  {
-    slug: 'lop-vuot-gom-cuoi-tuan',
-    title: 'Lớp vuốt gốm cuối tuần cho thiếu nhi',
-    date: '2026-10-21',
-    tag: 'Trải nghiệm',
-    tint: '#5e8a7d',
-    photo: {
-      id: 'ban-xoay-xuong',
-      alt: 'Những bàn xoay gỗ thấp đặt rải rác trên nền gạch đỏ trong một xưởng gốm',
-    },
-  },
-  {
-    slug: 'gia-dat-set-quy-4',
-    title: 'Giá đất sét quý IV tăng nhẹ 3%',
-    date: '2026-10-16',
-    tag: 'Vật liệu',
-    tint: '#8c6a24',
-    photo: {
-      id: 'news-dat-set',
-      alt: 'Đống đất sét nâu đỏ chất cao trong nhà kho rộng, phía sau là hàng ngói đất nung',
-    },
-  },
-];
-
 const delay = <T>(value: T) => Promise.resolve(value);
 
 /** Niêm phong nhật ký (BR-01) một lần, dùng lại cho mọi lần gọi. */
@@ -729,7 +688,6 @@ export const getProductByCode = async (code: string) =>
   (await loadProducts()).find((p) => p.code === code.toUpperCase()) ?? null;
 export const getProductsByArtisan = async (slug: string) =>
   (await loadProducts()).filter((p) => p.artisanSlug === slug);
-export const getNews = () => delay(news);
 export const getVillageStats = (): Promise<VillageStats> =>
   delay({ households: 142, products: 1860, scans: 23_400, years: 700 });
 

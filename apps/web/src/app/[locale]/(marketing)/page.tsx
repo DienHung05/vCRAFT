@@ -26,6 +26,7 @@ import {
   tintOf,
 } from '@/features/catalog/view-models';
 import { fetchNews } from '@/features/news/news-api';
+import { NewsSourceLine } from '@/features/news/news-source-line';
 import { pinOpenState, pinStatus } from '@/features/village-map/map-model';
 import { fetchMapPins } from '@/features/village-map/map-pins';
 import { VillageMiniMap } from '@/features/village-map/village-mini-map';
@@ -384,6 +385,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
                     {format.dateTime(new Date(n.publishedAt), 'long')}
                   </time>
                   <h3 className="text-[1.25rem] leading-snug">{n.title}</h3>
+                  <NewsSourceLine item={n} />
                 </li>
               ))}
             </ul>

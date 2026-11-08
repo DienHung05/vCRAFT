@@ -120,9 +120,7 @@ describe('view models', () => {
     const bowl = toProductCardView(card('1', { name: 'Bát ăn cơm vẽ sen', category: 'TABLEWARE' }));
     expect(bowl.presetKind).toBe('bowl');
     const { container } = renderVi(<ProductCard product={bowl} />);
-    expect(
-      screen.getByRole('img', { name: /Hình minh hoạ chiếc bát.*chưa có ảnh thật/ }),
-    ).toBeTruthy();
+    expect(screen.getByRole('img', { name: /Hình vẽ chiếc bát.*chưa có ảnh thật/ })).toBeTruthy();
     expect(container.querySelector('img')).toBeNull();
   });
 

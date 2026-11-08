@@ -18,4 +18,11 @@ export type NewsStatus = (typeof NEWS_STATUSES)[number];
 /** `VILLAGE` is only readable by approved households and administrators (FR-NEWS-02). */
 export const NEWS_VISIBILITIES = ['PUBLIC', 'VILLAGE'] as const;
 export type NewsVisibility = (typeof NEWS_VISIBILITIES)[number];
+/**
+ * Where an item came from. Only administrators see it (GH#314): `IMPORTED` items come from the worker's
+ * feed import, `GENERATED` ones are evergreen articles written by the LLM filler.
+ */
+export const NEWS_ORIGINS = ['MANUAL', 'IMPORTED', 'GENERATED'] as const;
+export type NewsOrigin = (typeof NEWS_ORIGINS)[number];
+
 export * from './structured';

@@ -28,6 +28,8 @@ import {
   pickDisplayVariant,
 } from './link-media.js';
 import { DEMO_PHOTO_LINKS, DEMO_PHOTOS, RETIRED_DEMO_PHOTO_IDS } from './photo-manifest.js';
+import { NEWS } from './pools.js';
+import { demoEntityId } from './seed-demo.js';
 import { DEMO_VERIFICATION_DOCS } from './verification-docs.js';
 
 export interface DemoCheck {
@@ -190,10 +192,47 @@ export async function verifyDemoData(
   const pinnedNews = await em.count(News, { status: 'PUBLISHED', pinned: true });
   const villageNews = await em.count(News, { status: 'PUBLISHED', household: null });
   add(
-    'Tin tức: ≥ 15 tin đã đăng (có tin ghim, tin chung và tin của hộ)',
-    publishedNews >= 15 && pinnedNews >= 1 && villageNews >= 1 && villageNews < publishedNews,
+    'Tin tức: ≥ 6 tin đã đăng (có tin ghim và tin chung của làng; tin của hộ là tùy chọn)',
+    publishedNews >= 6 && pinnedNews >= 1 && villageNews >= 1,
     `${publishedNews} tin, ${pinnedNews} ghim, ${villageNews} tin chung`,
   );
+
+  // GH#314: every pooled story is real news, so it needs a publisher, an https link and the original date.
+  const seededNews = await em.find(
+    News,
+    { id: { $in: NEWS.map((item) => demoEntityId('news', item.key)) } },
+    { fields: ['id', 'title', 'sourceName', 'sourceUrl', 'sourcePublishedAt'] },
+  );
+  const noSource = seededNews.filter(
+    (n) => !n.sourceName?.trim() || !n.sourceUrl?.startsWith('https://') || !n.sourcePublishedAt,
+  );
+  add(
+    'Tin tức: mỗi tin trong dữ liệu có nguồn gốc (đơn vị đăng, liên kết https, ngày đăng gốc)',
+    seededNews.length === NEWS.length && noSource.length === 0,
+    noSource.length === 0
+      ? `${seededNews.length} tin có nguồn`
+      : `${noSource.length}/${NEWS.length} tin thiếu nguồn: ${noSource
+          .slice(0, 3)
+          .map((n) => n.title)
+          .join('; ')}`,
+  );
+  if (options.media ?? true) {
+    const newsCoverLinks = await em.find(
+      MediaLink,
+      { targetType: 'NEWS', role: 'COVER' },
+      { fields: ['id', 'targetId', 'altText', 'altEn'] },
+    );
+    const badNewsAlt = newsCoverLinks.filter((l) => !l.altText?.trim() || !l.altEn?.trim());
+    const coveredNews = new Set(newsCoverLinks.map((l) => l.targetId));
+    const uncoveredNews = seededNews.filter((n) => !coveredNews.has(n.id));
+    add(
+      'Tin tức: mỗi ảnh bìa có mô tả tiếng Việt và tiếng Anh, và mỗi tin đều có ảnh bìa',
+      badNewsAlt.length === 0 && uncoveredNews.length === 0,
+      badNewsAlt.length === 0 && uncoveredNews.length === 0
+        ? `${newsCoverLinks.length} ảnh bìa đủ alt vi/en`
+        : `${badNewsAlt.length} ảnh bìa thiếu alt vi/en, ${uncoveredNews.length} tin chưa có ảnh bìa; chạy pnpm demo:media`,
+    );
+  }
 
   const missingAccounts: string[] = [];
   for (const account of DEMO_ACCOUNT_LIST) {

@@ -33,6 +33,9 @@ export function toNewsSummaryDto(news: News, cover: PublicImageDto | null): News
     householdName: news.household?.name ?? null,
     householdSlug: news.household?.slug ?? null,
     cover,
+    sourceName: news.sourceName ?? null,
+    sourceUrl: news.sourceUrl ?? null,
+    sourcePublishedAt: news.sourcePublishedAt?.toISOString() ?? null,
   };
 }
 
