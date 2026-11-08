@@ -318,12 +318,18 @@ describe('Public images from media_link', () => {
         sha256: sha256Of('cong-doan'),
         credit: CREDIT,
         variants: variantsOf('cong-doan'),
+        mediaId: expect.any(String),
+        status: 'READY',
+        thumbhash: null,
       },
       {
         url: 'https://cdn.test/tu-chup.webp',
         sha256: sha256Of('tu-chup'),
         credit: null,
         variants: variantsOf('tu-chup'),
+        mediaId: expect.any(String),
+        status: 'READY',
+        thumbhash: null,
       },
     ]);
 
@@ -347,6 +353,12 @@ describe('Public images from media_link', () => {
     expect(card.coverVariants).toEqual(variantsOf('bia-sp'));
     const trace = await t.request({ method: 'GET', url: '/trace/BT7K2QXA' });
     expect(trace.body.product.coverVariants).toEqual(variantsOf('bia-sp'));
+    // GH#252: the household page embeds products with their cover sizes, so its cards can use srcset.
+    const household = await t.request({ method: 'GET', url: '/households/gom-anh' });
+    const embedded = household.body.products.find(
+      (p: { slug: string }) => p.slug === 'binh-co-anh',
+    );
+    expect(embedded.coverVariants).toEqual(variantsOf('bia-sp'));
 
     // The fixture's original cover URL is not a file of the cover link: a single file, no sizes.
     product.coverUrl = 'https://cdn.test/bia.webp';
@@ -382,6 +394,7 @@ describe('Public images from media_link', () => {
         mediaId: photo,
         url: urlOf('anh-san-pham'),
         variants: variantsOf('anh-san-pham'),
+        thumbhash: null,
         alt: 'Bình trên bàn gỗ',
       },
     ]);

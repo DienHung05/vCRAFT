@@ -9,6 +9,7 @@ import {
   TraceAvailabilityResponseSchema,
   VillageStatsSchema,
 } from '@vcraft/contracts';
+import { cache } from 'react';
 import { apiBaseUrl } from '@/features/news/news-api';
 import { logApiFailure } from '@/lib/api/log-api-failure';
 import { type ProductFilters, productsQueryString } from './exhibition-query';
@@ -69,8 +70,11 @@ export const fetchHouseholds = () => getJson('/households', HouseholdListRespons
 export const fetchHouseholdPage = (page: number, limit: number) =>
   getJson(`/households?page=${page}&limit=${limit}`, HouseholdPageResponseSchema);
 
-export const fetchHousehold = (slug: string) =>
-  getJson(`/households/${encodeURIComponent(slug)}`, PublicHouseholdResponseSchema);
+/** Share metadata/page reads within one server render. React resets this memo on each request;
+ * the underlying fetch remains no-store so a suspension is visible on the next request. */
+export const fetchHousehold = cache((slug: string) =>
+  getJson(`/households/${encodeURIComponent(slug)}`, PublicHouseholdResponseSchema),
+);
 
 /** The current slug behind a retired product or household slug (PLAN E5); `not-found` if none. */
 export const fetchSlugRedirect = (kind: 'products' | 'households', slug: string) =>

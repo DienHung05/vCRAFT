@@ -65,6 +65,9 @@
    */
   --spacing-gutter: clamp(1rem, 0.4286rem + 2.8571vw, 3rem);
   --spacing-section: clamp(4rem, 2.2857rem + 8.5714vw, 10rem);
+  /* Nhịp cuối trang (GH#301): đuôi trang chỉ cần tách footer khỏi section cuối, không cần đủ
+   * nhịp giữa hai section — giấy trống 160px ở cuối mọi trang đọc như thiếu khối. */
+  --spacing-section-tail: clamp(3rem, 2rem + 4vw, 6rem);
   --container-editorial: 90rem;
   --container-prose-vn: 42rem;
 

@@ -1073,6 +1073,7 @@ export class HouseholdsService {
       makers,
       media,
       linked: linked.get(household.id) ?? [],
+      productCovers: await this.media.productCoverImages(products),
     };
   }
 

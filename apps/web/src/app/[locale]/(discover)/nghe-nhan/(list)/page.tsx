@@ -5,6 +5,7 @@ import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { EmptyState } from '@/components/states/empty-state';
 import { UrlPagination } from '@/components/url-pagination';
+import { Reveal } from '@/experience/motion/reveal';
 import { fetchHouseholdPage } from '@/features/catalog/exhibition-api';
 import { altFor, photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
@@ -45,7 +46,7 @@ export default async function ArtisansIndexPage({
   const households = result.data.data;
 
   return (
-    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section">
+    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section-tail">
       <header className="flex max-w-prose-vn flex-col gap-3">
         <h1 className="text-h1">{t('title')}</h1>
         <p className="text-ash">{t('lead')}</p>
@@ -60,27 +61,31 @@ export default async function ArtisansIndexPage({
               : preset('household');
             return (
               <li key={h.slug}>
-                <Link
-                  href={{ pathname: '/nghe-nhan/[slug]', params: { slug: h.slug } }}
-                  className="group block"
-                >
-                  <ImageSlot
-                    alt={coverAlt}
-                    tint={tintOf(h.slug)}
-                    ratio="3/4"
-                    {...slotPhoto(photoFromUrl(h.coverUrl, coverAlt, h.coverVariants))}
-                    sizes="(min-width: 768px) 30vw, (min-width: 640px) 50vw, 100vw"
-                    priority={index < 2}
-                    className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
-                  />
-                  <h2 className="mt-4 text-h3 transition-colors group-hover:text-clay">{h.name}</h2>
-                  <p className="text-small text-ash">
-                    {[h.representative, h.craft].filter(Boolean).join(' · ')}
-                  </p>
-                  <p className="mt-1 text-small text-ash">
-                    {t('productCount', { count: h.productCount })}
-                  </p>
-                </Link>
+                <Reveal delay={(index % 3) * 40}>
+                  <Link
+                    href={{ pathname: '/nghe-nhan/[slug]', params: { slug: h.slug } }}
+                    className="group block"
+                  >
+                    <ImageSlot
+                      alt={coverAlt}
+                      tint={tintOf(h.slug)}
+                      ratio="3/4"
+                      {...slotPhoto(photoFromUrl(h.coverUrl, coverAlt, h.coverVariants))}
+                      sizes="(min-width: 768px) 30vw, (min-width: 640px) 50vw, 100vw"
+                      priority={index < 2}
+                      className="motion-safe:transition-transform motion-safe:duration-(--duration-slow) motion-safe:ease-clay motion-safe:group-hover:-translate-y-1"
+                    />
+                    <h2 className="mt-4 text-h3 transition-colors group-hover:text-clay">
+                      {h.name}
+                    </h2>
+                    <p className="text-small text-ash">
+                      {[h.representative, h.craft].filter(Boolean).join(' · ')}
+                    </p>
+                    <p className="mt-1 text-small text-ash">
+                      {t('productCount', { count: h.productCount })}
+                    </p>
+                  </Link>
+                </Reveal>
               </li>
             );
           })}

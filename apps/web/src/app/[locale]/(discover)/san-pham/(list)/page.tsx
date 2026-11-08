@@ -35,7 +35,7 @@ export default async function ProductsIndexPage({
   ]);
 
   return (
-    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section">
+    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section-tail">
       <CatalogHeader />
       <CatalogExplorer
         // Điều hướng tới URL lọc khác (vd. từ ô tìm kiếm) phải dựng lại từ dữ liệu mới của server.

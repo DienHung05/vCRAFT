@@ -50,3 +50,40 @@ describe('liveStream (GH#93)', () => {
     expect(events(out).map((e) => e.type)).toEqual(['ready', 'notifications']);
   });
 });
+
+describe('liveStream media updates (GH#252)', () => {
+  const update = (id: string, status: 'READY' | 'FAILED') => ({
+    type: 'media.updated' as const,
+    id,
+    status,
+    url: status === 'READY' ? 'https://cdn.test/a.webp' : null,
+    variants: [],
+    thumbhash: null,
+    width: null,
+    height: null,
+  });
+
+  it('sends each media event the callback returns, and survives a failing check', async () => {
+    const batches = [[update('a', 'READY')], 'boom', [update('b', 'FAILED')], []] as const;
+    let i = 0;
+    const out: string[] = [];
+    const controller = new AbortController();
+    for await (const chunk of liveStream(
+      async () => ({ unread: 0, latest: null }),
+      controller.signal,
+      { check: 1, heartbeat: 1_000, max: 5_000 },
+      async () => {
+        const batch = batches[Math.min(i++, batches.length - 1)];
+        if (batch === undefined || batch === 'boom') throw new Error('db down');
+        return [...batch];
+      },
+    )) {
+      out.push(chunk);
+      if (events(out).filter((e) => e.type === 'media.updated').length === 2) controller.abort();
+    }
+    expect(events(out).filter((e) => e.type === 'media.updated')).toEqual([
+      update('a', 'READY'),
+      update('b', 'FAILED'),
+    ]);
+  });
+});

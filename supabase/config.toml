@@ -74,3 +74,8 @@ content_path = "./supabase/templates/email_change.html"
 [auth.email.template.reauthentication]
 subject = "Mã xác nhận vCraft"
 content_path = "./supabase/templates/reauthentication.html"
+
+# GH#252 (NFR-SEC-05): the API accepts files up to 15 MiB, so Storage must too. The per-bucket limit is set by
+# supabase/migrations/20261108151000_media_limits_15mib.sql; this global cap matches it.
+[storage]
+file_size_limit = "15MiB"

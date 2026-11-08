@@ -311,6 +311,11 @@
     "scans": "{count, plural, one {# scan} other {# scans}}",
     "timelineTitle": "A journey through fire",
     "timelineLead": "Each step was recorded by the maker themselves, with a hash, and a photo when the maker took one.",
+    "journeyIllustration": "An illustration of this kind of pottery, not a photograph of the piece.",
+    "journalBy": "Journal published by {household}",
+    "stageNotRecorded": "{stage}, not recorded",
+    "notRecordedStages": "Not recorded: {stages}",
+    "emptyJournal": "No production stages have been recorded yet.",
     "whereTitle": "Where it was made",
     "certsTitle": "The household's certifications",
     "qrLabel": "Trace seal for code {code}",
@@ -487,13 +492,13 @@
       "customRequirements": "Special requirements (optional)",
       "customRequirementsHint": "For example: logo printing, separate packaging, glaze colour. Up to 1,000 characters.",
       "attachments": "Attachments (optional)",
-      "attachmentsHint": "A logo or a drawing: up to 3 image or PDF files, 10 MB each. Only the invited households can see them.",
+      "attachmentsHint": "A logo or a drawing: up to 3 image or PDF files, 15 MB each. Only the invited households can see them.",
       "attachmentsPick": "Add a file",
       "attachmentsUploading": "Uploading…",
       "attachmentsRemove": "Remove file {name}",
       "attachmentsFull": "You have attached 3 files.",
       "attachmentsErrorType": "Only JPEG, PNG, WebP, AVIF images or PDF files are accepted.",
-      "attachmentsErrorSize": "The file is too large, 10 MB at most.",
+      "attachmentsErrorSize": "The file is too large, 15 MB at most.",
       "attachmentsErrorUpload": "The file could not be uploaded. Please try again.",
       "householdsMatch": "Leave empty and the system invites up to 10 households that work in the same category as the request.",
       "send": "Send request",
@@ -576,7 +581,8 @@
       "overview": "Overview",
       "pending": "{count} applications waiting",
       "progress": "Order progress",
-      "users": "Accounts"
+      "users": "Accounts",
+      "payments": "Payments"
     },
     "accounts": {
       "title": "Accounts",
@@ -962,7 +968,8 @@
         "quotation": "Cooperative quotation",
         "news": "News",
         "app_user": "Account",
-        "account_invitation": "Invitation"
+        "account_invitation": "Invitation",
+        "payment": "Payment"
       },
       "actions": {
         "household": {
@@ -1003,6 +1010,11 @@
         },
         "access": {
           "denied": "Blocked from changing another household’s record"
+        },
+        "payment": {
+          "record_offline": "Recorded an offline payment",
+          "refund": "Marked a payment refunded",
+          "simulate_transfer": "Simulated a sandbox transfer"
         },
         "user": {
           "suspend": "Suspend account",
@@ -1115,6 +1127,68 @@
         "areaCode": "Send to",
         "areaCodeHint": "Only households with a workshop in this area (or with no area selected) see the banner. The area field next to it is a description for readers.",
         "outageHint": "Studio shows a banner on the day of the cut.{more, plural, =0 {} one { One more cut in this notice is kept as is.} other { # more cuts in this notice are kept as is.}}"
+      }
+    },
+    "payments": {
+      "title": "Payments",
+      "lead": "Deposits and balances of orders, whatever the method. Money reaches the village administration account; nothing here moves it.",
+      "signIn": "Sign in with a management board account to view payments.",
+      "failed": "The payments could not be loaded.",
+      "retry": "Retry",
+      "empty": "No payments match these filters.",
+      "more": "Load more",
+      "filters": "Filters",
+      "allStatuses": "All statuses",
+      "allMethods": "All methods",
+      "allKinds": "All kinds",
+      "status": "Status",
+      "method": "Method",
+      "kind": "Kind",
+      "columns": {
+        "when": "Created",
+        "order": "Order",
+        "buyer": "Buyer",
+        "kind": "Kind",
+        "method": "Method",
+        "amount": "Amount",
+        "status": "Status",
+        "reference": "Payment code"
+      },
+      "openOrder": "Open order",
+      "panel": {
+        "title": "Payments of this order",
+        "lead": "Deposit and balance. The deposit is paid online before production starts; the balance online or recorded here.",
+        "loading": "Loading payments…",
+        "failed": "The payments of this order could not be loaded.",
+        "none": "No payment has been started for this order yet.",
+        "total": "Order total",
+        "deposit": "Deposit ({percent}%)",
+        "balance": "Balance",
+        "paidOn": "Paid on {date}",
+        "notPaid": "Not paid",
+        "depositRequired": "Production is blocked until the deposit is paid.",
+        "recordTitle": "Record an offline balance",
+        "recordHelp": "Use this when the buyer paid the balance outside the site. The amount is the balance of the order; the entry is written to the audit log and the buyer is told.",
+        "noteLabel": "How it was paid",
+        "notePlaceholder": "Cash handed over at the office, receipt 0042",
+        "noteRequired": "Write a short note (at least 3 characters).",
+        "record": "Record balance",
+        "recording": "Recording…",
+        "recorded": "The offline balance was recorded.",
+        "recordFailed": "The balance could not be recorded.",
+        "refund": "Mark refunded",
+        "refundTitle": "Mark this payment refunded",
+        "refundHelp": "This only records the refund and the reason. No money is sent: return it by hand.",
+        "reasonLabel": "Reason",
+        "reasonRequired": "Write a reason (at least 3 characters).",
+        "refundConfirm": "Mark refunded",
+        "refunded": "The payment was marked refunded.",
+        "refundFailed": "The refund could not be recorded.",
+        "stale": "Someone else updated this payment. Reload and try again.",
+        "simulate": "Simulate transfer (sandbox)",
+        "simulated": "The sandbox transfer was applied.",
+        "simulateFailed": "The transfer could not be simulated.",
+        "back": "Back"
       }
     },
     "progress": {
@@ -1264,6 +1338,95 @@
     "rejected": "The buyer chose another household.",
     "lapsed": "The quotation has expired."
   },
+  "payments": {
+    "title": "Payment",
+    "loading": "Loading the payment…",
+    "signIn": "Sign in to view this payment.",
+    "loadFailed": "The payment could not be loaded, or you cannot view it.",
+    "retry": "Retry",
+    "kind": {
+      "DEPOSIT": "Deposit",
+      "BALANCE": "Balance"
+    },
+    "method": {
+      "SEPAY_TRANSFER": "Bank transfer / VietQR",
+      "VNPAY": "VNPay (sandbox)",
+      "MOMO": "MoMo (sandbox)",
+      "OFFLINE": "Offline (recorded by the board)"
+    },
+    "status": {
+      "PENDING": "Waiting for payment",
+      "PAID": "Paid",
+      "FAILED": "Failed",
+      "EXPIRED": "Expired",
+      "CANCELLED": "Cancelled",
+      "REFUNDED": "Refunded"
+    },
+    "summary": {
+      "title": "Payment for this order",
+      "total": "Order total",
+      "deposit": "Deposit ({percent}%)",
+      "balance": "Balance",
+      "paidOn": "Paid on {date}",
+      "notPaid": "Not paid yet",
+      "depositRequired": "Production starts after the deposit is paid.",
+      "sandbox": "Sandbox: no real money moves through VNPay and MoMo."
+    },
+    "pay": {
+      "deposit": "Pay the deposit",
+      "balance": "Pay the balance",
+      "choose": "Choose how to pay",
+      "start": "Continue",
+      "starting": "Preparing…",
+      "noMethods": "Online payment is not available right now. The management board will tell you how to pay."
+    },
+    "bank": {
+      "title": "Pay by bank transfer",
+      "scan": "Scan the QR code with your banking app, or transfer by hand with the details below.",
+      "qrAlt": "VietQR code for this transfer",
+      "bank": "Bank",
+      "account": "Account number",
+      "accountName": "Account holder",
+      "amount": "Amount",
+      "content": "Transfer content",
+      "contentHint": "Type this payment code exactly as the transfer content, or the payment cannot be matched. The amount must be exact.",
+      "copy": "Copy",
+      "copied": "Copied"
+    },
+    "redirect": {
+      "title": "Pay with {method}",
+      "text": "You will pay on the provider page and come back here. This page confirms the payment once the provider tells us.",
+      "open": "Open the payment page",
+      "app": "Open the app"
+    },
+    "live": {
+      "waiting": "Waiting for the money. This page updates by itself.",
+      "expiresAt": "Pay before {time}.",
+      "paid": "Payment received. Thank you.",
+      "paidAt": "Received on {time}.",
+      "failed": "The payment did not go through. You can start a new one.",
+      "expired": "This payment expired before the money arrived. Start a new one. If you did transfer, tell the management board.",
+      "cancelled": "This payment was cancelled.",
+      "refunded": "The management board marked this payment as refunded.",
+      "refundReason": "Reason: {reason}"
+    },
+    "cancel": "Cancel this payment",
+    "cancelling": "Cancelling…",
+    "history": "Payments of this order",
+    "errors": {
+      "PAYMENT_METHOD_UNAVAILABLE": "This payment method is not available.",
+      "PAYMENT_ORDER_NOT_PAYABLE": "The order cannot take this payment now.",
+      "PAYMENT_ALREADY_PAID": "This part of the order is already paid.",
+      "PAYMENT_DEPOSIT_REQUIRED": "Pay the deposit first.",
+      "SERVICE_UNAVAILABLE": "The payment provider did not answer. Try again in a moment.",
+      "default": "The payment could not be started. Try again in a few minutes."
+    },
+    "result": {
+      "title": "Payment result",
+      "back": "Back to the order",
+      "allOrders": "All requests"
+    }
+  },
   "order": {
     "title": "Order",
     "loading": "Loading the order…",
@@ -1362,6 +1525,9 @@
       "HOUSEHOLD_RESUBMITTED": "A household application was completed as requested and is waiting for review again.",
       "HOUSEHOLD_SUSPENDED": "Your household is suspended from the exhibition.",
       "HOUSEHOLD_REINSTATED": "Your household is back in the exhibition.",
+      "PAYMENT_PAID": "A payment for the order was received.",
+      "PAYMENT_EXPIRED": "A payment for the order expired before the money arrived.",
+      "PAYMENT_REFUNDED": "A payment for the order was marked refunded.",
       "NEWS_PUBLISHED": "The management board published important news."
     }
   },
@@ -1658,7 +1824,8 @@
       "slugTaken": "Another household already uses this address. Change it and try again.",
       "locked": "This account is locked, so this action is not available. Contact the village administration.",
       "forbidden": "This account is not allowed to do that.",
-      "mediaTooLarge": "The file is larger than 10 MB. Retake it at a lower resolution or compress it.",
+      "mediaTooLarge": "The file is larger than 15 MB. Retake it at a lower resolution or compress it.",
+      "mediaResolution": "The image has more than 50 megapixels. Retake it at a lower resolution.",
       "mediaUnsupported": "Only JPG, PNG, WebP, AVIF images or PDF files are accepted.",
       "apiDown": "Cannot reach the vCraft server. Please try again in a few minutes.",
       "consentRequired": "You need to agree to the Privacy policy before doing this. Tick the consent box and try again.",
@@ -1816,7 +1983,7 @@
           "WORKSHOP": "Workshop licence / craft village certificate",
           "UNKNOWN": "Unclassified"
         },
-        "drop": "JPG, PNG, WebP, AVIF images or PDF, up to 10 MB each.",
+        "drop": "JPG, PNG, WebP, AVIF images or PDF, up to 15 MB each.",
         "empty": "No file chosen yet.",
         "listLabel": "Chosen document files",
         "status": {
@@ -2169,6 +2336,8 @@
       "alt": "Photo description (required)",
       "moveHandle": "Drag to move photo {n}",
       "processing": "Processing",
+      "photoFailed": "This photo could not be processed. Remove it or try another one.",
+      "retryPhoto": "Try another photo",
       "remove": "Remove",
       "altRequired": "Each photo needs a description of at least 3 characters.",
       "makers": "Makers",
@@ -2270,7 +2439,9 @@
       "exifFilled": "Date and time filled from the photo.",
       "exifOld": "This photo is more than 30 days old. Check the date before saving.",
       "waitingPhoto": "Waiting for the photo to process…",
-      "photoFailed": "The photo has not finished processing. Try again later.",
+      "photoFailed": "The photo could not be processed. Choose another photo and try again.",
+      "photoProcessing": "Processing",
+      "photoUnavailable": "This photo could not be processed.",
       "photoRequired": "Add at least one photo as evidence for this stage.",
       "oldPhotoTitle": "Photo taken a while ago?",
       "oldPhotoText": "This photo was taken more than 30 days ago. Save the milestone with it anyway?",

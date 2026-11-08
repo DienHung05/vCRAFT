@@ -195,6 +195,85 @@ describe('Journal authoring and integrity', () => {
     expect(denied).toHaveLength(1);
   });
 
+  it('saves a milestone whose photo is still processing, refuses a failed one (GH#252)', async () => {
+    const product = await t.request({
+      method: 'POST',
+      url: '/me/household/products',
+      auth: rep.auth,
+      body: { name: 'Bình ảnh chậm' },
+    });
+    const url = `/me/household/products/${product.body.id}/journal`;
+    const em = db.orm.em.fork();
+    const photo = (sha256: string, status: 'PROCESSING' | 'FAILED') =>
+      em.create(MediaAsset, {
+        ownerId: rep.id,
+        purpose: 'JOURNAL',
+        visibility: 'PUBLIC',
+        status,
+        mimeType: 'image/png',
+        sizeBytes: 1,
+        sha256,
+        originalKey: `originals/${sha256}`,
+      });
+    const slowSha = 'd'.repeat(64);
+    const slow = photo(slowSha, 'PROCESSING');
+    const broken = photo('e'.repeat(64), 'FAILED');
+    await em.flush();
+    const body = { stage: 'clay', declaredDate: '2026-09-02', note: 'Ảnh chưa xử lý xong.' };
+
+    // A photo named by checksum alone is saved while the worker is still busy.
+    const saved = await t.request({
+      method: 'POST',
+      url,
+      auth: rep.auth,
+      body: { ...body, images: [{ sha256: slowSha }] },
+    });
+    expect(saved.status).toBe(201);
+    expect(saved.body.entries[0].images[0]).toEqual({
+      sha256: slowSha,
+      url: null,
+      variants: [],
+      credit: null,
+      mediaId: slow.id,
+      status: 'PROCESSING',
+      thumbhash: null,
+    });
+
+    // A failed photo, or a URL that does not exist yet, is still refused.
+    const failed = await t.request({
+      method: 'POST',
+      url,
+      auth: rep.auth,
+      body: { ...body, images: [{ sha256: broken.sha256 }] },
+    });
+    expect(failed.status).toBe(403);
+    const guessed = await t.request({
+      method: 'POST',
+      url,
+      auth: rep.auth,
+      body: { ...body, images: [{ sha256: slowSha, url: 'https://cdn.test/guess.webp' }] },
+    });
+    expect(guessed.status).toBe(403);
+
+    // The worker finishes: the same entry now resolves its URL, sizes and ThumbHash, and the chain still verifies.
+    slow.status = 'READY';
+    slow.thumbhash = 'YJqGPQw7sFlslqhFafSE+Q6oJ1h2iHB2Rg==';
+    slow.variants = [
+      { format: 'webp', width: 1280, height: 800, key: 'v/slow-1280.webp', bytes: 1 },
+    ];
+    await em.flush();
+    const read = await t.request({ method: 'GET', url, auth: rep.auth });
+    expect(read.body.entries[0].images[0]).toMatchObject({
+      status: 'READY',
+      url: expect.stringContaining('v/slow-1280.webp'),
+      thumbhash: 'YJqGPQw7sFlslqhFafSE+Q6oJ1h2iHB2Rg==',
+    });
+    expect(await verifyChain(product.body.id, toChain(read.body.entries))).toEqual({
+      ok: true,
+      count: 1,
+    });
+  });
+
   it('không nhận ảnh có checksum bịa hoặc không phải ảnh của hộ (GH#237)', async () => {
     const fabricated = await append({
       stage: 'fire',

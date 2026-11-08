@@ -26,6 +26,9 @@ const TOPIC_OF: Record<NotificationTypeDto, EmailTopic> = {
   PRODUCTION_STARTED: 'order',
   PROGRESS_REPORTED: 'order',
   ORDER_RECEIVED: 'order',
+  PAYMENT_PAID: 'order',
+  PAYMENT_EXPIRED: 'order',
+  PAYMENT_REFUNDED: 'order',
   NEWS_PUBLISHED: 'news',
 };
 

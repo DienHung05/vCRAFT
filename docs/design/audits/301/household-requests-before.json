@@ -1,0 +1,34 @@
+{
+  "web": "http://localhost:3019",
+  "observations": [
+    {
+      "phase": "first",
+      "status": 200,
+      "householdVisible": true,
+      "calls": 4,
+      "apiReads": 4,
+      "ttfbMs": 519,
+      "latencyMs": 200
+    },
+    {
+      "phase": "next",
+      "status": 200,
+      "householdVisible": true,
+      "calls": 8,
+      "apiReads": 4,
+      "ttfbMs": 387,
+      "latencyMs": 200
+    },
+    {
+      "phase": "suspended",
+      "status": 404,
+      "householdVisible": false,
+      "calls": 14,
+      "apiReads": 6,
+      "ttfbMs": 549,
+      "latencyMs": 200
+    }
+  ],
+  "noDuplicateReads": false,
+  "freshModeration": true
+}

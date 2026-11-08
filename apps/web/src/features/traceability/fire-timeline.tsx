@@ -42,6 +42,7 @@ export async function FireTimeline({
     if (e.supersedesSeq !== undefined) correctedBy.set(e.supersedesSeq, e.seq);
   }
   const inProgress = entries.length > 0 && isJournalInProgress(entries);
+  const unrecorded = missingStages(entries);
   // The story reads oldest first; the newest-first order of the QR variant stays a plain list.
   const storyKind = newestFirst || entries.length === 0 ? undefined : pieceKind;
   const list = (
@@ -68,7 +69,14 @@ export async function FireTimeline({
               {String(e.seq + 1).padStart(2, '0')} ·{' '}
               <time dateTime={e.at}>{format.dateTime(new Date(e.at), 'stamp')}</time>
             </p>
-            <h3 className="mt-1 text-h3">{stages(`${e.stage}.name`)}</h3>
+            <h3 className="mt-1 text-h3">
+              <a
+                href={`#log-${e.seq + 1}`}
+                className="underline-offset-4 hover:underline focus-visible:underline"
+              >
+                {stages(`${e.stage}.name`)}
+              </a>
+            </h3>
             {household ? (
               <p className="mt-1 text-small text-ash">{t('recordedBy', { household })}</p>
             ) : null}
@@ -93,22 +101,26 @@ export async function FireTimeline({
             {e.skipReason ? (
               <p className="mt-1 text-small text-ash">{t('skipped', { reason: e.skipReason })}</p>
             ) : null}
-            {e.images.map((image) => {
-              const alt = t('proofAlt', { stage: stages(`${e.stage}.name`) });
-              const photo = photoFromUrl(image.url, alt, image.variants);
-              return (
-                <div key={image.sha256}>
-                  <ImageSlot
-                    alt={alt}
-                    tint={e.tint}
-                    ratio="3/2"
-                    {...slotPhoto(photo)}
-                    sizes="(min-width: 640px) 24rem, 100vw"
-                    className="mt-3 max-w-sm"
-                  />
-                </div>
-              );
-            })}
+            {/* A photo still processing has no URL yet: nothing is shown until it is ready. */}
+            {e.images
+              .filter((image) => image.url)
+              .map((image) => {
+                const alt = t('proofAlt', { stage: stages(`${e.stage}.name`) });
+                const photo = photoFromUrl(image.url, alt, image.variants);
+                return (
+                  <div key={image.sha256}>
+                    <ImageSlot
+                      alt={alt}
+                      tint={e.tint}
+                      ratio="3/2"
+                      {...slotPhoto(photo)}
+                      thumbhash={image.thumbhash}
+                      sizes="(min-width: 640px) 24rem, 100vw"
+                      className="mt-3 max-w-sm"
+                    />
+                  </div>
+                );
+              })}
             {/* Hiển thị rút gọn cho gọn mắt; dấu băm đầy đủ 64 hex nằm ở `title`. */}
             <p
               className="mt-2 font-mono text-[0.7rem] text-ash"
@@ -134,6 +146,14 @@ export async function FireTimeline({
           </Badge>
         </p>
       ) : null}
+      {!inProgress && unrecorded.length > 0 ? (
+        <p className="mb-6 text-small text-ash">
+          {t('notRecordedStages', {
+            stages: unrecorded.map((stage) => stages(`${stage}.name`)).join(', '),
+          })}
+        </p>
+      ) : null}
+      {entries.length === 0 ? <p className="text-ash">{t('emptyJournal')}</p> : null}
       {storyKind ? (
         <FireStory
           figure={<PieceFigure kind={storyKind} glaze={glaze} />}

@@ -18,6 +18,7 @@ export * from './notification.entity.js';
 export * from './notification-preference.entity.js';
 export * from './order-allocation.entity.js';
 export * from './outbox-event.entity.js';
+export * from './payment.entity.js';
 export * from './product.entity.js';
 export * from './product-maker.entity.js';
 export * from './quotation-notice.entity.js';

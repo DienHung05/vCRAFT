@@ -20,11 +20,19 @@ export function useRichMotion(options: { finePointer?: boolean; minWidth?: numbe
   return allowed;
 }
 
-/** Runs `onEnter` once, the first time the element scrolls into view. */
+/**
+ * Runs `onEnter` once, the first time the element scrolls into view. A taller-than-viewport element
+ * can never reach a high intersection ratio, so the default threshold stays low and `rootMargin`
+ * pulls the trigger line slightly inside the viewport (GH#301: generic blocks, not just figures).
+ */
 export function useInView<T extends Element>(
   ref: { current: T | null },
   onEnter: () => void,
   enabled = true,
+  {
+    threshold = 0,
+    rootMargin = '0px 0px -10% 0px',
+  }: { threshold?: number; rootMargin?: string } = {},
 ): void {
   useEffect(() => {
     const el = ref.current;
@@ -36,9 +44,9 @@ export function useInView<T extends Element>(
           onEnter();
         }
       },
-      { threshold: 0.35 },
+      { threshold, rootMargin },
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [ref, onEnter, enabled]);
+  }, [ref, onEnter, enabled, threshold, rootMargin]);
 }

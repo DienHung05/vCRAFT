@@ -10,6 +10,7 @@ import {
   stageProgress,
   stageState,
 } from '@/experience/motion/motion-math';
+import { Reveal } from '@/experience/motion/reveal';
 
 vi.mock('@vcraft/ui', () => ({ useReducedMotion: () => true }));
 
@@ -54,5 +55,18 @@ describe('under reduced motion', () => {
     );
     expect(screen.getByText('700+')).toBeTruthy();
     expect(container.querySelector('[aria-hidden]')).toBeNull();
+  });
+
+  it('shows revealed content with no armed class (GH#301)', () => {
+    const { container } = render(
+      <Reveal>
+        <p>below the fold</p>
+      </Reveal>,
+    );
+    // Content is present and never hidden when motion is reduced.
+    expect(screen.getByText('below the fold')).toBeTruthy();
+    const box = container.firstElementChild as HTMLElement;
+    expect(box.className).not.toContain('reveal-armed');
+    expect(box.className).toContain('reveal-in');
   });
 });

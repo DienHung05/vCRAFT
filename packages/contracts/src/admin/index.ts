@@ -29,6 +29,10 @@ export const AUDIT_ACTIONS = [
   'rfq.confirm_receipt',
   'rfq.cancel',
   'allocation.reallocate',
+  // Payments (ADR-0021, GH#205).
+  'payment.record_offline',
+  'payment.refund',
+  'payment.simulate_transfer',
   'news.create',
   'news.update',
   'news.publish',

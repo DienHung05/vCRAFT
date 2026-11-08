@@ -1,4 +1,5 @@
-import { Badge, buttonVariants, ProductFigure, SealMark } from '@vcraft/ui';
+import { JOURNAL_STAGES } from '@vcraft/domain';
+import { Badge, buttonVariants, Card, cn, ProductFigure, SealMark } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations } from 'next-intl/server';
@@ -7,8 +8,9 @@ import { Breadcrumbs } from '@/components/breadcrumbs';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { UsdRateNote, UsdReference } from '@/components/usd-reference';
+import { JourneySummary } from '@/experience/journey/journey-summary';
+import { Reveal } from '@/experience/motion/reveal';
 import { fetchProduct, fetchProducts, fetchSlugRedirect } from '@/features/catalog/exhibition-api';
-import { JourneyCard } from '@/features/catalog/journey-card';
 import { presetKindOf } from '@/features/catalog/preset-figure';
 import { ProductCard, productImageTransition } from '@/features/catalog/product-card';
 import { GalleryTrigger, ProductGallery } from '@/features/catalog/product-gallery';
@@ -67,7 +69,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
   }
   if (result.status === 'unavailable') return <DataUnavailable />;
   const { product, household, journal } = result.data;
-  const [t, common, stages, categories, preset, format, siblings] = await Promise.all([
+  const [t, common, stages, categories, preset, format, siblings, trace] = await Promise.all([
     getTranslations('product'),
     getTranslations('common'),
     getTranslations('stages'),
@@ -75,8 +77,11 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
     getTranslations('presetFigure'),
     getFormatter(),
     fetchProducts({ household: household.slug, limit: 5 }),
+    getTranslations('trace'),
   ]);
   const log = toLogEntries(journal);
+  const first = log[0];
+  const last = log.at(-1);
   const sold = product.status === 'SOLD';
   const tint = tintOf(product.traceCode);
   const image = photoFromUrl(
@@ -275,8 +280,49 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
           </div>
 
           {/* Nhật ký rút gọn 1 dòng ⇒ landing truy xuất (BRAND §9). */}
-          <JourneyCard entries={log} traceCode={product.traceCode} />
-
+          {first && last ? (
+            <Reveal>
+              <Card className="flex flex-col gap-4 p-6">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="font-sans text-body font-semibold text-ink">{t('journey')}</h2>
+                  <span className="font-mono text-small text-ash">{product.traceCode}</span>
+                </div>
+                <JourneySummary
+                  label={t('journey')}
+                  steps={JOURNAL_STAGES.map((stage) => {
+                    const entry = log.findLast((item) => item.stage === stage);
+                    const name = stages(`${stage}.name`);
+                    const href = localizedPath(
+                      { pathname: '/truy-xuat/[code]', params: { code: product.traceCode } },
+                      locale,
+                    );
+                    return {
+                      stage,
+                      name: entry ? name : trace('stageNotRecorded', { stage: name }),
+                      href: `${href}#${entry ? `log-${entry.seq + 1}` : 'journey-title'}`,
+                      recorded: !!entry,
+                    };
+                  })}
+                />
+                <p className="text-small text-ash">
+                  {t('journeySummary', {
+                    count: log.length,
+                    from: format.dateTime(new Date(first.at), 'short'),
+                    to: format.dateTime(new Date(last.at), 'short'),
+                  })}
+                </p>
+                <Link
+                  href={{ pathname: '/truy-xuat/[code]', params: { code: product.traceCode } }}
+                  className={cn(
+                    buttonVariants({ variant: 'ghost', size: 'sm' }),
+                    'self-start px-0 text-clay hover:bg-transparent hover:underline',
+                  )}
+                >
+                  {t('journeyCta')} →
+                </Link>
+              </Card>
+            </Reveal>
+          ) : null}
           <ProductQr code={product.traceCode} url={traceShortUrl(product.traceCode)} />
 
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 border-ink/10 border-t pt-6 text-small">
@@ -316,14 +362,16 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
 
       {more.length > 0 ? (
         <section className="pt-section" aria-labelledby="more-title">
-          <h2 id="more-title">{t('more')}</h2>
-          <ul className="mt-8 grid grid-cols-2 gap-6 md:grid-cols-4">
-            {more.map((p) => (
-              <li key={p.slug}>
-                <ProductCard product={toProductCardView(p, locale)} />
-              </li>
-            ))}
-          </ul>
+          <Reveal>
+            <h2 id="more-title">{t('more')}</h2>
+            <ul className="mt-8 grid grid-cols-2 gap-6 md:grid-cols-4">
+              {more.map((p) => (
+                <li key={p.slug}>
+                  <ProductCard product={toProductCardView(p, locale)} />
+                </li>
+              ))}
+            </ul>
+          </Reveal>
         </section>
       ) : null}
     </article>

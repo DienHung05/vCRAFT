@@ -311,6 +311,11 @@
     "scans": "{count, plural, other {# lượt quét}}",
     "timelineTitle": "Hành trình qua lửa",
     "timelineLead": "Từng công đoạn do chính người thợ ghi lại, kèm dấu băm, và ảnh khi người thợ có chụp.",
+    "journeyIllustration": "Hình minh họa loại gốm, không phải ảnh chụp món đồ.",
+    "journalBy": "Nhật ký do {household} công bố",
+    "stageNotRecorded": "{stage}, chưa ghi nhận",
+    "notRecordedStages": "Chưa ghi nhận: {stages}",
+    "emptyJournal": "Chưa có công đoạn sản xuất nào được ghi nhận.",
     "whereTitle": "Nơi món gốm ra đời",
     "certsTitle": "Chứng nhận của hộ",
     "qrLabel": "Ấn truy xuất mã {code}",
@@ -492,13 +497,13 @@
       "customRequirements": "Yêu cầu riêng (không bắt buộc)",
       "customRequirementsHint": "Ví dụ: in logo, đóng gói riêng, màu men. Tối đa 1.000 ký tự.",
       "attachments": "Tệp đính kèm (không bắt buộc)",
-      "attachmentsHint": "Logo hoặc bản vẽ: tối đa 3 tệp ảnh hoặc PDF, mỗi tệp không quá 10 MB. Chỉ các hộ được mời xem được.",
+      "attachmentsHint": "Logo hoặc bản vẽ: tối đa 3 tệp ảnh hoặc PDF, mỗi tệp không quá 15 MB. Chỉ các hộ được mời xem được.",
       "attachmentsPick": "Thêm tệp",
       "attachmentsUploading": "Đang tải lên…",
       "attachmentsRemove": "Bỏ tệp {name}",
       "attachmentsFull": "Đã đủ 3 tệp.",
       "attachmentsErrorType": "Chỉ nhận ảnh JPEG, PNG, WebP, AVIF hoặc PDF.",
-      "attachmentsErrorSize": "Tệp quá lớn, tối đa 10 MB.",
+      "attachmentsErrorSize": "Tệp quá lớn, tối đa 15 MB.",
       "attachmentsErrorUpload": "Không tải được tệp. Vui lòng thử lại.",
       "householdsMatch": "Để trống, hệ thống sẽ tự mời tối đa 10 hộ đang làm cùng danh mục với yêu cầu.",
       "send": "Gửi yêu cầu",
@@ -581,7 +586,8 @@
       "overview": "Tổng quan",
       "pending": "{count} hồ sơ đang chờ duyệt",
       "progress": "Tiến độ đơn",
-      "users": "Tài khoản"
+      "users": "Tài khoản",
+      "payments": "Thanh toán"
     },
     "accounts": {
       "title": "Tài khoản",
@@ -967,7 +973,8 @@
         "quotation": "Chào giá liên kết",
         "news": "Tin tức",
         "app_user": "Tài khoản",
-        "account_invitation": "Lời mời"
+        "account_invitation": "Lời mời",
+        "payment": "Thanh toán"
       },
       "actions": {
         "household": {
@@ -1008,6 +1015,11 @@
         },
         "access": {
           "denied": "Bị chặn khi sửa bản ghi của hộ khác"
+        },
+        "payment": {
+          "record_offline": "Ghi nhận thanh toán ngoài hệ thống",
+          "refund": "Đánh dấu hoàn lại một khoản thanh toán",
+          "simulate_transfer": "Giả lập chuyển khoản (sandbox)"
         },
         "user": {
           "suspend": "Tạm khóa tài khoản",
@@ -1120,6 +1132,68 @@
         "areaCode": "Gửi tới",
         "areaCodeHint": "Chỉ hộ có xưởng trong khu vực này (hoặc chưa chọn khu vực) nhận banner. Ô khu vực bên cạnh chỉ là mô tả cho người đọc.",
         "outageHint": "Studio hiện banner vào đúng ngày cắt điện.{more, plural, =0 {} other { Thông báo còn # đợt cắt khác được giữ nguyên.}}"
+      }
+    },
+    "payments": {
+      "title": "Thanh toán",
+      "lead": "Tiền đặt cọc và phần còn lại của các đơn, theo mọi phương thức. Tiền về tài khoản của Ban quản lý làng nghề; màn này không chuyển tiền.",
+      "signIn": "Đăng nhập bằng tài khoản Ban quản lý để xem thanh toán.",
+      "failed": "Không tải được danh sách thanh toán.",
+      "retry": "Thử lại",
+      "empty": "Không có khoản thanh toán nào khớp bộ lọc.",
+      "more": "Tải thêm",
+      "filters": "Bộ lọc",
+      "allStatuses": "Mọi trạng thái",
+      "allMethods": "Mọi phương thức",
+      "allKinds": "Mọi loại",
+      "status": "Trạng thái",
+      "method": "Phương thức",
+      "kind": "Loại",
+      "columns": {
+        "when": "Tạo lúc",
+        "order": "Đơn hàng",
+        "buyer": "Người mua",
+        "kind": "Loại",
+        "method": "Phương thức",
+        "amount": "Số tiền",
+        "status": "Trạng thái",
+        "reference": "Mã thanh toán"
+      },
+      "openOrder": "Mở đơn hàng",
+      "panel": {
+        "title": "Thanh toán của đơn hàng này",
+        "lead": "Đặt cọc và phần còn lại. Tiền cọc thanh toán trực tuyến trước khi sản xuất; phần còn lại thanh toán trực tuyến hoặc ghi nhận tại đây.",
+        "loading": "Đang tải thanh toán…",
+        "failed": "Không tải được thanh toán của đơn hàng này.",
+        "none": "Đơn hàng này chưa có khoản thanh toán nào.",
+        "total": "Tổng giá trị đơn",
+        "deposit": "Đặt cọc ({percent}%)",
+        "balance": "Phần còn lại",
+        "paidOn": "Đã thanh toán ngày {date}",
+        "notPaid": "Chưa thanh toán",
+        "depositRequired": "Đơn chưa bắt đầu sản xuất được cho tới khi đặt cọc.",
+        "recordTitle": "Ghi nhận phần còn lại thanh toán ngoài hệ thống",
+        "recordHelp": "Dùng khi người mua trả phần còn lại ngoài trang web. Số tiền là phần còn lại của đơn; mục này được ghi vào nhật ký thao tác và người mua được báo.",
+        "noteLabel": "Cách thanh toán",
+        "notePlaceholder": "Tiền mặt nộp tại văn phòng, biên lai 0042",
+        "noteRequired": "Hãy ghi một ghi chú ngắn (ít nhất 3 ký tự).",
+        "record": "Ghi nhận phần còn lại",
+        "recording": "Đang ghi nhận…",
+        "recorded": "Đã ghi nhận phần còn lại thanh toán ngoài hệ thống.",
+        "recordFailed": "Chưa ghi nhận được phần còn lại.",
+        "refund": "Đánh dấu hoàn lại",
+        "refundTitle": "Đánh dấu khoản thanh toán này đã hoàn lại",
+        "refundHelp": "Thao tác này chỉ ghi lại việc hoàn tiền và lý do. Hệ thống không chuyển tiền: hãy hoàn tiền thủ công.",
+        "reasonLabel": "Lý do",
+        "reasonRequired": "Hãy ghi lý do (ít nhất 3 ký tự).",
+        "refundConfirm": "Đánh dấu hoàn lại",
+        "refunded": "Đã đánh dấu khoản thanh toán là hoàn lại.",
+        "refundFailed": "Chưa ghi nhận được việc hoàn tiền.",
+        "stale": "Có người vừa cập nhật khoản thanh toán này. Hãy tải lại rồi thử lại.",
+        "simulate": "Giả lập chuyển khoản (sandbox)",
+        "simulated": "Đã áp dụng khoản chuyển khoản giả lập.",
+        "simulateFailed": "Không giả lập được khoản chuyển khoản.",
+        "back": "Quay lại"
       }
     },
     "progress": {
@@ -1269,6 +1343,95 @@
     "rejected": "Bên mua đã chọn hộ khác.",
     "lapsed": "Báo giá đã hết hiệu lực."
   },
+  "payments": {
+    "title": "Thanh toán",
+    "loading": "Đang tải khoản thanh toán…",
+    "signIn": "Đăng nhập để xem khoản thanh toán này.",
+    "loadFailed": "Không tải được khoản thanh toán, hoặc bạn không có quyền xem.",
+    "retry": "Thử lại",
+    "kind": {
+      "DEPOSIT": "Đặt cọc",
+      "BALANCE": "Phần còn lại"
+    },
+    "method": {
+      "SEPAY_TRANSFER": "Chuyển khoản / VietQR",
+      "VNPAY": "VNPay (sandbox)",
+      "MOMO": "MoMo (sandbox)",
+      "OFFLINE": "Ngoài hệ thống (Ban quản lý ghi nhận)"
+    },
+    "status": {
+      "PENDING": "Chờ thanh toán",
+      "PAID": "Đã thanh toán",
+      "FAILED": "Không thành công",
+      "EXPIRED": "Đã hết hạn",
+      "CANCELLED": "Đã hủy",
+      "REFUNDED": "Đã hoàn lại"
+    },
+    "summary": {
+      "title": "Thanh toán cho đơn hàng này",
+      "total": "Tổng giá trị đơn",
+      "deposit": "Đặt cọc ({percent}%)",
+      "balance": "Phần còn lại",
+      "paidOn": "Đã thanh toán ngày {date}",
+      "notPaid": "Chưa thanh toán",
+      "depositRequired": "Đơn hàng bắt đầu sản xuất sau khi đặt cọc.",
+      "sandbox": "Sandbox: VNPay và MoMo không chuyển tiền thật."
+    },
+    "pay": {
+      "deposit": "Đặt cọc",
+      "balance": "Thanh toán phần còn lại",
+      "choose": "Chọn cách thanh toán",
+      "start": "Tiếp tục",
+      "starting": "Đang chuẩn bị…",
+      "noMethods": "Hiện chưa thanh toán trực tuyến được. Ban quản lý sẽ hướng dẫn bạn cách thanh toán."
+    },
+    "bank": {
+      "title": "Thanh toán bằng chuyển khoản",
+      "scan": "Quét mã QR bằng ứng dụng ngân hàng, hoặc chuyển khoản thủ công theo thông tin dưới đây.",
+      "qrAlt": "Mã VietQR của khoản chuyển này",
+      "bank": "Ngân hàng",
+      "account": "Số tài khoản",
+      "accountName": "Chủ tài khoản",
+      "amount": "Số tiền",
+      "content": "Nội dung chuyển khoản",
+      "contentHint": "Nhập đúng mã thanh toán này làm nội dung chuyển khoản, nếu không hệ thống không đối chiếu được. Số tiền phải chính xác.",
+      "copy": "Sao chép",
+      "copied": "Đã sao chép"
+    },
+    "redirect": {
+      "title": "Thanh toán bằng {method}",
+      "text": "Bạn thanh toán trên trang của nhà cung cấp rồi quay lại đây. Trang này xác nhận khi nhà cung cấp báo về cho hệ thống.",
+      "open": "Mở trang thanh toán",
+      "app": "Mở ứng dụng"
+    },
+    "live": {
+      "waiting": "Đang chờ tiền về. Trang này tự cập nhật.",
+      "expiresAt": "Vui lòng thanh toán trước {time}.",
+      "paid": "Đã nhận được tiền. Cảm ơn bạn.",
+      "paidAt": "Nhận lúc {time}.",
+      "failed": "Thanh toán không thành công. Bạn có thể tạo khoản thanh toán mới.",
+      "expired": "Khoản thanh toán đã hết hạn trước khi tiền về. Hãy tạo khoản mới. Nếu bạn đã chuyển khoản, hãy báo Ban quản lý.",
+      "cancelled": "Khoản thanh toán này đã bị hủy.",
+      "refunded": "Ban quản lý đã đánh dấu khoản thanh toán này là đã hoàn lại.",
+      "refundReason": "Lý do: {reason}"
+    },
+    "cancel": "Hủy khoản thanh toán này",
+    "cancelling": "Đang hủy…",
+    "history": "Các khoản thanh toán của đơn",
+    "errors": {
+      "PAYMENT_METHOD_UNAVAILABLE": "Phương thức thanh toán này hiện không dùng được.",
+      "PAYMENT_ORDER_NOT_PAYABLE": "Đơn hàng chưa thể nhận khoản thanh toán này.",
+      "PAYMENT_ALREADY_PAID": "Phần này của đơn đã được thanh toán.",
+      "PAYMENT_DEPOSIT_REQUIRED": "Hãy đặt cọc trước.",
+      "SERVICE_UNAVAILABLE": "Nhà cung cấp thanh toán chưa phản hồi. Hãy thử lại sau ít phút.",
+      "default": "Chưa tạo được khoản thanh toán. Hãy thử lại sau ít phút."
+    },
+    "result": {
+      "title": "Kết quả thanh toán",
+      "back": "Về đơn hàng",
+      "allOrders": "Tất cả yêu cầu"
+    }
+  },
   "order": {
     "title": "Đơn hàng",
     "loading": "Đang tải đơn hàng…",
@@ -1367,6 +1530,9 @@
       "HOUSEHOLD_RESUBMITTED": "Một hồ sơ hộ đã bổ sung thông tin theo yêu cầu và chờ xem xét lại.",
       "HOUSEHOLD_SUSPENDED": "Hộ của bạn đang tạm ngừng trưng bày.",
       "HOUSEHOLD_REINSTATED": "Hộ của bạn được trưng bày trở lại.",
+      "PAYMENT_PAID": "Đã nhận một khoản thanh toán cho đơn hàng.",
+      "PAYMENT_EXPIRED": "Một khoản thanh toán của đơn hàng đã hết hạn trước khi tiền về.",
+      "PAYMENT_REFUNDED": "Một khoản thanh toán của đơn hàng đã được đánh dấu hoàn lại.",
       "NEWS_PUBLISHED": "Ban quản lý vừa đăng một tin quan trọng."
     }
   },
@@ -1663,7 +1829,8 @@
       "slugTaken": "Đường dẫn này đã có hộ khác dùng. Hãy sửa đường dẫn rồi thử lại.",
       "locked": "Tài khoản đang bị khóa, nên chưa thể thực hiện thao tác này. Hãy liên hệ Ban quản lý.",
       "forbidden": "Tài khoản này không có quyền thực hiện thao tác này.",
-      "mediaTooLarge": "Tệp lớn hơn 10 MB. Hãy chụp lại ở độ phân giải thấp hơn hoặc nén tệp.",
+      "mediaTooLarge": "Tệp lớn hơn 15 MB. Hãy chụp lại ở độ phân giải thấp hơn hoặc nén tệp.",
+      "mediaResolution": "Ảnh có hơn 50 megapixel. Hãy chụp lại ở độ phân giải thấp hơn.",
       "mediaUnsupported": "Chỉ nhận ảnh JPG, PNG, WebP, AVIF hoặc tệp PDF.",
       "apiDown": "Không gọi được máy chủ vCraft. Bạn thử lại sau ít phút nhé.",
       "consentRequired": "Cần đồng ý với Chính sách quyền riêng tư trước khi thực hiện thao tác này. Hãy tích ô đồng ý rồi thử lại.",
@@ -1821,7 +1988,7 @@
           "WORKSHOP": "Giấy phép xưởng / giấy chứng nhận làng nghề",
           "UNKNOWN": "Chưa phân loại"
         },
-        "drop": "Ảnh JPG, PNG, WebP, AVIF hoặc PDF, mỗi tệp tối đa 10 MB.",
+        "drop": "Ảnh JPG, PNG, WebP, AVIF hoặc PDF, mỗi tệp tối đa 15 MB.",
         "empty": "Chưa chọn tệp nào.",
         "listLabel": "Tệp giấy tờ đã chọn",
         "status": {
@@ -2174,6 +2341,8 @@
       "alt": "Mô tả ảnh (bắt buộc)",
       "moveHandle": "Kéo để đổi thứ tự ảnh {n}",
       "processing": "Đang xử lý",
+      "photoFailed": "Không xử lý được ảnh này. Hãy xóa hoặc chọn ảnh khác.",
+      "retryPhoto": "Chọn ảnh khác",
       "remove": "Xóa",
       "altRequired": "Mỗi ảnh cần có mô tả ít nhất 3 ký tự.",
       "makers": "Người làm",
@@ -2275,7 +2444,9 @@
       "exifFilled": "Đã điền ngày giờ theo ảnh.",
       "exifOld": "Ảnh chụp cách đây hơn 30 ngày. Hãy kiểm tra lại ngày trước khi lưu.",
       "waitingPhoto": "Đang chờ xử lý ảnh…",
-      "photoFailed": "Ảnh chưa xử lý xong. Bạn thử lại sau.",
+      "photoFailed": "Không xử lý được ảnh. Hãy chọn ảnh khác rồi thử lại.",
+      "photoProcessing": "Đang xử lý",
+      "photoUnavailable": "Không xử lý được ảnh này.",
       "photoRequired": "Hãy thêm ít nhất một ảnh làm bằng chứng cho công đoạn này.",
       "oldPhotoTitle": "Ảnh chụp đã lâu?",
       "oldPhotoText": "Ảnh này chụp hơn 30 ngày trước. Vẫn lưu mốc với ảnh này?",

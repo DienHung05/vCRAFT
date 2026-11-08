@@ -149,6 +149,7 @@ export function toProductDto(
       mediaId: image.mediaId,
       url: media?.get(image.mediaId)?.url ?? null,
       variants: media?.get(image.mediaId)?.variants ?? [],
+      thumbhash: media?.get(image.mediaId)?.thumbhash ?? null,
       alt: image.alt,
     })),
     status: p.status,
@@ -192,6 +193,8 @@ export interface HouseholdParts {
   media?: ReadonlyMap<string, PublicMedia>;
   /** Portrait, banner and gallery images linked through `media_link`. */
   linked?: readonly LinkedImage[];
+  /** Processed `COVER` images of the products, by `product.id`: the sizes behind each `coverVariants` (GH#252). */
+  productCovers?: ReadonlyMap<string, readonly CoverImage[]>;
   /** Masked citizen ID number for the owner and admin views (never the full number). */
   idNumberMasked?: string | null;
 }
@@ -330,7 +333,9 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
       showrooms: splitWorkshops(parts.workshops).showrooms.map(toWorkshopDto),
       productionWorkshops: splitWorkshops(parts.workshops).production.map(toWorkshopDto),
     },
-    products: parts.products.map((p) => toProductDto(p, parts.makers.get(p.id), parts.media)),
+    products: parts.products.map((p) =>
+      toProductDto(p, parts.makers.get(p.id), parts.media, parts.productCovers?.get(p.id)),
+    ),
   };
 }
 

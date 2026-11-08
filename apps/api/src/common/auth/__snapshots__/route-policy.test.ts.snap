@@ -21,6 +21,10 @@ POST /api/v1/admin/news ROLES(ADMIN)
 DELETE /api/v1/admin/news/:id ROLES(ADMIN)
 GET /api/v1/admin/news/:id ROLES(ADMIN)
 PUT /api/v1/admin/news/:id ROLES(ADMIN)
+POST /api/v1/admin/orders/:id/payments/offline ROLES(ADMIN)
+GET /api/v1/admin/payments ROLES(ADMIN)
+POST /api/v1/admin/payments/:id/refund ROLES(ADMIN)
+POST /api/v1/admin/payments/:id/simulate-transfer ROLES(ADMIN)
 GET /api/v1/admin/users ROLES(ADMIN)
 POST /api/v1/admin/users/:id/suspend ROLES(ADMIN)
 POST /api/v1/admin/users/:id/unsuspend ROLES(ADMIN)
@@ -94,6 +98,15 @@ GET /api/v1/news/material-prices PUBLIC
 GET /api/v1/news/village ROLES(ADMIN,HOUSEHOLD)
 GET /api/v1/news/village/:slug ROLES(ADMIN,HOUSEHOLD)
 GET /api/v1/news/village/outages ROLES(ADMIN,HOUSEHOLD)
+GET /api/v1/orders/:id/payments ROLES(ADMIN,BUYER)
+POST /api/v1/orders/:id/payments ROLES(BUYER)
+GET /api/v1/payments/:ref ROLES(ADMIN,BUYER)
+POST /api/v1/payments/:ref/cancel ROLES(BUYER)
+GET /api/v1/payments/return/momo PUBLIC
+GET /api/v1/payments/return/vnpay PUBLIC
+POST /api/v1/payments/webhooks/momo PUBLIC
+POST /api/v1/payments/webhooks/sepay PUBLIC
+GET /api/v1/payments/webhooks/vnpay PUBLIC
 GET /api/v1/products PUBLIC
 POST /api/v1/products/:id/back-on-sale ROLES(ADMIN,HOUSEHOLD)
 POST /api/v1/products/:id/mark-sold ROLES(ADMIN,HOUSEHOLD)

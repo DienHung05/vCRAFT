@@ -97,6 +97,18 @@ const COPY: Record<NotificationType, { subject: string; body: string }> = {
     subject: 'Hộ của bạn được trưng bày trở lại',
     body: 'Ban quản lý đã khôi phục trưng bày cho hộ của bạn.',
   },
+  PAYMENT_PAID: {
+    subject: 'Đã nhận được khoản thanh toán cho đơn hàng',
+    body: 'Khoản thanh toán cho đơn hàng đã được xác nhận. Xem tình trạng thanh toán trong trang đơn hàng.',
+  },
+  PAYMENT_EXPIRED: {
+    subject: 'Khoản thanh toán đã hết hạn',
+    body: 'Khoản thanh toán chưa nhận được tiền trong thời hạn nên đã hết hạn. Bạn có thể tạo lại khoản thanh toán trong trang đơn hàng.',
+  },
+  PAYMENT_REFUNDED: {
+    subject: 'Khoản thanh toán đã được hoàn lại',
+    body: 'Ban quản lý đã đánh dấu hoàn lại một khoản thanh toán của đơn hàng. Xem lý do trong trang đơn hàng.',
+  },
   NEWS_PUBLISHED: {
     subject: 'Ban quản lý vừa đăng một tin quan trọng',
     body: 'Ban quản lý làng nghề vừa đăng một tin quan trọng dành cho các hộ.',

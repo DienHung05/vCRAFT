@@ -22,6 +22,7 @@ export const pathnames = {
   '/yeu-cau-bao-gia': { vi: '/yeu-cau-bao-gia', en: '/quotes' },
   '/yeu-cau-bao-gia/moi': { vi: '/yeu-cau-bao-gia/moi', en: '/quotes/new' },
   '/yeu-cau-bao-gia/[code]': { vi: '/yeu-cau-bao-gia/[code]', en: '/quotes/[code]' },
+  '/thanh-toan/[ref]': { vi: '/thanh-toan/[ref]', en: '/payment/[ref]' },
   // Tài khoản và phiên (FR-AUTH, SRS §5.1)
   '/dang-nhap': { vi: '/dang-nhap', en: '/login' },
   '/dang-ky': { vi: '/dang-ky', en: '/register' },
@@ -57,5 +58,6 @@ export const pathnames = {
   '/admin/nguoi-dung': { vi: '/admin/nguoi-dung', en: '/admin/users' },
   '/admin/dieu-phoi': { vi: '/admin/dieu-phoi', en: '/admin/coordination' },
   '/admin/tien-do': { vi: '/admin/tien-do', en: '/admin/progress' },
+  '/admin/thanh-toan': { vi: '/admin/thanh-toan', en: '/admin/payments' },
   '/admin/dieu-phoi/[code]': { vi: '/admin/dieu-phoi/[code]', en: '/admin/coordination/[code]' },
 } as const;

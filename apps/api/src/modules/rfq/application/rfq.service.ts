@@ -31,6 +31,7 @@ import {
   MediaLink,
   OrderAllocation as OrderAllocationEntity,
   OutboxEvent,
+  Payment,
   Product,
   QuotationRequest,
 } from '@vcraft/database';
@@ -42,6 +43,7 @@ import {
   checkProgressReport,
   hasAcceptWindowElapsed,
   isCompletionDateValid,
+  paymentTransition,
   projectBuyerQuotation,
   RFQ_ACCEPT_GRACE_MS,
   selectMatchingHouseholds,
@@ -52,6 +54,7 @@ import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
 import { MediaService } from '../../media/application/media.service';
+import { paymentsConfig } from '../../payments/payments.config';
 import { ConsentService } from '../../privacy/application/consent.service';
 import { allocationTimeline } from './allocation-timeline';
 import { assertWithinCapacity, declaredCapacity } from './household-capacity';
@@ -1161,6 +1164,12 @@ export class RfqService {
         status: 'SUBMITTED',
       }))
         quotation.status = 'WITHDRAWN';
+      // A payment still waiting for money on a cancelled order is cancelled with it (ADR-0021).
+      for (const payment of await em.find(Payment, { order: request, status: 'PENDING' })) {
+        payment.status = unwrap(
+          paymentTransition('PENDING', 'CANCEL', { actor: owner ? 'BUYER_OWNER' : 'ADMIN' }),
+        );
+      }
       const accepted = await em.findOne(CooperativeQuotationEntity, {
         request,
         status: 'ACCEPTED',
@@ -1282,8 +1291,15 @@ export class RfqService {
         householdId = (await this.ownHousehold(em, actor, false)).id;
       } else if (actor.role !== 'ADMIN') throw notFound();
       const statusBefore = request.status;
+      // ADR-0021: where online payment is on, production waits for a paid deposit.
+      const depositRequired = paymentsConfig().depositRequired;
+      const depositPaid =
+        depositRequired &&
+        (await em.count(Payment, { order: request, kind: 'DEPOSIT', status: 'PAID' })) > 0;
       request.status = unwrap(
         transition(request.status, 'START_PRODUCTION', {
+          depositRequired,
+          depositPaid,
           actor: actor.role === 'ADMIN' ? 'ADMIN' : 'ARTISAN',
           allocationStatuses: liveShares(allocations).map((allocation) => allocation.status),
           householdCount: households.size,

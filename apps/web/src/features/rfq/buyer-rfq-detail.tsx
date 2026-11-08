@@ -21,6 +21,7 @@ import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
 import { ListSkeleton } from '@/components/states/skeletons';
 import { AllocationTimeline } from '@/features/orders/allocation-timeline';
+import { OrderPaymentPanel } from '@/features/payments/order-payment-panel';
 import { Link } from '@/i18n/navigation';
 import { useLiveEvents } from '@/lib/api/live-events';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
@@ -452,6 +453,10 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
               <h2 id="order-title">{order('title')}</h2>
               <AllocationTimeline shares={allocations} unit={request.unit} />
             </section>
+          ) : null}
+
+          {['ACCEPTED', 'IN_PRODUCTION', 'DELIVERED'].includes(request.status) ? (
+            <OrderPaymentPanel orderId={request.id} orderStatus={request.status} />
           ) : null}
         </>
       )}

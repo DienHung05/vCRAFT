@@ -1,0 +1,322 @@
+[
+  {
+    "mode": "desktop",
+    "width": 1440,
+    "base": "http://localhost:3001",
+    "entries": 7,
+    "overflow": 0,
+    "companionVisible": true,
+    "enhanced": "true",
+    "stages": [
+      {
+        "focused": "log-1",
+        "current": "log-1",
+        "illustration": "clay",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-2",
+        "current": "log-2",
+        "illustration": "throw",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-3",
+        "current": "log-3",
+        "illustration": "dry",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-4",
+        "current": "log-4",
+        "illustration": "paint",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-5",
+        "current": "log-5",
+        "illustration": "glaze",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-6",
+        "current": "log-6",
+        "illustration": "fire",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-7",
+        "current": "log-7",
+        "illustration": "finish",
+        "currentCount": 1
+      }
+    ],
+    "scrollStages": [
+      "clay",
+      "throw",
+      "dry",
+      "paint",
+      "glaze",
+      "fire",
+      "finish"
+    ],
+    "measurements": {
+      "longTasks": [],
+      "cls": 0.004683420046791946
+    },
+    "summaryLinks": 7,
+    "productOverflow": 0,
+    "summaryPlayed": "true"
+  },
+  {
+    "mode": "phone",
+    "width": 390,
+    "base": "http://localhost:3001",
+    "entries": 7,
+    "overflow": 0,
+    "companionVisible": false,
+    "enhanced": null,
+    "stages": [
+      {
+        "focused": "log-1",
+        "current": "log-1",
+        "illustration": "clay",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-2",
+        "current": "log-2",
+        "illustration": "throw",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-3",
+        "current": "log-3",
+        "illustration": "dry",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-4",
+        "current": "log-4",
+        "illustration": "paint",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-5",
+        "current": "log-5",
+        "illustration": "glaze",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-6",
+        "current": "log-6",
+        "illustration": "fire",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-7",
+        "current": "log-7",
+        "illustration": "finish",
+        "currentCount": 1
+      }
+    ],
+    "measurements": {
+      "longTasks": [],
+      "cls": 0.04467587438209799
+    },
+    "summaryLinks": 7,
+    "productOverflow": 0,
+    "summaryPlayed": null
+  },
+  {
+    "mode": "narrow-phone",
+    "width": 360,
+    "base": "http://localhost:3001",
+    "entries": 7,
+    "overflow": 0,
+    "companionVisible": false,
+    "enhanced": null,
+    "stages": [
+      {
+        "focused": "log-1",
+        "current": "log-1",
+        "illustration": "clay",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-2",
+        "current": "log-2",
+        "illustration": "throw",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-3",
+        "current": "log-3",
+        "illustration": "dry",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-4",
+        "current": "log-4",
+        "illustration": "paint",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-5",
+        "current": "log-5",
+        "illustration": "glaze",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-6",
+        "current": "log-6",
+        "illustration": "fire",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-7",
+        "current": "log-7",
+        "illustration": "finish",
+        "currentCount": 1
+      }
+    ],
+    "measurements": {
+      "longTasks": [],
+      "cls": 0.00114040149424264
+    },
+    "summaryLinks": 7,
+    "productOverflow": 0,
+    "summaryPlayed": null
+  },
+  {
+    "mode": "reduced-motion",
+    "width": 1440,
+    "base": "http://localhost:3001",
+    "entries": 7,
+    "overflow": 0,
+    "companionVisible": false,
+    "enhanced": null,
+    "stages": [
+      {
+        "focused": "log-1",
+        "current": "log-1",
+        "illustration": "clay",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-2",
+        "current": "log-2",
+        "illustration": "throw",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-3",
+        "current": "log-3",
+        "illustration": "dry",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-4",
+        "current": "log-4",
+        "illustration": "paint",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-5",
+        "current": "log-5",
+        "illustration": "glaze",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-6",
+        "current": "log-6",
+        "illustration": "fire",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-7",
+        "current": "log-7",
+        "illustration": "finish",
+        "currentCount": 1
+      }
+    ],
+    "measurements": {
+      "longTasks": [],
+      "cls": 0.002112662107365612
+    },
+    "summaryLinks": 7,
+    "productOverflow": 0,
+    "summaryPlayed": null
+  },
+  {
+    "mode": "no-javascript",
+    "width": 1440,
+    "base": "http://localhost:3001",
+    "entries": 7,
+    "overflow": 0,
+    "companionVisible": false,
+    "summaryLinks": 7,
+    "productOverflow": 0,
+    "summaryPlayed": null
+  },
+  {
+    "mode": "no-webgl",
+    "width": 1440,
+    "base": "http://localhost:3001",
+    "entries": 7,
+    "overflow": 0,
+    "companionVisible": false,
+    "enhanced": null,
+    "stages": [
+      {
+        "focused": "log-1",
+        "current": "log-1",
+        "illustration": "clay",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-2",
+        "current": "log-2",
+        "illustration": "throw",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-3",
+        "current": "log-3",
+        "illustration": "dry",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-4",
+        "current": "log-4",
+        "illustration": "paint",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-5",
+        "current": "log-5",
+        "illustration": "glaze",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-6",
+        "current": "log-6",
+        "illustration": "fire",
+        "currentCount": 1
+      },
+      {
+        "focused": "log-7",
+        "current": "log-7",
+        "illustration": "finish",
+        "currentCount": 1
+      }
+    ],
+    "measurements": {
+      "longTasks": [],
+      "cls": 0.0021128141259296766
+    },
+    "summaryLinks": 7,
+    "productOverflow": 0,
+    "summaryPlayed": null
+  }
+]

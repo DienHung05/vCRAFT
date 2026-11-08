@@ -140,3 +140,16 @@ apps/web      order page: "Pay deposit" → method picker → QR/bank panel with
 - When built, the order flow gains a deposit gate before production starts, and the API gains public,
   signature-checked webhook routes that must stay fast and idempotent.
 - Three new secret sets on Render, and sandbox credentials for CI e2e.
+
+## Implementation notes (GH#205)
+
+Choices made while building slices 2-7 that refine, and in a few places differ from, the text above:
+
+- **Methods.** `BANK_TRANSFER` and `VIETQR` are one method, `SEPAY_TRANSFER`: the QR is an image (and a VietQR payload) of the same transfer, reconciled the same way. `OFFLINE` is created only by an administrator, for the balance.
+- **Order identifier.** The code has no separate order code: an order is its quotation request, so the routes are `POST|GET /orders/{requestId}/payments` and `GET /payments/{referenceCode}`.
+- **Deposit rounding.** The deposit is the configured share of the total rounded half up to a whole VND, at least 1 VND and below the total; the balance is the total minus the deposit that was paid (`PAYMENT_DEPOSIT_PERCENT`, default 30, whole percent 1-99).
+- **Late money.** A transfer with the exact amount and code that arrives after the payment expired still settles it (`EXPIRED` to `PAID`), because the money is already in the account. A transfer for a cancelled or failed payment, or a second one for an order already paid, is recorded on the row and logged for an administrator to handle by hand.
+- **Feature switches.** Everything is off while the environment is empty. Bank transfer turns on when the SePay account variables are set; it also switches on the deposit gate for production (`PAYMENTS_DEPOSIT_REQUIRED` overrides). VNPay and MoMo need `PAYMENTS_SANDBOX_GATEWAYS=true` plus their credentials and are absent from the API's method list otherwise.
+- **Webhook auth.** The global auth guard ignores a non-Bearer `Authorization` header on public routes, so SePay's `Authorization: Apikey <key>` reaches its own check instead of failing token verification.
+- **Not built.** The worker does not query VNPay or MoMo for pending payments whose IPN was missed (it only expires them), and there is no gateway refund call by design. Card payment through the SePay gateway stays future work.
+

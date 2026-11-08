@@ -7,6 +7,7 @@ import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { EmptyState } from '@/components/states/empty-state';
 import { UrlPagination } from '@/components/url-pagination';
+import { Reveal } from '@/experience/motion/reveal';
 import { altFor, photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
 import type { NewsResult } from './news-api';
@@ -47,7 +48,7 @@ export function NewsView({
     `inline-flex min-h-11 items-center rounded-chip border px-3 py-2 text-small transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay ${active ? 'border-clay bg-clay/12 text-clay-ink' : 'border-ink/15 text-ash hover:border-clay hover:text-clay-ink'}`;
 
   return (
-    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section">
+    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section-tail">
       <header className="flex max-w-prose-vn flex-col gap-3">
         <h1 className="text-h1">{t('title')}</h1>
         <p className="text-ash">{t('lead')}</p>
@@ -110,58 +111,63 @@ export function NewsView({
       )}
 
       {items.length > 0 && (
-        <ul aria-label={t('listLabel')} className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
-          {items.map((n) => (
+        <ul
+          aria-label={t('listLabel')}
+          className="mt-10 grid grid-cols-1 items-start gap-6 md:grid-cols-2"
+        >
+          {items.map((n, index) => (
             <li key={n.slug}>
-              <Card className="h-full p-5 md:p-6">
-                <article className="flex flex-col gap-2">
-                  {n.cover ? (
-                    <div className="mb-2">
-                      <ImageSlot
-                        alt={altFor(locale, n.cover.alt || n.title, n.cover.altEn)}
-                        tint={tintOf(n.slug)}
-                        ratio="3/2"
-                        {...slotPhoto(
-                          photoFromUrl(
-                            n.cover.url,
-                            altFor(locale, n.cover.alt || n.title, n.cover.altEn),
-                            n.cover.variants,
-                          ),
-                        )}
-                        sizes="(min-width: 768px) 40rem, 100vw"
-                      />
+              <Reveal delay={(index % 2) * 40}>
+                <Card className="p-5 motion-safe:transition-transform motion-safe:duration-(--duration-quick) motion-safe:ease-clay motion-safe:hover:-translate-y-0.5 md:p-6">
+                  <article className="flex flex-col gap-2">
+                    {n.cover ? (
+                      <div className="mb-2">
+                        <ImageSlot
+                          alt={altFor(locale, n.cover.alt || n.title, n.cover.altEn)}
+                          tint={tintOf(n.slug)}
+                          ratio="3/2"
+                          {...slotPhoto(
+                            photoFromUrl(
+                              n.cover.url,
+                              altFor(locale, n.cover.alt || n.title, n.cover.altEn),
+                              n.cover.variants,
+                            ),
+                          )}
+                          sizes="(min-width: 768px) 40rem, 100vw"
+                        />
+                      </div>
+                    ) : null}
+                    <div className="flex flex-wrap items-center gap-2 text-small text-ash">
+                      {n.pinned && <Badge tone="seal">{t('pinned')}</Badge>}
+                      <Badge tone="clay">{category(n.category)}</Badge>
+                      <time dateTime={n.publishedAt}>
+                        {format.dateTime(new Date(n.publishedAt), 'long')}
+                      </time>
                     </div>
-                  ) : null}
-                  <div className="flex flex-wrap items-center gap-2 text-small text-ash">
-                    {n.pinned && <Badge tone="seal">{t('pinned')}</Badge>}
-                    <Badge tone="clay">{category(n.category)}</Badge>
-                    <time dateTime={n.publishedAt}>
-                      {format.dateTime(new Date(n.publishedAt), 'long')}
-                    </time>
-                  </div>
-                  <h2 className="text-h3">
-                    <Link
-                      href={{ pathname: '/tin-tuc/[slug]', params: { slug: n.slug } }}
-                      className="transition-colors hover:text-clay"
-                    >
-                      {n.title}
-                    </Link>
-                  </h2>
-                  <p className="text-ash">{n.summary}</p>
-                  <p className="text-small text-ash">
-                    {n.householdSlug && n.householdName ? (
+                    <h2 className="text-h3">
                       <Link
-                        href={{ pathname: '/tin-tuc', query: { household: n.householdSlug } }}
-                        className="text-clay underline underline-offset-4"
+                        href={{ pathname: '/tin-tuc/[slug]', params: { slug: n.slug } }}
+                        className="transition-colors hover:text-clay"
                       >
-                        {t('byHousehold', { name: n.householdName })}
+                        {n.title}
                       </Link>
-                    ) : (
-                      t('village')
-                    )}
-                  </p>
-                </article>
-              </Card>
+                    </h2>
+                    <p className="text-ash">{n.summary}</p>
+                    <p className="text-small text-ash">
+                      {n.householdSlug && n.householdName ? (
+                        <Link
+                          href={{ pathname: '/tin-tuc', query: { household: n.householdSlug } }}
+                          className="text-clay underline underline-offset-4"
+                        >
+                          {t('byHousehold', { name: n.householdName })}
+                        </Link>
+                      ) : (
+                        t('village')
+                      )}
+                    </p>
+                  </article>
+                </Card>
+              </Reveal>
             </li>
           ))}
         </ul>

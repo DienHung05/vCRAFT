@@ -199,9 +199,9 @@ describe('RfqForm requirements, attachments and matching', () => {
     });
     expect(await screen.findByText('Chỉ nhận ảnh JPEG, PNG, WebP, AVIF hoặc PDF.')).toBeTruthy();
     const huge = new File(['x'], 'big.png', { type: 'image/png' });
-    Object.defineProperty(huge, 'size', { value: 11 * 1024 * 1024 });
+    Object.defineProperty(huge, 'size', { value: 16 * 1024 * 1024 });
     fireEvent.change(picker, { target: { files: [huge] } });
-    expect(await screen.findByText('Tệp quá lớn, tối đa 10 MB.')).toBeTruthy();
+    expect(await screen.findByText('Tệp quá lớn, tối đa 15 MB.')).toBeTruthy();
     expect(upload).not.toHaveBeenCalled();
 
     fireEvent.change(picker, {
