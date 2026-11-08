@@ -214,6 +214,366 @@ section:has(> [data-day-story="stage"]) {
 }
 
 /*
+ * The journey of one piece (GH#300). `fire-story.tsx` sets `data-fire-story="on"` only on wide screens with
+ * motion allowed, `data-piece-stage` (the stage in focus) on `.fire-figure` and `data-fire-state` (before /
+ * active / after) on each step. The figure stays put beside the steps, the piece takes shape layer by layer
+ * (opacity, transform and clip-path only) and the heat line grows by `transform: scaleY` written from
+ * `fire-story-scroll.ts`. Without the attribute the static list shows under the final illustration.
+ */
+.fire-figure {
+  width: 12rem;
+  margin: 0 auto 2rem;
+}
+.fire-note {
+  margin-top: 0.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--color-ash);
+}
+.fire-heat {
+  display: none;
+}
+.piece {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 200 / 240;
+}
+.piece-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.piece-halo {
+  position: absolute;
+  left: 50%;
+  width: 110%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklch, var(--color-seal) 50%, transparent),
+    transparent
+  );
+  opacity: 0;
+  scale: 0.8;
+}
+.piece-ground {
+  fill: color-mix(in oklch, var(--color-ink) 14%, transparent);
+}
+.piece-layer {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.piece-layer path,
+.piece-layer ellipse {
+  fill: var(--c);
+  stroke: none;
+}
+.piece-layer .piece-handle {
+  fill: none;
+  stroke: var(--c);
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+.piece-lump {
+  --c: color-mix(in oklch, var(--color-ash) 70%, var(--color-ink));
+  transform: scale(0.8);
+}
+.piece-wet {
+  --c: color-mix(in oklch, var(--color-ash) 70%, var(--color-ink));
+  transform: scaleY(0.3);
+}
+.piece-dry {
+  --c: color-mix(in oklch, var(--color-clay) 22%, var(--color-paper));
+}
+.piece-glaze {
+  --c: var(--piece-glaze, var(--color-glaze));
+  opacity: 1;
+  clip-path: inset(0 0 100% 0);
+}
+.piece-wave {
+  opacity: 1;
+  clip-path: inset(-6px calc(100% + 6px) -6px -6px);
+}
+.piece-wave path {
+  fill: none;
+  stroke: var(--color-glaze);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.piece-glow {
+  --c: color-mix(in oklch, var(--color-seal) 60%, var(--color-lacquer));
+}
+.piece-sheen path {
+  fill: none;
+  stroke: color-mix(in oklch, var(--color-paper) 70%, transparent);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+[data-piece-stage="clay"] .piece-lump {
+  opacity: 1;
+  transform: none;
+}
+[data-piece-stage="throw"] .piece-wet {
+  opacity: 1;
+  transform: none;
+}
+:is(
+    [data-piece-stage="dry"],
+    [data-piece-stage="paint"],
+    [data-piece-stage="glaze"],
+    [data-piece-stage="fire"],
+    [data-piece-stage="finish"]
+  )
+  .piece-wet {
+  transform: none;
+}
+:is(
+    [data-piece-stage="dry"],
+    [data-piece-stage="paint"],
+    [data-piece-stage="glaze"],
+    [data-piece-stage="fire"],
+    [data-piece-stage="finish"]
+  )
+  .piece-dry {
+  opacity: 1;
+}
+:is(
+    [data-piece-stage="paint"],
+    [data-piece-stage="glaze"],
+    [data-piece-stage="fire"],
+    [data-piece-stage="finish"]
+  )
+  .piece-wave {
+  clip-path: inset(-6px -6px -6px -6px);
+}
+:is([data-piece-stage="glaze"], [data-piece-stage="fire"], [data-piece-stage="finish"])
+  .piece-glaze {
+  clip-path: inset(0 0 0 0);
+}
+[data-piece-stage="fire"] .piece-glow {
+  opacity: 0.8;
+}
+[data-piece-stage="fire"] .piece-halo {
+  opacity: 1;
+  scale: 1;
+}
+[data-piece-stage="finish"] .piece-sheen {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .piece-layer {
+    transition:
+      opacity var(--duration-slow) var(--ease-clay),
+      transform var(--duration-slow) var(--ease-clay),
+      clip-path var(--duration-story) var(--ease-clay);
+  }
+  .piece-halo {
+    transition:
+      opacity var(--duration-story) var(--ease-clay),
+      scale var(--duration-story) var(--ease-clay);
+  }
+}
+
+[data-fire-story="on"] {
+  --fire-w: min(64rem, calc(100vw - 4rem));
+  display: grid;
+  grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
+  column-gap: 4rem;
+  align-items: start;
+  /* Breaks out of the narrow column of the trace page, centred on it. */
+  width: var(--fire-w);
+  margin-inline: calc(50% - var(--fire-w) / 2);
+}
+[data-fire-story="on"] .fire-figure {
+  position: sticky;
+  top: 6rem;
+  width: auto;
+  margin: 0;
+}
+[data-fire-story="on"] .fire-figure .piece {
+  width: min(100%, calc(min(50svh, 26rem) * 200 / 240));
+  margin-inline: auto;
+}
+[data-fire-story="on"] .fire-line {
+  background: color-mix(in oklch, var(--color-ash) 35%, transparent);
+}
+[data-fire-story="on"] .fire-heat {
+  display: block;
+  position: absolute;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  left: 0.9rem;
+  width: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(to bottom, var(--color-clay), var(--color-seal));
+  transform: scaleY(0);
+  transform-origin: top;
+  /* Rewritten on every scroll frame, so it gets its own layer. */
+  will-change: transform;
+}
+[data-fire-story="on"] .fire-step {
+  min-height: 60svh;
+  align-content: start;
+  padding-bottom: 3rem;
+}
+[data-fire-story="on"] .fire-step:last-child {
+  min-height: 0;
+}
+[data-fire-story="on"] .fire-step[data-fire-state] {
+  opacity: 0.4;
+  transition: opacity var(--duration-base) var(--ease-clay);
+}
+[data-fire-story="on"] .fire-step[data-fire-state="before"] {
+  opacity: 0.65;
+}
+[data-fire-story="on"] .fire-step[data-fire-state="active"] {
+  opacity: 1;
+}
+[data-fire-story="on"] .fire-step:focus-visible {
+  outline: 2px solid var(--color-glaze);
+  outline-offset: 4px;
+}
+.fire-mark::after {
+  content: "";
+  position: absolute;
+  inset: -0.4rem;
+  border-radius: 8px;
+  background: color-mix(in oklch, var(--color-seal) 35%, transparent);
+  opacity: 0;
+}
+[data-fire-story="on"] .fire-mark {
+  transition: scale var(--duration-base) var(--ease-clay);
+}
+[data-fire-story="on"] .fire-mark::after {
+  transition: opacity var(--duration-base) var(--ease-clay);
+}
+[data-fire-story="on"] .fire-step[data-fire-state="active"] .fire-mark {
+  scale: 1.2;
+}
+[data-fire-story="on"] .fire-step[data-fire-state="active"] .fire-mark::after {
+  opacity: 1;
+}
+.fire-track {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+}
+.fire-chip {
+  display: inline-flex;
+  min-height: 1.75rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  color: var(--color-ink);
+  background: color-mix(in oklch, var(--color-ink) 6%, transparent);
+}
+button.fire-chip {
+  cursor: pointer;
+}
+.fire-chip[data-current="true"] {
+  background: var(--color-clay);
+  color: var(--color-paper);
+}
+.fire-chip[data-missing="true"] {
+  border: 1px dashed color-mix(in oklch, var(--color-ash) 60%, transparent);
+  background: none;
+  color: var(--color-ash);
+}
+.fire-chip small {
+  font-size: 0.6875rem;
+}
+
+/*
+ * Product page journey card (GH#300): `journey-reveal.tsx` arms the card (`data-journey="armed"`: dots and
+ * links hidden) only when motion is allowed, then plays it (`data-journey="play"`) when it scrolls into view.
+ * Each dot and the link after it pop in one after the other, delayed by `--i`; transform and opacity only.
+ * Without the script, or under reduced motion, the card simply shows its final state. A dot shows the name of
+ * its stage on hover and keyboard focus.
+ */
+.journey-dot {
+  position: relative;
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 2px var(--color-surface);
+}
+.journey-dot-label {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 50%;
+  translate: -50% 0;
+  white-space: nowrap;
+  border-radius: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--color-paper);
+  background: var(--color-ink);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-quick) var(--ease-clay);
+}
+.journey-dot:hover .journey-dot-label,
+.journey-dot:focus-visible .journey-dot-label {
+  opacity: 1;
+}
+li:first-child > .journey-dot .journey-dot-label {
+  left: 0;
+  translate: 0 0;
+}
+li:last-child > .journey-dot .journey-dot-label {
+  left: auto;
+  right: 0;
+  translate: 0 0;
+}
+.journey-link {
+  transform-origin: left;
+}
+@keyframes journey-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+@keyframes journey-link {
+  from {
+    transform: scaleX(0);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .journey[data-journey="armed"] .journey-mark {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  .journey[data-journey="armed"] .journey-link {
+    transform: scaleX(0);
+  }
+  .journey[data-journey="play"] .journey-mark {
+    animation: journey-pop var(--duration-base) var(--ease-clay) both;
+    animation-delay: calc(var(--i, 0) * 120ms);
+  }
+  .journey[data-journey="play"] .journey-link {
+    animation: journey-link var(--duration-base) var(--ease-clay) both;
+    animation-delay: calc(var(--i, 0) * 120ms + 80ms);
+  }
+}
+
+/*
  * Light/dark switch (GH#214): the new theme spreads from the toggle as a wave. `theme-toggle.tsx` sets
  * `data-theme-transition` on <html> only for this switch, with the start point and the radius that reaches the
  * farthest corner in `--theme-wave-x/y/r`, so every other root transition keeps the cross-fade above. The old
