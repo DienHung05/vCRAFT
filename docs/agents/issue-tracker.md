@@ -68,3 +68,13 @@ error. Do not switch trackers or initialize a replacement database.
 
 Tracker configuration does not authorize git commits, git pushes, or
 Dolt remote sync. Follow the active repository and session rules.
+
+## Local backup
+
+`.beads/backup/` is the local auto-backup of the Dolt database. It is
+machine-specific and stays out of git (`.gitignore` covers `.beads/`):
+never `git add -f` it. A tracked copy gets overwritten on branch
+switches and leaves a manifest that points at missing table files
+(`auto-backup failed: … table file not found`). To repair a broken
+backup, empty `.beads/backup/` and run any `bd` write command; the next
+auto-backup rebuilds it.
