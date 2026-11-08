@@ -373,7 +373,7 @@ stateDiagram-v2
 | BR-AST-01 | Chỉ mục tri thức chỉ chứa nội dung **công khai**: sản phẩm của hộ `APPROVED` (BR-02), hồ sơ hộ công khai, tin `PUBLIC`, FAQ. Không bao giờ chứa CCCD, giấy tờ, giá chào, tin "chỉ hộ", email/SĐT. Gỡ/ẩn/khóa ở CSDL chính ⇒ xóa khỏi chỉ mục. |
 | BR-AST-02 | Trợ lý chỉ có tool **đọc** trong allowlist (`get_current_datetime`, `get_weather`, `search_catalog`, `get_open_workshops`), gọi API với quyền Guest. Mọi hành động chỉ là link để người dùng tự bấm.                                    |
 | BR-AST-03 | Phân loại ý định quyết định chặn: chỉ `injection`, `abuse` hoặc dò dữ liệu riêng bị chặn; heuristic chỉ cộng điểm nghi ngờ, không tự chặn.                                                                                                |
-| BR-AST-04 | Giới hạn: tin ≤ 1.000 ký tự, lịch sử ≤ 10 lượt, 10 tin/phút và 60 tin/ngày mỗi IP/phiên; vượt trần token/ngày toàn hệ thống ⇒ trợ lý tạm nghỉ, trang vẫn chạy bình thường.                                                              |
+| BR-AST-04 | Limits: a message is at most 4,000 characters and the history at most 20 turns. Per-IP and per-conversation rate limits and the system-wide daily token ceiling are off by default; `ASSISTANT_RATE_LIMIT_PER_MINUTE`, `ASSISTANT_RATE_LIMIT_PER_DAY` and `ASSISTANT_DAILY_TOKENS` turn each on. When the ceiling is reached the assistant pauses and the rest of the site keeps working. |
 
 ---
 
