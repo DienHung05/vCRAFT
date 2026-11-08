@@ -55,3 +55,8 @@ supabase/.temp/
 
 # Demo data
 scripts/demo/photos/photos-all/
+
+# Local-only Claude workflow (Opus plans, Sonnet implements, Opus reviews)
+CLAUDE.local.md
+.claude/agents/sonnet-implementer.md
+.claude/skills/plan-delegate-review/
