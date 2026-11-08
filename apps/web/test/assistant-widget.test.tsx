@@ -1,7 +1,8 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { messages } from '@vcraft/i18n';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AssistantPanel, type AssistantPanelProps } from '@/features/assistant/assistant-panel';
+import { AssistantWidget } from '@/features/assistant/assistant-widget';
 import {
   type ChatMessage,
   createSseParser,
@@ -12,6 +13,9 @@ import {
   secondsLeft,
 } from '@/features/assistant/conversation';
 import { renderEn, renderVi } from './render';
+
+const nav = vi.hoisted(() => ({ pathname: '/vi' }));
+vi.mock('next/navigation', () => ({ usePathname: () => nav.pathname }));
 
 const data = (event: object) => `data: ${JSON.stringify(event)}\n\n`;
 
@@ -245,5 +249,54 @@ describe('AssistantPanel', () => {
     renderVi(<AssistantPanel {...props} />);
     fireEvent.click(screen.getByRole('button', { name: 'Dừng trả lời' }));
     expect(props.onStop).toHaveBeenCalled();
+  });
+});
+
+describe('AssistantWidget position', () => {
+  const stubViewport = (phone: boolean) =>
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: phone && query.includes('max-width'),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+  const launcher = () => screen.getByRole('button', { name: 'Hỏi Cáo' });
+  const CORNER = 'bottom-[calc(env(safe-area-inset-bottom)+1rem)]';
+  const HIDE_FOR_SHEET = '[html[data-map-sheet=open]_&]:hidden';
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    nav.pathname = '/vi';
+  });
+
+  it('keeps the launcher in the normal corner on the map page (GH#297)', () => {
+    stubViewport(false);
+    nav.pathname = '/vi/ban-do';
+    renderVi(<AssistantWidget />);
+    expect(launcher().className).toContain(CORNER);
+    expect(launcher().className).not.toContain('7rem');
+  });
+
+  it('hides the launcher while the map bottom sheet is open, through the root flag', () => {
+    stubViewport(true);
+    nav.pathname = '/vi/ban-do';
+    renderVi(<AssistantWidget />);
+    // The flag itself is set by the map; the launcher reacts to it with this variant.
+    expect(launcher().className).toContain(HIDE_FOR_SHEET);
+  });
+
+  it('gives the open desktop panel the same height limit on the map page as elsewhere', () => {
+    stubViewport(false);
+    const heights = ['/vi', '/vi/ban-do'].map((path) => {
+      nav.pathname = path;
+      const { unmount } = renderVi(<AssistantWidget />);
+      fireEvent.click(launcher());
+      const dialog = screen.getByRole('dialog');
+      const { maxHeight } = dialog.style;
+      expect(dialog.className).toContain(CORNER);
+      unmount();
+      return maxHeight;
+    });
+    expect(heights[1]).toBe(heights[0]);
+    expect(heights[1]).toContain('7rem');
   });
 });
