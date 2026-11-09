@@ -157,7 +157,69 @@ describe('media pipeline: kiểm tra ở biên và tệp riêng tư', () => {
     expect(res.status).toBe(415);
   });
 
-  it('vượt 10 MB ⇒ 413 MEDIA_TOO_LARGE', async () => {
+  it('HEIC/HEIF ảnh công khai được nhận và chờ worker chuyển đổi (GH#252)', async () => {
+    const ftyp = (brand: string) =>
+      Buffer.concat([
+        Buffer.from([0, 0, 0, 24]),
+        Buffer.from(`ftyp${brand}`),
+        Buffer.alloc(4),
+        Buffer.from(`mif1${brand}`),
+        Buffer.alloc(64),
+      ]);
+    // Phones declare image/heic even when the brand sniffs as heif.
+    const heic = await upload(household.auth, 'PRODUCT', ftyp('heic'), 'image/heic');
+    expect(heic.status).toBe(202);
+    expect(heic.body).toMatchObject({ status: 'PROCESSING', mimeType: 'image/heic' });
+    const heif = await upload(household.auth, 'PRODUCT', ftyp('mif1'), 'image/heic');
+    expect(heif.status).toBe(202);
+    expect(heif.body.mimeType).toBe('image/heif');
+    // Private documents are never converted, so HEIC stays out of them.
+    const cert = await upload(household.auth, 'CERTIFICATE', ftyp('heic'), 'image/heic');
+    expect(cert.status).toBe(415);
+  });
+
+  it('ảnh quá 50 megapixel bị từ chối ngay lúc tải lên, 50 MP thì nhận (GH#252)', async () => {
+    const withSize = (width: number, height: number) => {
+      const png = Buffer.from(PNG);
+      png.writeUInt32BE(width, 16);
+      png.writeUInt32BE(height, 20);
+      return png;
+    };
+    const before = await db.orm.em.fork().count(MediaAsset, {});
+    const huge = await upload(household.auth, 'PRODUCT', withSize(8000, 7000), 'image/png');
+    expect(huge.status).toBe(422);
+    expect(huge.body.code).toBe('MEDIA_RESOLUTION_TOO_HIGH');
+    expect(await db.orm.em.fork().count(MediaAsset, {})).toBe(before);
+    const limit = await upload(household.auth, 'PRODUCT', withSize(10_000, 5_000), 'image/png');
+    expect(limit.status).toBe(202);
+  });
+
+  it('nhận tệp 11 MB (giới hạn là 15 MiB) (GH#252)', async () => {
+    const big = Buffer.concat([PNG, Buffer.alloc(11 * 1024 * 1024)]);
+    const res = await upload(household.auth, 'JOURNAL', big, 'image/png');
+    expect(res.status).toBe(202);
+  });
+
+  it('worker: READY ngay sau khi có các bản WebP, AVIF được thêm vào sau (GH#252)', async () => {
+    const photo = await sharp({
+      create: { width: 700, height: 500, channels: 3, background: '#3b5079' },
+    })
+      .jpeg()
+      .toBuffer();
+    const res = await upload(household.auth, 'JOURNAL', photo, 'image/jpeg');
+    await processMediaAsset({ orm: db.orm, storage: t.storage }, res.body.id);
+    const asset = await db.orm.em.fork().findOneOrFail(MediaAsset, res.body.id);
+    expect(asset).toMatchObject({ status: 'READY', width: 700, height: 500 });
+    expect(asset.thumbhash).toBeTruthy();
+    expect(asset.variants.map((v) => `${v.width}.${v.format}`)).toEqual([
+      '320.avif',
+      '320.webp',
+      '640.avif',
+      '640.webp',
+    ]);
+  });
+
+  it('vượt 15 MiB ⇒ 413 MEDIA_TOO_LARGE', async () => {
     const big = Buffer.concat([PNG, Buffer.alloc(MEDIA_MAX_BYTES)]);
     const res = await upload(household.auth, 'JOURNAL', big, 'image/png');
     expect(res.status).toBe(413);
@@ -238,5 +300,34 @@ describe('media pipeline: kiểm tra ở biên và tệp riêng tư', () => {
       });
       expect(denied.status).toBe(404);
     }
+  });
+
+  it('re-upload reuses a recent PROCESSING asset but re-enqueues a stuck one (GH#345)', async () => {
+    const owner = await t.createUser('HOUSEHOLD');
+    const png = Buffer.concat([PNG, Buffer.from('stuck-asset')]);
+    const first = await upload(owner.auth, 'JOURNAL', png, 'image/png');
+    expect(first.status).toBe(202);
+    const count = () => db.orm.em.fork().count(OutboxEvent, { type: 'media.uploaded' });
+    const before = await count();
+
+    const again = await upload(owner.auth, 'JOURNAL', png, 'image/png');
+    expect(again.body.id).toBe(first.body.id);
+    expect(await count()).toBe(before);
+
+    await db.orm.em
+      .fork()
+      .nativeUpdate(
+        MediaAsset,
+        { id: first.body.id },
+        { updatedAt: new Date(Date.now() - 11 * 60_000) },
+      );
+    const stuck = await upload(owner.auth, 'JOURNAL', png, 'image/png');
+    expect(stuck.body.id).toBe(first.body.id);
+    expect(stuck.body.status).toBe('PROCESSING');
+    expect(await count()).toBe(before + 1);
+
+    // The window restarts, so an immediate third upload does not enqueue again.
+    await upload(owner.auth, 'JOURNAL', png, 'image/png');
+    expect(await count()).toBe(before + 1);
   });
 });

@@ -1,11 +1,13 @@
 {
   "meta": {
     "title": "vCraft · The finest of the craft villages, shared far and wide",
-    "description": "See Bat Trang pottery workshops up close, scan the seal under a piece to learn how it was made, and order straight from the maker."
+    "description": "See Bat Trang pottery workshops up close, scan the seal under a piece to learn how it was made, and order straight from the maker.",
+    "slogan": "The finest of the craft villages, shared far and wide"
   },
   "common": {
     "skip": "Skip to main content",
     "oneOfAKind": "One of a kind",
+    "sold": "Sold",
     "verified": "Verified",
     "unverified": "Awaiting verification",
     "openNow": "Open now",
@@ -26,6 +28,20 @@
     "cancel": "Cancel",
     "close": "Close"
   },
+  "favourites": {
+    "title": "Favourites",
+    "lead": "The pieces you saved with the heart. Signed in, the list follows you to every device.",
+    "label": "Favourite",
+    "toggle": "Save {name} to favourites",
+    "failed": "Could not update your favourites. Please try again.",
+    "loading": "Loading your favourites",
+    "loadFailed": "Your favourites could not be loaded right now.",
+    "listLabel": "Favourite products",
+    "empty": "No favourites yet",
+    "emptyHint": "Tap the heart on a product to keep it here.",
+    "browse": "Browse products",
+    "guestNote": "Saved in this browser. Sign in to keep them on every device."
+  },
   "nav": {
     "home": "Back to the vCraft home page",
     "label": "Main navigation",
@@ -39,10 +55,10 @@
     "quotes": "Quote requests",
     "theme": "Switch light/dark theme",
     "themeToDark": "Switch to dark theme",
-    "themeToLight": "Switch to light theme"
+    "themeToLight": "Switch to light theme",
+    "favourites": "Favourites"
   },
   "indexPages": {
-    "demoNote": "Demo: this list comes from sample data, not real households and products.",
     "products": {
       "title": "Products",
       "lead": "Every piece carries a trace seal on its base. Pick one to see its journey.",
@@ -72,6 +88,7 @@
       "filteredBy": "Showing news from {name}.",
       "clearFilter": "Show all news",
       "more": "Load more news",
+      "categoryFilter": "News categories",
       "categories": {
         "HOUSEHOLD_UPDATE": "From a household",
         "VILLAGE_EVENT": "Village event",
@@ -87,6 +104,8 @@
       "villageTitle": "News for households",
       "notFound": "This item was not found, or it is only for village households.",
       "loading": "Loading…",
+      "sourceLine": "Source: {name}, {date}",
+      "sourceLineNoDate": "Source: {name}",
       "emptyHint": "News from the village and from each household will show up here once it is published."
     },
     "rfq": {
@@ -123,7 +142,7 @@
   },
   "credits": {
     "title": "Image credits",
-    "lead": "The illustrative photos in this demo come from Wikimedia Commons, the open-access collections of museums and Pixabay, under licences that allow public use with attribution. We thank the authors below. Photos were cropped and compressed for the web; no other changes were made.",
+    "lead": "The photos on this site come from Wikimedia Commons, the open-access collections of museums and Pixabay, under licences that allow public use with attribution. We thank the authors below. Photos were cropped and compressed for the web; no other changes were made.",
     "table": "List of photos and licences",
     "colPhoto": "Photo",
     "colAuthor": "Author",
@@ -148,7 +167,7 @@
     },
     "day": {
       "title": "A day in Bat Trang",
-      "lead": "From kneading clay to opening the kiln, six steps that every piece goes through. The photos only illustrate each step in general; they are not photos of any particular piece. Swipe sideways to follow each one.",
+      "lead": "From kneading clay to opening the kiln, six steps that every piece goes through. The photos are general pictures of each step, not photos of any particular piece. Swipe sideways to follow each one.",
       "railLabel": "Stages of the day",
       "current": "Stage {index} of {total}: {name}"
     },
@@ -214,6 +233,8 @@
   },
   "artisan": {
     "portraitAlt": "Portrait of {name}",
+    "sealAlt": "Seal of {name}",
+    "certPhotoAlt": "Photo of the certificate {name}",
     "breadcrumb": "Breadcrumb",
     "allArtisans": "All artisans",
     "ctaRfq": "Request a quote",
@@ -244,6 +265,8 @@
     "by": "Made by <link>{household}</link>",
     "stock": "{count, plural, =1 {Only 1 left} other {# in stock}}",
     "soldOut": "Sold out",
+    "soldNote": "This one-of-a-kind piece has found its owner. You can still follow its journey.",
+    "tags": "Product tags",
     "ctaRfq": "Request a quote",
     "ctaWorkshop": "See the workshop",
     "journey": "The piece's journey",
@@ -253,7 +276,24 @@
     "dimensions": "Dimensions",
     "weight": "Weight",
     "code": "Trace code",
-    "more": "Also from this household"
+    "more": "Also from this household",
+    "lightbox": {
+      "open": "Enlarge photo: {alt}",
+      "title": "Large photo",
+      "close": "Close photo",
+      "previous": "Previous photo",
+      "next": "Next photo",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "counter": "Photo {current} of {total}"
+    },
+    "qr": {
+      "title": "Trace QR code",
+      "lead": "Scan the code with your phone to see this piece's journey.",
+      "label": "Trace QR code {code}",
+      "link": "Short link",
+      "download": "Download QR code (PNG)"
+    }
   },
   "trace": {
     "home": "Back to the vCraft home page",
@@ -263,9 +303,8 @@
     "scanned": "You just scanned the seal of",
     "verifiedSeal": "vCraft verification seal",
     "integrity": {
-      "demoBadge": "Demo data",
       "householdVerified": "Household verified by the management board",
-      "match": "This code matches a demo product from {household}.",
+      "match": "This code matches a product from {household}.",
       "checkingTitle": "Checking the log…",
       "checkingText": "Your browser is recomputing the SHA-256 hash of every entry itself.",
       "okTitle": "Log intact",
@@ -282,12 +321,17 @@
       "unavailableTitle": "Can't check on this browser",
       "unavailableText": "Verification needs Web Crypto, which is only available when the page is opened over HTTPS. The log below is not confirmed intact.",
       "emptyTitle": "No log to check",
-      "emptyText": "This demo product has no production entries yet.",
+      "emptyText": "This product has no production entries yet.",
       "sentence": "Journal integrity: this journal has not been silently changed, deleted or reordered since it was recorded. It does not prove the stages happened as written, nor who physically made the object."
     },
     "scans": "{count, plural, one {# scan} other {# scans}}",
     "timelineTitle": "A journey through fire",
     "timelineLead": "Each step was recorded by the maker themselves, with a hash, and a photo when the maker took one.",
+    "journeyIllustration": "A drawing of this kind of pottery, not a photograph of the piece.",
+    "journalBy": "Journal published by {household}",
+    "stageNotRecorded": "{stage}, not recorded",
+    "notRecordedStages": "Not recorded: {stages}",
+    "emptyJournal": "No production stages have been recorded yet.",
     "whereTitle": "Where it was made",
     "certsTitle": "The household's certifications",
     "qrLabel": "Trace seal for code {code}",
@@ -300,12 +344,30 @@
     "skipped": "Skipped earlier stages: {reason}",
     "inProgress": "In progress · not yet recorded: {stages}",
     "hashHint": "SHA-256 hash of this entry, chained to the one before it.",
+    "recordedBy": "Recorded by {household}",
+    "notRecorded": "Not recorded",
+    "storyTrack": "Stages of this piece",
+    "pieceNote": "A drawing of the stages, not a photo of this piece.",
     "withdrawnTitle": "This piece is no longer on display",
     "withdrawnText": "The household withdrew it from the exhibition, so its journal is no longer public.",
     "lockedTitle": "We cannot verify this piece",
     "lockedText": "The household behind code {code} is locked by the village board. Please be careful: vCraft does not currently vouch for this piece."
   },
+  "orderProgress": {
+    "label": "Allocation progress",
+    "percent": "{percent}% complete",
+    "completed": "{done}/{total} {unit}",
+    "counts": "{done}/{total} {unit} · expected {expected} · promised {due}",
+    "started": "Started",
+    "empty": "No allocations yet.",
+    "lateness": { "DONE": "Done", "ON_TRACK": "On track", "BEHIND": "Behind", "OVERDUE": "Overdue" }
+  },
   "rfq": {
+    "duplicate": {
+      "action": "Duplicate as draft",
+      "hint": "Bidding and delivery dates are reset. Review the content and attach files again before sending.",
+      "failed": "The request could not be duplicated. Please try again."
+    },
     "breadcrumb": "Breadcrumb",
     "allRequests": "Quote requests",
     "stepperLabel": "Progress of the quote request",
@@ -446,13 +508,13 @@
       "customRequirements": "Special requirements (optional)",
       "customRequirementsHint": "For example: logo printing, separate packaging, glaze colour. Up to 1,000 characters.",
       "attachments": "Attachments (optional)",
-      "attachmentsHint": "A logo or a drawing: up to 3 image or PDF files, 10 MB each. Only the invited households can see them.",
+      "attachmentsHint": "A logo or a drawing: up to 3 image or PDF files, 15 MB each. Only the invited households can see them.",
       "attachmentsPick": "Add a file",
       "attachmentsUploading": "Uploading…",
       "attachmentsRemove": "Remove file {name}",
       "attachmentsFull": "You have attached 3 files.",
       "attachmentsErrorType": "Only JPEG, PNG, WebP, AVIF images or PDF files are accepted.",
-      "attachmentsErrorSize": "The file is too large, 10 MB at most.",
+      "attachmentsErrorSize": "The file is too large, 15 MB at most.",
       "attachmentsErrorUpload": "The file could not be uploaded. Please try again.",
       "householdsMatch": "Leave empty and the system invites up to 10 households that work in the same category as the request.",
       "send": "Send request",
@@ -474,11 +536,26 @@
         "destination": "Enter where to deliver.",
         "deadline": "The bidding deadline must be at least 24 hours after sending.",
         "requiredBy": "The delivery date must be after the bidding deadline.",
-        "budget": "The budget must be whole numbers, with the lower amount first."
+        "budget": "The budget must be whole numbers, with the lower amount first.",
+        "customerName": "Enter the customer's name (up to 120 characters).",
+        "customerPhone": "Enter a valid Vietnamese phone number, for example 0912 345 678.",
+        "customerEmail": "The email address is not valid."
       },
       "sentToast": "Quotation request sent. The households will receive an invitation to quote.",
       "sentToastMatched": "Quotation request sent to {count, plural, one {# matching household} other {# matching households}}.",
-      "consentRequired": "Agree to the privacy policy to send the request."
+      "consentRequired": "Agree to the privacy policy to send the request.",
+      "signInAdmin": "Sign in with a management board account to create a request for a customer.",
+      "onBehalf": {
+        "title": "Create a request for a customer",
+        "lead": "For customers who order by phone and have no account. You coordinate the request and accept quotations, confirm receipt and rate the households on the customer's behalf.",
+        "customer": "Off-platform customer",
+        "name": "Customer name",
+        "phone": "Phone number",
+        "email": "Email (optional)",
+        "coordinated": "You coordinate this request. Choose the households to invite to quote.",
+        "householdsHint": "Choose the households invited to quote; the best-rated households come first.",
+        "sentToast": "The request was sent for the customer. You are coordinating it."
+      }
     },
     "list": {
       "allStatuses": "All statuses",
@@ -535,7 +612,8 @@
       "overview": "Overview",
       "pending": "{count} applications waiting",
       "progress": "Order progress",
-      "users": "Accounts"
+      "users": "Accounts",
+      "payments": "Payments"
     },
     "accounts": {
       "title": "Accounts",
@@ -605,16 +683,37 @@
     "board": {
       "barTitle": "Splitting {quantity} {unit} across households",
       "barLabel": "{sum} of {quantity} {unit} allocated",
-      "statusOk": "All {quantity} {unit} allocated. You can simulate sending the co-op bid.",
+      "statusOk": "All {quantity} {unit} allocated. You can preview sending the co-op bid.",
       "problem": {
         "short": "{count} {unit} still missing.",
         "excess": "{count} {unit} too many allocated.",
         "over": "{name} is over the maximum it declared ({capacity}).",
+        "overCapacity": "{name} is over the capacity it declared ({capacity}).",
         "invalid": "Each household's quantity must be a whole number, 0 or more.",
         "date": "The completion date must fall after the bidding deadline and no later than the required delivery date.",
         "charge": "The delivery surcharge must be a whole number, 0 or more."
       },
       "partMeta": "Up to {max} · unit price {price} · completed by {date}",
+      "partCapacity": "declared capacity {capacity}",
+      "strategy": {
+        "label": "Automatic split proposal",
+        "hint": "Pick a strategy to fill the board below. You can still edit every household by hand before sending.",
+        "CAPACITY": {
+          "name": "By capacity",
+          "about": "Shares in proportion to each household's capacity; leftover units go to the largest remainders."
+        },
+        "CHEAPEST": {
+          "name": "Lowest price first",
+          "about": "The household with the lowest unit price takes its maximum first, then the next one."
+        },
+        "BALANCED": {
+          "name": "Balanced",
+          "about": "Equal shares; a household that reaches its maximum leaves the rest to the others."
+        },
+        "applied": "Proposed \"{strategy}\": {sum} of {quantity} {unit}, goods {price}, expected done by {date}.",
+        "shortfall": "The households can take at most {count} {unit} of this request, {missing} {unit} short.",
+        "excluded": "Offers of {names} could not be used: the completion date is outside the allowed window or the household has no room left."
+      },
       "slider": "Quantity for {name}",
       "quantityOf": "Enter the quantity for {name}",
       "stat": {
@@ -623,18 +722,20 @@
         "excess": "Over-allocated",
         "charge": "Delivery surcharge",
         "terms": "Shipping",
+        "production": "Goods",
+        "completion": "Expected completion",
         "total": "Buyer total"
       },
       "send": "Send cooperative quotation",
-      "sentLabel": "Simulated",
-      "demoNote": "Demo: this only runs in your browser. Nothing is saved or sent to a server, and no notification goes out.",
+      "sentLabel": "Previewed",
+      "demoNote": "This only runs in your browser. Nothing is saved or sent to a server, and no notification goes out.",
       "sendBlocked": "You can send once the full quantity is allocated, no household is over its maximum, and completion dates are valid.",
       "sent": {
-        "title": "Simulated (not saved, no notifications sent)",
+        "title": "Previewed (not saved, no notifications sent)",
         "text": "The allocation plan for request {code} was only trialled in this browser. No bid has reached the buyer and no household has been notified."
       },
-      "manualTitle": "Manual allocation",
-      "manualLead": "Split the quantity yourself for each household, exactly as they offered. There is no automatic plan and no predicted completion date: each household keeps the date and unit price it declared.",
+      "manualTitle": "Allocation",
+      "manualLead": "Pick a strategy to propose a split, or split the quantity yourself for each household. Every share stays within what the household offered and its declared capacity; the expected completion is the latest date among the households that get a share, and each household keeps the date and unit price it declared.",
       "chargeOf": "Delivery surcharge",
       "terms": {
         "included": "Shipping included",
@@ -687,8 +788,23 @@
       "back": "Go back",
       "reasonRequired": "Please give a reason.",
       "stale": "The data was just updated. Review it and try again.",
+      "capacityExceeded": "A household was given more than the capacity it declared for this category. Lower its share and send again.",
+      "offerExceeded": "A household was given more than the maximum it offered. Review the board and send again.",
       "startFailed": "Production could not be started. Make sure every household has confirmed its share, then try again.",
-      "actionFailed": "The action failed. Please try again."
+      "actionFailed": "The action failed. Please try again.",
+      "onBehalfBadge": "Off-platform customer",
+      "customerName": "Customer",
+      "customerPhone": "Phone",
+      "customerEmail": "Email",
+      "onBehalfLead": "You made this request for the customer, so you accept the quotation, confirm receipt and rate the households on their behalf.",
+      "quotationsTitle": "Quotations awaiting the customer's decision",
+      "noQuotations": "There is no quotation to accept yet.",
+      "quotationTotal": "Total {total}",
+      "accept": "Accept for the customer",
+      "acceptTitle": "Accept this quotation for the customer?",
+      "acceptText": "Accept {quantity} {unit} for a total of {total}. The other quotations will be rejected. This cannot be undone.",
+      "acceptedToast": "The quotation was accepted for the customer. The households are being told.",
+      "acceptFailed": "Could not accept. The data changed or the quotation is no longer valid."
     },
     "dashboard": {
       "title": "Overview",
@@ -701,6 +817,13 @@
       "openRfqs": "Open quotation requests",
       "ordersInProduction": "Orders in production",
       "qrScans30Days": "QR scans, last 30 days",
+      "trendTitle": "QR scans per day",
+      "trendPeriod": "Last 30 days, Vietnam time",
+      "trendEmpty": "No QR scans in the last 30 days.",
+      "trendTableCaption": "QR scans per day over the last 30 days, oldest first",
+      "trendDate": "Date",
+      "trendCount": "Scans",
+      "trendChart": "Bar chart of QR scans per day over the last 30 days",
       "reviewCta": "Review {count} waiting applications",
       "assistant": {
         "title": "Fox assistant",
@@ -733,7 +856,12 @@
       "empty": "No applications match these filters.",
       "emptyHint": "Try another status filter or date range to see other applications.",
       "showAll": "Show all statuses",
-      "showPending": "Show pending applications"
+      "showPending": "Show pending applications",
+      "reviewState": {
+        "NEW": "New application",
+        "AWAITING_APPLICANT": "Waiting for applicant",
+        "RESUBMITTED": "Resubmitted for review"
+      }
     },
     "review": {
       "back": "Back to queue",
@@ -758,7 +886,18 @@
       "workshops": "Workshops on the map",
       "noWorkshops": "No workshops declared.",
       "noLocation": "Workshop location not declared.",
+      "workshopArea": "Area: {area}",
+      "noWorkshopArea": "No area selected (receives every power-cut notice).",
       "outsideVillage": "Pinned outside Bát Tràng commune",
+      "insideVillage": "Pinned inside Bát Tràng commune",
+      "mapLabel": "Bát Tràng boundary and {count} workshop locations",
+      "mapHint": "The shaded outline marks the village boundary. Each workshop below states whether its pin is inside or outside it.",
+      "documentKind": {
+        "IDENTITY": "Citizen identity document",
+        "RESIDENCE": "Residence confirmation",
+        "WORKSHOP": "Workshop photos",
+        "UNKNOWN": "Unclassified documents"
+      },
       "decision": "Decision",
       "reason": "Reason",
       "sealed": "Approved and sealed.",
@@ -794,6 +933,20 @@
           "text": "{name} will be shown publicly again."
         }
       },
+      "certifications": "Certifications declared by the household",
+      "certificationsHint": "Mark “Verified” only after checking the papers. The mark is shown on the public page and written to the audit log.",
+      "noCertifications": "The household has not declared any certification.",
+      "certMeta": "{issuer} · {date}",
+      "certPhoto": "View certificate photo",
+      "certVerified": "Verified",
+      "certUnverified": "Not verified",
+      "markVerified": "Mark verified",
+      "removeVerification": "Remove verification",
+      "markVerifiedNamed": "Mark “{name}” verified",
+      "removeVerificationNamed": "Remove verification of “{name}”",
+      "certSaved": "Certification updated.",
+      "certFailed": "The certification could not be updated. Please try again.",
+      "certStale": "The record just changed. The latest version was loaded; check it and try again.",
       "idNumber": "Citizen ID",
       "noIdNumber": "Not provided",
       "revealIdNumber": "Show full number",
@@ -826,7 +979,11 @@
       "emptyHint": "When a buyer asks the Management Board to coordinate a request, it shows up here.",
       "emptyAction": "Back to overview",
       "claimedToast": "You are now coordinating this request.",
-      "detail": "Request"
+      "detail": "Request",
+      "createForCustomer": "Create a request for a customer",
+      "offPlatform": "Off-platform customer",
+      "customer": "Customer",
+      "customerPhone": "Phone"
     },
     "audit": {
       "title": "Audit log",
@@ -859,7 +1016,8 @@
         "quotation": "Cooperative quotation",
         "news": "News",
         "app_user": "Account",
-        "account_invitation": "Invitation"
+        "account_invitation": "Invitation",
+        "payment": "Payment"
       },
       "actions": {
         "household": {
@@ -868,7 +1026,9 @@
           "request_info": "Requested more information",
           "suspend": "Suspended household",
           "reinstate": "Reinstated household",
-          "reveal_id_number": "Viewed full citizen ID number"
+          "reveal_id_number": "Viewed full citizen ID number",
+          "certification_verify": "Verified a certification",
+          "certification_unverify": "Removed a certification's verification"
         },
         "product": {
           "publish": "Published product",
@@ -876,6 +1036,7 @@
           "republish": "Republished product"
         },
         "rfq": {
+          "create": "Created request for an off-platform customer",
           "claim": "Claimed coordination",
           "invite": "Invited households",
           "quotation_submit": "Submitted cooperative quotation",
@@ -898,6 +1059,11 @@
         },
         "access": {
           "denied": "Blocked from changing another household’s record"
+        },
+        "payment": {
+          "record_offline": "Recorded an offline payment",
+          "refund": "Marked a payment refunded",
+          "simulate_transfer": "Simulated a sandbox transfer"
         },
         "user": {
           "suspend": "Suspend account",
@@ -941,6 +1107,13 @@
       },
       "stateFilter": "Status",
       "allStates": "All",
+      "originFilter": "Origin",
+      "allOrigins": "Any origin",
+      "origin": {
+        "MANUAL": "Written by hand",
+        "IMPORTED": "Imported",
+        "GENERATED": "Generated"
+      },
       "publishedAt": "Published {date}",
       "scheduledAt": "Publishes {date}",
       "form": {
@@ -960,6 +1133,11 @@
         "publishAt": "Publish at",
         "cover": "Cover image",
         "coverAlt": "Cover image description",
+        "sourceTitle": "Original source",
+        "sourceName": "Publisher",
+        "sourceUrl": "Link to the original story (https)",
+        "sourcePublishedOn": "Original publication date",
+        "sourceHint": "Shown publicly as \"Source: publisher, date\" with a link to the original story.",
         "removeCover": "Remove cover",
         "coverUploading": "Processing image…",
         "coverFailed": "The cover image could not be uploaded.",
@@ -973,7 +1151,8 @@
           "summary": "Enter a summary.",
           "body": "Enter the content.",
           "publishAt": "Choose a time in the future.",
-          "slug": "A slug uses lowercase letters without accents, numbers and hyphens."
+          "slug": "A slug uses lowercase letters without accents, numbers and hyphens.",
+          "sourceUrl": "The original link must start with https:// and needs a publisher name."
         },
         "draftSavedToast": "Draft saved.",
         "scheduledToast": "Article scheduled.",
@@ -1007,7 +1186,71 @@
         "from": "From",
         "to": "To",
         "area": "Area",
+        "areaCode": "Send to",
+        "areaCodeHint": "Only households with a workshop in this area (or with no area selected) see the banner. The area field next to it is a description for readers.",
         "outageHint": "Studio shows a banner on the day of the cut.{more, plural, =0 {} one { One more cut in this notice is kept as is.} other { # more cuts in this notice are kept as is.}}"
+      }
+    },
+    "payments": {
+      "title": "Payments",
+      "lead": "Deposits and balances of orders, whatever the method. Money reaches the village administration account; nothing here moves it.",
+      "signIn": "Sign in with a management board account to view payments.",
+      "failed": "The payments could not be loaded.",
+      "retry": "Retry",
+      "empty": "No payments match these filters.",
+      "more": "Load more",
+      "filters": "Filters",
+      "allStatuses": "All statuses",
+      "allMethods": "All methods",
+      "allKinds": "All kinds",
+      "status": "Status",
+      "method": "Method",
+      "kind": "Kind",
+      "columns": {
+        "when": "Created",
+        "order": "Order",
+        "buyer": "Buyer",
+        "kind": "Kind",
+        "method": "Method",
+        "amount": "Amount",
+        "status": "Status",
+        "reference": "Payment code"
+      },
+      "openOrder": "Open order",
+      "panel": {
+        "title": "Payments of this order",
+        "lead": "Deposit and balance. The deposit is paid online before production starts; the balance online or recorded here.",
+        "loading": "Loading payments…",
+        "failed": "The payments of this order could not be loaded.",
+        "none": "No payment has been started for this order yet.",
+        "total": "Order total",
+        "deposit": "Deposit ({percent}%)",
+        "balance": "Balance",
+        "paidOn": "Paid on {date}",
+        "notPaid": "Not paid",
+        "depositRequired": "Production is blocked until the deposit is paid.",
+        "recordTitle": "Record an offline balance",
+        "recordHelp": "Use this when the buyer paid the balance outside the site. The amount is the balance of the order; the entry is written to the audit log and the buyer is told.",
+        "noteLabel": "How it was paid",
+        "notePlaceholder": "Cash handed over at the office, receipt 0042",
+        "noteRequired": "Write a short note (at least 3 characters).",
+        "record": "Record balance",
+        "recording": "Recording…",
+        "recorded": "The offline balance was recorded.",
+        "recordFailed": "The balance could not be recorded.",
+        "refund": "Mark refunded",
+        "refundTitle": "Mark this payment refunded",
+        "refundHelp": "This only records the refund and the reason. No money is sent: return it by hand.",
+        "reasonLabel": "Reason",
+        "reasonRequired": "Write a reason (at least 3 characters).",
+        "refundConfirm": "Mark refunded",
+        "refunded": "The payment was marked refunded.",
+        "refundFailed": "The refund could not be recorded.",
+        "stale": "Someone else updated this payment. Reload and try again.",
+        "simulate": "Simulate transfer (sandbox)",
+        "simulated": "The sandbox transfer was applied.",
+        "simulateFailed": "The transfer could not be simulated.",
+        "back": "Back"
       }
     },
     "progress": {
@@ -1096,13 +1339,14 @@
     "sending": "Sending…",
     "sentRealLabel": "Sent",
     "updatedLabel": "Updated",
-    "simulatedLabel": "Simulated",
-    "simulatedNote": "Simulated (not saved, no notifications sent). The demo only runs in this browser.",
+    "simulatedLabel": "Previewed",
+    "simulatedNote": "Previewed (not saved, no notifications sent). This only runs in this browser.",
     "sentNote": "The offer is saved on the server. The management board will use this maximum, unit price and completion date to assemble the quotation.",
     "withdraw": "Withdraw offer",
     "withdrawn": "The offer was withdrawn. Send again to rejoin.",
+    "capacityExceeded": "The quantity is above the capacity you declared for this category. Lower it or update your capacity in the profile, then send again.",
     "sendFailed": "Sending failed. Please try again later.",
-    "demoNote": "Demo: this only runs in your browser. Nothing is saved or sent to a server.",
+    "demoNote": "This only runs in your browser. Nothing is saved or sent to a server.",
     "liveNote": "The offer will be sent to the server through the API with your signed-in session. This information is private between the household and the management board; the buyer never sees it.",
     "privacyNote": "Maximum, unit price and completion date are private between the household and the management board; the buyer only sees the household, its share and the completion date.",
     "loading": "Loading the request…",
@@ -1155,6 +1399,113 @@
     "accepted": "The buyer accepted your quotation. Confirm your share under Orders.",
     "rejected": "The buyer chose another household.",
     "lapsed": "The quotation has expired."
+  },
+  "payments": {
+    "title": "Payment",
+    "loading": "Loading the payment…",
+    "signIn": "Sign in to view this payment.",
+    "loadFailed": "The payment could not be loaded, or you cannot view it.",
+    "retry": "Retry",
+    "kind": {
+      "DEPOSIT": "Deposit",
+      "BALANCE": "Balance"
+    },
+    "method": {
+      "SEPAY_TRANSFER": "Bank transfer / VietQR",
+      "VNPAY": "VNPay (sandbox)",
+      "MOMO": "MoMo (sandbox)",
+      "OFFLINE": "Offline (recorded by the board)"
+    },
+    "status": {
+      "PENDING": "Waiting for payment",
+      "PAID": "Paid",
+      "FAILED": "Failed",
+      "EXPIRED": "Expired",
+      "CANCELLED": "Cancelled",
+      "REFUNDED": "Refunded"
+    },
+    "summary": {
+      "title": "Payment for this order",
+      "total": "Order total",
+      "deposit": "Deposit ({percent}%)",
+      "balance": "Balance",
+      "paidOn": "Paid on {date}",
+      "notPaid": "Not paid yet",
+      "depositRequired": "Production starts after the deposit is paid.",
+      "sandbox": "Sandbox: no real money moves through VNPay and MoMo."
+    },
+    "pay": {
+      "deposit": "Pay the deposit",
+      "balance": "Pay the balance",
+      "choose": "Choose how to pay",
+      "start": "Continue",
+      "starting": "Preparing…",
+      "noMethods": "Online payment is not available right now. The management board will tell you how to pay."
+    },
+    "bank": {
+      "title": "Pay by bank transfer",
+      "scan": "Scan the QR code with your banking app, or transfer by hand with the details below.",
+      "qrAlt": "VietQR code for this transfer",
+      "bank": "Bank",
+      "account": "Account number",
+      "accountName": "Account holder",
+      "amount": "Amount",
+      "content": "Transfer content",
+      "contentHint": "Type this payment code exactly as the transfer content, or the payment cannot be matched. The amount must be exact.",
+      "copy": "Copy",
+      "copied": "Copied"
+    },
+    "redirect": {
+      "title": "Pay with {method}",
+      "text": "You will pay on the provider page and come back here. This page confirms the payment once the provider tells us.",
+      "open": "Open the payment page",
+      "app": "Open the app"
+    },
+    "live": {
+      "waiting": "Waiting for the money. This page updates by itself.",
+      "expiresAt": "Pay before {time}.",
+      "paid": "Payment received. Thank you.",
+      "paidAt": "Received on {time}.",
+      "failed": "The payment did not go through. You can start a new one.",
+      "expired": "This payment expired before the money arrived. Start a new one. If you did transfer, tell the management board.",
+      "cancelled": "This payment was cancelled.",
+      "refunded": "The management board marked this payment as refunded.",
+      "refundReason": "Reason: {reason}"
+    },
+    "cancel": "Cancel this payment",
+    "cancelling": "Cancelling…",
+    "history": "Payments of this order",
+    "errors": {
+      "PAYMENT_METHOD_UNAVAILABLE": "This payment method is not available.",
+      "PAYMENT_ORDER_NOT_PAYABLE": "The order cannot take this payment now.",
+      "PAYMENT_ALREADY_PAID": "This part of the order is already paid.",
+      "PAYMENT_DEPOSIT_REQUIRED": "Pay the deposit first.",
+      "SERVICE_UNAVAILABLE": "The payment provider did not answer. Try again in a moment.",
+      "default": "The payment could not be started. Try again in a few minutes."
+    },
+    "result": {
+      "title": "Payment result",
+      "back": "Back to the order",
+      "allOrders": "All requests"
+    }
+  },
+  "rating": {
+    "title": "Rate the households",
+    "lead": "The order is delivered. Rate each household that worked on it; you can change a rating for 30 days.",
+    "star": "{count, plural, one {# star} other {# stars}}",
+    "group": "Stars for {household}",
+    "comment": "Comment on {household} (optional)",
+    "commentHint": "Up to 1,000 characters.",
+    "save": "Save rating",
+    "saving": "Saving…",
+    "saved": "Rating saved.",
+    "editableUntil": "You can change it until {date}.",
+    "needStars": "Choose a number of stars.",
+    "saveFailed": "The rating could not be saved. Please try again.",
+    "windowClosed": "This rating can no longer be changed because 30 days have passed.",
+    "summary": "{average} / 5 · {count, plural, one {# rating} other {# ratings}}",
+    "summaryLabel": "Average {average} out of 5 from {count, plural, one {# rating} other {# ratings}}",
+    "none": "Not rated yet"
   },
   "order": {
     "title": "Order",
@@ -1240,6 +1591,9 @@
       "QUOTATION_ACCEPTED": "The buyer accepted the quotation.",
       "ALLOCATION_PROPOSED": "You have a production share to confirm.",
       "ALLOCATION_CONFIRMED": "A household confirmed its allocation.",
+      "ALLOCATION_REASSIGNED": "The management board moved the rest of your share to another household.",
+      "ALLOCATION_INCREASED": "The management board assigned more work to your household. Review your updated production share.",
+      "RFQ_NOT_SELECTED": "The buyer chose another offer. Thank you for taking part.",
       "ORDER_CANCELLED": "The order was cancelled.",
       "PRODUCTION_STARTED": "The order has entered production.",
       "PROGRESS_REPORTED": "Production progress was updated.",
@@ -1250,8 +1604,12 @@
       "HOUSEHOLD_APPROVED": "Your household application was approved.",
       "HOUSEHOLD_REJECTED": "Your household application was not approved.",
       "HOUSEHOLD_INFO_REQUESTED": "Your household application needs more information.",
+      "HOUSEHOLD_RESUBMITTED": "A household application was completed as requested and is waiting for review again.",
       "HOUSEHOLD_SUSPENDED": "Your household is suspended from the exhibition.",
       "HOUSEHOLD_REINSTATED": "Your household is back in the exhibition.",
+      "PAYMENT_PAID": "A payment for the order was received.",
+      "PAYMENT_EXPIRED": "A payment for the order expired before the money arrived.",
+      "PAYMENT_REFUNDED": "A payment for the order was marked refunded.",
       "NEWS_PUBLISHED": "The management board published important news."
     }
   },
@@ -1332,6 +1690,12 @@
       "back": "Back to account"
     }
   },
+  "villageAreas": {
+    "BAT_TRANG": "Bát Tràng hamlet",
+    "GIANG_CAO": "Giang Cao hamlet",
+    "VILLAGE_WIDE": "Whole commune",
+    "none": "No area selected"
+  },
   "villageMap": {
     "title": "Village map",
     "lead": "Find workshops and showrooms in Bát Tràng and see which ones are open to visitors now.",
@@ -1392,6 +1756,7 @@
     "sort": "Sort by",
     "oneOfAKind": "One of a kind",
     "inStock": "In stock",
+    "openWorkshop": "Workshop open to visitors",
     "clear": "Clear filters",
     "loading": "Loading products",
     "empty": "No products match these filters.",
@@ -1402,6 +1767,23 @@
     "groupProducts": "Products",
     "groupHouseholds": "Households",
     "groupNews": "News",
+    "groupCategories": "Categories",
+    "palette": {
+      "open": "Open quick search",
+      "title": "Quick search",
+      "close": "Close",
+      "hint": "Use the up and down arrow keys to choose, Enter to open, Esc to close.",
+      "prompt": "Type to find products, households, categories and news.",
+      "viewAll": "See every product matching “{query}”",
+      "results": "Search suggestions"
+    },
+    "craftCategories": {
+      "GOM_SU": "Ceramics and porcelain",
+      "MEN": "Glazes",
+      "VE_GOM": "Hand-painted ceramics",
+      "NUNG": "Kiln firing",
+      "KHAC": "Other"
+    },
     "categories": {
       "VASE": "Vases and jars",
       "TABLEWARE": "Tableware",
@@ -1412,7 +1794,8 @@
     "sorts": {
       "newest": "Newest",
       "price_asc": "Price: low to high",
-      "price_desc": "Price: high to low"
+      "price_desc": "Price: high to low",
+      "popular": "Most popular"
     },
     "emptyHint": "Try removing a filter or widening the price range to see more products.",
     "results": "Product results",
@@ -1444,7 +1827,8 @@
       "roleLabel": "Role",
       "checking": "Checking your session",
       "area": "Go to your workspace",
-      "settings": "Account and notifications"
+      "settings": "Account and notifications",
+      "favourites": "Favourites"
     },
     "roles": {
       "BUYER": "Buyer",
@@ -1464,7 +1848,7 @@
       "email": "Email",
       "emailPlaceholder": "name@example.com",
       "password": "Password",
-      "passwordHint": "At least 8 characters, with both letters and digits.",
+      "passwordHint": "At least 10 characters, with uppercase and lowercase letters and a digit.",
       "newPassword": "New password",
       "confirmPassword": "Repeat the new password",
       "showPassword": "Show",
@@ -1479,8 +1863,8 @@
       "emailRequired": "Enter your email.",
       "emailInvalid": "That email does not look right, for example name@example.com.",
       "passwordRequired": "Enter your password.",
-      "passwordShort": "The password needs at least 8 characters.",
-      "passwordWeak": "The password needs both letters and digits.",
+      "passwordShort": "The password needs at least 10 characters.",
+      "passwordWeak": "The password needs uppercase and lowercase letters and a digit.",
       "confirmMismatch": "The two passwords differ. Type them again so they match.",
       "nameShort": "The household name needs at least 2 characters.",
       "slugRequired": "The page address cannot be empty.",
@@ -1523,7 +1907,8 @@
       "slugTaken": "Another household already uses this address. Change it and try again.",
       "locked": "This account is locked, so this action is not available. Contact the village administration.",
       "forbidden": "This account is not allowed to do that.",
-      "mediaTooLarge": "The file is larger than 10 MB. Retake it at a lower resolution or compress it.",
+      "mediaTooLarge": "The file is larger than 15 MB. Retake it at a lower resolution or compress it.",
+      "mediaResolution": "The image has more than 50 megapixels. Retake it at a lower resolution.",
       "mediaUnsupported": "Only JPG, PNG, WebP, AVIF images or PDF files are accepted.",
       "apiDown": "Cannot reach the vCraft server. Please try again in a few minutes.",
       "consentRequired": "You need to agree to the Privacy policy before doing this. Tick the consent box and try again.",
@@ -1620,6 +2005,12 @@
         "namePlaceholder": "Minh Hai Ceramics",
         "slug": "Page address",
         "slugHint": "Household page address: {path}",
+        "slugChecking": "Checking the address…",
+        "slugAvailable": "This address is available.",
+        "slugTaken": "Another household already uses this address.",
+        "slugTakenSuggest": "Another household already uses this address. Try “{slug}”?",
+        "slugUseSuggestion": "Use “{slug}”",
+        "slugCheckFailed": "Could not check the address right now. It is checked again when you save.",
         "village": "Craft village",
         "villagePlaceholder": "Bat Trang",
         "history": "Household story",
@@ -1668,7 +2059,14 @@
         "title": "Verification documents",
         "lead": "Upload a business licence, a craft village certificate or an equivalent document. Files go to a private store that only the village administration can open.",
         "pick": "Choose files",
-        "drop": "JPG, PNG, WebP, AVIF images or PDF, up to 10 MB each.",
+        "kind": "This document is",
+        "kindOption": {
+          "IDENTITY": "Identity paper (ID card / passport)",
+          "RESIDENCE": "Residence paper / household register",
+          "WORKSHOP": "Workshop licence / craft village certificate",
+          "UNKNOWN": "Unclassified"
+        },
+        "drop": "JPG, PNG, WebP, AVIF images or PDF, up to 15 MB each.",
         "empty": "No file chosen yet.",
         "listLabel": "Chosen document files",
         "status": {
@@ -1715,6 +2113,21 @@
         "lead": "The household public page is hidden for now; your own records remain untouched."
       },
       "reason": "Reason from the village administration",
+      "pendingEditor": {
+        "title": "Edit your application",
+        "saved": "Application changes saved.",
+        "village": "Village",
+        "moreDocuments": "Additional application evidence",
+        "moreDocumentsHint": "Choose what each file shows before uploading. Save your edits before resubmitting."
+      },
+      "resubmit": {
+        "title": "Finished your edits?",
+        "lead": "Edit your application in the sections below, then send it back to the village administration for review.",
+        "submit": "Resubmit application",
+        "submitting": "Resubmitting…",
+        "stale": "The application just changed on the administration side. Reload the page and decide again.",
+        "failed": "The application could not be resubmitted. Try again."
+      },
       "publicPage": "View the household public page",
       "stepsLabel": "Application progress",
       "steps": {
@@ -1818,7 +2231,43 @@
       "story": "Story",
       "storyLabel": "Your household story",
       "craft": "Craft",
+      "craftCategory": "Craft category",
+      "craftCategoryPlaceholder": "Choose a category",
+      "craftDetail": "Craft detail (optional)",
+      "slugTitle": "Public page address",
+      "slug": "Page address",
+      "slugHint": "Your household page: {path}",
+      "slugFromName": "Suggest from the household name",
+      "slugChecking": "Checking…",
+      "slugAvailable": "This address is available.",
+      "slugTaken": "Another household already uses this address.",
+      "slugTakenSuggest": "Another household already uses this address. Try “{slug}”?",
+      "slugUseSuggestion": "Use “{slug}”",
+      "slugInvalid": "Use lowercase letters without accents, digits and hyphens only.",
+      "slugCheckFailed": "Could not check right now. The address is checked again when you save.",
+      "slugWarning": "If you change the address, the old link keeps redirecting to the new one, but links you printed or shared should be updated over time. Product QR codes use their own product code and are not affected.",
+      "slugSaveTaken": "Someone just took this address. Please choose another one.",
+      "photos": "Cover photo, portrait and seal",
+      "photosLead": "These three photos appear on your public household page. The cover and the portrait need a description so people who cannot see them still understand.",
+      "coverPhoto": "Cover photo",
+      "coverPhotoHint": "A wide photo shown at the top of your page.",
+      "portraitPhoto": "Artisan portrait",
+      "portraitPhotoHint": "Shown next to the household name and story.",
+      "sealPhoto": "Personal seal or signature",
+      "sealPhotoHint": "Shown at the end of the story, like the artisan's signature.",
+      "photoUpload": "Upload a photo",
+      "photoReplace": "Replace photo",
+      "photoRemove": "Remove photo",
+      "photoUploading": "Uploading…",
+      "photoAlt": "Photo description (required)",
+      "sealAlt": "Seal description (optional)",
+      "photoNone": "No photo yet",
+      "village": "Village",
       "foundedYear": "Founding year",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "staleVersion": "The profile just changed. Reload the page and save again.",
+      "failed": "The profile could not be saved. Try again.",
       "generations": "Generations in the craft",
       "timeline": "Family timeline",
       "addEvent": "Add event",
@@ -1837,10 +2286,21 @@
       "addCertification": "Add certification",
       "certName": "Certification name",
       "certIssuer": "Issued by",
+      "certDate": "Issue date",
+      "certLegacyYear": "Only the year {year} was recorded. Enter the issue date to be more precise.",
+      "certPhoto": "Certificate photo",
+      "certAddPhoto": "Add a certificate photo (optional)",
+      "certDateRequired": "Enter an issue date for every certification.",
+      "certVerifiedHint": "Only the Management Board can mark a certification “Verified”. Editing its details or photo removes the mark.",
       "verified": "Verified",
       "unverified": "Not verified",
       "gallery": "Workshop photos",
       "galleryHint": "Describe what each photo shows so people who cannot see it still understand.",
+      "galleryOrderHint": "Drag photos, or use the arrow buttons, to change their order. The public page shows them in this order.",
+      "galleryDrag": "Drag to move photo {n}",
+      "galleryMoveUp": "Move photo {n} earlier",
+      "galleryMoveDown": "Move photo {n} later",
+      "galleryMoved": "Photo moved to position {position} of {total}.",
       "addPhotos": "Add photos",
       "alt": "Photo description (required)",
       "caption": "Caption",
@@ -1850,6 +2310,8 @@
       "addWorkshop": "Add workshop",
       "workshopName": "Workshop name",
       "address": "Address",
+      "area": "Workshop area",
+      "areaHint": "Used to warn you about power cuts in your workshop's area.",
       "purpose": "Purpose",
       "purposes": {
         "PRODUCTION": "Production",
@@ -1875,6 +2337,36 @@
       "closureReason": "Reason for the closure",
       "closureReasonHint": "Visitors see this reason; the workshop shows as closed even if opening hours are set.",
       "capacity": "Production capacity (units per month)",
+      "storyEditor": {
+        "toolbar": "Story formatting",
+        "bold": "Bold",
+        "italic": "Italic",
+        "bullet": "List",
+        "link": "Link",
+        "linkUrl": "Link address (https://…)",
+        "linkInsert": "Insert link",
+        "linkCancel": "Cancel",
+        "linkInvalid": "The address must start with https://, http:// or mailto:",
+        "linkText": "link text",
+        "hint": "Select text, then press a button to format it. Bold, italic, lists and links are supported.",
+        "preview": "Preview"
+      },
+      "suggest": {
+        "button": "Suggest a story with AI",
+        "busy": "Drafting a suggestion…",
+        "title": "Story suggestion",
+        "lead": "This is only a suggestion drawn from your profile. Read it, correct anything untrue, then save it yourself. Nothing is published automatically.",
+        "vi": "Vietnamese",
+        "en": "English translation",
+        "insert": "Insert at the end of the story",
+        "copyVi": "Copy Vietnamese",
+        "copyEn": "Copy English",
+        "copied": "Copied.",
+        "close": "Close",
+        "unavailable": "Story suggestions are not switched on in this system.",
+        "failed": "Could not create a suggestion. Please try again later.",
+        "rateLimited": "You have used all suggestions for this hour. Please try again later."
+      },
       "idNumber": {
         "title": "Citizen ID number",
         "lead": "The representative's citizen ID number, encrypted when saved. Only the masked form is shown here.",
@@ -1898,10 +2390,17 @@
       "statuses": {
         "DRAFT": "Draft",
         "PUBLISHED": "On display",
-        "WITHDRAWN": "Withdrawn"
+        "SOLD": "Sold",
+        "WITHDRAWN": "Archived"
       },
       "newTitle": "New product",
       "editTitle": "Edit product",
+      "englishSection": "English (optional)",
+      "englishHint": "Shown on the English pages. Leave a field empty to show the Vietnamese text.",
+      "nameEn": "Product name (English)",
+      "descriptionEn": "Description (English)",
+      "materialEn": "Material (English)",
+      "dimensionsEn": "Dimensions (English)",
       "notFound": "This product is not in your household.",
       "name": "Product name",
       "description": "Description",
@@ -1926,6 +2425,8 @@
       "alt": "Photo description (required)",
       "moveHandle": "Drag to move photo {n}",
       "processing": "Processing",
+      "photoFailed": "This photo could not be processed. Remove it or try another one.",
+      "retryPhoto": "Try another photo",
       "remove": "Remove",
       "altRequired": "Each photo needs a description of at least 3 characters.",
       "makers": "Makers",
@@ -1938,8 +2439,8 @@
       "publishing": "Publishing",
       "publish": "Publish",
       "republish": "Publish again",
-      "withdraw": "Withdraw from display",
-      "withdrawReason": "Reason for withdrawing",
+      "withdraw": "Archive",
+      "withdrawReason": "Reason for archiving",
       "notApproved": "Your household must be approved before publishing.",
       "publishFailed": "We could not change the status. Please try again later.",
       "publishJournalRequired": "Add at least one production-journal milestone (with a photo) before publishing.",
@@ -1981,9 +2482,31 @@
       "publishTitle": "Publish this product?",
       "publishText": "The product becomes public on your household page and in the catalog. From now on its production journal can only be added to, never deleted.",
       "publishedToast": "Product published.",
-      "withdrawTitle": "Withdraw this product from display?",
-      "withdrawText": "The product will no longer be public. Reason for withdrawing: {reason}. You can publish it again later.",
-      "withdrawnToast": "Product withdrawn from display."
+      "withdrawTitle": "Archive this product?",
+      "withdrawText": "The product will no longer be public. Reason for archiving: {reason}. You can publish it again later.",
+      "withdrawnToast": "Product archived.",
+      "tags": "Tags",
+      "tagsChosen": "Chosen tags",
+      "tagsPlaceholder": "For example: blue glaze, handmade",
+      "tagsHint": "Up to {max} tags of 1 to 30 characters. Press Enter or a comma to add one.",
+      "tagsFull": "You have {max} tags. Remove one to add another.",
+      "tagsSuggested": "Suggested from your other products:",
+      "tagRemove": "Remove tag {tag}",
+      "markSold": "Mark as sold",
+      "markSoldHint": "For one-of-a-kind products that found a buyer.",
+      "markSoldTitle": "Mark this product as sold?",
+      "markSoldText": "The product stays public with a \"Sold\" badge and its trace page keeps working, but visitors can no longer request a quote from it. You can undo this.",
+      "soldToast": "Product marked as sold.",
+      "soldHint": "This product is sold. If you marked it by mistake, put it back on sale.",
+      "backOnSale": "Back on sale",
+      "backOnSaleTitle": "Put this product back on sale?",
+      "backOnSaleText": "The product returns to on display, with 1 piece in stock.",
+      "backOnSaleToast": "Product is back on sale.",
+      "duplicate": "Duplicate",
+      "duplicatedToast": "Draft created from this product. Its production journal is not copied.",
+      "duplicateFailed": "We could not duplicate the product. Please try again later.",
+      "priceSuggestion": "Suggested price: {price}, the median of {count} products on display in this category.",
+      "priceSuggestionUse": "Use this price"
     },
     "journal": {
       "title": "Journal: {product}",
@@ -2005,7 +2528,9 @@
       "exifFilled": "Date and time filled from the photo.",
       "exifOld": "This photo is more than 30 days old. Check the date before saving.",
       "waitingPhoto": "Waiting for the photo to process…",
-      "photoFailed": "The photo has not finished processing. Try again later.",
+      "photoFailed": "The photo could not be processed. Choose another photo and try again.",
+      "photoProcessing": "Processing",
+      "photoUnavailable": "This photo could not be processed.",
       "photoRequired": "Add at least one photo as evidence for this stage.",
       "oldPhotoTitle": "Photo taken a while ago?",
       "oldPhotoText": "This photo was taken more than 30 days ago. Save the milestone with it anyway?",
@@ -2069,7 +2594,9 @@
     "outage": {
       "title": "Power cut today",
       "slot": "{from}–{to} ({area})",
-      "details": "Read the notice"
+      "details": "Read the notice",
+      "areaPromptText": "Choose your workshop's area to receive only the power-cut notices for it. For now you receive every notice.",
+      "areaPromptLink": "Choose the workshop area"
     }
   },
   "media": {
@@ -2091,15 +2618,15 @@
     "binh-men-lam-xam": "A tall-necked, round-bellied vase in grey-blue glaze with a relief branch and a gilded figure holding a fishing rod"
   },
   "presetFigure": {
-    "bowl": "Illustration of a bowl; this product has no photo yet",
-    "cup": "Illustration of a cup; this product has no photo yet",
-    "vase": "Illustration of a vase; this product has no photo yet",
-    "jar": "Illustration of a jar; this product has no photo yet",
-    "plate": "Illustration of a plate; this product has no photo yet",
-    "teaset": "Illustration of a tea set; this product has no photo yet",
-    "incense": "Illustration of an incense burner; this product has no photo yet",
-    "generic": "Illustration of a piece of pottery; this product has no photo yet",
-    "household": "Illustration of a piece of pottery; this household has no workshop photo yet"
+    "bowl": "Drawing of a bowl; this product has no photo yet",
+    "cup": "Drawing of a cup; this product has no photo yet",
+    "vase": "Drawing of a vase; this product has no photo yet",
+    "jar": "Drawing of a jar; this product has no photo yet",
+    "plate": "Drawing of a plate; this product has no photo yet",
+    "teaset": "Drawing of a tea set; this product has no photo yet",
+    "incense": "Drawing of an incense burner; this product has no photo yet",
+    "generic": "Drawing of a piece of pottery; this product has no photo yet",
+    "household": "Drawing of a piece of pottery; this household has no workshop photo yet"
   },
   "privacy": {
     "title": "Privacy policy",
@@ -2214,6 +2741,11 @@
         "CLAY": "Clay",
         "GLAZE": "Glaze",
         "GAS": "Gas"
+      },
+      "units": {
+        "tonne": "tonne",
+        "kg": "kg",
+        "cylinder12kg": "12 kg cylinder"
       }
     }
   },

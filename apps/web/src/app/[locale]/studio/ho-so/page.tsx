@@ -3,6 +3,8 @@ import { Badge, type BadgeProps, Card, Stepper } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { FormAlert } from '@/features/auth/fields';
+import { PendingApplicationEditor } from '@/features/auth/pending-application-editor';
+import { ResubmitApplication } from '@/features/auth/resubmit-application';
 import { ProfileEditor } from '@/features/studio/profile-editor';
 import { Link, redirect } from '@/i18n/navigation';
 import { firstParam } from '@/lib/auth/return-to';
@@ -102,6 +104,12 @@ export default async function HouseholdProfilePage({
           </h2>
           <p className="mt-2">{household.statusReason}</p>
         </Card>
+      ) : null}
+
+      {household.status === 'PENDING_REVIEW' ? <PendingApplicationEditor /> : null}
+
+      {household.status === 'PENDING_REVIEW' && household.statusReason ? (
+        <ResubmitApplication householdId={household.id} />
       ) : null}
 
       {household.status === 'APPROVED' ? (

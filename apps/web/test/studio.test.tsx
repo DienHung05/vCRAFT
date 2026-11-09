@@ -25,14 +25,23 @@ const HOUSEHOLD: HouseholdDto = {
   history: 'Câu chuyện.',
   village: 'Bát Tràng',
   craft: 'men lam',
+  craftCategory: 'MEN',
   coverUrl: null,
   coverVariants: [],
+  ratingAverage: null,
+  ratingCount: 0,
   portrait: null,
   banner: null,
+  seal: null,
+  coverPhoto: null,
+  portraitPhoto: null,
+  sealPhoto: null,
   foundedYear: null,
   generations: null,
   timeline: [],
-  certifications: [{ name: 'OCOP', issuer: 'UBND', year: 2023, verified: true }],
+  certifications: [
+    { name: 'OCOP', issuer: 'UBND', year: 2023, issuedOn: null, photo: null, verified: true },
+  ],
   gallery: [],
   capacityByCategory: {},
   artisans: [],
@@ -41,6 +50,8 @@ const HOUSEHOLD: HouseholdDto = {
   products: [],
   status: 'PENDING_REVIEW',
   statusReason: null,
+  reviewState: 'NEW',
+  resubmittedAt: null,
   approvedAt: null,
   idNumberMasked: '••••••••4567',
   completeness: { percent: 25, missing: ['story', 'timeline'] },
@@ -227,6 +238,7 @@ const NO_OFFER = {
   experiencePrice: '',
   temporarilyClosed: false,
   closureReason: '',
+  areaCode: null,
 };
 
 describe('toWorkshopRequest', () => {
@@ -249,7 +261,24 @@ describe('toWorkshopRequest', () => {
       acceptsVisitors: true,
       openingHours: [{ day: 1, open: '08:00', close: '17:00' }],
       temporarilyClosed: false,
+      areaCode: null,
     });
+  });
+
+  it('sends the hamlet code, or null to clear it', () => {
+    const base = {
+      name: 'Lò',
+      address: 'Xóm 3',
+      purpose: 'BOTH' as const,
+      acceptsVisitors: false,
+      visitingInfo: '',
+      lat: null,
+      lng: null,
+      hours: [],
+      ...NO_OFFER,
+    };
+    expect(toWorkshopRequest({ ...base, areaCode: 'GIANG_CAO' }).areaCode).toBe('GIANG_CAO');
+    expect(toWorkshopRequest({ ...base, areaCode: null }).areaCode).toBeNull();
   });
 
   it('sends the experience offer and the closure reason only while their flags are on', () => {
@@ -268,6 +297,7 @@ describe('toWorkshopRequest', () => {
       experiencePrice: '250000',
       temporarilyClosed: true,
       closureReason: ' Nghỉ Tết ',
+      areaCode: null,
     };
     expect(toWorkshopRequest(draft)).toMatchObject({
       experience: { description: 'Nặn gốm cùng nghệ nhân', durationMinutes: 90, priceVnd: 250000 },

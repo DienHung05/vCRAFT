@@ -11,6 +11,7 @@ import { QUOTATION_NOTICE_KINDS, type QuotationNoticeKind } from '../rfq/quotati
  * | `HOUSEHOLD_APPROVED`   | Đại diện hộ vừa được chấp nhận       |
  * | `HOUSEHOLD_REJECTED`   | Đại diện hộ bị từ chối               |
  * | `HOUSEHOLD_INFO_REQUESTED` | Đại diện hộ cần bổ sung hồ sơ     |
+ * | `HOUSEHOLD_RESUBMITTED`| Ban quản lý nhận lại hồ sơ đã bổ sung |
  * | `HOUSEHOLD_SUSPENDED`  | Đại diện hộ bị tạm ngừng trưng bày   |
  * | `HOUSEHOLD_REINSTATED` | Đại diện hộ được khôi phục trưng bày |
  */
@@ -18,17 +19,39 @@ export const HOUSEHOLD_NOTICE_KINDS = [
   'HOUSEHOLD_APPROVED',
   'HOUSEHOLD_REJECTED',
   'HOUSEHOLD_INFO_REQUESTED',
+  'HOUSEHOLD_RESUBMITTED',
   'HOUSEHOLD_SUSPENDED',
   'HOUSEHOLD_REINSTATED',
 ] as const;
 export type HouseholdNoticeKind = (typeof HOUSEHOLD_NOTICE_KINDS)[number];
 
+/**
+ * Payment notices (ADR-0021, GH#205). The subject is the order (the quotation request id).
+ *
+ * | Loại                | Người nhận                                         |
+ * | ------------------- | -------------------------------------------------- |
+ * | `PAYMENT_PAID`      | Người mua (money confirmed), admin điều phối       |
+ * | `PAYMENT_EXPIRED`   | Người mua (the payment ran out of time)            |
+ * | `PAYMENT_REFUNDED`  | Người mua (an administrator marked it refunded)    |
+ */
+export const PAYMENT_NOTICE_KINDS = [
+  'PAYMENT_PAID',
+  'PAYMENT_EXPIRED',
+  'PAYMENT_REFUNDED',
+] as const;
+export type PaymentNoticeKind = (typeof PAYMENT_NOTICE_KINDS)[number];
+
 export const NOTIFICATION_TYPES = [
   ...QUOTATION_NOTICE_KINDS,
   ...HOUSEHOLD_NOTICE_KINDS,
+  ...PAYMENT_NOTICE_KINDS,
   'NEWS_PUBLISHED',
 ] as const;
-export type NotificationType = QuotationNoticeKind | HouseholdNoticeKind | 'NEWS_PUBLISHED';
+export type NotificationType =
+  | QuotationNoticeKind
+  | HouseholdNoticeKind
+  | PaymentNoticeKind
+  | 'NEWS_PUBLISHED';
 
 export function isNotificationType(value: unknown): value is NotificationType {
   return (NOTIFICATION_TYPES as readonly unknown[]).includes(value);
@@ -61,17 +84,26 @@ export const NOTIFICATION_TYPES_BY_ROLE: Record<AccountRole, readonly Notificati
     'ORDER_CANCELLED',
     'PRODUCTION_STARTED',
     'PROGRESS_REPORTED',
+    'PAYMENT_PAID',
+    'PAYMENT_EXPIRED',
+    'PAYMENT_REFUNDED',
+    // The coordinator confirms receipt on the buyer's behalf (GH#248 s5-12).
+    'ORDER_RECEIVED',
   ],
   HOUSEHOLD: [
     'HOUSEHOLD_APPROVED',
     'HOUSEHOLD_REJECTED',
     'HOUSEHOLD_INFO_REQUESTED',
+    'HOUSEHOLD_RESUBMITTED',
     'HOUSEHOLD_SUSPENDED',
     'HOUSEHOLD_REINSTATED',
     'RFQ_INVITED',
     'BIDDING_CLOSED',
     'RFQ_EXPIRED',
     'ALLOCATION_PROPOSED',
+    'ALLOCATION_REASSIGNED',
+    'ALLOCATION_INCREASED',
+    'RFQ_NOT_SELECTED',
     'ORDER_CANCELLED',
     'PRODUCTION_STARTED',
     'ORDER_RECEIVED',
@@ -80,12 +112,19 @@ export const NOTIFICATION_TYPES_BY_ROLE: Record<AccountRole, readonly Notificati
   ADMIN: [
     'CONTRIBUTION_RECEIVED',
     'COORDINATION_NEEDED',
+    'HOUSEHOLD_RESUBMITTED',
     'QUOTATION_WITHDRAWN',
     'QUOTATION_ACCEPTED',
     'ALLOCATION_CONFIRMED',
     'ORDER_CANCELLED',
     'PROGRESS_REPORTED',
     'ORDER_RECEIVED',
+    'PAYMENT_PAID',
+    // An administrator who owns a request made for an off-platform customer is its buyer too (GH#248 s5-10).
+    'QUOTATION_RECEIVED',
+    'BIDDING_CLOSED',
+    'RFQ_EXPIRED',
+    'PRODUCTION_STARTED',
   ],
 };
 
@@ -97,6 +136,8 @@ export const NOTIFICATION_TARGET_PAGES = [
   'STUDIO_CONTRIBUTION',
   /** Admin: màn điều phối của yêu cầu. */
   'ADMIN_COORDINATION',
+  /** Admin: the review screen of one household (the resubmission signal, vCRAFT-8my.2). */
+  'ADMIN_HOUSEHOLD_REVIEW',
   /** Hộ: trạng thái hồ sơ đã nộp (kết quả duyệt). */
   'STUDIO_APPLICATION',
   /** News article, addressed by the news id. */
@@ -126,6 +167,10 @@ export function notificationTarget(
   role: AccountRole,
   subjectId: string | null | undefined,
 ): NotificationTarget | null {
+  // The board's resubmission signal points at the review screen of the household (vCRAFT-8my.2).
+  if (type === 'HOUSEHOLD_RESUBMITTED' && role === 'ADMIN') {
+    return { page: 'ADMIN_HOUSEHOLD_REVIEW', id: subjectId ?? null };
+  }
   if ((HOUSEHOLD_NOTICE_KINDS as readonly string[]).includes(type)) {
     return { page: 'STUDIO_APPLICATION', id: null };
   }

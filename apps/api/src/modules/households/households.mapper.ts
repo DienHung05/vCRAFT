@@ -1,18 +1,31 @@
 import type {
   ArtisanDto,
+  CertificationDto,
   HouseholdDto,
   MakerCreditDto,
   MapPinDto,
   MediaVariantResponse,
   ProductDto,
+  ProfilePhotoDto,
   PublicHouseholdDto,
+  PublicImageDto,
   WorkshopDto,
 } from '@vcraft/contracts';
-import type { Artisan, Household, Product, ProductMaker, Workshop } from '@vcraft/database';
+import type {
+  Artisan,
+  Household,
+  HouseholdPhoto,
+  Product,
+  ProductMaker,
+  Workshop,
+} from '@vcraft/database';
 import {
+  effectiveCraftCategory,
+  householdReviewState,
   isVisitable,
   POSTED_BY_ADMINISTRATION,
   profileCompleteness,
+  type RatingSummary,
   splitWorkshops,
 } from '@vcraft/domain';
 import type { LinkedImage, PublicLinkRole, PublicMedia } from '../media/application/media.service';
@@ -43,6 +56,7 @@ export function toWorkshopDto(w: Workshop): WorkshopDto {
     experience: toExperience(w),
     temporarilyClosed: w.temporarilyClosed,
     closureReason: w.closureReason ?? null,
+    areaCode: w.areaCode ?? null,
     lat: toNumber(w.lat),
     lng: toNumber(w.lng),
   };
@@ -115,9 +129,11 @@ export function toProductDto(
     id: p.id,
     version: p.version,
     name: p.name,
+    nameEn: p.nameEn ?? null,
     slug: p.slug,
     traceCode: p.traceCode,
     description: p.description,
+    descriptionEn: p.descriptionEn ?? null,
     kind: p.kind,
     batchSize: p.batchSize ?? null,
     category: p.category,
@@ -125,8 +141,11 @@ export function toProductDto(
     stock: p.stock,
     material: p.material ?? null,
     dimensions: p.dimensions ?? null,
+    materialEn: p.materialEn ?? null,
+    dimensionsEn: p.dimensionsEn ?? null,
     weightGrams: p.weightGrams ?? null,
     artisanNote: p.artisanNote ?? null,
+    tags: p.tags ?? [],
     coverUrl: cover.url,
     coverVariants: cover.variants,
     coverAlt: cover.alt,
@@ -135,6 +154,7 @@ export function toProductDto(
       mediaId: image.mediaId,
       url: media?.get(image.mediaId)?.url ?? null,
       variants: media?.get(image.mediaId)?.variants ?? [],
+      thumbhash: media?.get(image.mediaId)?.thumbhash ?? null,
       alt: image.alt,
     })),
     status: p.status,
@@ -163,6 +183,7 @@ export function toMapPinDto(w: Workshop): MapPinDto {
       name: w.household.name,
       slug: w.household.slug,
       craft: w.household.craft ?? null,
+      craftCategory: effectiveCraftCategory(w.household.craftCategory, w.household.craft),
       coverUrl: w.household.coverUrl ?? null,
     },
   };
@@ -178,8 +199,12 @@ export interface HouseholdParts {
   media?: ReadonlyMap<string, PublicMedia>;
   /** Portrait, banner and gallery images linked through `media_link`. */
   linked?: readonly LinkedImage[];
+  /** Processed `COVER` images of the products, by `product.id`: the sizes behind each `coverVariants` (GH#252). */
+  productCovers?: ReadonlyMap<string, readonly CoverImage[]>;
   /** Masked citizen ID number for the owner and admin views (never the full number). */
   idNumberMasked?: string | null;
+  /** The buyers' rating summary (FR-ORD-11); absent means no ratings yet. */
+  rating?: RatingSummary;
 }
 
 const linkedOf = (parts: HouseholdParts, role: PublicLinkRole) =>
@@ -203,6 +228,53 @@ function toTimelineDto(h: Household, parts: HouseholdParts) {
         : null,
     };
   });
+}
+
+/** One of the household's own photos with its processed URL, or null URL while it is still processing. */
+function toProfilePhoto(
+  photo: HouseholdPhoto | null | undefined,
+  parts: HouseholdParts,
+): ProfilePhotoDto | null {
+  if (!photo) return null;
+  const media = parts.media?.get(photo.mediaId);
+  return {
+    mediaId: photo.mediaId,
+    url: media?.url ?? null,
+    variants: media?.variants ?? [],
+    alt: photo.alt,
+  };
+}
+
+/** The household's own photo as a public image; null until its processed file exists. */
+function toOwnPublicImage(
+  photo: HouseholdPhoto | null | undefined,
+  parts: HouseholdParts,
+): PublicImageDto | null {
+  const own = toProfilePhoto(photo, parts);
+  if (!own?.url) return null;
+  return {
+    mediaId: own.mediaId,
+    url: own.url,
+    width: null,
+    height: null,
+    variants: own.variants,
+    alt: own.alt,
+    altEn: null,
+    caption: null,
+    credit: null,
+  };
+}
+
+/** Certifications with the photo resolved; `verified` is the board's mark and nothing else. */
+function toCertificationsDto(h: Household, parts: HouseholdParts): CertificationDto[] {
+  return (h.certifications ?? []).map((c) => ({
+    name: c.name,
+    issuer: c.issuer,
+    year: c.year,
+    issuedOn: c.issuedOn ?? null,
+    photo: toProfilePhoto(c.photo, parts),
+    verified: c.verified === true,
+  }));
 }
 
 /** Images the household attached itself in Studio. */
@@ -238,8 +310,11 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
     credit: image.credit,
   }));
   const gallery = [...linkedGallery, ...toGalleryDto(h, parts)];
-  const [banner] = linkedOf(parts, 'BANNER');
-  const coverUrl = h.coverUrl ?? banner?.url ?? gallery.find((item) => item.url)?.url ?? null;
+  // The household's own uploads outrank the images the village board linked.
+  const ownCover = toOwnPublicImage(h.coverPhoto, parts);
+  const banner = ownCover ?? linkedOf(parts, 'BANNER')[0];
+  const coverUrl =
+    ownCover?.url ?? h.coverUrl ?? banner?.url ?? gallery.find((item) => item.url)?.url ?? null;
   return {
     id: h.id,
     name: h.name,
@@ -247,15 +322,19 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
     history: h.history,
     village: h.village ?? null,
     craft: h.craft ?? null,
+    craftCategory: effectiveCraftCategory(h.craftCategory, h.craft),
     // Chưa chọn bìa riêng thì dùng ảnh xưởng đầu tiên đã xử lý xong.
     coverUrl,
     coverVariants: variantsOfUrl(coverUrl, [...(banner ? [banner] : []), ...gallery]),
-    portrait: linkedOf(parts, 'PORTRAIT')[0] ?? null,
+    ratingAverage: parts.rating?.average ?? null,
+    ratingCount: parts.rating?.count ?? 0,
+    portrait: toOwnPublicImage(h.portraitPhoto, parts) ?? linkedOf(parts, 'PORTRAIT')[0] ?? null,
     banner: banner ?? null,
+    seal: toOwnPublicImage(h.sealPhoto, parts),
     foundedYear: h.foundedYear ?? null,
     generations: h.generations ?? null,
     timeline: toTimelineDto(h, parts),
-    certifications: h.certifications ?? [],
+    certifications: toCertificationsDto(h, parts),
     gallery,
     capacityByCategory: h.capacityByCategory ?? {},
     artisans: parts.artisans.map(toArtisanDto),
@@ -264,7 +343,9 @@ export function toPublicHouseholdDto(h: Household, parts: HouseholdParts): Publi
       showrooms: splitWorkshops(parts.workshops).showrooms.map(toWorkshopDto),
       productionWorkshops: splitWorkshops(parts.workshops).production.map(toWorkshopDto),
     },
-    products: parts.products.map((p) => toProductDto(p, parts.makers.get(p.id), parts.media)),
+    products: parts.products.map((p) =>
+      toProductDto(p, parts.makers.get(p.id), parts.media, parts.productCovers?.get(p.id)),
+    ),
   };
 }
 
@@ -275,7 +356,12 @@ export function toHouseholdDto(h: Household, parts: HouseholdParts): HouseholdDt
     version: h.version,
     status: h.status,
     statusReason: h.statusReason ?? null,
+    reviewState: householdReviewState(h.status, h.statusReason, h.resubmittedAt),
+    resubmittedAt: h.resubmittedAt?.toISOString() ?? null,
     approvedAt: h.approvedAt?.toISOString() ?? null,
+    coverPhoto: toProfilePhoto(h.coverPhoto, parts),
+    portraitPhoto: toProfilePhoto(h.portraitPhoto, parts),
+    sealPhoto: toProfilePhoto(h.sealPhoto, parts),
     idNumberMasked: parts.idNumberMasked ?? null,
     completeness: profileCompleteness({
       history: h.history,

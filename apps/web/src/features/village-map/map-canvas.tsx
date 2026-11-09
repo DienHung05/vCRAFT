@@ -112,6 +112,16 @@ export default function MapCanvas({
   );
   const [container, setContainer] = useState<HTMLElement | null>(null);
 
+  // The phone bottom sheet is flagged on the root element so the Fox assistant steps aside (GH#297).
+  const sheetOpen = Boolean(selected && phone);
+  useEffect(() => {
+    if (!sheetOpen) return;
+    document.documentElement.dataset.mapSheet = 'open';
+    return () => {
+      delete document.documentElement.dataset.mapSheet;
+    };
+  }, [sheetOpen]);
+
   // Pin images: the ones in use now, and any the style asks for later (a style switch drops them).
   useEffect(() => {
     const map = mapRef.current?.getMap();

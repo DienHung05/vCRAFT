@@ -30,7 +30,7 @@ describe('Username registration', () => {
     fireEvent.change(screen.getByLabelText('Tên đăng nhập'), { target: { value: 'New.Buyer' } });
     expect(await screen.findByText('Bạn có thể dùng tên đăng nhập này.')).toBeTruthy();
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'buyer@example.com' } });
-    fireEvent.change(screen.getByLabelText('Mật khẩu'), { target: { value: 'password123' } });
+    fireEvent.change(screen.getByLabelText('Mật khẩu'), { target: { value: 'Password123' } });
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
     await waitFor(() =>
@@ -44,6 +44,26 @@ describe('Username registration', () => {
     );
     expect(await screen.findByText('Kiểm tra hộp thư của bạn')).toBeTruthy();
   });
+
+  it.each(['Abcdefgh1', 'abcdefghij1', 'ABCDEFGHIJ1', 'Abcdefghijk'])(
+    'rejects invalid new password %s before registration',
+    async (password) => {
+      renderEn(<RegisterForm />);
+      fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'new.buyer' } });
+      fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'buyer@example.com' } });
+      fireEvent.change(screen.getByLabelText('Password'), { target: { value: password } });
+      fireEvent.click(screen.getByRole('checkbox'));
+      fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
+      expect(
+        await screen.findByText(
+          password.length < 10
+            ? 'The password needs at least 10 characters.'
+            : 'The password needs uppercase and lowercase letters and a digit.',
+        ),
+      ).toBeTruthy();
+      expect(signUp).not.toHaveBeenCalled();
+    },
+  );
 
   it('shows an English validation message for a reserved username', async () => {
     renderEn(<RegisterForm />);
@@ -60,7 +80,7 @@ describe('Username registration', () => {
     renderEn(<RegisterForm />);
     fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'new.buyer' } });
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'buyer@example.com' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Password123' } });
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: 'Create account' }));
     expect((await screen.findByRole('alert')).textContent).toContain(

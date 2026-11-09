@@ -85,7 +85,12 @@ export class AuthGuard implements CanActivate {
     const roles = this.reflector.getAllAndOverride<AccountRole[]>(ROLES_KEY, targets);
     const request = context.switchToHttp().getRequest<RequestWithActor>();
 
-    const actor = await this.resolveActor(request);
+    // A public route may be called with a credential that is not a user session: a provider webhook carries
+    // `Authorization: Apikey <key>` (SePay), which the route checks itself. Only a Bearer token is a session.
+    const authorization = request.headers.authorization;
+    const sessionless =
+      isPublic && !(typeof authorization === 'string' && /^Bearer\s/i.test(authorization));
+    const actor = sessionless ? null : await this.resolveActor(request);
     request.actor = actor;
     if (isPublic) return true;
     if (!actor) throw new AppError('AUTH_UNAUTHENTICATED');

@@ -9,6 +9,7 @@ import {
   TraceAvailabilityResponseSchema,
   VillageStatsSchema,
 } from '@vcraft/contracts';
+import { cache } from 'react';
 import { apiBaseUrl } from '@/features/news/news-api';
 import { logApiFailure } from '@/lib/api/log-api-failure';
 import { type ProductFilters, productsQueryString } from './exhibition-query';
@@ -28,11 +29,14 @@ async function getJson<T>(
       | { success: true; data: T }
       | { success: false; error: { issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey> }> } };
   },
+  /** Slow-changing helpers (redirects, village stats) opt back into ISR; everything else is
+   * `no-store` so a suspension or withdrawal is visible on the very next request (vCRAFT-8my.1). */
+  next: { revalidate: number } | undefined = undefined,
 ): Promise<ApiResult<T>> {
   try {
     const res = await fetch(`${apiBaseUrl()}${path}`, {
       headers: { accept: 'application/json' },
-      next: { revalidate: 30 },
+      ...(next ? { next } : { cache: 'no-store' }),
       signal: AbortSignal.timeout(4000),
     });
     if (res.status === 404) return { status: 'not-found' };
@@ -66,14 +70,20 @@ export const fetchHouseholds = () => getJson('/households', HouseholdListRespons
 export const fetchHouseholdPage = (page: number, limit: number) =>
   getJson(`/households?page=${page}&limit=${limit}`, HouseholdPageResponseSchema);
 
-export const fetchHousehold = (slug: string) =>
-  getJson(`/households/${encodeURIComponent(slug)}`, PublicHouseholdResponseSchema);
+/** Share metadata/page reads within one server render. React resets this memo on each request;
+ * the underlying fetch remains no-store so a suspension is visible on the next request. */
+export const fetchHousehold = cache((slug: string) =>
+  getJson(`/households/${encodeURIComponent(slug)}`, PublicHouseholdResponseSchema),
+);
 
 /** The current slug behind a retired product or household slug (PLAN E5); `not-found` if none. */
 export const fetchSlugRedirect = (kind: 'products' | 'households', slug: string) =>
-  getJson(`/redirects/${kind}/${encodeURIComponent(slug)}`, SlugRedirectResponseSchema);
+  getJson(`/redirects/${kind}/${encodeURIComponent(slug)}`, SlugRedirectResponseSchema, {
+    revalidate: 30,
+  });
 
 export const fetchTrace = (code: string) =>
   getJson(`/trace/${encodeURIComponent(code)}`, TraceAvailabilityResponseSchema);
 
-export const fetchVillageStats = () => getJson('/village/stats', VillageStatsSchema);
+export const fetchVillageStats = () =>
+  getJson('/village/stats', VillageStatsSchema, { revalidate: 30 });

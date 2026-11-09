@@ -2,7 +2,8 @@
 
 import type { MapPinDto } from '@vcraft/contracts';
 import { ProductFigure } from '@vcraft/ui';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
+import { craftLabel } from '@/features/catalog/craft-label';
 import { Link } from '@/i18n/navigation';
 import { directionsUrl, pinOpenState } from './map-model';
 
@@ -63,6 +64,8 @@ export function PinPopup({
   onClose?: () => void;
 }) {
   const t = useTranslations('villageMap');
+  const crafts = useTranslations('catalog.craftCategories');
+  const locale = useLocale();
   return (
     <div className="flex flex-col gap-2 font-sans text-ink">
       {pin.household.coverUrl ? (
@@ -87,7 +90,9 @@ export function PinPopup({
         <div>
           <p className="font-medium text-body leading-snug">{pin.household.name}</p>
           <p className="text-small text-ash">
-            {[pin.workshopName, pin.household.craft].filter(Boolean).join(' · ')}
+            {[pin.workshopName, craftLabel(locale, pin.household, (category) => crafts(category))]
+              .filter(Boolean)
+              .join(' · ')}
           </p>
         </div>
         {onClose ? (

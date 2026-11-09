@@ -439,11 +439,30 @@ describe('BuyerRfqDetail', () => {
     },
   );
 
+  it('shows the empty allocation state for an accepted order with no timeline data', async () => {
+    renderVi(
+      <BuyerRfqDetail
+        rfqId={ID}
+        client={client({
+          getRequest: vi.fn().mockResolvedValue({ ...REQUEST, status: 'ACCEPTED' }),
+        })}
+      />,
+    );
+    expect(await screen.findByText('Chưa có phân bổ.')).toBeTruthy();
+    expect(screen.queryByRole('progressbar')).toBeNull();
+  });
+
   it('offers receipt only when every allocation is done', async () => {
     const allocation = (status: string) => ({
       id: ID,
       version: 1,
       householdId: ID,
+      householdName: 'Gốm Minh Hải',
+      startedAt: '2099-01-01T00:00:00Z',
+      dueAt: '2100-01-01T00:00:00Z',
+      lateness: 'DONE',
+      expectedQty: 100,
+      progressPercent: 100,
       quantity: 100,
       completedQty: 100,
       status,
@@ -472,6 +491,29 @@ describe('BuyerRfqDetail', () => {
       />,
     );
     expect(await screen.findByRole('button', { name: 'Xác nhận đã nhận hàng' })).toBeTruthy();
+  });
+
+  it('duplicates a delivered request and opens the fresh draft for review', async () => {
+    const duplicateRequest = vi
+      .fn()
+      .mockResolvedValue({ ...REQUEST, id: 'copy-id', status: 'DRAFT' });
+    renderVi(
+      <BuyerRfqDetail
+        rfqId={ID}
+        client={client({
+          getRequest: vi.fn().mockResolvedValue({ ...REQUEST, status: 'DELIVERED' }),
+          duplicateRequest,
+        })}
+      />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Nhân bản thành bản nháp' }));
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith({
+        pathname: '/yeu-cau-bao-gia/[code]',
+        params: { code: 'copy-id' },
+      }),
+    );
+    expect(duplicateRequest).toHaveBeenCalledWith(ID);
   });
 
   it('continues a draft in the form and shows a cancelled request with its reason', async () => {

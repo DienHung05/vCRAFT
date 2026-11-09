@@ -23,7 +23,8 @@ export async function SiteFooter() {
   const facebookLabel = displayUrl(contact.facebook);
 
   return (
-    <footer className="mt-section">
+    // One compact gap before the wave; page padding supplies the rest of the separation.
+    <footer className="mt-6">
       <WaveDivider />
       <div className="mx-auto grid max-w-editorial gap-x-12 gap-y-12 px-gutter pt-14 pb-12 md:grid-cols-2 xl:grid-cols-12">
         <div className="flex flex-col gap-5 md:col-span-2 xl:col-span-4">

@@ -38,6 +38,8 @@ export interface OgCardContent {
   title: string;
   /** One line under the title (household, summary); trimmed to fit. */
   subtitle?: string | null | undefined;
+  /** The localized site slogan shown bottom right (`meta.slogan`). */
+  slogan: string;
 }
 
 function clip(text: string, max: number): string {
@@ -46,7 +48,7 @@ function clip(text: string, max: number): string {
 }
 
 /** A typographic share card on washi paper: seal, eyebrow, title, subtitle, wordmark and slogan. */
-export async function renderOgCard({ eyebrow, title, subtitle }: OgCardContent) {
+export async function renderOgCard({ eyebrow, title, subtitle, slogan }: OgCardContent) {
   const { regular, semibold, seal } = await loadAssets();
   const heading = clip(title, 90);
   return new ImageResponse(
@@ -88,7 +90,7 @@ export async function renderOgCard({ eyebrow, title, subtitle }: OgCardContent) 
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 26, color: ASH }}>
         <span style={{ fontWeight: 600, color: INK }}>vCraft</span>
-        <span>Tinh hoa làng nghề, muôn phương lan tỏa</span>
+        <span>{slogan}</span>
       </div>
     </div>,
     {

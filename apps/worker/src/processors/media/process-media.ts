@@ -1,7 +1,8 @@
 import type { MikroORM } from '@mikro-orm/core';
-import { MediaAsset } from '@vcraft/database';
+import { MediaAsset, type MediaVariant } from '@vcraft/database';
+import { isHeicMime } from '@vcraft/domain';
 import { IMMUTABLE_CACHE_CONTROL, type ObjectStorage } from '@vcraft/storage';
-import { convertImage } from './convert-image';
+import { type ConvertedVariant, convertImageInPhases } from './convert-image';
 
 export interface MediaDeps {
   orm: MikroORM;
@@ -10,29 +11,13 @@ export interface MediaDeps {
 
 const CONTENT_TYPES = { avif: 'image/avif', webp: 'image/webp' } as const;
 
-/**
- * Job `media`: chuyển ảnh công khai thành biến thể trong bucket công khai rồi đặt `READY`.
- * Idempotent: chỉ xử lý tệp còn `PROCESSING`, key biến thể suy ra từ nội dung. Lỗi decode là lỗi
- * vĩnh viễn ⇒ `FAILED`; lỗi lưu trữ/CSDL ném ra để BullMQ thử lại.
- */
-export async function processMediaAsset(deps: MediaDeps, assetId: string): Promise<void> {
-  const em = deps.orm.em.fork();
-  const asset = await em.findOne(MediaAsset, assetId);
-  if (asset?.status !== 'PROCESSING' || asset.visibility !== 'PUBLIC') return;
-
-  const original = await deps.storage.get('private', asset.originalKey);
-  let converted: Awaited<ReturnType<typeof convertImage>>;
-  try {
-    converted = await convertImage(original);
-  } catch (error) {
-    asset.status = 'FAILED';
-    asset.failureReason = (error instanceof Error ? error.message : String(error)).slice(0, 300);
-    await em.flush();
-    return;
-  }
-
-  const variants = [];
-  for (const variant of converted.variants) {
+async function storeVariants(
+  deps: MediaDeps,
+  asset: MediaAsset,
+  converted: readonly ConvertedVariant[],
+): Promise<MediaVariant[]> {
+  const variants: MediaVariant[] = [];
+  for (const variant of converted) {
     const key = `v/${asset.id}/${variant.width}-${variant.hash}.${variant.format}`;
     await deps.storage.put({
       bucket: 'public',
@@ -49,11 +34,74 @@ export async function processMediaAsset(deps: MediaDeps, assetId: string): Promi
       bytes: variant.bytes.byteLength,
     });
   }
-  asset.width = converted.width;
-  asset.height = converted.height;
-  asset.thumbhash = converted.thumbhash;
-  asset.dominantColor = converted.dominantColor;
-  asset.variants = variants;
-  asset.status = 'READY';
+  return variants;
+}
+
+/**
+ * Job `media`: chuyển ảnh công khai thành biến thể trong bucket công khai rồi đặt `READY`.
+ * Idempotent: chỉ xử lý tệp còn `PROCESSING`, key biến thể suy ra từ nội dung. Lỗi decode là lỗi
+ * vĩnh viễn ⇒ `FAILED`; lỗi lưu trữ/CSDL ném ra để BullMQ thử lại.
+ *
+ * Two phases (GH#252): WebP is fast to encode and is what every page displays, so the asset turns
+ * `READY` as soon as the WebP sizes are stored; the AVIF sizes, ten times slower to encode, are added
+ * to `variants` afterwards. On a small CPU this cuts the wait from minutes to seconds.
+ */
+export async function processMediaAsset(deps: MediaDeps, assetId: string): Promise<void> {
+  const em = deps.orm.em.fork();
+  const asset = await em.findOne(MediaAsset, assetId);
+  if (asset?.visibility !== 'PUBLIC') return;
+  // Resumable (GH#345): a READY asset whose AVIF phase failed on an earlier attempt still has no AVIF
+  // variant, so a retry fills it in. The WebP set is already live and is never rewritten or downgraded.
+  const needsAvifOnly =
+    asset.status === 'READY' && !asset.variants.some((v) => v.format === 'avif');
+  if (asset.status !== 'PROCESSING' && !needsAvifOnly) return;
+
+  const original = await deps.storage.get('private', asset.originalKey);
+  let converted: Awaited<ReturnType<typeof convertImageInPhases>>;
+  try {
+    converted = await convertImageInPhases(original, { heic: isHeicMime(asset.mimeType) });
+  } catch (error) {
+    if (needsAvifOnly) return;
+    asset.status = 'FAILED';
+    asset.failureReason = (error instanceof Error ? error.message : String(error)).slice(0, 300);
+    await em.flush();
+    return;
+  }
+
+  let webp: MediaVariant[] = asset.variants;
+  if (!needsAvifOnly) {
+    webp = await storeVariants(deps, asset, converted.webp);
+    asset.width = converted.width;
+    asset.height = converted.height;
+    asset.thumbhash = converted.thumbhash;
+    asset.dominantColor = converted.dominantColor;
+    asset.variants = webp;
+    asset.status = 'READY';
+    await em.flush();
+  }
+
+  const avif = await storeVariants(deps, asset, await converted.encodeAvif());
+  asset.variants = [...webp, ...avif].sort(
+    (a, b) => a.width - b.width || a.format.localeCompare(b.format),
+  );
+  await em.flush();
+}
+
+/**
+ * Called once BullMQ gave up on a media job (GH#345): a storage or database error exhausted every
+ * retry, so the asset would stay `PROCESSING` forever. Marks it `FAILED` with a reason; the API's live
+ * stream then announces the change like any other status flip. A `READY` asset (WebP already live,
+ * only AVIF missing) is left alone.
+ */
+export async function failMediaAsset(
+  deps: Pick<MediaDeps, 'orm'>,
+  assetId: string,
+  error: Error,
+): Promise<void> {
+  const em = deps.orm.em.fork();
+  const asset = await em.findOne(MediaAsset, assetId);
+  if (asset?.status !== 'PROCESSING') return;
+  asset.status = 'FAILED';
+  asset.failureReason = error.message.slice(0, 300);
   await em.flush();
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Reveal } from '@/experience/motion/reveal';
 import { KilnShell } from './kiln/kiln-shell';
 
 /**
@@ -28,7 +29,7 @@ export function AuthShell({
         </>
       }
     >
-      {children}
+      <Reveal>{children}</Reveal>
     </KilnShell>
   );
 }

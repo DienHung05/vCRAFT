@@ -1,7 +1,12 @@
 'use client';
 
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
-import type { CoordinationDto, RfqResponse } from '@vcraft/contracts';
+import type {
+  AllocationDto,
+  CoordinationDto,
+  InternalQuotationDto,
+  RfqResponse,
+} from '@vcraft/contracts';
 import { Badge, Button, buttonVariants, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
@@ -9,10 +14,12 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
 import { DashboardSkeleton } from '@/components/states/skeletons';
+import { HouseholdRatings } from '@/features/rfq/household-ratings';
 import { Link } from '@/i18n/navigation';
 import { useLiveEvents } from '@/lib/api/live-events';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { notify } from '@/lib/notify';
+import { useMoney } from '@/lib/use-money';
 import { AllocationBoard, type BoardSubmitPayload } from './allocation-board';
 
 type LiveState =
@@ -20,7 +27,13 @@ type LiveState =
   | { kind: 'unauthenticated' }
   | { kind: 'notFound' }
   | { kind: 'claimable'; request: RfqResponse }
-  | { kind: 'ready'; coordination: CoordinationDto; noticeCount: number }
+  | {
+      kind: 'ready';
+      coordination: CoordinationDto;
+      noticeCount: number;
+      /** Only for a request made for an off-platform customer: what the buyer would otherwise see. */
+      customer: { quotations: InternalQuotationDto[]; allocations: AllocationDto[] } | null;
+    }
   | { kind: 'error' };
 
 const biddingOpen = (request: RfqResponse) => ['SENT', 'BIDDING'].includes(request.status);
@@ -59,6 +72,7 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
   const t = useTranslations('admin.live');
   const rfq = useTranslations('rfq');
   const format = useFormatter();
+  const money = useMoney();
   const draftRef = useRef<PlanDraft | null>(null);
   const [state, setState] = useState<LiveState>({ kind: 'loading' });
   const [refresh, setRefresh] = useState(0);
@@ -66,6 +80,8 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
   const [dialog, setDialog] = useState<'start' | 'receive' | 'cancel' | null>(null);
   const [reason, setReason] = useState('');
   const [reasonMissing, setReasonMissing] = useState(false);
+  // The quotation the administrator is about to accept for an off-platform customer.
+  const [accepting, setAccepting] = useState<InternalQuotationDto | null>(null);
   // A new offer, claim or allocation notice: reload now rather than at the next 10 s poll (GH#93).
   useLiveEvents((event) => {
     if (event.type === 'activity' && !document.hidden) setRefresh((n) => n + 1);
@@ -88,10 +104,17 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
           return;
         }
         const notices = await client.listNotices();
+        const customer = coordination.request.onBehalfOf
+          ? await Promise.all([
+              client.listInternalQuotations(rfqId),
+              client.listAllocations(rfqId),
+            ]).then(([quotations, allocations]) => ({ quotations, allocations }))
+          : null;
         if (active && current === sequence)
           setState({
             kind: 'ready',
             coordination,
+            customer,
             noticeCount: notices.filter(
               (notice) => notice.requestId === rfqId && notice.kind === 'QUOTATION_WITHDRAWN',
             ).length,
@@ -210,6 +233,10 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
         setRefresh((value) => value + 1);
         throw new Error(t('stale'));
       }
+      if (error instanceof QuotationApiError && error.code === 'RFQ_CAPACITY_EXCEEDED')
+        throw new Error(t('capacityExceeded'));
+      if (error instanceof QuotationApiError && error.code === 'RFQ_OFFER_QUANTITY_EXCEEDED')
+        throw new Error(t('offerExceeded'));
       throw new Error(t('loadFailed'));
     }
   };
@@ -236,6 +263,16 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
       notify.success(t('receivedToast'));
     } catch (error) {
       actionFailed(error, t('actionFailed'));
+    }
+  };
+  const acceptForCustomer = async (quotation: InternalQuotationDto) => {
+    setAccepting(null);
+    try {
+      await client.acceptQuotation(rfqId, request.version, { quotationId: quotation.id });
+      setRefresh((value) => value + 1);
+      notify.success(t('acceptedToast'));
+    } catch (error) {
+      actionFailed(error, t('acceptFailed'));
     }
   };
   const closeDialog = () => {
@@ -283,6 +320,30 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
           <dd>{format.dateTime(new Date(request.requiredBy), 'long')}</dd>
         </div>
       </dl>
+      {request.onBehalfOf ? (
+        <Card className="flex flex-col gap-3 p-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone="clay">{t('onBehalfBadge')}</Badge>
+            <p className="text-small text-ash">{t('onBehalfLead')}</p>
+          </div>
+          <dl className="flex flex-wrap gap-x-8 gap-y-2 text-small">
+            <div>
+              <dt className="text-ash">{t('customerName')}</dt>
+              <dd>{request.onBehalfOf.name}</dd>
+            </div>
+            <div>
+              <dt className="text-ash">{t('customerPhone')}</dt>
+              <dd>{request.onBehalfOf.phone}</dd>
+            </div>
+            {request.onBehalfOf.email ? (
+              <div>
+                <dt className="text-ash">{t('customerEmail')}</dt>
+                <dd>{request.onBehalfOf.email}</dd>
+              </div>
+            ) : null}
+          </dl>
+        </Card>
+      ) : null}
       {state.noticeCount > 0 ? (
         <p role="status">{t('notice', { count: state.noticeCount })}</p>
       ) : null}
@@ -302,6 +363,7 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
             name: offer.householdName,
             tint: 'var(--color-clay)',
             maxQuantity: offer.maxQuantity,
+            capacity: offer.householdCapacity ?? null,
             unitPriceVnd: offer.unitPriceVnd,
             completionDate: offer.completionDate,
             contributionVersion: offer.version,
@@ -318,6 +380,49 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
             : {})}
           disabled={closed}
           onSubmit={submit}
+        />
+      ) : null}
+      {state.customer && bidding ? (
+        <section aria-labelledby="customer-quotations-title" className="flex flex-col gap-3">
+          <h2 id="customer-quotations-title" className="text-h3">
+            {t('quotationsTitle')}
+          </h2>
+          {state.customer.quotations.filter((q) => q.status === 'SUBMITTED').length === 0 ? (
+            <p className="text-ash">{t('noQuotations')}</p>
+          ) : (
+            <ul className="flex flex-col gap-3" data-testid="customer-quotations">
+              {state.customer.quotations
+                .filter((quotation) => quotation.status === 'SUBMITTED')
+                .map((quotation) => (
+                  <li key={quotation.id}>
+                    <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
+                      <div className="flex flex-col gap-1 text-small">
+                        <ul>
+                          {quotation.parts.map((part) => (
+                            <li key={part.householdId}>
+                              {part.householdName}: {format.number(part.quantity)} {request.unit}
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="font-medium">
+                          {t('quotationTotal', { total: money(quotation.totalVnd) })}
+                        </p>
+                      </div>
+                      <Button onClick={() => setAccepting(quotation)}>{t('accept')}</Button>
+                    </Card>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
+      {state.customer && request.status === 'DELIVERED' ? (
+        <HouseholdRatings
+          client={client}
+          requestId={request.id}
+          shares={state.customer.allocations}
+          ratings={request.ratings ?? []}
+          onSaved={() => setRefresh((value) => value + 1)}
         />
       ) : null}
       {request.status === 'ACCEPTED' ? (
@@ -337,6 +442,27 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
         </div>
       ) : null}
 
+      <ConfirmDialog
+        open={accepting !== null}
+        tone="seal"
+        title={t('acceptTitle')}
+        confirmLabel={t('accept')}
+        cancelLabel={t('back')}
+        onClose={() => setAccepting(null)}
+        onConfirm={() => {
+          if (accepting) void acceptForCustomer(accepting);
+        }}
+      >
+        {accepting ? (
+          <p className="text-ash">
+            {t('acceptText', {
+              quantity: format.number(request.quantity),
+              unit: request.unit,
+              total: money(accepting.totalVnd),
+            })}
+          </p>
+        ) : null}
+      </ConfirmDialog>
       <ConfirmDialog
         open={dialog === 'start'}
         title={t('startTitle')}

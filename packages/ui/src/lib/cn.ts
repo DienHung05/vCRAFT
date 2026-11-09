@@ -9,7 +9,7 @@ const twMerge = extendTailwindMerge({
   extend: {
     theme: {
       // Nhịp biên tập (`px-gutter`, `py-section`) và khung (`max-w-editorial`, `max-w-prose-vn`).
-      spacing: ['gutter', 'section'],
+      spacing: ['gutter', 'section', 'section-tail'],
       container: ['editorial', 'prose-vn'],
     },
     classGroups: {

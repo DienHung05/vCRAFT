@@ -1,3 +1,4 @@
+import { JOURNAL_STAGES } from '@vcraft/domain';
 import { Badge, buttonVariants, Card, cn, ProductFigure, SealMark } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -7,23 +8,31 @@ import { Breadcrumbs } from '@/components/breadcrumbs';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { UsdRateNote, UsdReference } from '@/components/usd-reference';
+import { JourneySummary } from '@/experience/journey/journey-summary';
+import { Reveal } from '@/experience/motion/reveal';
 import { fetchProduct, fetchProducts, fetchSlugRedirect } from '@/features/catalog/exhibition-api';
 import { presetKindOf } from '@/features/catalog/preset-figure';
 import { ProductCard, productImageTransition } from '@/features/catalog/product-card';
+import { GalleryTrigger, ProductGallery } from '@/features/catalog/product-gallery';
+import { ProductQr } from '@/features/catalog/product-qr';
 import {
   altFor,
+  type GallerySlide,
+  gallerySlide,
   photoFromUrl,
   slotPhoto,
   tintOf,
   toLogEntries,
   toProductCardView,
 } from '@/features/catalog/view-models';
+import { FavouriteButton } from '@/features/favourites/favourite-button';
 import { Link, permanentRedirect } from '@/i18n/navigation';
 import { frameRatioOf } from '@/lib/images';
 import { resolveLocale } from '@/lib/locale';
+import { optionalTextFor, textFor } from '@/lib/localized-text';
 import { jsonLd, metaDescription, pageMetadata } from '@/lib/seo/page-metadata';
 import { localizedPath } from '@/lib/seo/sitemap-entries';
-import { siteOrigin } from '@/lib/site';
+import { siteOrigin, traceShortUrl } from '@/lib/site';
 
 // Dữ liệu lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
 export const dynamic = 'force-dynamic';
@@ -39,8 +48,11 @@ export async function generateMetadata({
   return pageMetadata({
     locale,
     href: { pathname: '/san-pham/[slug]', params: { slug: product.slug } },
-    title: product.name,
-    description: metaDescription(product.description || product.name),
+    title: textFor(locale, product.name, product.nameEn),
+    description: metaDescription(
+      textFor(locale, product.description, product.descriptionEn) ||
+        textFor(locale, product.name, product.nameEn),
+    ),
   });
 }
 
@@ -62,7 +74,7 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
   }
   if (result.status === 'unavailable') return <DataUnavailable />;
   const { product, household, journal } = result.data;
-  const [t, common, stages, categories, preset, format, siblings] = await Promise.all([
+  const [t, common, stages, categories, preset, format, siblings, trace] = await Promise.all([
     getTranslations('product'),
     getTranslations('common'),
     getTranslations('stages'),
@@ -70,14 +82,20 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
     getTranslations('presetFigure'),
     getFormatter(),
     fetchProducts({ household: household.slug, limit: 5 }),
+    getTranslations('trace'),
   ]);
   const log = toLogEntries(journal);
   const first = log[0];
   const last = log.at(-1);
+  const name = textFor(locale, product.name, product.nameEn);
+  const description = textFor(locale, product.description, product.descriptionEn);
+  const material = optionalTextFor(locale, product.material, product.materialEn);
+  const dimensions = optionalTextFor(locale, product.dimensions, product.dimensionsEn);
+  const sold = product.status === 'SOLD';
   const tint = tintOf(product.traceCode);
   const image = photoFromUrl(
     product.coverUrl,
-    altFor(locale, product.coverAlt ?? product.name, product.coverAltEn),
+    altFor(locale, product.coverAlt ?? name, product.coverAltEn),
     product.coverVariants,
   );
   const presetKind = presetKindOf(product.category, product.name);
@@ -85,16 +103,42 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
   const entryPhotos = log
     .slice(1, 5)
     .flatMap((e) => e.images.slice(0, 1).map((image) => ({ e, image })));
+  // Slides of the lightbox: the cover when it is a real photo, then the journal photos, in page order.
+  const coverSlide = gallerySlide(image);
+  const entrySlides = entryPhotos.map(({ e, image: own }) =>
+    gallerySlide(photoFromUrl(own.url, stages(`${e.stage}.name`), own.variants)),
+  );
+  const slides: GallerySlide[] = [coverSlide, ...entrySlides].filter(
+    (slide): slide is GallerySlide => slide !== undefined,
+  );
+  const thumbOffset = coverSlide ? 1 : 0;
   const more =
     siblings.status === 'ok'
       ? siblings.data.data.filter((p) => p.slug !== product.slug).slice(0, 4)
       : [];
 
+  const cover = (
+    <ImageSlot
+      alt={image?.alt ?? preset(presetKind)}
+      tint={tint}
+      ratio={image?.variants ? frameRatioOf(image.variants) : '4/5'}
+      fit="contain"
+      {...slotPhoto(image)}
+      priority
+      sizes="(min-width: 768px) 58vw, 100vw"
+      className="grid place-items-center"
+    >
+      {image ? null : (
+        <ProductFigure kind={presetKind} className="h-3/5" body="var(--color-paper)" band={tint} />
+      )}
+    </ImageSlot>
+  );
+
   // schema.org Product for search results (GH#256); the price only when the household set one.
   const productLd = jsonLd({
     '@type': 'Product',
-    name: product.name,
-    description: product.description || undefined,
+    name,
+    description: description || undefined,
     sku: product.traceCode,
     category: categories(product.category),
     brand: { '@type': 'Brand', name: household.name },
@@ -105,7 +149,9 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
         price: product.priceVnd,
         priceCurrency: 'VND',
         availability:
-          product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+          product.stock > 0 && !sold
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
       },
     }),
   });
@@ -119,44 +165,32 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
         items={[
           { label: common('home'), href: '/' },
           { label: t('allProducts'), href: '/san-pham' },
-          { label: product.name },
+          { label: name },
         ]}
       />
 
       <div className="grid gap-10 md:grid-cols-12 md:gap-14">
         <div className="md:col-span-7">
-          <div className="md:sticky md:top-24">
-            <ViewTransition
-              name={productImageTransition(product.slug)}
-              share="product-morph"
-              default="none"
-            >
-              <ImageSlot
-                alt={image?.alt ?? preset(presetKind)}
-                tint={tint}
-                ratio={image?.variants ? frameRatioOf(image.variants) : '4/5'}
-                fit="contain"
-                {...slotPhoto(image)}
-                priority
-                sizes="(min-width: 768px) 58vw, 100vw"
-                className="grid place-items-center"
+          <ProductGallery slides={slides}>
+            <div className="md:sticky md:top-24">
+              <ViewTransition
+                name={productImageTransition(product.slug)}
+                share="product-morph"
+                default="none"
               >
-                {image ? null : (
-                  <ProductFigure
-                    kind={presetKind}
-                    className="h-3/5"
-                    body="var(--color-paper)"
-                    band={tint}
-                  />
+                {coverSlide ? (
+                  <GalleryTrigger index={0} alt={coverSlide.alt}>
+                    {cover}
+                  </GalleryTrigger>
+                ) : (
+                  cover
                 )}
-              </ImageSlot>
-            </ViewTransition>
-            {entryPhotos.length > 0 ? (
-              <ul className="mt-4 grid grid-cols-4 gap-3" aria-label={t('gallery')}>
-                {entryPhotos.map(({ e, image: own }) => {
-                  const alt = stages(`${e.stage}.name`);
-                  return (
-                    <li key={e.hash}>
+              </ViewTransition>
+              {entryPhotos.length > 0 ? (
+                <ul className="mt-4 grid grid-cols-4 gap-3" aria-label={t('gallery')}>
+                  {entryPhotos.map(({ e, image: own }, i) => {
+                    const alt = stages(`${e.stage}.name`);
+                    const thumb = (
                       <ImageSlot
                         alt={alt}
                         tint={e.tint}
@@ -164,12 +198,23 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
                         {...slotPhoto(photoFromUrl(own.url, alt, own.variants))}
                         sizes="(min-width: 768px) 14vw, 22vw"
                       />
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : null}
-          </div>
+                    );
+                    return (
+                      <li key={e.hash}>
+                        {entrySlides[i] ? (
+                          <GalleryTrigger index={thumbOffset + i} alt={alt}>
+                            {thumb}
+                          </GalleryTrigger>
+                        ) : (
+                          thumb
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+            </div>
+          </ProductGallery>
         </div>
 
         <div className="flex flex-col gap-8 md:col-span-5">
@@ -182,8 +227,9 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
                   {common('oneOfAKind')}
                 </Badge>
               ) : null}
+              {sold ? <Badge tone="outline">{common('sold')}</Badge> : null}
             </div>
-            <h1 className="text-h1">{product.name}</h1>
+            <h1 className="text-h1">{name}</h1>
             <p className="text-ash">
               {t.rich('by', {
                 household: household.name,
@@ -205,78 +251,101 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
             </p>
             <UsdRateNote />
             <p className="text-small text-ash">
-              {product.stock > 0 ? t('stock', { count: product.stock }) : t('soldOut')}
+              {sold
+                ? t('soldNote')
+                : product.stock > 0
+                  ? t('stock', { count: product.stock })
+                  : t('soldOut')}
             </p>
           </header>
 
-          <p className="max-w-prose-vn">{product.description}</p>
+          <p className="max-w-prose-vn">{description}</p>
+
+          {product.tags.length > 0 ? (
+            <ul className="flex flex-wrap gap-2" aria-label={t('tags')}>
+              {product.tags.map((tag) => (
+                <li key={tag}>
+                  <Badge tone="outline" className="normal-case">
+                    {tag}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          ) : null}
 
           <div className="flex flex-wrap gap-3">
-            <Link href="/yeu-cau-bao-gia" className={buttonVariants({ size: 'lg' })}>
-              {t('ctaRfq')}
-            </Link>
+            {/* A sold piece cannot start a new quotation request. */}
+            {sold ? null : (
+              <Link href="/yeu-cau-bao-gia" className={buttonVariants({ size: 'lg' })}>
+                {t('ctaRfq')}
+              </Link>
+            )}
             <Link
               href={{ pathname: '/nghe-nhan/[slug]', params: { slug: household.slug } }}
               className={buttonVariants({ variant: 'secondary', size: 'lg' })}
             >
               {t('ctaWorkshop')}
             </Link>
+            <FavouriteButton productId={product.id} name={name} variant="labelled" />
           </div>
 
           {/* Nhật ký rút gọn 1 dòng ⇒ landing truy xuất (BRAND §9). */}
           {first && last ? (
-            <Card className="flex flex-col gap-4 p-6">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="font-sans text-body font-semibold text-ink">{t('journey')}</h2>
-                <span className="font-mono text-small text-ash">{product.traceCode}</span>
-              </div>
-              <ol className="flex items-center" aria-label={t('journey')}>
-                {log.map((e, i) => (
-                  <li key={e.hash} className="flex flex-1 items-center last:flex-none">
-                    <span
-                      title={stages(`${e.stage}.name`)}
-                      className="size-3 shrink-0 rounded-full ring-2 ring-surface"
-                      style={{ background: e.tint }}
-                    />
-                    {i < log.length - 1 ? (
-                      <span
-                        aria-hidden="true"
-                        className="h-0.5 flex-1 bg-linear-to-r from-clay/50 to-seal/50"
-                      />
-                    ) : null}
-                  </li>
-                ))}
-              </ol>
-              <p className="text-small text-ash">
-                {t('journeySummary', {
-                  count: log.length,
-                  from: format.dateTime(new Date(first.at), 'short'),
-                  to: format.dateTime(new Date(last.at), 'short'),
-                })}
-              </p>
-              <Link
-                href={{ pathname: '/truy-xuat/[code]', params: { code: product.traceCode } }}
-                className={cn(
-                  buttonVariants({ variant: 'ghost', size: 'sm' }),
-                  'self-start px-0 text-clay hover:bg-transparent hover:underline',
-                )}
-              >
-                {t('journeyCta')} →
-              </Link>
-            </Card>
+            <Reveal>
+              <Card className="flex flex-col gap-4 p-6">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="font-sans text-body font-semibold text-ink">{t('journey')}</h2>
+                  <span className="font-mono text-small text-ash">{product.traceCode}</span>
+                </div>
+                <JourneySummary
+                  label={t('journey')}
+                  steps={JOURNAL_STAGES.map((stage) => {
+                    const entry = log.findLast((item) => item.stage === stage);
+                    const name = stages(`${stage}.name`);
+                    const href = localizedPath(
+                      { pathname: '/truy-xuat/[code]', params: { code: product.traceCode } },
+                      locale,
+                    );
+                    return {
+                      stage,
+                      name: entry ? name : trace('stageNotRecorded', { stage: name }),
+                      href: `${href}#${entry ? `log-${entry.seq + 1}` : 'journey-title'}`,
+                      recorded: !!entry,
+                    };
+                  })}
+                />
+                <p className="text-small text-ash">
+                  {t('journeySummary', {
+                    count: log.length,
+                    from: format.dateTime(new Date(first.at), 'short'),
+                    to: format.dateTime(new Date(last.at), 'short'),
+                  })}
+                </p>
+                <Link
+                  href={{ pathname: '/truy-xuat/[code]', params: { code: product.traceCode } }}
+                  className={cn(
+                    buttonVariants({ variant: 'ghost', size: 'sm' }),
+                    'self-start px-0 text-clay hover:bg-transparent hover:underline',
+                  )}
+                >
+                  {t('journeyCta')} →
+                </Link>
+              </Card>
+            </Reveal>
           ) : null}
+          <ProductQr code={product.traceCode} url={traceShortUrl(product.traceCode)} />
 
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 border-ink/10 border-t pt-6 text-small">
-            {product.material ? (
+            {material ? (
               <>
                 <dt className="text-ash">{t('material')}</dt>
-                <dd>{product.material}</dd>
+                <dd>{material}</dd>
               </>
             ) : null}
-            {product.dimensions ? (
+            {dimensions ? (
               <>
                 <dt className="text-ash">{t('dimensions')}</dt>
-                <dd>{product.dimensions}</dd>
+                <dd>{dimensions}</dd>
               </>
             ) : null}
             {product.weightGrams ? (
@@ -303,14 +372,16 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
 
       {more.length > 0 ? (
         <section className="pt-section" aria-labelledby="more-title">
-          <h2 id="more-title">{t('more')}</h2>
-          <ul className="mt-8 grid grid-cols-2 gap-6 md:grid-cols-4">
-            {more.map((p) => (
-              <li key={p.slug}>
-                <ProductCard product={toProductCardView(p, locale)} />
-              </li>
-            ))}
-          </ul>
+          <Reveal>
+            <h2 id="more-title">{t('more')}</h2>
+            <ul className="mt-8 grid grid-cols-2 gap-6 md:grid-cols-4">
+              {more.map((p) => (
+                <li key={p.slug}>
+                  <ProductCard product={toProductCardView(p, locale)} />
+                </li>
+              ))}
+            </ul>
+          </Reveal>
         </section>
       ) : null}
     </article>

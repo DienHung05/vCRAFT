@@ -1,21 +1,35 @@
 import {
+  CRAFT_CATEGORIES,
+  certificationYear,
+  HOUSEHOLD_REVIEW_STATES,
   HOUSEHOLD_STATUSES,
   ID_NUMBER_PATTERN,
   isValidOpeningInterval,
+  MAX_PRODUCT_TAG_LENGTH,
+  MAX_PRODUCT_TAGS,
   PRODUCT_CATEGORIES,
   PRODUCT_STATUSES,
   PROFILE_SECTIONS,
+  VILLAGE_AREA_CODES,
 } from '@vcraft/domain';
 import { z } from 'zod';
 import { IdSchema, IsoDateSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
 import { JournalResponseSchema } from '../journal';
-import { PublicCreditSchema, PublicImageSchema, PublicImageVariantsSchema } from '../media';
+import {
+  CertificateKindSchema,
+  PublicCreditSchema,
+  PublicImageSchema,
+  PublicImageVariantsSchema,
+} from '../media';
 
 /** Hộ sản xuất, xưởng, nghệ nhân, sản phẩm và các quyết định duyệt / xuất bản (vCRAFT-9hg.2, 9hg.3). */
 
 export const HouseholdStatusSchema = z.enum(HOUSEHOLD_STATUSES);
+export const HouseholdReviewStateSchema = z.enum(HOUSEHOLD_REVIEW_STATES);
 export const ProductStatusSchema = z.enum(PRODUCT_STATUSES);
 export const WorkshopPurposeSchema = z.enum(['PRODUCTION', 'SHOWROOM', 'BOTH']);
+/** The hamlet of a workshop (ADR-0023). */
+export const VillageAreaCodeSchema = z.enum(VILLAGE_AREA_CODES);
 export const ProductKindSchema = z.enum(['OBJECT', 'BATCH']);
 const CategorySchema = z.enum(PRODUCT_CATEGORIES);
 
@@ -62,6 +76,14 @@ export const HouseholdDecisionRequestSchema = z.object({
 });
 export type HouseholdDecisionRequest = z.infer<typeof HouseholdDecisionRequestSchema>;
 
+/** `POST /me/household/resubmit`: the representative explicitly resubmits the application after edits (vCRAFT-8my.2). */
+export const ResubmitHouseholdResponseSchema = z.object({
+  version: VersionSchema,
+  resubmittedAt: IsoDateTimeSchema,
+  reviewState: HouseholdReviewStateSchema,
+});
+export type ResubmitHouseholdDto = z.infer<typeof ResubmitHouseholdResponseSchema>;
+
 export const ListHouseholdsQuerySchema = z.object({
   status: HouseholdStatusSchema.optional(),
   /** Ngày nộp hồ sơ, tính cả hai đầu. */
@@ -75,6 +97,8 @@ export const AdminHouseholdSchema = z.object({
   version: VersionSchema,
   name: z.string(),
   status: HouseholdStatusSchema,
+  reviewState: HouseholdReviewStateSchema,
+  resubmittedAt: IsoDateTimeSchema.nullable().default(null),
   submittedAt: IsoDateTimeSchema,
 });
 export type AdminHouseholdDto = z.infer<typeof AdminHouseholdSchema>;
@@ -86,19 +110,35 @@ export const HouseholdDocumentSchema = z.object({
   mimeType: z.string(),
   /** What the document is (for example "Căn cước công dân"); null when the file has no caption. */
   caption: z.string().nullable().default(null),
+  /** What the document evidences (vCRAFT-8my.3); `UNKNOWN` for uploads made before classification. */
+  certificateKind: CertificateKindSchema.default('UNKNOWN'),
   sizeBytes: z.int().nonnegative(),
   createdAt: IsoDateTimeSchema,
 });
 export type HouseholdDocumentDto = z.infer<typeof HouseholdDocumentSchema>;
 export const HouseholdDocumentListSchema = z.object({ data: z.array(HouseholdDocumentSchema) });
 
-/** Số liệu tổng quan của Ban quản lý (FR-ADM-06). */
+/** One Vietnam calendar date (`YYYY-MM-DD`) of the dashboard's QR-scan trend. */
+export const AdminDashboardTrendPointSchema = z.object({
+  /** `YYYY-MM-DD`, a Vietnam calendar date (UTC+7). */
+  date: IsoDateSchema,
+  count: z.int().nonnegative(),
+});
+export type AdminDashboardTrendPointDto = z.infer<typeof AdminDashboardTrendPointSchema>;
+
+/** Overview figures of the village board (FR-ADM-06). */
 export const AdminDashboardSchema = z.object({
   activeHouseholds: z.int().nonnegative(),
   pendingApplications: z.int().nonnegative(),
   openRfqs: z.int().nonnegative(),
   ordersInProduction: z.int().nonnegative(),
   qrScans30Days: z.int().nonnegative(),
+  /**
+   * QR scans per day over the last 30 Vietnam calendar dates (UTC+7) including today, oldest first.
+   * Counts only persisted `trace_scan` rows and zero-fills the dates without scans — historical
+   * totals are never invented from present ones.
+   */
+  trend: z.array(AdminDashboardTrendPointSchema).optional(),
 });
 export type AdminDashboardDto = z.infer<typeof AdminDashboardSchema>;
 
@@ -166,11 +206,52 @@ export const TimelineEventResponseSchema = z.object({
 });
 export type TimelineEventDto = z.infer<typeof TimelineEventResponseSchema>;
 
-const CertificationInputSchema = z.object({
-  name: z.string().trim().min(2, 'Hãy ghi tên chứng nhận').max(160),
-  issuer: z.string().trim().min(2, 'Hãy ghi đơn vị cấp').max(160),
-  year: YearSchema,
+/** A photo the household uploaded itself: the media asset and what it shows. */
+const OwnPhotoInputSchema = z.object({ mediaId: IdSchema, alt: AltSchema });
+
+/** A photo as read back: its processed URL (null while still processing) and every size. */
+export const ProfilePhotoResponseSchema = z.object({
+  mediaId: IdSchema,
+  url: z.string().nullable(),
+  variants: PublicImageVariantsSchema,
+  alt: z.string(),
 });
+export type ProfilePhotoDto = z.infer<typeof ProfilePhotoResponseSchema>;
+
+/**
+ * A certification as the household sends it (FR-ART-03): name, issuer, issue date and an optional photo.
+ * Legacy entries have only a year; when a date is given the stored year is derived from it.
+ */
+const CertificationInputSchema = z
+  .object({
+    name: z.string().trim().min(2, 'Hãy ghi tên chứng nhận').max(160),
+    issuer: z.string().trim().min(2, 'Hãy ghi đơn vị cấp').max(160),
+    year: YearSchema.optional(),
+    issuedOn: IsoDateSchema.optional(),
+    photo: OwnPhotoInputSchema.nullable().optional(),
+  })
+  .refine((c) => certificationYear(c) !== null, {
+    message: 'Hãy nhập ngày cấp',
+    path: ['issuedOn'],
+  })
+  .refine(
+    (c) => {
+      const year = certificationYear(c);
+      return year === null || (year >= 1000 && year <= CURRENT_YEAR_LIMIT);
+    },
+    { message: 'Năm không hợp lệ', path: ['issuedOn'] },
+  );
+
+/** A certification as read back; `verified` is only ever set by the village board. */
+export const CertificationResponseSchema = z.object({
+  name: z.string(),
+  issuer: z.string(),
+  year: z.int(),
+  issuedOn: IsoDateSchema.nullable().default(null),
+  photo: ProfilePhotoResponseSchema.nullable().default(null),
+  verified: z.boolean(),
+});
+export type CertificationDto = z.infer<typeof CertificationResponseSchema>;
 
 /** Hộ chỉ gắn ảnh mình đã tải lên, hoặc giữ lại ảnh có sẵn trong bộ ảnh mẫu. */
 const GalleryInputSchema = z.union([
@@ -188,8 +269,18 @@ const CapacitySchema = z.partialRecord(z.enum(PRODUCT_CATEGORIES), z.int().min(0
 export const UpdateHouseholdProfileRequestSchema = z.object({
   /** A new public URL slug; the old one keeps answering with a permanent redirect (PLAN E5). */
   slug: SlugSchema.optional(),
+  /** The story as a restricted Markdown subset (`parseStoryMarkdown` in `@vcraft/domain`). */
   history: z.string().trim().max(10_000).optional(),
+  /** Free-text detail of the craft ("men lam"); the category below is the fixed-list choice. */
   craft: z.string().trim().max(160).optional(),
+  craftCategory: z.enum(CRAFT_CATEGORIES).nullable().optional(),
+  /** Own cover photo, portrait and personal seal (FR-ART-01); null removes one. Alt text is required for the first two. */
+  coverPhoto: OwnPhotoInputSchema.nullable().optional(),
+  portraitPhoto: OwnPhotoInputSchema.nullable().optional(),
+  sealPhoto: z
+    .object({ mediaId: IdSchema, alt: z.string().trim().max(300).default('') })
+    .nullable()
+    .optional(),
   village: z.string().trim().max(160).optional(),
   foundedYear: YearSchema.nullable().optional(),
   generations: z.int().min(1).max(50).nullable().optional(),
@@ -199,6 +290,29 @@ export const UpdateHouseholdProfileRequestSchema = z.object({
   capacityByCategory: CapacitySchema.optional(),
 });
 export type UpdateHouseholdProfileRequest = z.infer<typeof UpdateHouseholdProfileRequestSchema>;
+
+/** `GET /households/slug-availability?slug=`: a live check while the household types its address (FR-ART-01). */
+export const SlugAvailabilityQuerySchema = z.object({ slug: SlugSchema });
+export type SlugAvailabilityQuery = z.infer<typeof SlugAvailabilityQuerySchema>;
+export const SlugAvailabilityResponseSchema = z.object({
+  available: z.boolean(),
+  /** A free alternative, only when the asked slug is taken. */
+  suggestion: SlugSchema.optional(),
+});
+export type SlugAvailabilityDto = z.infer<typeof SlugAvailabilityResponseSchema>;
+
+/** `PUT /admin/households/:id/certifications/:index/verification`: the board marks a certification verified or not. */
+export const SetCertificationVerificationRequestSchema = z.strictObject({ verified: z.boolean() });
+export type SetCertificationVerificationRequest = z.infer<
+  typeof SetCertificationVerificationRequestSchema
+>;
+
+/**
+ * `POST /me/household/story-suggestion` (FR-ART-08): a suggested story in Vietnamese and its English
+ * translation. Only a suggestion: the household copies it into the editor and saves it itself.
+ */
+export const StorySuggestionResponseSchema = z.object({ vi: z.string(), en: z.string() });
+export type StorySuggestionDto = z.infer<typeof StorySuggestionResponseSchema>;
 
 /** Experience offer of a workshop (FR-ART-05): what visitors can do, for how long and at what price. */
 export const WorkshopExperienceSchema = z.object({
@@ -221,6 +335,8 @@ export const CreateWorkshopRequestSchema = z
     /** Temporarily closed (BR-03); needs a reason shown to visitors. */
     temporarilyClosed: z.boolean().default(false),
     closureReason: z.string().trim().max(300).optional(),
+    /** Hamlet of the workshop. On update, left out keeps the stored area and null clears it. */
+    areaCode: VillageAreaCodeSchema.nullish(),
     lat: z.number().min(-90).max(90).optional(),
     lng: z.number().min(-180).max(180).optional(),
   })
@@ -241,6 +357,11 @@ export type CreateArtisanRequest = z.infer<typeof CreateArtisanRequestSchema>;
 export const MAX_PRODUCT_IMAGES = 12;
 const ProductImageInputSchema = z.object({ mediaId: IdSchema, alt: AltSchema });
 
+/** FR-PRD-01: up to 10 tags of 1 to 30 characters; the server also drops case-insensitive duplicates. */
+export const ProductTagsSchema = z
+  .array(z.string().trim().min(1, 'Thẻ không được để trống').max(MAX_PRODUCT_TAG_LENGTH))
+  .max(MAX_PRODUCT_TAGS);
+
 export const CreateProductRequestSchema = z
   .object({
     name: z.string().trim().min(2, 'Tên cần ít nhất 2 ký tự').max(200),
@@ -254,6 +375,11 @@ export const CreateProductRequestSchema = z
     dimensions: z.string().trim().max(200).optional(),
     weightGrams: z.int().positive().max(1_000_000).optional(),
     artisanNote: z.string().trim().max(2_000).optional(),
+    tags: ProductTagsSchema.optional(),
+    nameEn: z.string().trim().max(200).optional(),
+    descriptionEn: z.string().trim().max(10_000).optional(),
+    materialEn: z.string().trim().max(200).optional(),
+    dimensionsEn: z.string().trim().max(200).optional(),
   })
   .refine((p) => (p.kind === 'BATCH') === (p.batchSize !== undefined), {
     message: 'Lô sản xuất cần số lượng vật trong lô; vật đơn chiếc thì không',
@@ -272,11 +398,31 @@ export const UpdateProductRequestSchema = z.object({
   dimensions: z.string().trim().max(200).optional(),
   weightGrams: z.int().positive().max(1_000_000).nullable().optional(),
   artisanNote: z.string().trim().max(2_000).optional(),
+  nameEn: z.string().trim().max(200).optional(),
+  descriptionEn: z.string().trim().max(10_000).optional(),
+  materialEn: z.string().trim().max(200).optional(),
+  dimensionsEn: z.string().trim().max(200).optional(),
   images: z.array(ProductImageInputSchema).max(MAX_PRODUCT_IMAGES).optional(),
+  tags: ProductTagsSchema.optional(),
 });
 export type UpdateProductRequest = z.infer<typeof UpdateProductRequestSchema>;
 
 export const WithdrawProductRequestSchema = z.object({ reason: ReasonSchema });
+
+/** `GET /me/household/products/price-suggestion?category=...` (FR-PRD-07). */
+export const PriceSuggestionQuerySchema = z.object({ category: CategorySchema });
+export type PriceSuggestionQuery = z.infer<typeof PriceSuggestionQuerySchema>;
+
+/**
+ * Median unit price of the published products in the category, with the number of products it is based
+ * on; `suggestion` is null when fewer than 3 comparable products exist. It is only a hint: the price
+ * is never filled in automatically.
+ */
+export const PriceSuggestionResponseSchema = z.object({
+  category: CategorySchema,
+  suggestion: z.object({ medianVnd: z.int().positive(), count: z.int().min(3) }).nullable(),
+});
+export type PriceSuggestionDto = z.infer<typeof PriceSuggestionResponseSchema>;
 
 /** Ghi công người làm cho sản phẩm (thay toàn bộ danh sách, theo thứ tự hiển thị). */
 export const SetProductMakersRequestSchema = z.object({
@@ -307,6 +453,8 @@ export const WorkshopResponseSchema = z.object({
   experience: WorkshopExperienceSchema.nullable(),
   temporarilyClosed: z.boolean(),
   closureReason: z.string().nullable(),
+  /** Hamlet the workshop is in; null when not set. */
+  areaCode: VillageAreaCodeSchema.nullable(),
   lat: z.number().nullable(),
   lng: z.number().nullable(),
 });
@@ -334,9 +482,11 @@ export const ProductResponseSchema = z.object({
   id: IdSchema,
   version: VersionSchema,
   name: z.string(),
+  nameEn: z.string().nullable().default(null),
   slug: z.string(),
   traceCode: z.string(),
   description: z.string(),
+  descriptionEn: z.string().nullable().default(null),
   kind: ProductKindSchema,
   batchSize: z.int().nullable(),
   category: CategorySchema,
@@ -344,8 +494,12 @@ export const ProductResponseSchema = z.object({
   stock: z.int().nonnegative(),
   material: z.string().nullable(),
   dimensions: z.string().nullable(),
+  materialEn: z.string().nullable().default(null),
+  dimensionsEn: z.string().nullable().default(null),
   weightGrams: z.int().nullable(),
   artisanNote: z.string().nullable(),
+  /** Free-text tags (FR-PRD-01), at most 10, in the order the household wrote them. */
+  tags: z.array(z.string()).default([]),
   coverUrl: z.string().nullable(),
   /** Sizes of the cover when it is an uploaded photo; empty for a preset cover. */
   coverVariants: PublicImageVariantsSchema,
@@ -358,6 +512,8 @@ export const ProductResponseSchema = z.object({
       mediaId: IdSchema,
       url: z.string().nullable(),
       variants: PublicImageVariantsSchema,
+      /** ThumbHash (base64) of a processed photo, for a blurred placeholder; null while it is processing. */
+      thumbhash: z.string().nullable().default(null),
       alt: z.string(),
     }),
   ),
@@ -376,17 +532,25 @@ export const PublicHouseholdResponseSchema = z.object({
   slug: z.string(),
   history: z.string(),
   village: z.string().nullable(),
+  /** Free-text detail of the craft, as the household wrote it. */
   craft: z.string().nullable(),
+  /** The stored category, or one inferred from legacy `craft` text; null when the household has neither. */
+  craftCategory: z.enum(CRAFT_CATEGORIES).nullable().default(null),
   coverUrl: z.string().nullable(),
   /** Sizes of `coverUrl` when it is a processed media-store image; empty otherwise. */
   coverVariants: PublicImageVariantsSchema,
+  /** Mean of the buyers' 1-5 star ratings with one decimal (FR-ORD-11); null until the first rating. */
+  ratingAverage: z.number().min(1).max(5).nullable(),
+  ratingCount: z.int().min(0),
   /** Portrait and banner linked through `media_link`. */
   portrait: PublicImageSchema.nullable(),
   banner: PublicImageSchema.nullable(),
+  /** Personal seal or signature of the artisan, shown near the story. */
+  seal: PublicImageSchema.nullable().default(null),
   foundedYear: z.int().nullable(),
   generations: z.int().nullable(),
   timeline: z.array(TimelineEventResponseSchema),
-  certifications: z.array(CertificationInputSchema.extend({ verified: z.boolean() })),
+  certifications: z.array(CertificationResponseSchema),
   /**
    * Public: `media_link` images (by `position`), then the household's own. The private profile has only
    * the household's own, since a household may resubmit only its own media. `url` is null while an image
@@ -422,7 +586,14 @@ export const HouseholdResponseSchema = PublicHouseholdResponseSchema.extend({
   version: VersionSchema,
   status: HouseholdStatusSchema,
   statusReason: z.string().nullable(),
+  /** Derived review state (vCRAFT-8my.2); an active `statusReason` outranks the resubmission marker. */
+  reviewState: HouseholdReviewStateSchema,
+  resubmittedAt: IsoDateTimeSchema.nullable().default(null),
   approvedAt: IsoDateTimeSchema.nullable(),
+  /** The household's own photos as saved, even while still processing (Studio editor; admin review). */
+  coverPhoto: ProfilePhotoResponseSchema.nullable().default(null),
+  portraitPhoto: ProfilePhotoResponseSchema.nullable().default(null),
+  sealPhoto: ProfilePhotoResponseSchema.nullable().default(null),
   /** `••••••••1234`, or null when no citizen ID number is on record. Never the full number. */
   idNumberMasked: z.string().nullable(),
   completeness: z.object({
@@ -495,6 +666,7 @@ export const MapPinSchema = z.object({
     name: z.string(),
     slug: z.string(),
     craft: z.string().nullable(),
+    craftCategory: z.enum(CRAFT_CATEGORIES).nullable().default(null),
     coverUrl: z.string().nullable(),
   }),
 });

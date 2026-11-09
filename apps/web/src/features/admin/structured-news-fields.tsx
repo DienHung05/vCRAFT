@@ -1,7 +1,7 @@
 'use client';
 
 import type { AdminNewsDto, SaveNewsRequest } from '@vcraft/contracts';
-import { MATERIALS, type Material } from '@vcraft/domain';
+import { MATERIALS, type Material, OUTAGE_AREA_CODES, type OutageAreaCode } from '@vcraft/domain';
 import { useTranslations } from 'next-intl';
 import { inputClass } from '@/features/studio/workshop-editor';
 
@@ -10,7 +10,7 @@ export interface StructuredValues {
   effectiveOn: string;
   prices: Record<Material, string>;
   units: Record<Material, string>;
-  outage: { date: string; from: string; to: string; area: string };
+  outage: { date: string; from: string; to: string; area: string; areaCode: OutageAreaCode };
   /** Cuts beyond the first one, kept as they were: the form edits one cut at a time. */
   otherOutages: NonNullable<AdminNewsDto['powerSchedule']>['outages'];
 }
@@ -21,7 +21,8 @@ export const EMPTY_STRUCTURED: StructuredValues = {
   effectiveOn: '',
   prices: { CLAY: '', GLAZE: '', GAS: '' },
   units: DEFAULT_UNITS,
-  outage: { date: '', from: '', to: '', area: '' },
+  /** A new notice defaults to the whole village: warning too many is safer than missing a household (ADR-0023). */
+  outage: { date: '', from: '', to: '', area: '', areaCode: 'VILLAGE_WIDE' },
   otherOutages: [],
 };
 
@@ -37,7 +38,10 @@ export function structuredValuesOf(news: AdminNewsDto): StructuredValues {
     effectiveOn: news.materialPrices?.effectiveOn ?? '',
     prices,
     units,
-    outage: first ?? EMPTY_STRUCTURED.outage,
+    // A legacy cut without an area code counts as village-wide, which the editor then shows explicitly.
+    outage: first
+      ? { ...first, areaCode: first.areaCode ?? 'VILLAGE_WIDE' }
+      : EMPTY_STRUCTURED.outage,
     otherOutages: rest,
   };
 }
@@ -62,8 +66,9 @@ export function structuredRequest(
     };
   }
   if (category === 'POWER_SCHEDULE') {
-    const { date, from, to, area } = values.outage;
-    const first = date && from && to && area.trim() ? [{ date, from, to, area: area.trim() }] : [];
+    const { date, from, to, area, areaCode } = values.outage;
+    const first =
+      date && from && to && area.trim() ? [{ date, from, to, area: area.trim(), areaCode }] : [];
     const outages = [...first, ...values.otherOutages];
     return { powerSchedule: outages.length > 0 ? { outages } : null };
   }
@@ -82,6 +87,7 @@ export function StructuredNewsFields({
 }) {
   const t = useTranslations('admin.news.structured');
   const materials = useTranslations('news.materialPrices.materials');
+  const areas = useTranslations('villageAreas');
   if (category === 'MATERIAL_PRICES')
     return (
       <fieldset className="flex flex-col gap-3 rounded-card border border-ink/10 p-4">
@@ -152,17 +158,39 @@ export function StructuredNewsFields({
             />
           </label>
         </div>
-        <label className="flex flex-col gap-1">
-          {t('area')}
-          <input
-            value={values.outage.area}
-            maxLength={160}
-            onChange={(e) =>
-              onChange({ ...values, outage: { ...values.outage, area: e.target.value } })
-            }
-            className={inputClass}
-          />
-        </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="flex flex-col gap-1">
+            {t('areaCode')}
+            <select
+              value={values.outage.areaCode}
+              onChange={(e) =>
+                onChange({
+                  ...values,
+                  outage: { ...values.outage, areaCode: e.target.value as OutageAreaCode },
+                })
+              }
+              className={inputClass}
+            >
+              {OUTAGE_AREA_CODES.map((code) => (
+                <option key={code} value={code}>
+                  {areas(code)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            {t('area')}
+            <input
+              value={values.outage.area}
+              maxLength={160}
+              onChange={(e) =>
+                onChange({ ...values, outage: { ...values.outage, area: e.target.value } })
+              }
+              className={inputClass}
+            />
+          </label>
+        </div>
+        <p className="text-small text-ash">{t('areaCodeHint')}</p>
         <p className="text-small text-ash">
           {t('outageHint', { more: values.otherOutages.length })}
         </p>

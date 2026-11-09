@@ -1,11 +1,13 @@
+import { storyPlainText } from '@vcraft/domain';
 import { Badge, buttonVariants, Card, cn, SealMark, VaseFigure, WaveDivider } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getTranslations } from 'next-intl/server';
+import { getFormatter, getTranslations } from 'next-intl/server';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { EmptyState } from '@/components/states/empty-state';
+import { Reveal } from '@/experience/motion/reveal';
 import { fetchHousehold, fetchSlugRedirect } from '@/features/catalog/exhibition-api';
 import { ProductCard } from '@/features/catalog/product-card';
 import {
@@ -18,7 +20,9 @@ import {
   toVisitWorkshops,
 } from '@/features/catalog/view-models';
 import { MakerCredits } from '@/features/exhibition/maker-credits';
+import { StoryText } from '@/features/exhibition/story-text';
 import { VisitSection } from '@/features/exhibition/visit-section';
+import { RatingSummary } from '@/features/rfq/star-rating';
 import { Link, permanentRedirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/lib/locale';
 import { jsonLd, metaDescription, pageMetadata } from '@/lib/seo/page-metadata';
@@ -39,7 +43,7 @@ export async function generateMetadata({
     locale,
     href: { pathname: '/nghe-nhan/[slug]', params: { slug: result.data.slug } },
     title: result.data.name,
-    description: metaDescription(result.data.history || result.data.name),
+    description: metaDescription(storyPlainText(result.data.history) || result.data.name),
   });
 }
 
@@ -51,13 +55,15 @@ export async function generateMetadata({
 export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-nhan/[slug]'>) {
   const locale = await resolveLocale(params);
   const { slug } = await params;
-  const [t, common, nav, categories, ex, preset, result] = await Promise.all([
+  const [t, common, nav, categories, crafts, ex, preset, format, result] = await Promise.all([
     getTranslations('artisan'),
     getTranslations('common'),
     getTranslations('nav'),
     getTranslations('catalog.categories'),
+    getTranslations('catalog.craftCategories'),
     getTranslations('exhibition'),
     getTranslations('presetFigure'),
+    getFormatter(),
     fetchHousehold(slug),
   ]);
   if (result.status === 'not-found') {
@@ -85,7 +91,10 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
     ? photoFromUrl(portrait.url, portraitAlt, portrait.variants)
     : undefined;
   const featured = household.products[0];
-  const story = household.history.split(/\n{2,}/).filter(Boolean);
+  const seal = household.seal;
+  const sealAlt = seal ? seal.alt || t('sealAlt', { name: household.name }) : '';
+  const sealPhoto = seal ? photoFromUrl(seal.url, sealAlt, seal.variants) : undefined;
+  const storyText = storyPlainText(household.history);
   const gallery = household.gallery.flatMap((item) => (item.url ? [item] : []));
   const capacities = Object.entries(household.capacityByCategory) as [
     keyof typeof household.capacityByCategory,
@@ -97,7 +106,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
   const householdLd = jsonLd({
     '@type': 'LocalBusiness',
     name: household.name,
-    description: metaDescription(household.history || household.name, 300),
+    description: metaDescription(storyText || household.name, 300),
     url: `${siteOrigin()}${localizedPath({ pathname: '/nghe-nhan/[slug]', params: { slug: household.slug } }, locale)}`,
     ...(place && {
       address: {
@@ -148,8 +157,20 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
           ) : null}
           <h1 className="mt-3 text-display text-paper type-wonk">{household.name}</h1>
           <p className="mt-4 text-paper/85">
-            {[representative?.name, household.craft, household.village].filter(Boolean).join(' · ')}
+            {[
+              representative?.name,
+              household.craftCategory ? crafts(household.craftCategory) : null,
+              household.craft,
+              household.village,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </p>
+          <RatingSummary
+            average={household.ratingAverage}
+            count={household.ratingCount}
+            className="mt-2 text-paper/85"
+          />
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/yeu-cau-bao-gia" className={buttonVariants({ size: 'lg' })}>
               {t('ctaRfq')}
@@ -169,72 +190,102 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
       {cover ? <div className="mx-auto max-w-editorial px-gutter"></div> : null}
 
       {/* Bento: câu chuyện, đời thứ N, chứng nhận. */}
-      <section
-        className="mx-auto grid max-w-editorial gap-5 px-gutter py-section md:grid-cols-6"
-        aria-label={t('bentoLabel')}
-      >
-        <Card className="p-8 md:col-span-4 md:row-span-2">
-          {portrait ? (
-            <figure className="mb-6 sm:float-right sm:mb-2 sm:ml-6 sm:w-44">
-              <ImageSlot
-                alt={portraitAlt}
-                tint={tintOf(portrait.url)}
-                ratio="4/5"
-                {...slotPhoto(portraitPhoto)}
-                // Below 640px the card is the page width minus gutters and padding; 80vw keeps 1.75x phones on the 640w file.
-                sizes="(min-width: 640px) 11rem, 80vw"
+      <Reveal>
+        <section
+          className="mx-auto grid max-w-editorial gap-5 px-gutter py-section md:grid-cols-6"
+          aria-label={t('bentoLabel')}
+        >
+          <Card className="p-8 md:col-span-4 md:row-span-2">
+            {portrait ? (
+              <figure className="mb-6 sm:float-right sm:mb-2 sm:ml-6 sm:w-44">
+                <ImageSlot
+                  alt={portraitAlt}
+                  tint={tintOf(portrait.url)}
+                  ratio="4/5"
+                  {...slotPhoto(portraitPhoto)}
+                  // Below 640px the card is the page width minus gutters and padding; 80vw keeps 1.75x phones on the 640w file.
+                  sizes="(min-width: 640px) 11rem, 80vw"
+                />
+              </figure>
+            ) : null}
+            <h2 className="text-h3">{t('story')}</h2>
+            <StoryText source={household.history} />
+            {seal ? (
+              <figure className="mt-6 clear-both w-28">
+                <ImageSlot
+                  alt={sealAlt}
+                  tint={tintOf(seal.url)}
+                  ratio="1/1"
+                  fit="contain"
+                  {...slotPhoto(sealPhoto)}
+                  sizes="7rem"
+                  className="rounded-input bg-transparent"
+                />
+              </figure>
+            ) : null}
+          </Card>
+          {household.generations && household.foundedYear ? (
+            <Card className="relative flex flex-col justify-between overflow-hidden bg-glaze p-8 text-paper md:col-span-2">
+              <VaseFigure
+                className="absolute -right-6 -bottom-4 h-40 opacity-25"
+                body="var(--color-paper)"
+                band="var(--color-glaze)"
               />
-            </figure>
+              <p className="text-small text-paper/75">{t('lineage')}</p>
+              <p className="font-display text-display leading-none text-paper type-wonk">
+                {household.generations}
+              </p>
+              <p className="text-small text-paper/85">
+                {t('lineageText', { n: household.generations, year: household.foundedYear })}
+              </p>
+            </Card>
           ) : null}
-          <h2 className="text-h3">{t('story')}</h2>
-          {story.map((paragraph) => (
-            <p key={paragraph.slice(0, 24)} className="mt-4 max-w-prose-vn">
-              {paragraph}
-            </p>
-          ))}
-        </Card>
-        {household.generations && household.foundedYear ? (
-          <Card className="relative flex flex-col justify-between overflow-hidden bg-glaze p-8 text-paper md:col-span-2">
-            <VaseFigure
-              className="absolute -right-6 -bottom-4 h-40 opacity-25"
-              body="var(--color-paper)"
-              band="var(--color-glaze)"
-            />
-            <p className="text-small text-paper/75">{t('lineage')}</p>
-            <p className="font-display text-display leading-none text-paper type-wonk">
-              {household.generations}
-            </p>
-            <p className="text-small text-paper/85">
-              {t('lineageText', { n: household.generations, year: household.foundedYear })}
-            </p>
-          </Card>
-        ) : null}
-        {household.certifications.length > 0 ? (
-          <Card className="p-8 md:col-span-2">
-            <h2 className="text-h3">{t('certs')}</h2>
-            <ul className="mt-4 space-y-4">
-              {household.certifications.map((c) => (
-                <li key={`${c.name}-${c.year}`} className="flex items-start gap-3">
-                  {c.verified ? (
-                    <SealMark size={24} bleed={false} />
-                  ) : (
-                    <span className="size-6 shrink-0 rounded-sm border border-ink/25 border-dashed" />
-                  )}
-                  <div>
-                    <p className="font-medium">{c.name}</p>
-                    <p className="text-small text-ash">
-                      {c.issuer} · {c.year}
-                    </p>
-                    <Badge tone={c.verified ? 'lacquer' : 'outline'} className="mt-1">
-                      {c.verified ? common('verified') : common('unverified')}
-                    </Badge>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        ) : null}
-      </section>
+          {household.certifications.length > 0 ? (
+            <Card className="p-8 md:col-span-2">
+              <h2 className="text-h3">{t('certs')}</h2>
+              <ul className="mt-4 space-y-4">
+                {household.certifications.map((c) => (
+                  <li key={`${c.name}-${c.year}`} className="flex items-start gap-3">
+                    {c.verified ? (
+                      <SealMark size={24} bleed={false} />
+                    ) : (
+                      <span className="size-6 shrink-0 rounded-sm border border-ink/25 border-dashed" />
+                    )}
+                    <div>
+                      <p className="font-medium">{c.name}</p>
+                      <p className="text-small text-ash">
+                        {c.issuer} ·{' '}
+                        {c.issuedOn
+                          ? format.dateTime(new Date(`${c.issuedOn}T00:00:00Z`), {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              timeZone: 'UTC',
+                            })
+                          : c.year}
+                      </p>
+                      {c.photo?.url ? (
+                        <div className="mt-2 w-24">
+                          <ImageSlot
+                            alt={c.photo.alt || t('certPhotoAlt', { name: c.name })}
+                            tint={tintOf(c.name)}
+                            ratio="4/3"
+                            {...slotPhoto(photoFromUrl(c.photo.url, c.photo.alt, c.photo.variants))}
+                            sizes="6rem"
+                          />
+                        </div>
+                      ) : null}
+                      <Badge tone={c.verified ? 'lacquer' : 'outline'} className="mt-1">
+                        {c.verified ? common('verified') : common('unverified')}
+                      </Badge>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ) : null}
+        </section>
+      </Reveal>
 
       {/* Timeline gia đình nằm ngang, kéo được (FR-ART-02). */}
       {household.timeline.length > 0 ? (
@@ -312,7 +363,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
       ) : null}
 
       <MakerCredits
-        className="mx-auto max-w-editorial px-gutter pb-section"
+        className="mx-auto max-w-editorial px-gutter pb-section-tail"
         household={household.name}
         makers={household.artisans.map((a) => ({ name: a.name, detail: a.craftRole ?? '' }))}
       />

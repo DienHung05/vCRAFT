@@ -4,8 +4,9 @@ import type { ProductDto } from '@vcraft/contracts';
 import { CreateProductRequestSchema } from '@vcraft/contracts';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
 import { useTranslations } from 'next-intl';
-import { useId } from 'react';
+import { type ReactNode, useId } from 'react';
 import { AmountInWords } from '@/components/amount-in-words';
+import { TagInput } from './tag-input';
 import { inputClass } from './workshop-editor';
 
 export interface ProductDraft {
@@ -20,6 +21,12 @@ export interface ProductDraft {
   dimensions: string;
   weightGrams: string;
   artisanNote: string;
+  tags: string[];
+  /** English versions (FR-CAT-08); empty means the English pages show the Vietnamese text. */
+  nameEn: string;
+  descriptionEn: string;
+  materialEn: string;
+  dimensionsEn: string;
 }
 
 export const EMPTY_PRODUCT: ProductDraft = {
@@ -34,6 +41,11 @@ export const EMPTY_PRODUCT: ProductDraft = {
   dimensions: '',
   weightGrams: '',
   artisanNote: '',
+  tags: [],
+  nameEn: '',
+  descriptionEn: '',
+  materialEn: '',
+  dimensionsEn: '',
 };
 
 export const toProductDraft = (p: ProductDto): ProductDraft => ({
@@ -48,6 +60,11 @@ export const toProductDraft = (p: ProductDto): ProductDraft => ({
   dimensions: p.dimensions ?? '',
   weightGrams: p.weightGrams?.toString() ?? '',
   artisanNote: p.artisanNote ?? '',
+  tags: p.tags,
+  nameEn: p.nameEn ?? '',
+  descriptionEn: p.descriptionEn ?? '',
+  materialEn: p.materialEn ?? '',
+  dimensionsEn: p.dimensionsEn ?? '',
 });
 
 const optional = (value: string) => (value.trim() ? { value: value.trim() } : null);
@@ -57,6 +74,10 @@ export function parseNewProduct(draft: ProductDraft) {
   const material = optional(draft.material);
   const dimensions = optional(draft.dimensions);
   const note = optional(draft.artisanNote);
+  const nameEn = optional(draft.nameEn);
+  const descriptionEn = optional(draft.descriptionEn);
+  const materialEn = optional(draft.materialEn);
+  const dimensionsEn = optional(draft.dimensionsEn);
   return CreateProductRequestSchema.safeParse({
     name: draft.name,
     description: draft.description,
@@ -69,6 +90,11 @@ export function parseNewProduct(draft: ProductDraft) {
     ...(dimensions && { dimensions: dimensions.value }),
     ...(draft.weightGrams ? { weightGrams: Number(draft.weightGrams) } : {}),
     ...(note && { artisanNote: note.value }),
+    ...(draft.tags.length > 0 && { tags: draft.tags }),
+    ...(nameEn && { nameEn: nameEn.value }),
+    ...(descriptionEn && { descriptionEn: descriptionEn.value }),
+    ...(materialEn && { materialEn: materialEn.value }),
+    ...(dimensionsEn && { dimensionsEn: dimensionsEn.value }),
   });
 }
 
@@ -77,11 +103,17 @@ export function ProductFields({
   draft,
   onChange,
   kindLocked = false,
+  tagSuggestions = [],
+  priceHint,
 }: {
   draft: ProductDraft;
   onChange: (change: Partial<ProductDraft>) => void;
   /** Loại và cỡ lô không đổi sau khi tạo (mã QR đã gắn với một vật hoặc một lô). */
   kindLocked?: boolean;
+  /** Tags the household already uses elsewhere, offered under the tag input. */
+  tagSuggestions?: readonly string[];
+  /** Rendered under the price field, for example the suggested price (FR-PRD-07). */
+  priceHint?: ReactNode;
 }) {
   const t = useTranslations('studio.products');
   const categories = useTranslations('catalog.categories');
@@ -165,6 +197,7 @@ export function ProductFields({
             />
           </label>
           <AmountInWords id={priceWordsId} value={draft.priceVnd} />
+          {priceHint}
         </div>
         {field('stock', t('stock'), 'number')}
         {field('weightGrams', t('weight'), 'number')}
@@ -173,6 +206,11 @@ export function ProductFields({
         {field('material', t('material'))}
         {field('dimensions', t('dimensions'))}
       </div>
+      <TagInput
+        value={draft.tags}
+        onChange={(tags) => onChange({ tags })}
+        suggestions={tagSuggestions}
+      />
       <label className="flex flex-col gap-1 text-small">
         {t('note')}
         <textarea
@@ -182,6 +220,24 @@ export function ProductFields({
           className={inputClass}
         />
       </label>
+      <fieldset className="flex flex-col gap-4 rounded-card border border-ink/10 p-4">
+        <legend className="px-2 text-small font-medium">{t('englishSection')}</legend>
+        <p className="text-small text-ash">{t('englishHint')}</p>
+        {field('nameEn', t('nameEn'))}
+        <label className="flex flex-col gap-1 text-small">
+          {t('descriptionEn')}
+          <textarea
+            rows={3}
+            value={draft.descriptionEn}
+            onChange={(event) => onChange({ descriptionEn: event.target.value })}
+            className={inputClass}
+          />
+        </label>
+        <div className="grid gap-4 md:grid-cols-2">
+          {field('materialEn', t('materialEn'))}
+          {field('dimensionsEn', t('dimensionsEn'))}
+        </div>
+      </fieldset>
     </div>
   );
 }

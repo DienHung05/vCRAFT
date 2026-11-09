@@ -70,6 +70,8 @@ describe('account menu and household registration (GH#180)', () => {
           slug: 'ho-a',
           status: 'PENDING_REVIEW',
           statusReason: null,
+          reviewState: 'NEW',
+          resubmittedAt: null,
         },
       }),
       householdIntent: true,

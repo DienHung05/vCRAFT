@@ -2,7 +2,7 @@
 
 import { ApiError, type StudioClient } from '@vcraft/api-client';
 import type { HouseholdDto, ProductDto, UpdateProductRequest } from '@vcraft/contracts';
-import { PRIVACY_POLICY_VERSION } from '@vcraft/domain';
+import { PRIVACY_POLICY_VERSION, tagKey } from '@vcraft/domain';
 import {
   Badge,
   Button,
@@ -19,11 +19,13 @@ import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { ConsentCheckbox } from '@/components/consent-checkbox';
 import { EmptyState } from '@/components/states/empty-state';
-import { QR_LOGO_OPTIONS, QR_LOGO_URL, TraceQr } from '@/features/traceability/trace-qr';
-import { Link } from '@/i18n/navigation';
+import { downloadQr } from '@/features/traceability/download-qr';
+import { TraceQr } from '@/features/traceability/trace-qr';
+import { Link, useRouter } from '@/i18n/navigation';
 import { notify } from '@/lib/notify';
 import { traceShortUrl } from '@/lib/site';
 import { HouseholdGate } from './household-gate';
+import { PriceSuggestionHint } from './price-suggestion-hint';
 import { type ProductDraft, ProductFields, toProductDraft } from './product-fields';
 import { ProductPhotos } from './product-photos';
 import { QrLabelsButton } from './qr-labels-button';
@@ -41,6 +43,11 @@ export function toProductUpdate(draft: ProductDraft): UpdateProductRequest {
     dimensions: draft.dimensions.trim(),
     weightGrams: draft.weightGrams ? Number(draft.weightGrams) : null,
     artisanNote: draft.artisanNote.trim(),
+    tags: draft.tags,
+    nameEn: draft.nameEn.trim(),
+    descriptionEn: draft.descriptionEn.trim(),
+    materialEn: draft.materialEn.trim(),
+    dimensionsEn: draft.dimensionsEn.trim(),
   };
 }
 
@@ -51,7 +58,22 @@ interface SectionProps {
   reload: () => Promise<void>;
 }
 
-function DetailsSection({ product, client, reload }: SectionProps) {
+/** Tags the household already uses on its other products. */
+function householdTags(household: HouseholdDto, product: ProductDto): string[] {
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const other of household.products) {
+    if (other.id === product.id) continue;
+    for (const tag of other.tags) {
+      if (seen.has(tagKey(tag))) continue;
+      seen.add(tagKey(tag));
+      tags.push(tag);
+    }
+  }
+  return tags;
+}
+
+function DetailsSection({ product, household, client, reload }: SectionProps) {
   const t = useTranslations('studio.products');
   const common = useTranslations('studio');
   const [draft, setDraft] = useState(() => toProductDraft(product));
@@ -75,6 +97,16 @@ function DetailsSection({ product, client, reload }: SectionProps) {
       <ProductFields
         draft={draft}
         kindLocked
+        tagSuggestions={householdTags(household, product)}
+        priceHint={
+          <PriceSuggestionHint
+            client={client}
+            category={draft.category}
+            onUse={(priceVnd) =>
+              setDraft((current) => ({ ...current, priceVnd: String(priceVnd) }))
+            }
+          />
+        }
         onChange={(change) => setDraft({ ...draft, ...change })}
       />
       <div className="flex items-center gap-3">
@@ -208,7 +240,7 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
   const common = useTranslations('studio');
   const [reason, setReason] = useState('');
   const [failed, setFailed] = useState<'generic' | 'journal-required' | null>(null);
-  const [confirm, setConfirm] = useState<'publish' | 'withdraw' | null>(null);
+  const [confirm, setConfirm] = useState<'publish' | 'withdraw' | 'sold' | 'back' | null>(null);
   // BRAND §6.3 #2: publishing presses the seal once, right after it succeeds.
   const [stamped, setStamped] = useState(false);
   const run = async (action: () => Promise<unknown>, success: string, stamp = false) => {
@@ -229,6 +261,7 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
     }
   };
   const approved = household.status === 'APPROVED';
+  const live = product.status === 'PUBLISHED' || product.status === 'SOLD';
   return (
     <Card
       className={cn(
@@ -242,12 +275,31 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
           {stamped && product.status === 'PUBLISHED' ? (
             <SealStamp size={40} tempo="tool" title={t('publishedToast')} />
           ) : null}
-          <Badge tone={product.status === 'PUBLISHED' ? 'lacquer' : 'outline'}>
-            {t(`statuses.${product.status}`)}
-          </Badge>
+          <Badge tone={live ? 'lacquer' : 'outline'}>{t(`statuses.${product.status}`)}</Badge>
         </span>
       </div>
-      {product.status === 'PUBLISHED' ? (
+      {product.status === 'SOLD' ? (
+        <div className="flex flex-col items-start gap-2">
+          <p className="text-small text-ash">{t('soldHint')}</p>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!approved}
+            onClick={() => setConfirm('back')}
+          >
+            {t('backOnSale')}
+          </Button>
+        </div>
+      ) : null}
+      {product.status === 'PUBLISHED' && product.kind === 'OBJECT' ? (
+        <div className="flex flex-col items-start gap-2">
+          <p className="text-small text-ash">{t('markSoldHint')}</p>
+          <Button type="button" variant="secondary" onClick={() => setConfirm('sold')}>
+            {t('markSold')}
+          </Button>
+        </div>
+      ) : null}
+      {live ? (
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex grow flex-col gap-1 text-small">
             {t('withdrawReason')}
@@ -298,6 +350,35 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
         <p className="text-ash">{t('publishText')}</p>
       </ConfirmDialog>
       <ConfirmDialog
+        open={confirm === 'sold'}
+        title={t('markSoldTitle')}
+        confirmLabel={t('markSold')}
+        cancelLabel={common('cancel')}
+        onClose={() => setConfirm(null)}
+        onConfirm={() => {
+          setConfirm(null);
+          void run(() => client.markProductSold(product.id, product.version), t('soldToast'));
+        }}
+      >
+        <p className="text-ash">{t('markSoldText')}</p>
+      </ConfirmDialog>
+      <ConfirmDialog
+        open={confirm === 'back'}
+        title={t('backOnSaleTitle')}
+        confirmLabel={t('backOnSale')}
+        cancelLabel={common('cancel')}
+        onClose={() => setConfirm(null)}
+        onConfirm={() => {
+          setConfirm(null);
+          void run(
+            () => client.productBackOnSale(product.id, product.version),
+            t('backOnSaleToast'),
+          );
+        }}
+      >
+        <p className="text-ash">{t('backOnSaleText')}</p>
+      </ConfirmDialog>
+      <ConfirmDialog
         open={confirm === 'withdraw'}
         tone="seal"
         title={t('withdrawTitle')}
@@ -316,26 +397,6 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
       </ConfirmDialog>
     </Card>
   );
-}
-
-/** Tải mã QR PNG hoặc SVG cỡ in (FR-TRC-02); thư viện vẽ QR chỉ nạp khi bấm. */
-async function downloadQr(url: string, code: string, extension: 'png' | 'svg') {
-  const { default: QRCodeStyling } = await import('qr-code-styling');
-  const qr = new QRCodeStyling({
-    width: 1024,
-    height: 1024,
-    type: extension === 'svg' ? 'svg' : 'canvas',
-    data: url,
-    image: QR_LOGO_URL,
-    imageOptions: QR_LOGO_OPTIONS,
-    margin: 32,
-    qrOptions: { errorCorrectionLevel: 'H' },
-    dotsOptions: { type: 'rounded', color: '#1c1814' },
-    cornersSquareOptions: { type: 'extra-rounded', color: '#c2261f' },
-    cornersDotOptions: { color: '#c2261f' },
-    backgroundOptions: { color: '#ffffff' },
-  });
-  await qr.download({ name: `vcraft-qr-${code}`, extension });
 }
 
 function QrSection({ product, client }: { product: ProductDto; client: StudioClient }) {
@@ -378,6 +439,40 @@ function QrSection({ product, client }: { product: ProductDto; client: StudioCli
   );
 }
 
+/** FR-PRD-06: copy the product into a new draft (no journal) and open it in the editor. */
+function DuplicateButton({ product, client }: { product: ProductDto; client: StudioClient }) {
+  const t = useTranslations('studio.products');
+  const router = useRouter();
+  const [state, setState] = useState<'idle' | 'busy' | 'failed'>('idle');
+  const duplicate = async () => {
+    setState('busy');
+    try {
+      const copy = await client.duplicateProduct(product.id);
+      notify.success(t('duplicatedToast'));
+      router.push({ pathname: '/studio/san-pham/[id]', params: { id: copy.id } });
+    } catch {
+      setState('failed');
+    }
+  };
+  return (
+    <span className="flex flex-col items-start gap-1">
+      <Button
+        type="button"
+        variant="secondary"
+        disabled={state === 'busy'}
+        onClick={() => void duplicate()}
+      >
+        {t('duplicate')}
+      </Button>
+      {state === 'failed' ? (
+        <span role="alert" className="text-small text-seal">
+          {t('duplicateFailed')}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 /** Màn sửa một sản phẩm: thông tin, ảnh, người làm, xuất bản, mã QR và lối vào nhật ký. */
 export function ProductEditor({ productId, client }: { productId: string; client?: StudioClient }) {
   const t = useTranslations('studio.products');
@@ -411,12 +506,17 @@ export function ProductEditor({ productId, client }: { productId: string; client
             />
             <header className="flex flex-wrap items-center justify-between gap-4">
               <h1 className="text-h1">{product.name}</h1>
-              <Link
-                href={{ pathname: '/studio/san-pham/[id]/nhat-ky', params: { id: product.id } }}
-                className={buttonVariants({ variant: 'secondary' })}
-              >
-                {t('journalLink')}
-              </Link>
+              <span className="flex flex-wrap items-start gap-3">
+                {household.status === 'APPROVED' ? (
+                  <DuplicateButton product={product} client={live} />
+                ) : null}
+                <Link
+                  href={{ pathname: '/studio/san-pham/[id]/nhat-ky', params: { id: product.id } }}
+                  className={buttonVariants({ variant: 'secondary' })}
+                >
+                  {t('journalLink')}
+                </Link>
+              </span>
             </header>
             <PublishSection {...props} />
             <DetailsSection {...props} />

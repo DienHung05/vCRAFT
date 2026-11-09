@@ -18,9 +18,9 @@ jwt_expiry = 900
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
 enable_signup = true
-# Khớp luật kiểm tra ở form web (apps/web/src/features/auth/schemas.ts): >= 8 ký tự, có chữ và số.
-minimum_password_length = 8
-password_requirements = "letters_digits"
+# Match the web and API: at least 10 characters, with uppercase, lowercase and a digit.
+minimum_password_length = 10
+password_requirements = "lower_upper_letters_digits"
 
 # GH#122: "Tiếp tục với Google". Local dev reads the OAuth client from env; production is set in the
 # dashboard (docs/operations/deploy.md §6). Google's authorised redirect URI is `<Supabase URL>/auth/v1/callback`.
@@ -74,3 +74,8 @@ content_path = "./supabase/templates/email_change.html"
 [auth.email.template.reauthentication]
 subject = "Mã xác nhận vCraft"
 content_path = "./supabase/templates/reauthentication.html"
+
+# GH#252 (NFR-SEC-05): the API accepts files up to 15 MiB, so Storage must too. The per-bucket limit is set by
+# supabase/migrations/20261108151000_media_limits_15mib.sql; this global cap matches it.
+[storage]
+file_size_limit = "15MiB"

@@ -175,7 +175,16 @@ export type InternalQuotationDto = z.infer<typeof InternalQuotationResponseSchem
 
 export const CoordinationResponseSchema = z.strictObject({
   request: RfqResponseSchema,
-  contributions: z.array(ContributionResponseSchema.extend({ householdName: z.string() })),
+  contributions: z.array(
+    ContributionResponseSchema.extend({
+      householdName: z.string(),
+      /**
+       * The capacity the household declared for the request's category (FR-ART-06). Absent or null when
+       * it declared none; the split board caps a share at it (BR-L6).
+       */
+      householdCapacity: z.number().int().min(0).nullable().optional(),
+    }),
+  ),
 });
 export type CoordinationDto = z.infer<typeof CoordinationResponseSchema>;
 

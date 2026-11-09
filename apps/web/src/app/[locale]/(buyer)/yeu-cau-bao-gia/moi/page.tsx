@@ -21,6 +21,8 @@ async function productPrefill(code: string | undefined): Promise<RfqFormPrefill 
   const result = await fetchTrace(code);
   if (result.status !== 'ok' || result.data.availability !== 'VISIBLE') return undefined;
   const { product, household } = result.data;
+  // A sold piece cannot start a new quotation request.
+  if (product.status === 'SOLD') return undefined;
   const t = await getTranslations('rfq.form');
   return {
     title: product.name,

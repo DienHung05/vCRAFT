@@ -64,7 +64,9 @@
    * `max-w-editorial` khung lưới 12 cột, `max-w-prose-vn` cột chữ đọc dài.
    */
   --spacing-gutter: clamp(1rem, 0.4286rem + 2.8571vw, 3rem);
-  --spacing-section: clamp(4rem, 2.2857rem + 8.5714vw, 10rem);
+  --spacing-section: clamp(3rem, 2rem + 4vw, 6rem);
+  /* Page endings share the footer's smaller rhythm, separate from editorial sections. */
+  --spacing-section-tail: clamp(1.5rem, 1rem + 2vw, 3rem);
   --container-editorial: 90rem;
   --container-prose-vn: 42rem;
 

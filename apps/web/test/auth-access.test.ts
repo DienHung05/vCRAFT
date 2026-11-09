@@ -22,6 +22,8 @@ const household = (status: NonNullable<MeDto['household']>['status']): MeDto['ho
   slug: 'gom-minh-hai',
   status,
   statusReason: null,
+  reviewState: 'NEW' as const,
+  resubmittedAt: null,
 });
 
 const buyer: Viewer = { role: 'BUYER', status: 'ACTIVE', household: null };
@@ -103,6 +105,8 @@ describe('unfinished household registration (GH#180)', () => {
     slug: 'ho-a',
     status: 'PENDING_REVIEW' as const,
     statusReason: null,
+    reviewState: 'NEW' as const,
+    resubmittedAt: null,
   };
 
   it('reads the flag only when it is exactly true', () => {

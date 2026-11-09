@@ -40,6 +40,8 @@ import {
   DEMO_QR_TRACE_CODE,
   DEMO_REQUEST_IDS,
 } from './accounts.js';
+import { artisanBio, householdStory } from './demo-text.js';
+import { newsSeedFields } from './news-seed.js';
 import {
   ARTISAN_FIRST,
   ARTISAN_LAST,
@@ -56,15 +58,6 @@ import {
   TEMPLATE_CATEGORY,
   VILLAGE_PARTS,
 } from './pools.js';
-
-/** Workshop steps named in artisan bios (GH#204), picked by position so the seed stays deterministic. */
-const CRAFT_STEP = [
-  'vuốt dáng trên bàn xoay',
-  'vẽ họa tiết',
-  'tráng men',
-  'xếp lò và canh lửa',
-  'sửa và hoàn thiện',
-];
 
 /**
  * Dữ liệu mẫu cho buổi bảo vệ (GH#14, vCRAFT-83g mục demo). Viết bằng entity (không SQL tay) nên chạy y hệt
@@ -725,7 +718,7 @@ export async function seedDemoData(
         email: `rep.${slug}@example.com`,
         // GH#212: a unique handle derived from the household slug, keeping the sample data consistent.
         username: slugify(`rep.${slug}`),
-        fullName: `${row.seed.owner} (mẫu)`,
+        fullName: row.seed.owner,
         role: 'HOUSEHOLD',
         status: 'ACTIVE',
         createdAt: new Date(createdMs),
@@ -779,16 +772,21 @@ export async function seedDemoData(
     const artisans: Artisan[] = [];
     const artisanCount = random.int(2, 3);
     for (let a = 0; a < artisanCount; a++) {
+      // Same call order as before, so the seeded random stream (and every frozen id) is unchanged.
+      const artisanName = a === 0 ? row.seed.owner : fullName(random);
+      const craftRole = a === 0 ? 'Chủ hộ, thợ cả' : random.pick(CRAFT_ROLES);
       artisans.push(
         em.create(Artisan, {
           id: idOf('artisan', `${row.index}-${a}`),
           household,
-          name: a === 0 ? row.seed.owner : fullName(random),
-          craftRole: a === 0 ? 'Chủ hộ, thợ cả' : random.pick(CRAFT_ROLES),
-          bio:
-            a === 0
-              ? `Đại diện hộ ${row.seed.name}, giữ lò và lo khâu chọn đất, pha men cho các món ${row.seed.craft}.`
-              : `Làm ở xưởng của hộ ${row.seed.name}, phụ trách khâu ${CRAFT_STEP[a % CRAFT_STEP.length]}.`,
+          name: artisanName,
+          craftRole,
+          bio: artisanBio({
+            household: row.seed,
+            artisanName,
+            position: a,
+            craftRole,
+          }),
           createdAt: new Date(createdMs + a * HOUR),
           updatedAt: new Date(createdMs + a * HOUR),
         }),
@@ -819,10 +817,7 @@ export async function seedDemoData(
         updatedAt: new Date(createdMs + w * HOUR),
       });
       if (w === 0) {
-        household.history = row.seed.story.replace(
-          '{address}',
-          workshop.address.replace(/, Hà Nội$/, ''),
-        );
+        household.history = householdStory(row.seed, workshop.address);
       }
       summary.workshops++;
     }
@@ -950,20 +945,15 @@ export async function seedDemoData(
   for (const [order, item] of NEWS.entries()) {
     const owner = item.h === null ? null : (households[item.h] as Household);
     const ownerName = owner?.name ?? '';
-    const publishedAt = new Date(FROZEN_ANCHOR.getTime() - item.daysAgo * DAY + order * HOUR);
+    const fields = newsSeedFields(item, order, FROZEN_ANCHOR, ownerName);
     em.create(News, {
+      ...fields,
       id: idOf('news', item.key),
-      slug: slugify(item.title.replaceAll('{hộ}', ownerName)),
-      title: item.title.replaceAll('{hộ}', ownerName),
-      summary: item.summary,
-      body: item.body.replaceAll('{hộ}', ownerName),
-      category: item.category,
+      slug: slugify(fields.title),
       household: owner,
       status: 'PUBLISHED',
-      publishedAt,
-      pinned: item.pinned ?? false,
-      createdAt: publishedAt,
-      updatedAt: publishedAt,
+      createdAt: fields.publishedAt,
+      updatedAt: fields.publishedAt,
     });
     summary.news++;
   }

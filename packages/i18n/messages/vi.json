@@ -1,13 +1,15 @@
 {
   "meta": {
     "title": "vCraft · Tinh hoa làng nghề, muôn phương lan tỏa",
-    "description": "Xem tận mắt xưởng gốm Bát Tràng, quét ấn dưới đáy món đồ để biết nó được làm ra thế nào, và đặt hàng trực tiếp từ người thợ."
+    "description": "Xem tận mắt xưởng gốm Bát Tràng, quét ấn dưới đáy món đồ để biết nó được làm ra thế nào, và đặt hàng trực tiếp từ người thợ.",
+    "slogan": "Tinh hoa làng nghề, muôn phương lan tỏa"
   },
   "common": {
     "skip": "Bỏ qua, tới nội dung chính",
     "oneOfAKind": "Độc bản",
-    "verified": "Đã xác thực",
-    "unverified": "Chờ xác thực",
+    "sold": "Đã bán",
+    "verified": "Đã xác minh",
+    "unverified": "Chờ xác minh",
     "openNow": "Đang mở cửa",
     "closed": "Đang nghỉ",
     "generation": "Đời thứ {n}",
@@ -26,6 +28,20 @@
     "cancel": "Hủy",
     "close": "Đóng"
   },
+  "favourites": {
+    "title": "Yêu thích",
+    "lead": "Những món bạn đã lưu bằng biểu tượng trái tim. Khi đã đăng nhập, danh sách đi theo bạn trên mọi thiết bị.",
+    "label": "Yêu thích",
+    "toggle": "Lưu {name} vào yêu thích",
+    "failed": "Chưa cập nhật được danh sách yêu thích. Vui lòng thử lại.",
+    "loading": "Đang tải danh sách yêu thích",
+    "loadFailed": "Chưa tải được danh sách yêu thích.",
+    "listLabel": "Sản phẩm yêu thích",
+    "empty": "Chưa có món yêu thích",
+    "emptyHint": "Bấm vào trái tim trên một sản phẩm để giữ nó ở đây.",
+    "browse": "Xem sản phẩm",
+    "guestNote": "Lưu trong trình duyệt này. Đăng nhập để giữ trên mọi thiết bị."
+  },
   "nav": {
     "home": "Về trang chủ vCraft",
     "label": "Điều hướng chính",
@@ -39,10 +55,10 @@
     "quotes": "Yêu cầu báo giá",
     "theme": "Đổi giao diện sáng/tối",
     "themeToDark": "Chuyển sang giao diện tối",
-    "themeToLight": "Chuyển sang giao diện sáng"
+    "themeToLight": "Chuyển sang giao diện sáng",
+    "favourites": "Yêu thích"
   },
   "indexPages": {
-    "demoNote": "Bản trình diễn: danh sách này lấy từ dữ liệu mẫu, không phải hộ và sản phẩm thật.",
     "products": {
       "title": "Sản phẩm",
       "lead": "Mỗi món gốm mang một ấn truy xuất dưới đáy. Chọn một món để xem hành trình của nó.",
@@ -72,6 +88,7 @@
       "filteredBy": "Đang xem tin của {name}.",
       "clearFilter": "Xem mọi tin",
       "more": "Xem thêm tin",
+      "categoryFilter": "Phân loại tin",
       "categories": {
         "HOUSEHOLD_UPDATE": "Từ hộ làng nghề",
         "VILLAGE_EVENT": "Sự kiện làng",
@@ -87,6 +104,8 @@
       "villageTitle": "Tin dành cho các hộ",
       "notFound": "Không tìm thấy tin này, hoặc tin chỉ dành cho các hộ trong làng.",
       "loading": "Đang tải tin…",
+      "sourceLine": "Nguồn: {name}, {date}",
+      "sourceLineNoDate": "Nguồn: {name}",
       "emptyHint": "Tin mới của làng và của từng hộ sẽ hiện ở đây khi được đăng."
     },
     "rfq": {
@@ -123,7 +142,7 @@
   },
   "credits": {
     "title": "Ghi nhận ảnh",
-    "lead": "Ảnh minh hoạ trong bản trình diễn lấy từ Wikimedia Commons, kho ảnh mở của các bảo tàng và Pixabay theo giấy phép cho phép dùng công khai kèm ghi nguồn. Chúng tôi cảm ơn các tác giả dưới đây. Ảnh đã được cắt và nén cho web; không có chỉnh sửa nào khác.",
+    "lead": "Ảnh trên trang web này lấy từ Wikimedia Commons, kho ảnh mở của các bảo tàng và Pixabay theo giấy phép cho phép dùng công khai kèm ghi nguồn. Chúng tôi cảm ơn các tác giả dưới đây. Ảnh đã được cắt và nén cho web; không có chỉnh sửa nào khác.",
     "table": "Danh sách ảnh và giấy phép",
     "colPhoto": "Ảnh",
     "colAuthor": "Tác giả",
@@ -148,7 +167,7 @@
     },
     "day": {
       "title": "Một ngày ở Bát Tràng",
-      "lead": "Từ nhào đất tới ra lò là sáu chặng mà món gốm nào cũng đi qua. Ảnh chỉ minh hoạ chung cho từng chặng, không phải ảnh của một món cụ thể. Vuốt ngang để xem từng chặng.",
+      "lead": "Từ nhào đất tới ra lò là sáu chặng mà món gốm nào cũng đi qua. Ảnh chỉ mang tính chung cho từng chặng, không phải ảnh của một món cụ thể. Vuốt ngang để xem từng chặng.",
       "railLabel": "Các chặng trong ngày",
       "current": "Chặng {index} trên {total}: {name}"
     },
@@ -214,6 +233,8 @@
   },
   "artisan": {
     "portraitAlt": "Chân dung {name}",
+    "sealAlt": "Con dấu của {name}",
+    "certPhotoAlt": "Ảnh chứng nhận {name}",
     "breadcrumb": "Đường dẫn trang",
     "allArtisans": "Tất cả nghệ nhân",
     "ctaRfq": "Gửi yêu cầu báo giá",
@@ -244,6 +265,8 @@
     "by": "Do <link>{household}</link> làm",
     "stock": "{count, plural, =1 {Chỉ còn 1 món} other {Còn # món}}",
     "soldOut": "Đã hết hàng",
+    "soldNote": "Món độc bản này đã có chủ. Bạn vẫn xem được hành trình làm ra nó.",
+    "tags": "Thẻ sản phẩm",
     "ctaRfq": "Gửi yêu cầu báo giá",
     "ctaWorkshop": "Xem xưởng của hộ",
     "journey": "Hành trình của món gốm",
@@ -253,7 +276,24 @@
     "dimensions": "Kích thước",
     "weight": "Khối lượng",
     "code": "Mã truy xuất",
-    "more": "Cùng hộ này làm"
+    "more": "Cùng hộ này làm",
+    "lightbox": {
+      "open": "Phóng to ảnh: {alt}",
+      "title": "Xem ảnh lớn",
+      "close": "Đóng ảnh",
+      "previous": "Ảnh trước",
+      "next": "Ảnh sau",
+      "zoomIn": "Phóng to",
+      "zoomOut": "Thu nhỏ",
+      "counter": "Ảnh {current} trên {total}"
+    },
+    "qr": {
+      "title": "Mã QR truy xuất",
+      "lead": "Quét mã bằng điện thoại để xem hành trình của món này.",
+      "label": "Mã QR truy xuất {code}",
+      "link": "Đường dẫn ngắn",
+      "download": "Tải mã QR (PNG)"
+    }
   },
   "trace": {
     "home": "Về trang chủ vCraft",
@@ -263,9 +303,8 @@
     "scanned": "Bạn vừa quét ấn của",
     "verifiedSeal": "Ấn xác thực của vCraft",
     "integrity": {
-      "demoBadge": "Dữ liệu minh họa",
       "householdVerified": "Hộ đã được BQL xác minh",
-      "match": "Mã này khớp với một sản phẩm minh họa của {household}.",
+      "match": "Mã này khớp với một sản phẩm của {household}.",
       "checkingTitle": "Đang kiểm tra nhật ký…",
       "checkingText": "Trình duyệt của bạn đang tự tính lại dấu băm SHA-256 của từng mốc.",
       "okTitle": "Nhật ký toàn vẹn",
@@ -282,12 +321,17 @@
       "unavailableTitle": "Chưa kiểm được trên trình duyệt này",
       "unavailableText": "Việc kiểm chứng cần Web Crypto, chỉ có khi mở trang qua HTTPS. Nhật ký bên dưới chưa được xác nhận là toàn vẹn.",
       "emptyTitle": "Chưa có nhật ký để kiểm",
-      "emptyText": "Sản phẩm minh họa này chưa có mốc sản xuất nào.",
+      "emptyText": "Sản phẩm này chưa có mốc sản xuất nào.",
       "sentence": "Toàn vẹn nhật ký: nhật ký này không bị âm thầm thay đổi, xóa hay đảo thứ tự kể từ khi được ghi. Điều đó không chứng minh các công đoạn đã diễn ra đúng như ghi, cũng không chứng minh ai đã tự tay làm ra món đồ."
     },
     "scans": "{count, plural, other {# lượt quét}}",
     "timelineTitle": "Hành trình qua lửa",
     "timelineLead": "Từng công đoạn do chính người thợ ghi lại, kèm dấu băm, và ảnh khi người thợ có chụp.",
+    "journeyIllustration": "Hình vẽ loại gốm, không phải ảnh chụp món đồ.",
+    "journalBy": "Nhật ký do {household} công bố",
+    "stageNotRecorded": "{stage}, chưa ghi nhận",
+    "notRecordedStages": "Chưa ghi nhận: {stages}",
+    "emptyJournal": "Chưa có công đoạn sản xuất nào được ghi nhận.",
     "whereTitle": "Nơi món gốm ra đời",
     "certsTitle": "Chứng nhận của hộ",
     "qrLabel": "Ấn truy xuất mã {code}",
@@ -300,12 +344,35 @@
     "skipped": "Bỏ qua công đoạn trước: {reason}",
     "inProgress": "Đang làm · chưa ghi: {stages}",
     "hashHint": "Dấu băm SHA-256 của mốc này, nối với mốc trước đó.",
+    "recordedBy": "Do {household} ghi lại",
+    "notRecorded": "Chưa ghi",
+    "storyTrack": "Các công đoạn của món gốm",
+    "pieceNote": "Hình vẽ các công đoạn, không phải ảnh của món đồ này.",
     "withdrawnTitle": "Món đồ này không còn được trưng bày",
     "withdrawnText": "Hộ làm ra món đồ đã rút nó khỏi triển lãm, nên nhật ký không còn hiện công khai.",
     "lockedTitle": "Chưa xác thực được món đồ này",
     "lockedText": "Hộ làm ra mã {code} đang bị Ban quản lý làng tạm khóa. Hãy thận trọng: món đồ này hiện không được vCraft xác nhận."
   },
+  "orderProgress": {
+    "label": "Tiến độ phần việc",
+    "percent": "Hoàn thành {percent}%",
+    "completed": "{done}/{total} {unit}",
+    "counts": "{done}/{total} {unit} · dự kiến {expected} · hẹn {due}",
+    "started": "Bắt đầu",
+    "empty": "Chưa có phân bổ.",
+    "lateness": {
+      "DONE": "Xong",
+      "ON_TRACK": "Đúng tiến độ",
+      "BEHIND": "Chậm",
+      "OVERDUE": "Quá hạn"
+    }
+  },
   "rfq": {
+    "duplicate": {
+      "action": "Nhân bản thành bản nháp",
+      "hint": "Ngày chào giá và ngày giao được đặt lại. Hãy kiểm tra nội dung và đính kèm lại tệp trước khi gửi.",
+      "failed": "Chưa nhân bản được yêu cầu. Hãy thử lại."
+    },
     "breadcrumb": "Đường dẫn trang",
     "allRequests": "Yêu cầu báo giá",
     "stepperLabel": "Tiến trình của yêu cầu báo giá",
@@ -446,13 +513,13 @@
       "customRequirements": "Yêu cầu riêng (không bắt buộc)",
       "customRequirementsHint": "Ví dụ: in logo, đóng gói riêng, màu men. Tối đa 1.000 ký tự.",
       "attachments": "Tệp đính kèm (không bắt buộc)",
-      "attachmentsHint": "Logo hoặc bản vẽ: tối đa 3 tệp ảnh hoặc PDF, mỗi tệp không quá 10 MB. Chỉ các hộ được mời xem được.",
+      "attachmentsHint": "Logo hoặc bản vẽ: tối đa 3 tệp ảnh hoặc PDF, mỗi tệp không quá 15 MB. Chỉ các hộ được mời xem được.",
       "attachmentsPick": "Thêm tệp",
       "attachmentsUploading": "Đang tải lên…",
       "attachmentsRemove": "Bỏ tệp {name}",
       "attachmentsFull": "Đã đủ 3 tệp.",
       "attachmentsErrorType": "Chỉ nhận ảnh JPEG, PNG, WebP, AVIF hoặc PDF.",
-      "attachmentsErrorSize": "Tệp quá lớn, tối đa 10 MB.",
+      "attachmentsErrorSize": "Tệp quá lớn, tối đa 15 MB.",
       "attachmentsErrorUpload": "Không tải được tệp. Vui lòng thử lại.",
       "householdsMatch": "Để trống, hệ thống sẽ tự mời tối đa 10 hộ đang làm cùng danh mục với yêu cầu.",
       "send": "Gửi yêu cầu",
@@ -474,11 +541,26 @@
         "destination": "Hãy nhập nơi giao hàng.",
         "deadline": "Hạn chào giá phải sau thời điểm gửi ít nhất 24 giờ.",
         "requiredBy": "Ngày cần hàng phải sau hạn chào giá.",
-        "budget": "Ngân sách phải là số nguyên, và mức từ không lớn hơn mức đến."
+        "budget": "Ngân sách phải là số nguyên, và mức từ không lớn hơn mức đến.",
+        "customerName": "Hãy nhập tên khách hàng (tối đa 120 ký tự).",
+        "customerPhone": "Hãy nhập số điện thoại Việt Nam hợp lệ, ví dụ 0912 345 678.",
+        "customerEmail": "Email không hợp lệ."
       },
       "sentToast": "Đã gửi yêu cầu báo giá. Các hộ sẽ nhận được lời mời chào giá.",
       "sentToastMatched": "Đã gửi yêu cầu báo giá tới {count, plural, other {# hộ phù hợp}}.",
-      "consentRequired": "Hãy đồng ý với chính sách quyền riêng tư để gửi yêu cầu."
+      "consentRequired": "Hãy đồng ý với chính sách quyền riêng tư để gửi yêu cầu.",
+      "signInAdmin": "Đăng nhập bằng tài khoản Ban quản lý để tạo yêu cầu cho khách hàng.",
+      "onBehalf": {
+        "title": "Tạo yêu cầu cho khách hàng",
+        "lead": "Dành cho khách đặt hàng qua điện thoại và chưa có tài khoản. Bạn là người điều phối yêu cầu và thay khách chốt chào giá, xác nhận nhận hàng và đánh giá các hộ.",
+        "customer": "Khách hàng ngoài nền tảng",
+        "name": "Tên khách hàng",
+        "phone": "Số điện thoại",
+        "email": "Email (không bắt buộc)",
+        "coordinated": "Yêu cầu này do bạn điều phối. Hãy chọn các hộ muốn mời chào giá.",
+        "householdsHint": "Chọn các hộ được mời chào giá; hộ có điểm đánh giá cao hiện trước.",
+        "sentToast": "Đã gửi yêu cầu cho khách hàng. Bạn đang phụ trách điều phối."
+      }
     },
     "list": {
       "allStatuses": "Tất cả trạng thái",
@@ -535,7 +617,8 @@
       "overview": "Tổng quan",
       "pending": "{count} hồ sơ đang chờ duyệt",
       "progress": "Tiến độ đơn",
-      "users": "Tài khoản"
+      "users": "Tài khoản",
+      "payments": "Thanh toán"
     },
     "accounts": {
       "title": "Tài khoản",
@@ -605,16 +688,37 @@
     "board": {
       "barTitle": "Chia {quantity} {unit} cho các hộ",
       "barLabel": "Đã chia {sum} trên {quantity} {unit}",
-      "statusOk": "Đã chia đủ {quantity} {unit}. Bạn có thể mô phỏng gửi chào giá liên kết.",
+      "statusOk": "Đã chia đủ {quantity} {unit}. Bạn có thể xem trước việc gửi chào giá liên kết.",
       "problem": {
         "short": "Còn thiếu {count} {unit}.",
         "excess": "Đang chia thừa {count} {unit}.",
         "over": "{name} vượt mức tối đa hộ đã khai ({capacity}).",
+        "overCapacity": "{name} vượt năng lực hộ đã khai ({capacity}).",
         "invalid": "Số lượng của mỗi hộ phải là số nguyên từ 0 trở lên.",
         "date": "Ngày hoàn thành phải sau hạn chào giá và không muộn hơn hạn giao.",
         "charge": "Phụ phí giao hàng phải là số nguyên từ 0 trở lên."
       },
       "partMeta": "Tối đa {max} · đơn giá {price} · hoàn thành {date}",
+      "partCapacity": "năng lực khai {capacity}",
+      "strategy": {
+        "label": "Đề xuất chia tự động",
+        "hint": "Chọn một cách chia để điền sẵn bảng bên dưới. Bạn vẫn chỉnh tay từng hộ được trước khi gửi.",
+        "CAPACITY": {
+          "name": "Theo năng lực",
+          "about": "Chia theo tỉ lệ năng lực của từng hộ; phần dư thuộc về hộ có số dư lớn nhất."
+        },
+        "CHEAPEST": {
+          "name": "Giá thấp trước",
+          "about": "Hộ có đơn giá thấp nhất nhận trước, tới mức tối đa của hộ rồi chuyển sang hộ kế tiếp."
+        },
+        "BALANCED": {
+          "name": "Cân bằng",
+          "about": "Chia đều cho các hộ; hộ nào chạm mức tối đa thì phần còn lại chia cho các hộ khác."
+        },
+        "applied": "Đã đề xuất theo \"{strategy}\": {sum} / {quantity} {unit}, tiền hàng {price}, dự kiến xong {date}.",
+        "shortfall": "Các hộ chỉ nhận được tối đa {count} {unit} cho yêu cầu này, còn thiếu {missing} {unit}.",
+        "excluded": "Không dùng được đề xuất của {names}: ngày hoàn thành ngoài khoảng cho phép hoặc hộ không còn mức nhận."
+      },
       "slider": "Số lượng giao cho {name}",
       "quantityOf": "Nhập số lượng cho {name}",
       "stat": {
@@ -623,18 +727,20 @@
         "excess": "Đang thừa",
         "charge": "Phụ phí giao hàng",
         "terms": "Vận chuyển",
+        "production": "Tiền hàng",
+        "completion": "Dự kiến hoàn thành",
         "total": "Tổng cho bên mua"
       },
       "send": "Gửi chào giá liên kết",
-      "sentLabel": "Đã mô phỏng",
-      "demoNote": "Bản trình diễn: thao tác chỉ chạy trên trình duyệt của bạn, chưa lưu, chưa gửi lên máy chủ và không có thông báo nào được gửi.",
+      "sentLabel": "Đã xem trước",
+      "demoNote": "Thao tác này chỉ chạy trên trình duyệt của bạn: chưa lưu, chưa gửi lên máy chủ và không có thông báo nào được gửi.",
       "sendBlocked": "Chia đủ số lượng, không hộ nào vượt mức tối đa và ngày hoàn thành hợp lệ thì mới gửi được.",
       "sent": {
-        "title": "Đã mô phỏng (chưa lưu, không gửi thông báo)",
+        "title": "Đã xem trước (chưa lưu, không gửi thông báo)",
         "text": "Phương án chia đơn cho yêu cầu {code} chỉ chạy thử trên trình duyệt này. Chưa có chào giá nào tới bên mua và chưa hộ nào nhận thông báo."
       },
-      "manualTitle": "Chia đơn thủ công",
-      "manualLead": "Bạn tự chia số lượng cho từng hộ theo đúng đề xuất tham gia của họ. Không có phương án tự động và không có ngày hoàn thành suy đoán: từng hộ giữ đúng ngày và đơn giá hộ đã khai.",
+      "manualTitle": "Chia đơn",
+      "manualLead": "Chọn một cách chia để đề xuất phương án, hoặc tự chia số lượng cho từng hộ. Phần của mỗi hộ nằm trong mức hộ đã đề xuất và năng lực hộ đã khai; ngày hoàn thành dự kiến là ngày muộn nhất trong các hộ có phần, và từng hộ giữ đúng ngày và đơn giá đã khai.",
       "chargeOf": "Phụ phí giao hàng",
       "terms": {
         "included": "Đã gồm vận chuyển",
@@ -687,8 +793,23 @@
       "back": "Quay lại",
       "reasonRequired": "Hãy ghi lý do.",
       "stale": "Dữ liệu vừa được cập nhật. Hãy soát lại rồi thử lại.",
+      "capacityExceeded": "Có hộ được chia vượt năng lực đã khai cho nhóm hàng này. Hãy giảm phần của hộ đó rồi gửi lại.",
+      "offerExceeded": "Có hộ được chia vượt mức tối đa đã khai trong đề xuất. Hãy soát lại bảng chia rồi gửi lại.",
       "startFailed": "Chưa thể bắt đầu sản xuất. Hãy chắc chắn mọi hộ đã xác nhận phần việc của mình rồi thử lại.",
-      "actionFailed": "Thao tác không thành công. Hãy thử lại."
+      "actionFailed": "Thao tác không thành công. Hãy thử lại.",
+      "onBehalfBadge": "Khách ngoài nền tảng",
+      "customerName": "Khách hàng",
+      "customerPhone": "Điện thoại",
+      "customerEmail": "Email",
+      "onBehalfLead": "Bạn tạo yêu cầu này cho khách nên bạn chốt chào giá, xác nhận nhận hàng và đánh giá các hộ thay họ.",
+      "quotationsTitle": "Chào giá chờ khách quyết định",
+      "noQuotations": "Chưa có chào giá nào để chốt.",
+      "quotationTotal": "Tổng {total}",
+      "accept": "Chốt thay khách",
+      "acceptTitle": "Chốt chào giá này thay khách?",
+      "acceptText": "Chốt {quantity} {unit} với tổng {total}. Các chào giá khác sẽ bị từ chối. Không thể hoàn tác.",
+      "acceptedToast": "Đã chốt chào giá thay khách. Các hộ sẽ được báo ngay.",
+      "acceptFailed": "Không chốt được. Dữ liệu vừa thay đổi hoặc chào giá không còn hiệu lực."
     },
     "dashboard": {
       "title": "Tổng quan",
@@ -701,6 +822,13 @@
       "openRfqs": "Yêu cầu báo giá đang mở",
       "ordersInProduction": "Đơn đang sản xuất",
       "qrScans30Days": "Lượt quét QR 30 ngày",
+      "trendTitle": "Lượt quét QR theo ngày",
+      "trendPeriod": "30 ngày qua, giờ Việt Nam",
+      "trendEmpty": "30 ngày qua chưa có lượt quét QR nào.",
+      "trendTableCaption": "Lượt quét QR theo ngày trong 30 ngày qua, cũ nhất trước",
+      "trendDate": "Ngày",
+      "trendCount": "Lượt quét",
+      "trendChart": "Biểu đồ cột lượt quét QR theo ngày trong 30 ngày qua",
       "reviewCta": "Duyệt {count} hồ sơ đang chờ",
       "assistant": {
         "title": "Trợ lý Cáo",
@@ -733,7 +861,12 @@
       "empty": "Không có hồ sơ nào khớp bộ lọc.",
       "emptyHint": "Thử đổi bộ lọc trạng thái hoặc khoảng ngày để xem các hồ sơ khác.",
       "showAll": "Xem mọi trạng thái",
-      "showPending": "Xem hồ sơ đang chờ"
+      "showPending": "Xem hồ sơ đang chờ",
+      "reviewState": {
+        "NEW": "Hồ sơ mới",
+        "AWAITING_APPLICANT": "Chờ hộ bổ sung",
+        "RESUBMITTED": "Đã bổ sung và nộp lại"
+      }
     },
     "review": {
       "back": "Về hàng đợi",
@@ -758,7 +891,18 @@
       "workshops": "Xưởng trên bản đồ",
       "noWorkshops": "Hộ chưa khai xưởng.",
       "noLocation": "Xưởng chưa khai vị trí.",
+      "workshopArea": "Khu vực: {area}",
+      "noWorkshopArea": "Chưa chọn khu vực (nhận mọi thông báo cắt điện).",
       "outsideVillage": "Ghim ngoài ranh giới xã Bát Tràng",
+      "insideVillage": "Ghim trong ranh giới xã Bát Tràng",
+      "mapLabel": "Ranh giới Bát Tràng và vị trí của {count} xưởng",
+      "mapHint": "Vùng tô và đường viền thể hiện ranh giới làng. Mỗi xưởng bên dưới ghi rõ ghim nằm trong hay ngoài ranh giới.",
+      "documentKind": {
+        "IDENTITY": "Căn cước công dân",
+        "RESIDENCE": "Xác nhận cư trú",
+        "WORKSHOP": "Ảnh xưởng",
+        "UNKNOWN": "Giấy tờ chưa phân loại"
+      },
       "decision": "Quyết định",
       "reason": "Lý do",
       "sealed": "Đã duyệt và đóng ấn.",
@@ -794,6 +938,20 @@
           "text": "Hộ {name} sẽ được trưng bày công khai trở lại."
         }
       },
+      "certifications": "Chứng nhận do hộ khai",
+      "certificationsHint": "Chỉ đánh dấu “Đã xác minh” sau khi đối chiếu giấy tờ. Dấu này hiện trên trang công khai và được ghi vào nhật ký kiểm toán.",
+      "noCertifications": "Hộ chưa khai chứng nhận.",
+      "certMeta": "{issuer} · {date}",
+      "certPhoto": "Xem ảnh chứng nhận",
+      "certVerified": "Đã xác minh",
+      "certUnverified": "Chưa xác minh",
+      "markVerified": "Đánh dấu đã xác minh",
+      "removeVerification": "Bỏ xác minh",
+      "markVerifiedNamed": "Đánh dấu “{name}” đã xác minh",
+      "removeVerificationNamed": "Bỏ xác minh “{name}”",
+      "certSaved": "Đã cập nhật chứng nhận.",
+      "certFailed": "Chưa cập nhật được chứng nhận. Bạn thử lại.",
+      "certStale": "Hồ sơ vừa thay đổi. Đã tải lại bản mới, bạn kiểm tra rồi thử lại.",
       "idNumber": "Số CCCD",
       "noIdNumber": "Chưa khai",
       "revealIdNumber": "Xem số đầy đủ",
@@ -826,7 +984,11 @@
       "emptyHint": "Khi người mua nhờ Ban quản lý điều phối một yêu cầu, nó sẽ hiện ở đây.",
       "emptyAction": "Về tổng quan",
       "claimedToast": "Đã nhận điều phối yêu cầu này.",
-      "detail": "Yêu cầu"
+      "detail": "Yêu cầu",
+      "createForCustomer": "Tạo yêu cầu cho khách hàng",
+      "offPlatform": "Khách ngoài nền tảng",
+      "customer": "Khách hàng",
+      "customerPhone": "Điện thoại"
     },
     "audit": {
       "title": "Nhật ký kiểm toán",
@@ -859,7 +1021,8 @@
         "quotation": "Chào giá liên kết",
         "news": "Tin tức",
         "app_user": "Tài khoản",
-        "account_invitation": "Lời mời"
+        "account_invitation": "Lời mời",
+        "payment": "Thanh toán"
       },
       "actions": {
         "household": {
@@ -868,7 +1031,9 @@
           "request_info": "Yêu cầu bổ sung hồ sơ",
           "suspend": "Tạm ngừng hộ",
           "reinstate": "Khôi phục hộ",
-          "reveal_id_number": "Xem số CCCD đầy đủ"
+          "reveal_id_number": "Xem số CCCD đầy đủ",
+          "certification_verify": "Xác minh chứng nhận",
+          "certification_unverify": "Bỏ xác minh chứng nhận"
         },
         "product": {
           "publish": "Xuất bản sản phẩm",
@@ -876,6 +1041,7 @@
           "republish": "Xuất bản lại sản phẩm"
         },
         "rfq": {
+          "create": "Tạo yêu cầu thay mặt khách ngoài hệ thống",
           "claim": "Nhận điều phối",
           "invite": "Mời thêm hộ",
           "quotation_submit": "Gửi chào giá liên kết",
@@ -898,6 +1064,11 @@
         },
         "access": {
           "denied": "Bị chặn khi sửa bản ghi của hộ khác"
+        },
+        "payment": {
+          "record_offline": "Ghi nhận thanh toán ngoài hệ thống",
+          "refund": "Đánh dấu hoàn lại một khoản thanh toán",
+          "simulate_transfer": "Giả lập chuyển khoản (sandbox)"
         },
         "user": {
           "suspend": "Tạm khóa tài khoản",
@@ -941,6 +1112,13 @@
       },
       "stateFilter": "Trạng thái",
       "allStates": "Tất cả",
+      "originFilter": "Nguồn gốc tin",
+      "allOrigins": "Mọi nguồn gốc",
+      "origin": {
+        "MANUAL": "Nhập tay",
+        "IMPORTED": "Nhập tự động",
+        "GENERATED": "Bài tự sinh"
+      },
       "publishedAt": "Đăng lúc {date}",
       "scheduledAt": "Sẽ đăng lúc {date}",
       "form": {
@@ -960,6 +1138,11 @@
         "publishAt": "Thời điểm đăng",
         "cover": "Ảnh bìa",
         "coverAlt": "Mô tả ảnh bìa",
+        "sourceTitle": "Nguồn tin gốc",
+        "sourceName": "Tên đơn vị đăng tin",
+        "sourceUrl": "Đường dẫn bài gốc (https)",
+        "sourcePublishedOn": "Ngày đăng bài gốc",
+        "sourceHint": "Hiện công khai ở dạng \"Nguồn: tên, ngày\" kèm liên kết tới bài gốc.",
         "removeCover": "Bỏ ảnh bìa",
         "coverUploading": "Đang xử lý ảnh…",
         "coverFailed": "Không tải được ảnh bìa.",
@@ -973,7 +1156,8 @@
           "summary": "Hãy nhập tóm tắt.",
           "body": "Hãy nhập nội dung.",
           "publishAt": "Hãy chọn thời điểm trong tương lai.",
-          "slug": "Đường dẫn chỉ gồm chữ thường không dấu, số và dấu gạch ngang."
+          "slug": "Đường dẫn chỉ gồm chữ thường không dấu, số và dấu gạch ngang.",
+          "sourceUrl": "Đường dẫn bài gốc phải bắt đầu bằng https:// và cần có tên đơn vị đăng tin."
         },
         "draftSavedToast": "Đã lưu bản nháp.",
         "scheduledToast": "Đã hẹn giờ đăng tin.",
@@ -1007,7 +1191,71 @@
         "from": "Từ",
         "to": "Đến",
         "area": "Khu vực",
+        "areaCode": "Gửi tới",
+        "areaCodeHint": "Chỉ hộ có xưởng trong khu vực này (hoặc chưa chọn khu vực) nhận banner. Ô khu vực bên cạnh chỉ là mô tả cho người đọc.",
         "outageHint": "Studio hiện banner vào đúng ngày cắt điện.{more, plural, =0 {} other { Thông báo còn # đợt cắt khác được giữ nguyên.}}"
+      }
+    },
+    "payments": {
+      "title": "Thanh toán",
+      "lead": "Tiền đặt cọc và phần còn lại của các đơn, theo mọi phương thức. Tiền về tài khoản của Ban quản lý làng nghề; màn này không chuyển tiền.",
+      "signIn": "Đăng nhập bằng tài khoản Ban quản lý để xem thanh toán.",
+      "failed": "Không tải được danh sách thanh toán.",
+      "retry": "Thử lại",
+      "empty": "Không có khoản thanh toán nào khớp bộ lọc.",
+      "more": "Tải thêm",
+      "filters": "Bộ lọc",
+      "allStatuses": "Mọi trạng thái",
+      "allMethods": "Mọi phương thức",
+      "allKinds": "Mọi loại",
+      "status": "Trạng thái",
+      "method": "Phương thức",
+      "kind": "Loại",
+      "columns": {
+        "when": "Tạo lúc",
+        "order": "Đơn hàng",
+        "buyer": "Người mua",
+        "kind": "Loại",
+        "method": "Phương thức",
+        "amount": "Số tiền",
+        "status": "Trạng thái",
+        "reference": "Mã thanh toán"
+      },
+      "openOrder": "Mở đơn hàng",
+      "panel": {
+        "title": "Thanh toán của đơn hàng này",
+        "lead": "Đặt cọc và phần còn lại. Tiền cọc thanh toán trực tuyến trước khi sản xuất; phần còn lại thanh toán trực tuyến hoặc ghi nhận tại đây.",
+        "loading": "Đang tải thanh toán…",
+        "failed": "Không tải được thanh toán của đơn hàng này.",
+        "none": "Đơn hàng này chưa có khoản thanh toán nào.",
+        "total": "Tổng giá trị đơn",
+        "deposit": "Đặt cọc ({percent}%)",
+        "balance": "Phần còn lại",
+        "paidOn": "Đã thanh toán ngày {date}",
+        "notPaid": "Chưa thanh toán",
+        "depositRequired": "Đơn chưa bắt đầu sản xuất được cho tới khi đặt cọc.",
+        "recordTitle": "Ghi nhận phần còn lại thanh toán ngoài hệ thống",
+        "recordHelp": "Dùng khi người mua trả phần còn lại ngoài trang web. Số tiền là phần còn lại của đơn; mục này được ghi vào nhật ký thao tác và người mua được báo.",
+        "noteLabel": "Cách thanh toán",
+        "notePlaceholder": "Tiền mặt nộp tại văn phòng, biên lai 0042",
+        "noteRequired": "Hãy ghi một ghi chú ngắn (ít nhất 3 ký tự).",
+        "record": "Ghi nhận phần còn lại",
+        "recording": "Đang ghi nhận…",
+        "recorded": "Đã ghi nhận phần còn lại thanh toán ngoài hệ thống.",
+        "recordFailed": "Chưa ghi nhận được phần còn lại.",
+        "refund": "Đánh dấu hoàn lại",
+        "refundTitle": "Đánh dấu khoản thanh toán này đã hoàn lại",
+        "refundHelp": "Thao tác này chỉ ghi lại việc hoàn tiền và lý do. Hệ thống không chuyển tiền: hãy hoàn tiền thủ công.",
+        "reasonLabel": "Lý do",
+        "reasonRequired": "Hãy ghi lý do (ít nhất 3 ký tự).",
+        "refundConfirm": "Đánh dấu hoàn lại",
+        "refunded": "Đã đánh dấu khoản thanh toán là hoàn lại.",
+        "refundFailed": "Chưa ghi nhận được việc hoàn tiền.",
+        "stale": "Có người vừa cập nhật khoản thanh toán này. Hãy tải lại rồi thử lại.",
+        "simulate": "Giả lập chuyển khoản (sandbox)",
+        "simulated": "Đã áp dụng khoản chuyển khoản giả lập.",
+        "simulateFailed": "Không giả lập được khoản chuyển khoản.",
+        "back": "Quay lại"
       }
     },
     "progress": {
@@ -1096,13 +1344,14 @@
     "sending": "Đang gửi…",
     "sentRealLabel": "Đã gửi",
     "updatedLabel": "Đã cập nhật",
-    "simulatedLabel": "Đã mô phỏng",
-    "simulatedNote": "Đã mô phỏng (chưa lưu, không gửi thông báo). Bản trình diễn chỉ chạy trên trình duyệt này.",
+    "simulatedLabel": "Đã xem trước",
+    "simulatedNote": "Đã xem trước (chưa lưu, không gửi thông báo). Thao tác chỉ chạy trên trình duyệt này.",
     "sentNote": "Đề xuất đã lưu trên máy chủ. BQL điều phối sẽ dùng mức tối đa, đơn giá và ngày hoàn thành này để ghép chào giá.",
     "withdraw": "Rút đề xuất",
     "withdrawn": "Đề xuất đã rút. Gửi lại để tham gia lại.",
     "sendFailed": "Gửi không thành công. Bạn thử lại sau.",
-    "demoNote": "Bản trình diễn: thao tác chỉ chạy trên trình duyệt của bạn, chưa lưu, chưa gửi lên máy chủ.",
+    "capacityExceeded": "Số lượng vượt năng lực bạn đã khai cho nhóm hàng này. Hãy giảm số lượng hoặc cập nhật năng lực trong hồ sơ rồi gửi lại.",
+    "demoNote": "Thao tác này chỉ chạy trên trình duyệt của bạn: chưa lưu, chưa gửi lên máy chủ.",
     "liveNote": "Đề xuất sẽ gửi lên máy chủ qua API, kèm phiên đăng nhập của bạn. Thông tin này riêng giữa hộ và Ban quản lý, bên mua không thấy.",
     "privacyNote": "Mức tối đa, đơn giá và ngày hoàn thành là thông tin riêng giữa hộ và Ban quản lý; bên mua chỉ thấy hộ, phần chia và ngày hoàn thành.",
     "loading": "Đang tải yêu cầu…",
@@ -1155,6 +1404,113 @@
     "accepted": "Bên mua đã chốt báo giá của hộ. Xác nhận phần việc trong mục Đơn hàng.",
     "rejected": "Bên mua đã chọn hộ khác.",
     "lapsed": "Báo giá đã hết hiệu lực."
+  },
+  "payments": {
+    "title": "Thanh toán",
+    "loading": "Đang tải khoản thanh toán…",
+    "signIn": "Đăng nhập để xem khoản thanh toán này.",
+    "loadFailed": "Không tải được khoản thanh toán, hoặc bạn không có quyền xem.",
+    "retry": "Thử lại",
+    "kind": {
+      "DEPOSIT": "Đặt cọc",
+      "BALANCE": "Phần còn lại"
+    },
+    "method": {
+      "SEPAY_TRANSFER": "Chuyển khoản / VietQR",
+      "VNPAY": "VNPay (sandbox)",
+      "MOMO": "MoMo (sandbox)",
+      "OFFLINE": "Ngoài hệ thống (Ban quản lý ghi nhận)"
+    },
+    "status": {
+      "PENDING": "Chờ thanh toán",
+      "PAID": "Đã thanh toán",
+      "FAILED": "Không thành công",
+      "EXPIRED": "Đã hết hạn",
+      "CANCELLED": "Đã hủy",
+      "REFUNDED": "Đã hoàn lại"
+    },
+    "summary": {
+      "title": "Thanh toán cho đơn hàng này",
+      "total": "Tổng giá trị đơn",
+      "deposit": "Đặt cọc ({percent}%)",
+      "balance": "Phần còn lại",
+      "paidOn": "Đã thanh toán ngày {date}",
+      "notPaid": "Chưa thanh toán",
+      "depositRequired": "Đơn hàng bắt đầu sản xuất sau khi đặt cọc.",
+      "sandbox": "Sandbox: VNPay và MoMo không chuyển tiền thật."
+    },
+    "pay": {
+      "deposit": "Đặt cọc",
+      "balance": "Thanh toán phần còn lại",
+      "choose": "Chọn cách thanh toán",
+      "start": "Tiếp tục",
+      "starting": "Đang chuẩn bị…",
+      "noMethods": "Hiện chưa thanh toán trực tuyến được. Ban quản lý sẽ hướng dẫn bạn cách thanh toán."
+    },
+    "bank": {
+      "title": "Thanh toán bằng chuyển khoản",
+      "scan": "Quét mã QR bằng ứng dụng ngân hàng, hoặc chuyển khoản thủ công theo thông tin dưới đây.",
+      "qrAlt": "Mã VietQR của khoản chuyển này",
+      "bank": "Ngân hàng",
+      "account": "Số tài khoản",
+      "accountName": "Chủ tài khoản",
+      "amount": "Số tiền",
+      "content": "Nội dung chuyển khoản",
+      "contentHint": "Nhập đúng mã thanh toán này làm nội dung chuyển khoản, nếu không hệ thống không đối chiếu được. Số tiền phải chính xác.",
+      "copy": "Sao chép",
+      "copied": "Đã sao chép"
+    },
+    "redirect": {
+      "title": "Thanh toán bằng {method}",
+      "text": "Bạn thanh toán trên trang của nhà cung cấp rồi quay lại đây. Trang này xác nhận khi nhà cung cấp báo về cho hệ thống.",
+      "open": "Mở trang thanh toán",
+      "app": "Mở ứng dụng"
+    },
+    "live": {
+      "waiting": "Đang chờ tiền về. Trang này tự cập nhật.",
+      "expiresAt": "Vui lòng thanh toán trước {time}.",
+      "paid": "Đã nhận được tiền. Cảm ơn bạn.",
+      "paidAt": "Nhận lúc {time}.",
+      "failed": "Thanh toán không thành công. Bạn có thể tạo khoản thanh toán mới.",
+      "expired": "Khoản thanh toán đã hết hạn trước khi tiền về. Hãy tạo khoản mới. Nếu bạn đã chuyển khoản, hãy báo Ban quản lý.",
+      "cancelled": "Khoản thanh toán này đã bị hủy.",
+      "refunded": "Ban quản lý đã đánh dấu khoản thanh toán này là đã hoàn lại.",
+      "refundReason": "Lý do: {reason}"
+    },
+    "cancel": "Hủy khoản thanh toán này",
+    "cancelling": "Đang hủy…",
+    "history": "Các khoản thanh toán của đơn",
+    "errors": {
+      "PAYMENT_METHOD_UNAVAILABLE": "Phương thức thanh toán này hiện không dùng được.",
+      "PAYMENT_ORDER_NOT_PAYABLE": "Đơn hàng chưa thể nhận khoản thanh toán này.",
+      "PAYMENT_ALREADY_PAID": "Phần này của đơn đã được thanh toán.",
+      "PAYMENT_DEPOSIT_REQUIRED": "Hãy đặt cọc trước.",
+      "SERVICE_UNAVAILABLE": "Nhà cung cấp thanh toán chưa phản hồi. Hãy thử lại sau ít phút.",
+      "default": "Chưa tạo được khoản thanh toán. Hãy thử lại sau ít phút."
+    },
+    "result": {
+      "title": "Kết quả thanh toán",
+      "back": "Về đơn hàng",
+      "allOrders": "Tất cả yêu cầu"
+    }
+  },
+  "rating": {
+    "title": "Đánh giá các hộ",
+    "lead": "Đơn đã được giao. Hãy cho điểm từng hộ đã làm hàng cho đơn này; bạn có thể sửa đánh giá trong 30 ngày.",
+    "star": "{count, plural, other {# sao}}",
+    "group": "Số sao dành cho {household}",
+    "comment": "Nhận xét về {household} (không bắt buộc)",
+    "commentHint": "Tối đa 1.000 ký tự.",
+    "save": "Lưu đánh giá",
+    "saving": "Đang lưu…",
+    "saved": "Đã lưu đánh giá.",
+    "editableUntil": "Bạn có thể sửa đến {date}.",
+    "needStars": "Hãy chọn số sao.",
+    "saveFailed": "Không lưu được đánh giá. Vui lòng thử lại.",
+    "windowClosed": "Đã quá 30 ngày nên không sửa được đánh giá này.",
+    "summary": "{average} / 5 · {count, plural, other {# đánh giá}}",
+    "summaryLabel": "Điểm trung bình {average} trên 5 từ {count, plural, other {# đánh giá}}",
+    "none": "Chưa có đánh giá"
   },
   "order": {
     "title": "Đơn hàng",
@@ -1240,6 +1596,9 @@
       "QUOTATION_ACCEPTED": "Chào giá đã được người mua chấp nhận.",
       "ALLOCATION_PROPOSED": "Bạn có phần sản xuất cần xác nhận.",
       "ALLOCATION_CONFIRMED": "Một hộ đã xác nhận phân bổ.",
+      "ALLOCATION_REASSIGNED": "Ban quản lý đã chuyển phần việc còn lại của bạn cho hộ khác.",
+      "ALLOCATION_INCREASED": "Ban quản lý đã giao thêm việc cho hộ bạn. Vui lòng xem phần sản xuất đã cập nhật.",
+      "RFQ_NOT_SELECTED": "Người mua đã chọn một chào giá khác. Cảm ơn bạn đã tham gia.",
       "ORDER_CANCELLED": "Đơn hàng đã bị hủy.",
       "PRODUCTION_STARTED": "Đơn hàng đã bắt đầu sản xuất.",
       "PROGRESS_REPORTED": "Có cập nhật tiến độ sản xuất.",
@@ -1250,8 +1609,12 @@
       "HOUSEHOLD_APPROVED": "Hồ sơ hộ của bạn đã được chấp nhận.",
       "HOUSEHOLD_REJECTED": "Hồ sơ hộ của bạn chưa được chấp nhận.",
       "HOUSEHOLD_INFO_REQUESTED": "Hồ sơ hộ của bạn cần bổ sung thông tin.",
+      "HOUSEHOLD_RESUBMITTED": "Một hồ sơ hộ đã bổ sung thông tin theo yêu cầu và chờ xem xét lại.",
       "HOUSEHOLD_SUSPENDED": "Hộ của bạn đang tạm ngừng trưng bày.",
       "HOUSEHOLD_REINSTATED": "Hộ của bạn được trưng bày trở lại.",
+      "PAYMENT_PAID": "Đã nhận một khoản thanh toán cho đơn hàng.",
+      "PAYMENT_EXPIRED": "Một khoản thanh toán của đơn hàng đã hết hạn trước khi tiền về.",
+      "PAYMENT_REFUNDED": "Một khoản thanh toán của đơn hàng đã được đánh dấu hoàn lại.",
       "NEWS_PUBLISHED": "Ban quản lý vừa đăng một tin quan trọng."
     }
   },
@@ -1332,6 +1695,12 @@
       "back": "Về trang tài khoản"
     }
   },
+  "villageAreas": {
+    "BAT_TRANG": "Thôn Bát Tràng",
+    "GIANG_CAO": "Thôn Giang Cao",
+    "VILLAGE_WIDE": "Toàn xã",
+    "none": "Chưa chọn khu vực"
+  },
   "villageMap": {
     "title": "Bản đồ làng nghề",
     "lead": "Tìm xưởng và phòng trưng bày ở Bát Tràng, xem nơi nào đang mở cửa đón khách.",
@@ -1392,6 +1761,7 @@
     "sort": "Sắp xếp",
     "oneOfAKind": "Độc bản",
     "inStock": "Còn hàng",
+    "openWorkshop": "Có xưởng đón khách",
     "clear": "Xóa bộ lọc",
     "loading": "Đang tải sản phẩm",
     "empty": "Không có sản phẩm nào khớp bộ lọc.",
@@ -1402,6 +1772,23 @@
     "groupProducts": "Sản phẩm",
     "groupHouseholds": "Hộ",
     "groupNews": "Tin tức",
+    "groupCategories": "Danh mục",
+    "palette": {
+      "open": "Mở tìm kiếm nhanh",
+      "title": "Tìm kiếm nhanh",
+      "close": "Đóng",
+      "hint": "Dùng phím mũi tên lên xuống để chọn, Enter để mở, Esc để đóng.",
+      "prompt": "Gõ để tìm sản phẩm, hộ, danh mục và tin tức.",
+      "viewAll": "Xem mọi sản phẩm khớp “{query}”",
+      "results": "Gợi ý tìm kiếm"
+    },
+    "craftCategories": {
+      "GOM_SU": "Gốm sứ",
+      "MEN": "Men gốm",
+      "VE_GOM": "Vẽ gốm",
+      "NUNG": "Nung lò",
+      "KHAC": "Khác"
+    },
     "categories": {
       "VASE": "Bình, lọ",
       "TABLEWARE": "Bát đĩa",
@@ -1412,7 +1799,8 @@
     "sorts": {
       "newest": "Mới nhất",
       "price_asc": "Giá tăng dần",
-      "price_desc": "Giá giảm dần"
+      "price_desc": "Giá giảm dần",
+      "popular": "Phổ biến nhất"
     },
     "emptyHint": "Thử bỏ bớt bộ lọc hoặc đổi khoảng giá để xem thêm sản phẩm.",
     "results": "Kết quả sản phẩm",
@@ -1444,7 +1832,8 @@
       "roleLabel": "Vai trò",
       "checking": "Đang kiểm tra phiên đăng nhập",
       "area": "Vào khu làm việc",
-      "settings": "Tài khoản và thông báo"
+      "settings": "Tài khoản và thông báo",
+      "favourites": "Yêu thích"
     },
     "roles": {
       "BUYER": "Khách",
@@ -1464,7 +1853,7 @@
       "email": "Email",
       "emailPlaceholder": "ten@vidu.vn",
       "password": "Mật khẩu",
-      "passwordHint": "Ít nhất 8 ký tự, gồm cả chữ và số.",
+      "passwordHint": "Ít nhất 10 ký tự, gồm chữ hoa, chữ thường và số.",
       "newPassword": "Mật khẩu mới",
       "confirmPassword": "Nhập lại mật khẩu mới",
       "showPassword": "Hiện",
@@ -1479,8 +1868,8 @@
       "emailRequired": "Nhập email của bạn.",
       "emailInvalid": "Email chưa đúng dạng, ví dụ ten@vidu.vn.",
       "passwordRequired": "Nhập mật khẩu.",
-      "passwordShort": "Mật khẩu cần ít nhất 8 ký tự.",
-      "passwordWeak": "Mật khẩu cần có cả chữ và số.",
+      "passwordShort": "Mật khẩu cần ít nhất 10 ký tự.",
+      "passwordWeak": "Mật khẩu cần có chữ hoa, chữ thường và số.",
       "confirmMismatch": "Hai mật khẩu chưa giống nhau, hãy nhập lại cho khớp.",
       "nameShort": "Tên hộ cần ít nhất 2 ký tự.",
       "slugRequired": "Đường dẫn trang không được để trống.",
@@ -1523,7 +1912,8 @@
       "slugTaken": "Đường dẫn này đã có hộ khác dùng. Hãy sửa đường dẫn rồi thử lại.",
       "locked": "Tài khoản đang bị khóa, nên chưa thể thực hiện thao tác này. Hãy liên hệ Ban quản lý.",
       "forbidden": "Tài khoản này không có quyền thực hiện thao tác này.",
-      "mediaTooLarge": "Tệp lớn hơn 10 MB. Hãy chụp lại ở độ phân giải thấp hơn hoặc nén tệp.",
+      "mediaTooLarge": "Tệp lớn hơn 15 MB. Hãy chụp lại ở độ phân giải thấp hơn hoặc nén tệp.",
+      "mediaResolution": "Ảnh có hơn 50 megapixel. Hãy chụp lại ở độ phân giải thấp hơn.",
       "mediaUnsupported": "Chỉ nhận ảnh JPG, PNG, WebP, AVIF hoặc tệp PDF.",
       "apiDown": "Không gọi được máy chủ vCraft. Bạn thử lại sau ít phút nhé.",
       "consentRequired": "Cần đồng ý với Chính sách quyền riêng tư trước khi thực hiện thao tác này. Hãy tích ô đồng ý rồi thử lại.",
@@ -1620,6 +2010,12 @@
         "namePlaceholder": "Gốm Minh Hải",
         "slug": "Đường dẫn trang",
         "slugHint": "Địa chỉ trang hộ: {path}",
+        "slugChecking": "Đang kiểm tra địa chỉ…",
+        "slugAvailable": "Địa chỉ này dùng được.",
+        "slugTaken": "Địa chỉ này đã có hộ khác dùng.",
+        "slugTakenSuggest": "Địa chỉ này đã có hộ khác dùng. Thử “{slug}”?",
+        "slugUseSuggestion": "Dùng “{slug}”",
+        "slugCheckFailed": "Chưa kiểm tra được địa chỉ lúc này. Khi lưu, hệ thống vẫn kiểm tra lại.",
         "village": "Làng nghề",
         "villagePlaceholder": "Bát Tràng",
         "history": "Câu chuyện của hộ",
@@ -1668,7 +2064,14 @@
         "title": "Giấy tờ xác minh",
         "lead": "Tải lên giấy phép kinh doanh, giấy chứng nhận làng nghề hoặc giấy tờ tương đương. Tệp nằm trong kho riêng tư, chỉ Ban quản lý xem được.",
         "pick": "Chọn tệp",
-        "drop": "Ảnh JPG, PNG, WebP, AVIF hoặc PDF, mỗi tệp tối đa 10 MB.",
+        "kind": "Giấy tờ này là",
+        "kindOption": {
+          "IDENTITY": "Giấy tờ tùy thân (CCCD/hộ chiếu)",
+          "RESIDENCE": "Giấy tờ cư trú / hộ khẩu",
+          "WORKSHOP": "Giấy phép xưởng / giấy chứng nhận làng nghề",
+          "UNKNOWN": "Chưa phân loại"
+        },
+        "drop": "Ảnh JPG, PNG, WebP, AVIF hoặc PDF, mỗi tệp tối đa 15 MB.",
         "empty": "Chưa chọn tệp nào.",
         "listLabel": "Tệp giấy tờ đã chọn",
         "status": {
@@ -1715,6 +2118,21 @@
         "lead": "Trang công khai của hộ tạm ẩn, các bản ghi riêng của bạn vẫn còn nguyên."
       },
       "reason": "Lý do từ Ban quản lý",
+      "pendingEditor": {
+        "title": "Chỉnh sửa hồ sơ đăng ký",
+        "saved": "Đã lưu thay đổi hồ sơ.",
+        "village": "Làng",
+        "moreDocuments": "Giấy tờ bổ sung",
+        "moreDocumentsHint": "Chọn loại giấy tờ trước khi tải lên. Lưu các thay đổi trước khi gửi lại hồ sơ."
+      },
+      "resubmit": {
+        "title": "Đã bổ sung xong?",
+        "lead": "Bạn có thể sửa hồ sơ ở các khu bên dưới rồi gửi lại cho Ban quản lý xem xét.",
+        "submit": "Gửi lại hồ sơ",
+        "submitting": "Đang gửi lại…",
+        "stale": "Hồ sơ vừa có cập nhật từ Ban quản lý. Hãy tải lại trang rồi quyết định tiếp.",
+        "failed": "Chưa gửi lại được hồ sơ. Hãy thử lại."
+      },
       "publicPage": "Xem trang công khai của hộ",
       "stepsLabel": "Tiến trình hồ sơ",
       "steps": {
@@ -1818,7 +2236,43 @@
       "story": "Câu chuyện",
       "storyLabel": "Câu chuyện của hộ",
       "craft": "Nghề",
+      "craftCategory": "Nhóm nghề",
+      "craftCategoryPlaceholder": "Chọn nhóm nghề",
+      "craftDetail": "Chi tiết nghề (tùy chọn)",
+      "slugTitle": "Địa chỉ trang công khai",
+      "slug": "Địa chỉ trang",
+      "slugHint": "Trang của hộ: {path}",
+      "slugFromName": "Gợi ý theo tên hộ",
+      "slugChecking": "Đang kiểm tra…",
+      "slugAvailable": "Địa chỉ này dùng được.",
+      "slugTaken": "Địa chỉ này đã có hộ khác dùng.",
+      "slugTakenSuggest": "Địa chỉ này đã có hộ khác dùng. Thử “{slug}”?",
+      "slugUseSuggestion": "Dùng “{slug}”",
+      "slugInvalid": "Chỉ dùng chữ thường không dấu, số và dấu gạch ngang.",
+      "slugCheckFailed": "Chưa kiểm tra được lúc này. Khi lưu, hệ thống vẫn kiểm tra lại.",
+      "slugWarning": "Đổi địa chỉ thì đường dẫn cũ vẫn tự chuyển sang địa chỉ mới, nhưng liên kết đã in hoặc đã chia sẻ nên được cập nhật dần. Mã QR trên sản phẩm dùng mã sản phẩm riêng nên không bị ảnh hưởng.",
+      "slugSaveTaken": "Địa chỉ này vừa có người dùng. Hãy chọn địa chỉ khác.",
+      "photos": "Ảnh bìa, chân dung và con dấu",
+      "photosLead": "Ba ảnh này hiện trên trang công khai của hộ. Ảnh bìa và chân dung cần mô tả để người không xem được ảnh vẫn hiểu.",
+      "coverPhoto": "Ảnh bìa",
+      "coverPhotoHint": "Ảnh ngang, hiện ở đầu trang của hộ.",
+      "portraitPhoto": "Chân dung nghệ nhân",
+      "portraitPhotoHint": "Hiện cạnh tên và câu chuyện của hộ.",
+      "sealPhoto": "Con dấu hoặc chữ ký cá nhân",
+      "sealPhotoHint": "Hiện cuối câu chuyện, như chữ ký của nghệ nhân.",
+      "photoUpload": "Tải ảnh lên",
+      "photoReplace": "Đổi ảnh",
+      "photoRemove": "Bỏ ảnh",
+      "photoUploading": "Đang tải ảnh…",
+      "photoAlt": "Mô tả ảnh (bắt buộc)",
+      "sealAlt": "Mô tả con dấu (tùy chọn)",
+      "photoNone": "Chưa có ảnh",
+      "village": "Làng",
       "foundedYear": "Năm thành lập",
+      "save": "Lưu thay đổi",
+      "saving": "Đang lưu…",
+      "staleVersion": "Hồ sơ vừa có cập nhật. Hãy tải lại trang rồi lưu tiếp.",
+      "failed": "Chưa lưu được hồ sơ. Bạn thử lại.",
       "generations": "Số đời làm nghề",
       "timeline": "Dòng thời gian gia đình",
       "addEvent": "Thêm sự kiện",
@@ -1837,10 +2291,21 @@
       "addCertification": "Thêm chứng nhận",
       "certName": "Tên chứng nhận",
       "certIssuer": "Đơn vị cấp",
+      "certDate": "Ngày cấp",
+      "certLegacyYear": "Mới ghi năm {year}. Nhập ngày cấp để đầy đủ hơn.",
+      "certPhoto": "Ảnh chứng nhận",
+      "certAddPhoto": "Thêm ảnh chứng nhận (tùy chọn)",
+      "certDateRequired": "Hãy nhập ngày cấp cho mỗi chứng nhận.",
+      "certVerifiedHint": "Chỉ Ban quản lý mới đánh dấu “Đã xác minh”. Sửa nội dung hoặc ảnh chứng nhận sẽ bỏ dấu này.",
       "verified": "Đã xác minh",
       "unverified": "Chưa xác minh",
       "gallery": "Ảnh xưởng",
       "galleryHint": "Mỗi ảnh cần mô tả đúng điều nhìn thấy, để người không xem được ảnh vẫn hiểu.",
+      "galleryOrderHint": "Kéo thả ảnh, hoặc dùng nút mũi tên, để đổi thứ tự. Trang công khai hiện ảnh đúng thứ tự này.",
+      "galleryDrag": "Kéo để đổi vị trí ảnh {n}",
+      "galleryMoveUp": "Đưa ảnh {n} lên trước",
+      "galleryMoveDown": "Đưa ảnh {n} xuống sau",
+      "galleryMoved": "Ảnh đã chuyển sang vị trí {position} trên {total}.",
       "addPhotos": "Thêm ảnh",
       "alt": "Mô tả ảnh (bắt buộc)",
       "caption": "Chú thích",
@@ -1850,6 +2315,8 @@
       "addWorkshop": "Thêm xưởng",
       "workshopName": "Tên xưởng",
       "address": "Địa chỉ",
+      "area": "Khu vực của xưởng",
+      "areaHint": "Dùng để báo cắt điện đúng khu vực của xưởng.",
       "purpose": "Mục đích",
       "purposes": {
         "PRODUCTION": "Sản xuất",
@@ -1875,6 +2342,36 @@
       "closureReason": "Lý do tạm đóng cửa",
       "closureReasonHint": "Khách thấy lý do này; xưởng hiện là đóng cửa dù đã khai giờ mở cửa.",
       "capacity": "Năng lực sản xuất (đơn vị/tháng)",
+      "storyEditor": {
+        "toolbar": "Định dạng câu chuyện",
+        "bold": "Đậm",
+        "italic": "Nghiêng",
+        "bullet": "Danh sách",
+        "link": "Liên kết",
+        "linkUrl": "Địa chỉ liên kết (https://…)",
+        "linkInsert": "Chèn liên kết",
+        "linkCancel": "Hủy",
+        "linkInvalid": "Địa chỉ phải bắt đầu bằng https://, http:// hoặc mailto:",
+        "linkText": "chữ hiện ra",
+        "hint": "Chọn chữ rồi bấm nút để định dạng. Hỗ trợ chữ đậm, chữ nghiêng, danh sách và liên kết.",
+        "preview": "Xem trước"
+      },
+      "suggest": {
+        "button": "Gợi ý câu chuyện bằng AI",
+        "busy": "Đang soạn gợi ý…",
+        "title": "Gợi ý câu chuyện",
+        "lead": "Đây chỉ là bản gợi ý từ thông tin trong hồ sơ. Hãy đọc, sửa cho đúng sự thật rồi mới lưu. Hệ thống không tự đăng.",
+        "vi": "Tiếng Việt",
+        "en": "Bản dịch tiếng Anh",
+        "insert": "Chèn vào cuối câu chuyện",
+        "copyVi": "Chép bản tiếng Việt",
+        "copyEn": "Chép bản tiếng Anh",
+        "copied": "Đã chép.",
+        "close": "Đóng",
+        "unavailable": "Tính năng gợi ý chưa bật trên hệ thống này.",
+        "failed": "Chưa tạo được gợi ý. Bạn thử lại sau.",
+        "rateLimited": "Bạn đã dùng hết lượt gợi ý trong giờ này. Hãy thử lại sau."
+      },
       "idNumber": {
         "title": "Số CCCD",
         "lead": "Số CCCD của người đại diện, được mã hóa khi lưu. Ở đây chỉ hiện dạng che.",
@@ -1898,10 +2395,17 @@
       "statuses": {
         "DRAFT": "Nháp",
         "PUBLISHED": "Đang trưng bày",
-        "WITHDRAWN": "Đã rút"
+        "SOLD": "Đã bán",
+        "WITHDRAWN": "Lưu trữ"
       },
       "newTitle": "Sản phẩm mới",
       "editTitle": "Sửa sản phẩm",
+      "englishSection": "Tiếng Anh (không bắt buộc)",
+      "englishHint": "Hiện trên các trang tiếng Anh. Để trống thì trang tiếng Anh dùng nội dung tiếng Việt.",
+      "nameEn": "Tên sản phẩm (tiếng Anh)",
+      "descriptionEn": "Mô tả (tiếng Anh)",
+      "materialEn": "Chất liệu (tiếng Anh)",
+      "dimensionsEn": "Kích thước (tiếng Anh)",
       "notFound": "Không tìm thấy sản phẩm này trong hộ của bạn.",
       "name": "Tên sản phẩm",
       "description": "Mô tả",
@@ -1926,6 +2430,8 @@
       "alt": "Mô tả ảnh (bắt buộc)",
       "moveHandle": "Kéo để đổi thứ tự ảnh {n}",
       "processing": "Đang xử lý",
+      "photoFailed": "Không xử lý được ảnh này. Hãy xóa hoặc chọn ảnh khác.",
+      "retryPhoto": "Chọn ảnh khác",
       "remove": "Xóa",
       "altRequired": "Mỗi ảnh cần có mô tả ít nhất 3 ký tự.",
       "makers": "Người làm",
@@ -1938,8 +2444,8 @@
       "publishing": "Xuất bản",
       "publish": "Xuất bản",
       "republish": "Xuất bản lại",
-      "withdraw": "Rút khỏi trưng bày",
-      "withdrawReason": "Lý do rút",
+      "withdraw": "Lưu trữ",
+      "withdrawReason": "Lý do lưu trữ",
       "notApproved": "Hộ cần được duyệt trước khi xuất bản.",
       "publishFailed": "Chưa đổi được trạng thái. Bạn thử lại sau.",
       "publishJournalRequired": "Hãy thêm ít nhất một mốc nhật ký sản xuất (kèm ảnh) trước khi xuất bản.",
@@ -1981,9 +2487,31 @@
       "publishTitle": "Xuất bản sản phẩm này?",
       "publishText": "Sản phẩm sẽ hiện công khai trên trang hộ và trong danh mục. Nhật ký sản xuất từ đây chỉ ghi thêm, không xóa được.",
       "publishedToast": "Đã xuất bản sản phẩm.",
-      "withdrawTitle": "Rút sản phẩm khỏi trưng bày?",
-      "withdrawText": "Sản phẩm sẽ không còn hiện công khai. Lý do rút: {reason}. Bạn có thể xuất bản lại sau.",
-      "withdrawnToast": "Đã rút sản phẩm khỏi trưng bày."
+      "withdrawTitle": "Lưu trữ sản phẩm này?",
+      "withdrawText": "Sản phẩm sẽ không còn hiện công khai. Lý do lưu trữ: {reason}. Bạn có thể xuất bản lại sau.",
+      "withdrawnToast": "Đã lưu trữ sản phẩm.",
+      "tags": "Thẻ",
+      "tagsChosen": "Thẻ đã chọn",
+      "tagsPlaceholder": "Ví dụ: men lam, thủ công",
+      "tagsHint": "Tối đa {max} thẻ, mỗi thẻ 1 đến 30 ký tự. Nhấn Enter hoặc dấu phẩy để thêm.",
+      "tagsFull": "Đã đủ {max} thẻ. Xóa bớt một thẻ để thêm thẻ mới.",
+      "tagsSuggested": "Gợi ý từ sản phẩm khác của hộ:",
+      "tagRemove": "Xóa thẻ {tag}",
+      "markSold": "Đánh dấu đã bán",
+      "markSoldHint": "Chỉ với sản phẩm độc bản đã có người mua.",
+      "markSoldTitle": "Đánh dấu sản phẩm đã bán?",
+      "markSoldText": "Sản phẩm vẫn hiện công khai kèm nhãn \"Đã bán\" và trang truy xuất vẫn dùng được, nhưng khách không gửi yêu cầu báo giá từ sản phẩm này nữa. Bạn có thể hoàn tác.",
+      "soldToast": "Đã đánh dấu sản phẩm đã bán.",
+      "soldHint": "Sản phẩm này đã bán. Nếu đánh dấu nhầm, bạn có thể mở bán lại.",
+      "backOnSale": "Mở bán lại",
+      "backOnSaleTitle": "Mở bán lại sản phẩm này?",
+      "backOnSaleText": "Sản phẩm trở lại trạng thái đang trưng bày, còn 1 món.",
+      "backOnSaleToast": "Đã mở bán lại sản phẩm.",
+      "duplicate": "Nhân bản",
+      "duplicatedToast": "Đã tạo bản nháp từ sản phẩm này. Nhật ký sản xuất không được sao chép.",
+      "duplicateFailed": "Chưa nhân bản được sản phẩm. Bạn thử lại sau.",
+      "priceSuggestion": "Giá gợi ý: {price}, trung vị của {count} sản phẩm đang trưng bày cùng danh mục.",
+      "priceSuggestionUse": "Dùng giá này"
     },
     "journal": {
       "title": "Nhật ký: {product}",
@@ -2005,7 +2533,9 @@
       "exifFilled": "Đã điền ngày giờ theo ảnh.",
       "exifOld": "Ảnh chụp cách đây hơn 30 ngày. Hãy kiểm tra lại ngày trước khi lưu.",
       "waitingPhoto": "Đang chờ xử lý ảnh…",
-      "photoFailed": "Ảnh chưa xử lý xong. Bạn thử lại sau.",
+      "photoFailed": "Không xử lý được ảnh. Hãy chọn ảnh khác rồi thử lại.",
+      "photoProcessing": "Đang xử lý",
+      "photoUnavailable": "Không xử lý được ảnh này.",
       "photoRequired": "Hãy thêm ít nhất một ảnh làm bằng chứng cho công đoạn này.",
       "oldPhotoTitle": "Ảnh chụp đã lâu?",
       "oldPhotoText": "Ảnh này chụp hơn 30 ngày trước. Vẫn lưu mốc với ảnh này?",
@@ -2069,7 +2599,9 @@
     "outage": {
       "title": "Hôm nay cắt điện",
       "slot": "{from}–{to} ({area})",
-      "details": "Xem thông báo"
+      "details": "Xem thông báo",
+      "areaPromptText": "Hãy chọn khu vực cho xưởng để chỉ nhận thông báo cắt điện của khu vực mình. Hiện bạn nhận mọi thông báo.",
+      "areaPromptLink": "Chọn khu vực của xưởng"
     }
   },
   "media": {
@@ -2091,15 +2623,15 @@
     "binh-men-lam-xam": "Bình cổ cao, bụng tròn, men xám lam, đắp nổi cành cây và một người cầm cần câu nhuốm vàng"
   },
   "presetFigure": {
-    "bowl": "Hình minh hoạ chiếc bát, chưa có ảnh thật của sản phẩm này",
-    "cup": "Hình minh hoạ chiếc cốc, chưa có ảnh thật của sản phẩm này",
-    "vase": "Hình minh hoạ chiếc bình, chưa có ảnh thật của sản phẩm này",
-    "jar": "Hình minh hoạ chiếc hũ, chưa có ảnh thật của sản phẩm này",
-    "plate": "Hình minh hoạ chiếc đĩa, chưa có ảnh thật của sản phẩm này",
-    "teaset": "Hình minh hoạ bộ ấm chén, chưa có ảnh thật của sản phẩm này",
-    "incense": "Hình minh hoạ chiếc lư hương, chưa có ảnh thật của sản phẩm này",
-    "generic": "Hình minh hoạ đồ gốm, chưa có ảnh thật của sản phẩm này",
-    "household": "Hình minh hoạ đồ gốm, hộ này chưa có ảnh xưởng"
+    "bowl": "Hình vẽ chiếc bát, sản phẩm này chưa có ảnh thật",
+    "cup": "Hình vẽ chiếc cốc, sản phẩm này chưa có ảnh thật",
+    "vase": "Hình vẽ chiếc bình, sản phẩm này chưa có ảnh thật",
+    "jar": "Hình vẽ chiếc hũ, sản phẩm này chưa có ảnh thật",
+    "plate": "Hình vẽ chiếc đĩa, sản phẩm này chưa có ảnh thật",
+    "teaset": "Hình vẽ bộ ấm chén, sản phẩm này chưa có ảnh thật",
+    "incense": "Hình vẽ chiếc lư hương, sản phẩm này chưa có ảnh thật",
+    "generic": "Hình vẽ đồ gốm, sản phẩm này chưa có ảnh thật",
+    "household": "Hình vẽ đồ gốm, hộ này chưa có ảnh xưởng"
   },
   "privacy": {
     "title": "Chính sách quyền riêng tư",
@@ -2214,6 +2746,11 @@
         "CLAY": "Đất sét",
         "GLAZE": "Men",
         "GAS": "Gas"
+      },
+      "units": {
+        "tonne": "tấn",
+        "kg": "kg",
+        "cylinder12kg": "bình 12 kg"
       }
     }
   },

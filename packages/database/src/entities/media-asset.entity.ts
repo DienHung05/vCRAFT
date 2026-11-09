@@ -1,6 +1,6 @@
 import { type Opt } from '@mikro-orm/core';
 import { Entity, Index, Property } from '@mikro-orm/decorators/legacy';
-import type { MediaPurpose, MediaVisibility } from '@vcraft/domain';
+import type { CertificateKind, MediaPurpose, MediaVisibility } from '@vcraft/domain';
 import { BaseEntity } from './base.entity.js';
 
 export const MEDIA_STATUSES = ['PROCESSING', 'READY', 'FAILED'] as const;
@@ -33,6 +33,7 @@ export interface MediaCredit {
  */
 @Entity({ tableName: 'media_asset' })
 @Index({ properties: ['ownerId', 'sha256'] })
+@Index({ properties: ['sha256'] })
 export class MediaAsset extends BaseEntity {
   /** `AppUser.id` của người tải lên. */
   @Property({ type: 'uuid' })
@@ -40,6 +41,10 @@ export class MediaAsset extends BaseEntity {
 
   @Property({ type: 'string', length: 20 })
   purpose!: MediaPurpose;
+
+  /** What a private CERTIFICATE document evidences (vCRAFT-8my.3); `UNKNOWN` for legacy rows. */
+  @Property({ type: 'string', length: 10 })
+  certificateKind: Opt<CertificateKind> = 'UNKNOWN';
 
   @Property({ type: 'string', length: 10 })
   visibility!: MediaVisibility;

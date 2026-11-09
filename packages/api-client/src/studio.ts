@@ -10,11 +10,14 @@ import {
   HouseholdResponseSchema,
   JournalResponseSchema,
   MediaAssetResponseSchema,
+  PriceSuggestionResponseSchema,
   ProductResponseSchema,
   ProductScanStatsSchema,
   QrLabelsResponseSchema,
   type SetIdNumberRequest,
   type SetProductMakersRequest,
+  SlugAvailabilityResponseSchema,
+  StorySuggestionResponseSchema,
   type UpdateHouseholdProfileRequest,
   type UpdateProductRequest,
   WorkshopResponseSchema,
@@ -37,6 +40,15 @@ export function createStudioClient(options: AuthedClientOptions) {
       request('/me/household/id-number', HouseholdResponseSchema, { method: 'PUT', body }),
     updateProfile: (version: number, body: UpdateHouseholdProfileRequest) =>
       request('/me/household', HouseholdResponseSchema, { method: 'PATCH', body, version }),
+    /** FR-ART-01: is this page address free (the household's own address counts as free)? */
+    slugAvailability: (slug: string) =>
+      request(
+        `/households/slug-availability?slug=${encodeURIComponent(slug)}`,
+        SlugAvailabilityResponseSchema,
+      ),
+    /** FR-ART-08: a suggested story (Vietnamese and English); 503 when the model is not configured. */
+    storySuggestion: () =>
+      request('/me/household/story-suggestion', StorySuggestionResponseSchema, { method: 'POST' }),
     addWorkshop: (body: CreateWorkshopRequest) =>
       request('/me/household/workshops', WorkshopResponseSchema, { method: 'POST', body }),
     updateWorkshop: (id: string, version: number, body: CreateWorkshopRequest) =>
@@ -72,6 +84,23 @@ export function createStudioClient(options: AuthedClientOptions) {
         version,
         body: { reason },
       }),
+    /** One-of-a-kind products only: PUBLISHED to SOLD. */
+    markProductSold: (id: string, version: number) =>
+      request(`/products/${id}/mark-sold`, ProductResponseSchema, { method: 'POST', version }),
+    /** Undo a sale: SOLD back to PUBLISHED. */
+    productBackOnSale: (id: string, version: number) =>
+      request(`/products/${id}/back-on-sale`, ProductResponseSchema, { method: 'POST', version }),
+    /** FR-PRD-06: a DRAFT copy of the product without its production journal. */
+    duplicateProduct: (id: string) =>
+      request(`/me/household/products/${id}/duplicate`, ProductResponseSchema, {
+        method: 'POST',
+      }),
+    /** FR-PRD-07: median price of published products in a category (a hint, never auto-applied). */
+    getPriceSuggestion: (category: string) =>
+      request(
+        `/me/household/products/price-suggestion?category=${encodeURIComponent(category)}`,
+        PriceSuggestionResponseSchema,
+      ),
     /** Queue an A4 QR label sheet (PLAN E6); poll `qrLabelsStatus` until it is READY. */
     requestQrLabels: (body: CreateQrLabelsRequest) =>
       request('/me/household/qr-labels', QrLabelsResponseSchema, { method: 'POST', body }),

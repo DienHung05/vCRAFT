@@ -1,6 +1,6 @@
 'use client';
 
-import { createVillageNewsClient, type VillageNewsClient } from '@vcraft/api-client';
+import type { VillageNewsClient } from '@vcraft/api-client';
 import type { NewsDetailDto, NewsSummaryDto } from '@vcraft/contracts';
 import { buttonVariants } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
@@ -8,11 +8,14 @@ import { useEffect, useState } from 'react';
 import { EmptyState } from '@/components/states/empty-state';
 import { ArticleSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
-import { useLiveClient } from '@/lib/api/live-session';
+import { useLazyLiveClient } from '@/lib/api/lazy-live-client';
 import { NewsArticleView } from './news-article';
 
 const useVillageClient = (provided?: VillageNewsClient) =>
-  useLiveClient(provided, (getAccessToken) => createVillageNewsClient({ getAccessToken }));
+  useLazyLiveClient(provided, async (getAccessToken) => {
+    const { createVillageNewsClient } = await import('@vcraft/api-client');
+    return createVillageNewsClient({ getAccessToken });
+  });
 
 /** Village-only items above the public list. Everyone else sees nothing here. */
 export function VillageNews({ client: provided }: { client?: VillageNewsClient }) {

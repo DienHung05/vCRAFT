@@ -1,6 +1,7 @@
 import {
   type MaterialPriceSeriesDto,
   MaterialPriceSeriesResponseSchema,
+  type NewsCategoryDto,
   type NewsDetailDto,
   NewsDetailResponseSchema,
   type NewsListDto,
@@ -19,6 +20,7 @@ export type NewsResult =
   | { status: 'unavailable' };
 
 export interface FetchNewsOptions {
+  category?: NewsCategoryDto | undefined;
   householdSlug?: string | undefined;
   cursor?: string | undefined;
   /** Numbered page (GH#202); the answer then carries page totals. Not combined with `cursor`. */
@@ -34,6 +36,7 @@ const TIMEOUT_MS = 4000;
  */
 export async function fetchNews(options: FetchNewsOptions = {}): Promise<NewsResult> {
   const query = new URLSearchParams({ limit: String(options.limit ?? 24) });
+  if (options.category) query.set('category', options.category);
   if (options.householdSlug) query.set('householdSlug', options.householdSlug);
   if (options.page) query.set('page', String(options.page));
   else if (options.cursor) query.set('cursor', options.cursor);

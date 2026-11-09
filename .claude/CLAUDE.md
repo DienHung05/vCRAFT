@@ -8,7 +8,3 @@ In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the re
 
 If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
 <!-- CODEGRAPH_END -->
-
-## Plan, delegate, review
-
-For issue work larger than a few edits, the main session plans and reviews, and the `sonnet-implementer` subagent (`.claude/agents/sonnet-implementer.md`, Sonnet) writes the code. This saves tokens on the expensive model. Follow the `plan-delegate-review` skill (`.claude/skills/plan-delegate-review/SKILL.md`): write a self-contained brief, spawn the subagent, then review the diff yourself before committing. Do one-line fixes and production incidents directly.

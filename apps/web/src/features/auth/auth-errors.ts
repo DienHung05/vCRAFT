@@ -23,6 +23,7 @@ export type AuthErrorKey =
   | 'consentRequired'
   | 'forbidden'
   | 'mediaTooLarge'
+  | 'mediaResolution'
   | 'mediaUnsupported'
   | 'apiDown'
   | 'captcha';
@@ -65,6 +66,7 @@ const API_CODES: Readonly<Record<string, AuthErrorKey>> = {
   CONSENT_REQUIRED: 'consentRequired',
   CONFLICT_DUPLICATE: 'slugTaken',
   MEDIA_TOO_LARGE: 'mediaTooLarge',
+  MEDIA_RESOLUTION_TOO_HIGH: 'mediaResolution',
   MEDIA_UNSUPPORTED_TYPE: 'mediaUnsupported',
   RATE_LIMITED: 'rate_limited',
 };
@@ -87,6 +89,7 @@ export function authErrorKey(error: unknown): AuthErrorKey {
     if (mapped) return mapped;
     if (name === 'AuthRetryableFetchError' || status === 0) return 'network';
     if (status === 429) return 'rate_limited';
+    if (typeof status === 'number' && status >= 500) return 'apiDown';
   }
   return 'unknown';
 }

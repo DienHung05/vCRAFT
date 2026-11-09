@@ -63,7 +63,7 @@ describe('when the 3D vase runs', () => {
     ['few cores', { cores: 2 }],
     ['little memory', { memoryGb: 2 }],
     ['a phone-width screen', { width: 390 }],
-  ])('keeps the poster with %s', (_, over) => {
+  ])('keeps the turning vase with %s', (_, over) => {
     expect(canRun3d({ ...capable, ...over })).toBe(false);
   });
 

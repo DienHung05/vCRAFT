@@ -8,6 +8,8 @@ export interface MatchCandidate {
   readonly declaredCapacity?: number | undefined;
   /** Published products the household has in the request's category. */
   readonly publishedProducts: number;
+  /** Mean of the buyers' 1-5 star ratings (FR-ORD-11); null or undefined when the household has none yet. */
+  readonly ratingAverage?: number | null | undefined;
 }
 
 /**
@@ -16,10 +18,11 @@ export interface MatchCandidate {
  * Callers pass only households that are already APPROVED with an unlocked representative. A household is
  * eligible when it works in the request's craft category: it declared capacity for it, or sells a published
  * product in it. A declared capacity of zero opts the household out of that category. The best fit comes
- * first: declared capacity, then the number of published products, then the id so the order is stable.
+ * first: declared capacity, then the number of published products, then the buyers' rating (a household
+ * with no rating yet ranks as the lowest), then the id so the order is stable.
  *
- * The model has no rating, response-rate or on-time data and no "accepting orders" switch, so the score
- * of BR-05 reduces to capacity and catalogue depth here.
+ * The model has no response-rate or on-time data and no "accepting orders" switch, so the score of BR-05
+ * is capacity, catalogue depth and rating here.
  */
 export function selectMatchingHouseholds(
   candidates: readonly MatchCandidate[],
@@ -35,6 +38,7 @@ export function selectMatchingHouseholds(
       (a, b) =>
         (b.declaredCapacity ?? 0) - (a.declaredCapacity ?? 0) ||
         b.publishedProducts - a.publishedProducts ||
+        (b.ratingAverage ?? 0) - (a.ratingAverage ?? 0) ||
         a.householdId.localeCompare(b.householdId),
     )
     .slice(0, Math.max(0, limit))

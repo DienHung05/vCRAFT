@@ -15,8 +15,12 @@ export interface ProductImage {
   alt: string;
 }
 
+// Tags come before the description so the 700-character cap never cuts them off.
 const productSearchText = (p: Product) =>
-  normalizeSearchText(`${p.name} ${p.traceCode} ${p.description}`, 700);
+  normalizeSearchText(
+    `${p.name} ${p.nameEn ?? ''} ${(p.tags ?? []).join(' ')} ${p.traceCode} ${p.description}`,
+    700,
+  );
 
 /**
  * Sản phẩm: một vật hoặc một lô do đúng một hộ chịu trách nhiệm, có nhật ký và mã QR riêng.
@@ -45,6 +49,14 @@ export class Product extends BaseEntity {
   @Property({ type: 'text' })
   description!: string;
 
+  /** Optional English name; empty means pages on `/en` show `name`. Part of `searchText`. */
+  @Property({ type: 'string', length: 200, nullable: true })
+  nameEn?: string | null;
+
+  /** Optional English description; empty means pages on `/en` show `description`. */
+  @Property({ type: 'text', nullable: true })
+  descriptionEn?: string | null;
+
   @Property({ type: 'string', length: 10 })
   kind: Opt<ProductKind> = 'OBJECT';
 
@@ -69,6 +81,14 @@ export class Product extends BaseEntity {
   @Property({ type: 'string', length: 200, nullable: true })
   dimensions?: string | null;
 
+  /** Optional English material; empty means pages on `/en` show `material`. */
+  @Property({ type: 'string', length: 200, nullable: true })
+  materialEn?: string | null;
+
+  /** Optional English dimensions; empty means pages on `/en` show `dimensions`. */
+  @Property({ type: 'string', length: 200, nullable: true })
+  dimensionsEn?: string | null;
+
   @Property({ type: 'integer', nullable: true })
   weightGrams?: number | null;
 
@@ -89,6 +109,10 @@ export class Product extends BaseEntity {
 
   @Property({ type: 'json', nullable: true })
   images?: ProductImage[] | null;
+
+  /** Free-text tags (FR-PRD-01): at most 10, 1 to 30 characters each, diacritics kept for display. */
+  @Property({ type: 'json', nullable: true })
+  tags?: string[] | null;
 
   /** Tên, mô tả, mã đã bỏ dấu cho tìm kiếm (FR-CAT-04); tự tính lại mỗi lần ghi. */
   @Property({

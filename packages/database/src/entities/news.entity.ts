@@ -3,6 +3,7 @@ import { Entity, Index, ManyToOne, Property, Unique } from '@mikro-orm/decorator
 import type {
   MaterialPriceData,
   NewsCategory,
+  NewsOrigin,
   NewsStatus,
   NewsVisibility,
   PowerScheduleData,
@@ -25,6 +26,7 @@ const newsSearchText = (n: News) => normalizeSearchText(`${n.title} ${n.summary}
 @Entity({ tableName: 'news' })
 @Index({ properties: ['status', 'pinned', 'publishedAt'] })
 @Index({ properties: ['household', 'status'] })
+@Index({ properties: ['origin', 'status', 'publishedAt'] })
 export class News extends BaseEntity {
   @Property({ type: 'string', length: 200 })
   @Unique()
@@ -78,6 +80,22 @@ export class News extends BaseEntity {
 
   @Property({ type: 'boolean' })
   pinned: Opt<boolean> = false;
+
+  /** Publisher of the original story the item is based on (GH#314). */
+  @Property({ type: 'string', length: 120, nullable: true })
+  sourceName?: string | null;
+
+  /** Link to the original story; shown to visitors with `sourceName`. */
+  @Property({ type: 'string', length: 500, nullable: true })
+  sourceUrl?: string | null;
+
+  /** When the original story was published, which can differ from `publishedAt` on this site. */
+  @Property({ type: 'datetime', length: 3, nullable: true })
+  sourcePublishedAt?: Date | null;
+
+  /** Admin-only provenance (manual, feed import or LLM filler). Never part of a public DTO. */
+  @Property({ type: 'string', length: 20 })
+  origin: Opt<NewsOrigin> = 'MANUAL';
 
   /** Structured content of `MATERIAL_PRICES` and `POWER_SCHEDULE` items (PLAN E11). */
   @Property({ type: 'json', nullable: true })

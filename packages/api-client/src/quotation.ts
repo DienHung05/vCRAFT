@@ -21,6 +21,7 @@ import {
   type ErrorCode,
   formatVersionTag,
   HouseholdListResponseSchema,
+  HouseholdRatingSchema,
   IdSchema,
   InternalQuotationResponseSchema,
   InviteHouseholdsRequestSchema,
@@ -33,11 +34,14 @@ import {
   PriceHintResponseSchema,
   ProblemDetailsSchema,
   QuotationNoticeResponseSchema,
+  type RateHouseholdRequest,
+  RateHouseholdRequestSchema,
   type ReportProgressRequest,
   ReportProgressRequestSchema,
   RfqListResponseSchema,
   RfqResponseSchema,
 } from '@vcraft/contracts';
+import { fallbackErrorCode } from './http/fallback-error-code';
 
 export class QuotationApiError extends Error {
   constructor(
@@ -48,6 +52,17 @@ export class QuotationApiError extends Error {
     this.name = 'QuotationApiError';
   }
 }
+
+/**
+ * Per-call options of the state-changing RFQ actions. Each call sends an `Idempotency-Key` (BR-L5): a
+ * fresh UUID generated when the call starts, or `idempotencyKey` when the caller already holds one for
+ * this user action, so that a retry of the same action reuses it and the API runs it once.
+ */
+export interface QuotationActionOptions {
+  idempotencyKey?: string;
+}
+
+const newIdempotencyKey = () => globalThis.crypto.randomUUID();
 
 export interface QuotationClientOptions {
   getAccessToken: () => Promise<string | null>;
@@ -63,6 +78,7 @@ export function createQuotationClient(options: QuotationClientOptions) {
     method = 'GET',
     body?: unknown,
     version?: number,
+    idempotencyKey?: string,
   ): Promise<T> {
     const token = await options.getAccessToken();
     if (!token) throw new QuotationApiError('AUTH_UNAUTHENTICATED', 401);
@@ -73,6 +89,7 @@ export function createQuotationClient(options: QuotationClientOptions) {
         Authorization: `Bearer ${token}`,
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(version !== undefined ? { 'If-Match': formatVersionTag(version) } : {}),
+        ...(idempotencyKey !== undefined ? { 'Idempotency-Key': idempotencyKey } : {}),
       },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
@@ -80,12 +97,12 @@ export function createQuotationClient(options: QuotationClientOptions) {
     try {
       data = await response.json();
     } catch {
-      throw new QuotationApiError('INTERNAL_ERROR', response.status);
+      throw new QuotationApiError(fallbackErrorCode(response.status), response.status);
     }
     if (!response.ok) {
       const problem = ProblemDetailsSchema.safeParse(data);
       throw new QuotationApiError(
-        problem.success ? problem.data.code : 'INTERNAL_ERROR',
+        problem.success ? problem.data.code : fallbackErrorCode(response.status),
         response.status,
       );
     }
@@ -96,6 +113,9 @@ export function createQuotationClient(options: QuotationClientOptions) {
     /** Record consent to the privacy policy for the delivery address of a request (NFR-SEC-07). */
     recordConsent(purpose: ConsentPurposeDto, policyVersion: string) {
       return request('/me/consents', ConsentResponseSchema, 'POST', { purpose, policyVersion });
+    },
+    duplicateRequest(id: string) {
+      return request(`/rfqs/${IdSchema.parse(id)}/duplicate`, RfqResponseSchema, 'POST');
     },
     coordinate(id: string, version: number) {
       return request(
@@ -135,8 +155,15 @@ export function createQuotationClient(options: QuotationClientOptions) {
       const suffix = query.size > 0 ? `?${query}` : '';
       return request(`/rfqs${suffix}`, RfqListResponseSchema);
     },
-    createRequest(input: CreateRfqRequest) {
-      return request('/rfqs', RfqResponseSchema, 'POST', CreateRfqRequestSchema.parse(input));
+    createRequest(input: CreateRfqRequest, options: QuotationActionOptions = {}) {
+      return request(
+        '/rfqs',
+        RfqResponseSchema,
+        'POST',
+        CreateRfqRequestSchema.parse(input),
+        undefined,
+        options.idempotencyKey ?? newIdempotencyKey(),
+      );
     },
     updateRequest(id: string, version: number, input: CreateRfqRequest) {
       return request(
@@ -147,13 +174,14 @@ export function createQuotationClient(options: QuotationClientOptions) {
         version,
       );
     },
-    submitRequest(id: string, version: number) {
+    submitRequest(id: string, version: number, options: QuotationActionOptions = {}) {
       return request(
         `/rfqs/${IdSchema.parse(id)}/submit`,
         RfqResponseSchema,
         'POST',
         undefined,
         version,
+        options.idempotencyKey ?? newIdempotencyKey(),
       );
     },
     listInvitations() {
@@ -185,6 +213,22 @@ export function createQuotationClient(options: QuotationClientOptions) {
       return request(
         `/rfqs/${IdSchema.parse(id)}/quotations`,
         BuyerQuotationResponseSchema.array(),
+      );
+    },
+    /** The quotations of a request as the coordinating administrator sees them (with household names). */
+    listInternalQuotations(id: string) {
+      return request(
+        `/rfqs/${IdSchema.parse(id)}/quotations`,
+        InternalQuotationResponseSchema.array(),
+      );
+    },
+    /** FR-ORD-11: the owner rates one household of a delivered request (creates or replaces the rating). */
+    rateHousehold(id: string, householdId: string, input: RateHouseholdRequest) {
+      return request(
+        `/rfqs/${IdSchema.parse(id)}/ratings/${IdSchema.parse(householdId)}`,
+        HouseholdRatingSchema,
+        'PUT',
+        RateHouseholdRequestSchema.parse(input),
       );
     },
     /** Suggested unit price range for the signed-in household's offer (PLAN E9). */
@@ -267,13 +311,19 @@ export function createQuotationClient(options: QuotationClientOptions) {
       );
     },
     /** GH#11: buyer chốt chào giá đã chọn; version ở If-Match. */
-    acceptQuotation(id: string, version: number, input: AcceptQuotationRequest) {
+    acceptQuotation(
+      id: string,
+      version: number,
+      input: AcceptQuotationRequest,
+      options: QuotationActionOptions = {},
+    ) {
       return request(
         `/rfqs/${IdSchema.parse(id)}/accept`,
         RfqResponseSchema,
         'POST',
         AcceptQuotationRequestSchema.parse(input),
         version,
+        options.idempotencyKey ?? newIdempotencyKey(),
       );
     },
     /** GH#11: đọc allocations của đơn đã chốt. */
@@ -291,13 +341,14 @@ export function createQuotationClient(options: QuotationClientOptions) {
       );
     },
     /** GH#11: buyer hoặc admin xác nhận đã nhận hàng. */
-    confirmReceipt(id: string, version: number) {
+    confirmReceipt(id: string, version: number, options: QuotationActionOptions = {}) {
       return request(
         `/rfqs/${IdSchema.parse(id)}/receive`,
         RfqResponseSchema,
         'POST',
         undefined,
         version,
+        options.idempotencyKey ?? newIdempotencyKey(),
       );
     },
     /** GH#11: hộ xác nhận phân bổ của mình. */
@@ -331,13 +382,19 @@ export function createQuotationClient(options: QuotationClientOptions) {
       );
     },
     /** GH#11: admin dieu phoi huy don sau san xuat; ly do bat buoc. */
-    cancelOrder(id: string, version: number, input: CancelOrderRequest) {
+    cancelOrder(
+      id: string,
+      version: number,
+      input: CancelOrderRequest,
+      options: QuotationActionOptions = {},
+    ) {
       return request(
         `/rfqs/${IdSchema.parse(id)}/cancel`,
         RfqResponseSchema,
         'POST',
         CancelOrderRequestSchema.parse(input),
         version,
+        options.idempotencyKey ?? newIdempotencyKey(),
       );
     },
   };

@@ -2,6 +2,7 @@ import type { EntityManager } from '@mikro-orm/core';
 import { type ChainEntry, verifyChain } from '@vcraft/domain';
 import {
   AppUser,
+  Artisan,
   CooperativeQuotation,
   Household,
   JournalEntry,
@@ -27,6 +28,8 @@ import {
   pickDisplayVariant,
 } from './link-media.js';
 import { DEMO_PHOTO_LINKS, DEMO_PHOTOS, RETIRED_DEMO_PHOTO_IDS } from './photo-manifest.js';
+import { NEWS } from './pools.js';
+import { demoEntityId } from './seed-demo.js';
 import { DEMO_VERIFICATION_DOCS } from './verification-docs.js';
 
 export interface DemoCheck {
@@ -48,6 +51,11 @@ const MUST_STAY_OPEN = [
   'biddingReplaced',
 ] as const;
 const MIN_OPEN_DAYS = 3;
+
+/** Words of the old demo disclaimers (GH#204, GH#298). */
+const DEMO_DISCLAIMER = /dữ liệu mẫu|hư cấu|không phải hộ thật|dùng để trình diễn/i;
+/** A name still carrying the old "(mẫu)" tag. */
+const SAMPLE_NAME_SUFFIX = /\(mẫu\)/i;
 
 export interface VerifyDemoOptions {
   /** Kiểm ảnh và giấy tờ (sau `pnpm demo:media`). Mặc định bật; tắt khi chỉ có dữ liệu seed chưa gắn ảnh. */
@@ -74,6 +82,33 @@ export async function verifyDemoData(
     'Hộ: ≥ 20 (gồm 1 hộ chờ duyệt)',
     households >= 20 && pending === 1,
     `${households} hộ, ${pending} chờ duyệt`,
+  );
+
+  // GH#298: the old "sample data" disclaimers must be gone from every text a visitor can read.
+  const disclaimed = (texts: ReadonlyArray<string | null | undefined>) =>
+    texts.filter((text) => text != null && DEMO_DISCLAIMER.test(text)).length;
+  const disclaimerCounts = {
+    household: disclaimed(
+      (await em.find(Household, {}, { fields: ['history'] })).map((h) => h.history),
+    ),
+    artisan: disclaimed((await em.find(Artisan, {}, { fields: ['bio'] })).map((a) => a.bio)),
+    news: disclaimed(
+      (await em.find(News, {}, { fields: ['title', 'body'] })).flatMap((n) => [n.title, n.body]),
+    ),
+    product: disclaimed(
+      (await em.find(Product, {}, { fields: ['description'] })).map((p) => p.description),
+    ),
+    // The "(mẫu)" suffix the demo accounts used to carry in `app_user.full_name`.
+    appUser: (await em.find(AppUser, {}, { fields: ['fullName'] })).filter(
+      (u) => u.fullName != null && SAMPLE_NAME_SUFFIX.test(u.fullName),
+    ).length,
+  };
+  add(
+    'No demo disclaimer text',
+    Object.values(disclaimerCounts).every((count) => count === 0),
+    Object.entries(disclaimerCounts)
+      .map(([table, count]) => `${table} ${count}`)
+      .join(', '),
   );
 
   const products = await em.find(Product, {}, { fields: ['id', 'traceCode', 'status'] });
@@ -157,10 +192,56 @@ export async function verifyDemoData(
   const pinnedNews = await em.count(News, { status: 'PUBLISHED', pinned: true });
   const villageNews = await em.count(News, { status: 'PUBLISHED', household: null });
   add(
-    'Tin tức: ≥ 15 tin đã đăng (có tin ghim, tin chung và tin của hộ)',
-    publishedNews >= 15 && pinnedNews >= 1 && villageNews >= 1 && villageNews < publishedNews,
+    'Tin tức: ≥ 6 tin đã đăng (có tin ghim và tin chung của làng; tin của hộ là tùy chọn)',
+    publishedNews >= 6 && pinnedNews >= 1 && villageNews >= 1,
     `${publishedNews} tin, ${pinnedNews} ghim, ${villageNews} tin chung`,
   );
+
+  // GH#314: every pooled story is real news, so it needs a publisher, an https link and the original date.
+  const seededNews = await em.find(
+    News,
+    { id: { $in: NEWS.map((item) => demoEntityId('news', item.key)) } },
+    { fields: ['id', 'title', 'sourceName', 'sourceUrl', 'sourcePublishedAt'] },
+  );
+  const noSource = seededNews.filter(
+    (n) => !n.sourceName?.trim() || !n.sourceUrl?.startsWith('https://') || !n.sourcePublishedAt,
+  );
+  add(
+    'Tin tức: mỗi tin trong dữ liệu có nguồn gốc (đơn vị đăng, liên kết https, ngày đăng gốc)',
+    seededNews.length === NEWS.length && noSource.length === 0,
+    noSource.length === 0
+      ? `${seededNews.length} tin có nguồn`
+      : `${noSource.length}/${NEWS.length} tin thiếu nguồn: ${noSource
+          .slice(0, 3)
+          .map((n) => n.title)
+          .join('; ')}`,
+  );
+  if (options.media ?? true) {
+    const newsCoverLinks = await em.find(
+      MediaLink,
+      { targetType: 'NEWS', role: 'COVER' },
+      { fields: ['id', 'targetId', 'altText', 'altEn'] },
+    );
+    const badNewsAlt = newsCoverLinks.filter((l) => !l.altText?.trim() || !l.altEn?.trim());
+    const coveredNews = new Set(newsCoverLinks.map((l) => l.targetId));
+    // A story only needs a cover when the photo manifest has a licensed photo of its subject (GH#333); the others
+    // show the site illustration.
+    const expectedCoverIds = new Set(
+      DEMO_PHOTO_LINKS.filter((l) => l.target === 'NEWS' && l.role === 'COVER').map((l) =>
+        demoEntityId('news', l.key),
+      ),
+    );
+    const uncoveredNews = seededNews.filter(
+      (n) => expectedCoverIds.has(n.id) && !coveredNews.has(n.id),
+    );
+    add(
+      'Tin tức: mỗi ảnh bìa có mô tả tiếng Việt và tiếng Anh, và mỗi tin có ảnh trong bảng ánh xạ đều có ảnh bìa',
+      badNewsAlt.length === 0 && uncoveredNews.length === 0,
+      badNewsAlt.length === 0 && uncoveredNews.length === 0
+        ? `${newsCoverLinks.length} ảnh bìa đủ alt vi/en`
+        : `${badNewsAlt.length} ảnh bìa thiếu alt vi/en, ${uncoveredNews.length} tin chưa có ảnh bìa; chạy pnpm demo:media`,
+    );
+  }
 
   const missingAccounts: string[] = [];
   for (const account of DEMO_ACCOUNT_LIST) {

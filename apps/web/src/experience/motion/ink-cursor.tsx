@@ -14,34 +14,52 @@ export function InkCursor() {
   useEffect(() => {
     const el = dot.current;
     if (!motion || !el) return;
-    let x = -100;
-    let y = -100;
-    let tx = x;
-    let ty = y;
+    let x = 0;
+    let y = 0;
+    let tx = 0;
+    let ty = 0;
     let big = false;
+    let visible = false;
     let frame = 0;
+    const tick = () => {
+      frame = 0;
+      x += (tx - x) * 0.35;
+      y += (ty - y) * 0.35;
+      const settled = Math.abs(tx - x) < 0.1 && Math.abs(ty - y) < 0.1;
+      if (settled) {
+        x = tx;
+        y = ty;
+      }
+      el.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%) scale(${big ? 2.4 : 1})`;
+      if (!settled) frame = requestAnimationFrame(tick);
+    };
     const move = (event: PointerEvent) => {
       if (event.pointerType !== 'mouse') return;
       tx = event.clientX;
       ty = event.clientY;
       big = Boolean((event.target as Element | null)?.closest?.('a, button, [role="button"]'));
-      el.style.opacity = '1';
+      if (!visible) {
+        // Start under the pointer, including after returning from another window.
+        x = tx;
+        y = ty;
+        visible = true;
+        el.style.opacity = '1';
+      }
+      if (!frame) frame = requestAnimationFrame(tick);
     };
     const leave = () => {
+      visible = false;
       el.style.opacity = '0';
-    };
-    const tick = () => {
-      x += (tx - x) * 0.22;
-      y += (ty - y) * 0.22;
-      el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${big ? 2.4 : 1})`;
-      frame = requestAnimationFrame(tick);
+      cancelAnimationFrame(frame);
+      frame = 0;
     };
     window.addEventListener('pointermove', move, { passive: true });
+    window.addEventListener('blur', leave);
     document.documentElement.addEventListener('pointerleave', leave);
-    frame = requestAnimationFrame(tick);
     return () => {
-      cancelAnimationFrame(frame);
+      leave();
       window.removeEventListener('pointermove', move);
+      window.removeEventListener('blur', leave);
       document.documentElement.removeEventListener('pointerleave', leave);
     };
   }, [motion]);

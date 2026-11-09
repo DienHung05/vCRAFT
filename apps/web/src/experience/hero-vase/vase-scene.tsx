@@ -3,6 +3,7 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import { Color, LatheGeometry, type Mesh, ShaderMaterial, Vector2 } from 'three';
+import { afterFirstFrame } from './first-frame';
 import { kilnGlow, morphProfile, paintProgress } from './vase-profiles';
 
 const SEGMENTS = 72;
@@ -71,7 +72,7 @@ function latheFor(progress: number): LatheGeometry {
   return new LatheGeometry(points, SEGMENTS);
 }
 
-function Vase({ progress }: { progress: { current: number } }) {
+function Vase({ progress, onReady }: { progress: { current: number }; onReady: () => void }) {
   const mesh = useRef<Mesh>(null);
   const shown = useRef(-1);
   const invalidate = useThree((state) => state.invalidate);
@@ -92,6 +93,7 @@ function Vase({ progress }: { progress: { current: number } }) {
     [],
   );
   const initial = useMemo(() => latheFor(0), []);
+  const firstFrame = useMemo(() => afterFirstFrame(onReady), [onReady]);
 
   useEffect(
     () => () => {
@@ -118,6 +120,8 @@ function Vase({ progress }: { progress: { current: number } }) {
     // A slow turn on the wheel; with frameloop="demand" each frame asks for the next.
     target.rotation.y += delta * 0.35;
     invalidate();
+    // The render for this frame follows this callback; the hero fades to the canvas only after it.
+    firstFrame();
   });
 
   return <mesh ref={mesh} geometry={initial} material={material} />;
@@ -126,7 +130,8 @@ function Vase({ progress }: { progress: { current: number } }) {
 /**
  * The WebGL hero vase (PLAN E13, BRAND §6.3 #1): a LatheGeometry that turns from clay to a money jar
  * with the scroll, the blue glaze painting in, and the kiln glowing while it "fires". Loaded only by
- * {@link HeroVase} on capable devices; `progress` is a ref the scroll handler writes.
+ * {@link HeroVase} on capable devices; `progress` is a ref the scroll handler writes. `onReady` fires after
+ * the first frame has been drawn, not when the canvas is created (GH#316).
  */
 export default function VaseScene({
   progress,
@@ -141,10 +146,9 @@ export default function VaseScene({
       dpr={[1, 1.75]}
       camera={{ position: [0, 0.1, 5.4], fov: 30 }}
       gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
-      onCreated={() => onReady()}
       aria-hidden
     >
-      <Vase progress={progress} />
+      <Vase progress={progress} onReady={onReady} />
     </Canvas>
   );
 }

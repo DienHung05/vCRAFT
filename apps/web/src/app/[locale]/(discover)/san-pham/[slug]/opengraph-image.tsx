@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { fetchProduct } from '@/features/catalog/exhibition-api';
 import { resolveLocale } from '@/lib/locale';
+import { textFor } from '@/lib/localized-text';
 import { OG_CONTENT_TYPE, OG_SIZE, renderOgCard } from '@/lib/seo/og-card';
 
 export const size = OG_SIZE;
@@ -9,14 +10,18 @@ export const contentType = OG_CONTENT_TYPE;
 type Params = { params: Promise<{ locale: string; slug: string }> };
 
 export async function generateImageMetadata({ params }: Params) {
-  const { slug } = await params;
+  // Not resolveLocale: it calls notFound() and setRequestLocale, which break page-data collection at build time.
+  const { locale, slug } = await params;
   const result = await fetchProduct(slug);
   return [
     {
       id: 'card',
       size,
       contentType,
-      alt: result.status === 'ok' ? result.data.product.name : 'vCraft',
+      alt:
+        result.status === 'ok'
+          ? textFor(locale, result.data.product.name, result.data.product.nameEn)
+          : 'vCraft',
     },
   ];
 }
@@ -25,17 +30,19 @@ export async function generateImageMetadata({ params }: Params) {
 export default async function Image({ params }: Params) {
   const locale = await resolveLocale(params);
   const { slug } = await params;
-  const [t, result] = await Promise.all([
+  const [t, meta, result] = await Promise.all([
     getTranslations({ locale, namespace: 'nav' }),
+    getTranslations({ locale, namespace: 'meta' }),
     fetchProduct(slug),
   ]);
   return renderOgCard(
     result.status === 'ok'
       ? {
           eyebrow: t('products'),
-          title: result.data.product.name,
+          title: textFor(locale, result.data.product.name, result.data.product.nameEn),
           subtitle: result.data.household.name,
+          slogan: meta('slogan'),
         }
-      : { eyebrow: t('products'), title: 'vCraft' },
+      : { eyebrow: t('products'), title: 'vCraft', slogan: meta('slogan') },
   );
 }

@@ -1,11 +1,32 @@
 import { PRODUCT_CATEGORIES, RFQ_STATUSES } from '@vcraft/domain';
 import { z } from 'zod';
 import { CursorPageQuerySchema, cursorPageSchema } from '../common/pagination';
-import { IdSchema, IsoDateTimeSchema, VersionSchema, VndSchema } from '../common/primitives';
+import {
+  IdSchema,
+  IsoDateTimeSchema,
+  VersionSchema,
+  VietnamPhoneSchema,
+  VndSchema,
+} from '../common/primitives';
+import { HouseholdRatingSchema } from './household-rating';
 
 /** FR-RFQ-01: up to three attachments (a logo, a drawing) per request. */
 export const RFQ_MAX_ATTACHMENTS = 3;
 export const RFQ_MAX_CUSTOM_REQUIREMENTS = 1000;
+
+export const ON_BEHALF_NAME_MAX = 120;
+
+/**
+ * FR-ORD-10 (GH#248 s5-10): the off-platform customer an administrator creates a request for. The customer
+ * has no account; the administrator is the buyer of record and the coordinator, and reaches the customer by
+ * phone. Only administrators read it back.
+ */
+export const OnBehalfOfSchema = z.strictObject({
+  name: z.string().trim().min(1, 'Thiếu tên khách hàng').max(ON_BEHALF_NAME_MAX),
+  phone: VietnamPhoneSchema,
+  email: z.email().max(254).optional(),
+});
+export type OnBehalfOfDto = z.infer<typeof OnBehalfOfSchema>;
 
 /** GH#9: tạo yêu cầu báo giá — design, số lượng, đơn vị, điểm đến, ngày cần hàng, hạn chào giá. */
 export const CreateRfqRequestSchema = z
@@ -30,6 +51,8 @@ export const CreateRfqRequestSchema = z
     biddingClosesAt: IsoDateTimeSchema,
     invitedHouseholdIds: z.array(IdSchema).default([]),
     coordinationOptIn: z.boolean().default(false),
+    /** Required from an administrator, refused from a buyer (checked by the API against the caller's role). */
+    onBehalfOf: OnBehalfOfSchema.optional(),
   })
   .refine((v) => new Date(v.requiredBy).getTime() > new Date(v.biddingClosesAt).getTime(), {
     message: 'Ngày cần hàng phải sau hạn chào giá',
@@ -91,6 +114,12 @@ export const RfqResponseSchema = z.strictObject({
   coordinationOptIn: z.boolean(),
   /** Set only on a household representative's read of a request it was invited to. */
   declinedByMe: z.boolean().optional(),
+  /** Whether the request ever received a complete quotation, for its shared stage display. */
+  hasBids: z.boolean().optional(),
+  /** The off-platform customer of a request an administrator made (FR-ORD-10); only administrators see it. */
+  onBehalfOf: OnBehalfOfSchema.nullable().optional(),
+  /** The owner's ratings of the households of a delivered request (FR-ORD-11); only the owner sees them. */
+  ratings: z.array(HouseholdRatingSchema).optional(),
 });
 export type RfqResponse = z.infer<typeof RfqResponseSchema>;
 

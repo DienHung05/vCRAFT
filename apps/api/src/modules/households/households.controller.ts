@@ -22,12 +22,17 @@ import {
   CreateWorkshopRequestSchema,
   HouseholdDecisionRequestSchema,
   ListHouseholdsQuerySchema,
+  type PriceSuggestionQuery,
+  PriceSuggestionQuerySchema,
   type RecordScanRequest,
   RecordScanRequestSchema,
+  type SetCertificationVerificationRequest,
+  SetCertificationVerificationRequestSchema,
   type SetIdNumberRequest,
   SetIdNumberRequestSchema,
   type SetProductMakersRequest,
   SetProductMakersRequestSchema,
+  SlugAvailabilityQuerySchema,
   type UpdateHouseholdProfileRequest,
   UpdateHouseholdProfileRequestSchema,
   type UpdateProductRequest,
@@ -42,6 +47,7 @@ import { UuidPipe } from '../../common/pipes/uuid.pipe';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { HouseholdsService } from './application/households.service';
 import { QrLabelsService } from './application/qr-labels.service';
+import { StorySuggestionService } from './application/story-suggestion.service';
 
 /** Hồ sơ hộ của chính người đại diện (`/me/household`). */
 @Controller('me/household')
@@ -49,7 +55,20 @@ export class MyHouseholdController {
   constructor(
     private readonly households: HouseholdsService,
     private readonly qrLabels: QrLabelsService,
+    private readonly storySuggestions: StorySuggestionService,
   ) {}
+
+  /**
+   * FR-ART-08: a suggested story in Vietnamese and English from the profile facts. Never saved; 503 when the
+   * chat model is not configured.
+   */
+  @Post('story-suggestion')
+  @HttpCode(200)
+  @Header('Cache-Control', 'private, no-store')
+  @Roles('HOUSEHOLD')
+  storySuggestion(@CurrentActor() actor: Actor) {
+    return this.storySuggestions.suggest(actor);
+  }
 
   /** Queue an A4 QR label sheet for some of the household's products (PLAN E6); poll the status. */
   @Post('qr-labels')
@@ -97,6 +116,14 @@ export class MyHouseholdController {
     body: UpdateHouseholdProfileRequest,
   ) {
     return this.households.updateProfile(actor, version, body);
+  }
+
+  /** Explicit resubmission after edits (vCRAFT-8my.2); `If-Match` guards against stale writes. */
+  @Post('resubmit')
+  @HttpCode(200)
+  @Roles('HOUSEHOLD')
+  resubmit(@CurrentActor() actor: Actor, @IfMatchVersion() version: number) {
+    return this.households.resubmit(actor, version);
   }
 
   @Put('id-number')
@@ -158,6 +185,24 @@ export class MyHouseholdController {
     return this.households.scanStats(actor, id);
   }
 
+  /** FR-PRD-07: median price of published products in a category; declared before `products/:id`. */
+  @Get('products/price-suggestion')
+  @Header('Cache-Control', 'private, no-store')
+  @Roles('HOUSEHOLD')
+  priceSuggestion(
+    @CurrentActor() actor: Actor,
+    @Query(new ZodValidationPipe(PriceSuggestionQuerySchema)) query: PriceSuggestionQuery,
+  ) {
+    return this.households.priceSuggestion(actor, query.category);
+  }
+
+  /** FR-PRD-06: a DRAFT copy without the production journal. */
+  @Post('products/:id/duplicate')
+  @Roles('HOUSEHOLD')
+  duplicateProduct(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
+    return this.households.duplicateProduct(actor, id);
+  }
+
   @Patch('products/:id')
   @Roles('HOUSEHOLD')
   updateProduct(
@@ -204,6 +249,28 @@ export class ProductPublicationController {
     @IfMatchVersion() version: number,
   ) {
     return this.households.changeProduct(actor, id, 'REPUBLISH', version);
+  }
+
+  /** One-of-a-kind products only: PUBLISHED to SOLD (FR-PRD-01). */
+  @Post('mark-sold')
+  @HttpCode(200)
+  markSold(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+  ) {
+    return this.households.changeProduct(actor, id, 'MARK_SOLD', version);
+  }
+
+  /** Undo a sale: SOLD back to PUBLISHED. */
+  @Post('back-on-sale')
+  @HttpCode(200)
+  backOnSale(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+  ) {
+    return this.households.changeProduct(actor, id, 'BACK_ON_SALE', version);
   }
 
   @Post('withdraw')
@@ -268,6 +335,26 @@ export class AdminHouseholdsController {
     return this.households.documentsForAdmin(id);
   }
 
+  /** FR-ART-03: mark one certification verified, or remove the mark (audited). */
+  @Put(':id/certifications/:index/verification')
+  setCertificationVerification(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @Param('index') index: string,
+    @IfMatchVersion() version: number,
+    @Body(new ZodValidationPipe(SetCertificationVerificationRequestSchema))
+    body: SetCertificationVerificationRequest,
+  ) {
+    if (!/^\d{1,3}$/.test(index)) throw notFound();
+    return this.households.setCertificationVerified(
+      actor,
+      id,
+      Number(index),
+      version,
+      body.verified,
+    );
+  }
+
   /** `POST /admin/households/:id/{approve|reject|suspend|reinstate}`. */
   @Post(':id/:action')
   @HttpCode(200)
@@ -281,6 +368,25 @@ export class AdminHouseholdsController {
     const event = Object.hasOwn(HOUSEHOLD_ACTIONS, action) ? HOUSEHOLD_ACTIONS[action] : undefined;
     if (!event) throw notFound();
     return this.households.decide(actor, id, event, version, body.reason);
+  }
+}
+
+/**
+ * `GET /households/slug-availability?slug=`: live duplicate check for the address a household types
+ * (FR-ART-01). Any signed-in account may ask, because the sign-up wizard asks before the account is
+ * a representative; the household's own slug counts as free.
+ */
+@Controller('households/slug-availability')
+export class HouseholdSlugController {
+  constructor(private readonly households: HouseholdsService) {}
+
+  @Get()
+  @Header('Cache-Control', 'private, no-store')
+  check(
+    @CurrentActor() actor: Actor,
+    @Query(new ZodValidationPipe(SlugAvailabilityQuerySchema)) query: { slug: string },
+  ) {
+    return this.households.slugAvailability(actor, query.slug);
   }
 }
 

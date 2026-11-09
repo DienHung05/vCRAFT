@@ -3,8 +3,10 @@ import { Badge } from '@vcraft/ui';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ImageSlot } from '@/components/image-slot';
+import { Reveal } from '@/experience/motion/reveal';
 import { altFor, photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
+import { NewsSourceLine } from './news-source-line';
 
 /** Full article: cover, category, body and related news (FR-NEWS-01). */
 export function NewsArticleView({ article }: { article: NewsDetailDto }) {
@@ -14,7 +16,7 @@ export function NewsArticleView({ article }: { article: NewsDetailDto }) {
   const format = useFormatter();
   const locale = useLocale();
   return (
-    <article className="mx-auto flex max-w-prose-vn flex-col gap-6 px-gutter pt-12 pb-section">
+    <article className="mx-auto flex max-w-prose-vn flex-col gap-6 px-gutter pt-12 pb-section-tail">
       <Breadcrumbs
         items={[
           { label: common('home'), href: '/' },
@@ -33,28 +35,32 @@ export function NewsArticleView({ article }: { article: NewsDetailDto }) {
             {format.dateTime(new Date(article.publishedAt), 'long')}
           </time>
         </div>
-        <h1 className="text-h1 break-words">{article.title}</h1>
+        <h1 className="text-h1 text-balance break-words">{article.title}</h1>
         <p className="text-ash">{article.summary}</p>
         <p className="text-small text-ash">
           {article.householdName ? t('byHousehold', { name: article.householdName }) : t('village')}
         </p>
+        <NewsSourceLine item={article} />
       </header>
       {article.cover ? (
-        <div>
-          <ImageSlot
-            alt={altFor(locale, article.cover.alt || article.title, article.cover.altEn)}
-            tint={tintOf(article.slug)}
-            ratio="3/2"
-            {...slotPhoto(
-              photoFromUrl(
-                article.cover.url,
-                altFor(locale, article.cover.alt || article.title, article.cover.altEn),
-                article.cover.variants,
-              ),
-            )}
-            sizes="(min-width: 768px) 40rem, 100vw"
-          />
-        </div>
+        // GH#301: the cover reveals once below the fold (composite-only; reduced-motion safe).
+        <Reveal>
+          <div>
+            <ImageSlot
+              alt={altFor(locale, article.cover.alt || article.title, article.cover.altEn)}
+              tint={tintOf(article.slug)}
+              ratio="3/2"
+              {...slotPhoto(
+                photoFromUrl(
+                  article.cover.url,
+                  altFor(locale, article.cover.alt || article.title, article.cover.altEn),
+                  article.cover.variants,
+                ),
+              )}
+              sizes="(min-width: 768px) 40rem, 100vw"
+            />
+          </div>
+        </Reveal>
       ) : null}
       {article.bodyHtml ? (
         <div

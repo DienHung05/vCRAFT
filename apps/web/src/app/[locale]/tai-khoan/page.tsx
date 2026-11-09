@@ -1,6 +1,7 @@
 import { Badge, Card } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { SessionUnavailable } from '@/components/session-unavailable';
 import { AccountSecurity } from '@/features/account/account-security';
 import { ChangePasswordForm } from '@/features/account/change-password-form';
 import { EmailPreferencesForm } from '@/features/account/email-preferences-form';
@@ -29,6 +30,8 @@ export async function generateMetadata({
 export default async function AccountPage({ params }: PageProps<'/[locale]/tai-khoan'>) {
   const locale = await resolveLocale(params);
   const viewer = await requireViewer(locale);
+  // The API could not confirm the session: stay inside the shell with a retry instead of a 500 page.
+  if (!viewer) return <SessionUnavailable />;
   const [t, tAuth, privacy] = await Promise.all([
     getTranslations('account'),
     getTranslations('auth'),

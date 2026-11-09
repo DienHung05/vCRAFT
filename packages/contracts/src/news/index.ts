@@ -1,4 +1,11 @@
-import { MATERIALS, NEWS_CATEGORIES, NEWS_STATUSES, NEWS_VISIBILITIES } from '@vcraft/domain';
+import {
+  MATERIALS,
+  NEWS_CATEGORIES,
+  NEWS_ORIGINS,
+  NEWS_STATUSES,
+  NEWS_VISIBILITIES,
+  OUTAGE_AREA_CODES,
+} from '@vcraft/domain';
 import { z } from 'zod';
 import {
   CursorPageQuerySchema,
@@ -43,6 +50,10 @@ export const NewsSummaryResponseSchema = z.object({
   householdSlug: z.string().nullable(),
   /** Null when the news item has no cover. */
   cover: PublicImageSchema.nullable(),
+  /** Publisher and link of the original story (GH#314); all null when the item has no source. */
+  sourceName: z.string().nullable(),
+  sourceUrl: z.string().nullable(),
+  sourcePublishedAt: IsoDateTimeSchema.nullable(),
 });
 export type NewsSummaryDto = z.infer<typeof NewsSummaryResponseSchema>;
 
@@ -68,7 +79,14 @@ export const MaterialPriceDataSchema = z.object({
 });
 export type MaterialPriceDataDto = z.infer<typeof MaterialPriceDataSchema>;
 
-/** Planned cuts in a `POWER_SCHEDULE` item (PLAN E11), shown as a banner in Studio on the day. */
+/** Who a cut warns (ADR-0023): one hamlet, or `VILLAGE_WIDE`. */
+export const OutageAreaCodeSchema = z.enum(OUTAGE_AREA_CODES);
+export type OutageAreaCodeDto = z.infer<typeof OutageAreaCodeSchema>;
+
+/**
+ * Planned cuts in a `POWER_SCHEDULE` item (PLAN E11), shown as a banner in Studio on the day. `areaCode`
+ * decides who is warned; a cut without one (legacy) counts as `VILLAGE_WIDE`. `area` stays free text for readers.
+ */
 export const PowerScheduleDataSchema = z.object({
   outages: z
     .array(
@@ -78,6 +96,7 @@ export const PowerScheduleDataSchema = z.object({
           from: LocalTimeSchema,
           to: LocalTimeSchema,
           area: z.string().trim().min(1).max(160),
+          areaCode: OutageAreaCodeSchema.optional(),
         })
         .refine((o) => o.from < o.to, {
           message: 'The cut must end after it starts',
@@ -101,7 +120,11 @@ export const MaterialPriceSeriesResponseSchema = z.object({
 });
 export type MaterialPriceSeriesDto = z.infer<typeof MaterialPriceSeriesResponseSchema>;
 
-/** `GET /news/village/outages`: today's planned power cuts for the Studio banner. */
+/**
+ * `GET /news/village/outages`: the planned power cuts that affect the caller and have not ended yet
+ * (ADR-0023). `needsWorkshopArea` is true for a household none of whose workshops has an area, which is
+ * therefore warned about every cut.
+ */
 export const TodayOutagesResponseSchema = z.object({
   date: LocalDateSchema,
   outages: z.array(
@@ -109,14 +132,21 @@ export const TodayOutagesResponseSchema = z.object({
       from: z.string(),
       to: z.string(),
       area: z.string(),
+      areaCode: OutageAreaCodeSchema,
       newsSlug: z.string(),
     }),
   ),
+  needsWorkshopArea: z.boolean(),
 });
 export type TodayOutagesDto = z.infer<typeof TodayOutagesResponseSchema>;
 
 export const NewsVisibilitySchema = z.enum(NEWS_VISIBILITIES);
 export type NewsVisibilityDto = z.infer<typeof NewsVisibilitySchema>;
+
+export const NewsOriginSchema = z.enum(NEWS_ORIGINS);
+export type NewsOriginDto = z.infer<typeof NewsOriginSchema>;
+
+const NewsSourceUrlSchema = z.url({ protocol: /^https$/ }).max(500);
 
 export const NewsDetailResponseSchema = NewsSummaryResponseSchema.extend({
   body: z.string(),
@@ -157,6 +187,10 @@ export const SaveNewsRequestSchema = z.strictObject({
   /** A processed image uploaded by this administrator. `null` removes the cover. */
   coverMediaId: IdSchema.nullable().optional(),
   coverAlt: z.string().trim().max(500).optional(),
+  /** Original story (GH#314). `null` clears; left out keeps what is stored. A URL needs a publisher. */
+  sourceName: z.string().trim().min(1).max(120).nullable().optional(),
+  sourceUrl: NewsSourceUrlSchema.nullable().optional(),
+  sourcePublishedAt: IsoDateTimeSchema.nullable().optional(),
   /** Only with category `MATERIAL_PRICES`; null clears it. */
   materialPrices: MaterialPriceDataSchema.nullable().optional(),
   /** Only with category `POWER_SCHEDULE`; null clears it. */
@@ -166,6 +200,8 @@ export type SaveNewsRequest = z.infer<typeof SaveNewsRequestSchema>;
 
 export const ListAdminNewsQuerySchema = CursorPageQuerySchema.extend({
   state: z.enum(['DRAFT', 'SCHEDULED', 'PUBLISHED']).optional(),
+  /** Admin-only filter on where the item came from (GH#314). */
+  origin: NewsOriginSchema.optional(),
 });
 export type ListAdminNewsQuery = z.infer<typeof ListAdminNewsQuerySchema>;
 
@@ -185,6 +221,10 @@ export const AdminNewsSchema = z.object({
   cover: PublicImageSchema.nullable(),
   householdName: z.string().nullable(),
   updatedAt: IsoDateTimeSchema,
+  sourceName: z.string().nullable(),
+  sourceUrl: z.string().nullable(),
+  sourcePublishedAt: IsoDateTimeSchema.nullable(),
+  origin: NewsOriginSchema,
   materialPrices: MaterialPriceDataSchema.nullable(),
   powerSchedule: PowerScheduleDataSchema.nullable(),
 });

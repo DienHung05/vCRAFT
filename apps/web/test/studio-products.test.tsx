@@ -46,9 +46,11 @@ function product(n: number, overrides: Partial<ProductDto> = {}): ProductDto {
     id: `${ID}${n}`,
     version: 2,
     name: `Món ${n}`,
+    nameEn: null,
     slug: `mon-${n}`,
     traceCode: `CODE000${n}`,
     description: '',
+    descriptionEn: null,
     kind: 'OBJECT',
     batchSize: null,
     category: 'VASE',
@@ -56,8 +58,11 @@ function product(n: number, overrides: Partial<ProductDto> = {}): ProductDto {
     stock: 1,
     material: null,
     dimensions: null,
+    materialEn: null,
+    dimensionsEn: null,
     weightGrams: null,
     artisanNote: null,
+    tags: [],
     coverUrl: null,
     coverVariants: [],
     coverAlt: null,
@@ -75,6 +80,7 @@ const HOUSEHOLD = {
   id: `${ID}9`,
   version: 1,
   name: 'Hộ',
+  nameEn: null,
   slug: 'ho',
   status: 'APPROVED',
   artisans: [{ id: `${ID}8`, version: 1, name: 'Bình', craftRole: null, bio: null }],
@@ -161,11 +167,11 @@ function client(overrides: Partial<StudioClient> = {}): StudioClient {
 }
 
 describe('ProductList', () => {
-  it('lọc nháp, đang trưng bày, đã rút', async () => {
+  it('lọc nháp, đang trưng bày, lưu trữ', async () => {
     renderVi(<ProductList client={client()} />);
     const list = await screen.findByTestId('studio-products');
     expect(within(list).getAllByRole('listitem')).toHaveLength(3);
-    fireEvent.click(screen.getByRole('radio', { name: 'Đã rút' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Lưu trữ' }));
     expect(within(screen.getByTestId('studio-products')).getByText('Món 3')).toBeTruthy();
     expect(screen.queryByText('Món 1')).toBeNull();
   });
@@ -234,14 +240,14 @@ describe('ProductEditor', () => {
     ).toBeTruthy();
   });
 
-  it('rút cần lý do', async () => {
+  it('lưu trữ cần lý do', async () => {
     const api = client();
     renderVi(<ProductEditor productId={`${ID}2`} client={api} />);
-    const withdraw = await screen.findByRole('button', { name: 'Rút khỏi trưng bày' });
+    const withdraw = await screen.findByRole('button', { name: 'Lưu trữ' });
     expect((withdraw as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.change(screen.getByLabelText('Lý do rút'), { target: { value: 'Hết hàng' } });
+    fireEvent.change(screen.getByLabelText('Lý do lưu trữ'), { target: { value: 'Hết hàng' } });
     fireEvent.click(withdraw);
-    confirmDialog('Rút khỏi trưng bày');
+    confirmDialog('Lưu trữ');
     await waitFor(() => expect(api.withdrawProduct).toHaveBeenCalledWith(`${ID}2`, 2, 'Hết hàng'));
   });
 

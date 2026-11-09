@@ -1,5 +1,9 @@
-import { PRODUCT_SORTS, type ProductSort } from '@vcraft/contracts';
-import { PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
+import {
+  PRODUCT_CATEGORIES,
+  PRODUCT_SORTS,
+  type ProductCategory,
+  type ProductSort,
+} from '@vcraft/domain';
 import { parsePageParam } from '@/lib/page-param';
 import type { ProductFilters } from './exhibition-query';
 
@@ -12,6 +16,8 @@ export interface CatalogFilters {
   maxPrice: string;
   oneOfAKind: boolean;
   inStock: boolean;
+  /** Only products of households with a workshop open to visitors (FR-CAT-02). */
+  openWorkshop: boolean;
   sort: ProductSort;
   /** Current page (1-based). Omitted from URL when 1. */
   page: number;
@@ -25,6 +31,7 @@ export const EMPTY_FILTERS: CatalogFilters = {
   maxPrice: '',
   oneOfAKind: false,
   inStock: false,
+  openWorkshop: false,
   sort: 'newest',
   page: 1,
 };
@@ -51,6 +58,7 @@ export function parseCatalogParams(
     maxPrice: digits(first(params.maxPrice)),
     oneOfAKind: first(params.oneOfAKind) === '1',
     inStock: first(params.inStock) === '1',
+    openWorkshop: first(params.openWorkshop) === '1',
     sort: PRODUCT_SORTS.includes(sort as ProductSort) ? (sort as ProductSort) : 'newest',
     page,
   };
@@ -66,6 +74,7 @@ export function catalogSearchParams(filters: CatalogFilters): URLSearchParams {
   if (filters.maxPrice) query.set('maxPrice', filters.maxPrice);
   if (filters.oneOfAKind) query.set('oneOfAKind', '1');
   if (filters.inStock) query.set('inStock', '1');
+  if (filters.openWorkshop) query.set('openWorkshop', '1');
   if (filters.sort !== 'newest') query.set('sort', filters.sort);
   if (filters.page > 1) query.set('page', String(filters.page));
   return query;
@@ -83,5 +92,6 @@ export function toProductFilters(filters: CatalogFilters): ProductFilters {
     ...(filters.maxPrice && { maxPrice: Number(filters.maxPrice) }),
     ...(filters.oneOfAKind && { oneOfAKind: true }),
     ...(filters.inStock && { inStock: true }),
+    ...(filters.openWorkshop && { openWorkshop: true }),
   };
 }

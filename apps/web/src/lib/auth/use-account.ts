@@ -3,8 +3,9 @@
 import { createAccountClient } from '@vcraft/api-client';
 import type { MeDto } from '@vcraft/contracts';
 import { useEffect, useState } from 'react';
+import { favouritesStore } from '@/features/favourites/favourites-store';
 import { ACCOUNT_CHANGED_EVENT, hasHouseholdIntent } from './household-intent';
-import { browserSupabase } from './supabase-browser';
+import { hasAuthCookie } from './session-cookie';
 
 export type AccountState =
   | { readonly status: 'loading' }
@@ -34,25 +35,46 @@ export function useAccount(): AccountState {
   const [me, setMe] = useState<MeDto | null>(null);
 
   useEffect(() => {
-    const supabase = browserSupabase();
-    if (!supabase) {
+    // A guest holds no auth cookie: settle without loading the Supabase SDK (~60 KB gzip). Every way of
+    // signing in ends in a full page load (see sign-in-form), which mounts this hook again.
+    if (!hasAuthCookie(document.cookie)) {
       setSession(null);
+      favouritesStore.startAsGuest();
       return;
     }
-    // INITIAL_SESSION được phát ngay khi đăng ký nên không cần getSession riêng. Callback chỉ ghi
-    // state (không gọi lại Supabase bên trong) để tránh khóa vòng đời phiên.
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => {
-      setSession(
-        next
-          ? {
-              email: next.user.email ?? '',
-              token: next.access_token,
-              householdIntent: hasHouseholdIntent(next.user.user_metadata),
-            }
-          : null,
-      );
-    });
-    return () => data.subscription.unsubscribe();
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
+    void import('./supabase-browser')
+      .then(({ browserSupabase }) => {
+        const supabase = browserSupabase();
+        if (!active) return;
+        if (!supabase) {
+          setSession(null);
+          favouritesStore.startAsGuest();
+          return;
+        }
+        // INITIAL_SESSION được phát ngay khi đăng ký nên không cần getSession riêng. Callback chỉ ghi
+        // state (không gọi lại Supabase bên trong) để tránh khóa vòng đời phiên.
+        const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+          setSession(
+            next
+              ? {
+                  email: next.user.email ?? '',
+                  token: next.access_token,
+                  householdIntent: hasHouseholdIntent(next.user.user_metadata),
+                }
+              : null,
+          );
+        });
+        unsubscribe = () => data.subscription.unsubscribe();
+      })
+      .catch(() => {
+        if (active) setSession(null);
+      });
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
   }, []);
 
   // GH#180: bumped when the role or household changes in this tab (e.g. the wizard's household step).
@@ -69,6 +91,8 @@ export function useAccount(): AccountState {
       setMe(null);
       return;
     }
+    // FR-CAT-07: the first time a session is seen, local favourites move to the account (once per page load).
+    void favouritesStore.startAsAccount();
     let active = true;
     void revision;
     createAccountClient({ getAccessToken: async () => token })

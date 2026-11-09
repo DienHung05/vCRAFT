@@ -105,7 +105,12 @@ function DocumentRow({ doc, client }: { doc: HouseholdDocumentDto; client: Admin
   };
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 border-ink/10 border-b py-2 last:border-b-0">
-      <span className="text-small">{doc.caption ?? doc.mimeType}</span>
+      <span
+        className="min-w-0 flex-1 basis-48 truncate text-small"
+        title={doc.caption ?? undefined}
+      >
+        {doc.caption ?? doc.mimeType}
+      </span>
       <Button
         type="button"
         variant="secondary"
@@ -124,6 +129,41 @@ function DocumentRow({ doc, client }: { doc: HouseholdDocumentDto; client: Admin
   );
 }
 
+/** Review groups in a fixed order; legacy uploads without a classification come last (vCRAFT-8my.3). */
+const DOCUMENT_KIND_ORDER = ['IDENTITY', 'RESIDENCE', 'WORKSHOP', 'UNKNOWN'] as const;
+
+/** Group identity, residence and workshop evidence, with unclassified legacy files last. */
+function DocumentGroups({
+  documents,
+  client,
+}: {
+  documents: readonly HouseholdDocumentDto[];
+  client: AdminClient;
+}) {
+  const t = useTranslations('admin.review');
+  const groups = DOCUMENT_KIND_ORDER.map((kind) => ({
+    kind,
+    docs: documents.filter((doc) => (doc.certificateKind ?? 'UNKNOWN') === kind),
+  })).filter((group) => group.docs.length > 0);
+  return (
+    <div className="flex flex-col gap-4" data-testid="review-documents">
+      {groups.map((group) => (
+        <section key={group.kind} className="flex min-w-0 flex-col gap-1">
+          <h3 className="text-small font-semibold">
+            {t(`documentKind.${group.kind}`)}{' '}
+            <span className="font-normal text-ash">({group.docs.length})</span>
+          </h3>
+          <ul>
+            {group.docs.map((doc) => (
+              <DocumentRow key={doc.id} doc={doc} client={client} />
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
 /**
  * Duyệt một hộ (FR-ADM-02 … 04): thông tin khai ↔ giấy tờ (URL ký 5 phút, chỉ Admin) ↔ xưởng trên
  * bản đồ, cùng các quyết định: duyệt có hiệu ứng đóng ấn, từ chối và yêu cầu bổ sung phải có lý do,
@@ -139,6 +179,8 @@ export function HouseholdReview({
   const t = useTranslations('admin.review');
   const nav = useTranslations('admin.nav');
   const statuses = useTranslations('studio.home.statuses');
+  const areas = useTranslations('villageAreas');
+  const crafts = useTranslations('catalog.craftCategories');
   const format = useFormatter();
   const { client, loading } = useAdminClient(provided);
   const [household, setHousehold] = useState<HouseholdDto | null>(null);
@@ -148,6 +190,9 @@ export function HouseholdReview({
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<HouseholdAction | null>(null);
   const [result, setResult] = useState<'sealed' | 'done' | 'stale' | 'failed' | null>(null);
+  // FR-ART-03: the certification being toggled, and how the last toggle ended.
+  const [certBusy, setCertBusy] = useState<number | null>(null);
+  const [certResult, setCertResult] = useState<'stale' | 'failed' | null>(null);
   // The review map is decorative (the workshop list below has the same facts); keep it out of the tab order.
   const map = useUntabbable<HTMLDivElement>(household);
 
@@ -209,6 +254,26 @@ export function HouseholdReview({
     }
   };
 
+  const setVerified = async (index: number, verified: boolean) => {
+    setCertBusy(index);
+    setCertResult(null);
+    try {
+      setHousehold(
+        await client.setCertificationVerified(household.id, index, household.version, verified),
+      );
+      notify.success(t('certSaved'));
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        await load();
+        setCertResult('stale');
+      } else {
+        setCertResult('failed');
+      }
+    } finally {
+      setCertBusy(null);
+    }
+  };
+
   const actions = ACTIONS[household.status];
   const reasonOk = reason.trim().length >= 3;
 
@@ -239,64 +304,94 @@ export function HouseholdReview({
         </p>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-3" data-testid="review-columns">
-        <Card className="flex flex-col gap-3 p-5">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-3" data-testid="review-columns">
+        <Card className="flex min-w-0 flex-col gap-3 p-5">
           <h2 className="text-h3">{t('declared')}</h2>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-small">
+          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-small">
             <dt className="text-ash">{t('craft')}</dt>
-            <dd>{household.craft ?? '—'}</dd>
+            <dd className="min-w-0 break-words">
+              {[household.craftCategory ? crafts(household.craftCategory) : null, household.craft]
+                .filter(Boolean)
+                .join(' · ') || '—'}
+            </dd>
             <dt className="text-ash">{t('village')}</dt>
-            <dd>{household.village ?? '—'}</dd>
+            <dd className="min-w-0 break-words">{household.village ?? '—'}</dd>
             <dt className="text-ash">{t('foundedYear')}</dt>
-            <dd>{household.foundedYear ?? '—'}</dd>
+            <dd className="min-w-0 break-words">{household.foundedYear ?? '—'}</dd>
             <IdNumberRow household={household} client={client} />
             <dt className="text-ash">{t('artisans')}</dt>
-            <dd>{household.artisans.map((a) => a.name).join(', ') || '—'}</dd>
+            <dd className="min-w-0 break-words">
+              {household.artisans.map((a) => a.name).join(', ') || '—'}
+            </dd>
             {household.approvedAt ? (
               <>
                 <dt className="text-ash">{t('approvedAt')}</dt>
-                <dd>{format.dateTime(new Date(household.approvedAt), 'short')}</dd>
+                <dd className="min-w-0 break-words">
+                  {format.dateTime(new Date(household.approvedAt), 'short')}
+                </dd>
               </>
             ) : null}
           </dl>
           <p className="whitespace-pre-line text-small">{household.history}</p>
         </Card>
 
-        <Card className="flex flex-col gap-3 p-5">
+        <Card className="flex min-w-0 flex-col gap-3 p-5">
           <h2 className="text-h3">{t('documents')}</h2>
           <p className="text-small text-ash">{t('documentsHint')}</p>
           {documents.length === 0 ? (
             <p className="text-small text-ash">{t('noDocuments')}</p>
           ) : (
-            <ul data-testid="review-documents">
-              {documents.map((doc) => (
-                <DocumentRow key={doc.id} doc={doc} client={client} />
-              ))}
-            </ul>
+            <DocumentGroups documents={documents} client={client} />
           )}
         </Card>
 
-        <Card className="flex flex-col gap-3 p-5">
+        <Card className="flex min-w-0 flex-col gap-3 p-5">
           <h2 className="text-h3">{t('workshops')}</h2>
           {household.workshops.some((w) => w.lat !== null) ? (
-            <div ref={map} aria-hidden="true" className="h-56 overflow-hidden rounded-input">
-              <WorkshopReviewMap workshops={household.workshops} />
-            </div>
+            <>
+              {/* The map is an illustration next to the workshop list below, which carries the same
+                  facts; its wrapper is not hidden from assistive tech, and the boundary status of
+                  each pin is announced by the list entries (vCRAFT-8my.1 a11y review). */}
+              <div
+                ref={map}
+                role="img"
+                aria-label={t('mapLabel', {
+                  count: household.workshops.filter((w) => w.lat !== null).length,
+                })}
+                className="h-56 min-w-0 overflow-hidden rounded-input"
+              >
+                <WorkshopReviewMap workshops={household.workshops} />
+              </div>
+              <p className="text-small text-ash">{t('mapHint')}</p>
+            </>
           ) : null}
           {household.workshops.length === 0 ? (
             <p className="text-small text-ash">{t('noWorkshops')}</p>
           ) : (
-            <ul className="flex flex-col gap-1 text-small">
+            <ul className="flex min-w-0 flex-col gap-1 text-small">
               {household.workshops.map((w) => (
-                <li key={w.id}>
-                  <span className="font-medium">{w.name}</span> · {w.address}
+                <li key={w.id} className="min-w-0">
+                  <span className="font-medium">{w.name}</span> ·{' '}
+                  <span className="break-words">{w.address}</span>
+                  <span className="block text-ash">
+                    {w.areaCode
+                      ? t('workshopArea', { area: areas(w.areaCode) })
+                      : t('noWorkshopArea')}
+                  </span>
                   {w.lat !== null && w.lng !== null ? (
                     <>
                       <span className="block font-mono text-[0.75rem] text-ash">
                         {w.lat}, {w.lng}
                       </span>
-                      {isInBatTrang({ lat: w.lat, lng: w.lng }) ? null : (
-                        <Badge tone="clay" className="mt-1">
+                      {isInBatTrang({ lat: w.lat, lng: w.lng }) ? (
+                        <Badge
+                          tone="celadon"
+                          className="mt-1 max-w-full whitespace-normal text-left"
+                        >
+                          {t('insideVillage')}
+                        </Badge>
+                      ) : (
+                        <Badge tone="clay" className="mt-1 max-w-full whitespace-normal text-left">
                           {t('outsideVillage')}
                         </Badge>
                       )}
@@ -310,6 +405,71 @@ export function HouseholdReview({
           )}
         </Card>
       </div>
+
+      <Card className="flex min-w-0 flex-col gap-3 p-5" data-testid="review-certifications">
+        <h2 className="text-h3">{t('certifications')}</h2>
+        <p className="text-small text-ash">{t('certificationsHint')}</p>
+        {household.certifications.length === 0 ? (
+          <p className="text-small text-ash">{t('noCertifications')}</p>
+        ) : (
+          <ul className="flex flex-col">
+            {household.certifications.map((cert, index) => (
+              <li
+                // biome-ignore lint/suspicious/noArrayIndexKey: the API addresses a certification by its position.
+                key={index}
+                className="flex flex-wrap items-center justify-between gap-3 border-ink/10 border-b py-3 last:border-b-0"
+              >
+                <div className="min-w-0 flex-1 basis-56">
+                  <p className="break-words font-medium">{cert.name}</p>
+                  <p className="text-small text-ash">
+                    {t('certMeta', {
+                      issuer: cert.issuer,
+                      date: cert.issuedOn
+                        ? format.dateTime(new Date(`${cert.issuedOn}T00:00:00Z`), {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            timeZone: 'UTC',
+                          })
+                        : String(cert.year),
+                    })}
+                  </p>
+                  {cert.photo?.url ? (
+                    <a
+                      href={cert.photo.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-small text-clay underline"
+                    >
+                      {t('certPhoto')}
+                    </a>
+                  ) : null}
+                </div>
+                <Badge tone={cert.verified ? 'lacquer' : 'outline'}>
+                  {cert.verified ? t('certVerified') : t('certUnverified')}
+                </Badge>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={cert.verified ? 'secondary' : 'primary'}
+                  disabled={certBusy !== null}
+                  aria-label={t(cert.verified ? 'removeVerificationNamed' : 'markVerifiedNamed', {
+                    name: cert.name,
+                  })}
+                  onClick={() => void setVerified(index, !cert.verified)}
+                >
+                  {t(cert.verified ? 'removeVerification' : 'markVerified')}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {certResult ? (
+          <p role="alert" className="text-small text-seal">
+            {t(certResult === 'stale' ? 'certStale' : 'certFailed')}
+          </p>
+        ) : null}
+      </Card>
 
       {actions.length > 0 ? (
         <Card className="flex flex-col gap-4 p-5">

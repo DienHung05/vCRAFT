@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
 import type { MyAllocationDto, MyInvitationDto, RfqResponse } from '@vcraft/contracts';
 import { describe, expect, it, vi } from 'vitest';
@@ -47,6 +47,12 @@ const ALLOCATION: MyAllocationDto = {
   id: ID,
   version: 3,
   householdId: ID,
+  householdName: 'Gốm Minh Hải',
+  startedAt: '2099-01-01T00:00:00Z',
+  dueAt: '2100-01-01T00:00:00Z',
+  lateness: 'ON_TRACK',
+  expectedQty: 40,
+  progressPercent: 40,
   quantity: 100,
   completedQty: 40,
   status: 'IN_PROGRESS',
@@ -121,6 +127,10 @@ describe('QuotationInvitations', () => {
 });
 
 describe('Decline in the contribution workspace', () => {
+  /** RFQ stage stepper (FR-RFQ-12): every household RFQ screen shows the shared stage model. */
+  const stepper = () =>
+    within(screen.getByRole('navigation', { name: 'Tiến trình của yêu cầu báo giá' }));
+  const currentStage = () => stepper().getByRole('listitem', { current: 'step' }).textContent;
   const workspace = (overrides: object) =>
     asClient({
       getRequest: vi.fn().mockResolvedValue(REQUEST),
@@ -141,7 +151,9 @@ describe('Decline in the contribution workspace', () => {
         client={workspace({ declineInvitation, getRequest })}
       />,
     );
-    fireEvent.click(await screen.findByRole('button', { name: 'Từ chối lời mời' }));
+    const decline = await screen.findByRole('button', { name: 'Từ chối lời mời' });
+    expect(currentStage()).toContain('Đã gửi');
+    fireEvent.click(decline);
     expect(declineInvitation).not.toHaveBeenCalled();
     confirmDialog('Từ chối lời mời');
     await waitFor(() => expect(declineInvitation).toHaveBeenCalledWith(ID));

@@ -47,7 +47,32 @@ Tất cả lấy từ Supabase Dashboard (đường dẫn trong ngoặc theo `.e
 | `FIELD_ENCRYPTION_KEYS` | API, worker | Sinh mới: `v1:` + `openssl rand -base64 32`. **Giống nhau ở cả hai service**; giữ bản sao ở nơi an toàn, mất khóa là mất dữ liệu đã mã hóa. Thiếu hoặc sai định dạng thì API và worker không khởi động. Xoay khóa: đặt khóa mới lên đầu (`v2:<khóa mới>,v1:<khóa cũ>`), redeploy cả hai service, chạy `pnpm db:rotate-field-keys` (cần cùng `DB_*` và `FIELD_ENCRYPTION_KEYS`), rồi mới bỏ `v1` khỏi danh sách (xem ADR-18) |
 | `NEXT_PUBLIC_PRIVACY_EMAIL` | Web (Vercel) | Optional. Mailbox that receives personal-data requests the account page cannot handle (an order in progress blocks self-service deletion). Shown as a mailto link in the privacy policy (NFR-SEC-07); empty shows the generic Management Board wording. Build-time: Redeploy after changing it |
 | `SMTP_URL`, `MAIL_FROM` | worker | Nhà cung cấp SMTP, vd. `smtps://user:pass@smtp.example.com:465`; `MAIL_FROM="vCraft <no-reply@<domain>>"` |
+| `NEWS_IMPORT_FEEDS` | worker | Optional (GH#314). RSS or Atom feeds of newspapers and portals for the automatic news import, separated by newline or `;`, each `https://feed-url` or `Publisher|https://feed-url` (the publisher is the "Nguồn" line shown to visitors; the host is used when left out). **Empty or no valid https feed turns the import off.** The job `news.import` runs on the scheduler queue; each run logs fetched / imported / skipped (with reasons) and a bad feed never stops the worker |
+| `NEWS_IMPORT_VILLAGES`, `NEWS_IMPORT_CRAFTS` | worker | Optional, comma-separated. A feed story is kept only if its headline or snippet names one village and one craft word (accents and case ignored). Defaults: `Bát Tràng`; `gốm,sứ,gốm sứ,ceramic,pottery` |
+| `NEWS_IMPORT_PUBLISH` | worker | Optional, default `true`. `false` saves imported stories as drafts for review in `/admin/tin-tuc` (filter "Origin") |
+| `NEWS_IMPORT_EVERY_MINUTES`, `NEWS_IMPORT_MAX_PER_RUN` | worker | Optional, defaults `360` and `5` |
+| `NEWS_FILLER_MIN_PUBLISHED` | worker | Optional, default `6`. When fewer stories than this went live in the last 30 days, and `OPENAI_API_KEY` is set, the job writes evergreen craft articles (clay, glazes, firing, care, history, visitor guide; no events, people, quotes or prices; references listed). Without an LLM key the filler is skipped and the import stores only title, link and a one-line snippet |
+| `API_RATE_LIMIT_PER_MINUTE` | API | Optional, default `600`. Requests per minute per caller across the whole API (NFR-SEC-04): a signed-in caller is counted by a hash of its bearer token, an anonymous one by IP; over it the API answers `429` problem+json (`RATE_LIMITED`) with `Retry-After`. `GET /health*` is never limited. Sign-in, sign-up and username checks keep their own stricter limits. Needs `TRUST_PROXY=true` so the IP is the visitor's, not the proxy's. Counting signed-in callers by token keeps page renders on Vercel, which share a few server IPs, from sharing one bucket; anonymous renders still share one, so raise the limit if many guests browse at once |
+| `API_RATE_LIMIT_ENABLED` | API | Optional, default `true`. `false` turns the global limiter off (for example while a load test runs) |
 | `APP_URL` | API, worker | Origin công khai của web: `https://<domain>` (không có `/` cuối). Worker dùng để sinh liên kết trong email |
+| `SEPAY_WEBHOOK_API_KEY`, `SEPAY_BANK_NAME`, `SEPAY_BANK_ACCOUNT_NUMBER`, `SEPAY_BANK_ACCOUNT_NAME` | API | Online payment, sandbox (ADR-0021, GH#205). Optional; payment is off until all four are set. The API key is a secret: the value you give SePay's bank-account webhook, sent back as `Authorization: Apikey <key>`. Account details are those of the village administration's bank account linked to SePay. **Render only** (API service), never Vercel. See "Online payment (sandbox)" below |
+| `SEPAY_BANK_CODE`, `SEPAY_BANK_BIN`, `SEPAY_QR_BASE_URL` | API | Optional. Bank short name (e.g. `MBBank`) builds the QR image URL on `qr.sepay.vn`; the six-digit NAPAS BIN builds the VietQR payload. Without them the buyer sees the bank details and payment code but no QR |
+| `PAYMENT_DEPOSIT_PERCENT`, `PAYMENT_EXPIRES_IN_HOURS`, `PAYMENTS_DEPOSIT_REQUIRED` | API | Optional. Deposit share of the order total (default `30`, whole percent 1-99); how long a pending payment waits for the money before the worker expires it (default `24`); whether production waits for a paid deposit (default: on once SePay is configured, `false` turns the gate off) |
+| `PAYMENTS_SANDBOX_GATEWAYS` | API | Optional, default off. `true` offers VNPay and MoMo, which run against their public sandboxes only. **Leave unset in production**: the owner has no VNPay or MoMo merchant contract (GH#194) |
+| `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `VNPAY_PAY_URL` | API | VNPay sandbox merchant (sandbox.vnpayment.vn). `VNPAY_HASH_SECRET` is a secret. `VNPAY_PAY_URL` defaults to the sandbox payment page. Used only when `PAYMENTS_SANDBOX_GATEWAYS=true` |
+| `MOMO_PARTNER_CODE`, `MOMO_ACCESS_KEY`, `MOMO_SECRET_KEY`, `MOMO_ENDPOINT` | API | MoMo test credentials (developers.momo.vn). `MOMO_SECRET_KEY` is a secret. `MOMO_ENDPOINT` defaults to the MoMo test create endpoint. Used only when `PAYMENTS_SANDBOX_GATEWAYS=true` |
+
+### Online payment (sandbox, ADR-0021, GH#205)
+
+The village administration's bank account receives the money; the site only reconciles it. Nothing here is a merchant contract: bank transfer and VietQR use SePay's bank-account webhook, VNPay and MoMo use their public sandboxes behind a feature flag that stays off in production.
+
+1. **SePay.** Link the administration's bank account (a test account while sandboxing) in SePay and add a webhook of type "Bank account transactions": URL `https://<domain>/api/v1/payments/webhooks/sepay` (it goes through the Vercel rewrite like every API call), authentication "API Key" with the value of `SEPAY_WEBHOOK_API_KEY`. The API answers `200 {"success": true}` for every authenticated call, including transfers it cannot match (no payment code, other account, wrong amount), so SePay does not retry them; those are only logged. A wrong or missing key gets `401`.
+2. **Payment code.** Each payment has a unique code (`VCP` plus ten characters) that the buyer types as the transfer content. Matching needs the exact code and the exact amount; a short or long transfer leaves the payment pending and shows up in the log (`payment <code>: received X, expected Y`) and in `raw_last_event` of the payment row.
+3. **Expiry.** The worker (`payment.expire-sweep`, every minute) expires pending payments after `PAYMENT_EXPIRES_IN_HOURS` and tells the buyer. A transfer that still arrives for an expired payment, with the exact amount, settles it.
+4. **Production gate.** With SePay configured (or `PAYMENTS_DEPOSIT_REQUIRED=true`) an order cannot start production until its deposit is `PAID`. Leave SePay unset and nothing changes for existing orders.
+5. **VNPay and MoMo (sandbox).** Set `PAYMENTS_SANDBOX_GATEWAYS=true` and the VNPay and MoMo variables on a sandbox environment only. IPN URLs are `https://<domain>/api/v1/payments/webhooks/vnpay` (GET) and `.../webhooks/momo` (POST); the browser returns to `.../payments/return/{vnpay,momo}`, which only redirects to the web status page (`/vi/thanh-toan/<code>`) and never marks anything paid.
+6. **Simulate transfer.** Where `APP_ENV` is not `production`, an administrator sees "Simulate transfer (sandbox)" on a pending bank-transfer payment; it applies a synthetic SePay event through the same reconciliation. Production sets `APP_ENV=production` in `vcraft-shared`, which removes the button and refuses the endpoint.
+7. **Secrets** (`SEPAY_WEBHOOK_API_KEY`, `VNPAY_HASH_SECRET`, `MOMO_SECRET_KEY`, `MOMO_ACCESS_KEY`) are set in the Render dashboard for `vcraft-api` only. The worker needs none of them. CI and tests use signed fake webhooks and never call a gateway.
 
 **CA của pooler.** Mặc định `render.yaml` đặt `DB_SSL_CA_FILE=/opt/render/project/src/infra/certs/supabase-root-2021.crt` (Render clone repo vào `/opt/render/project/src`). Nếu muốn dán PEM thay cho file: xóa `DB_SSL_CA_FILE` khỏi nhóm biến `vcraft-shared` trên Render, rồi đặt `DB_SSL_CA` ở cả hai service (chỉ đặt MỘT trong hai, nếu không API từ chối khởi động).
 
@@ -150,6 +175,21 @@ The sign-in, sign-up, password recovery and change-password forms show Turnstile
 5. Check: `/vi/dang-nhap` shows the widget; signing in works; with the widget not done, the form says to complete the check.
 6. Local or CI: Cloudflare's test pair (site key `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`) always passes.
 
+### Auth audit follow-up (GH#238, Beads vCRAFT-b2q)
+
+The web and API require new passwords to have at least 10 characters, with ASCII uppercase and lowercase letters and a digit. `supabase/config.toml` records `minimum_password_length = 10`, `password_requirements = "lower_upper_letters_digits"` and `jwt_expiry = 900`. These repository values do not update hosted Auth settings. Existing passwords remain usable for sign-in.
+
+An owner with Cloudflare, Vercel, Supabase and SMTP access must apply the hosted settings tracked in `vCRAFT-b2q.2`:
+
+1. Record sanitized current Auth settings, then update only the intended settings. Do not push the whole local config, which contains localhost URLs and disables CAPTCHA for local development.
+2. Deploy the matching Turnstile site key on Vercel before enabling server enforcement with its secret in Supabase, as described in section 6.2. Use production keys and the production hostname.
+3. Set the hosted minimum password length to 10 and require uppercase, lowercase and digits. Enable leaked-password protection if the current provider plan supports it. If unavailable, record the plan limitation and an explicit maintainer decision in `vCRAFT-b2q.2`; the client policy does not check breached-password lists.
+4. Set access-token lifetime to 900 seconds. Keep refresh-token rotation and verify that an existing session refreshes successfully.
+5. Configure Supabase custom SMTP with a verified sender and confirm delivery of verification and recovery messages. Worker SMTP configuration does not configure Supabase Auth mail.
+6. With an owner-controlled test account, verify that missing or invalid CAPTCHA tokens fail at Supabase, valid tokens permit the auth flows, weak passwords fail for sign-up and password updates, and `exp - iat` equals 900 for a fresh access token. Record only the lifetime, never the token. Check the three public auth pages in a real browser at 360 px and 1440 px.
+
+Password recovery uses the same generic UI outcome for success and quota errors, including HTTP 429. The browser still calls Supabase `/auth/v1/recover` directly, so a caller can inspect the provider status and error code. Custom SMTP reduces quota exhaustion but does not prove that the provider prevents account enumeration. Compare direct provider responses for existing and unknown owner-controlled addresses after configuration. If responses still differ, keep `vCRAFT-b2q.2` and the parent audit open for a provider mitigation or an architecture decision. UI masking alone does not satisfy that network-level requirement.
+
 ### 6.3 Admin two-factor authentication (GH#83)
 
 Every admin route of the API needs an `aal2` session, meaning the admin has passed a TOTP code. With only a password (`aal1`) the API answers `403 AUTH_MFA_REQUIRED`. Instead of the admin pages, the web shows a screen to scan a QR code on first use, or to enter the 6-digit code on later sign-ins.
@@ -170,6 +210,15 @@ The account page (`/vi/tai-khoan`) lists the last 20 sign-ins. The API records o
 - Trước giờ thi 1 giờ: mở `<URL Render>/api/v1/health` và `https://<domain>/vi`, chạy `pnpm demo:e2e:preexam` (demo README), và nhìn Render → *Metrics* xem không có restart lặp lại.
 - Supabase Free tự tạm dừng sau 7 ngày không hoạt động: vào Dashboard khôi phục nếu cần, trước ngày thi ít nhất một ngày.
 
+### 7.1 Cloudflare in front of the API host (owner-only)
+
+`vcraft-api.onrender.com` can sit behind a Cloudflare proxy that Render controls. Its Bot Fight or rate rules answer a burst of requests (a few dozen from one IP, such as an exam room behind one NAT, or the Vercel servers calling `/me` on every signed-in page) with an HTML "Just a moment..." challenge, `429` or `503`, even for `/api/v1/health`. Those answers are not RFC 9457 and the web app cannot solve a challenge. The app now retries once and shows a retryable "session unavailable" state instead of an HTTP 500, but the edge rule is the real cause and only the account owner can change it:
+
+- In the Cloudflare dashboard for the API host, relax or skip Bot Fight Mode, Super Bot Fight Mode and any rate-limiting rule for `/api/v1/*` (a WAF custom rule with action *Skip* on `starts_with(http.request.uri.path, "/api/v1/")` is enough), or rely on the application limiter above, which answers in problem+json with `Retry-After`.
+- Challenge pages must never be served to the Vercel server-side fetches (`API_INTERNAL_URL`): they run without a browser and cannot pass a challenge. If the host is not under your control, put the API on a domain you own behind your own Cloudflare zone and add the skip rule there.
+- Check: `for i in $(seq 60); do curl -s -o /dev/null -w '%{http_code} %{content_type}
+' https://<URL Render>/api/v1/health; done` should print only `200 application/json`.
+
 ## 8. Kiểm tra sau triển khai
 
 ```bash
@@ -179,7 +228,9 @@ curl -sI https://<domain>/q/DF6P3WZE                          # 308, Location: /
 curl -sI https://<domain>/vi | grep -i strict-transport       # có HSTS
 ```
 
-Kiểm tay một lần: đăng nhập vai hộ sản xuất và tải lên một ảnh ~9 MB (gần giới hạn 10 MB) qua Studio, hoặc gọi endpoint media của API qua `https://<domain>/api/v1/...` nếu chưa có màn hình, để chắc rewrite của Vercel không chặn body lớn (ADR-16); nếu bị chặn, xem phương án trong ADR-16.
+Kiểm tay một lần: đăng nhập vai hộ sản xuất và tải lên một ảnh ~14 MB (gần giới hạn 15 MB) qua Studio, hoặc gọi endpoint media của API qua `https://<domain>/api/v1/...` nếu chưa có màn hình, để chắc rewrite của Vercel không chặn body lớn (ADR-16); nếu bị chặn, xem phương án trong ADR-16.
+
+**Media upload limit (GH#252).** The API accepts images up to 15 MiB (`MEDIA_MAX_BYTES`) and HEIC/HEIF originals. The owner must raise the production Storage limit to 15 MiB: Supabase Dashboard → Storage → Settings (global file size limit) and, for each of the buckets `vcraft-media` and `vcraft-private`, Edit bucket → *Restrict file upload size* = 15 MB; also add `image/heic` and `image/heif` to the allowed MIME types of `vcraft-private`. `supabase/migrations/20261108151000_media_limits_15mib.sql` does the same for a local or freshly linked project. Until then, files between 10 and 15 MiB are accepted by the API but rejected by Storage.
 
 Mở `https://<domain>/vi/tin-tuc`: phải có bài (API gọi được từ server Next). Quét thử QR bằng điện thoại ở mạng 4G.
 

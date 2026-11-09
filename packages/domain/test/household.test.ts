@@ -7,10 +7,14 @@ import {
   householdStructuralNext,
   householdTransition,
   isHouseholdPublic,
+  MAX_PRODUCT_TAGS,
+  MIN_PRICE_SUGGESTION_SAMPLES,
+  normalizeTags,
   PRODUCT_STATUSES,
   type ProductContext,
   productTransition,
   publicProductAvailability,
+  suggestProductPrice,
 } from '../src';
 
 const EXPECTED: Record<HouseholdStatus, Partial<Record<HouseholdEvent, HouseholdStatus>>> = {
@@ -98,6 +102,100 @@ describe('Product publication', () => {
   });
 });
 
+describe('Product sold state', () => {
+  const owner: ProductContext = {
+    actorRole: 'HOUSEHOLD',
+    isOwner: true,
+    householdStatus: 'APPROVED',
+    kind: 'OBJECT',
+  };
+
+  it('a one-of-a-kind product goes PUBLISHED to SOLD', () => {
+    expect(productTransition('PUBLISHED', 'MARK_SOLD', owner)).toEqual({ ok: true, value: 'SOLD' });
+  });
+
+  it('a batch can never be marked sold', () => {
+    const r = productTransition('PUBLISHED', 'MARK_SOLD', { ...owner, kind: 'BATCH' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('NOT_ONE_OF_A_KIND');
+    const unknown = productTransition('PUBLISHED', 'MARK_SOLD', { ...owner, kind: undefined });
+    expect(unknown.ok).toBe(false);
+  });
+
+  it('only the owning representative marks a product sold', () => {
+    expect(productTransition('PUBLISHED', 'MARK_SOLD', { ...owner, isOwner: false }).ok).toBe(
+      false,
+    );
+    expect(productTransition('PUBLISHED', 'MARK_SOLD', { ...owner, actorRole: 'ADMIN' }).ok).toBe(
+      false,
+    );
+  });
+
+  it('only a published product can be marked sold', () => {
+    for (const from of ['DRAFT', 'WITHDRAWN', 'SOLD'] as const) {
+      const r = productTransition(from, 'MARK_SOLD', owner);
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.error.code).toBe('INVALID_TRANSITION');
+    }
+  });
+
+  it('SOLD goes back on sale (undo) for an approved household only', () => {
+    expect(productTransition('SOLD', 'BACK_ON_SALE', owner)).toEqual({
+      ok: true,
+      value: 'PUBLISHED',
+    });
+    const suspended = productTransition('SOLD', 'BACK_ON_SALE', {
+      ...owner,
+      householdStatus: 'SUSPENDED',
+    });
+    expect(suspended.ok).toBe(false);
+    expect(productTransition('SOLD', 'BACK_ON_SALE', { ...owner, isOwner: false }).ok).toBe(false);
+  });
+
+  it('a sold product can still be withdrawn (archived) with a reason', () => {
+    expect(productTransition('SOLD', 'WITHDRAW', owner).ok).toBe(false);
+    expect(productTransition('SOLD', 'WITHDRAW', { ...owner, reason: 'Gone' })).toEqual({
+      ok: true,
+      value: 'WITHDRAWN',
+    });
+  });
+});
+
+describe('normalizeTags', () => {
+  it('trims, collapses spaces, keeps diacritics and drops case-insensitive duplicates', () => {
+    expect(normalizeTags(['  Gốm   Bát Tràng ', 'gốm bát tràng', 'GỐM', 'gom', ''])).toEqual([
+      'Gốm Bát Tràng',
+      'GỐM',
+      'gom',
+    ]);
+  });
+
+  it('drops tags longer than 30 characters and keeps at most 10', () => {
+    expect(normalizeTags(['x'.repeat(31), 'ok'])).toEqual(['ok']);
+    const many = Array.from({ length: 15 }, (_, i) => `tag${i}`);
+    expect(normalizeTags(many)).toHaveLength(MAX_PRODUCT_TAGS);
+  });
+});
+
+describe('suggestProductPrice', () => {
+  it('is null below the minimum number of comparable prices', () => {
+    expect(MIN_PRICE_SUGGESTION_SAMPLES).toBe(3);
+    expect(suggestProductPrice([100_000, 200_000])).toBeNull();
+    expect(suggestProductPrice([0, 0, 100_000, 200_000])).toBeNull();
+  });
+
+  it('is the median of the listed prices with the count it is based on', () => {
+    expect(suggestProductPrice([300_000, 100_000, 200_000])).toEqual({
+      medianVnd: 200_000,
+      count: 3,
+    });
+    expect(suggestProductPrice([100_000, 400_000, 200_000, 300_001])).toEqual({
+      medianVnd: 250_001,
+      count: 4,
+    });
+  });
+});
+
 describe('publicProductAvailability', () => {
   it.each([
     ['APPROVED', 'PUBLISHED', 'VISIBLE'],
@@ -106,17 +204,20 @@ describe('publicProductAvailability', () => {
     ['SUSPENDED', 'PUBLISHED', 'UNAVAILABLE'],
     ['SUSPENDED', 'WITHDRAWN', 'UNAVAILABLE'],
     ['SUSPENDED', 'DRAFT', 'MISSING'],
+    ['APPROVED', 'SOLD', 'VISIBLE'],
+    ['SUSPENDED', 'SOLD', 'UNAVAILABLE'],
+    ['PENDING_REVIEW', 'SOLD', 'MISSING'],
     ['PENDING_REVIEW', 'PUBLISHED', 'MISSING'],
     ['REJECTED', 'WITHDRAWN', 'MISSING'],
   ] as const)('hộ %s + sản phẩm %s ⇒ %s', (household, product, expected) => {
     expect(publicProductAvailability(household, product)).toBe(expected);
   });
 
-  it('chỉ VISIBLE khi hộ APPROVED và sản phẩm PUBLISHED', () => {
+  it('chỉ VISIBLE khi hộ APPROVED và sản phẩm PUBLISHED hoặc SOLD', () => {
     for (const h of HOUSEHOLD_STATUSES) {
       for (const p of PRODUCT_STATUSES) {
         const visible = publicProductAvailability(h, p) === 'VISIBLE';
-        expect(visible).toBe(h === 'APPROVED' && p === 'PUBLISHED');
+        expect(visible).toBe(h === 'APPROVED' && (p === 'PUBLISHED' || p === 'SOLD'));
       }
     }
   });

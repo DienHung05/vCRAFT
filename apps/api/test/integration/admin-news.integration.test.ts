@@ -1,4 +1,10 @@
-import { News, Notification, notifyDueImportantNews, OutboxEvent } from '@vcraft/database';
+import {
+  AuditLog,
+  News,
+  Notification,
+  notifyDueImportantNews,
+  OutboxEvent,
+} from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
@@ -126,6 +132,95 @@ describe('Admin news', () => {
       body: body({ slug: 'village' }),
     });
     expect(reserved.status).toBe(422);
+  });
+
+  it('stores the source of a story, shows it publicly and keeps the origin admin-only (GH#314)', async () => {
+    const source = {
+      sourceName: 'Hà Nội Mới',
+      sourceUrl: 'https://hanoimoi.vn/bai-viet-goc',
+      sourcePublishedAt: '2026-08-29T05:00:00.000Z',
+    };
+    const created = await create({ title: 'Tin có nguồn', ...source });
+    expect(created).toMatchObject({ ...source, origin: 'MANUAL' });
+
+    const detail = await t.request({ method: 'GET', url: `/news/${created.slug}` });
+    expect(detail.body).toMatchObject(source);
+    const list = await t.request({ method: 'GET', url: '/news?limit=50' });
+    const card = list.body.data.find((n: { slug: string }) => n.slug === created.slug);
+    expect(card).toMatchObject(source);
+    // The origin is an admin-only field: no public DTO carries it.
+    expect(JSON.stringify(detail.body)).not.toMatch(/origin|IMPORTED|GENERATED/);
+    expect(JSON.stringify(list.body)).not.toMatch(/origin|IMPORTED|GENERATED/);
+
+    const put = (version: number, overrides: object) =>
+      t.request({
+        method: 'PUT',
+        url: `/admin/news/${created.id}`,
+        auth: admin.auth,
+        headers: { 'if-match': `"${version}"` },
+        body: body({ title: 'Tin có nguồn', ...overrides }),
+      });
+    // Leaving the source out keeps it; null clears it, and clearing the publisher clears the link too.
+    const kept = await put(created.version, {});
+    expect(kept.body).toMatchObject(source);
+    const cleared = await put(kept.body.version, { sourceName: null });
+    expect(cleared.body).toMatchObject({ sourceName: null, sourceUrl: null });
+    const clearedDate = await put(cleared.body.version, { sourcePublishedAt: null });
+    expect(clearedDate.body.sourcePublishedAt).toBeNull();
+  });
+
+  it('rejects a source link that is not https or has no publisher', async () => {
+    for (const overrides of [
+      { sourceName: 'Báo', sourceUrl: 'http://insecure.example/a' },
+      { sourceName: 'Báo', sourceUrl: 'javascript:alert(1)' },
+      { sourceUrl: 'https://example.vn/a' },
+      { sourceName: 'x'.repeat(121) },
+    ]) {
+      const res = await t.request({
+        method: 'POST',
+        url: '/admin/news',
+        auth: admin.auth,
+        body: body(overrides),
+      });
+      expect([400, 422], JSON.stringify(overrides)).toContain(res.status);
+    }
+  });
+
+  it('filters the admin list by origin', async () => {
+    const em = db.orm.em.fork();
+    const imported = em.create(News, {
+      slug: 'tin-nhap-tu-dong',
+      title: 'Tin nhập tự động',
+      summary: 'Tóm tắt',
+      body: 'Nội dung',
+      category: 'GENERAL',
+      status: 'PUBLISHED',
+      publishedAt: new Date(Date.now() - 60_000),
+      origin: 'IMPORTED',
+      sourceName: 'Báo A',
+      sourceUrl: 'https://baoa.vn/x',
+    });
+    await em.flush();
+    const only = await t.request({
+      method: 'GET',
+      url: '/admin/news?origin=IMPORTED&limit=50',
+      auth: admin.auth,
+    });
+    expect(only.status).toBe(200);
+    expect(only.body.data.map((n: { id: string }) => n.id)).toContain(imported.id);
+    expect(only.body.data.every((n: { origin: string }) => n.origin === 'IMPORTED')).toBe(true);
+    const manual = await t.request({
+      method: 'GET',
+      url: '/admin/news?origin=MANUAL&limit=50',
+      auth: admin.auth,
+    });
+    expect(manual.body.data.map((n: { id: string }) => n.id)).not.toContain(imported.id);
+    const bad = await t.request({
+      method: 'GET',
+      url: '/admin/news?origin=OTHER',
+      auth: admin.auth,
+    });
+    expect(bad.status).toBe(422);
   });
 
   it('keeps drafts and scheduled items off the public site until their time', async () => {
@@ -269,12 +364,43 @@ describe('Admin news', () => {
     ]);
     expect(entries[0]).toMatchObject({ actorId: admin.id, after: null });
     expect(entries[0].before.title).toBe('Audited 2');
+    // vCRAFT-8my.5: the deleted news keeps its title from the delete event's before snapshot.
+    expect(entries[0].targetLabel).toBe('Audited 2');
     const gone = await t.request({
       method: 'GET',
       url: `/admin/news/${item.id}`,
       auth: admin.auth,
     });
     expect(gone.status).toBe(404);
+  });
+
+  it('audits a legacy entry without a snapshot label as null while the id stays', async () => {
+    const em = db.orm.em.fork();
+    const legacyId = '00000000-0000-4000-8000-0000000000e5';
+    em.create(AuditLog, {
+      actorId: admin.id,
+      action: 'news.delete',
+      entity: 'news',
+      entityId: legacyId,
+      before: null,
+      after: null,
+    });
+    await em.flush();
+    const res = await t
+      .request({
+        method: 'GET',
+        url: `/admin/audit-log?limit=100&cursor=${Buffer.from(
+          // A second ahead, so an entry written in the same millisecond is still before the cursor.
+          JSON.stringify({ t: new Date(Date.now() + 1000).toISOString(), id: legacyId }),
+        ).toString('base64url')}`,
+        auth: admin.auth,
+      })
+      .then((page) =>
+        page.body.data.filter((entry: { entityId: string }) => entry.entityId === legacyId),
+      );
+    const row = res[0];
+    expect(row).toMatchObject({ entity: 'news', targetLabel: null });
+    expect(row.entityId).toBe(legacyId);
   });
 
   it('refuses a cover the administrator does not own', async () => {

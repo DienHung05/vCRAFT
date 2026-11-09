@@ -6,7 +6,7 @@ import { stageAt, stageProgress, stageState } from './motion-math';
 import { useRichMotion } from './use-motion';
 
 /** Scroll distance per stage while the section is pinned, as a share of the viewport height. */
-const STEP_VH = 0.75;
+const STEP_VH = 0.35;
 
 type JumpTo = (index: number) => void;
 
@@ -48,18 +48,12 @@ export function DayStory({
     let cleanup: (() => void) | undefined;
     let cancelled = false;
     void (async () => {
-      const [{ gsap }, { ScrollTrigger }, { default: Lenis }] = await Promise.all([
+      const [{ gsap }, { ScrollTrigger }] = await Promise.all([
         import('gsap'),
         import('gsap/ScrollTrigger'),
-        import('lenis'),
       ]);
       if (cancelled) return;
       gsap.registerPlugin(ScrollTrigger);
-      const lenis = new Lenis({ lerp: 0.12 });
-      const raf = (time: number) => lenis.raf(time * 1000);
-      lenis.on('scroll', ScrollTrigger.update);
-      gsap.ticker.add(raf);
-      gsap.ticker.lagSmoothing(0);
       el.dataset.dayStory = 'stage';
       const distance = () => Math.round(window.innerHeight * STEP_VH * (count - 1));
       const trigger = ScrollTrigger.create({
@@ -78,14 +72,15 @@ export function DayStory({
         onUpdate: (self) => setActive(stageAt(self.progress, count)),
       });
       jump.current = (index) =>
-        lenis.scrollTo(trigger.start + stageProgress(index, count) * (trigger.end - trigger.start));
+        window.scrollTo({
+          top: trigger.start + stageProgress(index, count) * (trigger.end - trigger.start),
+          behavior: 'smooth',
+        });
       // The pinned layout differs from the strip, so measure again once it applies.
       ScrollTrigger.refresh();
       cleanup = () => {
         jump.current = null;
         trigger.kill();
-        gsap.ticker.remove(raf);
-        lenis.destroy();
         delete el.dataset.dayStory;
       };
     })();

@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Từ điển vi/en và cấu hình locale/pathnames dùng chung.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./routing": "./src/routing.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

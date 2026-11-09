@@ -25,13 +25,19 @@ export async function generateImageMetadata({ params }: Params) {
 export default async function Image({ params }: Params) {
   const locale = await resolveLocale(params);
   const { slug } = await params;
-  const [t, result] = await Promise.all([
+  const [t, meta, result] = await Promise.all([
     getTranslations({ locale, namespace: 'nav' }),
+    getTranslations({ locale, namespace: 'meta' }),
     fetchNewsArticle(slug),
   ]);
   return renderOgCard(
     result.status === 'ok'
-      ? { eyebrow: t('news'), title: result.article.title, subtitle: result.article.summary }
-      : { eyebrow: t('news'), title: 'vCraft' },
+      ? {
+          eyebrow: t('news'),
+          title: result.article.title,
+          subtitle: result.article.summary,
+          slogan: meta('slogan'),
+        }
+      : { eyebrow: t('news'), title: 'vCraft', slogan: meta('slogan') },
   );
 }

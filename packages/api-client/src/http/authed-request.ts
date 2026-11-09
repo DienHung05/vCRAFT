@@ -1,4 +1,5 @@
 import { type ErrorCode, formatVersionTag, ProblemDetailsSchema } from '@vcraft/contracts';
+import { fallbackErrorCode } from './fallback-error-code';
 
 export class ApiError extends Error {
   constructor(
@@ -47,11 +48,14 @@ export function createAuthedRequest(options: AuthedClientOptions) {
     try {
       data = await response.json();
     } catch {
-      throw new ApiError('INTERNAL_ERROR', response.status);
+      throw new ApiError(fallbackErrorCode(response.status), response.status);
     }
     if (!response.ok) {
       const problem = ProblemDetailsSchema.safeParse(data);
-      throw new ApiError(problem.success ? problem.data.code : 'INTERNAL_ERROR', response.status);
+      throw new ApiError(
+        problem.success ? problem.data.code : fallbackErrorCode(response.status),
+        response.status,
+      );
     }
     return schema.parse(data);
   };

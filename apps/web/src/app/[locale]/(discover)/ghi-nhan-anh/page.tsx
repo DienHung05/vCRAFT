@@ -1,26 +1,51 @@
+import { NewsPhotoCreditsResponseSchema } from '@vcraft/contracts';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { apiBaseUrl } from '@/lib/api/internal-url';
 import { PHOTO_CREDITS } from '@/lib/demo/photo-credits';
 import { resolveLocale } from '@/lib/locale';
+import { pageMetadata } from '@/lib/seo/page-metadata';
 
 export async function generateMetadata({
   params,
 }: PageProps<'/[locale]/ghi-nhan-anh'>): Promise<Metadata> {
-  await resolveLocale(params);
+  const locale = await resolveLocale(params);
   const t = await getTranslations('credits');
-  return { title: t('title'), description: t('lead') };
+  return pageMetadata({ locale, href: '/ghi-nhan-anh', title: t('title'), description: t('lead') });
 }
 
 /** Nhiều ảnh được cắt khác tỉ lệ từ cùng một file nguồn: liệt kê mỗi file một lần. */
 const UNIQUE_CREDITS = [...new Map(PHOTO_CREDITS.map((c) => [c.title, c])).values()];
 
+/** Credits of photos stored through the media pipeline, such as covers of imported news (GH#314). */
+async function fetchStoredCredits() {
+  try {
+    const res = await fetch(`${apiBaseUrl()}/media/credits`, {
+      headers: { accept: 'application/json' },
+      next: { revalidate: 300 },
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) return [];
+    const parsed = NewsPhotoCreditsResponseSchema.safeParse(await res.json());
+    return parsed.success ? parsed.data.data : [];
+  } catch {
+    return [];
+  }
+}
+
 /** Ghi nhận tác giả và giấy phép của ảnh minh hoạ (CC BY / CC BY-SA yêu cầu ghi nguồn). */
 export default async function ImageCreditsPage({ params }: PageProps<'/[locale]/ghi-nhan-anh'>) {
   await resolveLocale(params);
   const t = await getTranslations('credits');
+  const stored = await fetchStoredCredits();
+  const credits = [
+    ...new Map(
+      [...UNIQUE_CREDITS, ...stored.map((c) => ({ ...c, id: c.title }))].map((c) => [c.title, c]),
+    ).values(),
+  ];
 
   return (
-    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section">
+    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section-tail">
       <header className="flex max-w-prose-vn flex-col gap-3">
         <h1 className="text-h1">{t('title')}</h1>
         <p className="text-ash">{t('lead')}</p>
@@ -45,7 +70,7 @@ export default async function ImageCreditsPage({ params }: PageProps<'/[locale]/
             </tr>
           </thead>
           <tbody>
-            {UNIQUE_CREDITS.map((c) => (
+            {credits.map((c) => (
               <tr key={c.id} className="border-ink/8 border-b align-top">
                 <th scope="row" className="py-3 pr-4 font-normal">
                   <span className="break-words">{c.title.replace(/^File:/, '')}</span>

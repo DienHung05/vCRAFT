@@ -25,6 +25,60 @@ const METRICS = [
   'qrScans30Days',
 ] as const;
 
+/** The dashboard's QR-scan trend: 30 Vietnam calendar dates, oldest first (FR-ADM-06, vCRAFT-8my.4). */
+function DashboardTrendCard({ trend }: { trend: NonNullable<AdminDashboardDto['trend']> }) {
+  const t = useTranslations('admin.dashboard');
+  const format = useFormatter();
+  const peak = Math.max(1, ...trend.map((point) => point.count));
+  return (
+    <Card className="flex flex-col gap-4 p-4 md:p-6" aria-labelledby="dashboard-trend-title">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="dashboard-trend-title" className="font-display text-h3">
+          {t('trendTitle')}
+        </h2>
+        <p className="text-small text-ash">{t('trendPeriod')}</p>
+      </div>
+      {trend.every((point) => point.count === 0) ? (
+        <p className="text-small text-ash">{t('trendEmpty')}</p>
+      ) : (
+        <>
+          <div role="img" aria-label={t('trendChart')} className="flex h-24 items-end gap-0.5">
+            {trend.map((point) => (
+              <div
+                key={point.date}
+                title={`${point.date}: ${point.count}`}
+                className="min-h-px flex-1 rounded-t-sm bg-seal"
+                style={{ height: `${Math.max(2, (point.count / peak) * 100)}%` }}
+              />
+            ))}
+          </div>
+          {/* The table is what screen readers get; the bars carry the same numbers as tooltips.
+              It sits in a sr-only wrapper so its wide content cannot stretch narrow screens. */}
+          <div className="sr-only">
+            <table>
+              <caption>{t('trendTableCaption')}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">{t('trendDate')}</th>
+                  <th scope="col">{t('trendCount')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trend.map((point) => (
+                  <tr key={point.date}>
+                    <th scope="row">{point.date}</th>
+                    <td>{format.number(point.count)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </Card>
+  );
+}
+
 /** Tổng quan của Ban quản lý (FR-ADM-06): số liệu tự cập nhật, không cần tải lại trang. */
 export function AdminDashboard({ client: provided }: { client?: AdminClient }) {
   const t = useTranslations('admin.dashboard');
@@ -85,6 +139,7 @@ export function AdminDashboard({ client: provided }: { client?: AdminClient }) {
             </Link>
           ) : null}
           {client ? <AssistantStatsCard client={client} /> : null}
+          {data.trend ? <DashboardTrendCard trend={data.trend} /> : null}
         </>
       ) : null}
     </div>

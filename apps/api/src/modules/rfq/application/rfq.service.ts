@@ -12,25 +12,30 @@ import type {
   CreateDirectQuotationRequest,
   CreateRfqRequest,
   DirectQuotationDto,
+  HouseholdRatingDto,
   ListRfqsQuery,
   MyAllocationDto,
   MyInvitationDto,
   PriceHintDto,
+  RateHouseholdRequest,
   ReportProgressRequest,
   RfqAttachmentDto,
   RfqListDto,
   RfqResponse,
 } from '@vcraft/contracts';
+import { compactPhone } from '@vcraft/contracts';
 import {
   AppUser,
   AuditLog,
   ContributionOffer as ContributionOfferEntity,
   CooperativeQuotation as CooperativeQuotationEntity,
   Household,
+  HouseholdRating,
   MediaAsset,
   MediaLink,
   OrderAllocation as OrderAllocationEntity,
   OutboxEvent,
+  Payment,
   Product,
   QuotationRequest,
 } from '@vcraft/database';
@@ -42,8 +47,12 @@ import {
   checkProgressReport,
   hasAcceptWindowElapsed,
   isCompletionDateValid,
+  isRatingEditable,
+  paymentTransition,
   projectBuyerQuotation,
+  RATING_EDIT_WINDOW_DAYS,
   RFQ_ACCEPT_GRACE_MS,
+  ratingEditableUntil,
   selectMatchingHouseholds,
   suggestPriceRange,
   transition,
@@ -51,8 +60,12 @@ import {
 import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
+import { ratingSummaries } from '../../households/household-rating-stats';
 import { MediaService } from '../../media/application/media.service';
+import { paymentsConfig } from '../../payments/payments.config';
 import { ConsentService } from '../../privacy/application/consent.service';
+import { allocationTimeline } from './allocation-timeline';
+import { assertWithinCapacity, declaredCapacity } from './household-capacity';
 import { QuotationNotifier } from './quotation-notifier';
 
 /** All plan/input writes lock the request first, so changes cannot race with composition. */
@@ -65,19 +78,92 @@ export class RfqService {
     private readonly consents: ConsentService,
   ) {}
 
+  /**
+   * A buyer creates a request for themselves. FR-ORD-10 (GH#248 s5-10): an administrator creates one for an
+   * off-platform customer and says who the customer is in `onBehalfOf`. The administrator is then the buyer of
+   * record and the coordinator, so the request is always coordinated and already claimed by them.
+   */
   async createRequest(actor: Actor, input: CreateRfqRequest): Promise<RfqResponse> {
     if (actor.locked) throw forbidden();
+    const { onBehalfOf, ...fields } = input;
+    const forCustomer = actor.role === 'ADMIN';
+    if (forCustomer && !onBehalfOf)
+      throw new AppError('VALIDATION_FAILED', 'onBehalfOf is required for an administrator');
+    if (!forCustomer && onBehalfOf)
+      throw new AppError('VALIDATION_FAILED', 'onBehalfOf is only for administrators');
     // The request carries a delivery address, so it is only stored after the buyer consented (NFR-SEC-07).
-    await this.consents.require(actor.id, 'RFQ_CONTACT');
+    // A customer on the phone has no account to consent from; the administrator answers for the data.
+    if (!forCustomer) await this.consents.require(actor.id, 'RFQ_CONTACT');
     return this.orm.em.fork().transactional(async (em) => {
       await this.checkHouseholds(em, input.invitedHouseholdIds);
       const request = em.create(QuotationRequest, {
         buyer: em.getReference(AppUser, actor.id),
-        ...requestFields(input),
+        ...requestFields(fields),
+        ...(forCustomer && onBehalfOf
+          ? {
+              coordinationOptIn: true,
+              coordinatorId: actor.id,
+              onBehalfName: onBehalfOf.name,
+              onBehalfPhone: compactPhone(onBehalfOf.phone),
+              onBehalfEmail: onBehalfOf.email ?? null,
+            }
+          : {}),
       });
+      if (forCustomer)
+        this.audit(em, actor, 'rfq.create', 'rfq', request.id, null, {
+          status: request.status,
+          onBehalfOfCustomer: true,
+          coordinatorId: request.coordinatorId,
+        });
       await em.flush();
       await this.setAttachments(em, actor, request, input.attachments);
-      return toRfqResponse(request, await this.attachmentsOf(em, request.id));
+      return withCustomer(
+        toRfqResponse(request, await this.attachmentsOf(em, request.id)),
+        request,
+        actor,
+      );
+    });
+  }
+
+  /**
+   * FR-RFQ-13 (vCRAFT-bda.5): the buyer copies an owned request into a fresh draft of their own
+   * (GH#248 s4-12). Only editable content is copied: title, category, description, budget, special
+   * requirements, quantity, unit, destination, delivery target and the invitation/coordination
+   * preferences. Everything that belongs to the workflow stays behind — status, quotations, offers,
+   * allocations, notices, audit trail, decline marks, the cancel reason and the flag timestamps —
+   * so the copy is a brand-new request the buyer reviews before submitting. The dates are re-armed
+   * to fresh draft defaults because the old ones have often expired, which would block the first
+   * submit (T1). Attachments must be selected again on the new draft; file links are not copied.
+   */
+  async duplicateRequest(actor: Actor, id: string): Promise<RfqResponse> {
+    if (actor.locked) throw forbidden();
+    // The copy carries the same delivery address, so the consent rule applies again (NFR-SEC-07).
+    await this.consents.require(actor.id, 'RFQ_CONTACT');
+    return this.orm.em.fork().transactional(async (em) => {
+      const original = await this.request(em, id);
+      if (original.buyer.id !== actor.id) throw notFound();
+      const now = new Date();
+      const copy = em.create(QuotationRequest, {
+        buyer: em.getReference(AppUser, actor.id),
+        title: original.title,
+        category: original.category,
+        design: original.design,
+        customRequirements: original.customRequirements,
+        quantity: original.quantity,
+        unit: original.unit,
+        destination: original.destination,
+        budgetMinVnd: original.budgetMinVnd,
+        budgetMaxVnd: original.budgetMaxVnd,
+        // Fresh defaults (the same shape the web form proposes), so the draft can be reviewed,
+        // edited and submitted later even when the original's dates have expired.
+        biddingClosesAt: new Date(now.getTime() + 7 * 86_400_000),
+        requiredBy: new Date(now.getTime() + 30 * 86_400_000),
+        invitedHouseholdIds: [...(original.invitedHouseholdIds ?? [])],
+        coordinationOptIn: original.coordinationOptIn,
+      });
+      await em.flush();
+      // Attachments must be selected again so a new draft cannot revive expired or removed files.
+      return toRfqResponse(copy, []);
     });
   }
 
@@ -158,6 +244,9 @@ export class RfqService {
     const request = await this.request(em, id);
     await this.canRead(em, actor, request);
     const response = toRfqResponse(request, await this.attachmentsOf(em, request.id));
+    response.hasBids = (await em.count(CooperativeQuotationEntity, { request })) > 0;
+    withCustomer(response, request, actor);
+    await this.addOwnRatings(em, actor, request, response);
     if (actor.role === 'HOUSEHOLD') {
       const household = await this.ownHousehold(em, actor, false);
       response.invitedHouseholdIds = [household.id];
@@ -192,6 +281,15 @@ export class RfqService {
     ))
       if (ownsDirectQuotation(quotation, household.id) && !direct.has(quotation.request.id))
         direct.set(quotation.request.id, quotation);
+    const withBids = new Set(
+      (
+        await em.find(
+          CooperativeQuotationEntity,
+          { request: { $in: requests.map((request) => request.id) } },
+          { fields: ['request'] },
+        )
+      ).map((quotation) => quotation.request.id),
+    );
     const isOpen = (request: QuotationRequest) =>
       (request.status === 'SENT' || request.status === 'BIDDING') && !requestExpired(request);
     return requests
@@ -204,7 +302,11 @@ export class RfqService {
         const offer = byRequest.get(request.id);
         const quotation = direct.get(request.id);
         return {
-          request: { ...toRfqResponse(request), invitedHouseholdIds: [household.id] },
+          request: {
+            ...toRfqResponse(request),
+            invitedHouseholdIds: [household.id],
+            hasBids: withBids.has(request.id),
+          },
           contribution: offer ? toContributionDto(offer) : null,
           declined: (request.declinedHouseholdIds ?? []).includes(household.id),
           directQuotation: quotation ? toDirectQuotationDto(quotation) : null,
@@ -374,11 +476,14 @@ export class RfqService {
       { request },
       { populate: ['household'], orderBy: { createdAt: 'asc' } },
     );
+    const response = withCustomer(toRfqResponse(request), request, actor);
+    await this.addOwnRatings(em, actor, request, response);
     return {
-      request: toRfqResponse(request),
+      request: response,
       contributions: offers.map((offer) => ({
         ...toContributionDto(offer),
         householdName: offer.household.name,
+        householdCapacity: declaredCapacity(offer.household, request.category) ?? null,
       })),
     };
   }
@@ -395,6 +500,7 @@ export class RfqService {
       if (!request.invitedHouseholdIds.includes(household.id)) throw notFound();
       if (household.status !== 'APPROVED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
       this.completion(input.completionDate, request);
+      assertWithinCapacity(household, request.category, input.maxQuantity);
       request.declinedHouseholdIds = (request.declinedHouseholdIds ?? []).filter(
         (id) => id !== household.id,
       );
@@ -509,7 +615,10 @@ export class RfqService {
       assertVersion(offer, version);
       this.open(request);
       if (input && household.status !== 'APPROVED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
-      if (input) this.completion(input.completionDate, request);
+      if (input) {
+        this.completion(input.completionDate, request);
+        assertWithinCapacity(household, request.category, input.maxQuantity);
+      }
       offer.history = [
         ...offer.history,
         {
@@ -591,7 +700,7 @@ export class RfqService {
       if (household.status !== 'APPROVED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
       const existing = await this.activeDirectQuotation(em, request, household.id);
       if (existing) throw new AppError('RFQ_BID_ALREADY_EXISTS');
-      const plan = this.directPlan(request, household.id, input);
+      const plan = this.directPlan(request, household, input);
       if (request.status === 'SENT')
         request.status = unwrap(
           transition(request.status, 'RECEIVE_BID', {
@@ -681,7 +790,7 @@ export class RfqService {
       );
       if (input) {
         if (household.status !== 'APPROVED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
-        const plan = this.directPlan(request, household.id, input);
+        const plan = this.directPlan(request, household, input);
         quotation.parts = plan.parts;
         quotation.productionTotalVnd = plan.productionTotalVnd;
         quotation.totalVnd = plan.totalVnd;
@@ -703,7 +812,7 @@ export class RfqService {
   /** The stored shape of a household's quotation for the whole request, checked by the domain. */
   private directPlan(
     request: QuotationRequest,
-    householdId: string,
+    household: Household,
     input: CreateDirectQuotationRequest,
   ) {
     this.completion(input.completionDate, request);
@@ -712,9 +821,10 @@ export class RfqService {
         requiredQuantity: request.quantity,
         biddingClosesAt: request.biddingClosesAt,
         requiredBy: request.requiredBy,
-        householdId,
+        householdId: household.id,
         unitPriceVnd: input.unitPriceVnd,
         completionDate: new Date(input.completionDate),
+        capacity: declaredCapacity(household, request.category),
       }),
     );
     return {
@@ -761,6 +871,7 @@ export class RfqService {
             unitPriceVnd: offer.unitPriceVnd,
             completionDate: offer.completionDate,
             version: offer.version,
+            capacity: declaredCapacity(offer.household, request.category),
           })),
           parts: input.parts.map((part) => ({
             ...part,
@@ -844,7 +955,7 @@ export class RfqService {
   ) {
     return this.orm.em.fork().transactional(async (em) => {
       const request = await this.request(em, requestId, true);
-      if (actor.role !== 'BUYER' || request.buyer.id !== actor.id) throw notFound();
+      if (!this.isOwner(actor, request)) throw notFound();
       if (actor.locked) throw forbidden();
       assertVersion(request, version);
       const quotations = await em.find(
@@ -899,6 +1010,18 @@ export class RfqService {
           chosen.parts.map((part) => part.householdId),
         ),
       });
+      // FR-RFQ-08: every other invited household learns that the buyer chose another offer.
+      const chosenHouseholds = new Set(partHouseholds);
+      await this.notifier.notify(em, {
+        kind: 'RFQ_NOT_SELECTED',
+        requestId: request.id,
+        quotationId: chosen.id,
+        actorId: actor.id,
+        recipientIds: await this.notifier.representativeIds(
+          em,
+          request.invitedHouseholdIds.filter((householdId) => !chosenHouseholds.has(householdId)),
+        ),
+      });
       await this.notifier.notify(em, {
         kind: 'QUOTATION_ACCEPTED',
         requestId: request.id,
@@ -936,7 +1059,7 @@ export class RfqService {
     const allocations = await em.find(
       OrderAllocationEntity,
       { quotation: accepted },
-      { populate: ['household'], orderBy: { createdAt: 'asc' } },
+      { populate: ['household', 'quotation.request'], orderBy: { createdAt: 'asc' } },
     );
     if (actor.role === 'HOUSEHOLD') {
       const household = await this.ownHousehold(em, actor, false);
@@ -1070,7 +1193,11 @@ export class RfqService {
     return this.orm.em.fork().transactional(async (em) => {
       const request = await this.request(em, requestId, true);
       if (actor.locked) throw forbidden();
-      const owner = actor.role === 'BUYER' && request.buyer.id === actor.id;
+      // An administrator who owns the request for a customer cancels as the buyer before acceptance (T6)
+      // and as the board after it (T7).
+      const owner =
+        this.isOwner(actor, request) &&
+        (actor.role === 'BUYER' || ['DRAFT', 'SENT', 'BIDDING'].includes(request.status));
       if (!owner) this.coordinatorOrBoard(actor, request);
       assertVersion(request, version);
       if (requestExpired(request)) throw new AppError('INVALID_TRANSITION');
@@ -1096,6 +1223,12 @@ export class RfqService {
         status: 'SUBMITTED',
       }))
         quotation.status = 'WITHDRAWN';
+      // A payment still waiting for money on a cancelled order is cancelled with it (ADR-0021).
+      for (const payment of await em.find(Payment, { order: request, status: 'PENDING' })) {
+        payment.status = unwrap(
+          paymentTransition('PENDING', 'CANCEL', { actor: owner ? 'BUYER_OWNER' : 'ADMIN' }),
+        );
+      }
       const accepted = await em.findOne(CooperativeQuotationEntity, {
         request,
         status: 'ACCEPTED',
@@ -1136,7 +1269,7 @@ export class RfqService {
   async confirmReceipt(actor: Actor, requestId: string, version: number) {
     return this.orm.em.fork().transactional(async (em) => {
       const request = await this.request(em, requestId, true);
-      const owner = actor.role === 'BUYER' && request.buyer.id === actor.id;
+      const owner = this.isOwner(actor, request);
       const admin = actor.role === 'ADMIN' && request.coordinationOptIn;
       if (!owner && !admin) throw notFound();
       if (actor.locked) throw forbidden();
@@ -1178,8 +1311,10 @@ export class RfqService {
         requestId: request.id,
         quotationId: accepted.id,
         actorId: actor.id,
+        // The buyer is told too when the administrator confirms on their behalf (the actor is never notified).
         recipientIds: [
           request.coordinatorId,
+          request.buyer.id,
           ...(await this.notifier.representativeIds(
             em,
             allocations.map((allocation) => allocation.household.id),
@@ -1189,6 +1324,59 @@ export class RfqService {
       request.revision++;
       await em.flush();
       return toRfqResponse(request);
+    });
+  }
+
+  /**
+   * FR-ORD-11, BR-05 (GH#248 s5-11): after delivery the owning buyer rates each household that did work on
+   * the order, 1 to 5 stars and an optional comment. One rating per (request, household): rating again edits
+   * it, for `RATING_EDIT_WINDOW_DAYS` after it was first given. The request is locked first so two saves of
+   * the same pair cannot both insert.
+   */
+  async rateHousehold(
+    actor: Actor,
+    requestId: string,
+    householdId: string,
+    input: RateHouseholdRequest,
+  ): Promise<HouseholdRatingDto> {
+    if (actor.locked) throw forbidden();
+    return this.orm.em.fork().transactional(async (em) => {
+      const request = await this.request(em, requestId, true);
+      if (!this.isOwner(actor, request)) throw notFound();
+      if (request.status !== 'DELIVERED')
+        throw new AppError('INVALID_TRANSITION', 'ratings open once the request is delivered');
+      const accepted = await em.findOne(CooperativeQuotationEntity, {
+        request,
+        status: 'ACCEPTED',
+      });
+      // Only a household that finished a share of this order can be rated.
+      const share = accepted
+        ? await em.findOne(OrderAllocationEntity, {
+            quotation: accepted,
+            household: householdId,
+            status: 'DONE',
+          })
+        : null;
+      if (!share) throw notFound();
+      const comment = input.comment ? input.comment : null;
+      const existing = await em.findOne(HouseholdRating, { request, household: householdId });
+      if (existing) {
+        if (!isRatingEditable(existing.createdAt, new Date()))
+          throw new AppError('BUSINESS_RULE_VIOLATED', 'RATING_WINDOW_CLOSED');
+        existing.stars = input.stars;
+        existing.comment = comment;
+        await em.flush();
+        return toRatingDto(existing);
+      }
+      const rating = em.create(HouseholdRating, {
+        request,
+        household: em.getReference(Household, householdId),
+        raterId: actor.id,
+        stars: input.stars,
+        comment,
+      });
+      await em.flush();
+      return toRatingDto(rating);
     });
   }
 
@@ -1217,8 +1405,15 @@ export class RfqService {
         householdId = (await this.ownHousehold(em, actor, false)).id;
       } else if (actor.role !== 'ADMIN') throw notFound();
       const statusBefore = request.status;
+      // ADR-0021: where online payment is on, production waits for a paid deposit.
+      const depositRequired = paymentsConfig().depositRequired;
+      const depositPaid =
+        depositRequired &&
+        (await em.count(Payment, { order: request, kind: 'DEPOSIT', status: 'PAID' })) > 0;
       request.status = unwrap(
         transition(request.status, 'START_PRODUCTION', {
+          depositRequired,
+          depositPaid,
           actor: actor.role === 'ADMIN' ? 'ADMIN' : 'ARTISAN',
           allocationStatuses: liveShares(allocations).map((allocation) => allocation.status),
           householdCount: households.size,
@@ -1271,6 +1466,12 @@ export class RfqService {
         $or: [
           { status: { $in: ['SENT', 'BIDDING'] }, biddingClosesAt: { $gt: new Date() } },
           { status: { $in: ['ACCEPTED', 'IN_PRODUCTION'] } },
+          // A delivered request made for a customer stays listed while its rating window is open (FR-ORD-11).
+          {
+            status: 'DELIVERED',
+            onBehalfName: { $ne: null },
+            updatedAt: { $gt: new Date(Date.now() - RATING_EDIT_WINDOW_DAYS * 86_400_000) },
+          },
         ],
       },
       { populate: ['buyer'], orderBy: { biddingClosesAt: 'asc' }, limit: 200 },
@@ -1294,7 +1495,8 @@ export class RfqService {
       unit: request.unit,
       requiredBy: request.requiredBy.toISOString(),
       biddingClosesAt: request.biddingClosesAt.toISOString(),
-      buyerName: request.buyer.fullName ?? request.buyer.email,
+      buyerName: request.onBehalfName ?? request.buyer.fullName ?? request.buyer.email,
+      onBehalfOf: onBehalfOf(request),
       contributionCount: counts.get(request.id) ?? 0,
       coordinatorName: request.coordinatorId ? (names.get(request.coordinatorId) ?? null) : null,
       claimed: Boolean(request.coordinatorId),
@@ -1345,6 +1547,28 @@ export class RfqService {
     }
   }
 
+  /** FR-ORD-11: the owner sees their own ratings next to the delivered order, never anyone else's. */
+  private async addOwnRatings(
+    em: EntityManager,
+    actor: Actor,
+    request: QuotationRequest,
+    response: RfqResponse,
+  ) {
+    if (request.status !== 'DELIVERED' || !this.isOwner(actor, request)) return;
+    response.ratings = (
+      await em.find(HouseholdRating, { request }, { orderBy: { createdAt: 'asc' } })
+    ).map(toRatingDto);
+  }
+
+  /**
+   * The buyer of the request: the buyer who made it, or the administrator who made it for an off-platform
+   * customer (FR-ORD-10), who then does the buyer's accept, receive and rate steps.
+   */
+  private isOwner(actor: Actor, request: QuotationRequest): boolean {
+    if (request.buyer.id !== actor.id) return false;
+    return actor.role === 'BUYER' || (actor.role === 'ADMIN' && Boolean(request.onBehalfName));
+  }
+
   private coordinator(actor: Actor, request: QuotationRequest) {
     if (actor.role !== 'ADMIN' || request.coordinatorId !== actor.id || !request.coordinationOptIn)
       throw notFound();
@@ -1366,7 +1590,7 @@ export class RfqService {
   }
 
   private async canRead(em: EntityManager, actor: Actor, request: QuotationRequest) {
-    if (actor.role === 'BUYER' && request.buyer.id === actor.id) return;
+    if (this.isOwner(actor, request)) return;
     if (
       actor.role === 'ADMIN' &&
       request.coordinationOptIn &&
@@ -1441,7 +1665,7 @@ export class RfqService {
   /**
    * BR-05: approved households with an unlocked representative that work in the request's category,
    * best fit first, capped. Capacity comes from the household's declared capacity and its published
-   * products in the category; ratings and response rates do not exist in the model.
+   * products in the category; the buyers' ratings break ties (FR-ORD-11). Response rates do not exist in the model.
    */
   private async matchHouseholds(em: EntityManager, request: QuotationRequest): Promise<string[]> {
     const category = request.category;
@@ -1459,11 +1683,16 @@ export class RfqService {
     const published = new Map<string, number>();
     for (const product of products)
       published.set(product.household.id, (published.get(product.household.id) ?? 0) + 1);
+    const ratings = await ratingSummaries(
+      em,
+      households.map((household) => household.id),
+    );
     return selectMatchingHouseholds(
       households.map((household) => ({
         householdId: household.id,
         declaredCapacity: household.capacityByCategory?.[category],
         publishedProducts: published.get(household.id) ?? 0,
+        ratingAverage: ratings.get(household.id)?.average ?? null,
       })),
     );
   }
@@ -1522,7 +1751,7 @@ function householdNames(households: readonly Household[]): Map<string, string> {
   return new Map(households.map((household) => [household.id, household.name]));
 }
 
-function requestFields(input: CreateRfqRequest) {
+function requestFields(input: Omit<CreateRfqRequest, 'onBehalfOf'>) {
   return {
     customRequirements: input.customRequirements || null,
     title: input.title ?? null,
@@ -1609,6 +1838,34 @@ function toRfqResponse(
     coordinationOptIn: request.coordinationOptIn,
     customRequirements: request.customRequirements ?? null,
     ...(attachments ? { attachments: [...attachments] } : {}),
+  };
+}
+
+/** The customer of a request an administrator made for them; null on a buyer's own request. */
+function onBehalfOf(request: QuotationRequest): RfqResponse['onBehalfOf'] {
+  return request.onBehalfName && request.onBehalfPhone
+    ? {
+        name: request.onBehalfName,
+        phone: request.onBehalfPhone,
+        ...(request.onBehalfEmail ? { email: request.onBehalfEmail } : {}),
+      }
+    : null;
+}
+
+/** Adds the off-platform customer for an administrator; buyers and households never receive it (FR-ORD-10). */
+function withCustomer(response: RfqResponse, request: QuotationRequest, actor: Actor): RfqResponse {
+  if (actor.role === 'ADMIN') response.onBehalfOf = onBehalfOf(request);
+  return response;
+}
+
+function toRatingDto(rating: HouseholdRating): HouseholdRatingDto {
+  return {
+    householdId: rating.household.id,
+    stars: rating.stars,
+    comment: rating.comment ?? null,
+    createdAt: rating.createdAt.toISOString(),
+    updatedAt: rating.updatedAt.toISOString(),
+    editableUntil: ratingEditableUntil(rating.createdAt).toISOString(),
   };
 }
 
@@ -1699,6 +1956,7 @@ function toAllocationDto(allocation: OrderAllocationEntity): AllocationDto {
     id: allocation.id,
     version: allocation.version,
     householdId: allocation.household.id,
+    ...allocationTimeline(allocation),
     quantity: allocation.quantity,
     completedQty: allocation.completedQty,
     status: allocation.status,

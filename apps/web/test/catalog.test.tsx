@@ -32,12 +32,15 @@ function card(id: string, overrides: Partial<ProductCardDto> = {}): ProductCardD
   return {
     id,
     name: `Món ${id}`,
+    nameEn: null,
     slug: `mon-${id}`,
     traceCode: `CODE${id}`,
     kind: 'BATCH',
     category: 'VASE',
     priceVnd: 100_000,
     stock: 3,
+    status: 'PUBLISHED',
+    tags: [],
     coverUrl: null,
     coverVariants: [],
     coverAlt: null,
@@ -117,9 +120,7 @@ describe('view models', () => {
     const bowl = toProductCardView(card('1', { name: 'Bát ăn cơm vẽ sen', category: 'TABLEWARE' }));
     expect(bowl.presetKind).toBe('bowl');
     const { container } = renderVi(<ProductCard product={bowl} />);
-    expect(
-      screen.getByRole('img', { name: /Hình minh hoạ chiếc bát.*chưa có ảnh thật/ }),
-    ).toBeTruthy();
+    expect(screen.getByRole('img', { name: /Hình vẽ chiếc bát.*chưa có ảnh thật/ })).toBeTruthy();
     expect(container.querySelector('img')).toBeNull();
   });
 
@@ -144,6 +145,9 @@ describe('view models', () => {
       url: 'https://cdn.test/nung.webp',
       variants: [],
       sha256: 'a'.repeat(64),
+      mediaId: null,
+      status: 'READY' as const,
+      thumbhash: null,
       credit: {
         title: 'File:Nung.jpg',
         author: 'Tác giả ảnh',

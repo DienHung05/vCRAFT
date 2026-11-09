@@ -1,0 +1,44 @@
+/*
+ * The trace page's craft story, phones through desktop (vCRAFT-ec3). The story layout itself lives in
+ * globals.css (`.fire-story`); this file only adapts it to the screen it is read on.
+ */
+
+/* Keep the craft book's reading column on direct QR loads, independent of product-page CSS. */
+.trace-notebook > main > :not(.trace-journey, .trace-intro) {
+  max-width: 42rem;
+  margin-inline: auto;
+}
+
+.fire-story .fire-steps {
+  /* A long stage name or note never widens the page inside the two-column grid or on a 360px phone. */
+  min-width: 0;
+}
+
+.fire-story .fire-step :where(p, h3, time, a) {
+  overflow-wrap: anywhere;
+  /* A copied journal URL or hash wraps inside the step column instead of forcing a sideways scroll. */
+}
+
+/*
+ * Static mode (phones, tablets, reduced motion, before hydration): the drawing stays 12rem, but its
+ * caption may use the reading column instead of being squeezed into the drawing's width.
+ */
+.fire-story:not([data-fire-story="on"]) .fire-figure {
+  width: min(100%, 22rem);
+}
+
+.fire-story:not([data-fire-story="on"]) .fire-figure .piece {
+  width: min(12rem, 100%);
+  margin-inline: auto;
+}
+
+/*
+ * Touch: the stage chips are the only story controls, so they grow to the 44px target on a coarse
+ * pointer. Desktop keeps the compact chips the wide layout was designed around.
+ */
+@media (pointer: coarse) {
+  .fire-story .fire-chip {
+    min-height: 2.75rem;
+    padding-inline: 0.75rem;
+  }
+}

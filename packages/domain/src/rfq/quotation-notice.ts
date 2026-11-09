@@ -11,10 +11,13 @@
  * | `QUOTATION_ACCEPTED`    | Admin điều phối                                     |
  * | `ALLOCATION_PROPOSED`   | Đại diện hộ có phần trong đơn                       |
  * | `ALLOCATION_CONFIRMED`  | Người mua, admin điều phối                          |
+ * | `ALLOCATION_REASSIGNED` | Đại diện hộ bị chuyển bớt phần việc trễ (GH#247)    |
+ * | `ALLOCATION_INCREASED`  | Đại diện hộ nhận thêm việc khi đang sản xuất (GH#248) |
+ * | `RFQ_NOT_SELECTED`      | Đại diện hộ được mời nhưng không có phần trong chào giá được chọn (GH#248) |
  * | `ORDER_CANCELLED`       | Mọi bên của đơn                                     |
  * | `PRODUCTION_STARTED`    | Người mua, các hộ có phần                           |
  * | `PROGRESS_REPORTED`     | Người mua, admin điều phối                          |
- * | `ORDER_RECEIVED`        | Các hộ có phần, admin điều phối                     |
+ * | `ORDER_RECEIVED`        | Các hộ có phần, admin điều phối, người mua khi admin xác nhận thay (GH#248) |
  * | `BIDDING_CLOSED`        | Người mua, các hộ được mời (hạn chào giá đã qua)     |
  * | `RFQ_EXPIRED`           | Người mua, các hộ được mời (hết hạn không chốt)      |
  * | `COORDINATION_NEEDED`   | Admin điều phối, hoặc mọi admin khi chưa ai nhận     |
@@ -29,6 +32,9 @@ export const QUOTATION_NOTICE_KINDS = [
   'QUOTATION_ACCEPTED',
   'ALLOCATION_PROPOSED',
   'ALLOCATION_CONFIRMED',
+  'ALLOCATION_REASSIGNED',
+  'ALLOCATION_INCREASED',
+  'RFQ_NOT_SELECTED',
   'ORDER_CANCELLED',
   'PRODUCTION_STARTED',
   'PROGRESS_REPORTED',

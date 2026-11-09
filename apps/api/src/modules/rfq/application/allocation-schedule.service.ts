@@ -2,10 +2,12 @@ import { type EntityManager, MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { AllocationScheduleDto, ReallocateRequest } from '@vcraft/contracts';
 import { AuditLog, Household, OrderAllocation, type QuotationRequest } from '@vcraft/database';
-import { allocationLateness, allocationTransition, reallocate } from '@vcraft/domain';
+import { allocationTransition, reallocate } from '@vcraft/domain';
 import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
+import { allocationTimeline } from './allocation-timeline';
+import { assertWithinCapacity } from './household-capacity';
 import { QuotationNotifier } from './quotation-notifier';
 
 /** Shares still being made: they count in the order total and can take reallocated pieces. */
@@ -45,16 +47,7 @@ export class AllocationScheduleService {
     const byRequest = new Map<string, AllocationScheduleDto[number]>();
     for (const allocation of rows) {
       const request = allocation.quotation.request as QuotationRequest;
-      const dueAt = dueOf(allocation) ?? request.requiredBy;
-      const lateness = allocationLateness(
-        {
-          quantity: allocation.quantity,
-          completedQty: allocation.completedQty,
-          startedAt: allocation.createdAt,
-          dueAt,
-        },
-        now,
-      );
+      const timeline = allocationTimeline(allocation, now);
       const entry = byRequest.get(request.id) ?? {
         requestId: request.id,
         title: request.title ?? request.design.slice(0, 80),
@@ -66,14 +59,10 @@ export class AllocationScheduleService {
         id: allocation.id,
         version: allocation.version,
         householdId: allocation.household.id,
-        householdName: allocation.household.name,
+        ...timeline,
         quantity: allocation.quantity,
         completedQty: allocation.completedQty,
         status: allocation.status,
-        startedAt: allocation.createdAt.toISOString(),
-        dueAt: dueAt.toISOString(),
-        lateness: lateness.status,
-        expectedQty: lateness.expectedQty,
       });
       byRequest.set(request.id, entry);
     }
@@ -126,6 +115,7 @@ export class AllocationScheduleService {
         input.targets,
       );
       if (!result.ok) throw new AppError('VALIDATION_FAILED', result.error.message);
+      await this.checkCapacity(em, request, active, result.value);
       const total = (rows: readonly { quantity: number }[]) =>
         rows.reduce((sum, row) => sum + row.quantity, 0);
       if (total(result.value) !== total(active))
@@ -183,11 +173,19 @@ export class AllocationScheduleService {
         after: { targets: input.targets },
       });
       await this.notifier.notify(em, {
-        kind: 'ALLOCATION_PROPOSED',
+        kind: 'ALLOCATION_INCREASED',
         requestId: request.id,
         quotationId: quotation.id,
         actorId: actor.id,
         recipientIds: await this.notifier.representativeIds(em, touched),
+      });
+      // FR-ORD-09: the late household learns that the rest of its share moved to others.
+      await this.notifier.notify(em, {
+        kind: 'ALLOCATION_REASSIGNED',
+        requestId: request.id,
+        quotationId: quotation.id,
+        actorId: actor.id,
+        recipientIds: await this.notifier.representativeIds(em, [late.household.id]),
       });
       request.revision++;
       await em.flush();
@@ -222,6 +220,7 @@ export class AllocationScheduleService {
       input.targets,
     );
     if (!result.ok) throw new AppError('VALIDATION_FAILED', result.error.message);
+    await this.checkCapacity(em, request, rows, result.value);
     const before = declined.quantity;
     const dueAt = dueOf(declined) ?? request.requiredBy;
     const unitPriceVnd =
@@ -274,6 +273,27 @@ export class AllocationScheduleService {
     });
     request.revision++;
     await em.flush();
+  }
+
+  /**
+   * BR-L6: a household whose share is raised by a reallocation must stay within the capacity it declared
+   * for the request's category. A share that did not grow is left alone, so an older over-capacity share
+   * does not block moving the work away from it.
+   */
+  private async checkCapacity(
+    em: EntityManager,
+    request: QuotationRequest,
+    before: readonly OrderAllocation[],
+    after: readonly { householdId: string; quantity: number }[],
+  ) {
+    const previous = new Map(before.map((a) => [a.household.id, a.quantity]));
+    const raised = after.filter((s) => s.quantity > (previous.get(s.householdId) ?? 0));
+    if (raised.length === 0 || !request.category) return;
+    const households = await em.find(Household, { id: { $in: raised.map((s) => s.householdId) } });
+    for (const share of raised) {
+      const household = households.find((h) => h.id === share.householdId);
+      if (household) assertWithinCapacity(household, request.category, share.quantity);
+    }
   }
 
   private async checkTargets(em: EntityManager, input: ReallocateRequest) {

@@ -19,6 +19,7 @@ import { notify } from '@/lib/notify';
 import { ContributionForm, type ContributionFormValues } from './contribution-form';
 import { DirectQuotationForm } from './direct-quotation-form';
 import { RequestAttachments } from './rfq-attachments';
+import { RfqStepper } from './rfq-stepper';
 
 type State =
   | { kind: 'loading' }
@@ -130,14 +131,19 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
   const closed =
     !['SENT', 'BIDDING'].includes(request.status) ||
     new Date(request.biddingClosesAt).getTime() <= Date.now();
+  // BR-L6: tell the household when the quantity is above the capacity it declared.
+  const sendError = (error: unknown) =>
+    error instanceof QuotationApiError && error.code === 'RFQ_CAPACITY_EXCEEDED'
+      ? t('capacityExceeded')
+      : t('sendFailed');
   const submit = async (values: ContributionFormValues) => {
     try {
       if (contribution)
         await client.updateContribution(contribution.id, contribution.version, values);
       else await client.createContribution(rfqId, values);
       setRefresh((value) => value + 1);
-    } catch {
-      throw new Error(t('sendFailed'));
+    } catch (error) {
+      throw new Error(sendError(error));
     }
   };
   const submitQuotation = async (values: CreateDirectQuotationRequest) => {
@@ -146,8 +152,8 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
         await client.reviseDirectQuotation(quotation.id, quotation.version, values);
       else await client.createDirectQuotation(rfqId, values);
       setRefresh((value) => value + 1);
-    } catch {
-      throw new Error(t('sendFailed'));
+    } catch (error) {
+      throw new Error(sendError(error));
     }
   };
   const withdrawQuotation = async () => {
@@ -182,6 +188,7 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
     <div className="flex flex-col gap-4">
       <h1 className="text-h2">{request.title}</h1>
       <p className="break-words whitespace-pre-wrap text-ash">{request.design}</p>
+      <RfqStepper status={request.status} hasBids={request.hasBids ?? Boolean(quotation)} />
       {request.customRequirements ? (
         <div>
           <h2 className="text-small font-semibold">{summary('customization')}</h2>

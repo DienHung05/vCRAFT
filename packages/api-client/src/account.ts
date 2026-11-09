@@ -8,7 +8,9 @@ import {
   CreateWorkshopRequestSchema,
   DataExportSchema,
   type ErrorCode,
+  FavouritesResponseSchema,
   type FieldError,
+  formatVersionTag,
   HouseholdResponseSchema,
   IdSchema,
   LoginEventListSchema,
@@ -19,11 +21,14 @@ import {
   NotificationPreferencesResponseSchema,
   NotificationResponseSchema,
   ProblemDetailsSchema,
+  ResubmitHouseholdResponseSchema,
+  SlugAvailabilityResponseSchema,
   UnreadCountResponseSchema,
   type UpdateNotificationPreferencesRequest,
   UpdateNotificationPreferencesRequestSchema,
   WorkshopResponseSchema,
 } from '@vcraft/contracts';
+import { fallbackErrorCode } from './http/fallback-error-code';
 
 /** Lỗi API của nhóm tài khoản: mã ổn định để giao diện tra i18n, kèm lỗi theo field (nếu có). */
 export class AccountApiError extends Error {
@@ -53,7 +58,7 @@ export function createAccountClient(options: AccountClientOptions) {
   async function request<T>(
     path: string,
     schema: { parse: (data: unknown) => T },
-    init: { method?: string; json?: unknown; form?: FormData } = {},
+    init: { method?: string; json?: unknown; form?: FormData; version?: number } = {},
   ): Promise<T> {
     const token = await options.getAccessToken();
     if (!token) throw new AccountApiError('AUTH_UNAUTHENTICATED', 401);
@@ -64,6 +69,8 @@ export function createAccountClient(options: AccountClientOptions) {
         Authorization: `Bearer ${token}`,
         // Multipart tự đặt Content-Type kèm boundary, nên chỉ JSON mới khai báo.
         ...(init.json !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        // Optimistic concurrency: endpoints that require `If-Match` (vCRAFT-8my.2 resubmit).
+        ...(init.version !== undefined ? { 'If-Match': formatVersionTag(init.version) } : {}),
       },
       ...(init.json !== undefined ? { body: JSON.stringify(init.json) } : {}),
       ...(init.form ? { body: init.form } : {}),
@@ -72,38 +79,44 @@ export function createAccountClient(options: AccountClientOptions) {
     try {
       data = await response.json();
     } catch {
-      throw new AccountApiError('INTERNAL_ERROR', response.status);
+      throw new AccountApiError(fallbackErrorCode(response.status), response.status);
     }
     if (!response.ok) {
       const problem = ProblemDetailsSchema.safeParse(data);
       throw problem.success
         ? new AccountApiError(problem.data.code, response.status, problem.data.errors)
-        : new AccountApiError('INTERNAL_ERROR', response.status);
+        : new AccountApiError(fallbackErrorCode(response.status), response.status);
     }
     return schema.parse(data);
   }
 
   /** For calls whose success answer has no JSON body (204). Errors are read like in {@link request}. */
-  async function requestVoid(path: string, init: { method: string; json: unknown }): Promise<void> {
+  async function requestVoid(
+    path: string,
+    init: { method: string; json?: unknown },
+  ): Promise<void> {
     const token = await options.getAccessToken();
     if (!token) throw new AccountApiError('AUTH_UNAUTHENTICATED', 401);
     const response = await fetcher(`/api/v1${path}`, {
       method: init.method,
       cache: 'no-store',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(init.json),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(init.json !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      },
+      ...(init.json !== undefined ? { body: JSON.stringify(init.json) } : {}),
     });
     if (response.ok) return;
     let data: unknown;
     try {
       data = await response.json();
     } catch {
-      throw new AccountApiError('INTERNAL_ERROR', response.status);
+      throw new AccountApiError(fallbackErrorCode(response.status), response.status);
     }
     const problem = ProblemDetailsSchema.safeParse(data);
     throw problem.success
       ? new AccountApiError(problem.data.code, response.status, problem.data.errors)
-      : new AccountApiError('INTERNAL_ERROR', response.status);
+      : new AccountApiError(fallbackErrorCode(response.status), response.status);
   }
 
   return {
@@ -122,6 +135,13 @@ export function createAccountClient(options: AccountClientOptions) {
     getMyHousehold() {
       return request('/me/household', HouseholdResponseSchema);
     },
+    /** FR-ART-01: is this page address free? Used while the sign-up wizard's address is typed. */
+    slugAvailability(slug: string) {
+      return request(
+        `/households/slug-availability?slug=${encodeURIComponent(slug)}`,
+        SlugAvailabilityResponseSchema,
+      );
+    },
     /** Nộp hồ sơ hộ (`PENDING_REVIEW`); tài khoản trở thành người đại diện hộ. */
     applyHousehold(input: ApplyHouseholdRequest) {
       return request('/me/household', HouseholdResponseSchema, {
@@ -135,11 +155,23 @@ export function createAccountClient(options: AccountClientOptions) {
         json: CreateWorkshopRequestSchema.parse(input),
       });
     },
+    /** Explicit resubmission after edits (vCRAFT-8my.2); `If-Match` guards a stale write. */
+    resubmitHousehold(version: number) {
+      return request('/me/household/resubmit', ResubmitHouseholdResponseSchema, {
+        method: 'POST',
+        version,
+      });
+    },
     /** Giấy tờ xác minh: đi vào bucket riêng tư, chỉ Ban quản lý xem được. */
-    uploadCertificate(file: Blob, filename: string) {
+    uploadCertificate(
+      file: Blob,
+      filename: string,
+      kind?: 'IDENTITY' | 'RESIDENCE' | 'WORKSHOP' | 'UNKNOWN',
+    ) {
       const form = new FormData();
       form.append('file', file, filename);
-      return request('/media?purpose=CERTIFICATE', MediaAssetResponseSchema, {
+      const suffix = kind ? `&kind=${kind}` : '';
+      return request(`/media?purpose=CERTIFICATE${suffix}`, MediaAssetResponseSchema, {
         method: 'POST',
         form,
       });
@@ -184,6 +216,18 @@ export function createAccountClient(options: AccountClientOptions) {
     /** Tùy chọn email của các loại thông báo vai trò hiện tại có thể nhận. */
     notificationPreferences() {
       return request('/me/notification-preferences', NotificationPreferencesResponseSchema);
+    },
+    /** The saved products that are still publicly visible, most recently saved first (FR-CAT-07). */
+    favourites() {
+      return request('/me/favourites', FavouritesResponseSchema);
+    },
+    /** Idempotent: saving a product that is already saved succeeds. */
+    addFavourite(productId: string) {
+      return requestVoid(`/me/favourites/${IdSchema.parse(productId)}`, { method: 'PUT' });
+    },
+    /** Idempotent: removing a product that is not saved succeeds. */
+    removeFavourite(productId: string) {
+      return requestVoid(`/me/favourites/${IdSchema.parse(productId)}`, { method: 'DELETE' });
     },
     saveNotificationPreferences(input: UpdateNotificationPreferencesRequest) {
       return request('/me/notification-preferences', NotificationPreferencesResponseSchema, {

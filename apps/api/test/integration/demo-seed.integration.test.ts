@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   AppUser,
+  Artisan,
   CooperativeQuotation,
   clearBusinessData,
   DEMO_ACCOUNTS,
@@ -27,6 +28,7 @@ import {
   Product,
   QuotationRequest,
   RETIRED_DEMO_PHOTO_IDS,
+  refreshDemoText,
   seedDemoData,
   verifyDemoData,
 } from '@vcraft/database';
@@ -94,7 +96,7 @@ describe('Demo seed and guarded reset', () => {
     expect(await em.count(Household, { status: 'APPROVED' })).toBeGreaterThanOrEqual(20);
     expect(await em.count(Product)).toBeGreaterThanOrEqual(200);
     expect(await em.count(QuotationRequest)).toBe(12);
-    expect(await em.count(News, { status: 'PUBLISHED' })).toBeGreaterThanOrEqual(15);
+    expect(await em.count(News, { status: 'PUBLISHED' })).toBeGreaterThanOrEqual(6);
     const statuses = new Set((await em.find(QuotationRequest, {})).map((r) => r.status));
     expect(statuses).toEqual(
       new Set([
@@ -159,6 +161,85 @@ describe('Demo seed and guarded reset', () => {
     const report = await verifyDemoData(db.orm.em.fork(), now, { media: false });
     expect(report.checks.filter((c) => !c.ok)).toEqual([]);
     expect(report.ok).toBe(true);
+  });
+
+  it('GH#298: demo:refresh-text restores the seed text over the old disclaimers and is idempotent', async () => {
+    const check = async () =>
+      (await verifyDemoData(db.orm.em.fork(), now, { media: false })).checks.find(
+        (c) => c.name === 'No demo disclaimer text',
+      );
+    expect(await check()).toMatchObject({ ok: true });
+
+    const em = db.orm.em.fork();
+    const households = await em.find(Household, {}, { orderBy: { slug: 'asc' } });
+    const artisans = await em.find(Artisan, {}, { orderBy: { id: 'asc' } });
+    const bodies = new Map(households.map((h) => [h.id, h.history]));
+    const bios = new Map(artisans.map((a) => [a.id, a.bio]));
+    const household = households[0] as Household;
+    const artisan = artisans[0] as Artisan;
+    const prices = await em.findOneOrFail(News, { category: 'MATERIAL_PRICES' });
+    const pricesBody = prices.body;
+    household.history = `[Dữ liệu mẫu] ${household.name} làm nghề gốm. Đây là hồ sơ hư cấu dùng để trình diễn, không phải hộ thật.`;
+    artisan.bio = '[Dữ liệu mẫu] Làm gốm men lam tại Bát Tràng.';
+    prices.body = `[Dữ liệu mẫu] ${pricesBody}`;
+    // The four fixed accounts and a household representative used to carry a " (mẫu)" suffix.
+    const pendingUser = await em.findOneOrFail(AppUser, DEMO_ACCOUNTS.pending.id);
+    const adminUser = await em.findOneOrFail(AppUser, DEMO_ACCOUNTS.admin.id);
+    const rep = await em.findOneOrFail(AppUser, { email: { $like: 'rep.%' } });
+    const repName = rep.fullName;
+    pendingUser.fullName = 'Đại diện hộ chờ duyệt (mẫu)';
+    adminUser.fullName = 'Ban quản lý làng nghề (mẫu)';
+    rep.fullName = `${repName} (mẫu)`;
+    await em.flush();
+    expect(await check()).toMatchObject({
+      ok: false,
+      detail: 'household 1, artisan 1, news 1, product 0, appUser 3',
+    });
+
+    const dry = await refreshDemoText(db.orm.em.fork(), { dryRun: true });
+    expect(dry).toMatchObject({
+      dryRun: true,
+      household: { changed: 1 },
+      artisan: { changed: 1 },
+      news: { changed: 1 },
+      product: { changed: 0 },
+      appUser: { changed: 3 },
+    });
+    expect(await check()).toMatchObject({ ok: false });
+
+    const first = await refreshDemoText(db.orm.em.fork());
+    expect(first).toMatchObject({
+      household: { changed: 1 },
+      artisan: { changed: 1 },
+      news: { changed: 1 },
+      product: { changed: 0 },
+      appUser: { changed: 3 },
+      changedHouseholdSlugs: [household.slug],
+    });
+    const second = await refreshDemoText(db.orm.em.fork());
+    expect(second).toMatchObject({
+      household: { changed: 0 },
+      artisan: { changed: 0 },
+      news: { changed: 0 },
+      product: { changed: 0 },
+      appUser: { changed: 0 },
+      changedHouseholdSlugs: [],
+    });
+
+    const after = db.orm.em.fork();
+    expect((await after.findOneOrFail(Household, household.id)).history).toBe(
+      bodies.get(household.id),
+    );
+    expect((await after.findOneOrFail(Artisan, artisan.id)).bio).toBe(bios.get(artisan.id));
+    expect((await after.findOneOrFail(News, prices.id)).body).toBe(pricesBody);
+    expect((await after.findOneOrFail(AppUser, DEMO_ACCOUNTS.pending.id)).fullName).toBe(
+      DEMO_ACCOUNTS.pending.fullName,
+    );
+    expect((await after.findOneOrFail(AppUser, DEMO_ACCOUNTS.admin.id)).fullName).toBe(
+      DEMO_ACCOUNTS.admin.fullName,
+    );
+    expect((await after.findOneOrFail(AppUser, rep.id)).fullName).toBe(repName);
+    expect(await check()).toMatchObject({ ok: true });
   });
 
   it('chưa chạy `demo:media` thì nhóm kiểm ảnh và giấy tờ báo đỏ', async () => {
@@ -250,7 +331,7 @@ describe('Demo seed and guarded reset', () => {
     const productCovers = DEMO_PHOTO_LINKS.filter(
       (l) => l.target === 'PRODUCT' && l.role === 'COVER',
     );
-    expect(productCovers.length).toBeGreaterThanOrEqual(76);
+    expect(productCovers.length).toBeGreaterThanOrEqual(210);
     const covered = await db.orm.em
       .fork()
       .find(Product, { traceCode: { $in: productCovers.map((l) => l.key) } });
@@ -260,9 +341,12 @@ describe('Demo seed and guarded reset', () => {
       expect(product.coverAlt, product.traceCode).toBeTruthy();
       expect(product.coverAltEn, product.traceCode).toMatch(/^[\x20-\x7e]+$/);
     }
-    // HX2M9KQD's photo had no recorded author or licence, so it shows the illustration again (GH#204).
+    // HX2M9KQD (a blue lotus bowl) keeps its photo although the licence is unknown: it matches the product (GH#204).
     const bowl = await db.orm.em.fork().findOneOrFail(Product, { traceCode: 'HX2M9KQD' });
-    expect(bowl.coverUrl).toBeNull();
+    expect(bowl.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
+    // A photo left out because it does not match its product shows the illustration.
+    const noCover = await db.orm.em.fork().findOneOrFail(Product, { traceCode: 'KKVB8B28' });
+    expect(noCover.coverUrl).toBeNull();
     const lamNgoc = await db.orm.em.fork().findOneOrFail(Household, { slug: 'gom-lam-ngoc' });
     expect(lamNgoc.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
     // Gốm Minh Hải's old kiln banner was retired (Commons does not confirm it is in Bát Tràng); it now has a
@@ -398,7 +482,7 @@ describe('Demo seed and guarded reset', () => {
     }
   });
 
-  it('tin tức công khai có ≥ 15 tin, tin ghim đứng đầu, gồm cả tin chung và tin của hộ', async () => {
+  it('tin tức công khai có ≥ 15 tin, tin ghim đứng đầu, toàn tin chung của làng (tin thật, GH#314)', async () => {
     const list = await t.request({ method: 'GET', url: '/news?limit=100' });
     expect(list.status).toBe(200);
     expect(list.body.data.length).toBeGreaterThanOrEqual(15);
@@ -407,8 +491,9 @@ describe('Demo seed and guarded reset', () => {
     expect(
       list.body.data.some((n: { householdSlug: string | null }) => n.householdSlug === null),
     ).toBe(true);
+    // GH#314: every seeded story is real village news, so none belongs to a household.
     expect(
-      list.body.data.some((n: { householdSlug: string | null }) => n.householdSlug !== null),
+      list.body.data.every((n: { householdSlug: string | null }) => n.householdSlug === null),
     ).toBe(true);
   });
 

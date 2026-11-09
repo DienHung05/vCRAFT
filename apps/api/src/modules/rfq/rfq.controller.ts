@@ -28,6 +28,8 @@ import {
   InviteHouseholdsRequestSchema,
   type ListRfqsQuery,
   ListRfqsQuerySchema,
+  type RateHouseholdRequest,
+  RateHouseholdRequestSchema,
   type ReallocateRequest,
   ReallocateRequestSchema,
   type ReportProgressRequest,
@@ -36,6 +38,7 @@ import {
 import { type Actor, CurrentActor, Roles } from '../../common/auth/auth.guard';
 import type { HttpReply } from '../../common/http/http-types';
 import { IfMatchVersion } from '../../common/http/if-match';
+import { Idempotent } from '../../common/idempotency/idempotent.decorator';
 import { UuidPipe } from '../../common/pipes/uuid.pipe';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { AllocationScheduleService } from './application/allocation-schedule.service';
@@ -45,13 +48,21 @@ import { RfqService } from './application/rfq.service';
 export class RfqController {
   constructor(private readonly rfqs: RfqService) {}
 
+  /** A buyer creates their own request; an administrator creates one for an off-platform customer (FR-ORD-10). */
   @Post()
-  @Roles('BUYER')
+  @Idempotent()
+  @Roles('BUYER', 'ADMIN')
   create(
     @CurrentActor() actor: Actor,
     @Body(new ZodValidationPipe(CreateRfqRequestSchema)) body: CreateRfqRequest,
   ) {
     return this.rfqs.createRequest(actor, body);
+  }
+
+  @Post(':id/duplicate')
+  @Roles('BUYER')
+  duplicate(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
+    return this.rfqs.duplicateRequest(actor, id);
   }
 
   @Get()
@@ -88,8 +99,9 @@ export class RfqController {
   }
 
   @Post(':id/submit')
+  @Idempotent()
   @HttpCode(200)
-  @Roles('BUYER')
+  @Roles('BUYER', 'ADMIN')
   submit(
     @CurrentActor() actor: Actor,
     @Param('id', new UuidPipe()) id: string,
@@ -99,6 +111,7 @@ export class RfqController {
   }
 
   @Post(':id/coordinate')
+  @Idempotent()
   @HttpCode(200)
   @Roles('ADMIN')
   coordinate(
@@ -110,6 +123,7 @@ export class RfqController {
   }
 
   @Post(':id/invitations')
+  @Idempotent()
   @HttpCode(200)
   @Roles('ADMIN')
   invite(
@@ -130,6 +144,7 @@ export class RfqController {
 
   /** An invited household declines. Sealed: only that household's own state changes. */
   @Post(':id/decline')
+  @Idempotent()
   @HttpCode(200)
   @Roles('HOUSEHOLD')
   decline(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
@@ -137,6 +152,7 @@ export class RfqController {
   }
 
   @Post(':id/contributions')
+  @Idempotent()
   @Roles('HOUSEHOLD')
   createContribution(
     @CurrentActor() actor: Actor,
@@ -162,6 +178,7 @@ export class RfqController {
 
   /** FR-RFQ-04: an invited household quotes the whole request itself (requests without coordination). */
   @Post(':id/direct-quotations')
+  @Idempotent()
   @Roles('HOUSEHOLD')
   createDirectQuotation(
     @CurrentActor() actor: Actor,
@@ -180,6 +197,7 @@ export class RfqController {
   }
 
   @Post(':id/quotations')
+  @Idempotent()
   @Roles('ADMIN')
   createCooperativeQuotation(
     @CurrentActor() actor: Actor,
@@ -200,8 +218,9 @@ export class RfqController {
 
   /** GH#11: buyer chốt chào giá, sinh allocations PROPOSED. Version ở header `If-Match`. */
   @Post(':id/accept')
+  @Idempotent()
   @HttpCode(200)
-  @Roles('BUYER')
+  @Roles('BUYER', 'ADMIN')
   accept(
     @CurrentActor() actor: Actor,
     @Param('id', new UuidPipe()) id: string,
@@ -221,6 +240,7 @@ export class RfqController {
 
   /** GH#11: admin hoặc hộ đơn-1-hộ bắt đầu sản xuất. */
   @Post(':id/start-production')
+  @Idempotent()
   @HttpCode(200)
   @Roles('ADMIN', 'HOUSEHOLD')
   startProduction(
@@ -233,6 +253,7 @@ export class RfqController {
 
   /** GH#11: buyer hoặc admin xác nhận đã nhận hàng. */
   @Post(':id/receive')
+  @Idempotent()
   @HttpCode(200)
   @Roles('BUYER', 'ADMIN')
   receive(
@@ -243,8 +264,24 @@ export class RfqController {
     return this.rfqs.confirmReceipt(actor, id, version);
   }
 
+  /**
+   * FR-ORD-11: the owning buyer (or the administrator who owns a request made for a customer) rates one
+   * household of a delivered request. Creates the rating or replaces it while the edit window is open.
+   */
+  @Put(':id/ratings/:householdId')
+  @Roles('BUYER', 'ADMIN')
+  rateHousehold(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @Param('householdId', new UuidPipe()) householdId: string,
+    @Body(new ZodValidationPipe(RateHouseholdRequestSchema)) body: RateHouseholdRequest,
+  ) {
+    return this.rfqs.rateHousehold(actor, id, householdId, body);
+  }
+
   /** The owning buyer or the coordinator cancels. A reason is required. */
   @Post(':id/cancel')
+  @Idempotent()
   @HttpCode(200)
   @Roles('BUYER', 'ADMIN')
   cancel(
@@ -300,6 +337,7 @@ export class AdminAllocationsController {
   }
 
   @Post(':id/reallocate')
+  @Idempotent()
   @HttpCode(200)
   reallocate(
     @CurrentActor() actor: Actor,
@@ -327,6 +365,7 @@ export class ContributionsController {
   }
 
   @Post(':id/withdraw')
+  @Idempotent()
   @HttpCode(200)
   @Roles('HOUSEHOLD')
   withdraw(
@@ -361,6 +400,7 @@ export class DirectQuotationsController {
   }
 
   @Post(':id/withdraw')
+  @Idempotent()
   @HttpCode(200)
   @Roles('HOUSEHOLD')
   withdraw(
@@ -378,6 +418,7 @@ export class AllocationsController {
 
   /** GH#11: hộ xác nhận phân bổ PROPOSED của mình. */
   @Post(':id/confirm')
+  @Idempotent()
   @HttpCode(200)
   @Roles('HOUSEHOLD')
   confirm(
@@ -390,6 +431,7 @@ export class AllocationsController {
 
   /** GH#11: hộ từ chối phân bổ ⇒ hủy cả đơn chưa sản xuất. */
   @Post(':id/decline')
+  @Idempotent()
   @HttpCode(200)
   @Roles('HOUSEHOLD')
   decline(
@@ -402,6 +444,7 @@ export class AllocationsController {
 
   /** GH#11: hộ báo cáo số lượng đã xong trong 0..quantity. */
   @Post(':id/progress')
+  @Idempotent()
   @HttpCode(200)
   @Roles('HOUSEHOLD')
   progress(

@@ -10,13 +10,16 @@ import type {
   HouseholdDocumentDto,
   HouseholdDto,
   MapPinsDto,
+  PriceSuggestionDto,
   ProductDto,
   ProductScanStatsDto,
   PublicHouseholdDto,
   RecordScanRequest,
+  ResubmitHouseholdDto,
   RevealedIdNumberDto,
   SetIdNumberRequest,
   SetProductMakersRequest,
+  SlugAvailabilityDto,
   TraceAvailabilityDto,
   UpdateHouseholdProfileRequest,
   UpdateProductRequest,
@@ -36,20 +39,26 @@ import {
   ProductMaker,
   QuotationRequest,
   queueKnowledgeChange,
+  resolveDbDriver,
   TraceScan,
   Workshop,
 } from '@vcraft/database';
 import {
+  certificationYear,
   checkMakerCredits,
   type HouseholdEvent,
   type HouseholdStatus,
   householdNoticeKind,
+  householdReviewState,
   householdTransition,
   isHouseholdPublic,
   maskIdNumber,
+  normalizeTags,
+  type ProductCategory,
   type ProductEvent,
   productTransition,
   publicProductAvailability,
+  suggestProductPrice,
 } from '@vcraft/domain';
 import { slugify } from '@vcraft/utils';
 import type { Actor } from '../../../common/auth/auth.guard';
@@ -60,6 +69,7 @@ import { MediaService } from '../../media/application/media.service';
 import { NotificationPublisher } from '../../notifications/application/notification-publisher';
 import { ConsentService } from '../../privacy/application/consent.service';
 import { loadJournal } from '../../production-logs/application/journal.queries';
+import { NO_RATINGS, ratingSummaries } from '../household-rating-stats';
 import {
   type HouseholdParts,
   productMediaIds,
@@ -70,8 +80,27 @@ import {
   toPublicHouseholdDto,
   toWorkshopDto,
 } from '../households.mapper';
+import {
+  DAY_MS,
+  last30VietnamDates,
+  type ScanDayRow,
+  vietnamDayStartUtc,
+  zeroFilledTrend,
+} from './dashboard-trend';
 import { retireSlug, slugRetiredByOther } from './slug-redirects';
 import { generateTraceCode } from './trace-code';
+
+/** A placeholder owner id for a caller with no household yet: matches no redirect row. */
+const NO_HOUSEHOLD_ID = '00000000-0000-0000-0000-000000000000';
+
+/** What makes a certification the same piece of evidence: a verified mark does not outlive a change to it. */
+const certificationKey = (c: {
+  name: string;
+  issuer: string;
+  year: number;
+  issuedOn?: string | null | undefined;
+  photo?: { mediaId: string } | null | undefined;
+}) => `${c.name}|${c.issuer}|${c.year}|${c.issuedOn ?? ''}|${c.photo?.mediaId ?? ''}`;
 
 /** `<name>-<trace code>`: readable, and unique because the trace code is. */
 function productSlug(name: string, traceCode: string): string {
@@ -93,6 +122,11 @@ export class HouseholdsService {
     private readonly consents: ConsentService,
     private readonly cipher: FieldCipher,
   ) {}
+
+  /** Database driver in use: `postgresql` or `mysql` (ADR-05); picks the GROUP BY date expression. */
+  private get driver(): 'postgresql' | 'mysql' {
+    return resolveDbDriver(process.env);
+  }
 
   // --- Người đại diện hộ ---
 
@@ -183,16 +217,35 @@ export class HouseholdsService {
         if (ids.some((id) => !owned.has(id))) throw forbidden('gallery media is not yours');
         household.gallery = input.gallery.map((item) => ({ ...item }));
       }
+      // Own photos (cover, portrait, seal, certificate pictures) must be uploads of this household's account.
+      const photoIds = [
+        input.coverPhoto?.mediaId,
+        input.portraitPhoto?.mediaId,
+        input.sealPhoto?.mediaId,
+        ...(input.certifications ?? []).map((c) => c.photo?.mediaId),
+      ].filter((id): id is string => id !== undefined);
+      if (photoIds.length > 0) {
+        const owned = await this.media.ownedBy(actor.id, photoIds);
+        if (photoIds.some((id) => !owned.has(id))) throw forbidden('profile media is not yours');
+      }
+      if (input.coverPhoto !== undefined) household.coverPhoto = input.coverPhoto;
+      if (input.portraitPhoto !== undefined) household.portraitPhoto = input.portraitPhoto;
+      if (input.sealPhoto !== undefined) household.sealPhoto = input.sealPhoto;
       if (input.certifications) {
+        // The board's "verified" mark survives only while the household keeps the evidence unchanged.
         const verified = new Set(
-          (household.certifications ?? [])
-            .filter((c) => c.verified)
-            .map((c) => `${c.name}|${c.issuer}|${c.year}`),
+          (household.certifications ?? []).filter((c) => c.verified).map(certificationKey),
         );
-        household.certifications = input.certifications.map((c) => ({
-          ...c,
-          verified: verified.has(`${c.name}|${c.issuer}|${c.year}`),
-        }));
+        household.certifications = input.certifications.map((c) => {
+          const entry = {
+            name: c.name,
+            issuer: c.issuer,
+            year: certificationYear(c) ?? 0,
+            issuedOn: c.issuedOn ?? null,
+            photo: c.photo ?? null,
+          };
+          return { ...entry, verified: verified.has(certificationKey(entry)) };
+        });
       }
       if (input.slug !== undefined && input.slug !== household.slug) {
         const taken =
@@ -204,6 +257,7 @@ export class HouseholdsService {
       }
       if (input.history !== undefined) household.history = input.history;
       if (input.craft !== undefined) household.craft = input.craft || null;
+      if (input.craftCategory !== undefined) household.craftCategory = input.craftCategory;
       if (input.village !== undefined) household.village = input.village || null;
       if (input.foundedYear !== undefined) household.foundedYear = input.foundedYear;
       if (input.generations !== undefined) household.generations = input.generations;
@@ -228,6 +282,118 @@ export class HouseholdsService {
     return toHouseholdDto(household, await this.parts(em, household, false));
   }
 
+  /**
+   * Live check of a household slug while it is typed (FR-ART-01). The household's own slug (and one it
+   * retired earlier) counts as free, so the editor shows no false conflict. A taken slug comes back with the
+   * first free `-2` … `-9` variant. The save still enforces uniqueness, so this is advice, not a lock.
+   */
+  async slugAvailability(actor: Actor, slug: string): Promise<SlugAvailabilityDto> {
+    const em = this.orm.em.fork();
+    const own = await em.findOne(Household, { representative: actor.id });
+    const isFree = async (candidate: string) =>
+      (await em.count(Household, {
+        slug: candidate,
+        ...(own ? { id: { $ne: own.id } } : {}),
+      })) === 0 &&
+      !(await slugRetiredByOther(em, 'HOUSEHOLD', candidate, own?.id ?? NO_HOUSEHOLD_ID));
+    if (await isFree(slug)) return { available: true };
+    for (let suffix = 2; suffix <= 9; suffix++) {
+      const candidate = `${slug.slice(0, 160 - 2)}-${suffix}`;
+      if (await isFree(candidate)) return { available: false, suggestion: candidate };
+    }
+    return { available: false };
+  }
+
+  /**
+   * FR-ART-03: the village board marks one certification of a household verified, or removes the mark.
+   * Audited like the other board decisions; `If-Match` guards the index against a concurrent edit.
+   */
+  async setCertificationVerified(
+    actor: Actor,
+    householdId: string,
+    index: number,
+    expectedVersion: number,
+    verified: boolean,
+  ): Promise<HouseholdDto> {
+    return this.orm.em.fork().transactional(async (em) => {
+      const household = await em.findOne(Household, householdId);
+      if (!household) throw notFound();
+      assertVersion(household, expectedVersion);
+      const certifications = household.certifications ?? [];
+      const target = certifications[index];
+      if (!target) throw notFound('this certification does not exist');
+      household.certifications = certifications.map((c, i) =>
+        i === index ? { ...c, verified } : c,
+      );
+      em.create(AuditLog, {
+        actorId: actor.id,
+        action: verified ? 'household.certification_verify' : 'household.certification_unverify',
+        entity: 'household',
+        entityId: household.id,
+        before: { certification: target.name, issuer: target.issuer, verified: target.verified },
+        after: { certification: target.name, issuer: target.issuer, verified },
+      });
+      queueKnowledgeChange(em, 'HOUSEHOLD', household.id);
+      await em.flush();
+      return toHouseholdDto(household, await this.parts(em, household, false));
+    });
+  }
+
+  /**
+   * Explicit resubmission after the applicant answered an information request (vCRAFT-8my.2).
+   * Optimistic concurrency: `assertVersion` rejects a write based on a stale read with 409
+   * `STALE_VERSION`; because `decide` bumps the same version inside its own transaction, a resubmit
+   * racing a board decision fails on flush instead of silently overwriting it. The active reason is
+   * cleared here and kept as history in the audit log; the marker makes the queue show RESUBMITTED
+   * until the board writes a new reason or decides.
+   */
+  async resubmit(actor: Actor, expectedVersion: number): Promise<ResubmitHouseholdDto> {
+    return this.orm.em.fork().transactional(async (em) => {
+      const household = await this.ownWritableHousehold(em, actor);
+      assertVersion(household, expectedVersion);
+      if (household.status !== 'PENDING_REVIEW') {
+        throw new AppError('INVALID_TRANSITION', 'only a pending application can be resubmitted');
+      }
+      // Only an open information request can be answered; this also blocks repeated submissions,
+      // because a resubmit clears the active reason (the old text stays in the audit log).
+      const activeReason = household.statusReason?.trim() ?? '';
+      if (activeReason.length === 0) {
+        throw new AppError('INVALID_TRANSITION', 'no information request to answer');
+      }
+      const now = new Date();
+      household.statusReason = null;
+      household.resubmittedAt = now;
+      em.create(AuditLog, {
+        actorId: actor.id,
+        action: 'household.resubmit',
+        entity: 'household',
+        entityId: household.id,
+        before: { status: household.status, reason: activeReason },
+        after: { status: household.status, reason: null, resubmittedAt: now.toISOString() },
+      });
+      // An actionable signal for the board (FR-ADM-03): the application was answered and sent back.
+      this.notifications.publish(em, {
+        type: 'HOUSEHOLD_RESUBMITTED',
+        subjectId: household.id,
+        actorId: actor.id,
+        recipientIds: (
+          await em.find(AppUser, { role: 'ADMIN', status: 'ACTIVE' }, { fields: ['id'] })
+        ).map((admin) => admin.id),
+        email: false,
+      });
+      await em.flush();
+      return {
+        version: household.version,
+        resubmittedAt: now.toISOString(),
+        reviewState: householdReviewState(
+          household.status,
+          household.statusReason,
+          household.resubmittedAt,
+        ),
+      };
+    });
+  }
+
   async updateWorkshop(
     actor: Actor,
     workshopId: string,
@@ -250,6 +416,8 @@ export class HouseholdsService {
       workshop.experiencePriceVnd = input.experience?.priceVnd ?? null;
       workshop.temporarilyClosed = input.temporarilyClosed;
       workshop.closureReason = input.temporarilyClosed ? (input.closureReason ?? null) : null;
+      // Left out keeps the stored hamlet, so a client that does not know the field cannot clear it (ADR-0023).
+      if (input.areaCode !== undefined) workshop.areaCode = input.areaCode;
       workshop.lat = input.lat === undefined ? null : input.lat.toFixed(6);
       workshop.lng = input.lng === undefined ? null : input.lng.toFixed(6);
       await em.flush();
@@ -273,6 +441,7 @@ export class HouseholdsService {
         experiencePriceVnd: input.experience?.priceVnd ?? null,
         temporarilyClosed: input.temporarilyClosed,
         closureReason: input.temporarilyClosed ? (input.closureReason ?? null) : null,
+        areaCode: input.areaCode ?? null,
         lat: input.lat === undefined ? null : input.lat.toFixed(6),
         lng: input.lng === undefined ? null : input.lng.toFixed(6),
       });
@@ -307,6 +476,8 @@ export class HouseholdsService {
         slug: productSlug(input.name, traceCode),
         traceCode,
         description: input.description,
+        nameEn: input.nameEn || null,
+        descriptionEn: input.descriptionEn || null,
         kind: input.kind,
         batchSize: input.batchSize ?? null,
         category: input.category,
@@ -314,12 +485,75 @@ export class HouseholdsService {
         stock: input.stock,
         material: input.material ?? null,
         dimensions: input.dimensions ?? null,
+        materialEn: input.materialEn || null,
+        dimensionsEn: input.dimensionsEn || null,
         weightGrams: input.weightGrams ?? null,
         artisanNote: input.artisanNote ?? null,
+        tags: normalizeTags(input.tags ?? []),
       });
       await em.flush();
       return toProductDto(product);
     });
+  }
+
+  /**
+   * FR-PRD-06: a DRAFT copy of one of the household's products. It carries the descriptive fields, price,
+   * tags, category and photo references, but not the production journal, the makers' credits or the scan
+   * history, and it gets its own trace code and slug.
+   */
+  async duplicateProduct(actor: Actor, productId: string): Promise<ProductDto> {
+    return this.orm.em.fork().transactional(async (em) => {
+      const household = await this.ownApprovedHousehold(em, actor);
+      const source = await this.ownProduct(em, actor, household, productId);
+      const traceCode = await this.uniqueTraceCode(em);
+      const copy = em.create(Product, {
+        household,
+        name: source.name,
+        slug: productSlug(source.name, traceCode),
+        traceCode,
+        description: source.description,
+        nameEn: source.nameEn ?? null,
+        descriptionEn: source.descriptionEn ?? null,
+        kind: source.kind,
+        batchSize: source.batchSize ?? null,
+        category: source.category,
+        priceVnd: source.priceVnd,
+        stock: source.stock,
+        material: source.material ?? null,
+        dimensions: source.dimensions ?? null,
+        materialEn: source.materialEn ?? null,
+        dimensionsEn: source.dimensionsEn ?? null,
+        weightGrams: source.weightGrams ?? null,
+        artisanNote: source.artisanNote ?? null,
+        tags: [...(source.tags ?? [])],
+        coverUrl: source.coverUrl ?? null,
+        coverAlt: source.coverAlt ?? null,
+        coverAltEn: source.coverAltEn ?? null,
+        images: (source.images ?? []).map((image) => ({ ...image })),
+      });
+      await em.flush();
+      return toProductDto(copy);
+    });
+  }
+
+  /**
+   * FR-PRD-07: the median listed price of published products in a category, as a hint for the product
+   * editor. Null when fewer than 3 comparable products exist; it never writes a price.
+   */
+  async priceSuggestion(actor: Actor, category: ProductCategory): Promise<PriceSuggestionDto> {
+    const em = this.orm.em.fork();
+    await this.ownHousehold(em, actor);
+    const comparable = await em.find(
+      Product,
+      {
+        status: 'PUBLISHED',
+        household: { status: 'APPROVED' },
+        category,
+        priceVnd: { $gt: 0 },
+      },
+      { fields: ['priceVnd'], orderBy: { publishedAt: 'desc' }, limit: 500 },
+    );
+    return { category, suggestion: suggestProductPrice(comparable.map((p) => p.priceVnd)) };
   }
 
   /** Chủ hộ sửa thông tin và ảnh sản phẩm; ảnh chỉ được gắn khi chính họ đã tải lên. */
@@ -360,8 +594,13 @@ export class HouseholdsService {
       if (input.stock !== undefined) product.stock = input.stock;
       if (input.material !== undefined) product.material = input.material || null;
       if (input.dimensions !== undefined) product.dimensions = input.dimensions || null;
+      if (input.nameEn !== undefined) product.nameEn = input.nameEn || null;
+      if (input.descriptionEn !== undefined) product.descriptionEn = input.descriptionEn || null;
+      if (input.materialEn !== undefined) product.materialEn = input.materialEn || null;
+      if (input.dimensionsEn !== undefined) product.dimensionsEn = input.dimensionsEn || null;
       if (input.weightGrams !== undefined) product.weightGrams = input.weightGrams;
       if (input.artisanNote !== undefined) product.artisanNote = input.artisanNote || null;
+      if (input.tags !== undefined) product.tags = normalizeTags(input.tags);
       queueKnowledgeChange(em, 'PRODUCT', product.id);
       await em.flush();
       return product.id;
@@ -375,7 +614,7 @@ export class HouseholdsService {
     );
   }
 
-  /** Xuất bản / rút / xuất bản lại một sản phẩm; Ban quản lý chỉ được rút. */
+  /** Publish, withdraw (archive), republish, mark sold or put back on sale; the board may only withdraw. */
   async changeProduct(
     actor: Actor,
     productId: string,
@@ -398,6 +637,7 @@ export class HouseholdsService {
         isOwner,
         householdStatus: household.status,
         reason,
+        kind: product.kind,
       });
       if (!next.ok && next.error.code === 'HOUSEHOLD_NOT_APPROVED') {
         throw new AppError('HOUSEHOLD_NOT_APPROVED');
@@ -419,6 +659,9 @@ export class HouseholdsService {
       } else if (product.status === 'WITHDRAWN') {
         product.withdrawnReason = reason ?? null;
       }
+      // A one-of-a-kind piece has one unit: selling it empties the stock, undoing the sale restores it.
+      if (event === 'MARK_SOLD') product.stock = 0;
+      else if (event === 'BACK_ON_SALE' && product.stock === 0) product.stock = 1;
       if (actor.role === 'ADMIN') {
         em.create(AuditLog, {
           actorId: actor.id,
@@ -488,6 +731,8 @@ export class HouseholdsService {
       version: h.version,
       name: h.name,
       status: h.status,
+      reviewState: householdReviewState(h.status, h.statusReason, h.resubmittedAt),
+      resubmittedAt: h.resubmittedAt ? h.resubmittedAt.toISOString() : null,
       submittedAt: h.createdAt.toISOString(),
     }));
   }
@@ -522,6 +767,7 @@ export class HouseholdsService {
         id: a.id,
         mimeType: a.mimeType,
         caption: caption.get(a.id) ?? null,
+        certificateKind: a.certificateKind ?? 'UNKNOWN',
         sizeBytes: a.sizeBytes,
         createdAt: a.createdAt.toISOString(),
       })),
@@ -530,16 +776,54 @@ export class HouseholdsService {
 
   async dashboard(): Promise<AdminDashboardDto> {
     const em = this.orm.em.fork();
-    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const [activeHouseholds, pendingApplications, openRfqs, ordersInProduction, qrScans30Days] =
+    const dates = last30VietnamDates();
+    const since = vietnamDayStartUtc(dates[0] ?? '');
+    // Bounded time window (from the window start to the day after its last date) instead of every scan.
+    const [activeHouseholds, pendingApplications, openRfqs, ordersInProduction, daily] =
       await Promise.all([
         em.count(Household, { status: 'APPROVED' }),
         em.count(Household, { status: 'PENDING_REVIEW' }),
         em.count(QuotationRequest, { status: { $in: ['SENT', 'BIDDING'] } }),
         em.count(QuotationRequest, { status: 'IN_PRODUCTION' }),
-        em.count(TraceScan, { createdAt: { $gte: since } }),
+        this.scanTrend(em, since, dates[dates.length - 1] ?? ''),
       ]);
-    return { activeHouseholds, pendingApplications, openRfqs, ordersInProduction, qrScans30Days };
+    const trend = zeroFilledTrend(dates, daily);
+    return {
+      activeHouseholds,
+      pendingApplications,
+      openRfqs,
+      ordersInProduction,
+      // The same 30-day Vietnam window as `trend`, so the total equals the sum of the daily points.
+      qrScans30Days: trend.reduce((sum, point) => sum + point.count, 0),
+      trend,
+    };
+  }
+
+  /**
+   * Aggregated scans per Vietnam calendar date over the bounded window: one GROUP BY query answering
+   * at most 30 rows, never one row per scan. The date expression is driver-specific and always yields
+   * an ISO `YYYY-MM-DD` string (`to_char(...)` on PostgreSQL, `date_format(...)` on MySQL — the
+   * columns are UTC), while the window bounds travel as parameters so the plan keeps using the
+   * `trace_scan.created_at` index.
+   */
+  private scanTrend(em: EntityManager, since: Date, lastDate: string): Promise<ScanDayRow[]> {
+    const until = new Date(vietnamDayStartUtc(lastDate).getTime() + DAY_MS);
+    const dayExpr =
+      this.driver === 'mysql'
+        ? "date_format(date_add(created_at, interval 7 hour), '%Y-%m-%d')"
+        : "to_char(created_at at time zone 'Asia/Ho_Chi_Minh', 'YYYY-MM-DD')";
+    const sql =
+      `select ${dayExpr} as day, count(*) as count from trace_scan` +
+      ' where created_at >= ? and created_at < ? group by 1';
+    return em
+      .getConnection()
+      .execute(sql, [since, until])
+      .then((rows) =>
+        (rows as ScanDayRow[]).map((row) => ({
+          day: String(row.day).slice(0, 10),
+          count: Number(row.count),
+        })),
+      );
   }
 
   /**
@@ -682,23 +966,26 @@ export class HouseholdsService {
           product.household.status === 'SUSPENDED' ? 'HOUSEHOLD_SUSPENDED' : 'PRODUCT_WITHDRAWN',
       };
     }
-    const covers = await this.media.productCoverImages([product]);
+    // Independent reads run together: sequential awaits cost one database round trip each (GH#255).
+    const [covers, makers, media, journal, scanCount] = await Promise.all([
+      this.media.productCoverImages([product]),
+      this.makersOf(em, [product]),
+      this.media.publicMedia(productMediaIds([product])),
+      loadJournal(em, product, this.media),
+      em.count(TraceScan, { product }),
+    ]);
     return {
       availability,
-      product: toProductDto(
-        product,
-        (await this.makersOf(em, [product])).get(product.id),
-        await this.media.publicMedia(productMediaIds([product])),
-        covers.get(product.id),
-      ),
-      coverCredit: await this.media.productCoverCredit(product),
+      product: toProductDto(product, makers.get(product.id), media, covers.get(product.id)),
+      // The cover credit is the first linked cover image's: the same row set `productCoverImages` just read.
+      coverCredit: covers.get(product.id)?.[0]?.credit ?? null,
       household: {
         name: product.household.name,
         slug: product.household.slug,
         status: product.household.status,
       },
-      journal: await loadJournal(em, product, this.media),
-      scanCount: await em.count(TraceScan, { product }),
+      journal,
+      scanCount,
     };
   }
 
@@ -768,28 +1055,39 @@ export class HouseholdsService {
     const [artisans, workshops, products] = await Promise.all([
       em.find(Artisan, { household }, { orderBy: { createdAt: 'asc' } }),
       em.find(Workshop, { household }, { orderBy: { createdAt: 'asc' } }),
-      em.find(Product, publicOnly ? { household, status: 'PUBLISHED' } : { household }, {
-        orderBy: { createdAt: 'asc' },
-      }),
+      em.find(
+        Product,
+        publicOnly ? { household, status: { $in: ['PUBLISHED', 'SOLD'] } } : { household },
+        {
+          orderBy: { createdAt: 'asc' },
+        },
+      ),
     ]);
-    const linked = await this.media.linkedImages(
-      'HOUSEHOLD',
-      [household.id],
-      ['PORTRAIT', 'BANNER', 'GALLERY'],
-    );
     const mediaIds = [
+      ...[household.coverPhoto, household.portraitPhoto, household.sealPhoto].flatMap((photo) =>
+        photo ? [photo.mediaId] : [],
+      ),
+      ...(household.certifications ?? []).flatMap((c) => (c.photo ? [c.photo.mediaId] : [])),
       ...(household.gallery ?? []).flatMap((item) => (item.mediaId ? [item.mediaId] : [])),
       ...(household.timeline ?? []).flatMap((e) => (e.photo ? [e.photo.mediaId] : [])),
       ...productMediaIds(products),
     ];
+    // Three independent reads: together they cost one round trip instead of three (GH#255).
+    const [linked, makers, media] = await Promise.all([
+      this.media.linkedImages('HOUSEHOLD', [household.id], ['PORTRAIT', 'BANNER', 'GALLERY']),
+      this.makersOf(em, products),
+      this.media.publicMedia(mediaIds),
+    ]);
     return {
       artisans,
       workshops,
       products,
       idNumberMasked: this.maskedIdNumber(household),
-      makers: await this.makersOf(em, products),
-      media: await this.media.publicMedia(mediaIds),
+      makers,
+      media,
       linked: linked.get(household.id) ?? [],
+      productCovers: await this.media.productCoverImages(products),
+      rating: (await ratingSummaries(em, [household.id])).get(household.id) ?? NO_RATINGS,
     };
   }
 

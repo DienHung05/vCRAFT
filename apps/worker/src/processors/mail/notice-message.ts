@@ -41,6 +41,18 @@ const COPY: Record<NotificationType, { subject: string; body: string }> = {
     subject: 'Một hộ đã xác nhận phân bổ',
     body: 'Một hộ vừa xác nhận phần sản xuất của mình trong đơn hàng.',
   },
+  ALLOCATION_REASSIGNED: {
+    subject: 'Một phần việc của bạn đã được chuyển cho hộ khác',
+    body: 'Ban quản lý đã chuyển phần việc còn lại của bạn trong đơn hàng cho hộ khác để kịp tiến độ. Phần bạn đã làm xong vẫn được ghi nhận.',
+  },
+  ALLOCATION_INCREASED: {
+    subject: 'Hộ bạn được giao thêm phần sản xuất',
+    body: 'Ban quản lý đã chuyển thêm phần việc trong đơn hàng cho hộ bạn. Vui lòng xem số lượng và hạn hoàn thành của phần sản xuất đã cập nhật.',
+  },
+  RFQ_NOT_SELECTED: {
+    subject: 'Người mua đã chọn một chào giá khác',
+    body: 'Người mua đã chọn một chào giá khác cho yêu cầu báo giá mà hộ bạn được mời. Cảm ơn bạn đã quan tâm và tham gia.',
+  },
   ORDER_CANCELLED: {
     subject: 'Đơn hàng đã bị hủy',
     body: 'Đơn hàng đã bị hủy; các phân bổ còn hiệu lực không được tiếp tục.',
@@ -81,6 +93,10 @@ const COPY: Record<NotificationType, { subject: string; body: string }> = {
     subject: 'Hồ sơ hộ của bạn cần bổ sung thông tin',
     body: 'Ban quản lý cần thêm thông tin để xét hồ sơ hộ của bạn. Xem yêu cầu trong trang trạng thái hồ sơ.',
   },
+  HOUSEHOLD_RESUBMITTED: {
+    subject: 'Hồ sơ hộ đã được bổ sung và gửi lại',
+    body: 'Một hộ vừa bổ sung thông tin theo yêu cầu và gửi lại hồ sơ. Hãy xem xét trong hàng đợi duyệt hộ.',
+  },
   HOUSEHOLD_SUSPENDED: {
     subject: 'Hộ của bạn tạm ngừng trưng bày',
     body: 'Ban quản lý đã tạm ngừng trưng bày hộ của bạn. Xem lý do trong trang trạng thái hồ sơ.',
@@ -88,6 +104,18 @@ const COPY: Record<NotificationType, { subject: string; body: string }> = {
   HOUSEHOLD_REINSTATED: {
     subject: 'Hộ của bạn được trưng bày trở lại',
     body: 'Ban quản lý đã khôi phục trưng bày cho hộ của bạn.',
+  },
+  PAYMENT_PAID: {
+    subject: 'Đã nhận được khoản thanh toán cho đơn hàng',
+    body: 'Khoản thanh toán cho đơn hàng đã được xác nhận. Xem tình trạng thanh toán trong trang đơn hàng.',
+  },
+  PAYMENT_EXPIRED: {
+    subject: 'Khoản thanh toán đã hết hạn',
+    body: 'Khoản thanh toán chưa nhận được tiền trong thời hạn nên đã hết hạn. Bạn có thể tạo lại khoản thanh toán trong trang đơn hàng.',
+  },
+  PAYMENT_REFUNDED: {
+    subject: 'Khoản thanh toán đã được hoàn lại',
+    body: 'Ban quản lý đã đánh dấu hoàn lại một khoản thanh toán của đơn hàng. Xem lý do trong trang đơn hàng.',
   },
   NEWS_PUBLISHED: {
     subject: 'Ban quản lý vừa đăng một tin quan trọng',
@@ -100,6 +128,7 @@ const PAGE_PATH: Record<NotificationTargetPage, string> = {
   BUYER_RFQ: 'yeu-cau-bao-gia/{id}',
   STUDIO_CONTRIBUTION: 'studio/de-xuat-tham-gia/{id}',
   ADMIN_COORDINATION: 'admin/dieu-phoi/{id}',
+  ADMIN_HOUSEHOLD_REVIEW: 'admin/duyet-ho/{id}',
   STUDIO_APPLICATION: 'studio/ho-so',
   NEWS_ARTICLE: 'tin-tuc/{id}',
 };

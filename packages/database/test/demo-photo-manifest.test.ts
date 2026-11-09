@@ -24,8 +24,12 @@ const repoPath = (relative: string) =>
 const TRACE_CODE = /^[2-9A-HJKMNP-Z]{8}$/;
 /** Products with a photo from before the product-photo round (they keep their Commons photos). */
 const EARLIER_COVERED_TRACE_CODES = ['BT7K2QXM', '84PZKVJU'];
-/** Product photos of vCRAFT-83g.48 (74) and vCRAFT-83g.52 (146): one `pp-<trace code>` photo per product. */
-const PRODUCT_PHOTO_COUNT = 74;
+/**
+ * Product photos of vCRAFT-83g.48 (74) and vCRAFT-83g.52 (132 of 146 kept: unknown-licence photos stay when they match
+ * their product, owner decision 2026-11-08): one `pp-<trace code>` photo per product, plus two `pp2-<trace code>`
+ * museum open-access photos (GH#331) for products whose retired `pp-` photo did not match.
+ */
+const PRODUCT_PHOTO_COUNT = 208;
 
 describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
   const photos = new Map(DEMO_PHOTOS.map((p) => [p.id, p]));
@@ -46,7 +50,7 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
       expect(photo.credit.sourceUrl, photo.id).toMatch(/^https?:\/\//);
       if (photo.credit.license !== 'unknown') {
         expect(photo.credit.sourceUrl, photo.id).toMatch(
-          /^https:\/\/(commons\.wikimedia\.org|clevelandart\.org|pixabay\.com)\//,
+          /^https:\/\/(commons\.wikimedia\.org|clevelandart.org|www.metmuseum.org|pixabay\.com)\//,
         );
       }
       const widest = Math.max(...photo.widths);
@@ -72,7 +76,7 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
     }
   });
 
-  it('news covers are real photos that match the article; the rest keep the illustration (GH#181)', () => {
+  it('every news cover is a licensed photo of its village or subject (GH#314, GH#333)', () => {
     const covers = new Map(
       DEMO_PHOTO_LINKS.filter((l) => l.target === 'NEWS' && l.role === 'COVER').map((l) => [
         l.key,
@@ -80,34 +84,32 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
       ]),
     );
     expect(Object.fromEntries(covers)).toEqual({
-      'h7-class': 'ban-xoay-xuong',
-      'village-clay-month': 'news-dat-set',
-      'h0-blue-glaze': 'binh-hoa-lam',
-      'h1-crackle': 'ln-hu-men-ngoc',
-      'h3-lotus': 'pp-mf52jtdn',
-      'h4-vase': 'khuon-binh-lon',
-      'h6-altar': 'pp-a2sbgf7h',
-      'h8-white-plate': 'pp-e8uzvyg4',
-      'h12-wine-jar': 'pp-bu4ymz85',
-      // GH#197: Commons photos of Bát Tràng for the stories GH#181 left without a cover.
-      'village-cooperative': 'news-dong-hang',
-      'village-trace': 'news-got-bat',
-      'village-kiln-safety': 'news-trong-lo',
-      'village-spring-fair': 'news-dinh-tet',
-      'h0-open-kiln': 'news-khach-tham',
-      'h2-logo-cup': 'news-coc-in-hinh',
-      'h2-batch-code': 'news-lo-binh-moc',
-      'h5-teaset': 'news-am-chen',
+      'bt-creative-craft-network': 'news-am-trang-moc',
+      'bt-festival-heritage-2025': 'news-dinh-cong',
+      'bt-green-kilns-policy': 'news-trong-lo',
+      'bt-feast-heritage': 'news-nha-co',
+      'bt-young-artisans': 'news-got-bat',
+      'bt-ocop-five-star': 'news-am-chen',
+      'bt-imports-workshop': 'news-pho-gom',
+      'bt-livestream-ocop': 'ht-ve-chen',
+      'bt-festival-2026': 'news-dinh-chinh',
+      'bt-digital-village': 'news-khach-tham',
+      'bt-tan-thinh-ip': 'binh-hoa-lam',
     });
+    // A story with no licensed photo of its subject has no cover (the site shows an illustration); every cover
+    // belongs to a seeded story (GH#333).
+    const newsKeys = new Set(NEWS.map((n) => n.key));
+    for (const key of covers.keys()) expect(newsKeys.has(key), key).toBe(true);
     // Only photos credited to Commons, museum open access or Pixabay under CC0/PD/CC BY(-SA) are used.
     for (const photo of covers.values()) {
       const credit = DEMO_PHOTOS.find((p) => p.id === photo)?.credit;
       expect(credit?.license, photo).toMatch(/^(CC0|CC BY|CC BY-SA|Public domain|Pixabay)/i);
       expect(credit?.sourceUrl, photo).toMatch(/^https:\/\//);
     }
-    // News about one household never claims the photo shows that household's own piece.
-    for (const link of DEMO_PHOTO_LINKS.filter((l) => l.target === 'NEWS' && /^h\d/.test(l.key))) {
-      expect(`${link.alt} ${link.altEn}`, link.key).not.toMatch(/\{|của hộ|household's/i);
+    // A photo that is not of the exact event or object says so in its alt text.
+    for (const link of DEMO_PHOTO_LINKS.filter((l) => l.target === 'NEWS' && l.role === 'COVER')) {
+      expect(link.altEn, link.key).toMatch(/\bnot\b/);
+      expect(link.altEn, link.key).toMatch(/^[ -~]+$/);
     }
   });
 
@@ -119,11 +121,13 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
     expect(DEMO_PHOTO_LINKS.filter((l) => l.target === 'PRODUCT')).toHaveLength(covered.length);
     expect(covered.find((l) => l.key === 'BT7K2QXM')?.photo).toBe('binh-men-lam-xam');
     expect(covered.find((l) => l.key === '84PZKVJU')?.photo).toBe('ong-gom-lam-may');
-    const own = covered.filter((l) => l.photo.startsWith('pp-'));
+    const own = covered.filter((l) => l.photo.startsWith('pp-') || l.photo.startsWith('pp2-'));
     expect(own).toHaveLength(PRODUCT_PHOTO_COUNT);
     // The 83g.48 photos use a lowercase trace code in the id, the 83g.52 ones keep the original uppercase.
     for (const link of own) {
-      expect(link.photo.toLowerCase(), link.key).toBe(`pp-${link.key.toLowerCase()}`);
+      expect(link.photo.toLowerCase(), link.key).toMatch(
+        new RegExp(`^pp2?-${link.key.toLowerCase()}$`),
+      );
     }
     expect(new Set(keys)).toEqual(
       new Set([...EARLIER_COVERED_TRACE_CODES, ...own.map((l) => l.key)]),

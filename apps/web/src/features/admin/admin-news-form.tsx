@@ -35,6 +35,7 @@ const inputClass = 'w-full rounded-input border border-ink/20 bg-surface px-3 py
 const COVER_POLL_MS = 1500;
 const COVER_POLL_ATTEMPTS = 20;
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const SOURCE_URL = /^https:\/\/\S+$/i;
 
 type Publication = 'draft' | 'now' | 'schedule';
 
@@ -51,6 +52,10 @@ interface Values {
   publication: Publication;
   publishAt: string;
   coverAlt: string;
+  sourceName: string;
+  sourceUrl: string;
+  /** `YYYY-MM-DD` of the original story, or empty. */
+  sourcePublishedOn: string;
 }
 
 const EMPTY: Values = {
@@ -66,6 +71,9 @@ const EMPTY: Values = {
   publication: 'draft',
   publishAt: '',
   coverAlt: '',
+  sourceName: '',
+  sourceUrl: '',
+  sourcePublishedOn: '',
 };
 
 /** `datetime-local` works in the viewer's clock, so it is converted through local time. */
@@ -87,9 +95,12 @@ const valuesOf = (news: AdminNewsDto): Values => ({
   publication: news.state === 'DRAFT' ? 'draft' : news.state === 'SCHEDULED' ? 'schedule' : 'now',
   publishAt: news.state === 'SCHEDULED' && news.publishedAt ? toLocalInput(news.publishedAt) : '',
   coverAlt: news.cover?.alt ?? '',
+  sourceName: news.sourceName ?? '',
+  sourceUrl: news.sourceUrl ?? '',
+  sourcePublishedOn: news.sourcePublishedAt?.slice(0, 10) ?? '',
 });
 
-type Field = 'title' | 'summary' | 'body' | 'publishAt' | 'slug';
+type Field = 'title' | 'summary' | 'body' | 'publishAt' | 'slug' | 'sourceUrl';
 
 export function newsFormProblems(values: Values, now = new Date()): Partial<Record<Field, true>> {
   const problems: Partial<Record<Field, true>> = {};
@@ -97,6 +108,9 @@ export function newsFormProblems(values: Values, now = new Date()): Partial<Reco
   if (!values.summary.trim()) problems.summary = true;
   if (values.bodyEmpty) problems.body = true;
   if (values.slug && !SLUG.test(values.slug)) problems.slug = true;
+  const sourceUrl = values.sourceUrl.trim();
+  if (sourceUrl && (!SOURCE_URL.test(sourceUrl) || !values.sourceName.trim()))
+    problems.sourceUrl = true;
   if (values.publication === 'schedule' && (!values.publishAt || new Date(values.publishAt) <= now))
     problems.publishAt = true;
   return problems;
@@ -119,6 +133,23 @@ async function uploadCover(client: AdminClient, file: File): Promise<string> {
     await new Promise((resolve) => setTimeout(resolve, COVER_POLL_MS));
   }
   throw new Error('cover-not-ready');
+}
+
+/** Source fields are sent when filled, or when an existing item had them (so clearing works). */
+function sourceRequest(
+  values: Values,
+  existing: AdminNewsDto | null,
+): Pick<SaveNewsRequest, 'sourceName' | 'sourceUrl' | 'sourcePublishedAt'> {
+  const name = values.sourceName.trim();
+  const url = values.sourceUrl.trim();
+  const out: Pick<SaveNewsRequest, 'sourceName' | 'sourceUrl' | 'sourcePublishedAt'> = {};
+  if (name || existing?.sourceName) out.sourceName = name || null;
+  if (url || existing?.sourceUrl) out.sourceUrl = url || null;
+  if (values.sourcePublishedOn || existing?.sourcePublishedAt)
+    out.sourcePublishedAt = values.sourcePublishedOn
+      ? `${values.sourcePublishedOn}T12:00:00.000Z`
+      : null;
+  return out;
 }
 
 /** Create and edit form for news (FR-NEWS-01, 02, 05). */
@@ -225,6 +256,7 @@ export function AdminNewsForm({
         : {}),
       ...(coverMediaId !== undefined ? { coverMediaId } : {}),
       ...(values.coverAlt.trim() ? { coverAlt: values.coverAlt.trim() } : {}),
+      ...sourceRequest(values, existing),
       ...structuredRequest(values.category, structured),
     };
     try {
@@ -389,6 +421,41 @@ export function AdminNewsForm({
           className={inputClass}
         />
       </label>
+      <fieldset className="flex flex-col gap-3">
+        <legend>{form('sourceTitle')}</legend>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <label className="flex flex-col gap-1">
+            {form('sourceName')}
+            <input
+              value={values.sourceName}
+              maxLength={120}
+              onChange={(event) => set('sourceName', event.target.value)}
+              className={inputClass}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            {form('sourcePublishedOn')}
+            <input
+              type="date"
+              value={values.sourcePublishedOn}
+              onChange={(event) => set('sourcePublishedOn', event.target.value)}
+              className={inputClass}
+            />
+          </label>
+        </div>
+        <label className="flex flex-col gap-1">
+          {form('sourceUrl')}
+          <input
+            type="url"
+            value={values.sourceUrl}
+            maxLength={500}
+            onChange={(event) => set('sourceUrl', event.target.value)}
+            className={inputClass}
+          />
+          {problem('sourceUrl')}
+        </label>
+        <span className="text-small text-ash">{form('sourceHint')}</span>
+      </fieldset>
       <label className="flex items-center gap-2">
         <input
           type="checkbox"

@@ -18,7 +18,10 @@ import {
 import { createNoticeLoader } from './processors/mail/load-notice';
 import { type HouseholdMailJob, sendHouseholdMail } from './processors/mail/send-household-mail';
 import { sendNoticeMail } from './processors/mail/send-notice-mail';
-import { processMediaAsset } from './processors/media/process-media';
+import { failMediaAsset, processMediaAsset } from './processors/media/process-media';
+import { newsImportConfigFromEnv, newsImportEnabled } from './processors/news-import/config';
+import { runNewsImport } from './processors/news-import/import-news';
+import { llmFromEnv } from './processors/news-import/llm';
 import { createOutboxDispatcher } from './processors/outbox/dispatch';
 import { relayOutbox } from './processors/outbox/relay-outbox';
 import { generateQrLabels, type QrLabelsJob } from './processors/qr-labels/generate-qr-labels';
@@ -26,6 +29,11 @@ import {
   ASSISTANT_LOG_PURGE_EVERY_MS,
   ASSISTANT_LOG_PURGE_JOB,
   COORDINATION_CHECK_EVERY_MS,
+  IDEMPOTENCY_PURGE_EVERY_MS,
+  IDEMPOTENCY_PURGE_JOB,
+  NEWS_IMPORT_JOB,
+  PAYMENT_EXPIRE_EVERY_MS,
+  PAYMENT_EXPIRE_SWEEP_JOB,
   RFQ_COORDINATION_CHECK_JOB,
   RFQ_EXPIRE_SWEEP_JOB,
   RFQ_SWEEP_EVERY_MS,
@@ -102,6 +110,7 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       appUrl: process.env.APP_URL ?? 'http://localhost:8080',
     };
 
+    const newsImportConfig = newsImportConfigFromEnv();
     const workers = [
       new Worker<MediaJob>(
         MEDIA_QUEUE,
@@ -144,10 +153,20 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
         connection,
         concurrency: 1,
       }),
-      new Worker(SCHEDULER_QUEUE, (job) => runSchedulerJob(this.orm, job.name, job.data), {
-        connection,
-        concurrency: 1,
-      }),
+      new Worker(
+        SCHEDULER_QUEUE,
+        (job) =>
+          job.name === NEWS_IMPORT_JOB
+            ? runNewsImport({
+                orm: this.orm,
+                storage: this.storage,
+                llm: llmFromEnv(),
+                config: newsImportConfig,
+                logger: this.logger,
+              })
+            : runSchedulerJob(this.orm, job.name, job.data),
+        { connection, concurrency: 1 },
+      ),
       new Worker(
         OUTBOX_QUEUE,
         async () => {
@@ -158,9 +177,14 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       ),
     ];
     for (const worker of workers)
-      worker.on('failed', (job, error) =>
-        this.logger.warn(`${worker.name} job ${job?.id} failed: ${error.message}`),
-      );
+      worker.on('failed', (job, error) => {
+        this.logger.warn(`${worker.name} job ${job?.id} failed: ${error.message}`);
+        // Last attempt of a media job: stop the asset from staying PROCESSING forever (GH#345).
+        if (worker.name === MEDIA_QUEUE && job && job.attemptsMade >= (job.opts.attempts ?? 1))
+          failMediaAsset({ orm: this.orm }, (job.data as MediaJob).assetId, error).catch(
+            (e: unknown) => this.logger.error(`could not mark media asset failed: ${String(e)}`),
+          );
+      });
     await outbox.upsertJobScheduler('relay', { every: OUTBOX_RELAY_EVERY_MS });
     await scheduler.upsertJobScheduler(
       RFQ_EXPIRE_SWEEP_JOB,
@@ -177,6 +201,30 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       { every: ASSISTANT_LOG_PURGE_EVERY_MS },
       { name: ASSISTANT_LOG_PURGE_JOB },
     );
+    await scheduler.upsertJobScheduler(
+      IDEMPOTENCY_PURGE_JOB,
+      { every: IDEMPOTENCY_PURGE_EVERY_MS },
+      { name: IDEMPOTENCY_PURGE_JOB },
+    );
+    await scheduler.upsertJobScheduler(
+      PAYMENT_EXPIRE_SWEEP_JOB,
+      { every: PAYMENT_EXPIRE_EVERY_MS },
+      { name: PAYMENT_EXPIRE_SWEEP_JOB },
+    );
+    if (newsImportEnabled(newsImportConfig)) {
+      await scheduler.upsertJobScheduler(
+        NEWS_IMPORT_JOB,
+        { every: newsImportConfig.everyMinutes * 60_000 },
+        { name: NEWS_IMPORT_JOB },
+      );
+      this.logger.log(
+        `news import on: ${newsImportConfig.feeds.length} feed(s), every ${newsImportConfig.everyMinutes} min`,
+      );
+    } else {
+      // A schedule left over from an earlier configuration must not keep running.
+      await scheduler.removeJobScheduler(NEWS_IMPORT_JOB);
+      this.logger.log('news import off: NEWS_IMPORT_FEEDS has no valid feed');
+    }
     this.closables.push(...workers, media, mail, qrLabels, scheduler, assistant, outbox, {
       close: async () => mailDeps.transport.close(),
     });

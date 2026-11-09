@@ -7,7 +7,7 @@ import {
   IsoDateTimeSchema,
   MAX_PAGE_LIMIT,
 } from '../common';
-import { RfqStatusSchema } from '../rfq/create-rfq';
+import { OnBehalfOfSchema, RfqStatusSchema } from '../rfq/create-rfq';
 
 /** Every action written to the audit log. The screen offers these as the action filter. */
 export const AUDIT_ACTIONS = [
@@ -17,9 +17,12 @@ export const AUDIT_ACTIONS = [
   'household.suspend',
   'household.reinstate',
   'household.reveal_id_number',
+  'household.certification_verify',
+  'household.certification_unverify',
   'product.publish',
   'product.withdraw',
   'product.republish',
+  'rfq.create',
   'rfq.claim',
   'rfq.invite',
   'rfq.quotation_submit',
@@ -27,6 +30,10 @@ export const AUDIT_ACTIONS = [
   'rfq.confirm_receipt',
   'rfq.cancel',
   'allocation.reallocate',
+  // Payments (ADR-0021, GH#205).
+  'payment.record_offline',
+  'payment.refund',
+  'payment.simulate_transfer',
   'news.create',
   'news.update',
   'news.publish',
@@ -61,6 +68,12 @@ export const AuditEntrySchema = z.object({
   action: z.string(),
   entity: z.string(),
   entityId: IdSchema,
+  /**
+   * Readable, safe target label: the name/title stored in the event's snapshot, or one bulk lookup per
+   * page for a household/news row that still exists. `null` for a legacy entry without a label in its
+   * snapshot and for a deleted row whose snapshot has no name; `entityId` always stays for tracing.
+   */
+  targetLabel: z.string().nullable().optional(),
   before: z.record(z.string(), z.unknown()).nullable(),
   after: z.record(z.string(), z.unknown()).nullable(),
   createdAt: IsoDateTimeSchema,
@@ -91,6 +104,8 @@ export const CoordinationQueueItemSchema = z.object({
   coordinatorName: z.string().nullable(),
   claimed: z.boolean(),
   claimedByMe: z.boolean(),
+  /** Set when the request was made by an administrator for an off-platform customer (FR-ORD-10). */
+  onBehalfOf: OnBehalfOfSchema.nullable().optional(),
 });
 export type CoordinationQueueItemDto = z.infer<typeof CoordinationQueueItemSchema>;
 export const CoordinationQueueSchema = z.array(CoordinationQueueItemSchema);

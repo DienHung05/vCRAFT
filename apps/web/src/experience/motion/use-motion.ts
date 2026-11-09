@@ -12,19 +12,45 @@ export function useRichMotion(options: { finePointer?: boolean; minWidth?: numbe
   const [allowed, setAllowed] = useState(false);
   const { finePointer, minWidth } = options;
   useEffect(() => {
-    if (reduced) return setAllowed(false);
-    const fine = !finePointer || window.matchMedia('(pointer: fine)').matches;
-    const wide = !minWidth || window.innerWidth >= minWidth;
-    setAllowed(fine && wide);
+    const fine = finePointer ? window.matchMedia?.('(pointer: fine)') : undefined;
+    const preference = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    let prefersReduced = reduced || preference?.matches === true;
+    const update = () =>
+      setAllowed(
+        !prefersReduced &&
+          (!finePointer || fine?.matches === true) &&
+          (!minWidth || window.innerWidth >= minWidth),
+      );
+    const onPreference = (event: MediaQueryListEvent) => {
+      prefersReduced = event.matches;
+      update();
+    };
+    update();
+    preference?.addEventListener('change', onPreference);
+    fine?.addEventListener('change', update);
+    if (minWidth) window.addEventListener('resize', update);
+    return () => {
+      preference?.removeEventListener('change', onPreference);
+      fine?.removeEventListener('change', update);
+      if (minWidth) window.removeEventListener('resize', update);
+    };
   }, [reduced, finePointer, minWidth]);
   return allowed;
 }
 
-/** Runs `onEnter` once, the first time the element scrolls into view. */
+/**
+ * Runs `onEnter` once, the first time the element scrolls into view. A taller-than-viewport element
+ * can never reach a high intersection ratio, so the default threshold stays low and `rootMargin`
+ * pulls the trigger line slightly inside the viewport (GH#301: generic blocks, not just figures).
+ */
 export function useInView<T extends Element>(
   ref: { current: T | null },
   onEnter: () => void,
   enabled = true,
+  {
+    threshold = 0,
+    rootMargin = '0px 0px -10% 0px',
+  }: { threshold?: number; rootMargin?: string } = {},
 ): void {
   useEffect(() => {
     const el = ref.current;
@@ -36,9 +62,9 @@ export function useInView<T extends Element>(
           onEnter();
         }
       },
-      { threshold: 0.35 },
+      { threshold, rootMargin },
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [ref, onEnter, enabled]);
+  }, [ref, onEnter, enabled, threshold, rootMargin]);
 }

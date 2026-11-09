@@ -94,7 +94,7 @@ export function ChainVerifier({
       )}
     >
       <Crackle className={broken ? 'text-seal' : 'text-glaze'} opacity={broken ? 0.3 : 0.18} />
-      <div className="relative flex items-center gap-5">
+      <div className="relative flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
         {state.status === 'ok' ? (
           <SealStamp size={64} title={t('okTitle')} />
         ) : (
@@ -143,7 +143,6 @@ export function ChainVerifier({
       </div>
 
       <div className="relative mt-5 flex flex-wrap gap-2">
-        <Badge tone="outline">{t('demoBadge')}</Badge>
         {householdVerified ? <Badge tone="celadon">✓ {t('householdVerified')}</Badge> : null}
         {state.status === 'ok' ? (
           <Badge tone="celadon">✓ {t('okBadge', { count: state.count })}</Badge>

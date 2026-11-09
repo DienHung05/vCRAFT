@@ -1,4 +1,4 @@
-import { PRODUCT_CATEGORIES } from '@vcraft/domain';
+import { CRAFT_CATEGORIES, PRODUCT_CATEGORIES, PRODUCT_SORTS } from '@vcraft/domain';
 import { z } from 'zod';
 import {
   CursorPageQuerySchema,
@@ -18,7 +18,7 @@ import { PublicImageVariantsSchema } from '../media';
 export const ProductCategorySchema = z.enum(PRODUCT_CATEGORIES);
 export type ProductCategoryDto = z.infer<typeof ProductCategorySchema>;
 
-export const PRODUCT_SORTS = ['newest', 'price_asc', 'price_desc'] as const;
+export { PRODUCT_SORTS };
 export const ProductSortSchema = z.enum(PRODUCT_SORTS);
 export type ProductSort = z.infer<typeof ProductSortSchema>;
 
@@ -33,6 +33,15 @@ export const ListProductsQuerySchema = CursorPageQuerySchema.extend({
   maxPrice: PriceSchema.optional(),
   oneOfAKind: FlagSchema.optional(),
   inStock: FlagSchema.optional(),
+  /** Only products of households with a workshop open to visitors (a showroom that accepts visitors). */
+  openWorkshop: FlagSchema.optional(),
+  /** Only these products (comma-separated ids, at most 100): how a guest's favourites list gets its cards. */
+  ids: z
+    .string()
+    .max(4_000)
+    .transform((value) => value.split(','))
+    .pipe(z.array(z.uuid()).min(1).max(100))
+    .optional(),
   sort: ProductSortSchema.default('newest'),
   /** Page mode (catalog exception to cursor-only paging, see ADR-0020); cannot be combined with `cursor`. */
   page: PageNumberSchema.optional(),
@@ -43,12 +52,17 @@ export type ListProductsQuery = z.infer<typeof ListProductsQuerySchema>;
 export const ProductCardSchema = z.object({
   id: z.string(),
   name: z.string(),
+  /** English name for `/en`; null falls back to `name`. */
+  nameEn: z.string().nullable().default(null),
   slug: z.string(),
   traceCode: z.string(),
   kind: ProductKindSchema,
   category: ProductCategorySchema,
   priceVnd: z.int().nonnegative(),
   stock: z.int().nonnegative(),
+  /** `SOLD` cards stay in the catalog with a "sold" badge and never count as in stock. */
+  status: z.enum(['PUBLISHED', 'SOLD']).default('PUBLISHED'),
+  tags: z.array(z.string()).default([]),
   coverUrl: z.string().nullable(),
   coverVariants: PublicImageVariantsSchema,
   coverAlt: z.string().nullable(),
@@ -58,6 +72,10 @@ export const ProductCardSchema = z.object({
   household: z.object({ name: z.string(), slug: z.string() }),
 });
 export type ProductCardDto = z.infer<typeof ProductCardSchema>;
+
+/** `GET /me/favourites`: the signed-in user's saved products that are still publicly visible. */
+export const FavouritesResponseSchema = z.object({ data: z.array(ProductCardSchema) });
+export type FavouritesDto = z.infer<typeof FavouritesResponseSchema>;
 
 export const ProductListResponseSchema = cursorPageSchema(ProductCardSchema);
 export type ProductListDto = z.infer<typeof ProductListResponseSchema>;
@@ -73,6 +91,8 @@ export const HouseholdSummarySchema = z.object({
   slug: z.string(),
   village: z.string().nullable(),
   craft: z.string().nullable(),
+  /** The stored category, or one inferred from legacy `craft` text; lets `/en` show a translated label. */
+  craftCategory: z.enum(CRAFT_CATEGORIES).nullable().default(null),
   coverUrl: z.string().nullable(),
   coverVariants: PublicImageVariantsSchema,
   /** What the cover shows (the household banner's description); null when it has no linked description. */
@@ -81,6 +101,9 @@ export const HouseholdSummarySchema = z.object({
   coverAltEn: z.string().nullable().default(null),
   representative: z.string().nullable(),
   productCount: z.int().nonnegative(),
+  /** Mean of the buyers' 1-5 star ratings with one decimal (FR-ORD-11); null until the first rating. */
+  ratingAverage: z.number().min(1).max(5).nullable(),
+  ratingCount: z.int().min(0),
   /** Giờ của nơi đón khách đầu tiên; `null` là hộ không có nơi đón khách. */
   openingHours: z.array(OpeningIntervalSchema).nullable(),
 });
@@ -113,8 +136,17 @@ export type SlugRedirectDto = z.infer<typeof SlugRedirectResponseSchema>;
 
 /** Gợi ý tức thời (FR-CAT-04), mỗi nhóm tối đa 5 mục. */
 export const SearchSuggestionsSchema = z.object({
-  products: z.array(z.object({ name: z.string(), slug: z.string(), household: z.string() })),
+  products: z.array(
+    z.object({
+      name: z.string(),
+      nameEn: z.string().nullable().default(null),
+      slug: z.string(),
+      household: z.string(),
+    }),
+  ),
   households: z.array(z.object({ name: z.string(), slug: z.string() })),
+  /** Categories whose name matches, in either language; the web labels them in the page locale. */
+  categories: z.array(z.object({ category: ProductCategorySchema })),
   news: z.array(z.object({ title: z.string(), slug: z.string() })),
 });
 export type SearchSuggestionsDto = z.infer<typeof SearchSuggestionsSchema>;

@@ -6,6 +6,7 @@ import { CatalogHeader } from '@/features/catalog/catalog-header';
 import { CATALOG_PAGE_SIZE } from '@/features/catalog/catalog-page-size';
 import { fetchHouseholds, fetchProductPage } from '@/features/catalog/exhibition-api';
 import { resolveLocale } from '@/lib/locale';
+import { pageMetadata } from '@/lib/seo/page-metadata';
 
 // Danh mục lấy từ API theo bộ lọc trên URL, không dựng tĩnh lúc build.
 export const dynamic = 'force-dynamic';
@@ -13,9 +14,9 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({
   params,
 }: PageProps<'/[locale]/san-pham'>): Promise<Metadata> {
-  await resolveLocale(params);
+  const locale = await resolveLocale(params);
   const t = await getTranslations('indexPages.products');
-  return { title: t('title'), description: t('lead') };
+  return pageMetadata({ locale, href: '/san-pham', title: t('title'), description: t('lead') });
 }
 
 /** Danh mục sản phẩm (FR-CAT-01 … 03): trang đầu dựng phía server theo URL, sau đó tải bằng JSON. */
@@ -35,7 +36,7 @@ export default async function ProductsIndexPage({
   ]);
 
   return (
-    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section">
+    <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section-tail">
       <CatalogHeader />
       <CatalogExplorer
         // Điều hướng tới URL lọc khác (vd. từ ô tìm kiếm) phải dựng lại từ dữ liệu mới của server.

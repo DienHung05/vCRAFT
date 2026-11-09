@@ -1,7 +1,7 @@
 import { JOURNAL_STAGES } from '@vcraft/domain';
 import { z } from 'zod';
 import { IdSchema, IsoDateSchema, IsoDateTimeSchema, VersionSchema } from '../common';
-import { PublicCreditSchema, PublicImageVariantsSchema } from '../media';
+import { MediaStatusSchema, PublicCreditSchema, PublicImageVariantsSchema } from '../media';
 
 /** Nhật ký sản xuất và mốc đính chính (vCRAFT-9hg.4). */
 
@@ -9,8 +9,13 @@ export const JournalStageSchema = z.enum(JOURNAL_STAGES);
 
 const Sha256HexSchema = z.string().regex(/^[0-9a-f]{64}$/, 'SHA-256 phải là 64 ký tự hex thường');
 
+/**
+ * A photo named by the checksum of the uploaded original. `url` is optional so a milestone can be saved while
+ * the photo is still processing (GH#252): the hash chain covers only `sha256`, and the API resolves the URL from
+ * the media store once the photo is `READY`.
+ */
 export const JournalImageSchema = z.object({
-  url: z.url().max(2_000),
+  url: z.url().max(2_000).optional(),
   sha256: Sha256HexSchema,
 });
 export type JournalImageDto = z.infer<typeof JournalImageSchema>;
@@ -52,8 +57,16 @@ export const JournalEntryResponseSchema = z.object({
    */
   images: z.array(
     JournalImageSchema.extend({
+      /** Null while the photo is not public yet (processing or failed): show a placeholder or nothing. */
+      url: z.url().nullable(),
       credit: PublicCreditSchema,
       variants: PublicImageVariantsSchema,
+      /** The media asset behind the photo, to follow its processing; null when it is not in the media store. */
+      mediaId: IdSchema.nullable().default(null),
+      /** Processing state; `READY` for photos that are not in the media store (static demo images). */
+      status: MediaStatusSchema.default('READY'),
+      /** ThumbHash (base64) for a blurred placeholder; known once the photo is `READY`. */
+      thumbhash: z.string().nullable().default(null),
     }),
   ),
   skipReason: z.string().nullable(),

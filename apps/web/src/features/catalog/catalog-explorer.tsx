@@ -1,13 +1,12 @@
 'use client';
 
+import type { HouseholdSummaryDto, ProductCardDto } from '@vcraft/contracts';
 import {
-  type HouseholdSummaryDto,
+  PRODUCT_CATEGORIES,
   PRODUCT_SORTS,
-  type ProductCardDto,
-  ProductPageResponseSchema,
+  type ProductCategory,
   type ProductSort,
-} from '@vcraft/contracts';
-import { PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
+} from '@vcraft/domain';
 import { Button, buttonVariants } from '@vcraft/ui';
 import { useLocale, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -29,6 +28,8 @@ import { toProductCardView } from './view-models';
 
 const PAGE_SIZE = CATALOG_PAGE_SIZE;
 const TYPING_DEBOUNCE_MS = 250;
+/** Cards in the first viewport (one row on desktop, two on mobile): their pictures load eagerly. */
+const EAGER_CARD_COUNT = 4;
 
 type FetchProducts = (query: string, signal: AbortSignal) => Promise<Response>;
 const browserFetch: FetchProducts = (query, signal) =>
@@ -88,6 +89,8 @@ export function CatalogExplorer({
           controller.signal,
         );
         if (!res.ok) throw new Error(String(res.status));
+        // The schema (zod) loads on the first filter or page change, not with the page's first-load JS.
+        const { ProductPageResponseSchema } = await import('@vcraft/contracts');
         const pageData = ProductPageResponseSchema.parse(await res.json());
         setItems(pageData.data);
         setTotal(pageData.total);
@@ -256,6 +259,14 @@ export function CatalogExplorer({
           />
           {t('inStock')}
         </label>
+        <label className="flex items-center gap-2 py-2 text-small">
+          <input
+            type="checkbox"
+            checked={filters.openWorkshop}
+            onChange={(event) => apply({ openWorkshop: event.target.checked })}
+          />
+          {t('openWorkshop')}
+        </label>
         {hasFilters ? (
           <button
             type="button"
@@ -294,10 +305,17 @@ export function CatalogExplorer({
             }
           />
         ) : (
-          <ul data-testid="product-grid" className="grid grid-cols-2 gap-6 md:grid-cols-4">
-            {items.map((product) => (
+          <ul
+            data-testid="product-grid"
+            className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-8"
+          >
+            {items.map((product, index) => (
               <li key={product.id}>
-                <ProductCard product={toProductCardView(product, locale)} heading="h2" />
+                <ProductCard
+                  product={toProductCardView(product, locale)}
+                  heading="h2"
+                  priority={index < EAGER_CARD_COUNT}
+                />
               </li>
             ))}
           </ul>

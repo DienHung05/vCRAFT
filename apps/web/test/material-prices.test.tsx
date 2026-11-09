@@ -49,7 +49,16 @@ describe('OutageBanner', () => {
     const client = {
       todayOutages: vi.fn(async () => ({
         date: '2026-11-03',
-        outages: [{ from: '08:00', to: '11:30', area: 'Xóm 2', newsSlug: 'lich-cat-dien' }],
+        outages: [
+          {
+            from: '08:00',
+            to: '11:30',
+            area: 'Xóm 2',
+            areaCode: 'GIANG_CAO',
+            newsSlug: 'lich-cat-dien',
+          },
+        ],
+        needsWorkshopArea: false,
       })),
     };
     renderVi(<OutageBanner client={client as never} />);
@@ -60,7 +69,13 @@ describe('OutageBanner', () => {
   });
 
   it('stays hidden on a day without cuts', async () => {
-    const client = { todayOutages: vi.fn(async () => ({ date: '2026-11-03', outages: [] })) };
+    const client = {
+      todayOutages: vi.fn(async () => ({
+        date: '2026-11-03',
+        outages: [],
+        needsWorkshopArea: false,
+      })),
+    };
     const { container } = renderVi(<OutageBanner client={client as never} />);
     await waitFor(() => expect(client.todayOutages).toHaveBeenCalled());
     expect(container.textContent).toBe('');
@@ -89,11 +104,19 @@ describe('structuredRequest', () => {
   it('sends the cut for an outage notice and nothing for other categories', () => {
     const values = {
       ...EMPTY_STRUCTURED,
-      outage: { date: '2026-11-03', from: '08:00', to: '11:30', area: ' Xóm 2 ' },
+      outage: {
+        date: '2026-11-03',
+        from: '08:00',
+        to: '11:30',
+        area: ' Xóm 2 ',
+        areaCode: 'GIANG_CAO' as const,
+      },
     };
     expect(structuredRequest('POWER_SCHEDULE', values)).toEqual({
       powerSchedule: {
-        outages: [{ date: '2026-11-03', from: '08:00', to: '11:30', area: 'Xóm 2' }],
+        outages: [
+          { date: '2026-11-03', from: '08:00', to: '11:30', area: 'Xóm 2', areaCode: 'GIANG_CAO' },
+        ],
       },
     });
     expect(structuredRequest('GENERAL', values)).toEqual({});

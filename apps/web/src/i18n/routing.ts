@@ -1,4 +1,4 @@
-import { defaultLocale, locales, pathnames } from '@vcraft/i18n';
+import { defaultLocale, locales, pathnames } from '@vcraft/i18n/routing';
 import { defineRouting } from 'next-intl/routing';
 
 /** Định tuyến đa ngôn ngữ (ARCHITECTURE: next-intl + pathnames bản địa hóa, SRS §5.1). */

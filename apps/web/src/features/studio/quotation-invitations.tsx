@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
 import { ListSkeleton } from '@/components/states/skeletons';
 import { DeadlineCountdown } from '@/features/rfq/deadline-countdown';
+import { RfqStepper } from '@/features/rfq/rfq-stepper';
 import { Link } from '@/i18n/navigation';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { useMoney } from '@/lib/use-money';
@@ -107,6 +108,10 @@ function Invitations({ client }: { client: QuotationClient }) {
             <li key={row.request.id}>
               <Card className="flex flex-col gap-2 p-4">
                 <h2 className="text-h3 break-words">{row.request.title}</h2>
+                <RfqStepper
+                  status={row.request.status}
+                  hasBids={row.request.hasBids ?? Boolean(row.directQuotation)}
+                />
                 <p className="text-small">
                   {t('quantity', {
                     quantity: format.number(row.request.quantity),

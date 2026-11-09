@@ -1,100 +1,45 @@
 'use client';
 
-import type { SearchSuggestionsDto } from '@vcraft/contracts';
-import { useTranslations } from 'next-intl';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
+import { useId, useState } from 'react';
 import { Link, useRouter } from '@/i18n/navigation';
+import {
+  browserFetchSuggestions,
+  type FetchSuggestions,
+  SUGGESTION_GROUPS,
+  suggestionEntries,
+  useSuggestions,
+} from './suggestions';
 
-const DEBOUNCE_MS = 150;
-
-type FetchSuggestions = (query: string, signal: AbortSignal) => Promise<Response>;
-const browserFetch: FetchSuggestions = (query, signal) =>
-  fetch(`/api/v1/search/suggest?q=${encodeURIComponent(query)}`, { signal });
-
-const NO_RESULTS: SearchSuggestionsDto = { products: [], households: [], news: [] };
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
-const everyItem = (value: unknown, keys: readonly string[]) =>
-  Array.isArray(value) &&
-  value.every((v) => isRecord(v) && keys.every((k) => typeof v[k] === 'string'));
-
-/**
- * Checks the shape of `GET /search/suggest` by hand: the contract's zod schema would put zod (~40KB
- * gzipped) on the critical path of every public page, since the search box lives in the header.
- */
-function parseSuggestions(value: unknown): SearchSuggestionsDto {
-  if (
-    !isRecord(value) ||
-    !everyItem(value.products, ['name', 'slug', 'household']) ||
-    !everyItem(value.households, ['name', 'slug']) ||
-    !everyItem(value.news, ['title', 'slug'])
-  ) {
-    throw new Error('Unexpected search suggestions payload');
-  }
-  return value as unknown as SearchSuggestionsDto;
-}
+const GROUP_LABEL = {
+  products: 'groupProducts',
+  households: 'groupHouseholds',
+  categories: 'groupCategories',
+  news: 'groupNews',
+} as const;
 
 /**
- * Ô tìm kiếm trên đầu trang (FR-CAT-04): gợi ý tức thời không dấu cho sản phẩm, hộ và tin; `Ctrl K`
- * / `⌘K` đưa con trỏ vào ô, Enter mở danh mục đã lọc, Esc đóng gợi ý.
+ * Ô tìm kiếm trên đầu trang (FR-CAT-04): gợi ý tức thời không dấu cho sản phẩm, hộ, danh mục và tin;
+ * Enter mở danh mục đã lọc, Esc đóng gợi ý. `Ctrl K` / `⌘K` mở bảng tìm kiếm nhanh (`CommandPalette`).
  */
 export function SearchBox({
-  fetchSuggestions = browserFetch,
+  fetchSuggestions = browserFetchSuggestions,
 }: {
   fetchSuggestions?: FetchSuggestions;
 }) {
   const t = useTranslations('catalog');
+  const locale = useLocale();
   const router = useRouter();
   const panelId = useId();
-  const input = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const [results, setResults] = useState(NO_RESULTS);
-
-  useEffect(() => {
-    const focus = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault();
-        input.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', focus);
-    return () => window.removeEventListener('keydown', focus);
-  }, []);
-
-  useEffect(() => {
-    const term = query.trim();
-    if (!term) {
-      setResults(NO_RESULTS);
-      setFailed(false);
-      return;
-    }
-    const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      try {
-        const res = await fetchSuggestions(term, controller.signal);
-        if (!res.ok) throw new Error(String(res.status));
-        setResults(parseSuggestions(await res.json()));
-        setFailed(false);
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
-        setFailed(true);
-      }
-    }, DEBOUNCE_MS);
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [query, fetchSuggestions]);
+  const { results, failed } = useSuggestions(query, fetchSuggestions);
+  const entries = suggestionEntries(results, (category) => t(`categories.${category}`), locale);
 
   const close = () => {
     setOpen(false);
     setQuery('');
   };
-  const empty =
-    results.products.length === 0 && results.households.length === 0 && results.news.length === 0;
   const linkClass = 'block rounded-input px-2 py-1.5 text-small hover:bg-ink/6';
   const groupClass = 'px-2 pt-2 text-[0.7rem] tracking-wide text-ash uppercase';
 
@@ -115,10 +60,10 @@ export function SearchBox({
         }}
       >
         <input
-          ref={input}
           type="search"
           value={query}
           aria-label={t('search')}
+          aria-keyshortcuts="Control+K Meta+K"
           placeholder={t('searchPlaceholder')}
           className="w-full rounded-input border border-ink/15 bg-surface px-3 py-1.5 text-small lg:w-44 xl:w-56"
           onFocus={() => setOpen(true)}
@@ -139,59 +84,28 @@ export function SearchBox({
         >
           {failed ? (
             <p className="px-2 py-1.5 text-small text-ash">{t('suggestFailed')}</p>
-          ) : empty ? (
+          ) : entries.length === 0 ? (
             <p className="px-2 py-1.5 text-small text-ash">{t('suggestEmpty')}</p>
           ) : null}
-          {results.products.length > 0 ? (
-            <>
-              <p className={groupClass}>{t('groupProducts')}</p>
-              <ul>
-                {results.products.map((p) => (
-                  <li key={p.slug}>
-                    <Link
-                      href={{ pathname: '/san-pham/[slug]', params: { slug: p.slug } }}
-                      className={linkClass}
-                      onClick={close}
-                    >
-                      {p.name} <span className="text-ash">· {p.household}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : null}
-          {results.households.length > 0 ? (
-            <>
-              <p className={groupClass}>{t('groupHouseholds')}</p>
-              <ul>
-                {results.households.map((h) => (
-                  <li key={h.slug}>
-                    <Link
-                      href={{ pathname: '/nghe-nhan/[slug]', params: { slug: h.slug } }}
-                      className={linkClass}
-                      onClick={close}
-                    >
-                      {h.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : null}
-          {results.news.length > 0 ? (
-            <>
-              <p className={groupClass}>{t('groupNews')}</p>
-              <ul>
-                {results.news.map((n) => (
-                  <li key={n.slug}>
-                    <Link href="/tin-tuc" className={linkClass} onClick={close}>
-                      {n.title}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : null}
+          {SUGGESTION_GROUPS.map((group) => {
+            const items = entries.filter((entry) => entry.group === group);
+            if (items.length === 0) return null;
+            return (
+              <div key={group}>
+                <p className={groupClass}>{t(GROUP_LABEL[group])}</p>
+                <ul>
+                  {items.map((entry) => (
+                    <li key={entry.key}>
+                      <Link href={entry.href} className={linkClass} onClick={close}>
+                        {entry.label}
+                        {entry.hint ? <span className="text-ash"> · {entry.hint}</span> : null}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
       ) : null}
     </search>

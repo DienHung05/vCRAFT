@@ -5,10 +5,11 @@ import type {
   ProductCardDto,
   WorkshopDto,
 } from '@vcraft/contracts';
-import type { ChainEntry, JournalStage } from '@vcraft/domain';
+import type { ChainEntry, JournalStage, ProductStatus } from '@vcraft/domain';
 import type { ProductFigureKind } from '@vcraft/ui';
 import { PHOTO_BY_ID } from '@/lib/demo/photo-credits';
 import type { ImageVariant } from '@/lib/images';
+import { textFor } from '@/lib/localized-text';
 import { presetKindOf } from './preset-figure';
 
 /** Tham chiếu ảnh có giấy phép trong `/images/demo` (kèm ghi công) hoặc ảnh tải lên qua kho media. */
@@ -24,7 +25,7 @@ export interface PhotoView {
 
 /** Description to show for `locale`: the English one on `/en` when there is one, else the Vietnamese one. */
 export function altFor(locale: string, alt: string, altEn?: string | null): string {
-  return locale === 'en' && altEn?.trim() ? altEn : alt;
+  return textFor(locale, alt, altEn);
 }
 
 /** What the household cover is: the banner, else the household's first workshop photo (the API's `coverUrl`). */
@@ -86,6 +87,27 @@ export function slotPhoto(view: PhotoView | undefined) {
   };
 }
 
+/** One photo of the product gallery lightbox: the largest size on offer, and what it shows. */
+export interface GallerySlide {
+  src: string;
+  alt: string;
+}
+
+/** The lightbox slide for a photo, or undefined when there is no photo (a drawn stand-in has none to enlarge). */
+export function gallerySlide(view: PhotoView | undefined): GallerySlide | undefined {
+  if (!view) return undefined;
+  if (view.photo) {
+    const credit = PHOTO_BY_ID.get(view.photo.id);
+    if (!credit) return undefined;
+    return { src: `/images/demo/${credit.id}-${Math.max(...credit.widths)}.webp`, alt: view.alt };
+  }
+  if (!view.src) return undefined;
+  const widest = [...(view.variants ?? [])]
+    .filter((v) => v.format === 'webp')
+    .sort((a, b) => b.width - a.width)[0];
+  return { src: widest?.url ?? view.src, alt: view.alt };
+}
+
 const TINTS = ['#3f5a8a', '#b4895a', '#9a8064', '#8a5a3c', '#5f7d6e', '#a4532a', '#6b6f8a'];
 
 /** Màu nền ổn định theo mã: cùng một món luôn cùng màu khi chưa có `dominantColor` của ảnh. */
@@ -96,6 +118,8 @@ export function tintOf(seed: string): string {
 }
 
 export interface ProductCardView {
+  /** Product id, the key of the favourites list. */
+  id: string;
   slug: string;
   name: string;
   /** Which placeholder illustration to draw while the product has no photo. */
@@ -104,20 +128,28 @@ export interface ProductCardView {
   /** `0` là chưa niêm yết giá. */
   price: number;
   oneOfAKind: boolean;
+  /** A sold one-of-a-kind piece stays listed with a "sold" badge. */
+  sold?: boolean;
   image?: PhotoView | undefined;
 }
 
-export function toProductCardView(dto: ProductCardDto, locale = 'vi'): ProductCardView {
+/** A card DTO, or a product of a household page (whose status is the full lifecycle). */
+type ProductCardSource = Omit<ProductCardDto, 'status'> & { status: ProductStatus };
+
+export function toProductCardView(dto: ProductCardSource, locale = 'vi'): ProductCardView {
+  const name = textFor(locale, dto.name, dto.nameEn);
   return {
+    id: dto.id,
     slug: dto.slug,
-    name: dto.name,
+    name,
     presetKind: presetKindOf(dto.category, dto.name),
     tint: tintOf(dto.traceCode),
     price: dto.priceVnd,
     oneOfAKind: dto.kind === 'OBJECT',
+    sold: dto.status === 'SOLD',
     image: photoFromUrl(
       dto.coverUrl,
-      altFor(locale, dto.coverAlt ?? dto.name, dto.coverAltEn),
+      altFor(locale, dto.coverAlt ?? name, dto.coverAltEn),
       dto.coverVariants,
     ),
   };

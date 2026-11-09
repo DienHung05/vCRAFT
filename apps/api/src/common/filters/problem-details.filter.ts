@@ -30,6 +30,7 @@ const DOMAIN_CODE_MAP: Readonly<Record<string, ErrorCode>> = {
   REASON_REQUIRED: 'VALIDATION_FAILED',
   MISSING_CONTEXT: 'VALIDATION_FAILED',
   JOURNAL_FROZEN: 'HOUSEHOLD_ACCOUNT_LOCKED',
+  CONTRIBUTION_QUANTITY_EXCEEDED: 'RFQ_OFFER_QUANTITY_EXCEEDED',
 };
 
 function fromHttpException(exception: HttpException): ProblemDetails {
