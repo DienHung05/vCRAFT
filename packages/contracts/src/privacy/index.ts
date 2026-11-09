@@ -23,6 +23,9 @@ export const ConsentResponseSchema = z.strictObject({
   purpose: ConsentPurposeSchema,
   policyVersion: z.string(),
   givenAt: IsoDateTimeSchema,
+  /** When the person withdrew this consent; `null` while it stands. */
+  // Defaults to null so responses from before GH#418 (no field) still parse.
+  withdrawnAt: IsoDateTimeSchema.nullable().default(null),
 });
 export type ConsentDto = z.infer<typeof ConsentResponseSchema>;
 
@@ -32,6 +35,17 @@ export const ConsentListResponseSchema = z.strictObject({
   data: z.array(ConsentResponseSchema),
 });
 export type ConsentListResponse = z.infer<typeof ConsentListResponseSchema>;
+
+/**
+ * `DELETE /me/consents/:purpose`: withdraw the consent for one purpose. Answers with the refreshed list.
+ * `SIGN_UP` cannot be withdrawn on its own: it is the basis for having an account, so the API refuses
+ * and points to account deletion.
+ */
+export const WITHDRAWABLE_CONSENT_PURPOSES = [
+  'ID_DOCUMENT',
+  'RFQ_CONTACT',
+  'MAKER_PROFILE',
+] as const;
 
 /**
  * `DELETE /me`: `confirmation` must be the account's own email (compared case-insensitively), so a

@@ -2,7 +2,7 @@ import type { EntityManager } from '@mikro-orm/core';
 import { MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { ConsentDto, ConsentListResponse, RecordConsentRequest } from '@vcraft/contracts';
-import { ConsentRecord } from '@vcraft/database';
+import { AuditLog, ConsentRecord } from '@vcraft/database';
 import {
   type ConsentPurpose,
   isCurrentPolicyVersion,
@@ -16,12 +16,14 @@ export const toConsentDto = (record: ConsentRecord): ConsentDto => ({
   purpose: record.purpose,
   policyVersion: record.policyVersion,
   givenAt: record.createdAt.toISOString(),
+  withdrawnAt: record.withdrawnAt?.toISOString() ?? null,
 });
 
 /**
  * Recorded consent (NFR-SEC-07): who agreed to what, under which policy version, and when. Actions
  * that collect personal data call {@link ConsentService.require} and are refused without a record for
- * the current policy version.
+ * the current policy version. A person can withdraw a consent again (Decree 13/2023/ND-CP Art. 12): the
+ * row stays as history, stops counting, and consenting again adds a new row.
  */
 @Injectable()
 export class ConsentService {
@@ -43,6 +45,7 @@ export class ConsentService {
       userId: actor.id,
       purpose: input.purpose,
       policyVersion: input.policyVersion,
+      withdrawnAt: null,
     });
     if (existing) return toConsentDto(existing);
     const created = em.create(ConsentRecord, {
@@ -61,12 +64,50 @@ export class ConsentService {
     return { currentPolicyVersion: PRIVACY_POLICY_VERSION, data: records.map(toConsentDto) };
   }
 
+  /**
+   * Withdraw the consent for `purpose`: every standing record of it is marked withdrawn and an audit entry
+   * is written. Withdrawing a consent that is not standing changes nothing. `SIGN_UP` is refused: it is
+   * the basis for having an account, so withdrawing it means deleting the account.
+   */
+  async withdraw(actor: Actor, purpose: ConsentPurpose): Promise<ConsentListResponse> {
+    if (purpose === 'SIGN_UP') {
+      throw new AppError('VALIDATION_FAILED', undefined, [
+        {
+          path: 'purpose',
+          message:
+            'Sự đồng ý khi đăng ký không rút riêng được; muốn rút, hãy xóa tài khoản (DELETE /me).',
+          code: 'consent_not_withdrawable',
+        },
+      ]);
+    }
+    await this.orm.em.fork().transactional(async (em) => {
+      const standing = await em.find(ConsentRecord, {
+        userId: actor.id,
+        purpose,
+        withdrawnAt: null,
+      });
+      if (standing.length === 0) return;
+      const now = new Date();
+      for (const row of standing) row.withdrawnAt = now;
+      em.create(AuditLog, {
+        actorId: actor.id,
+        action: 'consent.withdraw',
+        entity: 'consent',
+        entityId: actor.id,
+        before: null,
+        after: { purpose },
+      });
+    });
+    return this.list(actor);
+  }
+
   /** Throws `CONSENT_REQUIRED` unless the person consented to `purpose` under the current policy. */
   async require(userId: string, purpose: ConsentPurpose, em?: EntityManager): Promise<void> {
     const found = await (em ?? this.orm.em.fork()).count(ConsentRecord, {
       userId,
       purpose,
       policyVersion: PRIVACY_POLICY_VERSION,
+      withdrawnAt: null,
     });
     if (found === 0) {
       throw new AppError(

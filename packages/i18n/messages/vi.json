@@ -1048,6 +1048,7 @@
           "suspend": "Tạm ngừng hộ",
           "reinstate": "Khôi phục hộ",
           "reveal_id_number": "Xem số CCCD đầy đủ",
+          "set_id_number": "Đặt hoặc đổi số CCCD",
           "certification_verify": "Xác minh chứng nhận",
           "certification_unverify": "Bỏ xác minh chứng nhận",
           "resubmit": "Gửi lại hồ sơ đã bổ sung"
@@ -1075,6 +1076,9 @@
         },
         "account": {
           "delete": "Xóa tài khoản"
+        },
+        "consent": {
+          "withdraw": "Rút lại sự đồng ý"
         },
         "allocation": {
           "reallocate": "Chia lại phần còn lại"
@@ -2773,6 +2777,34 @@
         "working": "Đang chuẩn bị…",
         "done": "Đã tải xuống tệp dữ liệu của bạn.",
         "failed": "Chưa tải được dữ liệu. Bạn thử lại sau ít phút."
+      },
+      "consents": {
+        "title": "Rút lại sự đồng ý",
+        "text": "Bạn có thể rút lại từng sự đồng ý bất cứ lúc nào. Việc rút lại không ảnh hưởng đến dữ liệu đã được xử lý trước đó và không xóa dữ liệu đã có; muốn xóa dữ liệu, hãy xóa tài khoản ở bên dưới. Bạn có thể đồng ý lại khi cần dùng tính năng đó.",
+        "signUpNote": "Sự đồng ý khi đăng ký là cơ sở để có tài khoản nên không rút riêng được; muốn rút, hãy xóa tài khoản ở bên dưới.",
+        "none": "Bạn chưa có sự đồng ý nào đang hiệu lực để rút.",
+        "loadFailed": "Chưa tải được danh sách sự đồng ý. Bạn thử lại sau ít phút.",
+        "purposes": {
+          "ID_DOCUMENT": {
+            "title": "Giấy tờ xác minh và số CCCD",
+            "effect": "Sau khi rút: không tải thêm giấy tờ và không đặt hoặc đổi số CCCD được. Giấy tờ và số đã lưu vẫn còn cho đến khi bạn xóa tài khoản."
+          },
+          "RFQ_CONTACT": {
+            "title": "Địa chỉ nhận hàng và liên hệ trong yêu cầu báo giá",
+            "effect": "Sau khi rút: không gửi được yêu cầu báo giá mới có địa chỉ nhận hàng và thông tin liên hệ."
+          },
+          "MAKER_PROFILE": {
+            "title": "Hiển thị tên và vai trò người làm",
+            "effect": "Sau khi rút: không thêm hoặc sửa người làm hiển thị công khai trên trang hộ."
+          }
+        },
+        "withdraw": "Rút lại",
+        "dialogTitle": "Rút lại sự đồng ý này?",
+        "confirm": "Rút lại sự đồng ý",
+        "cancel": "Giữ nguyên",
+        "working": "Đang rút…",
+        "done": "Đã rút lại sự đồng ý.",
+        "failed": "Chưa rút được sự đồng ý và chưa có gì bị thay đổi. Bạn thử lại sau ít phút."
       },
       "delete": {
         "title": "Xóa tài khoản",
