@@ -31,6 +31,7 @@ import {
   MediaReadUrlResponseSchema,
   MyAllocationListSchema,
   MyInvitationListSchema,
+  OpenCoordinatedRequestListSchema,
   PriceHintResponseSchema,
   ProblemDetailsSchema,
   QuotationNoticeResponseSchema,
@@ -193,6 +194,10 @@ export function createQuotationClient(options: QuotationClientOptions) {
     },
     listInvitations() {
       return request('/me/invitations', MyInvitationListSchema);
+    },
+    /** BR-05a: redacted summaries of open coordinated requests the household may offer on. */
+    listOpenCoordinatedRequests() {
+      return request('/me/open-coordinated-requests', OpenCoordinatedRequestListSchema);
     },
     declineInvitation(id: string) {
       return request(`/rfqs/${IdSchema.parse(id)}/decline`, RfqResponseSchema, 'POST');

@@ -16,6 +16,7 @@ import type {
   ListRfqsQuery,
   MyAllocationDto,
   MyInvitationDto,
+  OpenCoordinatedRequestDto,
   PriceHintDto,
   RateHouseholdRequest,
   ReportProgressRequest,
@@ -48,7 +49,10 @@ import {
   checkProgressReport,
   hasAcceptWindowElapsed,
   isCompletionDateValid,
+  isEligibleForOpenRequest,
+  isOpenCoordinatedRequest,
   isRatingEditable,
+  type ProductCategory,
   paymentTransition,
   projectBuyerQuotation,
   RATING_EDIT_WINDOW_DAYS,
@@ -326,6 +330,55 @@ export class RfqService {
       });
   }
 
+  /**
+   * BR-05a: coordinated requests an administrator claimed that still take offers and that match the
+   * household's craft categories, as redacted summaries. Requests the household is already invited to
+   * are left out (they are in its invitations). Never carries buyer identity, budget or free text.
+   */
+  async listOpenCoordinatedRequests(actor: Actor): Promise<OpenCoordinatedRequestDto[]> {
+    const em = this.orm.em.fork();
+    const household = await this.ownHousehold(em, actor, false);
+    if (household.status !== 'APPROVED' || actor.locked) return [];
+    const published = await this.publishedByCategory(em, household.id);
+    const categories = new Set<ProductCategory>(published.keys());
+    for (const [category, capacity] of Object.entries(household.capacityByCategory ?? {}))
+      if ((capacity ?? 0) > 0) categories.add(category as ProductCategory);
+    if (categories.size === 0) return [];
+    const now = new Date();
+    const requests = await em.find(
+      QuotationRequest,
+      {
+        coordinationOptIn: true,
+        coordinatorId: { $ne: null },
+        status: { $in: ['SENT', 'BIDDING'] },
+        biddingClosesAt: { $gt: now },
+        category: { $in: [...categories] },
+      },
+      { orderBy: { biddingClosesAt: 'asc' } },
+    );
+    return requests
+      .filter(
+        (request) =>
+          isOpenCoordinatedRequest(request, now) &&
+          !request.invitedHouseholdIds.includes(household.id) &&
+          isEligibleForOpenRequest({
+            householdStatus: household.status,
+            representativeLocked: false,
+            requestCategory: request.category,
+            declaredCapacity: declaredCapacity(household, request.category),
+            publishedProducts: published.get(request.category as ProductCategory) ?? 0,
+          }),
+      )
+      .map((request) => ({
+        id: request.id,
+        category: request.category as ProductCategory,
+        quantity: request.quantity,
+        unit: request.unit,
+        biddingClosesAt: request.biddingClosesAt.toISOString(),
+        requiredBy: request.requiredBy.toISOString(),
+      }));
+  }
+
   /** An invited household says no (FR-RFQ-04). It can still send an offer before the deadline. */
   async declineInvitation(actor: Actor, id: string) {
     return this.orm.em.fork().transactional(async (em) => {
@@ -509,7 +562,22 @@ export class RfqService {
       const request = await this.request(em, requestId, true);
       this.open(request);
       const household = await this.ownHousehold(em, actor);
-      if (!request.invitedHouseholdIds.includes(household.id)) throw notFound();
+      if (!request.invitedHouseholdIds.includes(household.id)) {
+        // BR-05a: without an invitation the request stays invisible unless it is an open coordinated one.
+        if (!isOpenCoordinatedRequest(request)) throw notFound();
+        const published = await this.publishedByCategory(em, household.id);
+        if (
+          !isEligibleForOpenRequest({
+            householdStatus: household.status,
+            representativeLocked: actor.locked,
+            requestCategory: request.category,
+            declaredCapacity: declaredCapacity(household, request.category),
+            publishedProducts: published.get(request.category as ProductCategory) ?? 0,
+          })
+        )
+          throw new AppError('RFQ_ARTISAN_NOT_ELIGIBLE');
+        request.invitedHouseholdIds = [...request.invitedHouseholdIds, household.id];
+      }
       if (household.status !== 'APPROVED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
       this.completion(input.completionDate, request);
       const committed = await committedByHousehold(
@@ -1771,6 +1839,19 @@ export class RfqService {
     if (!request.invitedHouseholdIds.includes(household.id)) throw notFound();
     if (request.coordinationOptIn) throw new AppError('RFQ_DIRECT_QUOTATION_NOT_ALLOWED');
     return household;
+  }
+
+  /** Published products of a household per craft category. */
+  private async publishedByCategory(em: EntityManager, householdId: string) {
+    const products = await em.find(
+      Product,
+      { status: 'PUBLISHED', household: householdId },
+      { fields: ['category'] },
+    );
+    const counts = new Map<ProductCategory, number>();
+    for (const product of products)
+      counts.set(product.category, (counts.get(product.category) ?? 0) + 1);
+    return counts;
   }
 
   private async checkHouseholds(em: EntityManager, ids: readonly string[]) {
