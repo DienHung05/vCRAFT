@@ -209,4 +209,57 @@ describe('Public exhibition and QR trace', () => {
       }),
     ]);
   });
+
+  describe('GET /map/workshops?bbox= (FR-MAP-04)', () => {
+    const names = (body: { data: { workshopName: string }[] }) =>
+      body.data.map((pin) => pin.workshopName);
+
+    it('returns only the workshops inside the viewport', async () => {
+      // Around the showroom (20.9752, 105.9131) but not the kiln (20.9771, 105.9155).
+      const res = await t.request({
+        method: 'GET',
+        url: '/map/workshops?bbox=105.912,20.974,105.914,20.976',
+      });
+      expect(res.status).toBe(200);
+      expect(names(res.body)).toEqual(['Phòng trưng bày Minh Hải']);
+      const both = await t.request({
+        method: 'GET',
+        url: '/map/workshops?bbox=105.9,20.97,105.92,20.98',
+      });
+      expect(names(both.body).sort()).toEqual(['Lò nung Minh Hải', 'Phòng trưng bày Minh Hải']);
+    });
+
+    it('returns an empty list for a viewport with no workshops', async () => {
+      const res = await t.request({ method: 'GET', url: '/map/workshops?bbox=100,10,100.5,10.5' });
+      expect(res.status).toBe(200);
+      expect(res.body.data).toEqual([]);
+    });
+
+    it('is cacheable and revalidates with the ETag', async () => {
+      const url = '/map/workshops?bbox=105.9,20.97,105.92,20.98';
+      const first = await t.request({ method: 'GET', url });
+      expect(String(first.headers['cache-control'])).toContain('public');
+      const etag = String(first.headers.etag);
+      const again = await t.request({ method: 'GET', url, headers: { 'if-none-match': etag } });
+      expect(again.status).toBe(304);
+    });
+
+    it('keeps the full list without a bbox', async () => {
+      const res = await t.request({ method: 'GET', url: '/map/workshops' });
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(2);
+    });
+
+    it.each([
+      ['not numbers', 'a,b,c,d'],
+      ['three values', '105.9,20.97,105.92'],
+      ['min not below max', '105.92,20.97,105.9,20.98'],
+      ['latitude out of range', '105.9,-91,105.92,20.98'],
+      ['longitude out of range', '105.9,20.97,181,21'],
+      ['empty part', '105.9,,105.92,20.98'],
+    ])('rejects a malformed bbox with a validation error (%s)', async (_label, bbox) => {
+      const res = await t.request({ method: 'GET', url: `/map/workshops?bbox=${bbox}` });
+      expect(res.status).toBe(422);
+    });
+  });
 });

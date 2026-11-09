@@ -20,12 +20,19 @@ import MapGL, {
   Source,
   type ViewStateChangeEvent,
 } from 'react-map-gl/maplibre';
-import { type LatLng, type MapBounds, type PinStatus, toFeatureCollection } from './map-model';
+import {
+  type LatLng,
+  type MapBounds,
+  type PinStatus,
+  toFeatureCollection,
+  villageCenter,
+} from './map-model';
 import { PMTILES_URL } from './offline-style';
 import { loadPinImage, PIN_COLORS, PIN_HEIGHT, PIN_WIDTH, pinSvg } from './pin-icons';
 import { PinPopup } from './pin-popup';
 import { pulseDue, pulsePaint, shouldPulse } from './pin-pulse';
 import { useMapStyle } from './use-map-style';
+import { routeLine } from './walking-route';
 
 // Tệp này do `scripts/copy-map-worker.mjs` chép vào `public/map` khi dev và build.
 setWorkerUrl('/map/maplibre-gl-worker.mjs');
@@ -35,6 +42,7 @@ if (PMTILES_URL) addProtocol('pmtiles', new Protocol().tile);
 const SOURCE = 'workshops';
 const CLUSTERS = 'workshop-clusters';
 const PINS = 'workshop-pins';
+const ROUTE_SOURCE = 'walking-route';
 const GLAZE = '#2f6f6a';
 const PAPER = '#fbf7ef';
 const PHONE = '(max-width: 639px)';
@@ -73,6 +81,8 @@ export interface MapCanvasProps {
   highlightId: string | null;
   selected: MapPinDto | null;
   userLocation: LatLng | null;
+  /** Walking route to draw: the start followed by the stops in order (FR-MAP-08). */
+  route?: readonly LatLng[] | null;
   now: Date;
   onHighlight: (id: string | null) => void;
   onSelect: (id: string | null) => void;
@@ -86,6 +96,7 @@ export default function MapCanvas({
   highlightId,
   selected,
   userLocation,
+  route = null,
   now,
   onHighlight,
   onSelect,
@@ -96,12 +107,13 @@ export default function MapCanvas({
   const { style, offline, onMapError } = useMapStyle();
   const data = useMemo(() => toFeatureCollection(pins, now), [pins, now]);
   const initialCenter = useMemo(() => {
-    const [lng = 105.9139, lat = 20.9758] = (process.env.NEXT_PUBLIC_MAP_CENTER ?? '')
-      .split(',')
-      .map((value) => Number.parseFloat(value))
-      .filter(Number.isFinite);
+    const { lat, lng } = villageCenter();
     return { longitude: lng, latitude: lat };
   }, []);
+  const routeData = useMemo(
+    () => (route && route.length > 1 ? routeLine(route[0] as LatLng, route.slice(1)) : null),
+    [route],
+  );
 
   const phone = usePhone();
   const selectedId = selected?.workshopId ?? '';
@@ -174,6 +186,22 @@ export default function MapCanvas({
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [inView, hasOpenPin]);
+
+  // Frame the whole route; no animation for people who asked for reduced motion.
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !container || !route || route.length < 2) return;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const lngs = route.map((point) => point.lng);
+    const lats = route.map((point) => point.lat);
+    map.fitBounds(
+      [
+        [Math.min(...lngs), Math.min(...lats)],
+        [Math.max(...lngs), Math.max(...lats)],
+      ],
+      { padding: 48, maxZoom: 17, animate: !reducedMotion },
+    );
+  }, [route, container]);
 
   const handleClick = async (event: MapLayerMouseEvent) => {
     const feature = event.features?.[0];
@@ -298,6 +326,20 @@ export default function MapCanvas({
           }}
         />
       </Source>
+      {routeData ? (
+        <Source id={ROUTE_SOURCE} type="geojson" data={routeData}>
+          <Layer
+            id="walking-route-line"
+            type="line"
+            layout={{ 'line-cap': 'round', 'line-join': 'round' }}
+            paint={{
+              'line-color': PIN_COLORS.open,
+              'line-width': 4,
+              'line-dasharray': [2, 1.5],
+            }}
+          />
+        </Source>
+      ) : null}
       {userLocation ? (
         <Marker longitude={userLocation.lng} latitude={userLocation.lat}>
           <span className="block size-4 rounded-full border-2 border-paper bg-seal shadow-warm" />

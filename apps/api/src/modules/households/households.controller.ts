@@ -10,6 +10,7 @@ import {
   Put,
   Query,
   Req,
+  Res,
 } from '@nestjs/common';
 import {
   type ApplyHouseholdRequest,
@@ -24,6 +25,8 @@ import {
   HouseholdDecisionRequestSchema,
   type ListHouseholdsQuery,
   ListHouseholdsQuerySchema,
+  type MapPinsQuery,
+  MapPinsQuerySchema,
   type PriceSuggestionQuery,
   PriceSuggestionQuerySchema,
   type RecordScanRequest,
@@ -44,7 +47,9 @@ import {
 import type { HouseholdEvent } from '@vcraft/domain';
 import { type Actor, CurrentActor, Public, Roles } from '../../common/auth/auth.guard';
 import { notFound } from '../../common/errors/app-error';
+import type { HttpReply, HttpRequest } from '../../common/http/http-types';
 import { IfMatchVersion } from '../../common/http/if-match';
+import { withPublicCache } from '../../common/http/public-cache';
 import { Idempotent } from '../../common/idempotency/idempotent.decorator';
 import { UuidPipe } from '../../common/pipes/uuid.pipe';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
@@ -407,10 +412,14 @@ export class PublicHouseholdsController {
     return this.households.getPublic(slug);
   }
 
-  /** Ghim bản đồ làng; trang luôn hiện kèm danh sách chữ. */
+  /** Ghim bản đồ làng; trang luôn hiện kèm danh sách chữ. `?bbox=` loads one viewport (FR-MAP-04). */
   @Get('map/workshops')
-  mapPins() {
-    return this.households.mapPins();
+  async mapPins(
+    @Query(new ZodValidationPipe(MapPinsQuerySchema)) query: MapPinsQuery,
+    @Req() request: HttpRequest,
+    @Res({ passthrough: true }) reply: HttpReply,
+  ) {
+    return withPublicCache(request, reply, await this.households.mapPins(query.bbox));
   }
 
   @Get('trace/:code')

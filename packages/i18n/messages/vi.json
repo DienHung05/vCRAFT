@@ -1764,7 +1764,19 @@
     "legendClosed": "Đang đóng cửa",
     "legendProduction": "Chỉ sản xuất",
     "pinButton": "{name}: xem thông tin",
-    "viewOnFullMap": "Xem trên bản đồ làng"
+    "viewOnFullMap": "Xem trên bản đồ làng",
+    "routeSuggest": "Gợi ý tuyến đi bộ",
+    "routeTitle": "Tuyến đi bộ gợi ý",
+    "routeClear": "Xóa tuyến",
+    "routeStart": {
+      "location": "Xuất phát từ vị trí của bạn",
+      "workshop": "Xuất phát từ xưởng đang chọn",
+      "village": "Xuất phát từ trung tâm làng"
+    },
+    "routeSummary": "{count, plural, one {# điểm dừng} other {# điểm dừng}} · khoảng {km} km",
+    "routeEmpty": "Hiện chưa có xưởng nào đang mở cửa để gợi ý tuyến.",
+    "routeOpenUntil": "Mở đến {time}",
+    "routeLimited": "Chỉ hiện {count} điểm dừng gần nhất."
   },
   "catalog": {
     "filtersLabel": "Lọc sản phẩm",
