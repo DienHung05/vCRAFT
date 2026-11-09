@@ -1,6 +1,6 @@
 import {
   AdminDashboardSchema,
-  AdminHouseholdListSchema,
+  AdminHouseholdPageSchema,
   AdminNewsListSchema,
   AdminNewsSchema,
   type AdminUserListQuery,
@@ -35,6 +35,9 @@ export interface AdminHouseholdFilters {
   /** Ngày nộp hồ sơ, `YYYY-MM-DD`. */
   from?: string | undefined;
   to?: string | undefined;
+  /** Opaque cursor from the previous page's `nextCursor`. */
+  cursor?: string | undefined;
+  limit?: number | undefined;
 }
 
 /** Màn Ban quản lý: số liệu, hàng đợi duyệt hộ, giấy tờ riêng tư qua URL ký 5 phút. */
@@ -47,9 +50,9 @@ export function createAdminClient(options: AuthedClientOptions) {
       request(`/admin/assistant/stats?days=${days}`, AssistantStatsSchema),
     listHouseholds: (filters: AdminHouseholdFilters = {}) => {
       const query = new URLSearchParams();
-      for (const [key, value] of Object.entries(filters)) if (value) query.set(key, value);
+      for (const [key, value] of Object.entries(filters)) if (value) query.set(key, String(value));
       const suffix = query.size > 0 ? `?${query}` : '';
-      return request(`/admin/households${suffix}`, AdminHouseholdListSchema);
+      return request(`/admin/households${suffix}`, AdminHouseholdPageSchema);
     },
     getHousehold: (id: string) => request(`/admin/households/${id}`, HouseholdResponseSchema),
     /** The full citizen ID number. Each call is written to the audit log (NFR-SEC-03). */

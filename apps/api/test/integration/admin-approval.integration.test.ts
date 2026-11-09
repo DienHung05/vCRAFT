@@ -99,12 +99,12 @@ describe('Admin dashboard and household approval', () => {
   it('hàng đợi lọc theo trạng thái và ngày nộp', async () => {
     const get = (qs: string) =>
       t.request({ method: 'GET', url: `/admin/households?${qs}`, auth: admin.auth });
-    expect((await get('status=PENDING_REVIEW')).body).toEqual([
+    expect((await get('status=PENDING_REVIEW')).body.data).toEqual([
       expect.objectContaining({ id: household.id, name: 'Gốm Chờ Duyệt' }),
     ]);
-    expect((await get('status=APPROVED')).body).toEqual([]);
-    expect((await get('to=2000-01-01')).body).toEqual([]);
-    expect((await get('from=2000-01-01')).body).toHaveLength(1);
+    expect((await get('status=APPROVED')).body.data).toEqual([]);
+    expect((await get('to=2000-01-01')).body.data).toEqual([]);
+    expect((await get('from=2000-01-01')).body.data).toHaveLength(1);
     expect((await get('from=khong-phai-ngay')).status).toBe(422);
   });
 

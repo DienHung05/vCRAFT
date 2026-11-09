@@ -52,10 +52,23 @@ const ORDERS: AllocationScheduleDto = [
 function client(overrides: Partial<AdminClient> = {}): AdminClient {
   return {
     allocationSchedule: vi.fn(async () => ORDERS),
-    listHouseholds: vi.fn(async () => [
-      { id: id(3), name: 'Gốm Minh Hải', status: 'APPROVED', submittedAt: '2026-10-01T00:00:00Z' },
-      { id: id(6), name: 'Gốm Bích Hợp', status: 'APPROVED', submittedAt: '2026-10-01T00:00:00Z' },
-    ]),
+    listHouseholds: vi.fn(async () => ({
+      data: [
+        {
+          id: id(3),
+          name: 'Gốm Minh Hải',
+          status: 'APPROVED',
+          submittedAt: '2026-10-01T00:00:00Z',
+        },
+        {
+          id: id(6),
+          name: 'Gốm Bích Hợp',
+          status: 'APPROVED',
+          submittedAt: '2026-10-01T00:00:00Z',
+        },
+      ],
+      nextCursor: null,
+    })),
     reallocate: vi.fn(async () => ORDERS),
     ...overrides,
   } as unknown as AdminClient;

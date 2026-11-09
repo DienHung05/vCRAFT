@@ -22,17 +22,23 @@ export function HouseholdQueue({ client: provided }: { client?: AdminClient }) {
   const { client, loading } = useAdminClient(provided);
   const [filters, setFilters] = useState<AdminHouseholdFilters>({ status: 'PENDING_REVIEW' });
   const [rows, setRows] = useState<readonly AdminHouseholdDto[] | null>(null);
+  const [next, setNext] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
-  const load = useCallback(async () => {
-    if (!client) return;
-    setFailed(false);
-    try {
-      setRows(await client.listHouseholds(filters));
-    } catch {
-      setFailed(true);
-    }
-  }, [client, filters]);
+  const load = useCallback(
+    async (cursor?: string) => {
+      if (!client) return;
+      setFailed(false);
+      try {
+        const page = await client.listHouseholds({ ...filters, ...(cursor && { cursor }) });
+        setRows((current) => (cursor ? [...(current ?? []), ...page.data] : page.data));
+        setNext(page.nextCursor);
+      } catch {
+        setFailed(true);
+      }
+    },
+    [client, filters],
+  );
 
   useEffect(() => {
     void load();
@@ -141,6 +147,16 @@ export function HouseholdQueue({ client: provided }: { client?: AdminClient }) {
           ))}
         </ul>
       )}
+      {next && !failed ? (
+        <Button
+          type="button"
+          variant="secondary"
+          className="self-start"
+          onClick={() => void load(next)}
+        >
+          {t('more')}
+        </Button>
+      ) : null}
     </div>
   );
 }

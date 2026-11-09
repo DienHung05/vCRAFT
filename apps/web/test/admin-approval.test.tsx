@@ -76,14 +76,17 @@ function client(overrides: Partial<AdminClient> = {}): AdminClient {
       qrScans30Days: 37,
       trend: TREND,
     })),
-    listHouseholds: vi.fn(async () => [
-      {
-        id: ID,
-        name: 'Gốm Bảo Châu',
-        status: 'PENDING_REVIEW',
-        submittedAt: '2026-10-01T00:00:00.000Z',
-      },
-    ]),
+    listHouseholds: vi.fn(async () => ({
+      data: [
+        {
+          id: ID,
+          name: 'Gốm Bảo Châu',
+          status: 'PENDING_REVIEW',
+          submittedAt: '2026-10-01T00:00:00.000Z',
+        },
+      ],
+      nextCursor: null,
+    })),
     getHousehold: vi.fn(async () => PENDING),
     revealIdNumber: vi.fn(async () => ({ idNumber: '079203004567' })),
     documents: vi.fn(async () => ({
@@ -159,6 +162,26 @@ describe('AdminDashboard', () => {
 });
 
 describe('HouseholdQueue', () => {
+  it('xem thêm nối trang kế tiếp bằng con trỏ và ẩn nút khi hết', async () => {
+    const row = (id: string, name: string) => ({
+      id,
+      name,
+      status: 'PENDING_REVIEW',
+      submittedAt: '2026-10-01T00:00:00.000Z',
+    });
+    const listHouseholds = vi
+      .fn()
+      .mockResolvedValueOnce({ data: [row('a', 'Hộ Một')], nextCursor: 'next-1' })
+      .mockResolvedValueOnce({ data: [row('b', 'Hộ Hai')], nextCursor: null });
+    renderVi(<HouseholdQueue client={client({ listHouseholds })} />);
+    expect(await screen.findByText('Hộ Một')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Xem thêm' }));
+    expect(await screen.findByText('Hộ Hai')).toBeTruthy();
+    expect(screen.getByText('Hộ Một')).toBeTruthy();
+    expect(listHouseholds).toHaveBeenLastCalledWith({ status: 'PENDING_REVIEW', cursor: 'next-1' });
+    expect(screen.queryByRole('button', { name: 'Xem thêm' })).toBeNull();
+  });
+
   it('mặc định lọc hồ sơ chờ; đổi trạng thái và ngày gọi lại API', async () => {
     const api = client();
     renderVi(<HouseholdQueue client={api} />);

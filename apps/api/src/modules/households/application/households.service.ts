@@ -3,12 +3,14 @@ import { Injectable } from '@nestjs/common';
 import type {
   AdminDashboardDto,
   AdminHouseholdDto,
+  AdminHouseholdPageDto,
   ApplyHouseholdRequest,
   CreateArtisanRequest,
   CreateProductRequest,
   CreateWorkshopRequest,
   HouseholdDocumentDto,
   HouseholdDto,
+  ListHouseholdsQuery,
   MapPinsDto,
   PriceSuggestionDto,
   ProductDto,
@@ -47,7 +49,6 @@ import {
   certificationYear,
   checkMakerCredits,
   type HouseholdEvent,
-  type HouseholdStatus,
   householdNoticeKind,
   householdReviewState,
   householdTransition,
@@ -105,6 +106,28 @@ const certificationKey = (c: {
 /** `<name>-<trace code>`: readable, and unique because the trace code is. */
 function productSlug(name: string, traceCode: string): string {
   return `${slugify(name) || 'san-pham'}-${traceCode.toLowerCase()}`;
+}
+
+interface HouseholdCursor {
+  t: string;
+  id: string;
+}
+
+function decodeHouseholdCursor(raw: string): HouseholdCursor {
+  try {
+    const value = JSON.parse(
+      Buffer.from(raw, 'base64url').toString('utf8'),
+    ) as Partial<HouseholdCursor>;
+    if (
+      typeof value.t === 'string' &&
+      typeof value.id === 'string' &&
+      !Number.isNaN(Date.parse(value.t))
+    )
+      return { t: value.t, id: value.id };
+  } catch {
+    // Falls through to the error below.
+  }
+  throw new AppError('VALIDATION_MALFORMED_REQUEST', 'cursor is not valid');
 }
 
 /**
@@ -706,35 +729,51 @@ export class HouseholdsService {
 
   // --- Ban quản lý ---
 
-  /** Hàng đợi duyệt: hồ sơ nộp trước đứng trước; `from`/`to` là ngày theo giờ Việt Nam. */
-  async listForAdmin(filters: {
-    status?: HouseholdStatus | undefined;
-    from?: string | undefined;
-    to?: string | undefined;
-  }): Promise<AdminHouseholdDto[]> {
+  /**
+   * Hàng đợi duyệt: hồ sơ nộp trước đứng trước; `from`/`to` là ngày theo giờ Việt Nam.
+   * Cursor-paged on (createdAt, id), oldest first.
+   */
+  async listForAdmin(query: ListHouseholdsQuery): Promise<AdminHouseholdPageDto> {
     const em = this.orm.em.fork();
-    const households = await em.find(
+    const where: Record<string, unknown>[] = [];
+    if (query.status) where.push({ status: query.status });
+    if (query.from || query.to) {
+      where.push({
+        createdAt: {
+          ...(query.from && { $gte: new Date(`${query.from}T00:00:00.000+07:00`) }),
+          ...(query.to && { $lte: new Date(`${query.to}T23:59:59.999+07:00`) }),
+        },
+      });
+    }
+    if (query.cursor) {
+      const cursor = decodeHouseholdCursor(query.cursor);
+      const at = new Date(cursor.t);
+      where.push({ $or: [{ createdAt: { $gt: at } }, { createdAt: at, id: { $gt: cursor.id } }] });
+    }
+    const rows = await em.find(
       Household,
-      {
-        ...(filters.status && { status: filters.status }),
-        ...((filters.from || filters.to) && {
-          createdAt: {
-            ...(filters.from && { $gte: new Date(`${filters.from}T00:00:00.000+07:00`) }),
-            ...(filters.to && { $lte: new Date(`${filters.to}T23:59:59.999+07:00`) }),
-          },
-        }),
-      },
-      { orderBy: { createdAt: 'asc' } },
+      { $and: where },
+      { orderBy: { createdAt: 'asc', id: 'asc' }, limit: query.limit + 1 },
     );
-    return households.map((h) => ({
-      id: h.id,
-      version: h.version,
-      name: h.name,
-      status: h.status,
-      reviewState: householdReviewState(h.status, h.statusReason, h.resubmittedAt),
-      resubmittedAt: h.resubmittedAt ? h.resubmittedAt.toISOString() : null,
-      submittedAt: h.createdAt.toISOString(),
-    }));
+    const page = rows.slice(0, query.limit);
+    const last = page.at(-1);
+    return {
+      data: page.map((h) => ({
+        id: h.id,
+        version: h.version,
+        name: h.name,
+        status: h.status,
+        reviewState: householdReviewState(h.status, h.statusReason, h.resubmittedAt),
+        resubmittedAt: h.resubmittedAt ? h.resubmittedAt.toISOString() : null,
+        submittedAt: h.createdAt.toISOString(),
+      })),
+      nextCursor:
+        rows.length > query.limit && last
+          ? Buffer.from(JSON.stringify({ t: last.createdAt.toISOString(), id: last.id })).toString(
+              'base64url',
+            )
+          : null,
+    };
   }
 
   /** Hồ sơ đầy đủ cho màn duyệt, ở mọi trạng thái. */

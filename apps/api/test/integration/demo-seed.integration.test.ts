@@ -543,7 +543,7 @@ describe('Demo seed and guarded reset', () => {
       auth: as('admin'),
     });
     expect(pending.status).toBe(200);
-    const target = (pending.body.data ?? pending.body).find(
+    const target = pending.body.data.find(
       (h: { id: string }) => h.id === DEMO_HOUSEHOLD_IDS.pending,
     );
     expect(target).toBeTruthy();

@@ -863,6 +863,7 @@
       "retry": "Try again",
       "empty": "No applications match these filters.",
       "emptyHint": "Try another status filter or date range to see other applications.",
+      "more": "Load more",
       "showAll": "Show all statuses",
       "showPending": "Show pending applications",
       "reviewState": {

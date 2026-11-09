@@ -101,7 +101,7 @@ describe('notifications: bell inbox, ownership and email preferences', () => {
       url: '/admin/households?status=APPROVED',
       auth: admin.auth,
     });
-    const household = current.body.find((h: { id: string }) => h.id === approved.householdId);
+    const household = current.body.data.find((h: { id: string }) => h.id === approved.householdId);
     const suspended = await t.request({
       method: 'POST',
       url: `/admin/households/${approved.householdId}/suspend`,

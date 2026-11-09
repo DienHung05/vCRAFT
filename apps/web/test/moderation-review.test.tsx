@@ -44,14 +44,16 @@ it('groups classified and legacy evidence and describes the workshop boundary wi
 
 it('distinguishes applications waiting for an answer from explicit resubmissions in the queue', async () => {
   const client = {
-    listHouseholds: async () =>
-      ['AWAITING_APPLICANT', 'RESUBMITTED'].map((reviewState, index) => ({
+    listHouseholds: async () => ({
+      data: ['AWAITING_APPLICANT', 'RESUBMITTED'].map((reviewState, index) => ({
         id: String(index),
         name: `Household ${index}`,
         status: 'PENDING_REVIEW',
         reviewState,
         submittedAt: '2026-11-08T01:00:00.000Z',
       })),
+      nextCursor: null,
+    }),
   } as unknown as AdminClient;
   renderVi(<HouseholdQueue client={client} />);
   expect(await screen.findByText('Chờ hộ bổ sung')).toBeDefined();

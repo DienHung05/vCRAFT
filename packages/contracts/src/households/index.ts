@@ -13,7 +13,15 @@ import {
   VILLAGE_AREA_CODES,
 } from '@vcraft/domain';
 import { z } from 'zod';
-import { IdSchema, IsoDateSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
+import {
+  CursorPageQuerySchema,
+  cursorPageSchema,
+  IdSchema,
+  IsoDateSchema,
+  IsoDateTimeSchema,
+  SlugSchema,
+  VersionSchema,
+} from '../common';
 import { JournalResponseSchema } from '../journal';
 import {
   CertificateKindSchema,
@@ -84,7 +92,8 @@ export const ResubmitHouseholdResponseSchema = z.object({
 });
 export type ResubmitHouseholdDto = z.infer<typeof ResubmitHouseholdResponseSchema>;
 
-export const ListHouseholdsQuerySchema = z.object({
+/** `GET /admin/households`: oldest application first, cursor-paged. */
+export const ListHouseholdsQuerySchema = CursorPageQuerySchema.extend({
   status: HouseholdStatusSchema.optional(),
   /** Ngày nộp hồ sơ, tính cả hai đầu. */
   from: IsoDateSchema.optional(),
@@ -102,7 +111,9 @@ export const AdminHouseholdSchema = z.object({
   submittedAt: IsoDateTimeSchema,
 });
 export type AdminHouseholdDto = z.infer<typeof AdminHouseholdSchema>;
-export const AdminHouseholdListSchema = z.array(AdminHouseholdSchema);
+export const AdminHouseholdPageSchema = cursorPageSchema(AdminHouseholdSchema);
+export type AdminHouseholdPageDto = z.infer<typeof AdminHouseholdPageSchema>;
+export type ListHouseholdsQuery = z.infer<typeof ListHouseholdsQuerySchema>;
 
 /** Giấy tờ xác minh riêng tư; nội dung chỉ đọc qua URL ký 5 phút (FR-MEDIA-04). */
 export const HouseholdDocumentSchema = z.object({

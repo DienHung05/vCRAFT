@@ -1,10 +1,13 @@
 import type { MikroORM } from '@mikro-orm/core';
+import { Logger } from '@nestjs/common';
 import {
+  countFailedOutboxEvents,
   dueRequestIds,
   expireDuePayments,
   expireRequest,
   flagRequestsNeedingCoordination,
   purgeAssistantLogs,
+  purgeDoneOutboxEvents,
   purgeIdempotencyKeys,
 } from '@vcraft/database';
 
@@ -16,6 +19,8 @@ export const RFQ_COORDINATION_CHECK_JOB = 'rfq.coordination-check';
 export const ASSISTANT_LOG_PURGE_JOB = 'assistant.purge-logs';
 /** Deletes idempotency keys older than 24 hours (BR-L5). */
 export const IDEMPOTENCY_PURGE_JOB = 'idempotency.purge-keys';
+/** Deletes `DONE` outbox events older than 7 days and warns about `FAILED` ones, which are kept. */
+export const OUTBOX_PRUNE_JOB = 'outbox.prune';
 /** Imports real village news from the configured feeds and, when news is scarce, adds evergreen articles (GH#314). */
 export const NEWS_IMPORT_JOB = 'news.import';
 /** Expires pending payments past their expiry time and tells the buyers (ADR-0021). */
@@ -26,7 +31,21 @@ export const RFQ_SWEEP_EVERY_MS = 60_000;
 export const COORDINATION_CHECK_EVERY_MS = 15 * 60_000;
 export const ASSISTANT_LOG_PURGE_EVERY_MS = 24 * 60 * 60_000;
 export const IDEMPOTENCY_PURGE_EVERY_MS = 60 * 60_000;
+export const OUTBOX_PRUNE_EVERY_MS = 24 * 60 * 60_000;
 export const PAYMENT_EXPIRE_EVERY_MS = 60_000;
+
+const logger = new Logger('OutboxPrune');
+
+/** Prunes old `DONE` outbox events; `FAILED` events are never deleted, only counted in a warning. */
+export async function pruneOutbox(
+  orm: MikroORM,
+  now = new Date(),
+): Promise<{ deleted: number; failed: number }> {
+  const deleted = await purgeDoneOutboxEvents(orm, now);
+  const failed = await countFailedOutboxEvents(orm);
+  if (failed > 0) logger.warn(`${failed} outbox event(s) are FAILED and need attention`);
+  return { deleted, failed };
+}
 
 export interface RfqExpireJob {
   requestId: string;
@@ -54,6 +73,8 @@ export async function runSchedulerJob(
       return purgeAssistantLogs(orm, now);
     case IDEMPOTENCY_PURGE_JOB:
       return purgeIdempotencyKeys(orm, now);
+    case OUTBOX_PRUNE_JOB:
+      return pruneOutbox(orm, now);
     case PAYMENT_EXPIRE_SWEEP_JOB:
       return expireDuePayments(orm, now);
     default:
