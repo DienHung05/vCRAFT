@@ -75,8 +75,6 @@ services:
         sync: false
       - key: SUPABASE_SECRET_KEY
         sync: false
-      - key: SUPABASE_JWKS_URL
-        sync: false
       # Bảo mật
       - key: FIELD_ENCRYPTION_KEYS
         sync: false

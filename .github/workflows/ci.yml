@@ -22,6 +22,7 @@ jobs:
   quality:
     if: vars.CI_ENABLED != 'false'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -53,6 +54,7 @@ jobs:
     name: integration (${{ matrix.db }} ${{ matrix.shard }}/4)
     if: vars.CI_ENABLED != 'false'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -75,12 +77,14 @@ jobs:
     needs: integration-shard
     if: always() && vars.CI_ENABLED != 'false'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - run: test "${{ needs.integration-shard.result }}" = success
 
   e2e:
     if: vars.CI_ENABLED != 'false'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     # Trang công khai đọc API thật nên E2E cần CSDL đã nạp dữ liệu mẫu và API đang chạy.
     services:
       postgres:
@@ -142,7 +146,13 @@ jobs:
       - name: Chạy API nền
         run: |
           node apps/api/dist/main.js &
-          for _ in $(seq 1 30); do curl -sf localhost:4000/api/v1/village/stats && break; sleep 1; done
+          # Fail the step when the API never becomes healthy, instead of letting the e2e run hit a dead server.
+          for _ in $(seq 1 30); do
+            curl -sf localhost:4000/api/v1/village/stats && exit 0
+            sleep 1
+          done
+          echo "API did not become healthy within 30 s" >&2
+          exit 1
         env:
           APP_URL: http://localhost:4000
           STORAGE_DRIVER: local

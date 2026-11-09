@@ -15,6 +15,7 @@ The first release deferred the Fox assistant (E15) to keep the scope small: `vCR
 2. **Embeddings:** OpenAI `OPENAI_EMBEDDING_MODEL` (currently `text-embedding-3-large`) at `OPENAI_EMBEDDING_DIMENSIONS` = **1024** dimensions, which matches `knowledge_chunks.embedding vector(1024)`. The model supports Vietnamese and English in one space, so an English question finds Vietnamese content.
 3. **Vector store:** unchanged from ADR-13: pgvector on the Supabase project, separate from the business database, reached only through the `VectorStore` port.
 4. `ANTHROPIC_API_KEY` is no longer used by the assistant. It stays optional for the story-writing and translation suggestions (FR-ART-08, Could).
+   *Note (9 Nov 2026, #380): no code reads `ANTHROPIC_API_KEY`, so it was removed from `.env.example`. Add it back together with the feature if FR-ART-08 is built.*
 5. The deferral is reversed: E15 (#77–#82) is planned for release 2, with the guardrails of ARCHITECTURE §7.6 unchanged.
 
 ## Options considered
