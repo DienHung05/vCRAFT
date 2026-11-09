@@ -184,4 +184,12 @@ describe('Scheduled quotation jobs', () => {
     expect(quote.status).toBe(201);
     expect(await flagRequestsNeedingCoordination(db.orm)).not.toContain(quoted.id);
   });
+
+  it('only considers requests inside the unclaimed window, picked up as the deadline nears', async () => {
+    const { id } = await sentRequest({ closesInMs: 3 * DAY, coordinationOptIn: true });
+    expect(await flagRequestsNeedingCoordination(db.orm)).not.toContain(id);
+    // One day later the deadline is inside the 48 h window and the request is picked up.
+    const later = new Date(Date.now() + DAY + 60_000);
+    expect(await flagRequestsNeedingCoordination(db.orm, later)).toContain(id);
+  });
 });

@@ -48,6 +48,7 @@ import {
   type MailJob,
   MEDIA_QUEUE,
   type MediaJob,
+  NEWS_IMPORT_QUEUE,
   OUTBOX_QUEUE,
   OUTBOX_RELAY_EVERY_MS,
   QR_LABELS_QUEUE,
@@ -100,10 +101,17 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       connection,
       defaultJobOptions: DEFAULT_JOB_OPTIONS,
     });
+    const newsImport = new Queue(NEWS_IMPORT_QUEUE, {
+      connection,
+      defaultJobOptions: DEFAULT_JOB_OPTIONS,
+    });
     const knowledge = { orm: this.orm, ...knowledgeFromEnv() };
     const outbox = new Queue(OUTBOX_QUEUE, { connection, defaultJobOptions: OUTBOX_JOB_OPTIONS });
     // Free space first: a full Redis refuses the writes below (issue #153).
-    await trimFinishedJobs([media, mail, qrLabels, scheduler, assistant, outbox], this.logger);
+    await trimFinishedJobs(
+      [media, mail, qrLabels, scheduler, assistant, newsImport, outbox],
+      this.logger,
+    );
     const dispatch = createOutboxDispatcher({ media, mail, qrLabels, scheduler, assistant });
     const mailDeps = {
       loadNotice: createNoticeLoader(this.orm),
@@ -155,18 +163,20 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
         connection,
         concurrency: 1,
       }),
+      new Worker(SCHEDULER_QUEUE, (job) => runSchedulerJob(this.orm, job.name, job.data), {
+        connection,
+        concurrency: 1,
+      }),
       new Worker(
-        SCHEDULER_QUEUE,
-        (job) =>
-          job.name === NEWS_IMPORT_JOB
-            ? runNewsImport({
-                orm: this.orm,
-                storage: this.storage,
-                llm: llmFromEnv(),
-                config: newsImportConfig,
-                logger: this.logger,
-              })
-            : runSchedulerJob(this.orm, job.name, job.data),
+        NEWS_IMPORT_QUEUE,
+        () =>
+          runNewsImport({
+            orm: this.orm,
+            storage: this.storage,
+            llm: llmFromEnv(),
+            config: newsImportConfig,
+            logger: this.logger,
+          }),
         { connection, concurrency: 1 },
       ),
       new Worker(
@@ -218,8 +228,10 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       { every: PAYMENT_EXPIRE_EVERY_MS },
       { name: PAYMENT_EXPIRE_SWEEP_JOB },
     );
+    // The import used to be scheduled on the shared `scheduler` queue; drop that old repeat.
+    await scheduler.removeJobScheduler(NEWS_IMPORT_JOB);
     if (newsImportEnabled(newsImportConfig)) {
-      await scheduler.upsertJobScheduler(
+      await newsImport.upsertJobScheduler(
         NEWS_IMPORT_JOB,
         { every: newsImportConfig.everyMinutes * 60_000 },
         { name: NEWS_IMPORT_JOB },
@@ -229,13 +241,25 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       );
     } else {
       // A schedule left over from an earlier configuration must not keep running.
-      await scheduler.removeJobScheduler(NEWS_IMPORT_JOB);
+      await newsImport.removeJobScheduler(NEWS_IMPORT_JOB);
       this.logger.log('news import off: NEWS_IMPORT_FEEDS has no valid feed');
     }
-    this.closables.push(...workers, media, mail, qrLabels, scheduler, assistant, outbox, {
-      close: async () => mailDeps.transport.close(),
-    });
-    this.logger.log('queues ready: media, mail, qr-labels, scheduler, assistant, outbox');
+    this.closables.push(
+      ...workers,
+      media,
+      mail,
+      qrLabels,
+      scheduler,
+      assistant,
+      newsImport,
+      outbox,
+      {
+        close: async () => mailDeps.transport.close(),
+      },
+    );
+    this.logger.log(
+      'queues ready: media, mail, qr-labels, scheduler, assistant, news-import, outbox',
+    );
   }
 
   async onApplicationShutdown(): Promise<void> {
