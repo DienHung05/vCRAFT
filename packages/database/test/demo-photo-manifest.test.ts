@@ -75,7 +75,7 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
     }
   });
 
-  it('every real news story has a licensed cover photo of its village or subject (GH#314)', () => {
+  it('every news cover is a licensed photo of its village or subject (GH#314, GH#333)', () => {
     const covers = new Map(
       DEMO_PHOTO_LINKS.filter((l) => l.target === 'NEWS' && l.role === 'COVER').map((l) => [
         l.key,
@@ -95,7 +95,10 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
       'bt-digital-village': 'news-khach-tham',
       'bt-tan-thinh-ip': 'binh-hoa-lam',
     });
-    expect([...covers.keys()].sort()).toEqual(NEWS.map((n) => n.key).sort());
+    // A story with no licensed photo of its subject has no cover (the site shows an illustration); every cover
+    // belongs to a seeded story (GH#333).
+    const newsKeys = new Set(NEWS.map((n) => n.key));
+    for (const key of covers.keys()) expect(newsKeys.has(key), key).toBe(true);
     // Only photos credited to Commons, museum open access or Pixabay under CC0/PD/CC BY(-SA) are used.
     for (const photo of covers.values()) {
       const credit = DEMO_PHOTOS.find((p) => p.id === photo)?.credit;

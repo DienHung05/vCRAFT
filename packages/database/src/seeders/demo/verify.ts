@@ -224,9 +224,18 @@ export async function verifyDemoData(
     );
     const badNewsAlt = newsCoverLinks.filter((l) => !l.altText?.trim() || !l.altEn?.trim());
     const coveredNews = new Set(newsCoverLinks.map((l) => l.targetId));
-    const uncoveredNews = seededNews.filter((n) => !coveredNews.has(n.id));
+    // A story only needs a cover when the photo manifest has a licensed photo of its subject (GH#333); the others
+    // show the site illustration.
+    const expectedCoverIds = new Set(
+      DEMO_PHOTO_LINKS.filter((l) => l.target === 'NEWS' && l.role === 'COVER').map((l) =>
+        demoEntityId('news', l.key),
+      ),
+    );
+    const uncoveredNews = seededNews.filter(
+      (n) => expectedCoverIds.has(n.id) && !coveredNews.has(n.id),
+    );
     add(
-      'Tin tức: mỗi ảnh bìa có mô tả tiếng Việt và tiếng Anh, và mỗi tin đều có ảnh bìa',
+      'Tin tức: mỗi ảnh bìa có mô tả tiếng Việt và tiếng Anh, và mỗi tin có ảnh trong bảng ánh xạ đều có ảnh bìa',
       badNewsAlt.length === 0 && uncoveredNews.length === 0,
       badNewsAlt.length === 0 && uncoveredNews.length === 0
         ? `${newsCoverLinks.length} ảnh bìa đủ alt vi/en`
