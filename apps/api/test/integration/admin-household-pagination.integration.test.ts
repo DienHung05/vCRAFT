@@ -37,7 +37,11 @@ describe('Admin household list pagination', () => {
     }
     // Two of the five are already approved, so the status filter has something to exclude.
     const em = db.orm.em.fork();
-    await em.nativeUpdate(Household, { id: { $in: [ids[1], ids[3]] } }, { status: 'APPROVED' });
+    await em.nativeUpdate(
+      Household,
+      { id: { $in: [ids[1] as string, ids[3] as string] } },
+      { status: 'APPROVED' },
+    );
   }, 120_000);
 
   afterAll(async () => {
