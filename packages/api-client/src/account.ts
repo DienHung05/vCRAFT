@@ -11,6 +11,7 @@ import {
   FavouritesResponseSchema,
   type FieldError,
   formatVersionTag,
+  HouseholdDocumentListSchema,
   HouseholdResponseSchema,
   IdSchema,
   LoginEventListSchema,
@@ -142,7 +143,7 @@ export function createAccountClient(options: AccountClientOptions) {
         SlugAvailabilityResponseSchema,
       );
     },
-    /** Nộp hồ sơ hộ (`PENDING_REVIEW`); tài khoản trở thành người đại diện hộ. */
+    /** Start the application as a draft (`DRAFT`); the account becomes a household representative. */
     applyHousehold(input: ApplyHouseholdRequest) {
       return request('/me/household', HouseholdResponseSchema, {
         method: 'POST',
@@ -154,6 +155,14 @@ export function createAccountClient(options: AccountClientOptions) {
         method: 'POST',
         json: CreateWorkshopRequestSchema.parse(input),
       });
+    },
+    /** Final wizard step: send the draft application to the board (`PENDING_REVIEW`). */
+    submitHousehold() {
+      return request('/me/household/submit', HouseholdResponseSchema, { method: 'POST' });
+    },
+    /** The household's own uploaded documents, so the wizard shows them again after a reload. */
+    getMyDocuments() {
+      return request('/me/household/documents', HouseholdDocumentListSchema);
     },
     /** Explicit resubmission after edits (vCRAFT-8my.2); `If-Match` guards a stale write. */
     resubmitHousehold(version: number) {

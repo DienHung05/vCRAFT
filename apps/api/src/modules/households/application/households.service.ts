@@ -8,6 +8,7 @@ import type {
   CreateArtisanRequest,
   CreateProductRequest,
   CreateWorkshopRequest,
+  FieldError,
   HouseholdDocumentDto,
   HouseholdDto,
   ListHouseholdsQuery,
@@ -179,6 +180,8 @@ export class HouseholdsService {
           ? this.cipher.encrypt(input.idNumber, FIELD_CONTEXTS.householdIdNumber)
           : null,
         representative: user,
+        // Stays a draft until the representative submits at the last wizard step.
+        status: 'DRAFT',
       });
       if (input.idNumber) this.auditSetIdNumber(em, actor, household.id);
       await em.flush();
@@ -190,6 +193,39 @@ export class HouseholdsService {
         idNumberMasked: input.idNumber ? maskIdNumber(input.idNumber) : null,
       });
     });
+  }
+
+  /**
+   * Final wizard step: a draft application becomes `PENDING_REVIEW` and enters the board's queue.
+   * Refused with `APPLICATION_INCOMPLETE` while the profile, a workshop or a document is missing.
+   */
+  async submit(actor: Actor): Promise<HouseholdDto> {
+    return this.orm.em.fork().transactional(async (em) => {
+      const household = await this.ownWritableHousehold(em, actor);
+      const before = household.status;
+      // Checked first so a repeated submit answers INVALID_TRANSITION rather than a completeness error.
+      const next = unwrap(householdTransition(before, 'SUBMIT', { actorRole: actor.role }));
+      await this.assertComplete(em, household);
+      household.status = next;
+      household.statusReason = null;
+      em.create(AuditLog, {
+        actorId: actor.id,
+        action: 'household.submit',
+        entity: 'household',
+        entityId: household.id,
+        before: { status: before },
+        after: { status: household.status },
+      });
+      await em.flush();
+      return toHouseholdDto(household, await this.parts(em, household, false));
+    });
+  }
+
+  /** The household's own private documents (the same list the board reads), so the wizard can reload them. */
+  async documentsForMine(actor: Actor): Promise<{ data: HouseholdDocumentDto[] }> {
+    const em = this.orm.em.fork();
+    const household = await this.ownHousehold(em, actor);
+    return this.documentsOf(em, household);
   }
 
   /** Bản ghi riêng: luôn đọc được kể cả khi hộ bị tạm ngừng hay từ chối. */
@@ -758,6 +794,8 @@ export class HouseholdsService {
   async listForAdmin(query: ListHouseholdsQuery): Promise<AdminHouseholdPageDto> {
     const em = this.orm.em.fork();
     const where: Record<string, unknown>[] = [];
+    // Drafts are still being written in the wizard: the board never sees them.
+    where.push({ status: { $ne: 'DRAFT' } });
     if (query.status) where.push({ status: query.status });
     if (query.from || query.to) {
       where.push({
@@ -802,7 +840,7 @@ export class HouseholdsService {
   async getForAdmin(householdId: string): Promise<HouseholdDto> {
     const em = this.orm.em.fork();
     const household = await em.findOne(Household, householdId);
-    if (!household) throw notFound();
+    if (!household || household.status === 'DRAFT') throw notFound();
     return toHouseholdDto(household, await this.parts(em, household, false));
   }
 
@@ -811,6 +849,14 @@ export class HouseholdsService {
     const em = this.orm.em.fork();
     const household = await em.findOne(Household, householdId);
     if (!household) throw notFound();
+    return this.documentsOf(em, household);
+  }
+
+  private async documentsOf(
+    em: EntityManager,
+    household: Household,
+  ): Promise<{ data: HouseholdDocumentDto[] }> {
+    const householdId = household.id;
     const assets = await em.find(
       MediaAsset,
       { ownerId: household.representative.id, purpose: 'CERTIFICATE', visibility: 'PRIVATE' },
@@ -979,9 +1025,12 @@ export class HouseholdsService {
       if (!household) throw notFound();
       assertVersion(household, expectedVersion);
       const before = household.status;
-      household.status = unwrap(
-        householdTransition(before, event, { actorRole: actor.role, reason }),
-      );
+      const next = unwrap(householdTransition(before, event, { actorRole: actor.role, reason }));
+      // Approval needs the required parts; reinstating an already approved household does not.
+      if (event === 'APPROVE' && before === 'PENDING_REVIEW') {
+        await this.assertComplete(em, household);
+      }
+      household.status = next;
       household.statusReason = household.status === 'APPROVED' ? null : (reason ?? null);
       if (household.status === 'APPROVED') household.approvedAt ??= new Date();
       em.create(AuditLog, {
@@ -1088,6 +1137,40 @@ export class HouseholdsService {
   }
 
   // --- Nội bộ ---
+
+  /** Required parts of an application: profile (name, page address), a workshop and a document. */
+  private async assertComplete(em: EntityManager, household: Household): Promise<void> {
+    const missing: FieldError[] = [];
+    if (household.name.trim().length === 0 || household.slug.trim().length === 0) {
+      missing.push({
+        path: 'profile',
+        code: 'required',
+        message: 'household profile is incomplete',
+      });
+    }
+    if ((await em.count(Workshop, { household })) === 0) {
+      missing.push({ path: 'workshops', code: 'required', message: 'add at least one workshop' });
+    }
+    const documents = await em.count(MediaAsset, {
+      ownerId: household.representative.id,
+      purpose: 'CERTIFICATE',
+      visibility: 'PRIVATE',
+    });
+    if (documents === 0) {
+      missing.push({
+        path: 'documents',
+        code: 'required',
+        message: 'upload at least one document',
+      });
+    }
+    if (missing.length > 0) {
+      throw new AppError(
+        'APPLICATION_INCOMPLETE',
+        'the application is missing required parts',
+        missing,
+      );
+    }
+  }
 
   private async ownHousehold(em: EntityManager, actor: Actor): Promise<Household> {
     const household = await em.findOne(Household, { representative: actor.id });

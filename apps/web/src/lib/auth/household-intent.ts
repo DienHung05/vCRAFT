@@ -24,5 +24,7 @@ export function hasUnfinishedHouseholdRegistration(
   viewer: Pick<MeDto, 'role' | 'household'> | null,
   intent: boolean,
 ): boolean {
+  // A draft application (step 2 done, final submit not yet) is also unfinished.
+  if (viewer?.household?.status === 'DRAFT') return true;
   return intent && viewer?.role === 'BUYER' && !viewer.household;
 }

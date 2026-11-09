@@ -40,7 +40,7 @@ describe('Household approval and publishing', () => {
       body: { name: 'Gốm Đông Hải', slug: 'gom-dong-hai', history: 'Ba đời làm gốm men lam.' },
     });
     expect(applied.status).toBe(201);
-    expect(applied.body.status).toBe('PENDING_REVIEW');
+    expect(applied.body.status).toBe('DRAFT');
     householdId = applied.body.id;
     householdVersion = applied.body.version;
 

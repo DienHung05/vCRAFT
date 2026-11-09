@@ -28,6 +28,9 @@ export const VALIDATION_KEYS = [
   'lngInvalid',
   'consentRequired',
   'idNumberInvalid',
+  'villageTooLong',
+  'historyTooLong',
+  'fieldInvalid',
 ] as const;
 export type ValidationKey = (typeof VALIDATION_KEYS)[number];
 
@@ -36,6 +39,40 @@ export function isValidationKey(value: unknown): value is ValidationKey {
 }
 
 const key = (k: ValidationKey) => k;
+
+/**
+ * Localized message key for a field error the API sent back. The server text is Vietnamese whatever the
+ * page language, so it is never shown: the field (and the failure kind, for the household name) picks a
+ * key of `auth.validation` instead, and an unknown field falls back to the generic key.
+ */
+export function serverFieldMessageKey(path: string, code: string): ValidationKey {
+  switch (path) {
+    case 'name':
+      return 'nameShort';
+    case 'slug':
+      return code === 'too_small' ? 'slugRequired' : 'slugInvalid';
+    case 'village':
+      return 'villageTooLong';
+    case 'history':
+      return 'historyTooLong';
+    case 'idNumber':
+      return 'idNumberInvalid';
+    default:
+      return 'fieldInvalid';
+  }
+}
+
+/** Same as {@link serverFieldMessageKey} for the workshop step's fields. */
+export function serverWorkshopFieldMessageKey(path: string): ValidationKey {
+  switch (path) {
+    case 'name':
+      return 'workshopNameShort';
+    case 'address':
+      return 'addressShort';
+    default:
+      return 'fieldInvalid';
+  }
+}
 
 export const PASSWORD_MIN_LENGTH = 10;
 
@@ -109,10 +146,10 @@ export const householdStepSchema = z.object({
     .min(1, key('slugRequired'))
     .max(160, key('slugInvalid'))
     .regex(SLUG_PATTERN, key('slugInvalid')),
-  village: z.string().trim().max(160),
+  village: z.string().trim().max(160, key('villageTooLong')),
   /** Citizen ID number (CCCD): the API stores it encrypted (NFR-SEC-03). */
   idNumber: z.string().trim().regex(ID_NUMBER_PATTERN, key('idNumberInvalid')),
-  history: z.string().trim().max(10_000),
+  history: z.string().trim().max(10_000, key('historyTooLong')),
 });
 export type HouseholdStepValues = z.infer<typeof householdStepSchema>;
 

@@ -35,6 +35,8 @@ const ACTIONS: Record<
   APPROVED: [{ action: 'suspend', needsReason: true }],
   SUSPENDED: [{ action: 'reinstate', needsReason: false }],
   REJECTED: [],
+  // The board never sees a draft; it has no decisions.
+  DRAFT: [],
 };
 
 /** Citizen ID number: masked until an admin asks to see it; each reveal is audited server-side. */

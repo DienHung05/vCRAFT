@@ -67,7 +67,7 @@ export function HouseholdQueue({ client: provided }: { client?: AdminClient }) {
             className={inputClass}
           >
             <option value="">{t('allStatuses')}</option>
-            {HOUSEHOLD_STATUSES.map((status) => (
+            {HOUSEHOLD_STATUSES.filter((status) => status !== 'DRAFT').map((status) => (
               <option key={status} value={status}>
                 {statuses(status)}
               </option>

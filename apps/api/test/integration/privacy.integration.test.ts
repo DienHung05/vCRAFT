@@ -94,13 +94,6 @@ describe('Personal data: consent, export and deletion', () => {
       body: { name: `Household ${label}`, slug: `household-${label}`, history: `History ${label}` },
     });
     expect(applied.status).toBe(201);
-    const approved = await t.request({
-      method: 'POST',
-      url: `/admin/households/${applied.body.id}/approve`,
-      auth: admin.auth,
-      headers: { 'if-match': `"${applied.body.version}"` },
-    });
-    expect(approved.status).toBe(200);
     const workshop = await t.request({
       method: 'POST',
       url: '/me/household/workshops',
@@ -108,6 +101,13 @@ describe('Personal data: consent, export and deletion', () => {
       body: { name: `Workshop ${label}`, address: `${label} Workshop Lane` },
     });
     expect(workshop.status).toBe(201);
+    const approved = await t.request({
+      method: 'POST',
+      url: `/admin/households/${applied.body.id}/approve`,
+      auth: admin.auth,
+      headers: { 'if-match': `"${applied.body.version}"` },
+    });
+    expect(approved.status).toBe(200);
     const artisan = await t.request({
       method: 'POST',
       url: '/me/household/artisans',

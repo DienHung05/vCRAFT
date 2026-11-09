@@ -4,7 +4,14 @@ import { join } from 'node:path';
 import { MikroORM } from '@mikro-orm/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test, type TestingModuleBuilder } from '@nestjs/testing';
-import { AppUser, ConsentRecord, FieldCipher } from '@vcraft/database';
+import {
+  AppUser,
+  ConsentRecord,
+  FieldCipher,
+  Household,
+  MediaAsset,
+  Workshop,
+} from '@vcraft/database';
 import { type AccountRole, CONSENT_PURPOSES, PRIVACY_POLICY_VERSION } from '@vcraft/domain';
 import { LocalObjectStorage } from '@vcraft/storage';
 import { AppModule } from '../../../src/app.module.js';
@@ -113,15 +120,66 @@ export interface TestApp {
     role: AccountRole,
     options?: { consent?: boolean },
   ) => Promise<{ id: string; auth: string; email: string }>;
+  /**
+   * Sends one request. Fixtures create a household with `POST /me/household` and approve it right away;
+   * an application is now a draft until the representative submits it, and approval needs a workshop and a
+   * document. So, unless `strict` is set, a `POST /admin/households/:id/approve` first completes the
+   * application in the database (submitted, one workshop and one document when missing) without bumping its
+   * version. The tests of those rules themselves send `strict` requests.
+   */
+  /** Fixture shortcut: submit a household's application (adds a workshop and a document when missing). */
+  completeApplication: (householdId: string, options?: { withDocument?: boolean }) => Promise<void>;
   request: (opts: {
     method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     url: string;
     auth?: string;
     body?: unknown;
     headers?: Record<string, string>;
+    /**
+     * Skip the fixture shortcut described at {@link TestApp.request}: the request reaches the API as sent.
+     * Tests of the submit and approval completeness rules set it.
+     */
+    strict?: boolean;
     // biome-ignore lint/suspicious/noExplicitAny: test đọc JSON tùy dạng, kiểm bằng expect
   }) => Promise<{ status: number; body: any; headers: Record<string, unknown> }>;
   close: () => Promise<void>;
+}
+
+/** Fixture shortcut: makes a household's application complete and submitted, leaving its version alone. */
+async function completeApplication(
+  db: TestDatabase,
+  householdId: string,
+  options: { withDocument?: boolean } = {},
+): Promise<void> {
+  const em = db.orm.em.fork();
+  const household = await em.findOne(Household, householdId);
+  if (!household) return;
+  if ((await em.count(Workshop, { household })) === 0) {
+    em.create(Workshop, { household, name: 'Xưởng thử', address: 'Bát Tràng, Gia Lâm, Hà Nội' });
+  }
+  const ownerId = household.representative.id;
+  if (
+    options.withDocument !== false &&
+    (await em.count(MediaAsset, { ownerId, purpose: 'CERTIFICATE' })) === 0
+  ) {
+    em.create(MediaAsset, {
+      ownerId,
+      purpose: 'CERTIFICATE',
+      visibility: 'PRIVATE',
+      status: 'READY',
+      mimeType: 'application/pdf',
+      sizeBytes: 3,
+      sha256: 'c'.repeat(64),
+      originalKey: `originals/${ownerId}/${crypto.randomUUID()}`,
+    });
+  }
+  await em.flush();
+  if (household.status === 'DRAFT') {
+    // Raw SQL: an ORM update would bump the optimistic-lock version the tests still hold.
+    await em
+      .getConnection()
+      .execute("update household set status = 'PENDING_REVIEW' where id = ?", [householdId]);
+  }
 }
 
 /** `configure` adds overrides of its own, e.g. a fake chat model for the assistant tests. */
@@ -180,7 +238,12 @@ export async function startTestApp(
       await em.flush();
       return { id: user.id, auth: `Bearer test:${user.id}`, email: user.email };
     },
-    async request({ method, url, auth, body, headers }) {
+    completeApplication: (householdId, options) => completeApplication(db, householdId, options),
+    async request({ method, url, auth, body, headers, strict }) {
+      const approving = /^\/admin\/households\/([0-9a-f-]{36})\/approve$/.exec(url);
+      if (approving && method === 'POST' && !strict) {
+        await completeApplication(db, approving[1] as string);
+      }
       const res = await app.inject({
         method,
         url: `/api/v1${url}`,

@@ -25,7 +25,7 @@ export type AccessDecision =
   | { readonly kind: 'household-profile' };
 
 /** Hộ ở trạng thái này chưa có khu làm việc (chờ duyệt) hoặc không có (bị từ chối). */
-const PROFILE_ONLY_STATUSES: ReadonlySet<string> = new Set(['PENDING_REVIEW', 'REJECTED']);
+const PROFILE_ONLY_STATUSES: ReadonlySet<string> = new Set(['DRAFT', 'PENDING_REVIEW', 'REJECTED']);
 
 export interface AccessContext {
   /** Đang ở trang trạng thái hồ sơ hộ, nơi hộ chưa duyệt vẫn được xem. */

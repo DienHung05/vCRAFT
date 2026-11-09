@@ -1913,7 +1913,10 @@
       "latInvalid": "Latitude must be a number between -90 and 90.",
       "lngInvalid": "Longitude must be a number between -180 and 180.",
       "consentRequired": "Agree to the Privacy policy to create an account.",
-      "idNumberInvalid": "The ID number is exactly 12 digits, without spaces."
+      "idNumberInvalid": "The ID number is exactly 12 digits, without spaces.",
+      "villageTooLong": "The village name is too long: 160 characters at most.",
+      "historyTooLong": "The story is too long: 10,000 characters at most.",
+      "fieldInvalid": "This value is not accepted. Check it and try again."
     },
     "username": {
       "checking": "Checking username...",
@@ -1949,6 +1952,7 @@
       "mediaResolution": "The image has more than 50 megapixels. Retake it at a lower resolution.",
       "mediaUnsupported": "Only JPG, PNG, WebP, AVIF images or PDF files are accepted.",
       "apiDown": "Cannot reach the vCraft server. Please try again in a few minutes.",
+      "applicationIncomplete": "The application is still missing a required part: the household information, at least one workshop and at least one document. Complete the earlier steps and submit again.",
       "consentRequired": "You need to agree to the Privacy policy before doing this. Tick the consent box and try again.",
       "captcha": "Please complete the \"I am not a robot\" check above, then try again."
     },
@@ -2119,7 +2123,9 @@
         "submitting": "Submitting…",
         "needOne": "Upload at least one document before submitting.",
         "waitUploads": "Wait for the files to finish uploading, then submit.",
-        "consentFirst": "Agree to the Privacy policy above before choosing files."
+        "consentFirst": "Agree to the Privacy policy above before choosing files.",
+        "uploadedEarlier": "Uploaded earlier",
+        "loadFailed": "Could not load the documents you uploaded earlier. Reload the page to see them."
       },
       "alreadyAdmin": "An administrator account does not represent a household. Sign out and use another email to register a household.",
       "alreadyApplied": "This account has already submitted a household application."
@@ -2129,6 +2135,7 @@
       "submitted": "Application submitted. The village administration will review it, and this page changes when there is a result.",
       "statusLabel": "Application status",
       "status": {
+        "DRAFT": "Draft, not submitted yet",
         "PENDING_REVIEW": "Pending review",
         "APPROVED": "Accepted",
         "REJECTED": "Not accepted",
@@ -2236,6 +2243,7 @@
       "title": "Welcome, {household}",
       "status": "Application status",
       "statuses": {
+        "DRAFT": "Draft, not submitted yet",
         "PENDING_REVIEW": "Waiting for the village board to review",
         "APPROVED": "Approved and on public display",
         "REJECTED": "Not accepted",
