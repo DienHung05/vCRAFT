@@ -333,6 +333,31 @@ describe('ProductEditor', () => {
     fireEvent.click(within(section).getByRole('button', { name: 'Lưu' }));
     expect(await within(section).findByText(/vừa được sửa ở nơi khác/)).toBeTruthy();
   });
+
+  it('after a 409 the details draft shows the server values, not the stale edit', async () => {
+    const newer = {
+      ...HOUSEHOLD,
+      products: [
+        product(1, { version: 3, name: 'Tên từ người khác' }),
+        ...HOUSEHOLD.products.slice(1),
+      ],
+    } as unknown as HouseholdDto;
+    const getHousehold = vi.fn().mockResolvedValueOnce(HOUSEHOLD).mockResolvedValue(newer);
+    const api = client({
+      getHousehold,
+      updateProduct: vi.fn(async () => {
+        throw new ApiError('STALE_VERSION', 409);
+      }),
+    });
+    renderVi(<ProductEditor productId={`${ID}1`} client={api} />);
+    const input = (await screen.findByDisplayValue('Món 1')) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Chỉnh sửa của tôi' } });
+    const section = screen.getByRole('heading', { name: 'Thông tin' }).parentElement as HTMLElement;
+    fireEvent.click(within(section).getByRole('button', { name: 'Lưu' }));
+    expect(await within(section).findByText(/nhập lại thay đổi chưa lưu/)).toBeTruthy();
+    await waitFor(() => expect(screen.getByDisplayValue('Tên từ người khác')).toBeTruthy());
+    expect(screen.queryByDisplayValue('Chỉnh sửa của tôi')).toBeNull();
+  });
 });
 
 describe('JournalEditor', () => {

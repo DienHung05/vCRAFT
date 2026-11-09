@@ -1108,6 +1108,8 @@
       "deleteText": "Tin \"{title}\" sẽ bị xóa hẳn. Không thể hoàn tác.",
       "keep": "Giữ lại",
       "deleteFailed": "Không xóa được. Tin có thể vừa được sửa, hãy tải lại rồi thử lại.",
+      "moreFailed": "Chưa tải được trang tiếp theo. Các tin phía trên vẫn được giữ nguyên.",
+      "moreRetry": "Thử tải lại",
       "pinned": "Ghim",
       "important": "Quan trọng",
       "state": {
@@ -2204,10 +2206,11 @@
     "notHousehold": "Tài khoản này chưa đại diện cho hộ nào. Hãy đăng ký làm nghệ nhân để mở Studio.",
     "loadFailed": "Chưa tải được dữ liệu của hộ. Bạn thử lại sau ít phút.",
     "retry": "Thử lại",
+    "refreshFailed": "Chưa làm mới được dữ liệu. Nội dung đang hiển thị có thể đã cũ.",
     "loading": "Đang tải…",
     "saved": "Đã lưu.",
     "save": "Lưu",
-    "stale": "Hồ sơ vừa được sửa ở nơi khác. Đã tải lại bản mới, bạn kiểm tra rồi lưu lại.",
+    "stale": "Nội dung vừa được sửa ở nơi khác. Đang hiển thị bản mới nhất, bạn hãy nhập lại thay đổi chưa lưu rồi lưu lại.",
     "saveFailed": "Chưa lưu được. Bạn kiểm tra nội dung rồi thử lại.",
     "home": {
       "title": "Chào {household}",
