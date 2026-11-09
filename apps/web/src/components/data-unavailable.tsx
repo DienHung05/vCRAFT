@@ -9,16 +9,26 @@ import { ErrorState } from './states/error-state';
 export function DataUnavailable({
   className,
   message,
+  heading,
 }: {
   className?: string;
   /** More specific text than the generic "could not load". */
   message?: string;
+  /** Page title for a detail page that has nothing else to render, so the document keeps an h1. */
+  heading?: string;
 }) {
-  return (
+  const block = (
     <ErrorState
       message={message}
       action={<RetryLink />}
       className={className ?? 'mx-auto max-w-editorial px-gutter py-section'}
     />
+  );
+  if (!heading) return block;
+  return (
+    <div className="mx-auto max-w-editorial px-gutter py-section">
+      <h1 className="mb-4">{heading}</h1>
+      {block}
+    </div>
   );
 }

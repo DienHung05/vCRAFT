@@ -38,7 +38,7 @@ export async function generateMetadata({
   const locale = await resolveLocale(params);
   const { slug } = await params;
   const result = await fetchHousehold(slug);
-  if (result.status !== 'ok') return {};
+  if (result.status !== 'ok') return { robots: { index: false } };
   return pageMetadata({
     locale,
     href: { pathname: '/nghe-nhan/[slug]', params: { slug: result.data.slug } },
@@ -77,7 +77,10 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
     }
     notFound();
   }
-  if (result.status === 'unavailable') return <DataUnavailable />;
+  if (result.status === 'unavailable') {
+    const errors = await getTranslations('errors.generic');
+    return <DataUnavailable heading={errors('title')} />;
+  }
 
   const household = result.data;
   const representative = household.artisans[0];
