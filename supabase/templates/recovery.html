@@ -31,11 +31,11 @@
                 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0;">
                   <tr>
                     <td style="background-color:#a8482a;border-radius:4px;">
-                      <a href="{{ .SiteURL }}/vi/dat-lai-mat-khau?token_hash={{ .TokenHash }}&amp;type=recovery" style="display:inline-block;padding:13px 24px;font-family:'Be Vietnam Pro',Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;color:#f5efe4;text-decoration:none;">Đặt mật khẩu mới</a>
+                      <a href="{{ .SiteURL }}/{{ if .Data.locale }}{{ if eq .Data.locale "en" }}en/reset-password{{ else }}vi/dat-lai-mat-khau{{ end }}{{ else }}vi/dat-lai-mat-khau{{ end }}?token_hash={{ .TokenHash }}&amp;type=recovery" style="display:inline-block;padding:13px 24px;font-family:'Be Vietnam Pro',Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;color:#f5efe4;text-decoration:none;">Đặt mật khẩu mới</a>
                     </td>
                   </tr>
                 </table>
-                <p style="margin:0 0 16px 0;font-size:14px;color:#6b635a;">Nút không bấm được? Dán liên kết này vào thanh địa chỉ của trình duyệt:<br /><a href="{{ .SiteURL }}/vi/dat-lai-mat-khau?token_hash={{ .TokenHash }}&amp;type=recovery" style="color:#a8482a;word-break:break-all;">{{ .SiteURL }}/vi/dat-lai-mat-khau?token_hash={{ .TokenHash }}&amp;type=recovery</a></p>
+                <p style="margin:0 0 16px 0;font-size:14px;color:#6b635a;">Nút không bấm được? Dán liên kết này vào thanh địa chỉ của trình duyệt:<br /><a href="{{ .SiteURL }}/{{ if .Data.locale }}{{ if eq .Data.locale "en" }}en/reset-password{{ else }}vi/dat-lai-mat-khau{{ end }}{{ else }}vi/dat-lai-mat-khau{{ end }}?token_hash={{ .TokenHash }}&amp;type=recovery" style="color:#a8482a;word-break:break-all;">{{ .SiteURL }}/{{ if .Data.locale }}{{ if eq .Data.locale "en" }}en/reset-password{{ else }}vi/dat-lai-mat-khau{{ end }}{{ else }}vi/dat-lai-mat-khau{{ end }}?token_hash={{ .TokenHash }}&amp;type=recovery</a></p>
                 <p style="margin:0 0 16px 0;font-size:14px;color:#6b635a;">Liên kết chỉ dùng một lần và sẽ hết hạn sau ít phút. Sau khi đổi mật khẩu, các thiết bị khác sẽ bị đăng xuất.</p>
                 <p style="margin:0 0 16px 0;font-size:14px;color:#6b635a;margin-bottom:0;">Nếu bạn không yêu cầu, cứ bỏ qua thư này, mật khẩu hiện tại vẫn nguyên như cũ.</p>
               </td>
