@@ -37,8 +37,12 @@ services:
       - fromGroup: vcraft-shared
       - key: NODE_VERSION
         value: "24"
+      # Hops of proxy in front of the API whose X-Forwarded-For entry is trusted. Render's proxy appends the
+      # real client IP, so 1 hop. If Cloudflare proxying is enabled in front of Render, the owner must use 2
+      # (or list Cloudflare's IP ranges); otherwise every visitor looks like a Cloudflare edge address.
+      # Never "true": that trusts a client-supplied X-Forwarded-For and lets a caller pick its own IP.
       - key: TRUST_PROXY
-        value: "true"
+        value: "1"
       # Origin công khai của web (https://<tên miền>), không có dấu / cuối
       - key: APP_URL
         sync: false
@@ -86,9 +90,14 @@ services:
         sync: false
       - key: OPENAI_CHAT_MODEL
         value: gpt-6-luna
-      # No assistant usage limit by default. To turn one on, add it in the dashboard as a positive integer:
-      # ASSISTANT_RATE_LIMIT_PER_MINUTE and ASSISTANT_RATE_LIMIT_PER_DAY (per IP and per conversation),
-      # ASSISTANT_DAILY_TOKENS (all visitors).
+      # Assistant usage limits are on by default (set a var to 0 to turn that limit off):
+      # messages per minute and per day, per IP and per conversation, and a daily token ceiling for all visitors.
+      - key: ASSISTANT_RATE_LIMIT_PER_MINUTE
+        value: "10"
+      - key: ASSISTANT_RATE_LIMIT_PER_DAY
+        value: "100"
+      - key: ASSISTANT_DAILY_TOKENS
+        value: "2000000"
       # Redis nội bộ (Key Value bên dưới). API chưa dùng nhưng khai sẵn cho cache/hàng đợi.
       - key: REDIS_URL
         fromService:

@@ -1,10 +1,12 @@
 import 'dotenv/config';
 import 'reflect-metadata';
 import helmet from '@fastify/helmet';
+import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
 import { registerApiDocs } from './common/openapi/api-docs';
+import { parseTrustProxy } from './common/trust-proxy';
 import { configureHttp } from './configure-http';
 
 /** `CORS_ORIGINS`: danh sách origin được phép, ngăn cách bằng dấu phẩy (bỏ dấu `/` cuối). Rỗng = tắt CORS. */
@@ -16,10 +18,13 @@ function corsOrigins(raw = process.env.CORS_ORIGINS): string[] {
 }
 
 async function bootstrap() {
-  // Sau reverse proxy (Render, Caddy) `req.ip` phải lấy từ X-Forwarded-For: bật bằng TRUST_PROXY=true.
+  // Behind a reverse proxy (Render, Caddy) `req.ip` must come from X-Forwarded-For, but only from hops we
+  // trust: TRUST_PROXY is a hop count or a list of IPs/CIDRs, never "trust all" (see common/trust-proxy.ts).
+  const trustProxy = parseTrustProxy(process.env.TRUST_PROXY);
+  if (trustProxy.warning) new Logger('Bootstrap').warn(trustProxy.warning);
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ trustProxy: process.env.TRUST_PROXY === 'true' }),
+    new FastifyAdapter({ trustProxy: trustProxy.value }),
   );
   await configureHttp(app);
   // Header bảo mật cho phản hồi JSON. Qua rewrite của Next, phản hồi API không nhận header của next.config nên đặt ở đây.

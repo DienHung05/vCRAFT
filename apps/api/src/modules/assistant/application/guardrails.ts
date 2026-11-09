@@ -1,4 +1,5 @@
 import { ASSISTANT_MESSAGE_MAX } from '@vcraft/contracts';
+import { villageToday } from '@vcraft/domain';
 import { foldVietnamese, isAllowedLink, maskPii, normalizeUserText } from '@vcraft/utils';
 import type { KeyValueStore } from '../infrastructure/key-value';
 
@@ -65,6 +66,23 @@ export function positiveInt(raw: string | undefined): number {
   return Number.isInteger(value) && value > 0 ? value : 0;
 }
 
+/** Defaults used when the matching env var is unset; set the var to `0` to turn a limit off. */
+export const DEFAULT_RATE_LIMIT_PER_MINUTE = 10;
+export const DEFAULT_RATE_LIMIT_PER_DAY = 100;
+export const DEFAULT_DAILY_TOKENS = 2_000_000;
+
+/**
+ * Reads a limit that is on by default: unset, empty or invalid gives `fallback`; an explicit `0` turns
+ * the limit off (returns 0); a positive integer overrides the default.
+ */
+export function limitFromEnv(raw: string | undefined, fallback: number): number {
+  const text = raw?.trim();
+  if (!text) return fallback;
+  const value = Number(text);
+  if (!Number.isInteger(value) || value < 0) return fallback;
+  return value;
+}
+
 /**
  * Optional rate limit per IP and per conversation (Redis counters). Off by default: a window with no
  * limit (undefined or 0) is never counted, and with neither window set the guard touches no counters.
@@ -101,14 +119,14 @@ export class RateLimiter implements Guard {
 
 /**
  * Optional daily token ceiling across all visitors: a circuit breaker, after which "the Fox is asleep".
- * Off by default (`dailyTokens` of 0): nothing is blocked and no usage is recorded. Set
- * `ASSISTANT_DAILY_TOKENS` to a positive integer to turn it on.
+ * The budget day is the village's calendar day (Asia/Ho_Chi_Minh). A `dailyTokens` of 0 (explicit
+ * `ASSISTANT_DAILY_TOKENS=0`) turns it off: nothing is blocked and no usage is recorded.
  */
 export class BudgetGuard implements Guard {
   constructor(
     private readonly kv: KeyValueStore,
     private readonly dailyTokens = 0,
-    private readonly today: () => string = () => new Date().toISOString().slice(0, 10),
+    private readonly today: () => string = () => villageToday(),
   ) {}
 
   get enabled(): boolean {
