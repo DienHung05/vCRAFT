@@ -1,7 +1,7 @@
 # vCraft — Đặc tả Yêu cầu Phần mềm (SRS)
 
 > **Tinh hoa làng nghề, muôn phương lan tỏa**
-> Phiên bản 1.1 · 08/11/2026 (bản 1.0: 27/10/2026) · INT3306 – Phát triển ứng dụng web (Fall 2026)
+> Phiên bản 1.2 · 09/11/2026 (bản 1.0: 27/10/2026) · INT3306 – Phát triển ứng dụng web (Fall 2026)
 > Nguồn yêu cầu gốc: [requirements/vCraft.pdf](vCraft.pdf)
 > Tài liệu liên quan: [ARCHITECTURE.md](../ARCHITECTURE.md) · [PLAN.md](../PLAN.md) · [BRAND.md](../design/BRAND.md) · [quotation-workflow.md](../api/quotation-workflow.md) · [ADR-0020](../adr/0020-catalog-page-based-pagination.md)
 
@@ -11,6 +11,7 @@
 | --- | --- | --- |
 | 1.0 | 27/10/2026 | Bản đầu tiên. |
 | 1.1 | 08/11/2026 | Đồng bộ với thiết kế đã triển khai (issue #242): đề xuất tham gia, chào giá trực tiếp và chào giá liên kết thay cho chào giá mở của mọi hộ (§1.2, §1.3, FR-RFQ-03…08, FR-ORD-01, FR-ORD-04, §4.1, §4.2, BR-L3, BR-L4, BR-05, AC-2); phân trang theo số trang theo ADR-0020 (FR-CAT-03, §8); quy tắc "Cần điều phối" theo job `rfq.coordination-check`. |
+| 1.2 | 09/11/2026 | Đồng bộ phạm vi với ADR-0021 (issue #392): thanh toán trực tuyến (đặt cọc) có ở chế độ sandbox, chỉ phần chạy thật vẫn ngoài phạm vi (§1.2). |
 
 ---
 
@@ -47,7 +48,7 @@ vCraft **không phải một sàn bán lẻ**. Sản phẩm gồm bốn trụ c�
 
 Dữ liệu mẫu (seed) dùng **Làng gốm Bát Tràng** (Gia Lâm, Hà Nội); hệ thống cấu hình được cho làng nghề khác (vd. Lụa Vạn Phúc) qua bảng mẫu công đoạn sản xuất theo danh mục.
 
-**Ngoài phạm vi (Won't have, phiên bản này):** thanh toán trực tuyến, tích hợp vận chuyển, ứng dụng di động native, hóa đơn điện tử.
+**Ngoài phạm vi (Won't have, phiên bản này):** thanh toán trực tuyến trên môi trường thật (đặt cọc trực tuyến chỉ chạy ở chế độ sandbox theo [ADR-0021](../adr/0021-online-payment-for-orders.md), chưa có hợp đồng merchant), tích hợp vận chuyển, ứng dụng di động native, hóa đơn điện tử.
 
 ### 1.3 Thuật ngữ
 
