@@ -155,6 +155,14 @@
     "text": "The link you opened isn't in the village. It may have moved, or a character may have been mistyped.",
     "back": "Back to the home page"
   },
+  "errors": {
+    "generic": {
+      "title": "Something went wrong on our side",
+      "body": "This page could not be shown. Please try again, or go back to the home page.",
+      "retry": "Try again",
+      "home": "Back to the home page"
+    }
+  },
   "home": {
     "hero": {
       "eyebrow": "Bat Trang · a seven-hundred-year pottery village",

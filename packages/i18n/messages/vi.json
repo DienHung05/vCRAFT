@@ -155,6 +155,14 @@
     "text": "Đường dẫn bạn mở không có trong làng. Có thể nó đã đổi chỗ, hoặc bị gõ nhầm một ký tự.",
     "back": "Về trang chủ"
   },
+  "errors": {
+    "generic": {
+      "title": "Đã có trục trặc ở phía chúng tôi",
+      "body": "Trang này chưa hiển thị được. Bạn hãy thử lại, hoặc quay về trang chủ.",
+      "retry": "Thử lại",
+      "home": "Về trang chủ"
+    }
+  },
   "home": {
     "hero": {
       "eyebrow": "Bát Tràng · làng gốm bảy trăm năm",
