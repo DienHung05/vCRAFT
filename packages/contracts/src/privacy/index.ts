@@ -24,7 +24,8 @@ export const ConsentResponseSchema = z.strictObject({
   policyVersion: z.string(),
   givenAt: IsoDateTimeSchema,
   /** When the person withdrew this consent; `null` while it stands. */
-  withdrawnAt: IsoDateTimeSchema.nullable(),
+  // Defaults to null so responses from before GH#418 (no field) still parse.
+  withdrawnAt: IsoDateTimeSchema.nullable().default(null),
 });
 export type ConsentDto = z.infer<typeof ConsentResponseSchema>;
 
