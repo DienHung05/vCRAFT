@@ -112,6 +112,7 @@ Tùy chọn: `CORS_ORIGINS=https://<domain>` ở `vcraft-api` chỉ khi có clie
    | --- | --- |
    | `NEXT_PUBLIC_SITE_URL` | `https://<domain>` (nhúng vào QR lúc build) |
    | `API_INTERNAL_URL` | `https://<URL Render của vcraft-api>/api/v1` (rewrite `/api/*` lấy origin từ biến này) |
+   | `INTERNAL_API_KEY` | Shared secret (GH#362), the same value as on `vcraft-api`. Lets `/q/<code>` forward the visitor's IP and User-Agent so the API counts repeat scans once per 30 minutes. Unset: every scan is counted, without dedupe. Read at runtime, no redeploy needed |
    | `NEXT_PUBLIC_SUPABASE_URL` | Project URL |
    | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Khóa `sb_publishable_...` |
    | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Site key Turnstile (nếu dùng) |

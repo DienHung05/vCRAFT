@@ -36,16 +36,28 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/q/[code]'>):
   // Đếm lượt quét không được làm chậm hay chặn người quét: lỗi thì bỏ qua (FR-ADM-06).
   // `after()` runs once the 308 is sent and keeps the serverless function alive until it finishes (a
   // dangling `fetch` is frozen by Vercel and never completes). Only the country and the device class go to
-  // the API (FR-TRC-06); the IP address is never read, sent or stored.
+  // the API as scan data (FR-TRC-06); the IP address is stored nowhere, only hashed by the API for dedupe.
   const scan = {
     country: scanCountry(request.headers.get('x-vercel-ip-country')),
     deviceType: scanDeviceType(request.headers.get('user-agent')),
   };
+  // GH#362: this fetch comes from Vercel, so forward the visitor's address and User-Agent for the API's
+  // dedupe. The API honours them only with the shared secret; without it the API sees forwarded headers it
+  // cannot trust and counts the scan without dedupe (never collapsing every visitor into Vercel's address).
+  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip')?.trim() ||
+    'unknown';
+  headers['x-visitor-ip'] = ip;
+  headers['x-visitor-ua'] = request.headers.get('user-agent') ?? '';
+  const internalKey = process.env.INTERNAL_API_KEY?.trim();
+  if (internalKey) headers['x-internal-key'] = internalKey;
   after(async () => {
     try {
       await fetch(`${apiBaseUrl()}/trace/${encodeURIComponent(code)}/scan`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers,
         body: JSON.stringify(scan),
         signal: AbortSignal.timeout(1500),
       });
