@@ -1,13 +1,13 @@
-import { type EntityManager, MikroORM } from '@mikro-orm/core';
+import { type EntityManager, LockMode, MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { AllocationScheduleDto, ReallocateRequest } from '@vcraft/contracts';
-import { AuditLog, Household, OrderAllocation, type QuotationRequest } from '@vcraft/database';
+import { AuditLog, Household, OrderAllocation, QuotationRequest } from '@vcraft/database';
 import { allocationTransition, reallocate } from '@vcraft/domain';
 import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
 import { allocationTimeline } from './allocation-timeline';
-import { assertWithinCapacity } from './household-capacity';
+import { assertWithinCapacity, committedByHousehold } from './household-capacity';
 import { QuotationNotifier } from './quotation-notifier';
 
 /** Shares still being made: they count in the order total and can take reallocated pieces. */
@@ -83,10 +83,19 @@ export class AllocationScheduleService {
   ): Promise<AllocationScheduleDto> {
     if (actor.locked) throw forbidden();
     await this.orm.em.fork().transactional(async (em) => {
-      const late = await em.findOne(OrderAllocation, allocationId, {
-        populate: ['quotation.request', 'household'],
+      const reference = await em.findOne(OrderAllocation, allocationId, {
+        populate: ['quotation.request'],
       });
-      if (!late) throw notFound();
+      if (!reference) throw notFound();
+      // BR-L2: lock the RFQ row before any guard, as confirm/decline/progress do.
+      await em.findOneOrFail(QuotationRequest, reference.quotation.request.id, {
+        lockMode: LockMode.PESSIMISTIC_WRITE,
+        refresh: true,
+      });
+      const late = await em.findOneOrFail(OrderAllocation, allocationId, {
+        populate: ['quotation.request', 'household'],
+        refresh: true,
+      });
       assertVersion(late, version);
       const quotation = late.quotation;
       const request = quotation.request as QuotationRequest;
@@ -289,10 +298,19 @@ export class AllocationScheduleService {
     const previous = new Map(before.map((a) => [a.household.id, a.quantity]));
     const raised = after.filter((s) => s.quantity > (previous.get(s.householdId) ?? 0));
     if (raised.length === 0 || !request.category) return;
-    const households = await em.find(Household, { id: { $in: raised.map((s) => s.householdId) } });
+    const ids = raised.map((s) => s.householdId);
+    const households = await em.find(Household, { id: { $in: ids } });
+    // Other orders' active shares count against the capacity; this order's own shares are being replaced.
+    const committed = await committedByHousehold(em, ids, request.category, request.id);
     for (const share of raised) {
       const household = households.find((h) => h.id === share.householdId);
-      if (household) assertWithinCapacity(household, request.category, share.quantity);
+      if (household)
+        assertWithinCapacity(
+          household,
+          request.category,
+          share.quantity,
+          committed.get(share.householdId) ?? 0,
+        );
     }
   }
 

@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { checkAllocationPlan } from '../src';
+import { checkAllocationPlan, remainingCapacity } from '../src';
 
 describe('checkAllocationPlan (BR-L6)', () => {
   it('Σ = tổng, trong năng lực ⇒ hợp lệ', () => {
@@ -150,5 +150,17 @@ describe('checkAllocationPlan (BR-L6)', () => {
         },
       ),
     );
+  });
+});
+
+describe('remainingCapacity (BR-L6)', () => {
+  it('subtracts what is already committed and never goes below zero', () => {
+    expect(remainingCapacity(1000, 800)).toBe(200);
+    expect(remainingCapacity(1000, 1200)).toBe(0);
+  });
+
+  it('does not cap a household that declared no capacity', () => {
+    expect(remainingCapacity(undefined, 500)).toBeUndefined();
+    expect(remainingCapacity(null, 500)).toBeUndefined();
   });
 });

@@ -53,6 +53,7 @@ import {
   RATING_EDIT_WINDOW_DAYS,
   RFQ_ACCEPT_GRACE_MS,
   ratingEditableUntil,
+  remainingCapacity,
   selectMatchingHouseholds,
   suggestPriceRange,
   transition,
@@ -65,7 +66,7 @@ import { MediaService } from '../../media/application/media.service';
 import { paymentsConfig } from '../../payments/payments.config';
 import { ConsentService } from '../../privacy/application/consent.service';
 import { allocationTimeline } from './allocation-timeline';
-import { assertWithinCapacity, declaredCapacity } from './household-capacity';
+import { assertWithinCapacity, committedByHousehold, declaredCapacity } from './household-capacity';
 import { QuotationNotifier } from './quotation-notifier';
 
 /** All plan/input writes lock the request first, so changes cannot race with composition. */
@@ -500,7 +501,18 @@ export class RfqService {
       if (!request.invitedHouseholdIds.includes(household.id)) throw notFound();
       if (household.status !== 'APPROVED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
       this.completion(input.completionDate, request);
-      assertWithinCapacity(household, request.category, input.maxQuantity);
+      const committed = await committedByHousehold(
+        em,
+        [household.id],
+        request.category,
+        request.id,
+      );
+      assertWithinCapacity(
+        household,
+        request.category,
+        input.maxQuantity,
+        committed.get(household.id) ?? 0,
+      );
       request.declinedHouseholdIds = (request.declinedHouseholdIds ?? []).filter(
         (id) => id !== household.id,
       );
@@ -617,7 +629,18 @@ export class RfqService {
       if (input && household.status !== 'APPROVED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
       if (input) {
         this.completion(input.completionDate, request);
-        assertWithinCapacity(household, request.category, input.maxQuantity);
+        const committed = await committedByHousehold(
+          em,
+          [household.id],
+          request.category,
+          request.id,
+        );
+        assertWithinCapacity(
+          household,
+          request.category,
+          input.maxQuantity,
+          committed.get(household.id) ?? 0,
+        );
       }
       offer.history = [
         ...offer.history,
@@ -860,6 +883,12 @@ export class RfqService {
         em,
         input.parts.map((part) => part.householdId),
       );
+      const committed = await committedByHousehold(
+        em,
+        offers.map((offer) => offer.household.id),
+        request.category,
+        request.id,
+      );
       const quotation = unwrap(
         assembleCooperativeQuotation({
           requiredQuantity: request.quantity,
@@ -871,7 +900,10 @@ export class RfqService {
             unitPriceVnd: offer.unitPriceVnd,
             completionDate: offer.completionDate,
             version: offer.version,
-            capacity: declaredCapacity(offer.household, request.category),
+            capacity: remainingCapacity(
+              declaredCapacity(offer.household, request.category),
+              committed.get(offer.household.id) ?? 0,
+            ),
           })),
           parts: input.parts.map((part) => ({
             ...part,
@@ -984,15 +1016,28 @@ export class RfqService {
         throw new AppError('BUSINESS_RULE_VIOLATED', 'ACCEPT_EMPTY_PLAN');
       const partHouseholds = chosen.parts.map((part) => part.householdId);
       // A household's own quotation is accepted only while that household is still eligible (BR-02).
-      if (chosen.bidType === 'INDIVIDUAL') await this.checkHouseholds(em, partHouseholds);
+      await this.checkHouseholds(em, partHouseholds);
       const names = new Map(
         (await em.find(Household, { id: { $in: [...new Set(partHouseholds)] } })).map(
           (household) => [household.id, household],
         ),
       );
+      // BR-L6: capacity can shrink, or other orders can use it up, after the quotation was written.
+      const committed = await committedByHousehold(
+        em,
+        partHouseholds,
+        request.category,
+        request.id,
+      );
       for (const part of chosen.parts) {
         const household = names.get(part.householdId);
         if (!household) throw new AppError('BUSINESS_RULE_VIOLATED', 'ACCEPT_UNKNOWN_HOUSEHOLD');
+        assertWithinCapacity(
+          household,
+          request.category,
+          part.quantity,
+          committed.get(household.id) ?? 0,
+        );
         em.create(OrderAllocationEntity, {
           quotation: chosen,
           household,
