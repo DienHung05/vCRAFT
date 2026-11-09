@@ -1,4 +1,5 @@
 import { buttonVariants, WaveDivider } from '@vcraft/ui';
+import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { Suspense } from 'react';
 import { ImageSlot } from '@/components/image-slot';
@@ -19,6 +20,7 @@ import { Link } from '@/i18n/navigation';
 import type { LogStage } from '@/lib/demo/data';
 import { dayPhoto } from '@/lib/demo/stage-photos';
 import { resolveLocale } from '@/lib/locale';
+import { pageMetadata } from '@/lib/seo/page-metadata';
 
 const DAY_STAGES: readonly { stage: LogStage; tint: string }[] = [
   { stage: 'clay', tint: '#a88d6c' },
@@ -31,6 +33,16 @@ const DAY_STAGES: readonly { stage: LogStage; tint: string }[] = [
 
 // Số liệu và danh sách lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ params }: PageProps<'/[locale]'>): Promise<Metadata> {
+  const locale = await resolveLocale(params);
+  const t = await getTranslations({ locale, namespace: 'meta' });
+  // The meta title already carries the brand, so the layout's "%s · vCraft" template must not repeat it.
+  return {
+    ...pageMetadata({ locale, href: '/', title: t('title'), description: t('description') }),
+    title: { absolute: t('title') },
+  };
+}
 
 /**
  * Trang chủ. Hero, "một ngày" và mọi tiêu đề section nằm trong HTML đầu tiên; chỉ phần dữ liệu

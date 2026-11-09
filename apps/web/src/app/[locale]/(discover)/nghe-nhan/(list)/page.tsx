@@ -10,6 +10,7 @@ import { altFor, photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view
 import { Link } from '@/i18n/navigation';
 import { resolveLocale } from '@/lib/locale';
 import { parsePageParam } from '@/lib/page-param';
+import { pageMetadata } from '@/lib/seo/page-metadata';
 
 /** Households per numbered page: four rows of the three-column grid (GH#202). */
 const HOUSEHOLD_PAGE_SIZE = 12;
@@ -20,9 +21,9 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({
   params,
 }: PageProps<'/[locale]/nghe-nhan'>): Promise<Metadata> {
-  await resolveLocale(params);
+  const locale = await resolveLocale(params);
   const t = await getTranslations('indexPages.artisans');
-  return { title: t('title'), description: t('lead') };
+  return pageMetadata({ locale, href: '/nghe-nhan', title: t('title'), description: t('lead') });
 }
 
 /**

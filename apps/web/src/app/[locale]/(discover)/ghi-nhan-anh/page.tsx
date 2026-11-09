@@ -4,13 +4,14 @@ import { getTranslations } from 'next-intl/server';
 import { apiBaseUrl } from '@/lib/api/internal-url';
 import { PHOTO_CREDITS } from '@/lib/demo/photo-credits';
 import { resolveLocale } from '@/lib/locale';
+import { pageMetadata } from '@/lib/seo/page-metadata';
 
 export async function generateMetadata({
   params,
 }: PageProps<'/[locale]/ghi-nhan-anh'>): Promise<Metadata> {
-  await resolveLocale(params);
+  const locale = await resolveLocale(params);
   const t = await getTranslations('credits');
-  return { title: t('title'), description: t('lead') };
+  return pageMetadata({ locale, href: '/ghi-nhan-anh', title: t('title'), description: t('lead') });
 }
 
 /** Nhiều ảnh được cắt khác tỉ lệ từ cùng một file nguồn: liệt kê mỗi file một lần. */
