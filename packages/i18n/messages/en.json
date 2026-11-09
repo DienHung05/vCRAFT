@@ -53,6 +53,9 @@
     "map": "Map",
     "news": "News",
     "quotes": "Quote requests",
+    "invitations": "Quote invitations",
+    "coordination": "Coordination",
+    "openInvitations": "{count, plural, one {# open invitation} other {# open invitations}}",
     "theme": "Switch light/dark theme",
     "themeToDark": "Switch to dark theme",
     "themeToLight": "Switch to light theme",
@@ -2156,7 +2159,8 @@
       "locked": "Your account is temporarily locked, so workspaces are closed. Contact the village administration for help.",
       "lead": "This area is for another role. Sign in with a suitable account, or go back home.",
       "home": "Back to home",
-      "switch": "Sign in with another account"
+      "switch": "Sign in with another account",
+      "ownArea": "Go to {area}"
     },
     "serviceDown": {
       "title": "Cannot check your session right now",
@@ -2193,7 +2197,7 @@
       "label": "Studio navigation",
       "home": "Home",
       "products": "Products",
-      "quotations": "Quotations",
+      "quotations": "Quote invitations",
       "orders": "Orders",
       "profile": "Profile"
     },
@@ -2238,7 +2242,12 @@
         "openingHours": "Opening hours",
         "capacity": "Production capacity"
       },
-      "newProduct": "Add product"
+      "newProduct": "Add product",
+      "invitations": "Quote invitations",
+      "invitationsOpen": "{count, plural, =0 {No open invitations} one {# open invitation} other {# open invitations}}",
+      "invitationsNone": "No invitations need an answer right now.",
+      "invitationsNearest": "Nearest deadline: {deadline}",
+      "invitationsLink": "View invitations"
     },
     "profile": {
       "title": "Household profile",
@@ -2586,6 +2595,15 @@
       "closed": "Closed",
       "emptyHint": "When a buyer or the Management Board invites your household to quote, the invitation shows up here.",
       "emptyAction": "Complete the household profile",
+      "emptyRuleTitle": "When is a household invited?",
+      "emptyRuleLead": "A household is invited to quote only when all of the following hold:",
+      "emptyRule1": "The household profile is approved by the Management Board.",
+      "emptyRule2": "The representative account is not locked.",
+      "emptyRule3": "The buyer's request has a product category.",
+      "emptyRule4": "The household declared production capacity for that category, or has a published product in it.",
+      "emptyRuleNote": "Each request invites at most the 10 best-matching households (by capacity, products and rating). On requests handed to the Management Board for coordination, the board picks the households to invite.",
+      "emptyCapacity": "Declare production capacity",
+      "emptyAddProduct": "Add a product",
       "directActive": "Quoted: {price} per {unit}, total {total}",
       "directAccepted": "The buyer accepted the quotation",
       "directRejected": "The buyer chose another household"
