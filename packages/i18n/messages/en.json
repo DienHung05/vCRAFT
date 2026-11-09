@@ -1759,7 +1759,19 @@
     "legendClosed": "Closed now",
     "legendProduction": "Production only",
     "pinButton": "{name}: show details",
-    "viewOnFullMap": "View on the village map"
+    "viewOnFullMap": "View on the village map",
+    "routeSuggest": "Suggest a walking route",
+    "routeTitle": "Suggested walking route",
+    "routeClear": "Clear route",
+    "routeStart": {
+      "location": "Starting from your location",
+      "workshop": "Starting from the selected workshop",
+      "village": "Starting from the village centre"
+    },
+    "routeSummary": "{count, plural, one {# stop} other {# stops}} · about {km} km",
+    "routeEmpty": "No workshop is open right now, so there is no route to suggest.",
+    "routeOpenUntil": "Open until {time}",
+    "routeLimited": "Showing the nearest {count} stops only."
   },
   "catalog": {
     "filtersLabel": "Filter products",

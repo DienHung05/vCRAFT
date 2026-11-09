@@ -1,4 +1,4 @@
-import { type EntityManager, MikroORM } from '@mikro-orm/core';
+import { type EntityManager, type FilterQuery, MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type {
   AdminDashboardDto,
@@ -11,6 +11,7 @@ import type {
   HouseholdDocumentDto,
   HouseholdDto,
   ListHouseholdsQuery,
+  MapBbox,
   MapPinsDto,
   PriceSuggestionDto,
   ProductDto,
@@ -26,6 +27,7 @@ import type {
   UpdateHouseholdProfileRequest,
   UpdateProductRequest,
 } from '@vcraft/contracts';
+import { MAP_PINS_BBOX_LIMIT } from '@vcraft/contracts';
 import {
   AppUser,
   Artisan,
@@ -1044,14 +1046,25 @@ export class HouseholdsService {
     };
   }
 
-  /** Ghim bản đồ làng: xưởng có tọa độ của mọi hộ đang được duyệt. */
-  async mapPins(): Promise<MapPinsDto> {
+  /**
+   * Ghim bản đồ làng: xưởng có tọa độ của mọi hộ đang được duyệt. With a `bbox` only the workshops
+   * inside it, at most `MAP_PINS_BBOX_LIMIT` (FR-MAP-04); without one, the full list.
+   */
+  async mapPins(bbox?: MapBbox): Promise<MapPinsDto> {
     const em = this.orm.em.fork();
-    const workshops = await em.find(
-      Workshop,
-      { household: { status: 'APPROVED' }, lat: { $ne: null }, lng: { $ne: null } },
-      { populate: ['household'], orderBy: { household: { name: 'asc' }, name: 'asc' } },
-    );
+    // lat/lng are DECIMAL columns the ORM types as strings; the database compares them numerically.
+    const where: FilterQuery<Workshop> = bbox
+      ? {
+          household: { status: 'APPROVED' },
+          lat: { $gte: String(bbox.minLat), $lte: String(bbox.maxLat) },
+          lng: { $gte: String(bbox.minLng), $lte: String(bbox.maxLng) },
+        }
+      : { household: { status: 'APPROVED' }, lat: { $ne: null }, lng: { $ne: null } };
+    const workshops = await em.find(Workshop, where, {
+      populate: ['household'],
+      orderBy: { household: { name: 'asc' }, name: 'asc' },
+      ...(bbox ? { limit: MAP_PINS_BBOX_LIMIT } : {}),
+    });
     return { data: workshops.map(toMapPinDto) };
   }
 

@@ -81,6 +81,15 @@ export function craftsOf(pins: readonly MapPinDto[]): CraftOption[] {
   return [...categories, ...texts];
 }
 
+/** Village centre: `NEXT_PUBLIC_MAP_CENTER` ("lng,lat"), else Bát Tràng. */
+export function villageCenter(): LatLng {
+  const [lng = 105.9139, lat = 20.9758] = (process.env.NEXT_PUBLIC_MAP_CENTER ?? '')
+    .split(',')
+    .map((value) => Number.parseFloat(value))
+    .filter(Number.isFinite);
+  return { lat, lng };
+}
+
 export const inBounds = (pin: LatLng, b: MapBounds): boolean =>
   pin.lat >= b.south && pin.lat <= b.north && pin.lng >= b.west && pin.lng <= b.east;
 
