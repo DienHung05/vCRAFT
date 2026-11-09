@@ -17,7 +17,8 @@ import { TableSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
 import { useAdminClient } from './admin-dashboard';
 
-const inputClass = 'rounded-input border border-ink/20 bg-surface px-2 py-1.5';
+// `max-w-full`: a select is as wide as its longest option, which overflowed 360 px screens in English (GH#393).
+const inputClass = 'max-w-full rounded-input border border-ink/20 bg-surface px-2 py-1.5';
 
 type Filters = Pick<Partial<AuditLogQuery>, 'actorId' | 'action' | 'from' | 'to'>;
 
@@ -135,7 +136,7 @@ export function AuditLogView({ client: provided }: { client?: AdminClient }) {
         className="flex flex-wrap items-end gap-4"
         onSubmit={(event) => event.preventDefault()}
       >
-        <label className="flex flex-col gap-1 text-small">
+        <label className="flex min-w-0 max-w-full flex-col gap-1 text-small">
           {t('actor')}
           <select
             value={filters.actorId ?? ''}
@@ -152,7 +153,7 @@ export function AuditLogView({ client: provided }: { client?: AdminClient }) {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-small">
+        <label className="flex min-w-0 max-w-full flex-col gap-1 text-small">
           {t('action')}
           <select
             value={filters.action ?? ''}
@@ -172,7 +173,7 @@ export function AuditLogView({ client: provided }: { client?: AdminClient }) {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-small">
+        <label className="flex min-w-0 max-w-full flex-col gap-1 text-small">
           {t('from')}
           <input
             type="date"
@@ -181,7 +182,7 @@ export function AuditLogView({ client: provided }: { client?: AdminClient }) {
             className={inputClass}
           />
         </label>
-        <label className="flex flex-col gap-1 text-small">
+        <label className="flex min-w-0 max-w-full flex-col gap-1 text-small">
           {t('to')}
           <input
             type="date"
