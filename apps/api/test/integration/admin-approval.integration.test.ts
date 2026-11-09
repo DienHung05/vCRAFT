@@ -46,6 +46,7 @@ describe('Admin dashboard and household approval', () => {
       body: { name: 'Gốm Chờ Duyệt', slug: 'gom-cho-duyet', history: 'Khai báo.' },
     });
     household = applied.body;
+    await t.completeApplication(household.id, { withDocument: false });
     const boundary = 'vcraftboundary';
     const upload = await t.app.inject({
       method: 'POST',

@@ -26,6 +26,7 @@ export type AuthErrorKey =
   | 'mediaResolution'
   | 'mediaUnsupported'
   | 'apiDown'
+  | 'applicationIncomplete'
   | 'captcha';
 
 const SUPABASE_CODES: Readonly<Record<string, AuthErrorKey>> = {
@@ -63,6 +64,7 @@ const API_CODES: Readonly<Record<string, AuthErrorKey>> = {
   AUTH_FORBIDDEN: 'forbidden',
   AUTH_ACCOUNT_SUSPENDED: 'locked',
   HOUSEHOLD_ACCOUNT_LOCKED: 'locked',
+  APPLICATION_INCOMPLETE: 'applicationIncomplete',
   CONSENT_REQUIRED: 'consentRequired',
   CONFLICT_DUPLICATE: 'slugTaken',
   MEDIA_TOO_LARGE: 'mediaTooLarge',

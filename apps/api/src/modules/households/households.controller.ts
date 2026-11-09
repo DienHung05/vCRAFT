@@ -116,6 +116,22 @@ export class MyHouseholdController {
     return this.households.getMine(actor);
   }
 
+  /** Final wizard step: the draft application enters the board's queue (needs profile, workshop, document). */
+  @Post('submit')
+  @HttpCode(200)
+  @Roles('HOUSEHOLD')
+  submit(@CurrentActor() actor: Actor) {
+    return this.households.submit(actor);
+  }
+
+  /** The household's own uploaded documents, so a returning wizard user does not upload them again. */
+  @Get('documents')
+  @Roles('HOUSEHOLD')
+  @Header('Cache-Control', 'private, no-store')
+  documents(@CurrentActor() actor: Actor) {
+    return this.households.documentsForMine(actor);
+  }
+
   @Patch()
   @Roles('HOUSEHOLD')
   updateProfile(

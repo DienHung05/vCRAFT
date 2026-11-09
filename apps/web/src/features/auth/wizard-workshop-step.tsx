@@ -12,7 +12,12 @@ import { notify } from '@/lib/notify';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
 import { CheckboxField, FormAlert, SelectField, TextAreaField, TextField } from './fields';
 import { LocationPicker } from './location-picker';
-import { WORKSHOP_PURPOSES, type WorkshopStepValues, workshopStepSchema } from './schemas';
+import {
+  serverWorkshopFieldMessageKey,
+  WORKSHOP_PURPOSES,
+  type WorkshopStepValues,
+  workshopStepSchema,
+} from './schemas';
 import { useValidationMessage } from './use-validation-message';
 
 /**
@@ -68,9 +73,9 @@ export function WizardWorkshopStep({ onDone }: { onDone: () => void }) {
       onDone();
     } catch (failure) {
       if (failure instanceof AccountApiError && failure.fieldErrors.length > 0) {
-        for (const { path, message: text } of failure.fieldErrors) {
+        for (const { path } of failure.fieldErrors) {
           if (path === 'name' || path === 'address' || path === 'visitingInfo') {
-            setFieldError(path, { message: text });
+            setFieldError(path, { message: serverWorkshopFieldMessageKey(path) });
           }
         }
         return;

@@ -37,7 +37,7 @@ describe('GET /me', () => {
     });
   });
 
-  it('nộp hồ sơ hộ thì thành HOUSEHOLD kèm trạng thái PENDING_REVIEW', async () => {
+  it('nộp hồ sơ hộ thì thành HOUSEHOLD kèm trạng thái DRAFT (chưa nộp)', async () => {
     const rep = await t.createUser('BUYER');
     const applied = await t.request({
       method: 'POST',
@@ -53,7 +53,7 @@ describe('GET /me', () => {
     expect(res.body.household).toMatchObject({
       name: 'Gốm Thanh Hà',
       slug: 'gom-thanh-ha',
-      status: 'PENDING_REVIEW',
+      status: 'DRAFT',
       statusReason: null,
     });
   });

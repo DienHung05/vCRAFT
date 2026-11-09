@@ -4,7 +4,7 @@ import { ApiError, type PaymentClient } from '@vcraft/api-client';
 import type { OrderPaymentsDto, PaymentDto } from '@vcraft/contracts';
 import { Button, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { PaymentStatusBadge } from '@/features/payments/payment-parts';
 import { usePaymentClient } from '@/lib/api/use-payment-client';
@@ -42,6 +42,10 @@ function Panel({ orderId, client }: { orderId: string; client: PaymentClient }) 
   const [reason, setReason] = useState('');
   const [reasonError, setReasonError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const noteInput = useRef<HTMLInputElement>(null);
+  const reasonInput = useRef<HTMLTextAreaElement>(null);
+  const noteErrorId = useId();
+  const reasonErrorId = useId();
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -90,6 +94,7 @@ function Panel({ orderId, client }: { orderId: string; client: PaymentClient }) 
   const record = async () => {
     if (note.trim().length < 3) {
       setNoteError(true);
+      noteInput.current?.focus();
       return;
     }
     setNoteError(false);
@@ -107,6 +112,7 @@ function Panel({ orderId, client }: { orderId: string; client: PaymentClient }) 
     if (!refunding) return;
     if (reason.trim().length < 3) {
       setReasonError(true);
+      reasonInput.current?.focus();
       return;
     }
     const target = refunding;
@@ -226,6 +232,9 @@ function Panel({ orderId, client }: { orderId: string; client: PaymentClient }) 
             <label className="flex flex-col gap-2 text-small">
               <span className="text-ash">{t('noteLabel')}</span>
               <input
+                ref={noteInput}
+                aria-invalid={noteError}
+                aria-describedby={noteError ? noteErrorId : undefined}
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
                 maxLength={500}
@@ -234,7 +243,7 @@ function Panel({ orderId, client }: { orderId: string; client: PaymentClient }) 
               />
             </label>
             {noteError ? (
-              <p role="alert" className="text-small text-seal">
+              <p id={noteErrorId} role="alert" className="text-small text-seal">
                 {t('noteRequired')}
               </p>
             ) : null}
@@ -269,6 +278,9 @@ function Panel({ orderId, client }: { orderId: string; client: PaymentClient }) 
         <label className="mt-3 flex flex-col gap-2 text-small">
           <span className="text-ash">{t('reasonLabel')}</span>
           <textarea
+            ref={reasonInput}
+            aria-invalid={reasonError}
+            aria-describedby={reasonError ? reasonErrorId : undefined}
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             rows={3}
@@ -277,7 +289,7 @@ function Panel({ orderId, client }: { orderId: string; client: PaymentClient }) 
           />
         </label>
         {reasonError ? (
-          <p role="alert" className="text-small text-seal">
+          <p id={reasonErrorId} role="alert" className="text-small text-seal">
             {t('reasonRequired')}
           </p>
         ) : null}

@@ -35,6 +35,8 @@ describe('Admin household list pagination', () => {
       });
       ids.push(applied.body.id);
     }
+    // Drafts stay out of the queue: submit all five first.
+    for (const id of ids) await t.completeApplication(id);
     // Two of the five are already approved, so the status filter has something to exclude.
     const em = db.orm.em.fork();
     await em.nativeUpdate(

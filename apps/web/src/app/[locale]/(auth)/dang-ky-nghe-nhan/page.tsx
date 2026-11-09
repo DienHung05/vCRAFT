@@ -32,9 +32,9 @@ export default async function RegisterHouseholdPage({
   const viewer = await getViewer();
   if (viewer?.status === 'LOCKED') forbidden();
 
-  // Hộ đang chờ duyệt: đếm xưởng đã có để biết còn thiếu bước nào.
+  // Hồ sơ còn là bản nháp: đếm xưởng đã có để biết còn thiếu bước nào.
   let workshopCount = 0;
-  if (viewer?.household?.status === 'PENDING_REVIEW') {
+  if (viewer?.household?.status === 'DRAFT') {
     try {
       const client = await serverAccountClient();
       workshopCount = (await client?.getMyHousehold())?.workshops.length ?? 0;

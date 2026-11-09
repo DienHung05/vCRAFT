@@ -58,6 +58,8 @@ export function isNotificationType(value: unknown): value is NotificationType {
 }
 
 const HOUSEHOLD_EVENT_KIND: Record<HouseholdEvent, HouseholdNoticeKind> = {
+  // A submission is the applicant's own act and sends no household notice; kept for exhaustiveness.
+  SUBMIT: 'HOUSEHOLD_RESUBMITTED',
   APPROVE: 'HOUSEHOLD_APPROVED',
   REJECT: 'HOUSEHOLD_REJECTED',
   REQUEST_INFO: 'HOUSEHOLD_INFO_REQUESTED',

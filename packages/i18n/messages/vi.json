@@ -1914,7 +1914,10 @@
       "latInvalid": "Vĩ độ phải là số từ -90 đến 90.",
       "lngInvalid": "Kinh độ phải là số từ -180 đến 180.",
       "consentRequired": "Hãy đồng ý với Chính sách quyền riêng tư để tạo tài khoản.",
-      "idNumberInvalid": "Số CCCD gồm đúng 12 chữ số, không có dấu cách."
+      "idNumberInvalid": "Số CCCD gồm đúng 12 chữ số, không có dấu cách.",
+      "villageTooLong": "Tên làng quá dài: tối đa 160 ký tự.",
+      "historyTooLong": "Phần giới thiệu quá dài: tối đa 10.000 ký tự.",
+      "fieldInvalid": "Giá trị này chưa được chấp nhận. Bạn kiểm tra lại rồi thử lại nhé."
     },
     "username": {
       "checking": "Đang kiểm tra tên đăng nhập...",
@@ -1950,6 +1953,7 @@
       "mediaResolution": "Ảnh có hơn 50 megapixel. Hãy chụp lại ở độ phân giải thấp hơn.",
       "mediaUnsupported": "Chỉ nhận ảnh JPG, PNG, WebP, AVIF hoặc tệp PDF.",
       "apiDown": "Không gọi được máy chủ vCraft. Bạn thử lại sau ít phút nhé.",
+      "applicationIncomplete": "Hồ sơ còn thiếu phần bắt buộc: thông tin hộ, ít nhất một xưởng và ít nhất một giấy tờ. Bạn hoàn thành các bước trước rồi nộp lại nhé.",
       "consentRequired": "Cần đồng ý với Chính sách quyền riêng tư trước khi thực hiện thao tác này. Hãy tích ô đồng ý rồi thử lại.",
       "captcha": "Hãy hoàn tất bước xác minh \"Tôi không phải robot\" phía trên rồi thử lại."
     },
@@ -2120,6 +2124,8 @@
         "submitting": "Đang nộp…",
         "needOne": "Cần tải lên ít nhất một giấy tờ trước khi nộp hồ sơ.",
         "waitUploads": "Đợi các tệp tải xong rồi nộp hồ sơ.",
+        "uploadedEarlier": "Đã tải lên trước đó",
+        "loadFailed": "Không tải được các giấy tờ bạn đã gửi trước đó. Bạn tải lại trang để xem nhé.",
         "consentFirst": "Hãy đồng ý với Chính sách quyền riêng tư ở trên trước khi chọn tệp."
       },
       "alreadyAdmin": "Tài khoản quản trị viên không đại diện cho hộ nào. Hãy đăng xuất rồi dùng email khác để đăng ký hộ.",
@@ -2130,6 +2136,7 @@
       "submitted": "Đã nộp hồ sơ. Ban quản lý sẽ xem xét và trạng thái ở trang này sẽ đổi khi có kết quả.",
       "statusLabel": "Trạng thái hồ sơ",
       "status": {
+        "DRAFT": "Bản nháp, chưa nộp",
         "PENDING_REVIEW": "Chờ duyệt",
         "APPROVED": "Đã chấp nhận",
         "REJECTED": "Chưa được chấp nhận",
@@ -2237,6 +2244,7 @@
       "title": "Chào {household}",
       "status": "Trạng thái hồ sơ",
       "statuses": {
+        "DRAFT": "Bản nháp, chưa nộp",
         "PENDING_REVIEW": "Đang chờ Ban quản lý duyệt",
         "APPROVED": "Đã được duyệt, đang trưng bày công khai",
         "REJECTED": "Chưa được chấp nhận",

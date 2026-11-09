@@ -47,6 +47,8 @@ export const ERROR_CATALOG = {
   // --- HOUSEHOLD: duyệt hộ & xuất bản (vCRAFT-9hg.3) ---
   /** Hộ chưa được Ban quản lý chấp nhận hoặc đang tạm ngừng nên không xuất bản / nhận báo giá được. */
   HOUSEHOLD_NOT_APPROVED: { status: 409, title: 'Household is not approved' },
+  /** The application misses a required part (profile, workshop or document); `errors[].path` names each. */
+  APPLICATION_INCOMPLETE: { status: 422, title: 'Application is incomplete' },
   /** Tài khoản đại diện bị khóa: nhật ký bị đóng băng, trang đã xuất bản vẫn còn. */
   HOUSEHOLD_ACCOUNT_LOCKED: { status: 403, title: 'Representative account is locked' },
   /** Ghi công người làm: phải có ít nhất một người, thuộc hộ, mỗi người một lần. */

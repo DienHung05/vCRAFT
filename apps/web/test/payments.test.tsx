@@ -189,6 +189,34 @@ describe('administration payment panel', () => {
     );
   });
 
+  it('links the note input to its error and moves focus to it when submit fails', async () => {
+    const orderPayments = vi.fn().mockResolvedValue({ ...SUMMARY, payments: [paid] });
+    renderVi(<AdminOrderPayments orderId={ORDER} client={asClient({ orderPayments })} />);
+    const input = (await screen.findByLabelText('Cách thanh toán')) as HTMLInputElement;
+    expect(input.getAttribute('aria-invalid')).toBe('false');
+    fireEvent.click(screen.getByRole('button', { name: 'Ghi nhận phần còn lại' }));
+    const alert = await screen.findByText('Hãy ghi một ghi chú ngắn (ít nhất 3 ký tự).');
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(input.getAttribute('aria-describedby')).toBe(alert.id);
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('links the refund reason to its error and focuses it when the reason is missing', async () => {
+    const orderPayments = vi
+      .fn()
+      .mockResolvedValue({ ...SUMMARY, depositPaidAt: paid.paidAt, payments: [paid] });
+    renderVi(<AdminOrderPayments orderId={ORDER} client={asClient({ orderPayments })} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Đánh dấu hoàn lại' }));
+    const dialog = await screen.findByRole('dialog');
+    const reason = dialog.querySelector('textarea') as HTMLTextAreaElement;
+    fireEvent.click(dialog.querySelectorAll('button')[1] as HTMLButtonElement);
+    await waitFor(() => expect(reason.getAttribute('aria-invalid')).toBe('true'));
+    const describedBy = reason.getAttribute('aria-describedby') ?? '';
+    expect(describedBy).not.toBe('');
+    expect(document.getElementById(describedBy)?.textContent).toContain('3 ký tự');
+    expect(document.activeElement).toBe(reason);
+  });
+
   it('marks a paid payment refunded with a reason, at the version it was read', async () => {
     const orderPayments = vi.fn().mockResolvedValue({
       ...SUMMARY,

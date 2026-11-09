@@ -52,6 +52,7 @@ describe('Household resubmission lifecycle', () => {
       body: { name: 'Gốm Gửi Lại', slug: 'gom-gui-lai', history: 'Khai báo.' },
     });
     household = applied.body;
+    await t.completeApplication(household.id);
   }, 120_000);
 
   afterAll(async () => {

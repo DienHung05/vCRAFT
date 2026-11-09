@@ -5,7 +5,11 @@ import { PendingApplicationEditor } from '@/features/auth/pending-application-ed
 import { ResubmitApplication } from '@/features/auth/resubmit-application';
 import { renderVi } from './render';
 
-const account = vi.hoisted(() => ({ getMyHousehold: vi.fn(), resubmitHousehold: vi.fn() }));
+const account = vi.hoisted(() => ({
+  getMyHousehold: vi.fn(),
+  resubmitHousehold: vi.fn(),
+  getMyDocuments: vi.fn(async () => ({ data: [] })),
+}));
 vi.mock('@vcraft/api-client', async (original) => ({
   ...(await original<typeof import('@vcraft/api-client')>()),
   createAccountClient: () => account,

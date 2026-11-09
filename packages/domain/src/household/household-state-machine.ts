@@ -4,6 +4,8 @@ import { createStateMachine, type TransitionTable } from '../shared/state-machin
 /**
  * Máy trạng thái Hộ sản xuất (GLOSSARY: Household approval, Suspension; vCRAFT-9hg.3).
  *
+ * - `DRAFT`: hồ sơ đang soạn trong wizard đăng ký, chưa nộp; Ban quản lý không thấy. Chỉ chuyển
+ *   sang `PENDING_REVIEW` khi người đại diện bấm nộp ở bước cuối (event `SUBMIT`).
  * - `PENDING_REVIEW`: hộ đã nộp hồ sơ, chưa có gì công khai.
  * - `APPROVED`: Ban quản lý chấp nhận hộ ⇒ hồ sơ, xưởng, sản phẩm đã xuất bản hiện công khai.
  * - `REJECTED`: từ chối hồ sơ, không có gì công khai.
@@ -12,10 +14,17 @@ import { createStateMachine, type TransitionTable } from '../shared/state-machin
  *
  * Mọi chuyển trạng thái do Quản trị viên làng thực hiện.
  */
-export const HOUSEHOLD_STATUSES = ['PENDING_REVIEW', 'APPROVED', 'REJECTED', 'SUSPENDED'] as const;
+export const HOUSEHOLD_STATUSES = [
+  'DRAFT',
+  'PENDING_REVIEW',
+  'APPROVED',
+  'REJECTED',
+  'SUSPENDED',
+] as const;
 export type HouseholdStatus = (typeof HOUSEHOLD_STATUSES)[number];
 
 export const HOUSEHOLD_EVENTS = [
+  'SUBMIT',
   'APPROVE',
   'REJECT',
   'REQUEST_INFO',
@@ -49,7 +58,16 @@ function reasonRequired(ctx: HouseholdContext): DomainError<HouseholdGuardCode> 
     : new DomainError('REASON_REQUIRED', 'a reason is required');
 }
 
+function representativeOnly(ctx: HouseholdContext): DomainError<HouseholdGuardCode> | undefined {
+  return ctx.actorRole === 'HOUSEHOLD'
+    ? undefined
+    : new DomainError('FORBIDDEN_ACTOR', 'only the household representative may submit');
+}
+
 export const HOUSEHOLD_TRANSITIONS = {
+  DRAFT: {
+    SUBMIT: { to: 'PENDING_REVIEW', guards: [representativeOnly] },
+  },
   PENDING_REVIEW: {
     APPROVE: { to: 'APPROVED', guards: [adminOnly] },
     REJECT: { to: 'REJECTED', guards: [adminOnly], inputGuards: [reasonRequired] },

@@ -18,6 +18,7 @@ import {
 } from '../src';
 
 const EXPECTED: Record<HouseholdStatus, Partial<Record<HouseholdEvent, HouseholdStatus>>> = {
+  DRAFT: { SUBMIT: 'PENDING_REVIEW' },
   PENDING_REVIEW: { APPROVE: 'APPROVED', REJECT: 'REJECTED', REQUEST_INFO: 'PENDING_REVIEW' },
   APPROVED: { SUSPEND: 'SUSPENDED' },
   SUSPENDED: { REINSTATE: 'APPROVED' },
@@ -41,6 +42,23 @@ describe('Household state machine', () => {
       ok: true,
       value: 'APPROVED',
     });
+  });
+
+  it('only the household representative can submit a draft application', () => {
+    const asAdmin = householdTransition('DRAFT', 'SUBMIT', { actorRole: 'ADMIN' });
+    expect(asAdmin.ok).toBe(false);
+    if (!asAdmin.ok) expect(asAdmin.error.code).toBe('FORBIDDEN_ACTOR');
+    expect(householdTransition('DRAFT', 'SUBMIT', { actorRole: 'HOUSEHOLD' })).toEqual({
+      ok: true,
+      value: 'PENDING_REVIEW',
+    });
+  });
+
+  it('a draft cannot be approved or rejected before it is submitted', () => {
+    expect(householdTransition('DRAFT', 'APPROVE', { actorRole: 'ADMIN' }).ok).toBe(false);
+    expect(householdTransition('DRAFT', 'REJECT', { actorRole: 'ADMIN', reason: 'x' }).ok).toBe(
+      false,
+    );
   });
 
   it('tạm ngừng và từ chối bắt buộc có lý do', () => {
@@ -74,7 +92,7 @@ describe('Product publication', () => {
   });
 
   it('hộ chưa duyệt hoặc đang tạm ngừng không xuất bản được', () => {
-    for (const householdStatus of ['PENDING_REVIEW', 'SUSPENDED', 'REJECTED'] as const) {
+    for (const householdStatus of ['DRAFT', 'PENDING_REVIEW', 'SUSPENDED', 'REJECTED'] as const) {
       const r = productTransition('DRAFT', 'PUBLISH', { ...owner, householdStatus });
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.error.code).toBe('HOUSEHOLD_NOT_APPROVED');

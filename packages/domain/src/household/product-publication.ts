@@ -128,7 +128,13 @@ export function publicProductAvailability(
 ): PublicAvailability {
   if (productStatus === 'DRAFT') return 'MISSING';
   // Hộ chưa duyệt / bị từ chối thì chưa từng có gì công khai, kể cả sản phẩm đã rút
-  if (householdStatus === 'PENDING_REVIEW' || householdStatus === 'REJECTED') return 'MISSING';
+  if (
+    householdStatus === 'DRAFT' ||
+    householdStatus === 'PENDING_REVIEW' ||
+    householdStatus === 'REJECTED'
+  ) {
+    return 'MISSING';
+  }
   if (householdStatus === 'SUSPENDED' || productStatus === 'WITHDRAWN') return 'UNAVAILABLE';
   return 'VISIBLE';
 }
