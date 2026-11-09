@@ -114,6 +114,9 @@ function Form({
     draft ? { id: draft.id, version: draft.version } : null,
   );
   const saving = useRef<Promise<void>>(Promise.resolve());
+  const autosaveTimer = useRef<number | null>(null);
+  // Set while a send is under way (and after it succeeded): autosave must not touch the draft any more.
+  const sent = useRef(false);
 
   // A new form restores what this browser kept, including the server draft it belongs to.
   useEffect(() => {
@@ -157,6 +160,8 @@ function Form({
     // An administrator's request is sent in one step, so no half-finished draft is left on the server.
     if (!touched || onBehalf) return;
     const timer = window.setTimeout(() => {
+      autosaveTimer.current = null;
+      if (sent.current) return;
       if (!draft) writeStoredDraft({ id: saved.current?.id ?? null, values });
       // Nothing personal (the delivery address) leaves this browser before the buyer consents.
       if (!consent || Object.keys(rfqFormProblems(values)).length > 0) {
@@ -166,6 +171,7 @@ function Form({
       setSaveState('saving');
       saveToServer(values)
         .then(() => {
+          if (sent.current) return;
           if (!draft) writeStoredDraft({ id: saved.current?.id ?? null, values });
           setSaveState('saved');
         })
@@ -175,6 +181,7 @@ function Form({
           setSaveState('failed');
         });
     }, AUTOSAVE_MS);
+    autosaveTimer.current = timer;
     return () => window.clearTimeout(timer);
   }, [values, touched, consent, draft, saveToServer, onBehalf]);
 
@@ -211,7 +218,16 @@ function Form({
       return;
     }
     setSending(true);
+    sent.current = true;
+    // A pending autosave would race this send with the same version; cancel it and let a running one finish.
+    if (autosaveTimer.current !== null) {
+      window.clearTimeout(autosaveTimer.current);
+      autosaveTimer.current = null;
+    }
     try {
+      await saving.current.catch(() => {
+        saving.current = Promise.resolve();
+      });
       await saveToServer(values);
       const target = saved.current;
       if (!target) throw new Error('draft was not saved');
@@ -229,6 +245,7 @@ function Form({
       else router.push({ pathname: '/yeu-cau-bao-gia/[code]', params: { code: sent.id } });
     } catch (error) {
       saving.current = Promise.resolve();
+      sent.current = false;
       setSendError(
         error instanceof QuotationApiError && error.code === 'AUTH_EMAIL_NOT_VERIFIED'
           ? 'emailNotVerified'
