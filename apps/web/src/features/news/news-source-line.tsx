@@ -30,7 +30,7 @@ export function NewsSourceLine({
           href={item.sourceUrl}
           target="_blank"
           rel="noopener nofollow"
-          className="text-clay underline underline-offset-4"
+          className="break-words text-clay underline underline-offset-4"
         >
           {label}
         </a>

@@ -23,9 +23,8 @@ export async function SiteFooter() {
   const facebookLabel = displayUrl(contact.facebook);
 
   return (
-    // mt-section-tail (GH#301): the wave divider separates the last section from the footer without
-    // the full 160px section rhythm — that much dead paper read as a missing block at every page end.
-    <footer className="mt-section-tail">
+    // One compact gap before the wave; page padding supplies the rest of the separation.
+    <footer className="mt-6">
       <WaveDivider />
       <div className="mx-auto grid max-w-editorial gap-x-12 gap-y-12 px-gutter pt-14 pb-12 md:grid-cols-2 xl:grid-cols-12">
         <div className="flex flex-col gap-5 md:col-span-2 xl:col-span-4">

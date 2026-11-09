@@ -114,15 +114,15 @@ export function NewsView({
       {items.length > 0 && (
         <ul
           aria-label={t('listLabel')}
-          className="mt-10 grid grid-cols-1 items-start gap-6 md:grid-cols-2"
+          className="mt-8 grid grid-cols-1 items-start gap-6 sm:grid-cols-2 lg:grid-cols-3"
         >
           {items.map((n, index) => (
-            <li key={n.slug}>
-              <Reveal delay={(index % 2) * 40}>
+            <li key={n.slug} className="min-w-0">
+              <Reveal delay={(index % 3) * 40}>
                 <Card className="p-5 motion-safe:transition-transform motion-safe:duration-(--duration-quick) motion-safe:ease-clay motion-safe:hover:-translate-y-0.5 md:p-6">
                   <article className="flex flex-col gap-2">
                     {n.cover ? (
-                      <div className="mb-2">
+                      <div className="mb-2 shrink-0">
                         <ImageSlot
                           alt={altFor(locale, n.cover.alt || n.title, n.cover.altEn)}
                           tint={tintOf(n.slug)}
@@ -134,7 +134,7 @@ export function NewsView({
                               n.cover.variants,
                             ),
                           )}
-                          sizes="(min-width: 768px) 40rem, 100vw"
+                          sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw"
                         />
                       </div>
                     ) : null}
@@ -145,7 +145,7 @@ export function NewsView({
                         {format.dateTime(new Date(n.publishedAt), 'long')}
                       </time>
                     </div>
-                    <h2 className="text-h3">
+                    <h2 className="text-h3 text-balance break-words">
                       <Link
                         href={{ pathname: '/tin-tuc/[slug]', params: { slug: n.slug } }}
                         className="transition-colors hover:text-clay"

@@ -35,7 +35,7 @@ export function NewsArticleView({ article }: { article: NewsDetailDto }) {
             {format.dateTime(new Date(article.publishedAt), 'long')}
           </time>
         </div>
-        <h1 className="text-h1 break-words">{article.title}</h1>
+        <h1 className="text-h1 text-balance break-words">{article.title}</h1>
         <p className="text-ash">{article.summary}</p>
         <p className="text-small text-ash">
           {article.householdName ? t('byHousehold', { name: article.householdName }) : t('village')}

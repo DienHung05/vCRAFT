@@ -58,7 +58,7 @@ rounded:
   chip: "999px"
 spacing:
   gutter: "clamp(1rem, 0.4286rem + 2.8571vw, 3rem)"
-  section: "clamp(4rem, 2.2857rem + 8.5714vw, 10rem)"
+  section: "clamp(3rem, 2rem + 4vw, 6rem)"
   container-editorial: "90rem"
   container-prose: "42rem"
 components:
@@ -164,7 +164,7 @@ The kiln scene's fine ember dots draw from a small slot set: clay and lacquer an
 
 ## Layout
 
-The public site uses a 12 column editorial grid inside a 1440px frame. Page gutters run fluid from 16 to 48px, sections stack with 64 to 160px rhythm, and compositions favor asymmetry with one large image against a narrow text block. Standard image ratios are 4:5 for products, 3:2 for workshops, 3:4 for portraits, and 1:1 for thumbnails.
+The public site uses a 12 column editorial grid inside a 1440px frame. Page gutters run fluid from 16 to 48px, sections stack with 48 to 96px rhythm, and compositions favor asymmetry with one large image against a narrow text block. Standard image ratios are 4:5 for products, 3:2 for workshops, 3:4 for portraits, and 1:1 for thumbnails.
 
 Household profiles use bento blocks for story, certificates, map, and lineage. Traceability pages read as a craft notebook on phones. Maps pair a paper toned basemap with seal pins and a list panel, collapsing to a bottom sheet on mobile. Admin pages use a 14rem sidebar on desktop that becomes a horizontal strip on narrow screens.
 
