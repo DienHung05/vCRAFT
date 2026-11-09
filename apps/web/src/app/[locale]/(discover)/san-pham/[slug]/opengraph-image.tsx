@@ -10,8 +10,8 @@ export const contentType = OG_CONTENT_TYPE;
 type Params = { params: Promise<{ locale: string; slug: string }> };
 
 export async function generateImageMetadata({ params }: Params) {
-  const locale = await resolveLocale(params);
-  const { slug } = await params;
+  // Not resolveLocale: it calls notFound() and setRequestLocale, which break page-data collection at build time.
+  const { locale, slug } = await params;
   const result = await fetchProduct(slug);
   return [
     {
