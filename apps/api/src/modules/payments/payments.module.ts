@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { IdempotencyModule } from '../../common/idempotency/idempotency.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsService } from './application/payments.service';
 import { MomoGateway } from './gateways/momo.gateway';
@@ -14,7 +15,7 @@ const realHttp: PaymentHttp = (url, init) =>
   fetch(url, { ...init, signal: AbortSignal.timeout(10_000) });
 
 @Module({
-  imports: [NotificationsModule],
+  imports: [NotificationsModule, IdempotencyModule],
   controllers: [
     PaymentsController,
     AdminPaymentsController,

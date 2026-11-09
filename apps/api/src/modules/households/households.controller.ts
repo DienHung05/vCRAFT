@@ -43,6 +43,7 @@ import type { HouseholdEvent } from '@vcraft/domain';
 import { type Actor, CurrentActor, Public, Roles } from '../../common/auth/auth.guard';
 import { notFound } from '../../common/errors/app-error';
 import { IfMatchVersion } from '../../common/http/if-match';
+import { Idempotent } from '../../common/idempotency/idempotent.decorator';
 import { UuidPipe } from '../../common/pipes/uuid.pipe';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { HouseholdsService } from './application/households.service';
@@ -198,6 +199,7 @@ export class MyHouseholdController {
 
   /** FR-PRD-06: a DRAFT copy without the production journal. */
   @Post('products/:id/duplicate')
+  @Idempotent()
   @Roles('HOUSEHOLD')
   duplicateProduct(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
     return this.households.duplicateProduct(actor, id);
@@ -215,6 +217,7 @@ export class MyHouseholdController {
   }
 
   @Post('products')
+  @Idempotent()
   @Roles('HOUSEHOLD')
   createProduct(
     @CurrentActor() actor: Actor,
