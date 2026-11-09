@@ -90,6 +90,13 @@ export const MOMO_MIN_VND = 1_000;
 export const MOMO_DEFAULT_MAX_VND = 50_000_000;
 export const DEFAULT_WALLET_EXPIRY_MINUTES = 30;
 
+const SEPAY_VARIABLES = [
+  'SEPAY_WEBHOOK_API_KEY',
+  'SEPAY_BANK_NAME',
+  'SEPAY_BANK_ACCOUNT_NUMBER',
+  'SEPAY_BANK_ACCOUNT_NAME',
+] as const;
+
 const isHttps = (url: string) => /^https:\/\//i.test(url);
 
 /** `.../create` becomes `.../query`; anything else cannot be derived. */
@@ -129,6 +136,13 @@ function resolvePayments(env: NodeJS.ProcessEnv): { config: PaymentsConfig; issu
           qrBaseUrl: text(env.SEPAY_QR_BASE_URL) ?? SEPAY_QR_BASE_URL,
         }
       : null;
+  const sepaySet = SEPAY_VARIABLES.filter((name) => text(env[name]) !== null);
+  if (sepaySet.length > 0 && sepaySet.length < SEPAY_VARIABLES.length) {
+    const missing = SEPAY_VARIABLES.filter((name) => text(env[name]) === null);
+    issues.push(
+      `SePay is only partly configured, bank transfer is off; missing ${missing.join(', ')}`,
+    );
+  }
 
   const legacySandbox = env.PAYMENTS_SANDBOX_GATEWAYS?.trim().toLowerCase() === 'true';
   const modeOf = (name: 'VNPAY_MODE' | 'MOMO_MODE'): 'off' | GatewayMode => {

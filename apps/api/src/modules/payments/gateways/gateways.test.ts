@@ -304,6 +304,15 @@ describe('payments config: gateway modes', () => {
     expect(methodLimits(custom).MOMO.maxVnd).toBe(10_000_000);
   });
 
+  it('reports a half-filled SePay account without naming a value', () => {
+    const env = { SEPAY_WEBHOOK_API_KEY: 'super-secret-key', SEPAY_BANK_NAME: 'MB Bank' };
+    expect(paymentsConfig(env).sepay).toBeNull();
+    const [issue] = paymentsConfigIssues(env);
+    expect(issue).toMatch(/SEPAY_BANK_ACCOUNT_NUMBER/);
+    expect(issue).toMatch(/SEPAY_BANK_ACCOUNT_NAME/);
+    expect(paymentsConfigIssues({ ...SEPAY_ENV })).toEqual([]);
+  });
+
   it('never puts a secret value in an issue', () => {
     const env = {
       APP_ENV: 'production',
