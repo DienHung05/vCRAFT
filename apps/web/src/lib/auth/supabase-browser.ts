@@ -1,6 +1,7 @@
 import { createBrowserClient, parseCookieHeader, serializeCookieHeader } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAccountClient } from '@vcraft/api-client';
+import { withSecureOnHttps } from '../secure-cookies';
 import { readRememberPreference, withRememberPolicy } from './remember';
 import { supabaseConfig } from './supabase-config';
 
@@ -18,7 +19,10 @@ const documentCookies = {
       const header = serializeCookieHeader(
         name,
         value,
-        withRememberPolicy(options, remember) ?? {},
+        withSecureOnHttps(
+          withRememberPolicy(options, remember),
+          window.location.protocol === 'https:',
+        ) ?? {},
       );
       // biome-ignore lint/suspicious/noDocumentCookie: same synchronous document.cookie write as the @supabase/ssr default, plus the remember policy.
       document.cookie = header;
