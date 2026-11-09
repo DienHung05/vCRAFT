@@ -58,7 +58,11 @@ describe('server API helpers report why they are unavailable', () => {
 
   it('fetchNews logs a schema mismatch', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ nope: true })));
+    // A fresh Response per call: the schema failure triggers a second, uncached read.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async () => Response.json({ nope: true })),
+    );
     await expect(fetchNews()).resolves.toEqual({ status: 'unavailable' });
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn.mock.calls[0]?.[0]).toMatch(/^\[api\] \/news unavailable: schema mismatch at /);
