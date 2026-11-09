@@ -21,6 +21,7 @@ import {
   type CreateWorkshopRequest,
   CreateWorkshopRequestSchema,
   HouseholdDecisionRequestSchema,
+  type ListHouseholdsQuery,
   ListHouseholdsQuerySchema,
   type PriceSuggestionQuery,
   PriceSuggestionQuerySchema,
@@ -316,7 +317,7 @@ export class AdminHouseholdsController {
   @Get()
   list(
     @Query(new ZodValidationPipe(ListHouseholdsQuerySchema))
-    query: ReturnType<typeof ListHouseholdsQuerySchema.parse>,
+    query: ListHouseholdsQuery,
   ) {
     return this.households.listForAdmin(query);
   }

@@ -142,10 +142,27 @@ function ReallocateForm({
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    client
-      .listHouseholds({ status: 'APPROVED' })
-      .then((rows) => setHouseholds(rows.filter((h) => h.id !== share.householdId)))
-      .catch(() => setHouseholds([]));
+    let cancelled = false;
+    // The list is cursor-paged; walk every page so each approved household can receive work.
+    (async () => {
+      const all: { id: string; name: string }[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await client.listHouseholds({
+          status: 'APPROVED',
+          limit: 100,
+          ...(cursor && { cursor }),
+        });
+        all.push(...page.data);
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+      if (!cancelled) setHouseholds(all.filter((h) => h.id !== share.householdId));
+    })().catch(() => {
+      if (!cancelled) setHouseholds([]);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [client, share.householdId]);
 
   const moved = targets.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0);

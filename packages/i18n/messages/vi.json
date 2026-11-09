@@ -868,6 +868,7 @@
       "retry": "Thử lại",
       "empty": "Không có hồ sơ nào khớp bộ lọc.",
       "emptyHint": "Thử đổi bộ lọc trạng thái hoặc khoảng ngày để xem các hồ sơ khác.",
+      "more": "Xem thêm",
       "showAll": "Xem mọi trạng thái",
       "showPending": "Xem hồ sơ đang chờ",
       "reviewState": {

@@ -259,6 +259,6 @@ describe('Household approval and publishing', () => {
       url: '/admin/households?status=APPROVED',
       auth: admin.auth,
     });
-    expect(list.body.map((h: { id: string }) => h.id)).toContain(householdId);
+    expect(list.body.data.map((h: { id: string }) => h.id)).toContain(householdId);
   });
 });

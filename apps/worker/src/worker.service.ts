@@ -32,6 +32,8 @@ import {
   IDEMPOTENCY_PURGE_EVERY_MS,
   IDEMPOTENCY_PURGE_JOB,
   NEWS_IMPORT_JOB,
+  OUTBOX_PRUNE_EVERY_MS,
+  OUTBOX_PRUNE_JOB,
   PAYMENT_EXPIRE_EVERY_MS,
   PAYMENT_EXPIRE_SWEEP_JOB,
   RFQ_COORDINATION_CHECK_JOB,
@@ -205,6 +207,11 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       IDEMPOTENCY_PURGE_JOB,
       { every: IDEMPOTENCY_PURGE_EVERY_MS },
       { name: IDEMPOTENCY_PURGE_JOB },
+    );
+    await scheduler.upsertJobScheduler(
+      OUTBOX_PRUNE_JOB,
+      { every: OUTBOX_PRUNE_EVERY_MS },
+      { name: OUTBOX_PRUNE_JOB },
     );
     await scheduler.upsertJobScheduler(
       PAYMENT_EXPIRE_SWEEP_JOB,

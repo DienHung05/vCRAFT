@@ -26,7 +26,8 @@ describe('Household resubmission lifecycle', () => {
       headers: { 'if-match': `"${version}"` },
     });
   const queue = async (query = 'status=PENDING_REVIEW') =>
-    (await t.request({ method: 'GET', url: `/admin/households?${query}`, auth: admin.auth })).body;
+    (await t.request({ method: 'GET', url: `/admin/households?${query}`, auth: admin.auth })).body
+      .data;
   const decide = (action: string, version: number, body: object = {}) =>
     t.request({
       method: 'POST',
