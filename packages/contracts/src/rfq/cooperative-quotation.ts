@@ -1,4 +1,9 @@
-import { BID_TYPES, DELIVERY_TERMS, QUOTATION_NOTICE_KINDS } from '@vcraft/domain';
+import {
+  BID_TYPES,
+  DELIVERY_TERMS,
+  PRODUCT_CATEGORIES,
+  QUOTATION_NOTICE_KINDS,
+} from '@vcraft/domain';
 import { z } from 'zod';
 import { IdSchema, IsoDateTimeSchema, VersionSchema, VndSchema } from '../common';
 import { RfqResponseSchema } from './create-rfq';
@@ -197,3 +202,19 @@ export const ContributionHistoryResponseSchema = z.array(
     status: ContributionStatusSchema,
   }),
 );
+
+/**
+ * `GET /me/open-coordinated-requests` (BR-05a, ADR-0024): a redacted summary of a coordinated request an
+ * administrator claimed and that is still open for offers. It carries no title, description, buyer
+ * identity, budget, destination or attachments: those stay behind the invitation check.
+ */
+export const OpenCoordinatedRequestSchema = z.strictObject({
+  id: IdSchema,
+  category: z.enum(PRODUCT_CATEGORIES),
+  quantity: PositiveQuantitySchema,
+  unit: z.string(),
+  biddingClosesAt: IsoDateTimeSchema,
+  requiredBy: IsoDateTimeSchema,
+});
+export type OpenCoordinatedRequestDto = z.infer<typeof OpenCoordinatedRequestSchema>;
+export const OpenCoordinatedRequestListSchema = z.array(OpenCoordinatedRequestSchema);

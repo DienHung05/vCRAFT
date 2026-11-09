@@ -2619,7 +2619,16 @@
       "emptyAddProduct": "Add a product",
       "directActive": "Quoted: {price} per {unit}, total {total}",
       "directAccepted": "The buyer accepted the quotation",
-      "directRejected": "The buyer chose another household"
+      "directRejected": "The buyer chose another household",
+      "openTitle": "Open requests",
+      "openLead": "Requests the Management Board is coordinating that match your craft. You can offer without an invitation. Buyer details stay hidden.",
+      "openLoading": "Loading open requests…",
+      "openFailed": "The open requests could not be loaded.",
+      "openEmpty": "No open requests match your household right now.",
+      "openEmptyHint": "A coordinated request is open to your household when the Management Board has claimed it, its bidding deadline has not passed, and your household is approved and has declared capacity or a published product in its category. Requests you are already invited to are listed above.",
+      "openRequest": "{category}: needs {quantity} {unit}",
+      "openOffer": "Send an offer",
+      "openHide": "Hide the form"
     },
     "allocations": {
       "title": "Orders",

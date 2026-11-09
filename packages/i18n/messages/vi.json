@@ -2624,7 +2624,16 @@
       "emptyAddProduct": "Thêm sản phẩm",
       "directActive": "Đã báo giá: {price} một {unit}, tổng {total}",
       "directAccepted": "Bên mua đã chốt báo giá của hộ",
-      "directRejected": "Bên mua đã chọn hộ khác"
+      "directRejected": "Bên mua đã chọn hộ khác",
+      "openTitle": "Yêu cầu mở",
+      "openLead": "Các yêu cầu Ban quản lý đang điều phối và phù hợp nghề của hộ. Hộ có thể gửi đề xuất mà không cần lời mời. Thông tin bên mua được ẩn.",
+      "openLoading": "Đang tải yêu cầu mở…",
+      "openFailed": "Không tải được các yêu cầu mở.",
+      "openEmpty": "Hiện chưa có yêu cầu mở nào phù hợp với hộ.",
+      "openEmptyHint": "Một yêu cầu điều phối mở cho hộ khi Ban quản lý đã nhận điều phối, chưa quá hạn chào giá, và hộ đã được duyệt, có khai năng lực hoặc có sản phẩm đã đăng trong nhóm đó. Các yêu cầu hộ đã được mời nằm ở danh sách phía trên.",
+      "openRequest": "{category}: cần {quantity} {unit}",
+      "openOffer": "Gửi đề xuất",
+      "openHide": "Ẩn biểu mẫu"
     },
     "allocations": {
       "title": "Đơn hàng",

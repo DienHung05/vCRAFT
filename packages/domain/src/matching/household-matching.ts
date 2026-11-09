@@ -29,11 +29,7 @@ export function selectMatchingHouseholds(
   limit = RFQ_MATCH_LIMIT,
 ): string[] {
   return candidates
-    .filter((candidate) => {
-      const capacity = candidate.declaredCapacity;
-      if (capacity !== undefined && capacity <= 0) return false;
-      return (capacity ?? 0) > 0 || candidate.publishedProducts > 0;
-    })
+    .filter((candidate) => worksInCategory(candidate.declaredCapacity, candidate.publishedProducts))
     .sort(
       (a, b) =>
         (b.declaredCapacity ?? 0) - (a.declaredCapacity ?? 0) ||
@@ -43,4 +39,62 @@ export function selectMatchingHouseholds(
     )
     .slice(0, Math.max(0, limit))
     .map((candidate) => candidate.householdId);
+}
+
+/**
+ * Whether a household works in a craft category: it declared capacity for it, or sells a published
+ * product in it. A declared capacity of zero opts the household out of the category (BR-05, BR-05a).
+ */
+export function worksInCategory(
+  declaredCapacity: number | undefined,
+  publishedProducts: number,
+): boolean {
+  if (declaredCapacity !== undefined && declaredCapacity <= 0) return false;
+  return (declaredCapacity ?? 0) > 0 || publishedProducts > 0;
+}
+
+/** What the platform knows about a household and a request when it decides whether the request is open to it. */
+export interface OpenRequestEligibilityInput {
+  readonly householdStatus: string;
+  /** True when the household representative's account is locked. */
+  readonly representativeLocked: boolean;
+  /** The request's craft category; null or undefined when the buyer chose none. */
+  readonly requestCategory: string | null | undefined;
+  /** Units per month the household declared for the request's category; undefined when it declared none. */
+  readonly declaredCapacity?: number | undefined;
+  /** Published products the household has in the request's category. */
+  readonly publishedProducts: number;
+}
+
+/**
+ * BR-05a: an open coordinated request is visible to, and can be offered on by, an APPROVED household with an
+ * unlocked representative that works in the request's category (declared capacity above zero, or a published
+ * product in it). A request without a category is open to nobody.
+ */
+export function isEligibleForOpenRequest(input: OpenRequestEligibilityInput): boolean {
+  if (!input.requestCategory) return false;
+  if (input.householdStatus !== 'APPROVED' || input.representativeLocked) return false;
+  return worksInCategory(input.declaredCapacity, input.publishedProducts);
+}
+
+/** The request fields BR-05a looks at. */
+export interface OpenRequestState {
+  readonly status: string;
+  readonly coordinationOptIn: boolean;
+  /** The administrator who claimed the request; null or undefined while nobody has. */
+  readonly coordinatorId?: string | null | undefined;
+  readonly biddingClosesAt: Date;
+}
+
+/** BR-05a: a request is open while it is coordinated, claimed by an administrator and still takes offers. */
+export function isOpenCoordinatedRequest(
+  request: OpenRequestState,
+  now: Date = new Date(),
+): boolean {
+  return (
+    request.coordinationOptIn &&
+    Boolean(request.coordinatorId) &&
+    (request.status === 'SENT' || request.status === 'BIDDING') &&
+    request.biddingClosesAt.getTime() > now.getTime()
+  );
 }

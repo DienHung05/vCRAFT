@@ -120,7 +120,14 @@ describe('QuotationInvitations', () => {
       .fn()
       .mockRejectedValueOnce(new QuotationApiError('INTERNAL_ERROR', 500))
       .mockResolvedValue([]);
-    renderVi(<QuotationInvitations client={asClient({ listInvitations })} />);
+    renderVi(
+      <QuotationInvitations
+        client={asClient({
+          listInvitations,
+          listOpenCoordinatedRequests: vi.fn().mockResolvedValue([]),
+        })}
+      />,
+    );
     fireEvent.click(await screen.findByRole('button', { name: 'Thử lại' }));
     expect(await screen.findByText('Hộ chưa có lời mời nào.')).toBeTruthy();
   });

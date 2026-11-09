@@ -306,6 +306,12 @@ export class MyQuotationWorkController {
     return this.rfqs.listInvitations(actor);
   }
 
+  @Get('open-coordinated-requests')
+  @Header('Cache-Control', 'private, no-store')
+  openCoordinatedRequests(@CurrentActor() actor: Actor) {
+    return this.rfqs.listOpenCoordinatedRequests(actor);
+  }
+
   @Get('allocations')
   @Header('Cache-Control', 'private, no-store')
   allocations(@CurrentActor() actor: Actor) {

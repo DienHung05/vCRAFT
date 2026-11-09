@@ -14,6 +14,7 @@ import { Link } from '@/i18n/navigation';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { useMoney } from '@/lib/use-money';
 import { isOpenInvitation } from './invitation-summary';
+import { OpenCoordinatedRequests } from './open-coordinated-requests';
 
 const isOpen = (row: MyInvitationDto) => isOpenInvitation(row);
 
@@ -158,6 +159,9 @@ function Invitations({ client }: { client: QuotationClient }) {
             </li>
           ))}
         </ul>
+      )}
+      {state === 'signed-out' || state === 'failed' ? null : (
+        <OpenCoordinatedRequests client={client} onOffered={() => void load()} />
       )}
     </div>
   );
