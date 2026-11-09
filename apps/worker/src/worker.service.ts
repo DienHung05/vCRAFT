@@ -32,6 +32,8 @@ import {
   COORDINATION_CHECK_EVERY_MS,
   IDEMPOTENCY_PURGE_EVERY_MS,
   IDEMPOTENCY_PURGE_JOB,
+  MEDIA_ORPHAN_SWEEP_EVERY_MS,
+  MEDIA_ORPHAN_SWEEP_JOB,
   NEWS_IMPORT_JOB,
   OUTBOX_PRUNE_EVERY_MS,
   OUTBOX_PRUNE_JOB,
@@ -165,10 +167,14 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
         connection,
         concurrency: 1,
       }),
-      new Worker(SCHEDULER_QUEUE, (job) => runSchedulerJob(this.orm, job.name, job.data), {
-        connection,
-        concurrency: 1,
-      }),
+      new Worker(
+        SCHEDULER_QUEUE,
+        (job) => runSchedulerJob(this.orm, job.name, job.data, new Date(), this.storage),
+        {
+          connection,
+          concurrency: 1,
+        },
+      ),
       new Worker(
         NEWS_IMPORT_QUEUE,
         () =>
@@ -224,6 +230,11 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       OUTBOX_PRUNE_JOB,
       { every: OUTBOX_PRUNE_EVERY_MS },
       { name: OUTBOX_PRUNE_JOB },
+    );
+    await scheduler.upsertJobScheduler(
+      MEDIA_ORPHAN_SWEEP_JOB,
+      { every: MEDIA_ORPHAN_SWEEP_EVERY_MS },
+      { name: MEDIA_ORPHAN_SWEEP_JOB },
     );
     await scheduler.upsertJobScheduler(
       PAYMENT_EXPIRE_SWEEP_JOB,
