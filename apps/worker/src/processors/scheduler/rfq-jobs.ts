@@ -61,12 +61,27 @@ const mediaLogger = new Logger('MediaOrphanSweep');
 /**
  * Removes orphan media assets in batches: the private original and every public variant first, the row only
  * after all its files are gone. An asset whose files cannot be removed keeps its row and is retried next run.
+ *
+ * Deleting files cannot be undone, so the sweep only reports what it would remove unless
+ * `MEDIA_ORPHAN_SWEEP=delete` is set; turn it on after the logged candidates look right.
  */
 export async function sweepOrphanMedia(
   orm: MikroORM,
   storage: ObjectStorage,
   now = new Date(),
+  mode: string | undefined = process.env.MEDIA_ORPHAN_SWEEP,
 ): Promise<{ deleted: number; failed: number }> {
+  if (mode !== 'delete') {
+    const candidates = await findOrphanMediaAssets(orm, { now, limit: MEDIA_ORPHAN_BATCH_SIZE });
+    if (candidates.length > 0)
+      mediaLogger.log(
+        `report only (MEDIA_ORPHAN_SWEEP is not "delete"): ${candidates.length}+ orphan media asset(s), e.g. ${candidates
+          .slice(0, 5)
+          .map((asset) => asset.id)
+          .join(', ')}`,
+      );
+    return { deleted: 0, failed: 0 };
+  }
   let deleted = 0;
   const failed = new Set<string>();
   for (let batch = 0; batch < MEDIA_ORPHAN_MAX_BATCHES; batch += 1) {

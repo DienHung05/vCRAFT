@@ -42,7 +42,7 @@ describe('orphan media sweep (GH#381)', () => {
     database.deleteMediaAssetRows.mockResolvedValue(2);
     const storage = storageMock();
 
-    const result = await sweepOrphanMedia(orm, storage as never);
+    const result = await sweepOrphanMedia(orm, storage as never, new Date(), 'delete');
 
     expect(result).toEqual({ deleted: 2, failed: 0 });
     expect(storage.delete.mock.calls).toEqual([
@@ -66,7 +66,7 @@ describe('orphan media sweep (GH#381)', () => {
       if (key.endsWith('/bad')) throw new Error('storage down');
     });
 
-    const result = await sweepOrphanMedia(orm, storage as never);
+    const result = await sweepOrphanMedia(orm, storage as never, new Date(), 'delete');
 
     expect(result).toEqual({ deleted: 1, failed: 1 });
     expect(database.deleteMediaAssetRows).toHaveBeenCalledWith(orm, ['good']);
@@ -86,5 +86,18 @@ describe('orphan media sweep (GH#381)', () => {
     await expect(runSchedulerJob(orm, MEDIA_ORPHAN_SWEEP_JOB, {}, now)).rejects.toThrow(
       /object storage/,
     );
+  });
+});
+
+describe('orphan media sweep without MEDIA_ORPHAN_SWEEP=delete (GH#381)', () => {
+  it('only reports candidates and deletes nothing', async () => {
+    database.findOrphanMediaAssets.mockResolvedValue([
+      { id: 'a1', originalKey: 'originals/x', variants: [{ key: 'v/a1.webp' }] },
+    ]);
+    const storage = storageMock();
+    const result = await sweepOrphanMedia(orm, storage as never, new Date(), undefined);
+    expect(result).toEqual({ deleted: 0, failed: 0 });
+    expect(storage.delete).not.toHaveBeenCalled();
+    expect(database.deleteMediaAssetRows).not.toHaveBeenCalled();
   });
 });
