@@ -7,6 +7,7 @@ import {
   SupabaseVectorStore,
   type VectorStore,
 } from '@vcraft/knowledge';
+import { KnowledgeBootstrapService } from './knowledge-bootstrap.service';
 
 /** DI token of the assistant's knowledge index (`VectorStore` port, ADR-13). */
 export const VECTOR_STORE = Symbol('VECTOR_STORE');
@@ -24,6 +25,7 @@ export type { Embedder, VectorStore };
 @Global()
 @Module({
   providers: [
+    KnowledgeBootstrapService,
     {
       provide: VECTOR_STORE,
       useFactory: (): VectorStore => {

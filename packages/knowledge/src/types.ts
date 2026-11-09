@@ -57,7 +57,8 @@ export interface VectorStore {
   search(
     embedding: readonly number[],
     options: {
-      locale?: 'vi' | 'en';
+      /** Only chunks in one of these locales; omit for every locale. */
+      locales?: readonly ('vi' | 'en')[];
       sourceType?: KnowledgeSource;
       limit: number;
       minSimilarity?: number;

@@ -37,7 +37,7 @@ export class InMemoryVectorStore implements VectorStore {
     const min = options.minSimilarity ?? 0;
     return [...this.chunks.values()]
       .flat()
-      .filter((chunk) => !options.locale || chunk.locale === options.locale)
+      .filter((chunk) => !options.locales || options.locales.includes(chunk.locale))
       .filter((chunk) => !options.sourceType || chunk.sourceType === options.sourceType)
       .map((chunk) => ({
         sourceType: chunk.sourceType,

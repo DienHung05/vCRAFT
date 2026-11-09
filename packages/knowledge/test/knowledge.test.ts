@@ -81,7 +81,10 @@ describe('indexing and search', () => {
       locale: 'en',
     });
     const [query] = await embedder.embed(['bat trang lang gom']);
-    expect(await store.search(query as number[], { locale: 'vi', limit: 5 })).toEqual([]);
+    expect(await store.search(query as number[], { locales: ['vi'], limit: 5 })).toEqual([]);
+    expect(await store.search(query as number[], { locales: ['vi', 'en'], limit: 5 })).toHaveLength(
+      1,
+    );
     expect(await store.search(query as number[], { limit: 5, minSimilarity: 0.99 })).toEqual([]);
   });
 });
