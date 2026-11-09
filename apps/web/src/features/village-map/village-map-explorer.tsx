@@ -142,9 +142,9 @@ export function VillageMapExplorer({
               className="max-w-56 rounded-input border border-ink/20 bg-surface px-2 py-1.5"
             >
               <option value="">{t('allCrafts')}</option>
-              {crafts.map((name) => (
-                <option key={name} value={name}>
-                  {name}
+              {crafts.map(({ value, category }) => (
+                <option key={value} value={value}>
+                  {category ? tCraft(category) : value}
                 </option>
               ))}
             </select>
