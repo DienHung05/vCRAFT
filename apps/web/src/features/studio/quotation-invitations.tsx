@@ -13,10 +13,9 @@ import { RfqStepper } from '@/features/rfq/rfq-stepper';
 import { Link } from '@/i18n/navigation';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { useMoney } from '@/lib/use-money';
+import { isOpenInvitation } from './invitation-summary';
 
-const isOpen = ({ request }: MyInvitationDto) =>
-  ['SENT', 'BIDDING'].includes(request.status) &&
-  new Date(request.biddingClosesAt).getTime() > Date.now();
+const isOpen = (row: MyInvitationDto) => isOpenInvitation(row);
 
 /** Invitation list of the household (FR-RFQ-04): deadline countdown, own offer, link to respond. */
 export function QuotationInvitations({ client: provided }: { client?: QuotationClient }) {
@@ -92,16 +91,19 @@ function Invitations({ client }: { client: QuotationClient }) {
       ) : rows === null ? (
         <ListSkeleton label={t('loading')} className="" rows={3} withHeader={false} />
       ) : rows.length === 0 ? (
-        <EmptyState
-          illustration="scroll"
-          title={t('empty')}
-          description={t('emptyHint')}
-          action={
-            <Link href="/studio/ho-so" className={buttonVariants({ variant: 'secondary' })}>
-              {t('emptyAction')}
-            </Link>
-          }
-        />
+        <>
+          <EmptyState
+            illustration="scroll"
+            title={t('empty')}
+            description={t('emptyHint')}
+            action={
+              <Link href="/studio/ho-so" className={buttonVariants({ variant: 'secondary' })}>
+                {t('emptyAction')}
+              </Link>
+            }
+          />
+          <InvitationRule />
+        </>
       ) : (
         <ul className="flex flex-col gap-3" data-testid="invitations">
           {rows.map((row) => (
@@ -158,5 +160,40 @@ function Invitations({ client }: { client: QuotationClient }) {
         </ul>
       )}
     </div>
+  );
+}
+
+/** BR-05 in plain words, with the two things a household can do about it (GH#388). */
+function InvitationRule() {
+  const t = useTranslations('studio.invitations');
+  return (
+    <Card
+      className="mx-auto flex w-full max-w-prose-vn flex-col gap-3 p-5"
+      data-testid="invitation-rule"
+    >
+      <h2 className="text-h3">{t('emptyRuleTitle')}</h2>
+      <p className="text-small text-ash">{t('emptyRuleLead')}</p>
+      <ul className="list-disc pl-5 text-small">
+        <li>{t('emptyRule1')}</li>
+        <li>{t('emptyRule2')}</li>
+        <li>{t('emptyRule3')}</li>
+        <li>{t('emptyRule4')}</li>
+      </ul>
+      <p className="text-small text-ash">{t('emptyRuleNote')}</p>
+      <div className="flex flex-wrap gap-3">
+        <Link
+          href={{ pathname: '/studio/ho-so', hash: 'capacity' }}
+          className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+        >
+          {t('emptyCapacity')}
+        </Link>
+        <Link
+          href="/studio/san-pham/moi"
+          className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+        >
+          {t('emptyAddProduct')}
+        </Link>
+      </div>
+    </Card>
   );
 }

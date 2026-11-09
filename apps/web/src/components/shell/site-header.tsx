@@ -7,8 +7,9 @@ import { SearchPaletteButton } from '@/features/catalog/search-palette-button';
 import { LazyNotificationBell } from '@/features/notifications/notification-bell-lazy';
 import { Link } from '@/i18n/navigation';
 import { Disclosure } from './disclosure';
-import { HeaderNavLinks } from './header-nav-links';
+import { HeaderRoleProvider } from './header-role';
 import { LocaleSwitcher } from './locale-switcher';
+import { RoleNavLinks } from './role-nav-links';
 import { ThemeToggle } from './theme-toggle';
 
 const NAV = [
@@ -28,55 +29,57 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-ink/8 border-b bg-paper/85 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-editorial items-center justify-between gap-3 px-gutter sm:gap-4">
-        <Link href="/" aria-label={t('home')} className="shrink-0">
-          <Logo size={30} />
-        </Link>
-        <nav aria-label={t('label')} className="relative hidden lg:block">
-          <HeaderNavLinks items={items} brush />
-        </nav>
-        <div className="flex items-center gap-1 sm:gap-2">
-          {/* Search: inline from xl; a toggle with a popover from md to xl; a button for the palette below md. */}
-          <SearchPaletteButton className="md:hidden" />
-          <CommandPalette />
-          <div className="hidden xl:block">
-            <SearchBox />
-          </div>
-          <Disclosure
-            className="hidden md:block xl:hidden"
-            label={catalog('search')}
-            summaryClassName="size-9 px-0"
-            focusOnOpen="input"
-            summary={<SearchIcon />}
-          >
-            <div className="absolute right-0 mt-2 w-80 rounded-card bg-surface p-3 shadow-warm ring-1 ring-ink/8">
+      <HeaderRoleProvider>
+        <div className="mx-auto flex h-16 max-w-editorial items-center justify-between gap-3 px-gutter sm:gap-4">
+          <Link href="/" aria-label={t('home')} className="shrink-0">
+            <Logo size={30} />
+          </Link>
+          <nav aria-label={t('label')} className="relative hidden lg:block">
+            <RoleNavLinks items={items} brush />
+          </nav>
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Search: inline from xl; a toggle with a popover from md to xl; a button for the palette below md. */}
+            <SearchPaletteButton className="md:hidden" />
+            <CommandPalette />
+            <div className="hidden xl:block">
               <SearchBox />
             </div>
-          </Disclosure>
-          {/* Dưới sm, đổi ngôn ngữ chuyển vào menu để hàng đầu trang vừa màn hình 360px. */}
-          <div className="hidden sm:block">
-            <LocaleSwitcher />
-          </div>
-          {/* Below sm the theme toggle moves into the menu too, making room for the search button (GH#254). */}
-          <div className="hidden sm:block">
-            <ThemeToggle />
-          </div>
-          <LazyNotificationBell />
-          <LazyAccountMenu compact />
-          <Disclosure className="lg:hidden" summary={t('menu')}>
-            <nav
-              aria-label={t('label')}
-              className="absolute right-0 mt-2 w-56 rounded-card bg-surface p-2 shadow-warm ring-1 ring-ink/8"
+            <Disclosure
+              className="hidden md:block xl:hidden"
+              label={catalog('search')}
+              summaryClassName="size-9 px-0"
+              focusOnOpen="input"
+              summary={<SearchIcon />}
             >
-              <div className="flex items-center gap-1 p-1 sm:hidden">
-                <LocaleSwitcher />
-                <ThemeToggle />
+              <div className="absolute right-0 mt-2 w-80 rounded-card bg-surface p-3 shadow-warm ring-1 ring-ink/8">
+                <SearchBox />
               </div>
-              <HeaderNavLinks items={menuItems} />
-            </nav>
-          </Disclosure>
+            </Disclosure>
+            {/* Dưới sm, đổi ngôn ngữ chuyển vào menu để hàng đầu trang vừa màn hình 360px. */}
+            <div className="hidden sm:block">
+              <LocaleSwitcher />
+            </div>
+            {/* Below sm the theme toggle moves into the menu too, making room for the search button (GH#254). */}
+            <div className="hidden sm:block">
+              <ThemeToggle />
+            </div>
+            <LazyNotificationBell />
+            <LazyAccountMenu compact />
+            <Disclosure className="lg:hidden" summary={t('menu')}>
+              <nav
+                aria-label={t('label')}
+                className="absolute right-0 mt-2 w-56 rounded-card bg-surface p-2 shadow-warm ring-1 ring-ink/8"
+              >
+                <div className="flex items-center gap-1 p-1 sm:hidden">
+                  <LocaleSwitcher />
+                  <ThemeToggle />
+                </div>
+                <RoleNavLinks items={menuItems} />
+              </nav>
+            </Disclosure>
+          </div>
         </div>
-      </div>
+      </HeaderRoleProvider>
     </header>
   );
 }

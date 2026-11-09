@@ -53,6 +53,9 @@
     "map": "Bản đồ",
     "news": "Tin tức",
     "quotes": "Yêu cầu báo giá",
+    "invitations": "Lời mời báo giá",
+    "coordination": "Điều phối",
+    "openInvitations": "{count, plural, one {# lời mời đang mở} other {# lời mời đang mở}}",
     "theme": "Đổi giao diện sáng/tối",
     "themeToDark": "Chuyển sang giao diện tối",
     "themeToLight": "Chuyển sang giao diện sáng",
@@ -2162,7 +2165,8 @@
       "locked": "Tài khoản của bạn đang bị tạm khóa nên không vào được khu làm việc. Hãy liên hệ Ban quản lý để được hỗ trợ.",
       "lead": "Khu vực này dành cho một vai trò khác. Đăng nhập bằng tài khoản phù hợp, hoặc quay về trang chủ.",
       "home": "Về trang chủ",
-      "switch": "Đăng nhập tài khoản khác"
+      "switch": "Đăng nhập tài khoản khác",
+      "ownArea": "Đến {area}"
     },
     "serviceDown": {
       "title": "Chưa kiểm tra được phiên đăng nhập",
@@ -2199,7 +2203,7 @@
       "label": "Điều hướng Studio",
       "home": "Trang chủ",
       "products": "Sản phẩm",
-      "quotations": "Báo giá",
+      "quotations": "Lời mời báo giá",
       "orders": "Đơn hàng",
       "profile": "Hồ sơ"
     },
@@ -2244,7 +2248,12 @@
         "openingHours": "Giờ mở cửa",
         "capacity": "Năng lực sản xuất"
       },
-      "newProduct": "Thêm sản phẩm"
+      "newProduct": "Thêm sản phẩm",
+      "invitations": "Lời mời báo giá",
+      "invitationsOpen": "{count, plural, =0 {Chưa có lời mời đang mở} other {# lời mời đang mở}}",
+      "invitationsNone": "Hiện chưa có lời mời nào cần trả lời.",
+      "invitationsNearest": "Hạn gần nhất: {deadline}",
+      "invitationsLink": "Xem lời mời"
     },
     "profile": {
       "title": "Hồ sơ của hộ",
@@ -2592,6 +2601,15 @@
       "closed": "Đã đóng",
       "emptyHint": "Khi người mua hoặc Ban quản lý mời hộ báo giá, lời mời sẽ hiện ở đây.",
       "emptyAction": "Hoàn thiện hồ sơ hộ",
+      "emptyRuleTitle": "Khi nào hộ được mời?",
+      "emptyRuleLead": "Hệ thống chỉ mời hộ báo giá khi đủ các điều kiện sau:",
+      "emptyRule1": "Hồ sơ hộ đã được Ban quản lý duyệt.",
+      "emptyRule2": "Tài khoản người đại diện không bị khóa.",
+      "emptyRule3": "Yêu cầu của người mua có chọn nhóm sản phẩm.",
+      "emptyRule4": "Hộ đã khai năng lực sản xuất cho nhóm đó, hoặc đang trưng bày ít nhất một sản phẩm thuộc nhóm đó.",
+      "emptyRuleNote": "Mỗi yêu cầu chỉ mời tối đa 10 hộ phù hợp nhất (theo năng lực, sản phẩm và điểm đánh giá). Với yêu cầu nhờ Ban quản lý điều phối, Ban quản lý sẽ tự chọn hộ để mời.",
+      "emptyCapacity": "Khai năng lực sản xuất",
+      "emptyAddProduct": "Thêm sản phẩm",
       "directActive": "Đã báo giá: {price} một {unit}, tổng {total}",
       "directAccepted": "Bên mua đã chốt báo giá của hộ",
       "directRejected": "Bên mua đã chọn hộ khác"

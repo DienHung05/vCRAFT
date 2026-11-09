@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { PublicShell } from '@/components/shell/public-shell';
 import { SignOutToSignInButton } from '@/features/auth/sign-out-button';
 import { Link } from '@/i18n/navigation';
+import { workspacePath } from '@/lib/auth/access';
 import { getViewer } from '@/lib/auth/viewer';
 
 /**
@@ -29,7 +30,18 @@ export default async function Forbidden() {
           {viewer?.status === 'LOCKED' ? t('forbidden.locked') : t('forbidden.lead')}
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <Link href="/" className={buttonVariants()}>
+          {/* A signed-in viewer on the wrong area (e.g. a household on the buyer area) gets a way to their own. */}
+          {viewer && viewer.status !== 'LOCKED' ? (
+            <Link href={workspacePath(viewer.role)} className={buttonVariants()}>
+              {t('forbidden.ownArea', { area: t(`areas.${viewer.role}`) })}
+            </Link>
+          ) : null}
+          <Link
+            href="/"
+            className={buttonVariants({
+              variant: viewer && viewer.status !== 'LOCKED' ? 'secondary' : 'primary',
+            })}
+          >
             {t('forbidden.home')}
           </Link>
           <SignOutToSignInButton variant="secondary">{t('forbidden.switch')}</SignOutToSignInButton>
