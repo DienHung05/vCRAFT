@@ -2,6 +2,7 @@
 
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
 import type { AllocationDto, BuyerQuotationDto, RfqResponse } from '@vcraft/contracts';
+import { liveShares } from '@vcraft/domain';
 import {
   Badge,
   Button,
@@ -188,10 +189,11 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
   const events = buyerEvents(request.status);
   const canAccept = events.includes('ACCEPT_BID');
   const canCancel = events.includes('CANCEL');
+  const liveAllocations = liveShares(allocations);
   const canReceive =
     events.includes('CONFIRM_DELIVERY') &&
-    allocations.length > 0 &&
-    allocations.every((allocation) => allocation.status === 'DONE');
+    liveAllocations.length > 0 &&
+    liveAllocations.every((allocation) => allocation.status === 'DONE');
   const model = rfqStepperModel(request.status, request.hasBids ?? quotations.length > 0);
   const day = (iso: string) => format.dateTime(new Date(iso), 'long');
   const open = quotations.filter((quotation) => quotation.status === 'SUBMITTED');

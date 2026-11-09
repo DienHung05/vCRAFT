@@ -52,6 +52,7 @@ import {
   isEligibleForOpenRequest,
   isOpenCoordinatedRequest,
   isRatingEditable,
+  liveShares,
   type ProductCategory,
   paymentTransition,
   projectBuyerQuotation,
@@ -1925,18 +1926,6 @@ function decodeRequestCursor(raw: string): { t: string; id: string } {
  * T8 (GH#244): a request nobody quoted expires at its bidding deadline; one with quotations stays open for the
  * buyer's 7-day accept window after it, the same bound the T3 guard uses.
  */
-/**
- * Shares that still count toward the order: a cancelled share and a declined share whose quantity has
- * been reallocated (GH#246) are history, so they neither block production nor delivery.
- */
-function liveShares<T extends { status: string; quantity: number }>(
-  allocations: readonly T[],
-): T[] {
-  return allocations.filter(
-    (a) => a.status !== 'CANCELLED' && !(a.status === 'DECLINED' && a.quantity === 0),
-  );
-}
-
 function requestExpired(request: QuotationRequest): boolean {
   const now = new Date();
   if (request.status === 'SENT') return now.getTime() >= request.biddingClosesAt.getTime();

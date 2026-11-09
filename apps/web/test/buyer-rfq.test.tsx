@@ -493,6 +493,40 @@ describe('BuyerRfqDetail', () => {
     expect(await screen.findByRole('button', { name: 'Xác nhận đã nhận hàng' })).toBeTruthy();
   });
 
+  it('offers receipt when cancelled and reallocated-declined shares sit next to done ones', async () => {
+    const allocation = (status: string, quantity: number) => ({
+      id: ID,
+      version: 1,
+      householdId: ID,
+      householdName: 'Gốm Minh Hải',
+      startedAt: '2099-01-01T00:00:00Z',
+      dueAt: '2100-01-01T00:00:00Z',
+      lateness: 'DONE',
+      expectedQty: quantity,
+      progressPercent: 100,
+      quantity,
+      completedQty: quantity,
+      status,
+    });
+    renderVi(
+      <BuyerRfqDetail
+        rfqId={ID}
+        client={client({
+          getRequest: vi.fn().mockResolvedValue({ ...REQUEST, status: 'IN_PRODUCTION' }),
+          listAllocations: vi
+            .fn()
+            .mockResolvedValue([
+              allocation('DONE', 60),
+              allocation('DONE', 40),
+              allocation('CANCELLED', 30),
+              allocation('DECLINED', 0),
+            ]),
+        })}
+      />,
+    );
+    expect(await screen.findByRole('button', { name: 'Xác nhận đã nhận hàng' })).toBeTruthy();
+  });
+
   it('duplicates a delivered request and opens the fresh draft for review', async () => {
     const duplicateRequest = vi
       .fn()
