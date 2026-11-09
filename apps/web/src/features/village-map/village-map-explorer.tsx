@@ -9,7 +9,6 @@ import { EmptyState } from '@/components/states/empty-state';
 import { Reveal } from '@/experience/motion/reveal';
 import { craftLabel } from '@/features/catalog/craft-label';
 import { Link } from '@/i18n/navigation';
-import { useUntabbable } from '@/lib/a11y/use-untabbable';
 import {
   craftsOf,
   distanceKm,
@@ -70,9 +69,6 @@ export function VillageMapExplorer({
   );
   const [origin, setOrigin] = useState<LatLng | null>(null);
   const [locationState, setLocationState] = useState<LocationState>('idle');
-  // The map frame is aria-hidden (the list beside it is the accessible equivalent), so nothing inside
-  // it may take focus.
-  const frame = useUntabbable<HTMLDivElement>(webgl);
 
   useEffect(() => {
     setWebgl(supportsWebGL());
@@ -174,13 +170,17 @@ export function VillageMapExplorer({
               {t('noWebgl')}
             </p>
           ) : (
-            // Bản đồ chỉ là minh họa thêm; nội dung tương đương nằm trong danh sách bên cạnh.
-            <div
-              ref={frame}
-              aria-hidden="true"
+            // GH#364: a labelled region, not aria-hidden, so MapLibre's own keyboard handling (focusable
+            // canvas, arrow keys pan, +/- zoom) stays usable. Choosing a workshop is done from the list.
+            <section
+              aria-label={t('mapLabel')}
+              aria-describedby="map-keyboard-hint"
               data-testid="map-frame"
               className="h-[55svh] min-h-80 overflow-hidden rounded-card shadow-warm lg:sticky lg:top-6 lg:h-[75svh]"
             >
+              <p id="map-keyboard-hint" className="sr-only">
+                {t('mapKeyboardHint')}
+              </p>
               {webgl ? (
                 <MapCanvas
                   pins={filtered}
@@ -193,12 +193,17 @@ export function VillageMapExplorer({
                   onUserMove={setBounds}
                 />
               ) : null}
-            </div>
+            </section>
           )}
 
           <section aria-labelledby="workshop-list-title">
             <div className="flex items-baseline justify-between gap-3">
-              <h2 id="workshop-list-title" className="text-h3">
+              <h2
+                id="workshop-list-title"
+                className="text-h3"
+                aria-live="polite"
+                aria-atomic="true"
+              >
                 {t('listTitle', { count: listed.length })}
               </h2>
               {bounds ? (
@@ -281,8 +286,7 @@ export function VillageMapExplorer({
                       {webgl ? (
                         <button
                           type="button"
-                          aria-hidden="true"
-                          tabIndex={-1}
+                          aria-label={t('showOnMapNamed', { name: pin.household.name })}
                           className="mt-1 text-small text-clay underline underline-offset-4"
                           onClick={() => setSelectedId(pin.workshopId)}
                         >
