@@ -129,6 +129,8 @@ describe('AuditLogView', () => {
     expect(within(table).getByText('Tin tức')).toBeTruthy();
     expect(within(table).getByText(LEGACY.entityId)).toBeTruthy();
 
+    // GH#393: filters never grow wider than the page (long English action labels overflowed 360 px).
+    expect(screen.getByLabelText('Hành động').className).toContain('max-w-full');
     fireEvent.change(screen.getByLabelText('Hành động'), { target: { value: 'rfq.claim' } });
     await waitFor(() =>
       expect(auditLog).toHaveBeenLastCalledWith(expect.objectContaining({ action: 'rfq.claim' })),
