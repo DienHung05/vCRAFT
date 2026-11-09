@@ -34,7 +34,13 @@ const base: MapPinDto = {
   closureReason: null,
   lat: 20.97,
   lng: 105.91,
-  household: { name: 'Gốm Minh Hải', slug: 'gom-minh-hai', craft: null, coverUrl: null },
+  household: {
+    name: 'Gốm Minh Hải',
+    slug: 'gom-minh-hai',
+    craft: null,
+    craftCategory: null,
+    coverUrl: null,
+  },
 };
 // 10:00 and 22:00 in Vietnam (UTC+7).
 const morning = new Date('2026-11-07T03:00:00Z');

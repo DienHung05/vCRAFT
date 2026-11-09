@@ -1,4 +1,4 @@
-import { PRODUCT_CATEGORIES, PRODUCT_SORTS } from '@vcraft/domain';
+import { CRAFT_CATEGORIES, PRODUCT_CATEGORIES, PRODUCT_SORTS } from '@vcraft/domain';
 import { z } from 'zod';
 import {
   CursorPageQuerySchema,
@@ -91,6 +91,8 @@ export const HouseholdSummarySchema = z.object({
   slug: z.string(),
   village: z.string().nullable(),
   craft: z.string().nullable(),
+  /** The stored category, or one inferred from legacy `craft` text; lets `/en` show a translated label. */
+  craftCategory: z.enum(CRAFT_CATEGORIES).nullable().default(null),
   coverUrl: z.string().nullable(),
   coverVariants: PublicImageVariantsSchema,
   /** What the cover shows (the household banner's description); null when it has no linked description. */

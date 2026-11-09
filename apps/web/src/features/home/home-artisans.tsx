@@ -4,15 +4,17 @@ import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { EmptyState } from '@/components/states/empty-state';
 import { InkReveal } from '@/experience/motion/ink-reveal';
+import { craftLabel } from '@/features/catalog/craft-label';
 import { fetchHouseholds } from '@/features/catalog/exhibition-api';
 import { altFor, photoFromUrl, slotPhoto, tintOf } from '@/features/catalog/view-models';
 import { Link } from '@/i18n/navigation';
 
 /** Featured households, streamed under the static heading so the hero and the story never wait. */
 export async function FeaturedArtisans({ locale }: { locale: string }) {
-  const [t, preset, householdsResult] = await Promise.all([
+  const [t, preset, crafts, householdsResult] = await Promise.all([
     getTranslations('home'),
     getTranslations('presetFigure'),
+    getTranslations('catalog.craftCategories'),
     fetchHouseholds(),
   ]);
   const households = householdsResult.status === 'ok' ? householdsResult.data.data : [];
@@ -58,7 +60,9 @@ export async function FeaturedArtisans({ locale }: { locale: string }) {
               </InkReveal>
               <h3 className="mt-4 transition-colors group-hover:text-clay">{h.name}</h3>
               <p className="text-small text-ash">
-                {[h.representative, h.craft].filter(Boolean).join(' · ')}
+                {[h.representative, craftLabel(locale, h, (category) => crafts(category))]
+                  .filter(Boolean)
+                  .join(' · ')}
               </p>
             </Link>
           </li>

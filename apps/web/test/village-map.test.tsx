@@ -36,7 +36,7 @@ function pin(id: string, overrides: Partial<MapPinDto> = {}, craft = 'men lam'):
     closureReason: null,
     lat: 20.97,
     lng: 105.91,
-    household: { name: `Hộ ${id}`, slug: `ho-${id}`, craft, coverUrl: null },
+    household: { name: `Hộ ${id}`, slug: `ho-${id}`, craft, craftCategory: null, coverUrl: null },
     ...overrides,
   };
 }

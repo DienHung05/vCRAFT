@@ -2745,6 +2745,11 @@
         "CLAY": "Đất sét",
         "GLAZE": "Men",
         "GAS": "Gas"
+      },
+      "units": {
+        "tonne": "tấn",
+        "kg": "kg",
+        "cylinder12kg": "bình 12 kg"
       }
     }
   },

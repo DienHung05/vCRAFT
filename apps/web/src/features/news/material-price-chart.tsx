@@ -4,6 +4,7 @@ import type { MaterialPriceSeriesDto } from '@vcraft/contracts';
 import dynamic from 'next/dynamic';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useId } from 'react';
+import { materialUnitLabel } from './material-units';
 
 /**
  * The line chart pulls in recharts (~100 KB gzip), so it loads after hydration: the chart is decorative
@@ -26,7 +27,9 @@ type Series = MaterialPriceSeriesDto['series'];
 export function MaterialPriceChart({ series }: { series: Series }) {
   const t = useTranslations('news.materialPrices');
   const format = useFormatter();
+  const tUnits = useTranslations('news.materialPrices.units');
   const tableId = useId();
+  const unitLabel = (unit: string) => materialUnitLabel(unit, (key) => tUnits(key));
   if (series.length === 0) return null;
   const months = [...new Set(series.flatMap((s) => s.points.map((p) => p.month)))].sort();
   const label = (month: string) =>
@@ -63,7 +66,7 @@ export function MaterialPriceChart({ series }: { series: Series }) {
               <th scope="col">{t('month')}</th>
               {series.map((s) => (
                 <th key={s.material} scope="col">
-                  {t(`materials.${s.material}`)} ({s.unit})
+                  {t(`materials.${s.material}`)} ({unitLabel(s.unit)})
                 </th>
               ))}
             </tr>
@@ -91,7 +94,7 @@ export function MaterialPriceChart({ series }: { series: Series }) {
               {t('latest', {
                 material: t(`materials.${s.material}`),
                 price: format.number(last.priceVnd, 'vnd'),
-                unit: s.unit,
+                unit: unitLabel(s.unit),
               })}
             </li>
           ) : null;

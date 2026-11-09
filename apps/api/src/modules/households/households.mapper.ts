@@ -183,6 +183,7 @@ export function toMapPinDto(w: Workshop): MapPinDto {
       name: w.household.name,
       slug: w.household.slug,
       craft: w.household.craft ?? null,
+      craftCategory: effectiveCraftCategory(w.household.craftCategory, w.household.craft),
       coverUrl: w.household.coverUrl ?? null,
     },
   };
