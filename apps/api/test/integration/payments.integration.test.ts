@@ -950,11 +950,16 @@ describe('online payment of orders (ADR-0021)', () => {
         await calling;
         // The provider call is open now: the order row must be lockable at once (short wait, then it would fail).
         await db.orm.em.fork().transactional(async (em) => {
-          await em.execute(
-            resolveDbDriver(process.env) === 'mysql'
-              ? 'SET SESSION innodb_lock_wait_timeout = 1'
-              : "SET LOCAL lock_timeout = '1s'",
-          );
+          await em
+            .getConnection()
+            .execute(
+              resolveDbDriver(process.env) === 'mysql'
+                ? 'SET SESSION innodb_lock_wait_timeout = 1'
+                : "SET LOCAL lock_timeout = '1s'",
+              [],
+              'run',
+              em.getTransactionContext(),
+            );
           const locked = await em.findOne(
             QuotationRequest,
             { id: requestId },
