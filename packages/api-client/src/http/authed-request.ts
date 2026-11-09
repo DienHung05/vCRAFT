@@ -21,7 +21,19 @@ export interface RequestOptions {
   body?: unknown;
   /** Khóa lạc quan: gửi `If-Match` với phiên bản đang xem. */
   version?: number;
+  /** Sent as `Idempotency-Key` (BR-L5) so the API runs a retried state change once. */
+  idempotencyKey?: string;
 }
+
+/**
+ * Per-call options of the state-changing calls that send an `Idempotency-Key`: a fresh UUID is generated
+ * when the call starts, or `idempotencyKey` when the caller already holds one for this user action.
+ */
+export interface ActionOptions {
+  idempotencyKey?: string;
+}
+
+export const newIdempotencyKey = () => globalThis.crypto.randomUUID();
 
 /** Gọi API riêng tư kèm token của phiên hiện tại; lỗi luôn thành `ApiError` theo RFC 9457. */
 export function createAuthedRequest(options: AuthedClientOptions) {
@@ -29,7 +41,7 @@ export function createAuthedRequest(options: AuthedClientOptions) {
   return async function request<T>(
     path: string,
     schema: { parse: (data: unknown) => T },
-    { method = 'GET', body, version }: RequestOptions = {},
+    { method = 'GET', body, version, idempotencyKey }: RequestOptions = {},
   ): Promise<T> {
     const token = await options.getAccessToken();
     if (!token) throw new ApiError('AUTH_UNAUTHENTICATED', 401);
@@ -40,6 +52,7 @@ export function createAuthedRequest(options: AuthedClientOptions) {
         Authorization: `Bearer ${token}`,
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(version !== undefined ? { 'If-Match': formatVersionTag(version) } : {}),
+        ...(idempotencyKey !== undefined ? { 'Idempotency-Key': idempotencyKey } : {}),
       },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });

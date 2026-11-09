@@ -11,7 +11,12 @@ import {
   type RefundPaymentRequest,
   RefundPaymentRequestSchema,
 } from '@vcraft/contracts';
-import { type AuthedClientOptions, createAuthedRequest } from './http/authed-request';
+import {
+  type ActionOptions,
+  type AuthedClientOptions,
+  createAuthedRequest,
+  newIdempotencyKey,
+} from './http/authed-request';
 
 /**
  * Online payment of orders (ADR-0021): the buyer's panel and status page, and the village administration's
@@ -23,10 +28,11 @@ export function createPaymentClient(options: AuthedClientOptions) {
     /** The order's money, its payments and the methods on offer (buyer of the order, or an administrator). */
     orderPayments: (orderId: string) =>
       request(`/orders/${IdSchema.parse(orderId)}/payments`, OrderPaymentsResponseSchema),
-    createPayment: (orderId: string, body: CreatePaymentRequest) =>
+    createPayment: (orderId: string, body: CreatePaymentRequest, action: ActionOptions = {}) =>
       request(`/orders/${IdSchema.parse(orderId)}/payments`, PaymentResponseSchema, {
         method: 'POST',
         body: CreatePaymentRequestSchema.parse(body),
+        idempotencyKey: action.idempotencyKey ?? newIdempotencyKey(),
       }),
     /** What the status page polls until the payment reaches a final state. */
     getPayment: (referenceCode: string) =>
@@ -43,10 +49,15 @@ export function createPaymentClient(options: AuthedClientOptions) {
       const suffix = query.size > 0 ? `?${query}` : '';
       return request(`/admin/payments${suffix}`, AdminPaymentPageSchema);
     },
-    recordOfflinePayment: (orderId: string, body: RecordOfflinePaymentRequest) =>
+    recordOfflinePayment: (
+      orderId: string,
+      body: RecordOfflinePaymentRequest,
+      action: ActionOptions = {},
+    ) =>
       request(`/admin/orders/${IdSchema.parse(orderId)}/payments/offline`, PaymentResponseSchema, {
         method: 'POST',
         body: RecordOfflinePaymentRequestSchema.parse(body),
+        idempotencyKey: action.idempotencyKey ?? newIdempotencyKey(),
       }),
     refundPayment: (paymentId: string, version: number, body: RefundPaymentRequest) =>
       request(`/admin/payments/${IdSchema.parse(paymentId)}/refund`, PaymentResponseSchema, {

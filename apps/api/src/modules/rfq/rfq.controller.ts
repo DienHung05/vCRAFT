@@ -60,6 +60,7 @@ export class RfqController {
   }
 
   @Post(':id/duplicate')
+  @Idempotent()
   @Roles('BUYER')
   duplicate(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
     return this.rfqs.duplicateRequest(actor, id);

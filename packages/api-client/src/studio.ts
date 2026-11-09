@@ -22,7 +22,12 @@ import {
   type UpdateProductRequest,
   WorkshopResponseSchema,
 } from '@vcraft/contracts';
-import { type AuthedClientOptions, createAuthedRequest } from './http/authed-request';
+import {
+  type ActionOptions,
+  type AuthedClientOptions,
+  createAuthedRequest,
+  newIdempotencyKey,
+} from './http/authed-request';
 
 /** Studio của hộ: mọi thao tác đi qua API với token của phiên, chủ hộ mới đọc và ghi được. */
 export function createStudioClient(options: AuthedClientOptions) {
@@ -60,8 +65,12 @@ export function createStudioClient(options: AuthedClientOptions) {
     addArtisan: (body: CreateArtisanRequest) =>
       request('/me/household/artisans', ArtisanResponseSchema, { method: 'POST', body }),
     getMedia: (id: string) => request(`/media/${id}`, MediaAssetResponseSchema),
-    createProduct: (body: CreateProductRequest) =>
-      request('/me/household/products', ProductResponseSchema, { method: 'POST', body }),
+    createProduct: (body: CreateProductRequest, action: ActionOptions = {}) =>
+      request('/me/household/products', ProductResponseSchema, {
+        method: 'POST',
+        body,
+        idempotencyKey: action.idempotencyKey ?? newIdempotencyKey(),
+      }),
     updateProduct: (id: string, version: number, body: UpdateProductRequest) =>
       request(`/me/household/products/${id}`, ProductResponseSchema, {
         method: 'PATCH',
@@ -91,9 +100,10 @@ export function createStudioClient(options: AuthedClientOptions) {
     productBackOnSale: (id: string, version: number) =>
       request(`/products/${id}/back-on-sale`, ProductResponseSchema, { method: 'POST', version }),
     /** FR-PRD-06: a DRAFT copy of the product without its production journal. */
-    duplicateProduct: (id: string) =>
+    duplicateProduct: (id: string, action: ActionOptions = {}) =>
       request(`/me/household/products/${id}/duplicate`, ProductResponseSchema, {
         method: 'POST',
+        idempotencyKey: action.idempotencyKey ?? newIdempotencyKey(),
       }),
     /** FR-PRD-07: median price of published products in a category (a hint, never auto-applied). */
     getPriceSuggestion: (category: string) =>
@@ -111,10 +121,15 @@ export function createStudioClient(options: AuthedClientOptions) {
       request(`/me/household/products/${productId}/scans`, ProductScanStatsSchema),
     getJournal: (productId: string) =>
       request(`/me/household/products/${productId}/journal`, JournalResponseSchema),
-    appendJournalEntry: (productId: string, body: CreateJournalEntryRequest) =>
+    appendJournalEntry: (
+      productId: string,
+      body: CreateJournalEntryRequest,
+      action: ActionOptions = {},
+    ) =>
       request(`/me/household/products/${productId}/journal`, JournalResponseSchema, {
         method: 'POST',
         body,
+        idempotencyKey: action.idempotencyKey ?? newIdempotencyKey(),
       }),
     deleteJournalEntry: (entryId: string, version: number) =>
       request(`/journal-entries/${entryId}`, JournalResponseSchema, { method: 'DELETE', version }),

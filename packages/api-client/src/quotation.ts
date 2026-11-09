@@ -114,8 +114,15 @@ export function createQuotationClient(options: QuotationClientOptions) {
     recordConsent(purpose: ConsentPurposeDto, policyVersion: string) {
       return request('/me/consents', ConsentResponseSchema, 'POST', { purpose, policyVersion });
     },
-    duplicateRequest(id: string) {
-      return request(`/rfqs/${IdSchema.parse(id)}/duplicate`, RfqResponseSchema, 'POST');
+    duplicateRequest(id: string, options: QuotationActionOptions = {}) {
+      return request(
+        `/rfqs/${IdSchema.parse(id)}/duplicate`,
+        RfqResponseSchema,
+        'POST',
+        undefined,
+        undefined,
+        options.idempotencyKey ?? newIdempotencyKey(),
+      );
     },
     coordinate(id: string, version: number) {
       return request(

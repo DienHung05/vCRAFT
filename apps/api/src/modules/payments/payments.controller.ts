@@ -12,6 +12,7 @@ import {
 import { type Actor, CurrentActor, Roles } from '../../common/auth/auth.guard';
 import { notFound } from '../../common/errors/app-error';
 import { IfMatchVersion } from '../../common/http/if-match';
+import { Idempotent } from '../../common/idempotency/idempotent.decorator';
 import { UuidPipe } from '../../common/pipes/uuid.pipe';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { PaymentsService } from './application/payments.service';
@@ -38,6 +39,7 @@ export class PaymentsController {
   }
 
   @Post('orders/:id/payments')
+  @Idempotent()
   @Roles('BUYER')
   create(
     @CurrentActor() actor: Actor,
@@ -78,6 +80,7 @@ export class AdminPaymentsController {
 
   /** Records the balance of an order paid outside the site (cash, another account). Audit-logged. */
   @Post('orders/:id/payments/offline')
+  @Idempotent()
   recordOffline(
     @CurrentActor() actor: Actor,
     @Param('id', new UuidPipe()) id: string,
