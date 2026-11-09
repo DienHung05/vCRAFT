@@ -1130,6 +1130,236 @@
       "author": "The Metropolitan Museum of Art",
       "license": "CC0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "tt-binh-lien-sanh",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 33.jpg",
+      "ratio": "3/2",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "tt-binh-hang",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 43.jpg",
+      "ratio": "3/4",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "bh-binh-nau-ran",
+      "file": "Bình vôi (lime container) 5.JPG",
+      "ratio": "3/2",
+      "position": "top",
+      "author": "Hungda",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "bh-gom-nau",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2640.JPG",
+      "ratio": "3/4",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "hy-lu-huong-nho",
+      "file": "Gom Bat Trang-Lu Huong.jpeg",
+      "ratio": "3/2",
+      "author": "Lưu Ly",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "hy-lu-huong-hac",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 62.jpg",
+      "ratio": "3/2",
+      "region": [0, 0.2, 1, 0.8],
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "qv-ong-ran-rong",
+      "file": "Điếu cày và điếu bát (Pipe for smoking).JPG",
+      "ratio": "3/2",
+      "author": "Hungda",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "qv-dia-co",
+      "file": "Bát Tràng DSC 0095.JPG",
+      "ratio": "3/2",
+      "author": "Greenknight dv",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "th-ke-bat-dia",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 63.jpg",
+      "ratio": "3/4",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "th-ke-chen-bat",
+      "file": "Bát Tràng DSC 0097.JPG",
+      "ratio": "3/2",
+      "author": "Greenknight dv",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "dph-chau-trang",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 31.jpg",
+      "ratio": "3/2",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "dph-huou-gom",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2604.JPG",
+      "ratio": "3/2",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "vk-bat-kien",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 36.jpg",
+      "ratio": "3/2",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "vk-hu-nau-binh-lam",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 37.jpg",
+      "ratio": "3/2",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "ma-am-moc-khac",
+      "file": "Bat-Trang-Ceramic-Village4.jpg",
+      "ratio": "3/2",
+      "author": "Steven C. Price",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "ma-ke-tra-cho",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2638.JPG",
+      "ratio": "3/2",
+      "region": [0, 0.13, 0.88, 0.87],
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "tlo-chum-nau",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 74.jpg",
+      "ratio": "3/2",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "tlo-chau-boc-rom",
+      "file": "Porcelana vendejo en vilaĝo Bát Tràng (Vjetnamio) 02.jpg",
+      "ratio": "3/2",
+      "region": [0.2, 0, 0.8, 1],
+      "author": "RG72",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "pa-binh-lam-cao",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 56.jpg",
+      "ratio": "3/2",
+      "region": [0, 0.12, 1, 0.88],
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "pa-binh-dap-noi",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 57.jpg",
+      "ratio": "3/2",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "ts-dat-set",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2699.JPG",
+      "ratio": "3/2",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "ts-khuon-cao",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2744.JPG",
+      "ratio": "3/2",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "kl-chen-moc",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 45.jpg",
+      "ratio": "3/2",
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "kl-chen-ban",
+      "file": "Ceramics shop in Bát Tràng, Hanoi (1 March 2018) 76.jpg",
+      "ratio": "3/2",
+      "region": [0, 0.1, 0.78, 0.9],
+      "author": "Donald Trung",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "tb-khay-men-mau",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2757.JPG",
+      "ratio": "3/2",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "tb-kho-xuong",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2718.JPG",
+      "ratio": "3/2",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "lc-chau-moc",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2731.JPG",
+      "ratio": "3/2",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    {
+      "id": "lc-tui-chau",
+      "file": "Xã Bát Tràng、鉢塲社 バチャン村 DSCF2745.JPG",
+      "ratio": "3/2",
+      "author": "松岡明芳 (Akiyoshi Matsuoka)",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
     }
   ]
 }
