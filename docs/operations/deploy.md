@@ -247,6 +247,8 @@ Mở `https://<domain>/vi/tin-tuc`: phải có bài (API gọi được từ ser
 
 - **Deploy:** merging to `main` runs CI; when it is green, `.github/workflows/deploy.yml` deploys the API to Render (migrations included), then the web to Vercel, then runs smoke checks (§12). Neither platform deploys `main` on its own once the setup in §12 is done.
 
+- **Release checklist, public read contract changes:** when a release changes the shape of a public API response (a new or renamed field in `/news`, `/products`, `/map` and so on), purge the Vercel Data Cache after the web deploy (`vercel cache purge --type data`). Cached reads that fail schema validation are refetched uncached by the web app (GH#395), but purging removes any stale entry at once.
+
 - **Rollback web:** Vercel → Deployments → chọn bản cũ → *Promote to Production*. **Rollback API:** Render → *Deploys* → *Rollback*. Rollback **không** hoàn tác migration.
 - Đổi biến môi trường Render tự khởi động lại service; đổi biến Vercel cần Redeploy (biến chốt lúc build).
 - `/api/*` trả 404 trên domain: `API_INTERNAL_URL` chưa đặt (hoặc đặt sau khi build). Đặt rồi Redeploy.
