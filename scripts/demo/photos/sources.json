@@ -1108,6 +1108,28 @@
       "author": "Steven C. Price",
       "license": "CC BY-SA 4.0",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "id": "pp2-hsujqp77",
+      "url": "https://images.metmuseum.org/CRDImages/as/original/DP264290.jpg",
+      "title": "Jar with ducks in lotus pond (18.56.8a, b)",
+      "sourceUrl": "https://www.metmuseum.org/art/collection/search/52778",
+      "ratio": "auto",
+      "bucketOnly": true,
+      "author": "The Metropolitan Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "id": "pp2-uqxed4km",
+      "url": "https://images.metmuseum.org/CRDImages/as/original/LC-65_86_56_whs-002.jpg",
+      "title": "Bottle vase (65.86.56)",
+      "sourceUrl": "https://www.metmuseum.org/art/collection/search/48304",
+      "ratio": "auto",
+      "bucketOnly": true,
+      "author": "The Metropolitan Museum of Art",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
     }
   ]
 }

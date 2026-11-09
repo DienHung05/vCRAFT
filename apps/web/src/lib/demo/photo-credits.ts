@@ -1507,6 +1507,28 @@ export const PHOTO_CREDITS: readonly PhotoCredit[] = [
     tint: '#8b8481',
     widths: [640, 1280],
   },
+  {
+    id: 'pp2-hsujqp77',
+    title: 'Jar with ducks in lotus pond (18.56.8a, b)',
+    author: 'The Metropolitan Museum of Art',
+    license: 'CC0',
+    licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+    sourceUrl: 'https://www.metmuseum.org/art/collection/search/52778',
+    ratio: '1500/2000',
+    tint: '#73797e',
+    widths: [1280],
+  },
+  {
+    id: 'pp2-uqxed4km',
+    title: 'Bottle vase (65.86.56)',
+    author: 'The Metropolitan Museum of Art',
+    license: 'CC0',
+    licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+    sourceUrl: 'https://www.metmuseum.org/art/collection/search/48304',
+    ratio: '3000/4000',
+    tint: '#acadaa',
+    widths: [1280],
+  },
 ];
 
 export const PHOTO_BY_ID: ReadonlyMap<string, PhotoCredit> = new Map(

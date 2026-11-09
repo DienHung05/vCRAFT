@@ -331,7 +331,7 @@ describe('Demo seed and guarded reset', () => {
     const productCovers = DEMO_PHOTO_LINKS.filter(
       (l) => l.target === 'PRODUCT' && l.role === 'COVER',
     );
-    expect(productCovers.length).toBeGreaterThanOrEqual(208);
+    expect(productCovers.length).toBeGreaterThanOrEqual(210);
     const covered = await db.orm.em
       .fork()
       .find(Product, { traceCode: { $in: productCovers.map((l) => l.key) } });

@@ -26,9 +26,10 @@ const TRACE_CODE = /^[2-9A-HJKMNP-Z]{8}$/;
 const EARLIER_COVERED_TRACE_CODES = ['BT7K2QXM', '84PZKVJU'];
 /**
  * Product photos of vCRAFT-83g.48 (74) and vCRAFT-83g.52 (132 of 146 kept: unknown-licence photos stay when they match
- * their product, owner decision 2026-11-08): one `pp-<trace code>` photo per product.
+ * their product, owner decision 2026-11-08): one `pp-<trace code>` photo per product, plus two `pp2-<trace code>`
+ * museum open-access photos (GH#331) for products whose retired `pp-` photo did not match.
  */
-const PRODUCT_PHOTO_COUNT = 206;
+const PRODUCT_PHOTO_COUNT = 208;
 
 describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
   const photos = new Map(DEMO_PHOTOS.map((p) => [p.id, p]));
@@ -49,7 +50,7 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
       expect(photo.credit.sourceUrl, photo.id).toMatch(/^https?:\/\//);
       if (photo.credit.license !== 'unknown') {
         expect(photo.credit.sourceUrl, photo.id).toMatch(
-          /^https:\/\/(commons\.wikimedia\.org|clevelandart\.org|pixabay\.com)\//,
+          /^https:\/\/(commons\.wikimedia\.org|clevelandart.org|www.metmuseum.org|pixabay\.com)\//,
         );
       }
       const widest = Math.max(...photo.widths);
@@ -120,11 +121,13 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
     expect(DEMO_PHOTO_LINKS.filter((l) => l.target === 'PRODUCT')).toHaveLength(covered.length);
     expect(covered.find((l) => l.key === 'BT7K2QXM')?.photo).toBe('binh-men-lam-xam');
     expect(covered.find((l) => l.key === '84PZKVJU')?.photo).toBe('ong-gom-lam-may');
-    const own = covered.filter((l) => l.photo.startsWith('pp-'));
+    const own = covered.filter((l) => l.photo.startsWith('pp-') || l.photo.startsWith('pp2-'));
     expect(own).toHaveLength(PRODUCT_PHOTO_COUNT);
     // The 83g.48 photos use a lowercase trace code in the id, the 83g.52 ones keep the original uppercase.
     for (const link of own) {
-      expect(link.photo.toLowerCase(), link.key).toBe(`pp-${link.key.toLowerCase()}`);
+      expect(link.photo.toLowerCase(), link.key).toMatch(
+        new RegExp(`^pp2?-${link.key.toLowerCase()}$`),
+      );
     }
     expect(new Set(keys)).toEqual(
       new Set([...EARLIER_COVERED_TRACE_CODES, ...own.map((l) => l.key)]),
