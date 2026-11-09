@@ -19,6 +19,7 @@ export const AUDIT_ACTIONS = [
   'household.reveal_id_number',
   'household.certification_verify',
   'household.certification_unverify',
+  'household.resubmit',
   'product.publish',
   'product.withdraw',
   'product.republish',
