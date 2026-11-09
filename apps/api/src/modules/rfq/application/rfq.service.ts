@@ -38,6 +38,7 @@ import {
   Payment,
   Product,
   QuotationRequest,
+  resolveDbDriver,
 } from '@vcraft/database';
 import {
   allocationTransition,
@@ -259,14 +260,24 @@ export class RfqService {
   async listInvitations(actor: Actor): Promise<MyInvitationDto[]> {
     const em = this.orm.em.fork();
     const household = await this.ownHousehold(em, actor, false);
-    // `invitedHouseholdIds` is a JSON column with no portable "contains" across both drivers.
-    const requests = (
-      await em.find(
-        QuotationRequest,
-        { status: { $ne: 'DRAFT' } },
-        { orderBy: { biddingClosesAt: 'desc' }, limit: 1000 },
-      )
-    ).filter((request) => request.invitedHouseholdIds.includes(household.id));
+    // `invitedHouseholdIds` is a JSON column: the driver-specific "contains" runs in the database, so
+    // only this household's invitations are loaded, however many other requests exist.
+    const contains =
+      resolveDbDriver(process.env) === 'mysql'
+        ? 'json_contains(invited_household_ids, json_quote(?))'
+        : 'invited_household_ids @> ?::jsonb';
+    const rows = (await em
+      .getConnection()
+      .execute(`select id from quotation_request where status <> 'DRAFT' and ${contains}`, [
+        resolveDbDriver(process.env) === 'mysql' ? household.id : JSON.stringify([household.id]),
+      ])) as Array<{ id: string }>;
+    const requests = rows.length
+      ? await em.find(
+          QuotationRequest,
+          { id: { $in: rows.map((row) => row.id) } },
+          { orderBy: { biddingClosesAt: 'desc' } },
+        )
+      : [];
     const offers = await em.find(
       ContributionOfferEntity,
       { household, request: { $in: requests.map((request) => request.id) } },

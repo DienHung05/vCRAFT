@@ -168,6 +168,17 @@ describe('direct household quotations', () => {
     ).toBeNull();
   });
 
+  it('lists only the household invitations, including ones older than many other requests', async () => {
+    const mine = await send([repC.householdId]);
+    for (let i = 0; i < 5; i += 1) await send([repB.householdId]);
+    const both = await send([repB.householdId, repC.householdId]);
+    const res = await t.request({ method: 'GET', url: '/me/invitations', auth: repC.auth });
+    expect(res.status).toBe(200);
+    const ids = res.body.map((item: { request: { id: string } }) => item.request.id);
+    expect(ids).toHaveLength(2);
+    expect(ids).toEqual(expect.arrayContaining([mine.id, both.id]));
+  });
+
   it('shows the buyer every active quotation with household name, unit price and total', async () => {
     const rfq = await send([repA.householdId, repB.householdId]);
     expect((await quote(rfq.id, repA.auth, {}, 30_000)).status).toBe(201);
