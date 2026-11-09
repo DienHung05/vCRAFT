@@ -34,6 +34,7 @@ import {
   RateLimiter,
   StreamingOutputFilter,
   sanitizeInput,
+  screenHistory,
 } from './guardrails';
 import { chatMessages, classifierPrompt } from './prompt';
 import { siteHelpQuery } from './site-help';
@@ -153,7 +154,12 @@ export class AskAssistantService {
   ): AsyncGenerator<AssistantEvent> {
     const started = Date.now();
     yield { type: 'thinking' };
-    const { message, suspicion } = sanitizeInput(input.message);
+    const current = sanitizeInput(input.message);
+    const { message } = current;
+    // Client history is untrusted: user turns are screened like the message, assistant turns dropped.
+    const screened = screenHistory(input.history, message, current.suspicion);
+    const suspicion = screened.suspicion;
+    const safeInput: AssistantMessageRequest = { ...input, history: screened.history };
     const log = (turn: Turn) => this.log(input, message, ipHash, turn);
     const blocked = async function* (reason: BlockReason, intent: string, retryAfter?: number) {
       const id = await log({
@@ -243,7 +249,7 @@ export class AskAssistantService {
       .classify(
         [
           { role: 'system', content: classifierPrompt(suspicion) },
-          ...input.history.slice(-4).map((t) => ({ role: t.role, content: t.content })),
+          ...safeInput.history.slice(-4).map((t) => ({ role: t.role, content: t.content })),
           { role: 'user', content: message },
         ],
         signal,
@@ -261,7 +267,7 @@ export class AskAssistantService {
         discarded
           ? null
           : answer(
-              chatMessages(input, message, canary, { matches: found, tools: [], page }),
+              chatMessages(safeInput, message, canary, { matches: found, tools: [], page }),
               this.config.maxAnswerTokens,
             ),
     );
@@ -322,7 +328,7 @@ export class AskAssistantService {
       .slice(0, 8);
 
     const filter = new StreamingOutputFilter(canary, this.config.allowedOrigins);
-    const messages = chatMessages(input, message, canary, {
+    const messages = chatMessages(safeInput, message, canary, {
       matches: context,
       tools: toolResults,
       page,
