@@ -12,16 +12,25 @@ export function useRichMotion(options: { finePointer?: boolean; minWidth?: numbe
   const [allowed, setAllowed] = useState(false);
   const { finePointer, minWidth } = options;
   useEffect(() => {
-    if (reduced) return setAllowed(false);
     const fine = finePointer ? window.matchMedia?.('(pointer: fine)') : undefined;
+    const preference = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    let prefersReduced = reduced || preference?.matches === true;
     const update = () =>
       setAllowed(
-        (!finePointer || fine?.matches === true) && (!minWidth || window.innerWidth >= minWidth),
+        !prefersReduced &&
+          (!finePointer || fine?.matches === true) &&
+          (!minWidth || window.innerWidth >= minWidth),
       );
+    const onPreference = (event: MediaQueryListEvent) => {
+      prefersReduced = event.matches;
+      update();
+    };
     update();
+    preference?.addEventListener('change', onPreference);
     fine?.addEventListener('change', update);
     if (minWidth) window.addEventListener('resize', update);
     return () => {
+      preference?.removeEventListener('change', onPreference);
       fine?.removeEventListener('change', update);
       if (minWidth) window.removeEventListener('resize', update);
     };

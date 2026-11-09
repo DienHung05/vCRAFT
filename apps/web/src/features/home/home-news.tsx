@@ -40,17 +40,19 @@ export async function HomeNews({ locale }: { locale: string }) {
         const alt = altFor(locale, n.cover?.alt || n.title, n.cover?.altEn);
         return (
           <li key={n.slug} className="flex flex-col gap-3">
-            <Link
-              href={{ pathname: '/tin-tuc/[slug]', params: { slug: n.slug } }}
-              className="block rounded-card transition-transform duration-(--duration-slow) ease-clay hover:-translate-y-1"
-            >
-              <ImageSlot
-                alt={alt}
-                tint={tintOf(n.slug)}
-                ratio="3/2"
-                {...slotPhoto(photoFromUrl(n.cover?.url ?? null, alt, n.cover?.variants))}
-              />
-            </Link>
+            {n.cover ? (
+              <Link
+                href={{ pathname: '/tin-tuc/[slug]', params: { slug: n.slug } }}
+                className="block rounded-card motion-safe:transition-transform motion-safe:duration-(--duration-slow) motion-safe:ease-clay motion-safe:hover:-translate-y-1"
+              >
+                <ImageSlot
+                  alt={alt}
+                  tint={tintOf(n.slug)}
+                  ratio="3/2"
+                  {...slotPhoto(photoFromUrl(n.cover.url, alt, n.cover.variants))}
+                />
+              </Link>
+            ) : null}
             <time dateTime={n.publishedAt} className="text-small text-ash">
               {format.dateTime(new Date(n.publishedAt), 'long')}
             </time>

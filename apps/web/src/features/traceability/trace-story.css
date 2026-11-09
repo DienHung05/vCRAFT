@@ -3,6 +3,12 @@
  * globals.css (`.fire-story`); this file only adapts it to the screen it is read on.
  */
 
+/* Keep the craft book's reading column on direct QR loads, independent of product-page CSS. */
+.trace-notebook > main > :not(.trace-journey, .trace-intro) {
+  max-width: 42rem;
+  margin-inline: auto;
+}
+
 .fire-story .fire-steps {
   /* A long stage name or note never widens the page inside the two-column grid or on a 360px phone. */
   min-width: 0;

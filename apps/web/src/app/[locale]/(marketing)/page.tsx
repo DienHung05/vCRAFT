@@ -192,7 +192,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
       </section>
 
       <section
-        className="cv-auto mx-auto max-w-editorial px-gutter pt-section pb-section-tail"
+        className="cv-auto mx-auto max-w-editorial px-gutter pb-section-tail"
         aria-labelledby="news-title"
       >
         <Reveal>

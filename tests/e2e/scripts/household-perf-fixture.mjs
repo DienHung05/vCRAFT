@@ -8,7 +8,21 @@ const upstream = 'https://vcraft-api.onrender.com/api/v1';
 const householdPath = '/households/gom-bich-hop';
 const response = await fetch(`${upstream}${householdPath}`);
 if (!response.ok) throw new Error(`Cannot record public household: ${response.status}`);
-const snapshot = await response.text();
+const household = await response.json();
+// Preserve the recorded workshop addresses; older deployments omit the optional area assignment.
+const workshops = (items) => items?.map((item) => ({ areaCode: null, ...item })) ?? [];
+const householdReplay = (value) => ({
+  ratingAverage: null,
+  ratingCount: 0,
+  ...value,
+  workshops: workshops(value.workshops),
+  visit: {
+    ...value.visit,
+    showrooms: workshops(value.visit?.showrooms),
+    productionWorkshops: workshops(value.visit?.productionWorkshops),
+  },
+});
+const snapshot = JSON.stringify(householdReplay(household));
 const recorded = new Map();
 let calls = 0;
 let suspended = false;
@@ -44,12 +58,32 @@ const server = createServer(async (request, reply) => {
   }
   // Freeze only public catalog responses. Do not forward cookies or authorization.
   const publicPath = pathname.replace(/^\/api\/v1/, '');
-  if (/^\/(products|households|trace|redirects|village)(\/|\?|$)/.test(publicPath)) {
+  if (/^\/(products|households|trace|redirects|village|news|map)(\/|\?|$)/.test(publicPath)) {
     const query = new URL(request.url, `http://127.0.0.1:${port}`).search;
     const key = `${publicPath}${query}`;
     if (!recorded.has(key)) {
       const upstreamResponse = await fetch(`${upstream}${key}`);
-      recorded.set(key, { status: upstreamResponse.status, body: await upstreamResponse.text() });
+      const body = await upstreamResponse.json();
+      // The deployed API can lag the local contract. Keep its recorded content and supply only
+      // empty metadata for fields that did not exist in that version. Diagnostic replay only.
+      if (publicPath === '/households' && Array.isArray(body.data)) {
+        body.data = body.data.map((item) => ({ ratingAverage: null, ratingCount: 0, ...item }));
+      }
+      if (publicPath.startsWith('/households/') && body.slug) {
+        Object.assign(body, householdReplay(body));
+      }
+      if (publicPath.startsWith('/news')) {
+        const summary = (item) => ({
+          sourceName: null,
+          sourceUrl: null,
+          sourcePublishedAt: null,
+          ...item,
+        });
+        if (Array.isArray(body.data)) body.data = body.data.map(summary);
+        else if (body.slug) Object.assign(body, summary(body));
+        if (Array.isArray(body.related)) body.related = body.related.map(summary);
+      }
+      recorded.set(key, { status: upstreamResponse.status, body: JSON.stringify(body) });
     }
     await delay(latencyMs);
     const value = recorded.get(key);

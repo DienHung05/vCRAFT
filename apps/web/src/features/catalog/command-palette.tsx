@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useRouter } from '@/i18n/navigation';
 import {
   browserFetchSuggestions,
@@ -104,9 +104,9 @@ function PaletteDialog({
     };
   }, []);
 
-  // New results start at the first row again.
+  // Reset before the new rows are painted, so a late effect cannot undo an arrow-key selection.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset on a changed result set or term
-  useEffect(() => setActive(0), [results, term]);
+  useLayoutEffect(() => setActive(0), [results, term]);
 
   const go = (entry: SuggestionEntry) => {
     onClose();

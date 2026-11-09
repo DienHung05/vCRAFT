@@ -53,7 +53,7 @@ export async function FeaturedArtisans({ locale }: { locale: string }) {
                   ratio="3/4"
                   {...slotPhoto(photoFromUrl(h.coverUrl, coverAlt, h.coverVariants))}
                   sizes="(min-width: 768px) 30vw, 100vw"
-                  className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
+                  className="motion-safe:transition-transform motion-safe:duration-(--duration-slow) motion-safe:ease-clay motion-safe:group-hover:-translate-y-1"
                 />
               </InkReveal>
               <h3 className="mt-4 transition-colors group-hover:text-clay">{h.name}</h3>
