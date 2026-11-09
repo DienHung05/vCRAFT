@@ -102,6 +102,18 @@ async function* drain({ iterator, first }: AnswerStream): AsyncGenerator<LlmChun
   }
 }
 
+const EN_PATHS: readonly (readonly [string, string])[] = [
+  ['/vi/san-pham/', '/en/products/'],
+  ['/vi/nghe-nhan/', '/en/artisans/'],
+  ['/vi/tin-tuc/', '/en/news/'],
+];
+
+/** Points a Vietnamese-indexed document at its English page, so an English visitor's citation stays in English. */
+function localizeMatch(m: KnowledgeMatch): KnowledgeMatch {
+  const [from, to] = EN_PATHS.find(([prefix]) => m.url.startsWith(prefix)) ?? [];
+  return from && to ? { ...m, url: to + m.url.slice(from.length) } : m;
+}
+
 const citationOf = (m: KnowledgeMatch): CitationDto => ({
   title: m.title.slice(0, 200),
   url: m.url,
@@ -375,13 +387,20 @@ export class AskAssistantService {
       const work = (async () => {
         const [embedding] = await this.embedder.embed([message]);
         if (!embedding) return [];
+        // Products, households and news are indexed in Vietnamese only (ADR-19), so English visitors search
+        // both languages; Vietnamese guides are dropped below because English ones cover the same topics.
         const found = await this.vectors.search(embedding, {
-          locale,
-          limit: RETRIEVAL_LIMIT,
+          locales: locale === 'en' ? ['en', 'vi'] : ['vi'],
+          limit: locale === 'en' ? RETRIEVAL_LIMIT * 2 : RETRIEVAL_LIMIT,
           minSimilarity: MIN_SIMILARITY,
           ...(guidesOnly && { sourceType: 'FAQ' as const }),
         });
-        return found;
+        return locale === 'en'
+          ? found
+              .filter((m) => m.sourceType !== 'FAQ' || !m.sourceId.endsWith('.vi'))
+              .map(localizeMatch)
+              .slice(0, RETRIEVAL_LIMIT)
+          : found;
       })();
       const timeout = new Promise<KnowledgeMatch[]>((resolve) =>
         setTimeout(() => resolve([]), TOOL_TIMEOUT_MS).unref(),

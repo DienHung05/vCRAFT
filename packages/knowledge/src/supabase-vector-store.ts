@@ -61,12 +61,29 @@ export class SupabaseVectorStore implements VectorStore {
     embedding: readonly number[],
     options: Parameters<VectorStore['search']>[1],
   ): Promise<KnowledgeMatch[]> {
+    // The SQL functions filter on one locale, so several locales are searched one by one and merged.
+    const locales = options.locales ?? [null];
+    const perLocale = await Promise.all(
+      locales.map((locale) => this.searchLocale(embedding, options, locale)),
+    );
+    if (perLocale.length === 1) return perLocale[0] ?? [];
+    return perLocale
+      .flat()
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, options.limit);
+  }
+
+  private async searchLocale(
+    embedding: readonly number[],
+    options: Parameters<VectorStore['search']>[1],
+    locale: 'vi' | 'en' | null,
+  ): Promise<KnowledgeMatch[]> {
     const { data, error } = await this.client.rpc(
       options.sourceType ? 'match_knowledge_by_source' : 'match_knowledge',
       {
         query_embedding: JSON.stringify(embedding),
         match_count: options.limit,
-        filter_locale: options.locale ?? null,
+        filter_locale: locale,
         min_similarity: options.minSimilarity ?? 0,
         ...(options.sourceType && { filter_source_type: options.sourceType }),
       },
