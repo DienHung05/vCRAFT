@@ -57,7 +57,7 @@ export async function FireTimeline({
           key={e.hash}
           id={`log-${e.seq + 1}`}
           data-fire-step=""
-          className="fire-step relative grid scroll-mt-6 grid-cols-[2rem_1fr] gap-4 rounded-card pb-10 last:pb-0 target:bg-seal/8 target:ring-2 target:ring-seal/50"
+          className="fire-step relative grid scroll-mt-6 grid-cols-[2rem_minmax(0,1fr)] gap-4 rounded-card pb-10 last:pb-0 target:bg-seal/8 target:ring-2 target:ring-seal/50"
         >
           <span
             aria-hidden="true"
@@ -78,7 +78,9 @@ export async function FireTimeline({
               </a>
             </h3>
             {household ? (
-              <p className="mt-1 text-small text-ash">{t('recordedBy', { household })}</p>
+              <p className="mt-1 break-words text-small text-ash">
+                {t('recordedBy', { household })}
+              </p>
             ) : null}
             {e.supersedesSeq !== undefined ? (
               <p className="mt-1 text-small font-medium text-seal">
@@ -97,9 +99,11 @@ export async function FireTimeline({
                 </a>
               </p>
             ) : null}
-            <p className="mt-1 text-ink/85">{e.note}</p>
+            <p className="mt-1 break-words text-ink/85">{e.note}</p>
             {e.skipReason ? (
-              <p className="mt-1 text-small text-ash">{t('skipped', { reason: e.skipReason })}</p>
+              <p className="mt-1 break-words text-small text-ash">
+                {t('skipped', { reason: e.skipReason })}
+              </p>
             ) : null}
             {/* A photo still processing has no URL yet: nothing is shown until it is ready. */}
             {e.images

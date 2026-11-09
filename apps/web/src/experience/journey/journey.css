@@ -1,8 +1,3 @@
-.trace-notebook > main > :not(.trace-journey, .trace-intro) {
-  max-width: 42rem;
-  margin-inline: auto;
-}
-
 .journey-companion {
   display: none;
 }

@@ -43,9 +43,9 @@ export function ProductCard({
             tint={product.tint}
             ratio="4/5"
             {...slotPhoto(product.image)}
-            sizes="(min-width: 768px) 25vw, 50vw"
+            sizes="(min-width: 1440px) 312px, (min-width: 768px) calc(25vw - 3rem), calc(50vw - 1.5rem)"
             priority={priority}
-            className="grid place-items-center transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
+            className="grid place-items-center motion-safe:transition-transform motion-safe:duration-(--duration-slow) motion-safe:ease-clay motion-safe:group-hover:-translate-y-1"
           >
             {product.image ? null : (
               <ProductFigure
@@ -67,11 +67,11 @@ export function ProductCard({
             ) : null}
           </ImageSlot>
         </ViewTransition>
-        <div className="mt-3 flex items-baseline justify-between gap-3">
-          <Heading className="font-sans text-body font-medium text-ink transition-colors group-hover:text-clay">
+        <div className="mt-3 flex min-w-0 flex-col gap-1 lg:flex-row lg:items-baseline lg:justify-between lg:gap-3">
+          <Heading className="min-w-0 break-words font-sans text-body font-medium text-ink transition-colors group-hover:text-clay">
             {product.name}
           </Heading>
-          <span className="shrink-0 text-right text-small text-ash">
+          <span className="shrink-0 text-small text-ash lg:text-right">
             {product.price > 0 ? format.number(product.price, 'vnd') : t('priceOnRequest')}
             <UsdReference vnd={product.price} className="block text-[0.75rem]" />
           </span>
@@ -98,7 +98,7 @@ export function ProductGridSkeleton({ label, count = 8 }: { label: string; count
       role="status"
       aria-label={label}
       data-testid="product-skeleton"
-      className="grid grid-cols-2 gap-8 md:grid-cols-4"
+      className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-8"
     >
       {Array.from({ length: count }, (_, index) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: khung chờ giống hệt nhau, không đổi thứ tự.

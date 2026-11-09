@@ -1,35 +1,20 @@
-import { buttonVariants, cn, TraceSealFrame, WaveDivider } from '@vcraft/ui';
-import { getFormatter, getTranslations } from 'next-intl/server';
-import { DataUnavailable } from '@/components/data-unavailable';
+import { buttonVariants, WaveDivider } from '@vcraft/ui';
+import { getTranslations } from 'next-intl/server';
+import { Suspense } from 'react';
 import { ImageSlot } from '@/components/image-slot';
-import { EmptyState } from '@/components/states/empty-state';
 import { HeroVase } from '@/experience/hero-vase/hero-vase';
 import { TurningVase } from '@/experience/hero-vase/turning-vase';
-import { CountUp } from '@/experience/motion/count-up';
 import { DayStory } from '@/experience/motion/day-story';
 import { HandUnderline } from '@/experience/motion/hand-underline';
 import { InkCursor } from '@/experience/motion/ink-cursor';
-import { InkReveal } from '@/experience/motion/ink-reveal';
 import { Magnetic } from '@/experience/motion/magnetic';
 import { PressedHeadline } from '@/experience/motion/pressed-headline';
 import { Reveal } from '@/experience/motion/reveal';
-import {
-  fetchHouseholds,
-  fetchProducts,
-  fetchVillageStats,
-} from '@/features/catalog/exhibition-api';
-import {
-  altFor,
-  photoFromUrl,
-  projectPins,
-  slotPhoto,
-  tintOf,
-} from '@/features/catalog/view-models';
-import { fetchNews } from '@/features/news/news-api';
-import { NewsSourceLine } from '@/features/news/news-source-line';
-import { pinOpenState, pinStatus } from '@/features/village-map/map-model';
-import { fetchMapPins } from '@/features/village-map/map-pins';
-import { VillageMiniMap } from '@/features/village-map/village-mini-map';
+import { FeaturedArtisans } from '@/features/home/home-artisans';
+import { HomeMiniMap, HomeWorkshopList } from '@/features/home/home-map';
+import { HomeNews } from '@/features/home/home-news';
+import { HeroTraceCta, HeroTraceSeal } from '@/features/home/home-showcase';
+import { VillageStats } from '@/features/home/home-stats';
 import { Link } from '@/i18n/navigation';
 import type { LogStage } from '@/lib/demo/data';
 import { dayPhoto } from '@/lib/demo/stage-photos';
@@ -47,45 +32,14 @@ const DAY_STAGES: readonly { stage: LogStage; tint: string }[] = [
 // Số liệu và danh sách lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
 export const dynamic = 'force-dynamic';
 
-/** Làng gốm Bát Tràng có từ khoảng thế kỷ 14 (số tròn, không phải số liệu trong CSDL). */
-const VILLAGE_YEARS = 700;
-
+/**
+ * Trang chủ. Hero, "một ngày" và mọi tiêu đề section nằm trong HTML đầu tiên; chỉ phần dữ liệu
+ * (sản phẩm của ấn truy xuất, nghệ nhân, bản đồ, số liệu, tin) đi qua Suspense riêng, nên bình gốm
+ * và tiêu đề không phải chờ API. Fetch bên dưới vẫn `no-store` (xem `exhibition-api`).
+ */
 export default async function HomePage({ params }: PageProps<'/[locale]'>) {
   const locale = await resolveLocale(params);
-  const [
-    t,
-    stages,
-    common,
-    preset,
-    mapT,
-    format,
-    householdsResult,
-    productsResult,
-    newsResult,
-    statsResult,
-    pinsResult,
-  ] = await Promise.all([
-    getTranslations('home'),
-    getTranslations('stages'),
-    getTranslations('common'),
-    getTranslations('presetFigure'),
-    getTranslations('villageMap'),
-    getFormatter(),
-    fetchHouseholds(),
-    fetchProducts({ limit: 1 }),
-    fetchNews({ limit: 3 }),
-    fetchVillageStats(),
-    fetchMapPins(),
-  ]);
-  const households = householdsResult.status === 'ok' ? householdsResult.data.data : [];
-  const featured = households.filter((h) => h.coverUrl).slice(0, 3);
-  const showcase = productsResult.status === 'ok' ? productsResult.data.data[0] : undefined;
-  const now = new Date();
-  const pins = pinsResult.status === 'ok' ? pinsResult.pins : [];
-  const visitable = pins.filter((pin) => pin.visitable).slice(0, 6);
-  const positions = projectPins(
-    pins.map((pin) => ({ id: pin.workshopId, lat: pin.lat, lng: pin.lng })),
-  );
+  const [t, stages] = await Promise.all([getTranslations('home'), getTranslations('stages')]);
 
   return (
     <>
@@ -96,12 +50,10 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
         className="mx-auto grid max-w-editorial items-center gap-10 px-gutter pt-12 pb-section md:grid-cols-12 md:pt-20"
       >
         <div className="flex flex-col gap-7 md:col-span-7">
-          <p className="text-small font-medium tracking-[0.18em] text-clay uppercase">
-            {t('hero.eyebrow')}
-          </p>
           <PressedHeadline className="text-display leading-[1.02] type-soft">
             {t('hero.title')}
           </PressedHeadline>
+          <p className="-mt-3 text-small text-ash">{t('hero.eyebrow')}</p>
           <p className="max-w-prose-vn text-ash">{t('hero.lead')}</p>
           <div className="flex flex-wrap gap-3">
             <Magnetic>
@@ -109,14 +61,12 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
                 {t('hero.ctaExplore')}
               </Link>
             </Magnetic>
-            {showcase ? (
-              <Link
-                href={{ pathname: '/truy-xuat/[code]', params: { code: showcase.traceCode } }}
-                className={buttonVariants({ variant: 'secondary', size: 'lg' })}
-              >
-                {t('hero.ctaTrace')}
-              </Link>
-            ) : null}
+            {/* Reserve the second action's row on phones while its product loads. */}
+            <div className="min-h-12 basis-full sm:basis-auto">
+              <Suspense fallback={null}>
+                <HeroTraceCta />
+              </Suspense>
+            </div>
           </div>
         </div>
         <div className="relative md:col-span-5">
@@ -132,13 +82,9 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             <TurningVase className="absolute inset-0 size-full" />
             <HeroVase sectionId="home-hero" />
           </ImageSlot>
-          {showcase ? (
-            <div className="absolute -bottom-6 -left-4 hidden rotate-[-4deg] rounded-card bg-paper p-3 shadow-warm sm:block">
-              <TraceSealFrame code={showcase.traceCode} size={112} title={t('hero.sealAlt')}>
-                <span className="font-display text-h3 text-seal type-wonk">vC</span>
-              </TraceSealFrame>
-            </div>
-          ) : null}
+          <Suspense fallback={null}>
+            <HeroTraceSeal />
+          </Suspense>
         </div>
       </section>
 
@@ -201,51 +147,9 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
               {t('artisans.all')} →
             </Link>
           </div>
-          {householdsResult.status !== 'ok' ? (
-            <DataUnavailable className="mt-10 flex flex-col items-start gap-3" />
-          ) : featured.length === 0 ? (
-            <EmptyState
-              className="mt-6"
-              illustration="vase"
-              headingLevel="h3"
-              title={t('artisans.empty')}
-              action={
-                <Link href="/san-pham" className={buttonVariants({ variant: 'secondary' })}>
-                  {t('hero.ctaExplore')}
-                </Link>
-              }
-            />
-          ) : (
-            <ul className="mt-10 grid gap-8 md:grid-cols-3">
-              {featured.map((h, i) => {
-                const coverAlt =
-                  altFor(locale, h.coverAlt ?? '', h.coverAltEn) || preset('household');
-                return (
-                  <li key={h.slug} className={cn(i === 1 && 'md:mt-16')}>
-                    <Link
-                      href={{ pathname: '/nghe-nhan/[slug]', params: { slug: h.slug } }}
-                      className="group block"
-                    >
-                      <InkReveal>
-                        <ImageSlot
-                          alt={coverAlt}
-                          tint={tintOf(h.slug)}
-                          ratio="3/4"
-                          {...slotPhoto(photoFromUrl(h.coverUrl, coverAlt, h.coverVariants))}
-                          sizes="(min-width: 768px) 30vw, 100vw"
-                          className="transition-transform duration-(--duration-slow) ease-clay group-hover:-translate-y-1"
-                        />
-                      </InkReveal>
-                      <h3 className="mt-4 transition-colors group-hover:text-clay">{h.name}</h3>
-                      <p className="text-small text-ash">
-                        {[h.representative, h.craft].filter(Boolean).join(' · ')}
-                      </p>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <Suspense fallback={null}>
+            <FeaturedArtisans locale={locale} />
+          </Suspense>
         </Reveal>
       </section>
 
@@ -257,35 +161,9 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
               {t('map.title')}
             </h2>
             <p className="mt-3 text-paper/75">{t('map.lead')}</p>
-            {pinsResult.status === 'ok' && visitable.length === 0 ? (
-              <p className="mt-8 text-paper/75">{t('map.empty')}</p>
-            ) : pinsResult.status === 'ok' ? (
-              <ul className="mt-8 space-y-3">
-                {visitable.map((pin) => {
-                  const state = pinOpenState(pin, now);
-                  return (
-                    <li
-                      key={pin.workshopId}
-                      className="flex items-center justify-between gap-4 border-paper/15 border-b pb-3"
-                    >
-                      <span>{pin.household.name}</span>
-                      <span className="flex items-center gap-2 text-small text-paper/75">
-                        <span
-                          aria-hidden="true"
-                          className={cn(
-                            'size-2 rounded-full',
-                            state.open ? 'bg-celadon' : 'bg-paper/30',
-                          )}
-                        />
-                        {state.open ? t('map.open', { hours: state.closesAt }) : t('map.closed')}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="mt-8 text-paper/75">{common('dataUnavailable')}</p>
-            )}
+            <Suspense fallback={null}>
+              <HomeWorkshopList />
+            </Suspense>
             <Link
               href="/ban-do"
               className="mt-6 inline-block text-paper underline underline-offset-4"
@@ -294,24 +172,9 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             </Link>
           </div>
           <div className="md:col-span-7">
-            <VillageMiniMap
-              label={t('map.mapLabel')}
-              pins={visitable.map((pin) => ({
-                id: pin.workshopId,
-                ...(positions.get(pin.workshopId) ?? { x: 50, y: 50 }),
-                open: pinOpenState(pin, now).open,
-                label: pin.household.name,
-                card: {
-                  title: pin.household.name,
-                  lines: [pin.workshopName, pin.address],
-                  status: pinStatus(pin, now),
-                  link: {
-                    href: { pathname: '/nghe-nhan/[slug]', params: { slug: pin.household.slug } },
-                    label: mapT('viewHousehold'),
-                  },
-                },
-              }))}
-            />
+            <Suspense fallback={null}>
+              <HomeMiniMap />
+            </Suspense>
           </div>
         </div>
       </section>
@@ -323,75 +186,22 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
         <h2 id="stats-title" className="sr-only">
           {t('stats.title')}
         </h2>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-4">
-          {(['households', 'products', 'artisans', 'years'] as const).map((key) => {
-            const value =
-              key === 'years'
-                ? `${VILLAGE_YEARS}+`
-                : statsResult.status === 'ok'
-                  ? format.number(statsResult.data[key])
-                  : '—';
-            return (
-              <div key={key} className="border-clay/40 border-t pt-4">
-                <dt className="text-small text-ash">{t(`stats.${key}`)}</dt>
-                <dd className="mt-1 font-display text-h1 text-glaze type-soft">
-                  <CountUp text={value} locale={locale} />
-                </dd>
-              </div>
-            );
-          })}
-        </dl>
+        <Suspense fallback={null}>
+          <VillageStats locale={locale} />
+        </Suspense>
       </section>
 
       <section
-        className="cv-auto mx-auto max-w-editorial px-gutter pt-section pb-section-tail"
+        className="cv-auto mx-auto max-w-editorial px-gutter pb-section-tail"
         aria-labelledby="news-title"
       >
         <Reveal>
           <div className="flex items-end justify-between gap-4">
             <h2 id="news-title">{t('news.title')}</h2>
           </div>
-          {newsResult.status === 'ok' && newsResult.page.data.length === 0 ? (
-            <EmptyState
-              className="mt-6"
-              illustration="scroll"
-              headingLevel="h3"
-              title={t('news.empty')}
-              action={
-                <Link href="/tin-tuc" className={buttonVariants({ variant: 'secondary' })}>
-                  {t('news.all')}
-                </Link>
-              }
-            />
-          ) : newsResult.status === 'ok' ? (
-            <ul className="mt-8 grid gap-6 md:grid-cols-3">
-              {newsResult.page.data.map((n) => (
-                <li key={n.slug} className="flex flex-col gap-3">
-                  <div>
-                    <ImageSlot
-                      alt={altFor(locale, n.cover?.alt || n.title, n.cover?.altEn)}
-                      tint={tintOf(n.slug)}
-                      ratio="3/2"
-                      {...slotPhoto(
-                        photoFromUrl(
-                          n.cover?.url ?? null,
-                          altFor(locale, n.cover?.alt || n.title, n.cover?.altEn),
-                          n.cover?.variants,
-                        ),
-                      )}
-                    />
-                  </div>
-                  <time dateTime={n.publishedAt} className="text-small text-ash">
-                    {format.dateTime(new Date(n.publishedAt), 'long')}
-                  </time>
-                  <h3 className="text-[1.25rem] leading-snug">{n.title}</h3>
-                  <NewsSourceLine item={n} />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <DataUnavailable className="mt-8 flex flex-col items-start gap-3" />
-          )}
+          <Suspense fallback={null}>
+            <HomeNews locale={locale} />
+          </Suspense>
         </Reveal>
       </section>
     </>
