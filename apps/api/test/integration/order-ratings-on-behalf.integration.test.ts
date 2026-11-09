@@ -409,6 +409,29 @@ describe('Order notices, ratings and requests made for a customer', () => {
         auth: buyer.auth,
       });
       expect(reread.body.onBehalfOf).toBeUndefined();
+
+      const audit = await t.request({
+        method: 'GET',
+        url: `/admin/audit-log?action=rfq.create&actorId=${admin.id}`,
+        auth: admin.auth,
+      });
+      expect(audit.status).toBe(200);
+      const creation = audit.body.data.filter(
+        (entry: { entityId: string }) => entry.entityId === made.body.id,
+      );
+      expect(creation).toEqual([
+        expect.objectContaining({
+          actorId: admin.id,
+          action: 'rfq.create',
+          entity: 'rfq',
+          entityId: made.body.id,
+          before: null,
+          after: { status: 'DRAFT', onBehalfOfCustomer: true, coordinatorId: admin.id },
+        }),
+      ]);
+      expect(
+        audit.body.data.some((entry: { entityId: string }) => entry.entityId === own.body.id),
+      ).toBe(false);
     });
 
     it('validates the customer and refuses it from a buyer', async () => {

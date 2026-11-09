@@ -3,7 +3,6 @@ import {
   CooperativeQuotation,
   Household,
   OrderAllocation,
-  QuotationNotice,
   QuotationRequest,
 } from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -228,8 +227,28 @@ describe('Allocation timeline and reallocation', () => {
 
     const quotation = await db.orm.em.fork().findOneOrFail(CooperativeQuotation, quotationId);
     expect(quotation.parts.map((p) => p.householdId)).toContain(c.id);
-    const notices = await db.orm.em.fork().find(QuotationNotice, { kind: 'ALLOCATION_PROPOSED' });
-    expect(notices).toHaveLength(2);
+    // Production shares are already in progress. Recipients learn about the extra work without
+    // being asked to confirm a proposal; the source household learns that its remaining work moved.
+    const recipients = [
+      { actor: representatives[0], expected: ['ALLOCATION_REASSIGNED'] },
+      { actor: representatives[1], expected: ['ALLOCATION_INCREASED'] },
+      { actor: representatives[2], expected: ['ALLOCATION_INCREASED'] },
+      { actor: buyer, expected: [] },
+      { actor: admin, expected: [] },
+    ];
+    for (const { actor, expected } of recipients) {
+      const inbox = await t.request({
+        method: 'GET',
+        url: '/me/quotation-notices',
+        auth: actor?.auth,
+      });
+      expect(inbox.status).toBe(200);
+      expect(
+        inbox.body
+          .filter((notice: { requestId: string }) => notice.requestId === requestId)
+          .map((notice: { kind: string }) => notice.kind),
+      ).toEqual(expected);
+    }
   });
 
   it('reports full and empty historical allocations without dividing by zero', async () => {

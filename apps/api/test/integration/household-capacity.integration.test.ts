@@ -3,7 +3,6 @@ import {
   CooperativeQuotation,
   Household,
   OrderAllocation,
-  QuotationNotice,
   QuotationRequest,
 } from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -326,11 +325,22 @@ describe('household capacity enforcement', () => {
       },
     });
     expect(ok.status).toBe(200);
-    const notices = await db.orm.em.fork().find(QuotationNotice, { requestId: request.id });
-    const kindsFor = (recipientId: string) =>
-      notices.filter((n) => n.recipientId === recipientId).map((n) => n.kind);
-    expect(kindsFor(free.id)).toEqual(['ALLOCATION_REASSIGNED']);
-    expect(kindsFor(tight.id)).toEqual(['ALLOCATION_PROPOSED']);
-    expect(kindsFor(roomy.id)).toEqual(['ALLOCATION_PROPOSED']);
+    for (const [recipient, expected] of [
+      [free, 'ALLOCATION_REASSIGNED'],
+      [tight, 'ALLOCATION_INCREASED'],
+      [roomy, 'ALLOCATION_INCREASED'],
+    ] as const) {
+      const inbox = await t.request({
+        method: 'GET',
+        url: '/me/quotation-notices',
+        auth: recipient.auth,
+      });
+      expect(inbox.status).toBe(200);
+      expect(
+        inbox.body
+          .filter((notice: { requestId: string }) => notice.requestId === request.id)
+          .map((notice: { kind: string }) => notice.kind),
+      ).toEqual([expected]);
+    }
   });
 });

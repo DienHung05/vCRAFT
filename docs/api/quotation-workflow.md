@@ -28,7 +28,7 @@ Every `POST` in the endpoints below accepts an optional `Idempotency-Key` header
 
 ### Request for an off-platform customer (FR-ORD-10)
 
-An administrator may call `POST /rfqs` and `POST /rfqs/:id/submit` for a customer who orders by phone and has no account. The body then carries a required `onBehalfOf` object (`name` up to 120 characters, `phone` a Vietnamese mobile or landline number, optional `email`); a buyer who sends it gets 422. The administrator becomes the buyer of record and the coordinator (`coordinationOptIn` is forced to true), no privacy consent is recorded for the customer, and the buyer-only steps (`POST /rfqs/:id/accept`, receive, cancel before acceptance, rating) are done by that administrator. `onBehalfOf` is returned only to administrators and the coordination queue shows it; households and buyers never see it. Another administrator gets 404 for the buyer-only steps.
+An administrator may call `POST /rfqs` and `POST /rfqs/:id/submit` for a customer who orders by phone and has no account. The body then carries a required `onBehalfOf` object (`name` up to 120 characters, `phone` a Vietnamese mobile or landline number, optional `email`); a buyer who sends it gets 422. The administrator becomes the buyer of record and the coordinator (`coordinationOptIn` is forced to true), no privacy consent is recorded for the customer, and the buyer-only steps (`POST /rfqs/:id/accept`, receive, cancel before acceptance, rating) are done by that administrator. `onBehalfOf` is returned only to administrators and the coordination queue shows it; households and buyers never see it. Another administrator gets 404 for the buyer-only steps. Creation records an `rfq.create` audit entry in the same transaction, identifying the administrator and the request, its initial status and coordinator. The audit snapshot marks that it was made for a customer without copying the customer's name, phone or email.
 
 ### Rating households (FR-ORD-11)
 
@@ -37,6 +37,14 @@ After a request is `DELIVERED` its owner calls `PUT /rfqs/:id/ratings/:household
 ### Matching households
 
 A request sent with no invited household and no coordination request is matched at `POST /rfqs/:id/submit` (BR-05). The category is then required. The system invites up to ten households that are APPROVED, whose representative is not locked and that work in the request's category: they declared capacity for it, or sell a published product in it. A declared capacity of zero opts a household out. The best fit comes first: declared capacity, then published products in the category, then the buyers' average rating (a household with no rating ranks last among equals). The model has no response-rate or "accepting orders" data, so BR-05's score is these three. The response lists the matched households in `invitedHouseholdIds`, and the buyer sees "Đã gửi tới N hộ phù hợp". When no household matches, the submit fails with `RFQ_NO_MATCHING_HOUSEHOLD` and the request stays a draft.
+
+### Order notices and reallocation
+
+Accepting a quotation sends `ALLOCATION_PROPOSED` to the participating households, `QUOTATION_ACCEPTED` to the coordinator, and `RFQ_NOT_SELECTED` to all other invited households. The last notice reveals only that another offer was selected, without its price or participants. When the coordinator confirms receipt, `ORDER_RECEIVED` also reaches the buyer. The actor never receives their own notice.
+
+Reallocating unfinished work during production sends `ALLOCATION_REASSIGNED` to the source household and `ALLOCATION_INCREASED` to each household receiving additional work, including a household newly added to the order. Those target allocations are already `IN_PROGRESS`, so their notice directs them to review their updated share without asking for confirmation. Reallocating a declined share before production still sends `ALLOCATION_PROPOSED`, because the recipients must confirm their proposed allocations.
+
+Notices and mail outbox events commit in the same transaction as the order change. Failed changes leave no notices. An `Idempotency-Key` replay returns the original response without adding notices. The worker respects each recipient's email preference; disabling mail keeps the in-app notice and its link to the recipient's request screen.
 
 ## Contributions
 

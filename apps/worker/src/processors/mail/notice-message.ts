@@ -45,6 +45,10 @@ const COPY: Record<NotificationType, { subject: string; body: string }> = {
     subject: 'Một phần việc của bạn đã được chuyển cho hộ khác',
     body: 'Ban quản lý đã chuyển phần việc còn lại của bạn trong đơn hàng cho hộ khác để kịp tiến độ. Phần bạn đã làm xong vẫn được ghi nhận.',
   },
+  ALLOCATION_INCREASED: {
+    subject: 'Hộ bạn được giao thêm phần sản xuất',
+    body: 'Ban quản lý đã chuyển thêm phần việc trong đơn hàng cho hộ bạn. Vui lòng xem số lượng và hạn hoàn thành của phần sản xuất đã cập nhật.',
+  },
   RFQ_NOT_SELECTED: {
     subject: 'Người mua đã chọn một chào giá khác',
     body: 'Người mua đã chọn một chào giá khác cho yêu cầu báo giá mà hộ bạn được mời. Cảm ơn bạn đã quan tâm và tham gia.',
