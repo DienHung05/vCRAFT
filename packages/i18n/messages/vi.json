@@ -1595,6 +1595,7 @@
       "ALLOCATION_PROPOSED": "Bạn có phần sản xuất cần xác nhận.",
       "ALLOCATION_CONFIRMED": "Một hộ đã xác nhận phân bổ.",
       "ALLOCATION_REASSIGNED": "Ban quản lý đã chuyển phần việc còn lại của bạn cho hộ khác.",
+      "ALLOCATION_INCREASED": "Ban quản lý đã giao thêm việc cho hộ bạn. Vui lòng xem phần sản xuất đã cập nhật.",
       "RFQ_NOT_SELECTED": "Người mua đã chọn một chào giá khác. Cảm ơn bạn đã tham gia.",
       "ORDER_CANCELLED": "Đơn hàng đã bị hủy.",
       "PRODUCTION_STARTED": "Đơn hàng đã bắt đầu sản xuất.",

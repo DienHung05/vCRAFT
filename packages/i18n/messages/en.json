@@ -1590,6 +1590,7 @@
       "ALLOCATION_PROPOSED": "You have a production share to confirm.",
       "ALLOCATION_CONFIRMED": "A household confirmed its allocation.",
       "ALLOCATION_REASSIGNED": "The management board moved the rest of your share to another household.",
+      "ALLOCATION_INCREASED": "The management board assigned more work to your household. Review your updated production share.",
       "RFQ_NOT_SELECTED": "The buyer chose another offer. Thank you for taking part.",
       "ORDER_CANCELLED": "The order was cancelled.",
       "PRODUCTION_STARTED": "The order has entered production.",

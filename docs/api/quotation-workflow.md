@@ -38,6 +38,14 @@ After a request is `DELIVERED` its owner calls `PUT /rfqs/:id/ratings/:household
 
 A request sent with no invited household and no coordination request is matched at `POST /rfqs/:id/submit` (BR-05). The category is then required. The system invites up to ten households that are APPROVED, whose representative is not locked and that work in the request's category: they declared capacity for it, or sell a published product in it. A declared capacity of zero opts a household out. The best fit comes first: declared capacity, then published products in the category, then the buyers' average rating (a household with no rating ranks last among equals). The model has no response-rate or "accepting orders" data, so BR-05's score is these three. The response lists the matched households in `invitedHouseholdIds`, and the buyer sees "Đã gửi tới N hộ phù hợp". When no household matches, the submit fails with `RFQ_NO_MATCHING_HOUSEHOLD` and the request stays a draft.
 
+### Order notices and reallocation
+
+Accepting a quotation sends `ALLOCATION_PROPOSED` to the participating households, `QUOTATION_ACCEPTED` to the coordinator, and `RFQ_NOT_SELECTED` to all other invited households. The last notice reveals only that another offer was selected, without its price or participants. When the coordinator confirms receipt, `ORDER_RECEIVED` also reaches the buyer. The actor never receives their own notice.
+
+Reallocating unfinished work during production sends `ALLOCATION_REASSIGNED` to the source household and `ALLOCATION_INCREASED` to each household receiving additional work, including a household newly added to the order. Those target allocations are already `IN_PROGRESS`, so their notice directs them to review their updated share without asking for confirmation. Reallocating a declined share before production still sends `ALLOCATION_PROPOSED`, because the recipients must confirm their proposed allocations.
+
+Notices and mail outbox events commit in the same transaction as the order change. Failed changes leave no notices. An `Idempotency-Key` replay returns the original response without adding notices. The worker respects each recipient's email preference; disabling mail keeps the in-app notice and its link to the recipient's request screen.
+
 ## Contributions
 
 Invited representatives use `POST /rfqs/:id/contributions` with:

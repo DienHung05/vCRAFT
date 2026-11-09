@@ -173,7 +173,7 @@ export class AllocationScheduleService {
         after: { targets: input.targets },
       });
       await this.notifier.notify(em, {
-        kind: 'ALLOCATION_PROPOSED',
+        kind: 'ALLOCATION_INCREASED',
         requestId: request.id,
         quotationId: quotation.id,
         actorId: actor.id,
