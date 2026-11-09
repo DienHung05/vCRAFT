@@ -1046,5 +1046,43 @@ describe('online payment of orders (ADR-0021)', () => {
         vi.stubEnv('SEPAY_WEBHOOK_API_KEY', SEPAY_KEY);
       }
     });
+
+    it('owes the whole total as the balance when production started without a deposit (#426)', async () => {
+      vi.stubEnv('SEPAY_WEBHOOK_API_KEY', '');
+      try {
+        const requestId = await acceptedOrder();
+        await confirmAllocations(requestId);
+        expect((await startProduction(requestId)).status).toBe(200);
+        const summary = await t.request({
+          method: 'GET',
+          url: `/orders/${requestId}/payments`,
+          auth: buyer.auth,
+        });
+        expect(summary.body).toMatchObject({
+          depositRequired: false,
+          depositPaidAt: null,
+          balanceAmountVnd: 10_000_000,
+        });
+        // An online balance is priced at the whole total, and so is the offline one that replaces it.
+        const pending = (await startPayment(requestId, 'BALANCE', 'VNPAY')).body;
+        expect(pending.amountVnd).toBe(10_000_000);
+        const recorded = await t.request({
+          method: 'POST',
+          url: `/admin/orders/${requestId}/payments/offline`,
+          auth: admin.auth,
+          body: { note: 'Paid in full at the office' },
+        });
+        expect(recorded.status).toBe(201);
+        expect(recorded.body).toMatchObject({ kind: 'BALANCE', amountVnd: 10_000_000 });
+        const after = await t.request({
+          method: 'GET',
+          url: `/orders/${requestId}/payments`,
+          auth: buyer.auth,
+        });
+        expect(after.body.balancePaidAt).not.toBeNull();
+      } finally {
+        vi.stubEnv('SEPAY_WEBHOOK_API_KEY', SEPAY_KEY);
+      }
+    });
   });
 });

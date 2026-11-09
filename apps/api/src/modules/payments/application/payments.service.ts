@@ -121,6 +121,10 @@ export class PaymentsService {
     const config = paymentsConfig();
     const paidDeposit = payments.find((p) => p.kind === 'DEPOSIT' && p.status === 'PAID');
     const paidBalance = payments.find((p) => p.kind === 'BALANCE' && p.status === 'PAID');
+    const depositFirst = config.depositRequired && request.status === 'ACCEPTED';
+    const depositPreview = depositFirst
+      ? paymentAmountVnd('DEPOSIT', quotation.totalVnd, config.depositPercent)
+      : undefined;
     return {
       orderId: request.id,
       totalVnd: quotation.totalVnd,
@@ -135,7 +139,8 @@ export class PaymentsService {
         'BALANCE',
         quotation.totalVnd,
         config.depositPercent,
-        paidDeposit?.amountVnd,
+        // While the deposit is still to be paid first, preview the balance that will remain after it.
+        paidDeposit?.amountVnd ?? (depositFirst ? depositPreview : undefined),
       ),
       depositRequired: config.depositRequired,
       depositPaidAt: paidDeposit?.paidAt?.toISOString() ?? null,
