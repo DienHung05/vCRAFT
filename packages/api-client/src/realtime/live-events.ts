@@ -15,15 +15,21 @@ export interface LiveEventsOptions {
   random?: () => number;
 }
 
-/** Backoff after a failed connection: 1 s, 2 s, 4 s … up to 30 s, with ±20% jitter. */
-export function backoffMs(failures: number, random: () => number = Math.random): number {
-  const base = Math.min(30_000, 1_000 * 2 ** Math.max(0, failures - 1));
+/** Backoff after a failed connection: 1 s, 2 s, 4 s … up to `capMs` (30 s by default), with ±20% jitter. */
+export function backoffMs(
+  failures: number,
+  random: () => number = Math.random,
+  capMs = 30_000,
+): number {
+  const base = Math.min(capMs, 1_000 * 2 ** Math.max(0, failures - 1));
   return Math.round(base * (0.8 + 0.4 * random()));
 }
 
 /** After this many failures in a row the caller is told to rely on polling; retries continue slowly. */
 export const POLLING_AFTER_FAILURES = 3;
 const MIN_HEALTHY_MS = 2_000;
+/** Longest wait between retries while the session is missing or rejected. */
+export const AUTH_RETRY_CAP_MS = 60_000;
 
 /** Splits an SSE byte stream into live events; comments (heartbeats) and malformed lines are skipped. */
 export function createLiveEventParser(): (chunk: string) => LiveEvent[] {
@@ -56,8 +62,9 @@ export function createLiveEventParser(): (chunk: string) => LiveEvent[] {
 /**
  * Keeps one live connection to `GET /me/events` (GH#93) with `fetch`, which unlike `EventSource` can send
  * the Authorization header. A stream that ends normally reconnects at once; failures back off. A missing
- * endpoint (404, an older API) or a signed-out session stops for good and leaves the caller polling.
- * Returns a function that closes the connection.
+ * endpoint (404, an older API) stops for good and leaves the caller polling. A missing token or a
+ * 401/403 also leaves the caller polling but keeps retrying with a slower backoff (up to 60 s), reading
+ * the token again each time, so the stream recovers once the session does. Returns a function that closes the connection.
  */
 export function subscribeLiveEvents(options: LiveEventsOptions): () => void {
   const fetchImpl = options.fetch ?? fetch;
@@ -65,6 +72,14 @@ export function subscribeLiveEvents(options: LiveEventsOptions): () => void {
   const controller = new AbortController();
   const status = (s: LiveStatus) => options.onStatus?.(s);
   let failures = 0;
+  let authFailures = 0;
+
+  // No usable session: the caller polls meanwhile, and the stream is tried again after a growing wait.
+  const waitForSession = async () => {
+    authFailures++;
+    status('polling');
+    await sleep(backoffMs(authFailures, options.random, AUTH_RETRY_CAP_MS));
+  };
 
   void (async () => {
     status('connecting');
@@ -73,14 +88,21 @@ export function subscribeLiveEvents(options: LiveEventsOptions): () => void {
       const opened = Date.now();
       try {
         const token = await options.getAccessToken();
-        if (!token) return status('polling');
+        if (!token) {
+          await waitForSession();
+          continue;
+        }
         const res = await fetchImpl(options.url ?? '/api/v1/me/events', {
           headers: { authorization: `Bearer ${token}`, accept: 'text/event-stream' },
           signal: controller.signal,
           cache: 'no-store',
         });
-        if (res.status === 404 || res.status === 401 || res.status === 403)
-          return status('polling');
+        if (res.status === 404) return status('polling');
+        if (res.status === 401 || res.status === 403) {
+          await waitForSession();
+          continue;
+        }
+        authFailures = 0;
         if (!res.ok || !res.body) throw new Error(`live events ${res.status}`);
         const parse = createLiveEventParser();
         const decoder = new TextDecoder();

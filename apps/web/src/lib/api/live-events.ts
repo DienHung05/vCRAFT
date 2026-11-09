@@ -21,7 +21,7 @@ function setStatus(status: LiveStatus) {
 function connect() {
   const supabase = browserSupabase();
   if (!supabase) return setStatus('polling');
-  stop = subscribeLiveEvents({
+  const stream = subscribeLiveEvents({
     getAccessToken: async () =>
       (await supabase.auth.getSession()).data.session?.access_token ?? null,
     onEvent: (event) => {
@@ -29,6 +29,18 @@ function connect() {
     },
     onStatus: setStatus,
   });
+  // A new session (sign-in, refreshed or switched account) restarts the stream at once instead of
+  // waiting for its retry backoff. The initial event only reports the session already in use.
+  const { data } = supabase.auth.onAuthStateChange((event) => {
+    if (event === 'INITIAL_SESSION' || !stop) return;
+    stop();
+    stop = null;
+    connect();
+  });
+  stop = () => {
+    data.subscription.unsubscribe();
+    stream();
+  };
 }
 
 /**

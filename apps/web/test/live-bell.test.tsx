@@ -11,7 +11,10 @@ vi.mock('@/i18n/navigation', () => ({
 }));
 vi.mock('@/lib/auth/supabase-browser', () => ({
   browserSupabase: () => ({
-    auth: { getSession: async () => ({ data: { session: { access_token: 'tok' } } }) },
+    auth: {
+      getSession: async () => ({ data: { session: { access_token: 'tok' } } }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => undefined } } }),
+    },
   }),
   browserAccountClient: () => {
     throw new Error('not used');
