@@ -21,9 +21,6 @@ export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[number];
 export const ONLINE_PAYMENT_METHODS = ['SEPAY_TRANSFER', 'VNPAY', 'MOMO'] as const;
 export type OnlinePaymentMethod = (typeof ONLINE_PAYMENT_METHODS)[number];
 
-/** Methods whose gateway is a direct sandbox integration, hidden unless the feature flag is on. */
-export const SANDBOX_GATEWAY_METHODS = ['VNPAY', 'MOMO'] as const;
-
 export const PAYMENT_STATUSES = [
   'PENDING',
   'PAID',

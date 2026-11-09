@@ -50,6 +50,9 @@ const SUMMARY: OrderPaymentsDto = {
   depositPaidAt: null,
   balancePaidAt: null,
   methods: ['SEPAY_TRANSFER'],
+  methodOptions: [
+    { method: 'SEPAY_TRANSFER', sandbox: false, minAmountVnd: 1, maxAmountVnd: null },
+  ],
   simulateAvailable: false,
   payments: [],
 };

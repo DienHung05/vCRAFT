@@ -39,11 +39,25 @@ import type {
 } from '../gateways/payment-gateway';
 import { SepayGateway } from '../gateways/sepay.gateway';
 import { VnpayGateway } from '../gateways/vnpay.gateway';
-import { availableMethods, paymentsConfig } from '../payments.config';
+import {
+  availableMethods,
+  methodLimits,
+  type PaymentsConfig,
+  paymentsConfig,
+} from '../payments.config';
 import { toPaymentDto } from './payment-view';
 
 /** The system is the actor of provider-driven changes; nobody is excluded from its notices. */
 const SYSTEM_ACTOR = 'system';
+
+/** A payment that expired this recently is still asked about at the provider: late money still settles it. */
+export const LATE_MONEY_WINDOW_MS = 60 * 60_000;
+
+/** At most one provider status query per payment in this time (the buyer polls every few seconds). */
+const SYNC_THROTTLE_MS = 20_000;
+
+/** The buyer's poll only asks the provider about a payment older than this (give the IPN time to arrive). */
+const POLL_SYNC_AFTER_MS = 30_000;
 
 /** A start request waits for the provider at most this long (the HTTP timeout is 10 s, with margin). */
 const CHECKOUT_IN_FLIGHT_MS = 30_000;
@@ -96,6 +110,8 @@ const randomSource = (length: number) => new Uint8Array(randomBytes(length));
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
+  /** Reference code to the time (ms) of its last provider query, for the throttle. */
+  private readonly lastQueried = new Map<string, number>();
 
   constructor(
     private readonly orm: MikroORM,
@@ -141,6 +157,7 @@ export class PaymentsService {
       depositPaidAt: paidDeposit?.paidAt?.toISOString() ?? null,
       balancePaidAt: paidBalance?.paidAt?.toISOString() ?? null,
       methods: availableMethods(config),
+      methodOptions: this.methodOptions(config),
       simulateAvailable: config.sandbox && config.sepay !== null,
       payments: payments.map(toPaymentDto),
     };
@@ -156,6 +173,14 @@ export class PaymentsService {
     );
     if (!payment) throw notFound();
     this.assertCanRead(actor, payment.order);
+    // The buyer is waiting on a wallet: if the IPN has not come yet, ask the provider (throttled, not awaited).
+    if (
+      (payment.provider === 'VNPAY' || payment.provider === 'MOMO') &&
+      payment.status === 'PENDING' &&
+      Date.now() - payment.createdAt.getTime() > POLL_SYNC_AFTER_MS
+    ) {
+      void this.syncWithProvider(payment.referenceCode);
+    }
     return toPaymentDto(payment);
   }
 
@@ -234,6 +259,16 @@ export class PaymentsService {
         depositRequired: config.depositRequired,
       });
       if (blocked) throw blocked;
+      const amountVnd = paymentAmountVnd(
+        input.kind,
+        quotation.totalVnd,
+        config.depositPercent,
+        state.deposit?.amountVnd,
+      );
+      const limit = methodLimits(config)[input.method];
+      if (amountVnd < limit.minVnd || (limit.maxVnd !== null && amountVnd > limit.maxVnd)) {
+        throw new AppError('PAYMENT_AMOUNT_OUT_OF_RANGE', input.method);
+      }
 
       const now = new Date();
       for (const pending of payments.filter(
@@ -265,14 +300,12 @@ export class PaymentsService {
         kind: input.kind,
         method: input.method,
         provider: providerOf(input.method),
-        amountVnd: paymentAmountVnd(
-          input.kind,
-          quotation.totalVnd,
-          config.depositPercent,
-          state.deposit?.amountVnd,
-        ),
+        amountVnd,
         referenceCode: await this.freshReference(em),
-        expiresAt: new Date(now.getTime() + config.expiryMs),
+        expiresAt: new Date(
+          now.getTime() +
+            (input.method === 'SEPAY_TRANSFER' ? config.expiryMs : config.walletExpiryMs),
+        ),
       });
       await em.flush();
       const snapshot: PaymentSnapshot = {
@@ -438,6 +471,55 @@ export class PaymentsService {
     });
   }
 
+  /**
+   * Asks VNPay or MoMo what became of a payment whose IPN may have been missed (ADR-0024), and applies a
+   * final answer through {@link reconcile}, so it stays idempotent with a late IPN. Only for a wallet gateway
+   * that is configured, a `PENDING` payment or one that expired within the late-money window; at most one query
+   * per payment every 20 s. Never throws: a provider that is down just leaves the payment as it is.
+   */
+  async syncWithProvider(referenceCode: string, now = new Date()): Promise<ReconcileResult | null> {
+    try {
+      const payment = await this.orm.em.fork().findOne(Payment, { referenceCode });
+      if (!payment) return null;
+      const gateway: Pick<PaymentGateway<unknown>, 'isConfigured' | 'queryStatus'> | null =
+        payment.provider === 'VNPAY' ? this.vnpay : payment.provider === 'MOMO' ? this.momo : null;
+      if (!gateway?.queryStatus || !gateway.isConfigured()) return null;
+      const pending = payment.status === 'PENDING';
+      const lateMoney =
+        payment.status === 'EXPIRED' &&
+        (payment.expiresAt?.getTime() ?? 0) >= now.getTime() - LATE_MONEY_WINDOW_MS;
+      if (!pending && !lateMoney) return null;
+
+      const last = this.lastQueried.get(referenceCode);
+      if (last !== undefined && now.getTime() - last < SYNC_THROTTLE_MS) return null;
+      this.lastQueried.set(referenceCode, now.getTime());
+      if (this.lastQueried.size > 500) {
+        for (const [ref, at] of this.lastQueried) {
+          if (now.getTime() - at >= SYNC_THROTTLE_MS) this.lastQueried.delete(ref);
+        }
+      }
+
+      const answer = await gateway.queryStatus({
+        referenceCode,
+        amountVnd: payment.amountVnd,
+        createdAt: payment.createdAt,
+        checkout: payment.checkout ?? null,
+      });
+      this.logger.log(`provider query ${payment.provider} ref ${referenceCode}: ${answer.state}`);
+      if (answer.state === 'PAID' || answer.state === 'FAILED') {
+        const result = await this.reconcile(answer.event, now);
+        this.logger.log(`provider query ref ${referenceCode} reconciled: ${result.outcome}`);
+        return result;
+      }
+      return null;
+    } catch (error) {
+      this.logger.warn(
+        `provider query for ${referenceCode} failed: ${error instanceof Error ? error.message : error}`,
+      );
+      return null;
+    }
+  }
+
   // --- administration ---
 
   /** An administrator records a balance paid outside the site. Audit-logged; the buyer is told. */
@@ -598,6 +680,21 @@ export class PaymentsService {
   }
 
   // --- helpers ---
+
+  private methodOptions(config: PaymentsConfig): OrderPaymentsDto['methodOptions'] {
+    const limits = methodLimits(config);
+    return availableMethods(config).map((method) => ({
+      method,
+      sandbox:
+        method === 'VNPAY'
+          ? config.vnpay?.mode === 'sandbox'
+          : method === 'MOMO'
+            ? config.momo?.mode === 'sandbox'
+            : false,
+      minAmountVnd: limits[method].minVnd,
+      maxAmountVnd: limits[method].maxVnd,
+    }));
+  }
 
   private async getById(id: string): Promise<PaymentDto> {
     const payment = await this.orm.em.fork().findOneOrFail(Payment, id, { populate: ['order'] });

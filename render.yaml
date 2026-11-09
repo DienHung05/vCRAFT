@@ -78,10 +78,14 @@ services:
       # Bảo mật
       - key: FIELD_ENCRYPTION_KEYS
         sync: false
-      # Online payment of orders (ADR-0021), sandbox only and off while these are unset. Add in the dashboard for the API
-      # only (the worker needs none): SEPAY_WEBHOOK_API_KEY, SEPAY_BANK_NAME, SEPAY_BANK_ACCOUNT_NUMBER,
-      # SEPAY_BANK_ACCOUNT_NAME (+ optional SEPAY_BANK_CODE, SEPAY_BANK_BIN, PAYMENT_DEPOSIT_PERCENT, PAYMENT_EXPIRES_IN_HOURS).
-      # PAYMENTS_SANDBOX_GATEWAYS (VNPay, MoMo) must stay unset in production. See docs/operations/deploy.md.
+      # Online payment of orders (ADR-0021, ADR-0024). API only, the worker needs none. Off while these are unset.
+      # Bank transfer: SEPAY_WEBHOOK_API_KEY, SEPAY_BANK_NAME, SEPAY_BANK_ACCOUNT_NUMBER, SEPAY_BANK_ACCOUNT_NAME
+      # (+ optional SEPAY_BANK_CODE, SEPAY_BANK_BIN, PAYMENT_DEPOSIT_PERCENT, PAYMENT_EXPIRES_IN_HOURS).
+      # VNPay / MoMo, each with its own mode (off | sandbox | production): VNPAY_MODE, VNPAY_TMN_CODE, VNPAY_HASH_SECRET,
+      # VNPAY_PAY_URL, VNPAY_API_URL; MOMO_MODE, MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, MOMO_SECRET_KEY, MOMO_ENDPOINT
+      # (+ optional PAYMENT_WALLET_EXPIRES_IN_MINUTES, VNPAY_MAX_AMOUNT_VND, MOMO_MAX_AMOUNT_VND,
+      # PAYMENTS_PROVIDER_SYNC_EVERY_SECONDS). Production URLs come from the provider contract; a sandbox gateway is
+      # never offered under APP_ENV=production. See docs/operations/deploy.md.
       # Fox assistant (ADR-19). Without OPENAI_API_KEY the assistant only answers greetings, date and weather.
       # Must be the same key as the worker's: both embed with it, and query/document vectors must come from one model.
       - key: OPENAI_API_KEY

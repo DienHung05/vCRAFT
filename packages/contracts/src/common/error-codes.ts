@@ -103,8 +103,13 @@ export const ERROR_CATALOG = {
   RFQ_OFFER_QUANTITY_EXCEEDED: { status: 409, title: 'Quantity is above the household offer' },
 
   // --- PAYMENT: online payment of orders (ADR-0021, GH#205) ---
-  /** The method is switched off or not configured in this deployment (VNPay and MoMo are sandbox-only behind a flag). */
+  /** The method is switched off or not configured in this deployment (ADR-0021, ADR-0024). */
   PAYMENT_METHOD_UNAVAILABLE: { status: 409, title: 'Payment method is not available' },
+  /** The payment amount is below the minimum or above the maximum of the chosen method (ADR-0024). */
+  PAYMENT_AMOUNT_OUT_OF_RANGE: {
+    status: 409,
+    title: 'Amount is outside the limits of this payment method',
+  },
   /** The order is not in a state that takes this payment (deposit before production, balance until delivery). */
   PAYMENT_ORDER_NOT_PAYABLE: { status: 409, title: 'Order cannot take this payment now' },
   /** The deposit or the balance of this order is already paid. */

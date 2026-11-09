@@ -90,8 +90,19 @@ export const OrderPaymentsResponseSchema = z.strictObject({
   depositRequired: z.boolean(),
   depositPaidAt: IsoDateTimeSchema.nullable(),
   balancePaidAt: IsoDateTimeSchema.nullable(),
-  /** Online methods the buyer may use; VNPay and MoMo are absent unless the sandbox flag is on. */
+  /** Online methods the buyer may use: SePay when its account is configured, VNPay and MoMo when their mode is on. */
   methods: z.array(OnlinePaymentMethodSchema),
+  /** The same methods in the same order, with what the buyer should know before choosing one. */
+  methodOptions: z.array(
+    z.strictObject({
+      method: OnlinePaymentMethodSchema,
+      /** The gateway runs in its provider's sandbox: no real money moves. Always `false` for SePay. */
+      sandbox: z.boolean(),
+      minAmountVnd: VndSchema,
+      /** `null`: no upper limit. */
+      maxAmountVnd: VndSchema.nullable(),
+    }),
+  ),
   /** The sandbox "simulate transfer" button is available (`APP_ENV` is not production). */
   simulateAvailable: z.boolean(),
   payments: z.array(PaymentResponseSchema),

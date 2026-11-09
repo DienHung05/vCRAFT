@@ -34,6 +34,9 @@ const summary = (payments: unknown[]) => ({
   depositPaidAt: '2026-01-01T00:00:00.000Z',
   balancePaidAt: null,
   methods: ['SEPAY_TRANSFER'],
+  methodOptions: [
+    { method: 'SEPAY_TRANSFER', sandbox: false, minAmountVnd: 1, maxAmountVnd: null },
+  ],
   simulateAvailable: false,
   payments,
 });

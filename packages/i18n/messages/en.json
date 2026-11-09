@@ -1488,6 +1488,7 @@
     "history": "Payments of this order",
     "errors": {
       "PAYMENT_METHOD_UNAVAILABLE": "This payment method is not available.",
+      "PAYMENT_AMOUNT_OUT_OF_RANGE": "This amount is outside the limits of the chosen payment method. Please choose another one.",
       "PAYMENT_ORDER_NOT_PAYABLE": "The order cannot take this payment now.",
       "PAYMENT_ALREADY_PAID": "This part of the order is already paid.",
       "PAYMENT_DEPOSIT_REQUIRED": "Pay the deposit first.",
