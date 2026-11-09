@@ -5,7 +5,7 @@ import {
   type PaymentDto,
   PaymentResponseSchema,
 } from '@vcraft/contracts';
-import { expireDuePayments, Payment, QuotationRequest } from '@vcraft/database';
+import { expireDuePayments, Payment, QuotationRequest, resolveDbDriver } from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   PAYMENT_HTTP,
@@ -950,7 +950,11 @@ describe('online payment of orders (ADR-0021)', () => {
         await calling;
         // The provider call is open now: the order row must be lockable at once (short wait, then it would fail).
         await db.orm.em.fork().transactional(async (em) => {
-          await em.getConnection().execute('SET SESSION innodb_lock_wait_timeout = 1');
+          await em.execute(
+            resolveDbDriver(process.env) === 'mysql'
+              ? 'SET SESSION innodb_lock_wait_timeout = 1'
+              : "SET LOCAL lock_timeout = '1s'",
+          );
           const locked = await em.findOne(
             QuotationRequest,
             { id: requestId },
