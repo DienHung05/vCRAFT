@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { liveStream } from './live-events.controller';
+import { describe, expect, it, vi } from 'vitest';
+import { liveStream, sleep } from './live-events.controller';
 
 const events = (lines: string[]) =>
   lines.flatMap((l) =>
@@ -85,5 +85,22 @@ describe('liveStream media updates (GH#252)', () => {
       update('a', 'READY'),
       update('b', 'FAILED'),
     ]);
+  });
+});
+
+describe('sleep abort listener', () => {
+  it('leaves no abort listener behind after many sleeps, and clears the timer on abort', async () => {
+    const controller = new AbortController();
+    const add = vi.spyOn(controller.signal, 'addEventListener');
+    const remove = vi.spyOn(controller.signal, 'removeEventListener');
+    for (let i = 0; i < 5; i++) await sleep(1, controller.signal);
+    expect(add).toHaveBeenCalledTimes(5);
+    expect(remove).toHaveBeenCalledTimes(5);
+    for (const [, listener] of add.mock.calls) {
+      expect(remove.mock.calls.some(([, l]) => l === listener)).toBe(true);
+    }
+    const pending = sleep(60_000, controller.signal);
+    controller.abort();
+    await expect(pending).resolves.toBeUndefined();
   });
 });
