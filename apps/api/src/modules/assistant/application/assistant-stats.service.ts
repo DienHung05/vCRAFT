@@ -1,8 +1,8 @@
-import { MikroORM } from '@mikro-orm/core';
+import { MikroORM, raw } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type { AssistantStatsDto } from '@vcraft/contracts';
 import { AssistantMessageLog } from '@vcraft/database';
-import { FAST_INTENTS, type FastIntent } from './fast-intents';
+import { FAST_INTENTS } from './fast-intents';
 
 /** Nearest-rank percentile of sorted values; null for an empty list. */
 export function percentile(sorted: readonly number[], p: number): number | null {
@@ -11,10 +11,39 @@ export function percentile(sorted: readonly number[], p: number): number | null 
   return sorted[Math.min(sorted.length, Math.max(1, rank)) - 1] ?? null;
 }
 
+// Refusals by the guardrail and classifier layers: the only turns that count as attacks.
+const GUARDRAIL_REASONS = ['INJECTION', 'ABUSE', 'PRIVATE_DATA'];
+// Limits (per-IP rate limit, daily token budget) and the kill switch are not attacks.
+const LIMIT_REASONS = ['RATE_LIMITED', 'BUDGET_EXHAUSTED'];
+// Not-blocked turns that ended in an error event (model down or too slow) carry one of these in `blockReason`.
+const FAILURE_REASONS = ['UPSTREAM', 'TIMEOUT'];
+
 /**
- * The Assistant card on the admin dashboard (FR-AST-08, GH#82): turns, block rate, thumbs up/down,
- * first-token latency (model turns only) and the questions the Fox could not answer, over the last few days. Reads the
- * anonymous log only, which holds at most 30 days.
+ * The slice of MikroORM's SQL QueryBuilder used here. `@mikro-orm/sql` is not a dependency of the API (the
+ * driver comes through `@vcraft/database`), so the builder the SQL entity manager hands out is typed by hand.
+ */
+interface StatsQuery {
+  select(fields: unknown): StatsQuery;
+  where(condition: object): StatsQuery;
+  groupBy(fields: string[]): StatsQuery;
+  orderBy(order: object | object[]): StatsQuery;
+  offset(count: number): StatsQuery;
+  limit(count: number): StatsQuery;
+  execute(method: 'all' | 'get'): Promise<unknown>;
+}
+
+interface TurnGroup {
+  blocked: boolean;
+  blockReason: string | null;
+  answered: boolean;
+  intent: string;
+  total: number | string;
+}
+
+/**
+ * The Assistant card on the admin dashboard (FR-AST-08, GH#82): turns, guardrail blocks, limits, failures,
+ * thumbs up/down, first-token latency (model turns only) and the questions the Fox could not answer, over the
+ * last few days. Reads the anonymous log only, which holds at most 30 days. Everything is aggregated in SQL.
  */
 @Injectable()
 export class AssistantStatsService {
@@ -22,40 +51,97 @@ export class AssistantStatsService {
 
   async stats(days: number, now = new Date()): Promise<AssistantStatsDto> {
     const since = new Date(now.getTime() - days * 86_400_000);
-    const rows = await this.orm.em
-      .fork()
-      .find(
-        AssistantMessageLog,
-        { createdAt: { $gte: since } },
-        { fields: ['blocked', 'answered', 'firstTokenMs', 'feedback', 'question', 'intent'] },
-      );
-    const blocked = rows.filter((r) => r.blocked).length;
-    // Fast-path turns never reach the model; mixing their ~100 ms in would hide the real first-token latency.
-    const latencies = rows
-      .filter((r) => !FAST_INTENTS.includes(r.intent as FastIntent))
-      .map((r) => r.firstTokenMs)
-      .filter((ms): ms is number => typeof ms === 'number')
-      .sort((a, b) => a - b);
-    const unanswered = new Map<string, number>();
-    for (const row of rows) {
-      if (row.blocked || row.answered) continue;
-      const key = row.question.trim();
-      if (key) unanswered.set(key, (unanswered.get(key) ?? 0) + 1);
+    const em = this.orm.em.fork();
+    const sqlEm = em as unknown as {
+      createQueryBuilder(entity: typeof AssistantMessageLog, alias: string): StatsQuery;
+    };
+    const inWindow = () => sqlEm.createQueryBuilder(AssistantMessageLog, 'l');
+
+    const groups = (await inWindow()
+      .select(['blocked', 'blockReason', 'answered', 'intent', raw('count(*) as total')])
+      .where({ createdAt: { $gte: since } })
+      .groupBy(['blocked', 'blockReason', 'answered', 'intent'])
+      .execute('all')) as unknown as TurnGroup[];
+
+    const counts = { turns: 0, blocked: 0, limited: 0, disabled: 0, failures: 0, unanswered: 0 };
+    for (const g of groups) {
+      const n = Number(g.total);
+      const reason = g.blockReason ?? '';
+      counts.turns += n;
+      if (g.blocked) {
+        if (GUARDRAIL_REASONS.includes(reason)) counts.blocked += n;
+        else if (LIMIT_REASONS.includes(reason)) counts.limited += n;
+        else if (reason === 'DISABLED') counts.disabled += n;
+      } else if (!g.answered) {
+        // Rows from before failures were tagged: a classifier outage was logged as intent `unknown`.
+        if (FAILURE_REASONS.includes(reason) || g.intent === 'unknown') counts.failures += n;
+        else counts.unanswered += n;
+      }
     }
+
+    const feedbackRows = (await inWindow()
+      .select(['feedback', raw('count(*) as total')])
+      .where({ createdAt: { $gte: since }, feedback: { $ne: null } })
+      .groupBy(['feedback'])
+      .execute('all')) as unknown as { feedback: string; total: number | string }[];
+    const feedback = (rating: 'UP' | 'DOWN') =>
+      Number(feedbackRows.find((r) => r.feedback === rating)?.total ?? 0);
+
+    // Fast-path turns never reach the model; mixing their ~100 ms in would hide the real first-token latency.
+    const latencyWhere = {
+      createdAt: { $gte: since },
+      firstTokenMs: { $ne: null },
+      intent: { $nin: [...FAST_INTENTS] },
+    };
+    const latencyCount = Number(
+      (
+        (await inWindow().select(raw('count(*) as total')).where(latencyWhere).execute('get')) as
+          | { total: number | string }
+          | undefined
+      )?.total ?? 0,
+    );
+    // Nearest-rank percentile, as `percentile` does, read as a single row at the right offset.
+    const atRank = async (p: number): Promise<number | null> => {
+      if (latencyCount === 0) return null;
+      const rank = Math.min(latencyCount, Math.max(1, Math.ceil((p / 100) * latencyCount)));
+      const row = (await inWindow()
+        .select('firstTokenMs')
+        .where(latencyWhere)
+        .orderBy({ firstTokenMs: 'asc' })
+        .offset(rank - 1)
+        .limit(1)
+        .execute('get')) as { firstTokenMs: number | string } | undefined;
+      return row ? Number(row.firstTokenMs) : null;
+    };
+
+    const unansweredRows = (await inWindow()
+      .select(['question', raw('count(*) as total')])
+      .where({
+        createdAt: { $gte: since },
+        blocked: false,
+        answered: false,
+        intent: { $ne: 'unknown' },
+        $or: [{ blockReason: null }, { blockReason: { $nin: FAILURE_REASONS } }],
+      })
+      .groupBy(['question'])
+      .orderBy([{ [raw('count(*)')]: 'desc' }, { question: 'asc' }])
+      .limit(10)
+      .execute('all')) as unknown as { question: string; total: number | string }[];
+
     return {
       days,
-      turns: rows.length,
-      blocked,
-      blockRate: rows.length ? blocked / rows.length : 0,
-      feedback: {
-        up: rows.filter((r) => r.feedback === 'UP').length,
-        down: rows.filter((r) => r.feedback === 'DOWN').length,
-      },
-      firstTokenMs: { p50: percentile(latencies, 50), p95: percentile(latencies, 95) },
-      unanswered: [...unanswered]
-        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-        .slice(0, 10)
-        .map(([question, count]) => ({ question, count })),
+      turns: counts.turns,
+      blocked: counts.blocked,
+      blockRate: counts.turns ? counts.blocked / counts.turns : 0,
+      limited: counts.limited,
+      disabled: counts.disabled,
+      failures: counts.failures,
+      unansweredCount: counts.unanswered,
+      feedback: { up: feedback('UP'), down: feedback('DOWN') },
+      firstTokenMs: { p50: await atRank(50), p95: await atRank(95) },
+      unanswered: unansweredRows
+        .filter((r) => r.question.trim())
+        .map((r) => ({ question: r.question.trim(), count: Number(r.total) })),
     };
   }
 }

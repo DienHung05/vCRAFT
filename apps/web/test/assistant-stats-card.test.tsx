@@ -16,6 +16,10 @@ describe('AssistantStatsCard (GH#82)', () => {
           turns: 120,
           blocked: 6,
           blockRate: 0.05,
+          limited: 11,
+          disabled: 2,
+          failures: 7,
+          unansweredCount: 9,
           feedback: { up: 30, down: 4 },
           firstTokenMs: { p50: 640, p95: 1800 },
           unanswered: [{ question: 'Có ship sang Nhật không?', count: 3 }],
@@ -24,6 +28,11 @@ describe('AssistantStatsCard (GH#82)', () => {
     );
     expect(await screen.findByText('120')).toBeTruthy();
     expect(screen.getByText('5%')).toBeTruthy();
+    // Limits, the kill switch and errors are shown apart from guardrail blocks.
+    expect(screen.getByText('Vượt giới hạn').nextElementSibling?.textContent).toBe('11');
+    expect(screen.getByText('Trợ lý đang tắt').nextElementSibling?.textContent).toBe('2');
+    expect(screen.getByText('Lỗi hệ thống').nextElementSibling?.textContent).toBe('7');
+    expect(screen.getByText('Chưa trả lời được').nextElementSibling?.textContent).toBe('9');
     expect(screen.getByText('👍 30 · 👎 4')).toBeTruthy();
     expect(screen.getByText('640 ms / 1800 ms')).toBeTruthy();
     expect(screen.getByText('Có ship sang Nhật không?')).toBeTruthy();
@@ -38,6 +47,10 @@ describe('AssistantStatsCard (GH#82)', () => {
           turns: 0,
           blocked: 0,
           blockRate: 0,
+          limited: 0,
+          disabled: 0,
+          failures: 0,
+          unansweredCount: 0,
           feedback: { up: 0, down: 0 },
           firstTokenMs: { p50: null, p95: null },
           unanswered: [],
