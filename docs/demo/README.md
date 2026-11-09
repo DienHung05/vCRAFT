@@ -208,6 +208,17 @@ pnpm assistant:reindex                # then rebuild the Fox assistant's knowled
 pnpm demo:verify -- --offline         # the check "No demo disclaimer text" must pass
 ```
 
+### Moving the demo workshop pins inside the commune boundary (GH#396)
+
+The drawn Bát Tràng commune polygon (OpenStreetMap, post-2025 merger, about 7 km by 9 km, `packages/domain/src/village/bat-trang-boundary.json`) is the source of truth for "in the commune"; it is not too tight. The old seed drew workshop pins from a small box around the old village core and 14 of the 22 landed outside the polygon, so the admin review flagged approved demo households with "Pinned outside Bát Tràng commune". The seed now pulls every pin that falls outside to the nearest point inside the polygon with a ~30 m inward margin (`boundary-fit.ts`); pins already inside are unchanged and the random stream (so every frozen id and trace code) is unchanged.
+
+`pnpm demo:refresh-coordinates [-- --dry-run]` applies the same fit to a live database without a reset. It writes only `workshop.lat` and `workshop.lng` of the workshops with deterministic demo ids, in one transaction, and is idempotent (a second run reports `changed: 0`). A dry run is read-only; a real run needs the `demo:reset` guard (`APP_ENV=demo` and `DEMO_RESET_CONFIRM=<host>:<port>/<db>`).
+
+```bash
+pnpm demo:refresh-coordinates -- --dry-run   # prints counts and the ids of the workshops it would move; writes nothing
+pnpm demo:refresh-coordinates                # applies the change
+```
+
 ### Swapping the seed news for the real stories on a live database (GH#314)
 
 `pnpm demo:reset` wipes every business table, so a live database gets the real stories with `pnpm news:swap` instead. The command is keyed on the stable news ids (UUID v5 of the seed key in `pools.ts`), idempotent and non-destructive: it creates or updates the `news` rows of the seed pool (text, publish date, publisher, link and original date), links their covers from `photo-manifest.ts` with Vietnamese and English alt text, and sets the old invented stories (`LEGACY_NEWS_KEYS` in `news-seed.ts`) that are no longer in the pool back to draft. It never deletes a row and writes nothing outside `news`, the news cover rows of `media_link` and the outbox event that makes the assistant reindex. Stories of a household that does not exist in the target database are skipped and counted.
@@ -412,6 +423,7 @@ Sau khi chuyển sang local, nhớ: dữ liệu local độc lập với Supabas
 | `pnpm demo:media [-- --force \| --check]` | Tải ảnh có giấy phép + giấy tờ mẫu lên Storage và nối vào seed (cần `APP_ENV=demo`; chạy sau mỗi `demo:reset`, §1B) |
 | `pnpm demo:verify [-- --offline]` | Kiểm dữ liệu demo còn nguyên, gồm ảnh và giấy tờ (chỉ đọc; `--offline` bỏ HEAD tới URL ảnh) |
 | `pnpm demo:refresh-text [-- --dry-run]` | Rewrite household stories, artisan bios and news text in place and strip the old sample-data disclaimers (text only, §3); then `pnpm assistant:reindex` |
+| `pnpm demo:refresh-coordinates [-- --dry-run]` | Move demo workshop pins that lie outside the Bát Tràng boundary to the nearest point inside it (lat/lng only, §3) |
 | `pnpm demo:auth [-- --check]` | Tạo/kiểm 4 người dùng Supabase Auth với id cố định |
 | `pnpm demo:e2e` | Kịch bản QR → biên nhận trên `E2E_BASE_URL` (làm bẩn dữ liệu, reset sau) |
 | `pnpm demo:e2e:preexam` | WCAG, đáp ứng, không nạp lại trang, bàn phím (đặt `DEMO_PREEXAM=1` tự động) |
