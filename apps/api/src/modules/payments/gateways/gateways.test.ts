@@ -9,7 +9,12 @@ import {
 import { MomoGateway } from './momo.gateway';
 import type { PaymentHttp, PaymentSnapshot } from './payment-gateway';
 import { SepayGateway } from './sepay.gateway';
-import { VnpayGateway, vnpayDate } from './vnpay.gateway';
+import {
+  VNPAY_QUERY_REQUEST_FIELDS,
+  VNPAY_QUERY_RESPONSE_FIELDS,
+  VnpayGateway,
+  vnpayDate,
+} from './vnpay.gateway';
 
 const SEPAY_ENV = {
   SEPAY_WEBHOOK_API_KEY: 'sepay-test-key',
@@ -444,10 +449,19 @@ describe('SePay gateway', () => {
   });
 });
 
+function fakeJsonHttp(reply: unknown, ok = true) {
+  const calls: Array<{ url: string; body: Record<string, string> }> = [];
+  const http: PaymentHttp = async (url, init) => {
+    calls.push({ url, body: JSON.parse(init.body) });
+    return { ok, status: ok ? 200 : 500, json: async () => reply };
+  };
+  return { http, calls };
+}
+
 describe('VNPay gateway', () => {
   // The legacy flag switches the sandbox mode on for credentials that come without an explicit mode.
   beforeEach(() => vi.stubEnv('PAYMENTS_SANDBOX_GATEWAYS', 'true'));
-  const gateway = new VnpayGateway();
+  const gateway = new VnpayGateway(fakeJsonHttp({}).http);
   const signedQuery = (fields: Record<string, string>) => {
     // Independent of the adapter: the documented scheme, sorted `key=value` joined by `&`, HMAC-SHA512.
     const data = Object.keys(fields)
@@ -537,6 +551,166 @@ describe('VNPay gateway', () => {
     expect(gateway.verifyCallback(bare)).toEqual({
       signatureValid: false,
       reason: 'MALFORMED_QUERY',
+    });
+  });
+
+  it('rejects a correctly signed call that names another merchant', () => {
+    setEnv(VNPAY_ENV);
+    expect(gateway.verifyCallback(ipn({ vnp_TmnCode: 'OTHERTMN' }))).toEqual({
+      signatureValid: false,
+      reason: 'WRONG_MERCHANT',
+    });
+  });
+
+  describe('queryStatus (querydr)', () => {
+    const sentUrl =
+      'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_Amount=300000000&vnp_CreateDate=20261108205500&vnp_TxnRef=VCPAB3DEF7K9M';
+    const query = {
+      referenceCode: snapshot.referenceCode,
+      amountVnd: 3_000_000,
+      createdAt: new Date('2026-11-08T13:55:01Z'),
+      checkout: { type: 'REDIRECT', url: sentUrl, deeplink: null, qrImageUrl: null },
+    } as const;
+    const answer = (overrides: Record<string, string> = {}) => {
+      const fields: Record<string, string> = {
+        vnp_ResponseId: 'resp-1',
+        vnp_Command: 'querydr',
+        vnp_ResponseCode: '00',
+        vnp_Message: 'QueryDR Success',
+        vnp_TmnCode: VNPAY_ENV.VNPAY_TMN_CODE,
+        vnp_TxnRef: snapshot.referenceCode,
+        vnp_Amount: '300000000',
+        vnp_BankCode: 'NCB',
+        vnp_PayDate: '20261108210000',
+        vnp_TransactionNo: '14123456',
+        vnp_TransactionType: '01',
+        vnp_TransactionStatus: '00',
+        vnp_OrderInfo: 'vCraft VCPAB3DEF7K9M',
+        vnp_PromotionCode: '',
+        vnp_PromotionAmount: '',
+        ...overrides,
+      };
+      // The documented response checksum: these fields joined by `|`, missing ones empty.
+      const raw = [
+        'vnp_ResponseId',
+        'vnp_Command',
+        'vnp_ResponseCode',
+        'vnp_Message',
+        'vnp_TmnCode',
+        'vnp_TxnRef',
+        'vnp_Amount',
+        'vnp_BankCode',
+        'vnp_PayDate',
+        'vnp_TransactionNo',
+        'vnp_TransactionType',
+        'vnp_TransactionStatus',
+        'vnp_OrderInfo',
+        'vnp_PromotionCode',
+        'vnp_PromotionAmount',
+      ]
+        .map((name) => fields[name] ?? '')
+        .join('|');
+      return {
+        ...fields,
+        vnp_SecureHash: createHmac('sha512', VNPAY_ENV.VNPAY_HASH_SECRET)
+          .update(raw, 'utf8')
+          .digest('hex'),
+      };
+    };
+
+    it('sends the documented request with a checksum over the fields in order', async () => {
+      setEnv({ ...VNPAY_ENV, VNPAY_MODE: 'sandbox', VNPAY_SERVER_IP: '198.51.100.9' });
+      const { http, calls } = fakeJsonHttp(answer());
+      await new VnpayGateway(http).queryStatus(query);
+      const [call] = calls;
+      expect(call?.url).toBe('https://sandbox.vnpayment.vn/merchant_webapi/api/transaction');
+      const body = call?.body as Record<string, string>;
+      expect(body).toMatchObject({
+        vnp_Version: '2.1.0',
+        vnp_Command: 'querydr',
+        vnp_TmnCode: 'TESTTMN1',
+        vnp_TxnRef: 'VCPAB3DEF7K9M',
+        // The create date that was sent with the pay request, read back from the stored URL.
+        vnp_TransactionDate: '20261108205500',
+        vnp_IpAddr: '198.51.100.9',
+        vnp_OrderInfo: 'Query VCPAB3DEF7K9M',
+      });
+      expect(body.vnp_RequestId).toMatch(/^[A-Za-z0-9]{1,32}$/);
+      expect(body.vnp_CreateDate).toMatch(/^\d{14}$/);
+      expect(VNPAY_QUERY_REQUEST_FIELDS.join('|')).toBe(
+        'vnp_RequestId|vnp_Version|vnp_Command|vnp_TmnCode|vnp_TxnRef|vnp_TransactionDate|vnp_CreateDate|vnp_IpAddr|vnp_OrderInfo',
+      );
+      const raw = [
+        body.vnp_RequestId,
+        '2.1.0',
+        'querydr',
+        'TESTTMN1',
+        'VCPAB3DEF7K9M',
+        '20261108205500',
+        body.vnp_CreateDate,
+        '198.51.100.9',
+        'Query VCPAB3DEF7K9M',
+      ].join('|');
+      expect(body.vnp_SecureHash).toBe(
+        createHmac('sha512', VNPAY_ENV.VNPAY_HASH_SECRET).update(raw, 'utf8').digest('hex'),
+      );
+      expect(VNPAY_QUERY_RESPONSE_FIELDS).toHaveLength(15);
+    });
+
+    it('falls back on the payment creation time and 127.0.0.1', async () => {
+      setEnv({ ...VNPAY_ENV, VNPAY_MODE: 'sandbox' });
+      const { http, calls } = fakeJsonHttp(answer());
+      await new VnpayGateway(http).queryStatus({ ...query, checkout: null });
+      expect(calls[0]?.body).toMatchObject({
+        vnp_TransactionDate: vnpayDate(query.createdAt),
+        vnp_IpAddr: '127.0.0.1',
+      });
+    });
+
+    it('reads a paid answer: transaction number and the x100 amount', async () => {
+      setEnv({ ...VNPAY_ENV, VNPAY_MODE: 'sandbox' });
+      const status = await new VnpayGateway(fakeJsonHttp(answer()).http).queryStatus(query);
+      expect(status).toMatchObject({
+        state: 'PAID',
+        event: {
+          provider: 'VNPAY',
+          referenceCode: 'VCPAB3DEF7K9M',
+          providerTxnId: '14123456',
+          amountVnd: 3_000_000,
+          outcome: 'PAID',
+          raw: { source: 'query' },
+        },
+      });
+    });
+
+    it.each([
+      ['a bad checksum', { vnp_SecureHash: 'abc' }, 'UNKNOWN'],
+      ['transaction not found (91)', { vnp_ResponseCode: '91' }, 'PENDING'],
+      ['not complete (01)', { vnp_TransactionStatus: '01' }, 'PENDING'],
+      ['an error status (02)', { vnp_TransactionStatus: '02' }, 'FAILED'],
+      ['a refunded status (04)', { vnp_TransactionStatus: '04' }, 'UNKNOWN'],
+      ['bad request checksum (97)', { vnp_ResponseCode: '97' }, 'UNKNOWN'],
+      ['another order', { vnp_TxnRef: 'VCPOTHER' }, 'UNKNOWN'],
+    ] as const)('maps %s to %s', async (_name, overrides, state) => {
+      setEnv({ ...VNPAY_ENV, VNPAY_MODE: 'sandbox' });
+      const signed = answer(overrides);
+      // Overrides other than the hash are re-signed by `answer`; the hash override is applied afterwards.
+      const reply = 'vnp_SecureHash' in overrides ? { ...signed, ...overrides } : signed;
+      const status = await new VnpayGateway(fakeJsonHttp(reply).http).queryStatus(query);
+      expect(status.state).toBe(state);
+    });
+
+    it('answers UNKNOWN when VNPay is down or not configured', async () => {
+      setEnv({ ...VNPAY_ENV, VNPAY_MODE: 'sandbox' });
+      expect((await new VnpayGateway(fakeJsonHttp({}, false).http).queryStatus(query)).state).toBe(
+        'UNKNOWN',
+      );
+      const broken: PaymentHttp = async () => {
+        throw new Error('timeout');
+      };
+      expect((await new VnpayGateway(broken).queryStatus(query)).state).toBe('UNKNOWN');
+      vi.stubEnv('VNPAY_MODE', '');
+      expect((await new VnpayGateway(broken).queryStatus(query)).state).toBe('UNKNOWN');
     });
   });
 
