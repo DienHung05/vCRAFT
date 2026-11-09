@@ -3226,6 +3226,30 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
     },
     widths: [640, 1280],
   },
+  {
+    id: 'pp2-hsujqp77',
+    alt: 'Chiếc bình có nắp núm tròn, men trắng vẽ lam vịt bơi giữa ao sen và hoa văn chữ nhật quanh vai, trên nền xám.',
+    credit: {
+      title: 'Jar with ducks in lotus pond (18.56.8a, b)',
+      author: 'The Metropolitan Museum of Art',
+      license: 'CC0',
+      licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+      sourceUrl: 'https://www.metmuseum.org/art/collection/search/52778',
+    },
+    widths: [1280],
+  },
+  {
+    id: 'pp2-uqxed4km',
+    alt: 'Chiếc bình thân tròn cổ dài miệng loe nhẹ, men trắng ngà, trên nền xám nhạt.',
+    credit: {
+      title: 'Bottle vase (65.86.56)',
+      author: 'The Metropolitan Museum of Art',
+      license: 'CC0',
+      licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+      sourceUrl: 'https://www.metmuseum.org/art/collection/search/48304',
+    },
+    widths: [1280],
+  },
 ];
 
 export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
@@ -5780,6 +5804,26 @@ export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [
     altEn:
       'Two white porcelain vases painted in cobalt blue: one with a house-by-the-river scene, one hexagonal; a general photo of Bat Trang blue-and-white ware, not the glaze line of the cooperative in the article',
   },
+  {
+    photo: 'pp2-hsujqp77',
+    target: 'PRODUCT',
+    key: 'HSUJQP77',
+    role: 'COVER',
+    position: 0,
+    alt: 'Chiếc bình có nắp núm tròn, men trắng vẽ lam vịt bơi giữa ao sen và hoa văn chữ nhật quanh vai, trên nền xám.',
+    altEn:
+      'A lidded jar with a round knob, white porcelain painted in blue with ducks among lotus in a pond and a key-pattern band at the shoulder, on a grey background.',
+  },
+  {
+    photo: 'pp2-uqxed4km',
+    target: 'PRODUCT',
+    key: 'UQXED4KM',
+    role: 'COVER',
+    position: 0,
+    alt: 'Chiếc bình thân tròn cổ dài miệng loe nhẹ, men trắng ngà, trên nền xám nhạt.',
+    altEn:
+      'A round-bodied bottle vase with a long neck and slightly flared lip, glazed ivory white, on a light grey background.',
+  },
 ];
 
 /**
@@ -5794,7 +5838,6 @@ export const NO_COVER_DEMO_PRODUCTS: readonly string[] = [
   'BRMH663W',
   'FDT9HNPV',
   'G5BEKP4Q',
-  'HSUJQP77',
   'HWKG9TFU',
   'JVANRMAB',
   'KKVB8B28',
@@ -5802,7 +5845,6 @@ export const NO_COVER_DEMO_PRODUCTS: readonly string[] = [
   'NA4WKT3A',
   'PQNMSM5U',
   'RNTYR2NV',
-  'UQXED4KM',
   'YT8G4F7E',
 ];
 
