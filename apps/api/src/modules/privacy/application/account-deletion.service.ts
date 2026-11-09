@@ -23,6 +23,7 @@ import {
   ProductMaker,
   QuotationNotice,
   QuotationRequest,
+  queueKnowledgeChange,
   Workshop,
 } from '@vcraft/database';
 import type { Actor } from '../../../common/auth/auth.guard';
@@ -262,7 +263,10 @@ export class AccountDeletionService {
       })) {
         em.remove(link);
       }
-      for (const item of news) em.remove(item);
+      for (const item of news) {
+        em.remove(item);
+        queueKnowledgeChange(em, 'NEWS', item.id);
+      }
     }
 
     for (const product of products) {
@@ -294,6 +298,8 @@ export class AccountDeletionService {
     household.capacityByCategory = null;
     household.status = 'SUSPENDED';
     household.statusReason = 'The representative deleted their account';
+    // A household change also covers its products, so the assistant index drops them all.
+    queueKnowledgeChange(em, 'HOUSEHOLD', household.id);
 
     await this.removeMedia(em, user.id, journalPhotos, removedAssets);
   }

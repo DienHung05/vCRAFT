@@ -8,8 +8,10 @@ import {
   Household,
   JournalEntry,
   MediaAsset,
+  News,
   Notification,
   OrderAllocation,
+  OutboxEvent,
   QuotationRequest,
   Workshop,
 } from '@vcraft/database';
@@ -534,10 +536,30 @@ describe('Personal data: consent, export and deletion', () => {
       expect(await t.storage.get('private', document.originalKey)).toBeDefined();
       expect((await t.request({ method: 'GET', url: `/households/${rep.slug}` })).status).toBe(200);
 
+      const newsItem = before.create(News, {
+        slug: 'del-news',
+        title: 'Household news',
+        summary: 'Summary',
+        body: 'Body',
+        category: 'VILLAGE_EVENT',
+        household: rep.householdId,
+        status: 'PUBLISHED',
+        publishedAt: new Date(),
+      });
+      await before.flush();
+      const newsId = newsItem.id;
+
       const res = await remove(rep.auth, rep.email);
       expect(res.status).toBe(204);
 
       const after = db.orm.em.fork();
+      // The assistant index is told to drop the household (and its products) and its news
+      const queued = (await after.find(OutboxEvent, { type: 'knowledge.changed' })).map(
+        (event) => event.payload,
+      );
+      expect(queued).toContainEqual({ sourceType: 'HOUSEHOLD', sourceId: rep.householdId });
+      expect(queued).toContainEqual({ sourceType: 'NEWS', sourceId: newsId });
+      expect(await after.count(News, { household: rep.householdId })).toBe(0);
       // The person
       expect(await after.findOneOrFail(AppUser, rep.id)).toMatchObject({
         status: 'DELETED',
