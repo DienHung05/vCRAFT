@@ -15,6 +15,7 @@ import {
   ingestSource,
   knowledgeFromEnv,
 } from './processors/assistant/ingest';
+import { createNoticeClaim } from './processors/mail/claim-notice';
 import { createNoticeLoader } from './processors/mail/load-notice';
 import { type HouseholdMailJob, sendHouseholdMail } from './processors/mail/send-household-mail';
 import { sendNoticeMail } from './processors/mail/send-notice-mail';
@@ -115,6 +116,7 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
     const dispatch = createOutboxDispatcher({ media, mail, qrLabels, scheduler, assistant });
     const mailDeps = {
       loadNotice: createNoticeLoader(this.orm),
+      ...createNoticeClaim(this.orm),
       transport: createTransport(process.env.SMTP_URL ?? 'smtp://localhost:1025'),
       from: process.env.MAIL_FROM ?? 'vCraft <no-reply@vcraft.local>',
       appUrl: process.env.APP_URL ?? 'http://localhost:8080',
