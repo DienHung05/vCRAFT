@@ -13,6 +13,18 @@ export function isWithinCapacity(quantity: number, capacity: number | null | und
   return Number.isFinite(capacity) && quantity <= capacity;
 }
 
+/**
+ * BR-L6: the capacity a household still has once its other active allocations are counted. Undefined
+ * when it declared none (not capped); never below zero.
+ */
+export function remainingCapacity(
+  capacity: number | null | undefined,
+  committed: number,
+): number | undefined {
+  if (capacity === null || capacity === undefined) return undefined;
+  return Math.max(0, capacity - committed);
+}
+
 export interface AllocationPlanCheck {
   /** Σ số lượng các phần. */
   readonly sum: number;
