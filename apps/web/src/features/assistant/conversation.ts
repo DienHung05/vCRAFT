@@ -62,10 +62,22 @@ export function createSseParser(): (chunk: string) => AssistantEvent[] {
   };
 }
 
-/** Earlier turns sent with a question: finished text only, the last ten, oldest first. */
+/**
+ * Earlier turns sent with a question: the last ten, oldest first. Only a question whose answer finished
+ * is kept, together with that answer. A question whose answer was blocked, refused, failed or stopped
+ * (or never came) is dropped with its reply, so a refused injection never rides along in the history of
+ * the next harmless question. The server screens the history again; this is the first line.
+ */
 export function historyOf(messages: readonly ChatMessage[]) {
-  return messages
-    .filter((m) => m.text.trim() && (m.role === 'user' || m.status === 'done'))
+  const kept: ChatMessage[] = [];
+  for (let i = 0; i < messages.length; i++) {
+    const turn = messages[i];
+    if (turn?.role !== 'user') continue;
+    const reply = messages[i + 1];
+    if (reply?.role !== 'assistant' || reply.status !== 'done') continue;
+    if (turn.text.trim() && reply.text.trim()) kept.push(turn, reply);
+  }
+  return kept
     .slice(-ASSISTANT_HISTORY_MAX)
     .map((m) => ({ role: m.role, content: m.text.slice(0, 4_000) }));
 }
