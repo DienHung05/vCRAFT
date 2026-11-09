@@ -6,8 +6,7 @@ import type { NextRequest, NextResponse } from 'next/server';
  * only make a cookie Secure, which is harmless.
  */
 export function isHttpsRequest(request: NextRequest): boolean {
-  const forwarded = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase();
-  return (forwarded ?? request.nextUrl.protocol.replace(':', '')) === 'https';
+  return isHttpsProto(request.headers.get('x-forwarded-proto'), request.nextUrl.protocol);
 }
 
 /**
@@ -21,4 +20,19 @@ export function secureCookiesOnHttps(request: NextRequest, response: NextRespons
     if (!cookie.secure) response.cookies.set({ ...cookie, secure: true });
   }
   return response;
+}
+
+/** The first `x-forwarded-proto` hop (or the given fallback protocol) is https. Shared by every cookie writer. */
+export function isHttpsProto(forwardedProto: string | null | undefined, fallback = ''): boolean {
+  const proto = forwardedProto?.split(',')[0]?.trim().toLowerCase();
+  return (proto || fallback.replace(':', '').toLowerCase()) === 'https';
+}
+
+/** Adds `secure: true` to cookie options when the connection is https; leaves them untouched otherwise. */
+export function withSecureOnHttps<T extends object>(
+  options: T | undefined,
+  https: boolean,
+): (T & { secure?: boolean }) | undefined {
+  if (!https) return options;
+  return { ...(options ?? ({} as T)), secure: true };
 }

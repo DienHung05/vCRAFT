@@ -33,7 +33,9 @@ vi.mock('@/lib/auth/supabase-config', () => ({
 
 const stored = new Map<string, { value: string; options: Record<string, unknown> | undefined }>();
 let incoming: { name: string; value: string }[] = [];
+let forwardedProto: string | null = null;
 vi.mock('next/headers', () => ({
+  headers: async () => new Headers(forwardedProto ? { 'x-forwarded-proto': forwardedProto } : {}),
   cookies: async () => ({
     getAll: () => incoming,
     set: (name: string, value: string, options?: Record<string, unknown>) =>
@@ -48,6 +50,7 @@ beforeEach(() => {
   captured = undefined;
   stored.clear();
   incoming = [];
+  forwardedProto = null;
 });
 
 function setCookieHeader(header: string, name: string): string {
@@ -82,6 +85,17 @@ describe('refreshSession cookie policy', () => {
 });
 
 describe('createServerSupabase cookie policy', () => {
+  it('marks auth cookies Secure only behind https', async () => {
+    forwardedProto = 'https';
+    await createServerSupabase();
+    captured?.cookies.setAll([{ name: 'sb-ref-auth-token', value: 'tok', options: { path: '/' } }]);
+    expect(stored.get('sb-ref-auth-token')?.options).toEqual({ path: '/', secure: true });
+    forwardedProto = 'http';
+    await createServerSupabase();
+    captured?.cookies.setAll([{ name: 'sb-ref-auth-token', value: 'tok', options: { path: '/' } }]);
+    expect(stored.get('sb-ref-auth-token')?.options).toEqual({ path: '/' });
+  });
+
   it('keeps maxAge when remembered', async () => {
     await createServerSupabase();
     captured?.cookies.setAll([
