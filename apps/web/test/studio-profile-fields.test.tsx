@@ -181,6 +181,49 @@ describe('slug field (FR-ART-01)', () => {
   });
 });
 
+describe('stale version and failed refresh', () => {
+  it('after a 409 the section draft shows the server value and the message asks to re-enter', async () => {
+    const getHousehold = vi
+      .fn()
+      .mockResolvedValueOnce(HOUSEHOLD)
+      .mockResolvedValue({ ...HOUSEHOLD, version: 4, slug: 'ban-cua-nguoi-khac' });
+    const updateProfile = vi.fn(async () => {
+      throw new ApiError('STALE_VERSION', 409);
+    });
+    renderVi(<ProfileEditor client={fakeClient({ getHousehold, updateProfile })} />);
+    const input = (await screen.findByLabelText('Địa chỉ trang')) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'ban-cua-toi' } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    fireEvent.click(saveOf('Địa chỉ trang công khai'));
+    expect(await screen.findByText(/nhập lại thay đổi chưa lưu/)).toBeTruthy();
+    await waitFor(() =>
+      expect((screen.getByLabelText('Địa chỉ trang') as HTMLInputElement).value).toBe(
+        'ban-cua-nguoi-khac',
+      ),
+    );
+  });
+
+  it('keeps the screen and shows a notice when a refresh fails after data is loaded', async () => {
+    const getHousehold = vi
+      .fn()
+      .mockResolvedValueOnce(HOUSEHOLD)
+      .mockRejectedValue(new ApiError('SERVICE_UNAVAILABLE', 500));
+    const updateProfile = vi.fn(async () => HOUSEHOLD);
+    renderVi(<ProfileEditor client={fakeClient({ getHousehold, updateProfile })} />);
+    const input = (await screen.findByLabelText('Địa chỉ trang')) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'ban-cua-toi' } });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    fireEvent.click(saveOf('Địa chỉ trang công khai'));
+    expect(await screen.findByText(/Chưa làm mới được dữ liệu/)).toBeTruthy();
+    expect(screen.getByLabelText('Địa chỉ trang')).toBeTruthy();
+    expect(screen.queryByText(/Chưa tải được dữ liệu của hộ/)).toBeNull();
+  });
+});
+
 describe('cover, portrait and seal (FR-ART-01)', () => {
   it('requires a description for the cover but not for the seal, and saves media references', async () => {
     const client = fakeClient();

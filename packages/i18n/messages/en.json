@@ -1103,6 +1103,8 @@
       "deleteText": "\"{title}\" will be permanently deleted. This cannot be undone.",
       "keep": "Keep it",
       "deleteFailed": "It could not be deleted. It may have just been edited: reload and try again.",
+      "moreFailed": "The next page could not be loaded. The news above is still shown.",
+      "moreRetry": "Try loading again",
       "pinned": "Pinned",
       "important": "Important",
       "state": {
@@ -2199,10 +2201,11 @@
     "notHousehold": "This account does not represent a household yet. Register as an artisan to open the Studio.",
     "loadFailed": "We could not load your household. Please try again in a few minutes.",
     "retry": "Try again",
+    "refreshFailed": "We could not refresh your data. What is shown may be out of date.",
     "loading": "Loading…",
     "saved": "Saved.",
     "save": "Save",
-    "stale": "This profile was just changed elsewhere. We loaded the latest version; check it and save again.",
+    "stale": "This was just changed elsewhere. The latest version is now shown, so please enter your unsaved change again and save.",
     "saveFailed": "We could not save. Check the details and try again.",
     "home": {
       "title": "Welcome, {household}",

@@ -43,17 +43,25 @@ import { PhotosFields, photosValid, toPhotosRequest, uploadPublicImage } from '.
 import { SlugAvailabilityNote } from './slug-availability-note';
 import { StoryEditor } from './story-editor';
 import { StorySuggestion } from './story-suggestion';
+import { useConflictReset } from './use-conflict-reset';
 import { useSlugAvailability } from './use-slug-availability';
 import { inputClass, WorkshopEditor } from './workshop-editor';
 
 type SaveState = 'idle' | 'saving' | 'stale' | 'failed';
 
 /** Một khối sửa có nút lưu riêng; bản cũ (409) tự tải lại để không ghi đè người khác. */
-function useSection(household: HouseholdDto, client: StudioClient, reload: () => Promise<void>) {
+function useSection(
+  household: HouseholdDto,
+  client: StudioClient,
+  reload: () => Promise<void>,
+  resetDrafts: () => void,
+) {
   const common = useTranslations('studio');
   const [state, setState] = useState<SaveState>('idle');
+  const conflict = useConflictReset(household.version, resetDrafts);
   const save = async (body: UpdateHouseholdProfileRequest) => {
     setState('saving');
+    conflict.disarm();
     try {
       await client.updateProfile(household.version, body);
       await reload();
@@ -61,6 +69,7 @@ function useSection(household: HouseholdDto, client: StudioClient, reload: () =>
       notify.success(common('saved'));
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
+        conflict.arm();
         await reload();
         setState('stale');
       } else {
@@ -175,7 +184,6 @@ function IdNumberSection({ household, client, reload }: SectionProps) {
 
 function StorySection({ household, client, reload }: SectionProps) {
   const t = useTranslations('studio.profile');
-  const { state, save } = useSection(household, client, reload);
   const [history, setHistory] = useState(household.history);
   const [craft, setCraft] = useState(household.craft ?? '');
   const [craftCategory, setCraftCategory] = useState<CraftCategory | ''>(
@@ -183,6 +191,13 @@ function StorySection({ household, client, reload }: SectionProps) {
   );
   const [foundedYear, setFoundedYear] = useState(household.foundedYear?.toString() ?? '');
   const [generations, setGenerations] = useState(household.generations?.toString() ?? '');
+  const { state, save } = useSection(household, client, reload, () => {
+    setHistory(household.history);
+    setCraft(household.craft ?? '');
+    setCraftCategory(household.craftCategory ?? '');
+    setFoundedYear(household.foundedYear?.toString() ?? '');
+    setGenerations(household.generations?.toString() ?? '');
+  });
   return (
     <Card className="flex flex-col gap-4 p-5">
       <h2 className="text-h3">{t('story')}</h2>
@@ -251,11 +266,13 @@ function SlugSection({ household, client, reload }: SectionProps) {
   const common = useTranslations('studio');
   const [slug, setSlug] = useState(household.slug);
   const [state, setState] = useState<'idle' | 'saving' | 'taken' | 'stale' | 'failed'>('idle');
+  const conflict = useConflictReset(household.version, () => setSlug(household.slug));
   const changed = slug !== household.slug;
   const check = useSlugAvailability(slug, (value) => client.slugAvailability(value), changed);
   const valid = slug === '' ? false : /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug);
   const save = async () => {
     setState('saving');
+    conflict.disarm();
     try {
       await client.updateProfile(household.version, { slug });
       await reload();
@@ -265,6 +282,7 @@ function SlugSection({ household, client, reload }: SectionProps) {
       if (error instanceof ApiError && error.code === 'CONFLICT_DUPLICATE') {
         setState('taken');
       } else if (error instanceof ApiError && error.status === 409) {
+        conflict.arm();
         await reload();
         setState('stale');
       } else {
@@ -354,12 +372,18 @@ function SlugSection({ household, client, reload }: SectionProps) {
 /** Cover photo, portrait and personal seal (FR-ART-01); each saved together with its description. */
 function PhotosSection({ household, client, reload }: SectionProps) {
   const t = useTranslations('studio.profile');
-  const { state, save } = useSection(household, client, reload);
   const [photos, setPhotos] = useState({
     coverPhoto: household.coverPhoto,
     portraitPhoto: household.portraitPhoto,
     sealPhoto: household.sealPhoto,
   });
+  const { state, save } = useSection(household, client, reload, () =>
+    setPhotos({
+      coverPhoto: household.coverPhoto,
+      portraitPhoto: household.portraitPhoto,
+      sealPhoto: household.sealPhoto,
+    }),
+  );
   const valid = photosValid(photos);
   return (
     <Card className="flex flex-col gap-4 p-5">
@@ -391,8 +415,10 @@ function toTimelineInput(row: TimelineRow) {
 /** Family milestones (FR-ART-02): add, edit, move up or down, delete, and an optional photo each. */
 function TimelineSection({ household, client, reload }: SectionProps) {
   const t = useTranslations('studio.profile');
-  const { state, save } = useSection(household, client, reload);
   const [events, setEvents] = useState<TimelineRow[]>(household.timeline);
+  const { state, save } = useSection(household, client, reload, () =>
+    setEvents(household.timeline),
+  );
   const patch = (index: number, change: Partial<TimelineRow>) =>
     setEvents((current) => current.map((e, i) => (i === index ? { ...e, ...change } : e)));
   const move = (index: number, by: -1 | 1) =>
@@ -597,8 +623,7 @@ export function toCertificationInput(
  */
 function CertificationSection({ household, client, reload }: SectionProps) {
   const t = useTranslations('studio.profile');
-  const { state, save } = useSection(household, client, reload);
-  const [items, setItems] = useState<CertRow[]>(() =>
+  const certRows = (): CertRow[] =>
     household.certifications.map((c) => ({
       name: c.name,
       issuer: c.issuer,
@@ -606,8 +631,9 @@ function CertificationSection({ household, client, reload }: SectionProps) {
       issuedOn: c.issuedOn ?? '',
       photo: c.photo,
       verified: c.verified,
-    })),
-  );
+    }));
+  const [items, setItems] = useState<CertRow[]>(certRows);
+  const { state, save } = useSection(household, client, reload, () => setItems(certRows()));
   const patch = (index: number, change: Partial<CertRow>) =>
     setItems((current) =>
       current.map((c, i) => (i === index ? { ...c, ...change, verified: false } : c)),
@@ -868,8 +894,8 @@ function SortableGalleryRow({
 function GallerySection({ household, client, reload }: SectionProps) {
   const t = useTranslations('studio.profile');
   const media = useTranslations('media');
-  const { state, save } = useSection(household, client, reload);
   const [rows, setRows] = useState<GalleryRow[]>(household.gallery);
+  const { state, save } = useSection(household, client, reload, () => setRows(household.gallery));
   const [uploads, setUploads] = useState<readonly UploadItem<string>[]>([]);
   const [skipped, setSkipped] = useState(0);
   const [moved, setMoved] = useState('');
@@ -1015,12 +1041,12 @@ function GallerySection({ household, client, reload }: SectionProps) {
 function CapacitySection({ household, client, reload }: SectionProps) {
   const t = useTranslations('studio.profile');
   const categories = useTranslations('catalog.categories');
-  const { state, save } = useSection(household, client, reload);
-  const [values, setValues] = useState<Partial<Record<ProductCategory, string>>>(() =>
+  const capacityValues = (): Partial<Record<ProductCategory, string>> =>
     Object.fromEntries(
       Object.entries(household.capacityByCategory).map(([key, value]) => [key, String(value)]),
-    ),
-  );
+    );
+  const [values, setValues] = useState<Partial<Record<ProductCategory, string>>>(capacityValues);
+  const { state, save } = useSection(household, client, reload, () => setValues(capacityValues()));
   return (
     <Card className="flex flex-col gap-4 p-5">
       <h2 className="text-h3">{t('capacity')}</h2>

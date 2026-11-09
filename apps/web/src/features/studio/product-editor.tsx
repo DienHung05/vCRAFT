@@ -30,6 +30,7 @@ import { type ProductDraft, ProductFields, toProductDraft } from './product-fiel
 import { ProductPhotos } from './product-photos';
 import { QrLabelsButton } from './qr-labels-button';
 import { ScanStatsCard } from './scan-stats-card';
+import { useConflictReset } from './use-conflict-reset';
 import { inputClass } from './workshop-editor';
 
 export function toProductUpdate(draft: ProductDraft): UpdateProductRequest {
@@ -78,8 +79,10 @@ function DetailsSection({ product, household, client, reload }: SectionProps) {
   const common = useTranslations('studio');
   const [draft, setDraft] = useState(() => toProductDraft(product));
   const [state, setState] = useState<'idle' | 'saving' | 'stale' | 'failed'>('idle');
+  const conflict = useConflictReset(product.version, () => setDraft(toProductDraft(product)));
   const save = async () => {
     setState('saving');
+    conflict.disarm();
     try {
       await client.updateProduct(product.id, product.version, toProductUpdate(draft));
       await reload();
@@ -87,7 +90,10 @@ function DetailsSection({ product, household, client, reload }: SectionProps) {
       notify.success(common('saved'));
     } catch (error) {
       const stale = error instanceof ApiError && error.status === 409;
-      if (stale) await reload();
+      if (stale) {
+        conflict.arm();
+        await reload();
+      }
       setState(stale ? 'stale' : 'failed');
     }
   };

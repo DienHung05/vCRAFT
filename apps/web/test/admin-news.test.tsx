@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { type AdminClient, ApiError, type VillageNewsClient } from '@vcraft/api-client';
 import type { AdminNewsDto, NewsDetailDto } from '@vcraft/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -187,6 +187,47 @@ describe('AdminNewsList', () => {
 
     fireEvent.change(screen.getByLabelText('Trạng thái'), { target: { value: 'SCHEDULED' } });
     await waitFor(() => expect(listNews).toHaveBeenLastCalledWith({ state: 'SCHEDULED' }));
+  });
+
+  it('keeps the loaded items and offers a retry when loading more fails', async () => {
+    const listNews = vi
+      .fn()
+      .mockResolvedValueOnce({ data: [NEWS], nextCursor: 'c1' })
+      .mockRejectedValueOnce(new ApiError('SERVICE_UNAVAILABLE', 500))
+      .mockResolvedValueOnce({
+        data: [{ ...NEWS, id: '123e4567-e89b-12d3-a456-426614174001', title: 'Tin thứ hai' }],
+        nextCursor: null,
+      });
+    renderVi(<AdminNewsList client={asAdmin({ listNews })} />);
+    expect(await screen.findByText('Giá men tháng này')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Xem thêm' }));
+    expect(await screen.findByText(/Chưa tải được trang tiếp theo/)).toBeTruthy();
+    expect(screen.getByText('Giá men tháng này')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Thử tải lại' }));
+    expect(await screen.findByText('Tin thứ hai')).toBeTruthy();
+    expect(screen.getByText('Giá men tháng này')).toBeTruthy();
+    expect(listNews).toHaveBeenLastCalledWith({ cursor: 'c1' });
+  });
+
+  it('ignores a slow response for old filters after the filters changed', async () => {
+    type Page = { data: AdminNewsDto[]; nextCursor: null };
+    let resolveSlow: (page: Page) => void = () => {};
+    const slow = new Promise<Page>((resolve) => {
+      resolveSlow = resolve;
+    });
+    const listNews = vi
+      .fn()
+      .mockReturnValueOnce(slow)
+      .mockResolvedValueOnce({ data: [{ ...NEWS, title: 'Kết quả mới' }], nextCursor: null });
+    renderVi(<AdminNewsList client={asAdmin({ listNews })} />);
+    await waitFor(() => expect(listNews).toHaveBeenCalledTimes(1));
+    fireEvent.change(screen.getByLabelText('Trạng thái'), { target: { value: 'SCHEDULED' } });
+    expect(await screen.findByText('Kết quả mới')).toBeTruthy();
+    await act(async () => {
+      resolveSlow({ data: [{ ...NEWS, title: 'Kết quả cũ' }], nextCursor: null });
+    });
+    expect(screen.queryByText('Kết quả cũ')).toBeNull();
+    expect(screen.getByText('Kết quả mới')).toBeTruthy();
   });
 });
 
