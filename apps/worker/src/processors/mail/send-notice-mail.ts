@@ -19,6 +19,10 @@ export interface MailTransport {
 
 export interface MailDeps {
   loadNotice(noticeId: string): Promise<NoticeRecipient | null>;
+  /** Marks the notice as being emailed; false when another run already claimed it (GH#377). */
+  claim(noticeId: string): Promise<boolean>;
+  /** Clears the claim after a failed send so the retry can send. */
+  release(noticeId: string): Promise<void>;
   transport: MailTransport;
   from: string;
   appUrl: string;
@@ -26,13 +30,20 @@ export interface MailDeps {
 
 /**
  * Job `mail`: gửi thư cho một thông báo. Không còn thông báo hay người nhận, hoặc người nhận đã tắt
- * email cho loại này, thì bỏ qua; gửi trùng đã được chặn bởi `jobId` BullMQ nên không theo dõi trạng
- * thái đã gửi. Lỗi SMTP ném ra để thử lại.
+ * email cho loại này, thì bỏ qua. Gửi trùng được chặn bằng `claim` có điều kiện (cột `emailed_at`),
+ * vì `jobId` BullMQ không đủ khi job đã bị dọn hoặc sự kiện outbox bị lấy lại. Lỗi SMTP nhả claim rồi
+ * ném ra để thử lại.
  */
 export async function sendNoticeMail(deps: MailDeps, noticeId: string): Promise<boolean> {
   const notice = await deps.loadNotice(noticeId);
   if (!notice?.emailEnabled) return false;
   const { subject, text } = buildNoticeMail({ ...notice, appUrl: deps.appUrl });
-  await deps.transport.sendMail({ from: deps.from, to: notice.email, subject, text });
+  if (!(await deps.claim(noticeId))) return false;
+  try {
+    await deps.transport.sendMail({ from: deps.from, to: notice.email, subject, text });
+  } catch (error) {
+    await deps.release(noticeId);
+    throw error;
+  }
   return true;
 }

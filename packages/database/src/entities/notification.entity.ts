@@ -22,4 +22,8 @@ export class Notification extends BaseEntity {
 
   @Property({ type: 'datetime', length: 3, nullable: true })
   readAt?: Date | null;
+
+  /** Set when the notice mail is claimed for sending (GH#377); cleared again if the send fails. */
+  @Property({ type: 'datetime', length: 3, nullable: true })
+  emailedAt?: Date | null;
 }

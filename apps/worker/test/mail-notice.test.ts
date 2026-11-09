@@ -53,6 +53,22 @@ describe('outbox dispatcher: quotation.notice', () => {
   });
 });
 
+/** In-memory stand-in for the `emailed_at` conditional update. */
+function claims() {
+  const claimed = new Set<string>();
+  return {
+    claimed,
+    async claim(id: string) {
+      if (claimed.has(id)) return false;
+      claimed.add(id);
+      return true;
+    },
+    async release(id: string) {
+      claimed.delete(id);
+    },
+  };
+}
+
 describe('sendNoticeMail', () => {
   const recipient: NoticeRecipient = {
     kind: 'ALLOCATION_PROPOSED',
@@ -77,6 +93,7 @@ describe('sendNoticeMail', () => {
     const delivered = await sendNoticeMail(
       {
         loadNotice: async () => recipient,
+        ...claims(),
         transport,
         from: 'vCraft <no-reply@vcraft.local>',
         appUrl: 'http://localhost:8080',
@@ -98,6 +115,7 @@ describe('sendNoticeMail', () => {
     const delivered = await sendNoticeMail(
       {
         loadNotice: async () => ({ ...recipient, emailEnabled: false }),
+        ...claims(),
         transport,
         from: 'x',
         appUrl: 'http://x',
@@ -111,7 +129,7 @@ describe('sendNoticeMail', () => {
   it('skips silently when the notice or recipient is missing', async () => {
     const { transport, sent } = fakeTransport();
     const delivered = await sendNoticeMail(
-      { loadNotice: async () => null, transport, from: 'x', appUrl: 'http://x' },
+      { loadNotice: async () => null, ...claims(), transport, from: 'x', appUrl: 'http://x' },
       'gone',
     );
     expect(delivered).toBe(false);
@@ -126,9 +144,69 @@ describe('sendNoticeMail', () => {
     };
     await expect(
       sendNoticeMail(
-        { loadNotice: async () => recipient, transport, from: 'x', appUrl: 'http://x' },
+        {
+          loadNotice: async () => recipient,
+          ...claims(),
+          transport,
+          from: 'x',
+          appUrl: 'http://x',
+        },
         'n1',
       ),
     ).rejects.toThrow('smtp down');
+  });
+
+  it('does not send again when a second run finds the notice already claimed', async () => {
+    const { transport, sent } = fakeTransport();
+    const deps = {
+      loadNotice: async () => recipient,
+      ...claims(),
+      transport,
+      from: 'x',
+      appUrl: 'http://x',
+    };
+    expect(await sendNoticeMail(deps, 'n1')).toBe(true);
+    expect(await sendNoticeMail(deps, 'n1')).toBe(false);
+    expect(sent).toHaveLength(1);
+  });
+
+  it('releases the claim when the send fails so a retry can send', async () => {
+    const { transport, sent } = fakeTransport();
+    let fail = true;
+    const flaky: MailTransport = {
+      async sendMail(message) {
+        if (fail) throw new Error('smtp down');
+        await transport.sendMail(message);
+      },
+    };
+    const c = claims();
+    const deps = {
+      loadNotice: async () => recipient,
+      ...c,
+      transport: flaky,
+      from: 'x',
+      appUrl: 'http://x',
+    };
+    await expect(sendNoticeMail(deps, 'n1')).rejects.toThrow('smtp down');
+    expect(c.claimed.has('n1')).toBe(false);
+    fail = false;
+    expect(await sendNoticeMail(deps, 'n1')).toBe(true);
+    expect(sent).toHaveLength(1);
+  });
+
+  it('does not claim when the recipient turned email off', async () => {
+    const { transport } = fakeTransport();
+    const c = claims();
+    await sendNoticeMail(
+      {
+        loadNotice: async () => ({ ...recipient, emailEnabled: false }),
+        ...c,
+        transport,
+        from: 'x',
+        appUrl: 'http://x',
+      },
+      'n1',
+    );
+    expect(c.claimed.size).toBe(0);
   });
 });
