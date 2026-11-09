@@ -44,3 +44,13 @@ describe('page metadata (GH#256)', () => {
     });
   });
 });
+
+describe('list page metadata (GH#341)', () => {
+  it('uses the clean list path as canonical, so filters and ?page=N do not fork it', () => {
+    const meta = pageMetadata({ locale: 'vi', href: '/san-pham', title: 'Sản phẩm' });
+    expect(meta.alternates).toEqual({
+      canonical: '/vi/san-pham',
+      languages: { vi: '/vi/san-pham', en: '/en/products', 'x-default': '/vi/san-pham' },
+    });
+  });
+});

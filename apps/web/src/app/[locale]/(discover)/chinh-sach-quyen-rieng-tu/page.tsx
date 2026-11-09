@@ -4,14 +4,20 @@ import type { ReactNode } from 'react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Link } from '@/i18n/navigation';
 import { resolveLocale } from '@/lib/locale';
+import { pageMetadata } from '@/lib/seo/page-metadata';
 import { privacyContactEmail } from '@/lib/site';
 
 export async function generateMetadata({
   params,
 }: PageProps<'/[locale]/chinh-sach-quyen-rieng-tu'>): Promise<Metadata> {
-  await resolveLocale(params);
+  const locale = await resolveLocale(params);
   const t = await getTranslations('privacy');
-  return { title: t('title'), description: t('lead') };
+  return pageMetadata({
+    locale,
+    href: '/chinh-sach-quyen-rieng-tu',
+    title: t('title'),
+    description: t('lead'),
+  });
 }
 
 /** Section ids in reading order; each has `privacy.sections.<id>.title`. */

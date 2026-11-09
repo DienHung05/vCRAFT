@@ -10,6 +10,7 @@ export const contentType = OG_CONTENT_TYPE;
 type Params = { params: Promise<{ locale: string; slug: string }> };
 
 export async function generateImageMetadata({ params }: Params) {
+  const locale = await resolveLocale(params);
   const { slug } = await params;
   const result = await fetchProduct(slug);
   return [
@@ -17,7 +18,10 @@ export async function generateImageMetadata({ params }: Params) {
       id: 'card',
       size,
       contentType,
-      alt: result.status === 'ok' ? result.data.product.name : 'vCraft',
+      alt:
+        result.status === 'ok'
+          ? textFor(locale, result.data.product.name, result.data.product.nameEn)
+          : 'vCraft',
     },
   ];
 }
@@ -26,8 +30,9 @@ export async function generateImageMetadata({ params }: Params) {
 export default async function Image({ params }: Params) {
   const locale = await resolveLocale(params);
   const { slug } = await params;
-  const [t, result] = await Promise.all([
+  const [t, meta, result] = await Promise.all([
     getTranslations({ locale, namespace: 'nav' }),
+    getTranslations({ locale, namespace: 'meta' }),
     fetchProduct(slug),
   ]);
   return renderOgCard(
@@ -36,7 +41,8 @@ export default async function Image({ params }: Params) {
           eyebrow: t('products'),
           title: textFor(locale, result.data.product.name, result.data.product.nameEn),
           subtitle: result.data.household.name,
+          slogan: meta('slogan'),
         }
-      : { eyebrow: t('products'), title: 'vCraft' },
+      : { eyebrow: t('products'), title: 'vCraft', slogan: meta('slogan') },
   );
 }

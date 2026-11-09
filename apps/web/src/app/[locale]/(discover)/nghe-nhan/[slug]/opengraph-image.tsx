@@ -21,8 +21,9 @@ export async function generateImageMetadata({ params }: Params) {
 export default async function Image({ params }: Params) {
   const locale = await resolveLocale(params);
   const { slug } = await params;
-  const [t, result] = await Promise.all([
+  const [t, meta, result] = await Promise.all([
     getTranslations({ locale, namespace: 'nav' }),
+    getTranslations({ locale, namespace: 'meta' }),
     fetchHousehold(slug),
   ]);
   return renderOgCard(
@@ -31,7 +32,8 @@ export default async function Image({ params }: Params) {
           eyebrow: t('artisans'),
           title: result.data.name,
           subtitle: storyPlainText(result.data.history),
+          slogan: meta('slogan'),
         }
-      : { eyebrow: t('artisans'), title: 'vCraft' },
+      : { eyebrow: t('artisans'), title: 'vCraft', slogan: meta('slogan') },
   );
 }

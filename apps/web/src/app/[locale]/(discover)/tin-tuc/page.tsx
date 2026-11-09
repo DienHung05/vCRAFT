@@ -7,6 +7,7 @@ import { NewsView } from '@/features/news/news-view';
 import { VillageNews } from '@/features/news/village-news';
 import { resolveLocale } from '@/lib/locale';
 import { parsePageParam } from '@/lib/page-param';
+import { pageMetadata } from '@/lib/seo/page-metadata';
 
 /** News items per numbered page (GH#202). */
 const NEWS_PAGE_SIZE = 12;
@@ -17,9 +18,9 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({
   params,
 }: PageProps<'/[locale]/tin-tuc'>): Promise<Metadata> {
-  await resolveLocale(params);
+  const locale = await resolveLocale(params);
   const t = await getTranslations('indexPages.news');
-  return { title: t('title'), description: t('lead') };
+  return pageMetadata({ locale, href: '/tin-tuc', title: t('title'), description: t('lead') });
 }
 
 const first = (value: string | string[] | undefined) =>
