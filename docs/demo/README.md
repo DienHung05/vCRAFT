@@ -97,7 +97,7 @@ pnpm demo:auth -- --check
 | Gắn vào | Cách | Số lượng |
 | --- | --- | --- |
 | Sản phẩm (`BT7K2QXM`, `84PZKVJU` và 206 sản phẩm `pp-<mã>`, 2 sản phẩm `pp2-<mã>`) | `media_link` (`PRODUCT`, `COVER`) | 210 ảnh bìa |
-| Hộ (4 hộ có ảnh: Minh Hải, Lam Ngọc, Lò Đức Phát, Hạnh Thủy) | `media_link` (`HOUSEHOLD`, `PORTRAIT` / `BANNER` / `GALLERY` kèm `caption`) | 19 liên kết |
+| Hộ (20 hộ đã duyệt đều có ảnh bìa; 18 hộ có ít nhất 2 ảnh thư viện, Hoàng Long và Ngọc Diệp chưa có vì Commons không có ảnh Bát Tràng hợp nghề của hộ; 4 hộ có thêm ảnh chân dung) | `media_link` (`HOUSEHOLD`, `PORTRAIT` / `BANNER` / `GALLERY` kèm `caption`) | 66 liên kết (4 chân dung, 20 ảnh bìa, 42 ảnh thư viện) |
 | Tin (ủ đất sét, lớp vuốt gốm) | `media_link` (`NEWS`, `COVER`) | 2 ảnh bìa |
 | Mốc nhật ký (mọi sản phẩm) | không gắn ảnh: `journal_entry.images` luôn `[]`, `mediaChecksums` rỗng trong chuỗi băm (một ảnh chung của công đoạn không phải ảnh của món đồ) | 0 |
 | Hộ chờ duyệt Gốm Bảo Châu | `media_asset` mục đích `CERTIFICATE`, riêng tư, chủ là người đại diện; `media_link` (`HOUSEHOLD`, `DOCUMENT`) | 3 giấy tờ mẫu |
