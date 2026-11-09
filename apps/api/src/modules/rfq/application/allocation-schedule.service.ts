@@ -9,6 +9,7 @@ import { AppError, forbidden, notFound } from '../../../common/errors/app-error'
 import { allocationTimeline } from './allocation-timeline';
 import { assertWithinCapacity, committedByHousehold } from './household-capacity';
 import { QuotationNotifier } from './quotation-notifier';
+import { assertCoordinatorOrBoard, assertEligibleHouseholds } from './request-access';
 
 /** Shares still being made: they count in the order total and can take reallocated pieces. */
 const ACTIVE = ['CONFIRMED', 'IN_PROGRESS'] as const;
@@ -99,15 +100,18 @@ export class AllocationScheduleService {
       assertVersion(late, version);
       const quotation = late.quotation;
       const request = quotation.request as QuotationRequest;
+      assertCoordinatorOrBoard(actor, request);
       // A declined share is handed out again before production starts (FR-ORD-05, GH#246).
       if (request.status === 'ACCEPTED' && late.status === 'DECLINED' && late.quantity > 0) {
         await this.checkTargets(em, input);
+        this.invite(request, input);
         await this.reallocateDeclined(em, actor, late, request, input);
         return;
       }
       if (request.status !== 'IN_PRODUCTION' || late.status !== 'IN_PROGRESS')
         throw new AppError('INVALID_TRANSITION', 'only a share in production can be reallocated');
       await this.checkTargets(em, input);
+      this.invite(request, input);
 
       const active = await em.find(
         OrderAllocation,
@@ -314,10 +318,21 @@ export class AllocationScheduleService {
     }
   }
 
+  /** Same checks as inviting households to a request: approved, with a representative who is not locked. */
   private async checkTargets(em: EntityManager, input: ReallocateRequest) {
-    const ids = [...new Set(input.targets.map((t) => t.householdId))];
-    const approved = await em.count(Household, { id: { $in: ids }, status: 'APPROVED' });
-    if (approved !== ids.length)
-      throw new AppError('VALIDATION_FAILED', 'targets must be approved households');
+    await assertEligibleHouseholds(
+      em,
+      input.targets.map((t) => t.householdId),
+    );
+  }
+
+  /**
+   * A household reads the request, its allocations and attachments only while it is invited, so every
+   * target joins the invitation list. Runs inside the locked transaction; the flush comes with the rest.
+   */
+  private invite(request: QuotationRequest, input: ReallocateRequest) {
+    const invited = new Set(request.invitedHouseholdIds);
+    for (const target of input.targets) invited.add(target.householdId);
+    request.invitedHouseholdIds = [...invited];
   }
 }

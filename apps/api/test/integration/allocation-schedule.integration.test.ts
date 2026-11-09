@@ -2,6 +2,8 @@ import {
   AppUser,
   CooperativeQuotation,
   Household,
+  MediaAsset,
+  MediaLink,
   OrderAllocation,
   QuotationRequest,
 } from '@vcraft/database';
@@ -23,6 +25,7 @@ describe('Allocation timeline and reallocation', () => {
   let households: Household[];
   let late: OrderAllocation;
   let quotationId: string;
+  let attachmentId: string;
   const DAY = 86_400_000;
 
   beforeAll(async () => {
@@ -107,6 +110,24 @@ describe('Allocation timeline and reallocation', () => {
       quantity: 400,
       completedQty: 100,
       status: 'IN_PROGRESS',
+    });
+    const attachment = em.create(MediaAsset, {
+      ownerId: buyer.id,
+      purpose: 'RFQ_ATTACHMENT',
+      visibility: 'PRIVATE',
+      status: 'READY',
+      mimeType: 'image/png',
+      sizeBytes: 70,
+      sha256: 'a'.repeat(64),
+      originalKey: `originals/${buyer.id}/allocation-schedule-attachment`,
+    });
+    attachmentId = attachment.id;
+    em.create(MediaLink, {
+      media: attachment,
+      targetType: 'RFQ',
+      targetId: request.id,
+      role: 'DOCUMENT',
+      position: 0,
     });
     await em.flush();
   }, 240_000);
@@ -199,6 +220,61 @@ describe('Allocation timeline and reallocation', () => {
     expect(res.status).toBe(422);
   });
 
+  it('refuses a target whose representative is locked', async () => {
+    const [, , c] = households as [Household, Household, Household];
+    const repC = representatives[2] as { id: string; auth: string };
+    const em = db.orm.em.fork();
+    await em.nativeUpdate(AppUser, repC.id, { status: 'LOCKED' });
+    try {
+      const res = await t.request({
+        method: 'POST',
+        url: `/admin/allocations/${late.id}/reallocate`,
+        auth: admin.auth,
+        headers: { 'if-match': `"${late.version}"` },
+        body: {
+          targets: [
+            { householdId: households[1]?.id, quantity: 150 },
+            { householdId: c.id, quantity: 250 },
+          ],
+        },
+      });
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('RFQ_ARTISAN_NOT_ELIGIBLE');
+    } finally {
+      await em.nativeUpdate(AppUser, repC.id, { status: 'ACTIVE' });
+    }
+  });
+
+  it('is reserved for the coordinator of a coordinated request', async () => {
+    const [, b, c] = households as [Household, Household, Household];
+    const other = await t.createUser('ADMIN');
+    const em = db.orm.em.fork();
+    await em.nativeUpdate(QuotationRequest, requestId, {
+      coordinationOptIn: true,
+      coordinatorId: other.id,
+    });
+    try {
+      const res = await t.request({
+        method: 'POST',
+        url: `/admin/allocations/${late.id}/reallocate`,
+        auth: admin.auth,
+        headers: { 'if-match': `"${late.version}"` },
+        body: {
+          targets: [
+            { householdId: b.id, quantity: 150 },
+            { householdId: c.id, quantity: 250 },
+          ],
+        },
+      });
+      expect(res.status).toBe(404);
+    } finally {
+      await em.nativeUpdate(QuotationRequest, requestId, {
+        coordinationOptIn: false,
+        coordinatorId: null,
+      });
+    }
+  });
+
   it('moves the unfinished pieces and keeps the order total', async () => {
     const [, b, c] = households as [Household, Household, Household];
     const res = await t.request({
@@ -227,6 +303,28 @@ describe('Allocation timeline and reallocation', () => {
 
     const quotation = await db.orm.em.fork().findOneOrFail(CooperativeQuotation, quotationId);
     expect(quotation.parts.map((p) => p.householdId)).toContain(c.id);
+    const request = await db.orm.em.fork().findOneOrFail(QuotationRequest, requestId);
+    expect(request.invitedHouseholdIds).toEqual(expect.arrayContaining([c.id]));
+
+    // The new household can read the order it must now make: request, allocations and attachments.
+    const repC = representatives[2];
+    const detail = await t.request({ method: 'GET', url: `/rfqs/${requestId}`, auth: repC?.auth });
+    expect(detail.status).toBe(200);
+    expect(detail.body.attachments.map((file: { id: string }) => file.id)).toEqual([attachmentId]);
+    const shares = await t.request({
+      method: 'GET',
+      url: `/rfqs/${requestId}/allocations`,
+      auth: repC?.auth,
+    });
+    expect(shares.status).toBe(200);
+    expect(shares.body).toHaveLength(1);
+    expect(shares.body[0]).toMatchObject({ householdName: 'Gantt c', quantity: 250 });
+    const file = await t.request({
+      method: 'GET',
+      url: `/media/${attachmentId}/read-url`,
+      auth: repC?.auth,
+    });
+    expect(file.status).toBe(200);
     // Production shares are already in progress. Recipients learn about the extra work without
     // being asked to confirm a proposal; the source household learns that its remaining work moved.
     const recipients = [
