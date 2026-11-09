@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { describe, expect, it } from 'vitest';
 import { AppModule } from '../../app.module';
+import { PUBLIC_STATE_CHANGE_KEY } from './auth.guard';
 import { type RouteEntry, routeInventory } from './route-inventory';
 
 const routes = routeInventory(AppModule);
@@ -24,6 +25,16 @@ const PUBLIC_WRITES = new Set([
 ]);
 
 /**
+ * Public GET routes that change state. A GET is normally read-only, so these handlers carry `@PublicStateChange()`
+ * and are listed here after review. The test cannot tell by itself that a handler writes, so a new GET webhook must
+ * be marked with the decorator and added here; any GET under `/payments/webhooks` is required to be marked.
+ */
+const PUBLIC_STATE_CHANGING_GETS = new Set([
+  // VNPay IPN is a GET with a signed `vnp_*` query; the HMAC signature is checked and the event applied idempotently.
+  'GET /api/v1/payments/webhooks/vnpay',
+]);
+
+/**
  * PLAN E14 / ARCHITECTURE §8.2: every API route, enumerated from decorator metadata, with the policy the
  * global `AuthGuard` applies. The snapshot makes any new route, or any change to who may call one, show
  * up in review; the rules below fail outright on the dangerous cases.
@@ -43,6 +54,25 @@ describe('API route policy', () => {
       .filter((r) => r.policy.kind === 'PUBLIC' && r.method !== 'GET')
       .map((r) => `${r.method} ${r.path}`);
     expect(writes.filter((w) => !PUBLIC_WRITES.has(w))).toEqual([]);
+  });
+
+  it('lists every public GET route that changes state, and marks it', () => {
+    const marked = (r: RouteEntry) =>
+      Reflect.getMetadata(
+        PUBLIC_STATE_CHANGE_KEY,
+        (r.controller.prototype as Record<string, object>)[r.methodName] as object,
+      ) === true;
+    const publicGets = routes.filter((r) => r.policy.kind === 'PUBLIC' && r.method === 'GET');
+    const key = (r: RouteEntry) => `${r.method} ${r.path}`;
+    expect(publicGets.filter(marked).map(key).sort()).toEqual(
+      [...PUBLIC_STATE_CHANGING_GETS].sort(),
+    );
+    // Provider callbacks arrive as GET too (VNPay); none under the webhooks path may go unmarked.
+    expect(
+      publicGets
+        .filter((r) => r.path.startsWith('/api/v1/payments/webhooks') && !marked(r))
+        .map(key),
+    ).toEqual([]);
   });
 
   it('allows only administrators on /admin routes', () => {

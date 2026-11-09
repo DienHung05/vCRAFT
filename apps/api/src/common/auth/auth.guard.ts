@@ -36,6 +36,12 @@ export const ALLOW_SUSPENDED_KEY = 'vcraft:allow-suspended';
 
 /** Route công khai: không bắt buộc đăng nhập (nếu có token hợp lệ thì vẫn gắn `actor`). */
 export const Public = () => SetMetadata(PUBLIC_KEY, true);
+export const PUBLIC_STATE_CHANGE_KEY = 'vcraft:public-state-change';
+/**
+ * Marks a public handler that changes state although its HTTP method is GET (a provider IPN that is a GET).
+ * Has no effect at runtime; the route policy test requires every marked route to be reviewed and listed.
+ */
+export const PublicStateChange = () => SetMetadata(PUBLIC_STATE_CHANGE_KEY, true);
 /** Giới hạn vai trò được gọi route. */
 export const Roles = (...roles: AccountRole[]) => SetMetadata(ROLES_KEY, roles);
 /**

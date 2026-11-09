@@ -1,10 +1,11 @@
 import { createHmac } from 'node:crypto';
+import { LockMode } from '@mikro-orm/core';
 import {
   OrderPaymentsResponseSchema,
   type PaymentDto,
   PaymentResponseSchema,
 } from '@vcraft/contracts';
-import { expireDuePayments, Payment } from '@vcraft/database';
+import { expireDuePayments, Payment, QuotationRequest, resolveDbDriver } from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   PAYMENT_HTTP,
@@ -20,9 +21,14 @@ const MOMO = { partner: 'MOMOTEST', access: 'access-key', secret: 'secret-key' }
 
 /** Stands in for MoMo's create endpoint: no request ever leaves the process. */
 const momoRequests: Array<Record<string, unknown>> = [];
+/** Lets a test hold the MoMo call open (`gate`), see it start (`entered`) or make it fail (`fail`). */
+const momoControl: { gate?: Promise<void>; entered?: () => void; fail?: boolean } = {};
 const fakeMomoHttp: PaymentHttp = async (_url, init) => {
   const body = JSON.parse(init.body) as Record<string, unknown>;
   momoRequests.push(body);
+  momoControl.entered?.();
+  await momoControl.gate;
+  if (momoControl.fail) throw new Error('MoMo is down');
   return {
     ok: true,
     status: 200,
@@ -926,6 +932,68 @@ describe('online payment of orders (ADR-0021)', () => {
       expect(back.headers.location).toBe(
         `https://vcraft.test/vi/thanh-toan/${created.body.referenceCode}`,
       );
+    });
+
+    it('calls MoMo outside the order lock, so a slow provider does not block the order', async () => {
+      const requestId = await acceptedOrder();
+      let release!: () => void;
+      let entered!: () => void;
+      const calling = new Promise<void>((resolve) => {
+        entered = resolve;
+      });
+      momoControl.gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      momoControl.entered = entered;
+      try {
+        const pending = startPayment(requestId, 'DEPOSIT', 'MOMO');
+        await calling;
+        // The provider call is open now: the order row must be lockable at once (short wait, then it would fail).
+        await db.orm.em.fork().transactional(async (em) => {
+          await em
+            .getConnection()
+            .execute(
+              resolveDbDriver(process.env) === 'mysql'
+                ? 'SET SESSION innodb_lock_wait_timeout = 1'
+                : "SET LOCAL lock_timeout = '1s'",
+              [],
+              'run',
+              em.getTransactionContext(),
+            );
+          const locked = await em.findOne(
+            QuotationRequest,
+            { id: requestId },
+            { lockMode: LockMode.PESSIMISTIC_WRITE },
+          );
+          expect(locked?.id).toBe(requestId);
+        });
+        // A second start of the same payment while the provider is still answering is refused, not duplicated.
+        const second = await startPayment(requestId, 'DEPOSIT', 'MOMO');
+        expect(second.status).toBe(409);
+        release();
+        const created = await pending;
+        expect(created.status).toBe(201);
+        expect(created.body.checkout).toMatchObject({ type: 'REDIRECT' });
+      } finally {
+        release();
+        momoControl.gate = undefined;
+        momoControl.entered = undefined;
+      }
+    });
+
+    it('marks the payment FAILED and answers 503 when MoMo cannot be reached', async () => {
+      const requestId = await acceptedOrder();
+      momoControl.fail = true;
+      try {
+        const failed = await startPayment(requestId, 'DEPOSIT', 'MOMO');
+        expect(failed.status).toBe(503);
+      } finally {
+        momoControl.fail = false;
+      }
+      const stored = await db.orm.em.fork().find(Payment, { order: requestId });
+      expect(stored.map((p) => p.status)).toEqual(['FAILED']);
+      const retry = await startPayment(requestId, 'DEPOSIT', 'MOMO');
+      expect(retry.status).toBe(201);
     });
 
     it('marks a failed MoMo result failed', async () => {

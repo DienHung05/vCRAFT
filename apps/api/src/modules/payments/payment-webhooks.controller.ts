@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Headers, HttpCode, Logger, Post, Query } from '@nestjs/common';
-import { Public } from '../../common/auth/auth.guard';
+import { Public, PublicStateChange } from '../../common/auth/auth.guard';
 import { AppError } from '../../common/errors/app-error';
 import { PaymentsService, type ReconcileResult } from './application/payments.service';
 import { MomoGateway } from './gateways/momo.gateway';
@@ -63,6 +63,7 @@ export class PaymentWebhooksController {
 
   /** VNPay IPN (a GET with the signed `vnp_*` query); answers with VNPay's `RspCode` envelope. */
   @Get('vnpay')
+  @PublicStateChange()
   async vnpayIpn(@Query() query: Record<string, unknown>) {
     let result: ReconcileResult | null;
     try {

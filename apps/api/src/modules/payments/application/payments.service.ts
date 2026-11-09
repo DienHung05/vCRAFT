@@ -16,6 +16,7 @@ import {
   AuditLog,
   CooperativeQuotation,
   Payment,
+  type PaymentCheckoutData,
   QuotationRequest,
 } from '@vcraft/database';
 import {
@@ -43,6 +44,9 @@ import { toPaymentDto } from './payment-view';
 
 /** The system is the actor of provider-driven changes; nobody is excluded from its notices. */
 const SYSTEM_ACTOR = 'system';
+
+/** A start request waits for the provider at most this long (the HTTP timeout is 10 s, with margin). */
+const CHECKOUT_IN_FLIGHT_MS = 30_000;
 
 export type ReconcileOutcome =
   | 'PAID'
@@ -209,7 +213,9 @@ export class PaymentsService {
     input: CreatePaymentRequest,
     clientIp: string,
   ): Promise<PaymentDto> {
-    return this.orm.em.fork().transactional(async (em) => {
+    // Transaction A holds the order lock only to validate and record the PENDING payment. The provider is
+    // called after it commits, so a slow provider never holds the order row (ADR-0021).
+    const started = await this.orm.em.fork().transactional(async (em) => {
       const request = await this.order(em, requestId, true);
       if (actor.role !== 'BUYER' || request.buyer.id !== actor.id) throw notFound();
       if (actor.locked) throw forbidden();
@@ -235,7 +241,12 @@ export class PaymentsService {
       )) {
         const reusable =
           pending.method === input.method && (pending.expiresAt?.getTime() ?? 0) > now.getTime();
-        if (reusable) return toPaymentDto(pending);
+        if (reusable && pending.checkout) return { done: toPaymentDto(pending), snapshot: null };
+        // No checkout yet: another request is still waiting for the provider. Within the provider timeout
+        // that request owns the payment; after it, the provider answer was lost and the payment is replaced.
+        if (reusable && now.getTime() - pending.createdAt.getTime() < CHECKOUT_IN_FLIGHT_MS) {
+          throw new AppError('BUSINESS_RULE_VIOLATED', 'PAYMENT_START_IN_PROGRESS');
+        }
         // A payment past its time is expired by the system; one the buyer replaces is cancelled by the buyer.
         const expired = (pending.expiresAt?.getTime() ?? 0) <= now.getTime();
         pending.status = unwrap(
@@ -263,6 +274,7 @@ export class PaymentsService {
         referenceCode: await this.freshReference(em),
         expiresAt: new Date(now.getTime() + config.expiryMs),
       });
+      await em.flush();
       const snapshot: PaymentSnapshot = {
         id: payment.id,
         referenceCode: payment.referenceCode,
@@ -272,17 +284,55 @@ export class PaymentsService {
         description: `vCraft ${payment.referenceCode}`,
         clientIp,
       };
-      try {
-        payment.checkout = await this.gatewayFor(input.method).createCheckout(snapshot);
-      } catch (error) {
-        this.logger.warn(
-          `payment ${payment.referenceCode} (${input.method}) could not be started: ${error instanceof Error ? error.message : error}`,
-        );
-        throw new AppError('SERVICE_UNAVAILABLE', 'The payment provider did not answer');
-      }
+      return { done: null, snapshot };
+    });
+    if (started.done) return started.done;
+
+    const { snapshot } = started;
+    if (!snapshot) throw new Error('unreachable: no payment recorded');
+    let checkout: PaymentCheckoutData;
+    try {
+      checkout = await this.gatewayFor(input.method).createCheckout(snapshot);
+    } catch (error) {
+      this.logger.warn(
+        `payment ${snapshot.referenceCode} (${input.method}) could not be started: ${error instanceof Error ? error.message : error}`,
+      );
+      await this.failStart(snapshot.id);
+      throw new AppError('SERVICE_UNAVAILABLE', 'The payment provider did not answer');
+    }
+    // Transaction B stores the provider answer. If it never runs (crash, lost response) the payment stays
+    // PENDING without a checkout and is expired by the worker (expireDuePayments) at its expiry time; a
+    // provider event for its reference code is still reconciled by the webhook.
+    return this.orm.em.fork().transactional(async (em) => {
+      const payment = await em.findOneOrFail(
+        Payment,
+        { id: snapshot.id },
+        { lockMode: LockMode.PESSIMISTIC_WRITE, populate: ['order'] },
+      );
+      // Only a payment that is still pending can take the checkout (the buyer may have replaced it meanwhile).
+      if (payment.status === 'PENDING') payment.checkout = checkout;
       await em.flush();
       return toPaymentDto(payment);
     });
+  }
+
+  /** The provider refused or did not answer: the payment that was recorded for it can never be paid. */
+  private async failStart(paymentId: string): Promise<void> {
+    try {
+      await this.orm.em.fork().transactional(async (em) => {
+        const payment = await em.findOne(
+          Payment,
+          { id: paymentId },
+          { lockMode: LockMode.PESSIMISTIC_WRITE },
+        );
+        if (payment?.status !== 'PENDING') return;
+        payment.status = unwrap(paymentTransition('PENDING', 'FAIL', { actor: 'SYSTEM' }));
+        await em.flush();
+      });
+    } catch (error) {
+      // The expiry job settles it later; the buyer still gets the provider error.
+      this.logger.error(`payment ${paymentId} could not be marked FAILED: ${error}`);
+    }
   }
 
   /** The buyer gives up a pending payment (to pick another method, for instance). */
