@@ -89,9 +89,18 @@ export type AssistantStatsQuery = z.infer<typeof AssistantStatsQuerySchema>;
 export const AssistantStatsSchema = z.object({
   days: z.int(),
   turns: z.int().nonnegative(),
+  /** Turns refused by the guardrail or classifier layers (injection, abuse, private data). */
   blocked: z.int().nonnegative(),
-  /** Share of turns refused, 0–1; 0 when there were no turns. */
+  /** Share of turns blocked by guardrails, 0–1; 0 when there were no turns. Limits and failures are not in it. */
   blockRate: z.number().min(0).max(1),
+  /** Turns refused by the per-IP rate limit or the daily token budget. */
+  limited: z.int().nonnegative(),
+  /** Turns refused because the assistant was switched off or had no model. */
+  disabled: z.int().nonnegative(),
+  /** Turns that ended in an upstream or timeout error. */
+  failures: z.int().nonnegative(),
+  /** Turns answered without any source (not blocked, not failures). */
+  unansweredCount: z.int().nonnegative(),
   feedback: z.object({ up: z.int().nonnegative(), down: z.int().nonnegative() }),
   /** Milliseconds to the first painted token; null without answered turns. */
   firstTokenMs: z.object({ p50: z.int().nullable(), p95: z.int().nullable() }),

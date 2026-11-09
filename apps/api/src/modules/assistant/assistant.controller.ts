@@ -1,4 +1,4 @@
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 import { Readable } from 'node:stream';
 import {
   Body,
@@ -28,6 +28,7 @@ import { UuidPipe } from '../../common/pipes/uuid.pipe';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { AskAssistantService } from './application/ask-assistant.service';
 import { AssistantStatsService } from './application/assistant-stats.service';
+import { resolveIpSalt } from './assistant-ip-salt';
 
 /**
  * Turns assistant events into SSE `data:` lines. A turn that throws is logged with its stack and ends
@@ -57,8 +58,10 @@ interface StreamRequest extends HttpRequest {
   readonly raw: { once(event: 'close', listener: () => void): unknown };
 }
 
-// Without a configured salt the hash still hides the IP, it just changes on every restart.
-const IP_SALT = process.env.ASSISTANT_IP_SALT?.trim() || randomBytes(32).toString('hex');
+// Resolved when the module loads, so a production API without `ASSISTANT_IP_SALT` fails at startup.
+const IP_SALT = resolveIpSalt(process.env, (message) =>
+  new Logger('AssistantController').warn(message),
+);
 
 /** A salted hash of the visitor's IP: the only trace of them in rate limits and logs (FR-AST-08). */
 export const hashIp = (ip: string) => createHmac('sha256', IP_SALT).update(ip).digest('hex');

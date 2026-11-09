@@ -79,6 +79,8 @@ const OUT_OF_SCOPE = {
 interface Turn {
   intent: string;
   blocked?: BlockReason;
+  /** The turn ended in an error event; stored in `blockReason` of a row that is not blocked. */
+  failed?: 'UPSTREAM' | 'TIMEOUT';
   answered: boolean;
   firstTokenMs: number | null;
   tokens: number;
@@ -272,7 +274,13 @@ export class AskAssistantService {
     if (!classified) {
       discardSpeculation();
       yield { type: 'error', code: 'UPSTREAM' };
-      await log({ intent: 'unknown', answered: false, firstTokenMs: null, tokens: 0 });
+      await log({
+        intent: 'unknown',
+        failed: 'UPSTREAM',
+        answered: false,
+        firstTokenMs: null,
+        tokens: 0,
+      });
       return;
     }
     await this.budget.record(classified.tokens);
@@ -346,8 +354,15 @@ export class AskAssistantService {
       await this.budget.record(tokens);
       if (signal?.aborted) return;
       this.logger.warn(`assistant answer failed: ${String(error)}`);
-      yield { type: 'error', code: timeout.aborted ? 'TIMEOUT' : 'UPSTREAM' };
-      await log({ intent, answered: false, firstTokenMs, tokens: classified.tokens + tokens });
+      const failed = timeout.aborted ? 'TIMEOUT' : 'UPSTREAM';
+      yield { type: 'error', code: failed };
+      await log({
+        intent,
+        failed,
+        answered: false,
+        firstTokenMs,
+        tokens: classified.tokens + tokens,
+      });
       return;
     }
     await this.budget.record(tokens);
@@ -425,7 +440,7 @@ export class AskAssistantService {
       question: maskPii(message).slice(0, 300),
       intent: turn.intent,
       blocked: turn.blocked !== undefined,
-      blockReason: turn.blocked ?? null,
+      blockReason: turn.blocked ?? turn.failed ?? null,
       answered: turn.answered,
       firstTokenMs: turn.firstTokenMs,
       tokens: turn.tokens,

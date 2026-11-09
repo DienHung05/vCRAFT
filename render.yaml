@@ -90,6 +90,10 @@ services:
       # and User-Agent forwarded by /q/<code> only when X-Internal-Key matches. The owner sets the value.
       - key: INTERNAL_API_KEY
         sync: false
+      # GH#410: salt for hashed visitor IPs. Required in production (the API refuses to start without it) and the
+      # same on every instance, or per-IP limits multiply and reset on restart. The owner sets a long random value.
+      - key: ASSISTANT_IP_SALT
+        sync: false
       - key: OPENAI_CHAT_MODEL
         value: gpt-6-luna
       # Assistant usage limits are on by default (set a var to 0 to turn that limit off):
