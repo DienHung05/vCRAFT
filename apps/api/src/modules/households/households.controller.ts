@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   type ApplyHouseholdRequest,
@@ -48,6 +49,7 @@ import { UuidPipe } from '../../common/pipes/uuid.pipe';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { HouseholdsService } from './application/households.service';
 import { QrLabelsService } from './application/qr-labels.service';
+import { type ScanRequestLike, visitorIdentity } from './application/scan-visitor';
 import { StorySuggestionService } from './application/story-suggestion.service';
 
 /** Hồ sơ hộ của chính người đại diện (`/me/household`). */
@@ -424,7 +426,9 @@ export class PublicHouseholdsController {
   async scan(
     @Param('code') code: string,
     @Body(new ZodValidationPipe(RecordScanRequestSchema)) body: RecordScanRequest,
+    @Req() request: ScanRequestLike,
   ) {
-    await this.households.recordScan(code, body);
+    // GH#362: repeats from one visitor within 30 minutes count once; the answer is the same either way.
+    await this.households.recordScan(code, body, visitorIdentity(request));
   }
 }

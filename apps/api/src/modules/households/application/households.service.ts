@@ -87,6 +87,7 @@ import {
   vietnamDayStartUtc,
   zeroFilledTrend,
 } from './dashboard-trend';
+import { SCAN_DEDUPE_WINDOW_MS, visitorHash } from './scan-visitor';
 import { retireSlug, slugRetiredByOther } from './slug-redirects';
 import { generateTraceCode } from './trace-code';
 
@@ -830,7 +831,11 @@ export class HouseholdsService {
    * Ghi một lượt quét QR; mã không tồn tại hoặc không còn công khai thì bỏ qua, không báo lỗi.
    * FR-TRC-06: the country and device class are optional; an IP address is never stored.
    */
-  async recordScan(traceCode: string, input: RecordScanRequest = {}): Promise<void> {
+  async recordScan(
+    traceCode: string,
+    input: RecordScanRequest = {},
+    visitor?: string,
+  ): Promise<void> {
     await this.orm.em.fork().transactional(async (em) => {
       const product = await em.findOne(
         Product,
@@ -839,10 +844,21 @@ export class HouseholdsService {
       );
       if (!product) return;
       if (publicProductAvailability(product.household.status, product.status) !== 'VISIBLE') return;
+      // GH#362: one visitor counts once per window; a repeat is dropped silently (same 204 as ever).
+      const hash = visitor === undefined ? null : visitorHash(traceCode.toUpperCase(), visitor);
+      if (hash) {
+        const recent = await em.count(TraceScan, {
+          product,
+          visitorHash: hash,
+          createdAt: { $gt: new Date(Date.now() - SCAN_DEDUPE_WINDOW_MS) },
+        });
+        if (recent > 0) return;
+      }
       em.create(TraceScan, {
         product,
         country: input.country ?? null,
         deviceType: input.deviceType ?? null,
+        visitorHash: hash,
       });
     });
   }

@@ -84,6 +84,10 @@ services:
       # Must be the same key as the worker's: both embed with it, and query/document vectors must come from one model.
       - key: OPENAI_API_KEY
         sync: false
+      # GH#362: shared secret with the web (Vercel INTERNAL_API_KEY, same value). The API trusts the visitor IP
+      # and User-Agent forwarded by /q/<code> only when X-Internal-Key matches. The owner sets the value.
+      - key: INTERNAL_API_KEY
+        sync: false
       - key: OPENAI_CHAT_MODEL
         value: gpt-6-luna
       # No assistant usage limit by default. To turn one on, add it in the dashboard as a positive integer:
