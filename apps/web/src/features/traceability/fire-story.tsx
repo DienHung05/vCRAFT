@@ -6,6 +6,7 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { stageState } from '@/experience/motion/motion-math';
 import { useRichMotion } from '@/experience/motion/use-motion';
 import { recordedAt } from './fire-story-math';
+import './trace-story.css';
 
 /**
  * The journey of one piece as a scroll story (GH#300), the trace page counterpart of the home page's `DayStory`.

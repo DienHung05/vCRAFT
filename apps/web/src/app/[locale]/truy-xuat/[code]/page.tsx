@@ -98,11 +98,11 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
     <div
       className={`mx-auto min-h-svh bg-paper ${visible ? 'trace-notebook max-w-6xl' : 'max-w-xl'}`}
     >
-      <header className="flex items-center justify-between px-5 py-4">
-        <Link href="/" aria-label={t('home')}>
+      <header className="flex items-center justify-between gap-3 px-5 py-4">
+        <Link href="/" aria-label={t('home')} className="shrink-0">
           <Logo size={26} />
         </Link>
-        <span className="font-mono text-[0.7rem] tracking-[0.25em] text-ash uppercase">
+        <span className="min-w-0 truncate font-mono text-[0.7rem] tracking-[0.25em] text-ash uppercase">
           {t('book')}
         </span>
         <LocaleSwitcher />
@@ -140,7 +140,7 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
             <section className="trace-intro mx-auto max-w-xl px-5 pt-6 lg:grid lg:max-w-none lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-center lg:gap-12">
               <div>
                 <p className="text-small text-ash">{t('scanned')}</p>
-                <h1 className="mt-1 text-h1">{productName}</h1>
+                <h1 className="mt-1 break-words text-h1">{productName}</h1>
                 <p className="mt-2 text-ash">{visible.household.name}</p>
                 {visible.product.status === 'SOLD' ? (
                   <Badge tone="outline" className="mt-3">
@@ -268,7 +268,7 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                 {t('shortLink')}:{' '}
                 <a
                   href={traceShortUrl(visible.product.traceCode)}
-                  className="font-mono text-clay underline underline-offset-4"
+                  className="break-all font-mono text-clay underline underline-offset-4"
                 >
                   {traceShortUrl(visible.product.traceCode).replace(/^https?:\/\//, '')}
                 </a>
@@ -278,7 +278,7 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
               </Link>
             </section>
 
-            <nav className="sticky bottom-0 mt-12 flex gap-3 border-ink/10 border-t bg-paper/90 px-5 py-4 backdrop-blur-md">
+            <nav className="sticky bottom-0 z-30 mt-12 flex gap-3 border-ink/10 border-t bg-paper/90 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-md">
               {/* Both labels share the row and wrap when the English text is long (GH#257). */}
               <a href="#workshop" className={`${buttonVariants({ size: 'lg' })} ${CTA_FIT}`}>
                 {t('ctaVisit')}

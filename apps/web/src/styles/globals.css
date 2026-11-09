@@ -26,6 +26,21 @@ html[data-fonts="ready"] {
     outline-offset: 2px;
   }
 
+  ::selection {
+    background: var(--color-glaze);
+    color: var(--color-paper);
+  }
+
+  html {
+    scrollbar-color: var(--color-ash) var(--color-paper);
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"] {
+    caret-color: var(--color-clay);
+  }
+
   body {
     background: var(--color-paper);
     color: var(--color-ink);
@@ -417,19 +432,16 @@ section:has(> [data-day-story="stage"]) {
   will-change: transform;
 }
 [data-fire-story="on"] .fire-step {
-  min-height: 60svh;
+  min-height: clamp(14rem, 28svh, 20rem);
   align-content: start;
-  padding-bottom: 3rem;
+  padding-bottom: 2rem;
 }
 [data-fire-story="on"] .fire-step:last-child {
   min-height: 0;
 }
+/* Keep every recorded note readable; the active marker carries scroll focus. */
 [data-fire-story="on"] .fire-step[data-fire-state] {
-  opacity: 0.4;
-  transition: opacity var(--duration-base) var(--ease-clay);
-}
-[data-fire-story="on"] .fire-step[data-fire-state="before"] {
-  opacity: 0.65;
+  opacity: 1;
 }
 [data-fire-story="on"] .fire-step[data-fire-state="active"] {
   opacity: 1;
@@ -461,7 +473,7 @@ section:has(> [data-day-story="stage"]) {
 .fire-track {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.375rem;
   margin-top: 0.75rem;
 }
