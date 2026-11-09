@@ -127,8 +127,8 @@ describe('Household draft until submit', () => {
     });
     // Legacy rows may be pending without parts: force the status directly.
     await db.orm.em
-      .fork()
-      .nativeUpdate(Household, { id: applied.body.id }, { status: 'PENDING_REVIEW' });
+      .getConnection()
+      .execute(`update household set status = 'PENDING_REVIEW' where id = '${applied.body.id}'`);
     const res = await t.request({
       method: 'POST',
       url: `/admin/households/${applied.body.id}/approve`,
