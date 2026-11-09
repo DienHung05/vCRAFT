@@ -1,5 +1,5 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
-import type { PaymentClient } from '@vcraft/api-client';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { ApiError, type PaymentClient } from '@vcraft/api-client';
 import type { OrderPaymentsDto, PaymentDto } from '@vcraft/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminOrderPayments } from '@/features/admin/admin-order-payments';
@@ -57,6 +57,30 @@ const SUMMARY: OrderPaymentsDto = {
   payments: [],
 };
 
+const walletSummary = (): OrderPaymentsDto => ({
+  ...SUMMARY,
+  methods: ['SEPAY_TRANSFER', 'VNPAY', 'MOMO'],
+  methodOptions: [
+    { method: 'SEPAY_TRANSFER', sandbox: false, minAmountVnd: 1, maxAmountVnd: null },
+    { method: 'VNPAY', sandbox: true, minAmountVnd: 10_000, maxAmountVnd: 500_000_000 },
+    { method: 'MOMO', sandbox: true, minAmountVnd: 1_000, maxAmountVnd: 50_000_000 },
+  ],
+});
+
+const WALLET_PAYMENT: PaymentDto = {
+  ...BANK_PAYMENT,
+  id: '00000000-0000-4000-8000-0000000000b2',
+  method: 'MOMO',
+  provider: 'MOMO',
+  referenceCode: 'VCPAMOMO0001',
+  checkout: {
+    type: 'REDIRECT',
+    url: 'https://test-payment.momo.vn/pay/1',
+    deeplink: 'momo://pay?x=1',
+    qrImageUrl: null,
+  },
+};
+
 const asClient = (methods: Partial<PaymentClient>) => methods as unknown as PaymentClient;
 
 describe('buyer payment panel', () => {
@@ -90,10 +114,10 @@ describe('buyer payment panel', () => {
         client={asClient({ orderPayments, createPayment })}
       />,
     );
-    expect(await screen.findByText('Chuyển khoản / VietQR')).toBeTruthy();
-    expect(screen.queryByText('VNPay (sandbox)')).toBeNull();
-    expect(screen.queryByText('MoMo (sandbox)')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục' }));
+    expect(await screen.findByText('Chuyển khoản ngân hàng (VietQR)')).toBeTruthy();
+    expect(screen.queryByText('VNPay')).toBeNull();
+    expect(screen.queryByText('Ví MoMo')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Hiện thông tin chuyển khoản' }));
     await waitFor(() =>
       expect(createPayment).toHaveBeenCalledWith(ORDER, {
         kind: 'DEPOSIT',
@@ -107,10 +131,8 @@ describe('buyer payment panel', () => {
     expect(screen.getByText(/Đang chờ tiền về/)).toBeTruthy();
   });
 
-  it('lists the wallets too when the sandbox flag is on', async () => {
-    const orderPayments = vi
-      .fn()
-      .mockResolvedValue({ ...SUMMARY, methods: ['SEPAY_TRANSFER', 'VNPAY', 'MOMO'] });
+  it('marks only the sandbox options as test mode and names them in one line', async () => {
+    const orderPayments = vi.fn().mockResolvedValue(walletSummary());
     renderVi(
       <OrderPaymentPanel
         orderId={ORDER}
@@ -118,8 +140,233 @@ describe('buyer payment panel', () => {
         client={asClient({ orderPayments })}
       />,
     );
-    expect(await screen.findByText('VNPay (sandbox)')).toBeTruthy();
-    expect(screen.getByText('MoMo (sandbox)')).toBeTruthy();
+    const vnpay = await screen.findByTestId('payment-method-VNPAY');
+    expect(within(vnpay).getByText('Thử nghiệm')).toBeTruthy();
+    expect(within(screen.getByTestId('payment-method-MOMO')).getByText('Thử nghiệm')).toBeTruthy();
+    expect(
+      within(screen.getByTestId('payment-method-SEPAY_TRANSFER')).queryByText('Thử nghiệm'),
+    ).toBeNull();
+    expect(screen.getByText('Chế độ thử nghiệm: VNPay và MoMo không trừ tiền thật.')).toBeTruthy();
+    // The first enabled option is the default.
+    expect(screen.getByRole('radio', { name: 'Chuyển khoản ngân hàng (VietQR)' })).toHaveProperty(
+      'checked',
+      true,
+    );
+  });
+
+  it('shows no test-mode line when no option is sandbox', async () => {
+    const orderPayments = vi.fn().mockResolvedValue(SUMMARY);
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="ACCEPTED"
+        client={asClient({ orderPayments })}
+      />,
+    );
+    await screen.findByTestId('payment-method-SEPAY_TRANSFER');
+    expect(screen.queryByText(/Chế độ thử nghiệm/)).toBeNull();
+  });
+
+  it('disables an option whose limit excludes the amount, with the reason, and skips it as default', async () => {
+    const summary = walletSummary();
+    summary.methodOptions[0] = { ...summary.methodOptions[0], maxAmountVnd: 2_000_000 } as never;
+    const orderPayments = vi.fn().mockResolvedValue(summary);
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="ACCEPTED"
+        client={asClient({ orderPayments })}
+      />,
+    );
+    const card = await screen.findByTestId('payment-method-SEPAY_TRANSFER');
+    expect(
+      within(card).getByText(/Số tiền vượt hạn mức .*2\.000\.000.* của phương thức này/),
+    ).toBeTruthy();
+    const radio = within(card).getByRole('radio') as HTMLInputElement;
+    expect(radio.disabled).toBe(true);
+    expect(radio.getAttribute('aria-disabled')).toBe('true');
+    expect(radio.getAttribute('aria-describedby')).toContain('-reason');
+    // VNPay is the first enabled option and so the default; its button label follows.
+    expect(screen.getByRole('radio', { name: 'VNPay' })).toHaveProperty('checked', true);
+    expect(screen.getByRole('button', { name: 'Thanh toán qua VNPay' })).toBeTruthy();
+  });
+
+  it('says so when the amount fits no method', async () => {
+    const summary = {
+      ...SUMMARY,
+      methodOptions: [
+        { method: 'SEPAY_TRANSFER', sandbox: false, minAmountVnd: 5_000_000, maxAmountVnd: null },
+      ],
+    } as OrderPaymentsDto;
+    const orderPayments = vi.fn().mockResolvedValue(summary);
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="ACCEPTED"
+        client={asClient({ orderPayments })}
+      />,
+    );
+    expect(await screen.findByText(/Số tiền dưới mức tối thiểu .*5\.000\.000/)).toBeTruthy();
+    expect(screen.getByText(/chưa phù hợp với hạn mức của phương thức nào/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Hiện thông tin chuyển khoản/ })).toBeNull();
+  });
+
+  it('falls back to the plain method list when the server sends no options', async () => {
+    const { methodOptions: _omit, ...rest } = walletSummary();
+    const orderPayments = vi.fn().mockResolvedValue(rest);
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="ACCEPTED"
+        client={asClient({ orderPayments })}
+      />,
+    );
+    expect(await screen.findByTestId('payment-method-MOMO')).toBeTruthy();
+    expect(screen.queryByText('Thử nghiệm')).toBeNull();
+  });
+
+  it('goes straight to the provider after starting a wallet payment', async () => {
+    const assign = vi.fn();
+    vi.stubGlobal('location', { ...window.location, assign });
+    const orderPayments = vi.fn().mockResolvedValue(walletSummary());
+    const createPayment = vi.fn().mockResolvedValue(WALLET_PAYMENT);
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="ACCEPTED"
+        client={asClient({ orderPayments, createPayment })}
+      />,
+    );
+    fireEvent.click(await screen.findByRole('radio', { name: 'Ví MoMo' }));
+    const button = screen.getByRole('button', { name: 'Thanh toán qua MoMo' });
+    fireEvent.click(button);
+    await waitFor(() => expect(assign).toHaveBeenCalledWith('https://test-payment.momo.vn/pay/1'));
+    expect(createPayment).toHaveBeenCalledWith(ORDER, { kind: 'DEPOSIT', method: 'MOMO' });
+    expect(screen.getByText('Đang chuyển tới MoMo…')).toBeTruthy();
+    expect(
+      (screen.getByRole('button', { name: 'Thanh toán qua MoMo' }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
+  it('explains an amount outside the limits when the server refuses it', async () => {
+    const orderPayments = vi.fn().mockResolvedValue(SUMMARY);
+    const createPayment = vi
+      .fn()
+      .mockRejectedValue(new ApiError('PAYMENT_AMOUNT_OUT_OF_RANGE', 409));
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="ACCEPTED"
+        client={asClient({ orderPayments, createPayment })}
+      />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Hiện thông tin chuyển khoản' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('nằm ngoài hạn mức');
+  });
+
+  it('shows the wallet waiting line and the continue button for a pending wallet payment', async () => {
+    const orderPayments = vi
+      .fn()
+      .mockResolvedValue({ ...walletSummary(), payments: [WALLET_PAYMENT] });
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="ACCEPTED"
+        client={asClient({ orderPayments })}
+      />,
+    );
+    expect(await screen.findByText(/Đang chờ MoMo xác nhận/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Tiếp tục thanh toán trên MoMo' })).toBeTruthy();
+    // The app deeplink is for touch devices only.
+    expect(screen.queryByRole('link', { name: 'Mở ứng dụng MoMo' })).toBeNull();
+  });
+
+  it('offers the MoMo app deeplink on a touch device', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(pointer: coarse)',
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    const orderPayments = vi
+      .fn()
+      .mockResolvedValue({ ...walletSummary(), payments: [WALLET_PAYMENT] });
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="ACCEPTED"
+        client={asClient({ orderPayments })}
+      />,
+    );
+    expect(await screen.findByRole('link', { name: 'Mở ứng dụng MoMo' })).toBeTruthy();
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('payment result page', () => {
+  const FAILED: PaymentDto = { ...WALLET_PAYMENT, status: 'FAILED', checkout: null };
+  const PAID: PaymentDto = {
+    ...WALLET_PAYMENT,
+    status: 'PAID',
+    checkout: null,
+    paidAt: '2026-11-09T11:00:00.000Z',
+  };
+
+  it('thanks the buyer on a paid payment and links back to the order', async () => {
+    renderVi(
+      <PaymentStatusPage
+        reference="VCPAMOMO0001"
+        client={asClient({ getPayment: vi.fn().mockResolvedValue(PAID) })}
+      />,
+    );
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Thanh toán thành công' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Kết quả thanh toán' })).toBeTruthy();
+    expect(screen.getByTestId('payment-code').textContent).toBe('VCPAMOMO0001');
+    expect(screen.getByText('Thời điểm thanh toán')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Về đơn hàng' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Chọn cách thanh toán khác' })).toBeNull();
+  });
+
+  it('offers another way to pay on a failed wallet payment and says no money was taken', async () => {
+    renderVi(
+      <PaymentStatusPage
+        reference="VCPAMOMO0001"
+        client={asClient({ getPayment: vi.fn().mockResolvedValue(FAILED) })}
+      />,
+    );
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Thanh toán chưa thành công' }),
+    ).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Chọn cách thanh toán khác' })).toBeTruthy();
+    expect(screen.getByText(/chưa ghi nhận khoản tiền nào/)).toBeTruthy();
+    expect(screen.getByText(/Nếu tiền đã rời khỏi tài khoản của bạn/)).toBeTruthy();
+    expect(screen.queryByText('Thời điểm thanh toán')).toBeNull();
+  });
+
+  describe('while a wallet payment is still pending', () => {
+    beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
+    afterEach(() => vi.useRealTimers());
+
+    it('adds the "you can close this page" hint after 20 s', async () => {
+      renderVi(
+        <PaymentStatusPage
+          reference="VCPAMOMO0001"
+          client={asClient({ getPayment: vi.fn().mockResolvedValue(WALLET_PAYMENT) })}
+        />,
+      );
+      expect(
+        await screen.findByRole('heading', { level: 2, name: 'Đang xác nhận thanh toán' }),
+      ).toBeTruthy();
+      expect(screen.getByText(/kết quả thường có trong vài giây/)).toBeTruthy();
+      expect(screen.queryByText(/Vẫn chưa có kết quả/)).toBeNull();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(20_000);
+      });
+      expect(screen.getByText(/Vẫn chưa có kết quả/)).toBeTruthy();
+    });
   });
 });
 

@@ -1422,9 +1422,9 @@
       "BALANCE": "Balance"
     },
     "method": {
-      "SEPAY_TRANSFER": "Bank transfer / VietQR",
-      "VNPAY": "VNPay (sandbox)",
-      "MOMO": "MoMo (sandbox)",
+      "SEPAY_TRANSFER": "Bank transfer (VietQR)",
+      "VNPAY": "VNPay",
+      "MOMO": "MoMo wallet",
       "OFFLINE": "Offline (recorded by the board)"
     },
     "status": {
@@ -1442,16 +1442,25 @@
       "balance": "Balance",
       "paidOn": "Paid on {date}",
       "notPaid": "Not paid yet",
-      "depositRequired": "Production starts after the deposit is paid.",
-      "sandbox": "Sandbox: no real money moves through VNPay and MoMo."
+      "depositRequired": "Production starts after the deposit is paid."
     },
     "pay": {
       "deposit": "Pay the deposit",
       "balance": "Pay the balance",
       "choose": "Choose how to pay",
-      "start": "Continue",
       "starting": "Preparing…",
-      "noMethods": "Online payment is not available right now. The management board will tell you how to pay."
+      "noMethods": "Online payment is not available right now. The management board will tell you how to pay.",
+      "startBy": {
+        "SEPAY_TRANSFER": "Show transfer details",
+        "VNPAY": "Pay with VNPay",
+        "MOMO": "Pay with MoMo"
+      },
+      "redirecting": "Taking you to {method}…",
+      "testBadge": "Test mode",
+      "sandboxNote": "Test mode: {methods} do not take real money.",
+      "overMax": "The amount is over the {max} limit of this method",
+      "underMin": "The amount is under the {min} minimum of this method",
+      "noneFit": "This amount does not fit the limits of any method. The management board will tell you how to pay."
     },
     "bank": {
       "title": "Pay by bank transfer",
@@ -1469,19 +1478,20 @@
     "redirect": {
       "title": "Pay with {method}",
       "text": "You will pay on the provider page and come back here. This page confirms the payment once the provider tells us.",
-      "open": "Open the payment page",
-      "app": "Open the app"
+      "open": "Continue paying on {method}",
+      "app": "Open the {method} app"
     },
     "live": {
       "waiting": "Waiting for the money. This page updates by itself.",
       "expiresAt": "Pay before {time}.",
       "paid": "Payment received. Thank you.",
       "paidAt": "Received on {time}.",
-      "failed": "The payment did not go through. You can start a new one.",
-      "expired": "This payment expired before the money arrived. Start a new one. If you did transfer, tell the management board.",
+      "failed": "The provider reported that the payment did not go through.",
+      "expired": "This payment expired before the money arrived.",
       "cancelled": "This payment was cancelled.",
       "refunded": "The management board marked this payment as refunded.",
-      "refundReason": "Reason: {reason}"
+      "refundReason": "Reason: {reason}",
+      "waitingWallet": "Waiting for {method} to confirm. This page updates by itself."
     },
     "cancel": "Cancel this payment",
     "cancelling": "Cancelling…",
@@ -1498,7 +1508,38 @@
     "result": {
       "title": "Payment result",
       "back": "Back to the order",
-      "allOrders": "All requests"
+      "allOrders": "All requests",
+      "heading": {
+        "PENDING": "Confirming your payment",
+        "PAID": "Payment successful",
+        "FAILED": "Payment did not go through",
+        "EXPIRED": "This payment has expired",
+        "CANCELLED": "Payment cancelled",
+        "REFUNDED": "Refunded"
+      },
+      "code": "Payment code",
+      "copyCode": "Copy payment code",
+      "amount": "Amount",
+      "method": "Method",
+      "kind": "Type",
+      "paidAt": "Paid at",
+      "another": "Choose another way to pay",
+      "noMoney": "The system has not recorded any money for this payment.",
+      "contactWallet": "If money left your account, contact the village management board and send the payment code.",
+      "contactBank": "If you did transfer, tell the village management board and send the payment code.",
+      "pendingNote": "If you have already paid, the result usually shows up within a few seconds.",
+      "slowHint": "Still no result? You can close this page — the system keeps checking and will let you know when the money arrives."
+    },
+    "methodShort": {
+      "SEPAY_TRANSFER": "your bank",
+      "VNPAY": "VNPay",
+      "MOMO": "MoMo",
+      "OFFLINE": "the board"
+    },
+    "methodHint": {
+      "SEPAY_TRANSFER": "Scan the VietQR code with your banking app, or transfer by hand. The system confirms automatically when the money arrives.",
+      "VNPAY": "Domestic ATM cards, Internet Banking, international cards or VNPAY-QR.",
+      "MOMO": "Pay with the MoMo wallet on your phone."
     }
   },
   "rating": {
