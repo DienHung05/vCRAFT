@@ -133,10 +133,14 @@ export async function flagRequestsNeedingCoordination(
     QuotationRequest,
     {
       status: { $in: ['SENT', 'BIDDING'] },
-      biddingClosesAt: { $gt: now },
+      // Only requests inside the widest check window can be flagged; the soonest-closing come first.
+      biddingClosesAt: {
+        $gt: now,
+        $lte: new Date(now.getTime() + Math.max(UNCLAIMED_WINDOW_MS, SHORTFALL_WINDOW_MS)),
+      },
       coordinationFlaggedAt: null,
     },
-    { fields: ['id'], limit: 200 },
+    { fields: ['id'], orderBy: { biddingClosesAt: 'asc' }, limit: 200 },
   );
   const flagged: string[] = [];
   for (const { id } of open) {

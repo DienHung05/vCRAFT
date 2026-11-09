@@ -8,6 +8,8 @@ export const OUTBOX_QUEUE = 'outbox';
 export const QR_LABELS_QUEUE = 'qr-labels';
 export const SCHEDULER_QUEUE = 'scheduler';
 export const ASSISTANT_QUEUE = 'assistant';
+/** News import runs for minutes, so it gets its own queue instead of blocking the sweeps on `scheduler`. */
+export const NEWS_IMPORT_QUEUE = 'news-import';
 
 /** Nhịp chuyển tiếp outbox: client hỏi lại mỗi 10–15s nên 2s là đủ nhanh. */
 export const OUTBOX_RELAY_EVERY_MS = 2_000;
