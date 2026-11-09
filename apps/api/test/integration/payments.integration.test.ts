@@ -7,6 +7,7 @@ import {
 } from '@vcraft/contracts';
 import { expireDuePayments, Payment, QuotationRequest, resolveDbDriver } from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { PaymentProviderSyncService } from '../../src/modules/payments/application/payment-provider-sync.service.js';
 import { PaymentsService } from '../../src/modules/payments/application/payments.service.js';
 import {
   PAYMENT_HTTP,
@@ -22,9 +23,10 @@ const VNPAY_SECRET = 'vnpay-integration-secret';
 const MOMO = { partner: 'MOMOTEST', access: 'access-key', secret: 'secret-key' };
 
 /** What a provider status query was asked, and how a test makes the fake provider answer it. */
-const queryRequests: Array<{ provider: 'VNPAY'; body: Record<string, unknown> }> = [];
+const queryRequests: Array<{ provider: 'VNPAY' | 'MOMO'; body: Record<string, unknown> }> = [];
 const queryControl: {
   vnpay?: (body: Record<string, string>) => Record<string, string>;
+  momo?: (body: Record<string, string>) => Record<string, unknown>;
 } = {};
 
 /** A VNPay `querydr` answer signed the documented way: the response fields joined by `|`, HMAC-SHA512. */
@@ -61,6 +63,20 @@ const vnpayPaid = (body: Record<string, string>, transactionNo: string, amountVn
     vnp_TransactionNo: transactionNo,
     vnp_TransactionStatus: '00',
   });
+const momoAnswer = (body: Record<string, string>, resultCode: number, transId = 0) => ({
+  partnerCode: body.partnerCode,
+  orderId: body.orderId,
+  requestId: body.requestId,
+  extraData: '',
+  amount: 3_000_000,
+  transId,
+  payType: 'qr',
+  resultCode,
+  message: 'x',
+  responseTime: 1_762_600_000_000,
+  lastUpdated: 1_762_600_000_000,
+});
+
 /** Stands in for the VNPay and MoMo endpoints: no request ever leaves the process. */
 const momoRequests: Array<Record<string, unknown>> = [];
 /** Lets a test hold the MoMo call open (`gate`), see it start (`entered`) or make it fail (`fail`). */
@@ -71,6 +87,12 @@ const fakeMomoHttp: PaymentHttp = async (url, init) => {
     queryRequests.push({ provider: 'VNPAY', body });
     const input = body as Record<string, string>;
     const reply = queryControl.vnpay?.(input) ?? vnpayAnswer(input);
+    return { ok: true, status: 200, json: async () => reply };
+  }
+  if (url.endsWith('/query')) {
+    queryRequests.push({ provider: 'MOMO', body });
+    const input = body as Record<string, string>;
+    const reply = queryControl.momo?.(input) ?? momoAnswer(input, 1000);
     return { ok: true, status: 200, json: async () => reply };
   }
   momoRequests.push(body);
@@ -1182,6 +1204,104 @@ describe('online payment of orders (ADR-0021)', () => {
       expect(stored.map((p) => p.status)).toEqual(['FAILED']);
       const retry = await startPayment(requestId, 'DEPOSIT', 'MOMO');
       expect(retry.status).toBe(201);
+    });
+
+    it('keeps the payment pending while MoMo is still processing it', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'MOMO')).body;
+      for (const resultCode of [1000, 7000, 7002, 9000]) {
+        expect((await post(ipn(created, { resultCode, message: 'processing' }))).status).toBe(204);
+      }
+      expect((await status(created)).status).toBe('PENDING');
+    });
+
+    it('lets the sweep settle a MoMo payment that expired within the hour, and leaves older ones alone', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'MOMO')).body;
+      const secondRequest = await acceptedOrder();
+      const old = (await startPayment(secondRequest, 'DEPOSIT', 'MOMO')).body;
+      const em = db.orm.em.fork();
+      const recent = await em.findOneOrFail(Payment, { referenceCode: created.referenceCode });
+      recent.status = 'EXPIRED';
+      recent.expiresAt = new Date(Date.now() - 10 * 60_000);
+      const stale = await em.findOneOrFail(Payment, { referenceCode: old.referenceCode });
+      stale.status = 'EXPIRED';
+      stale.expiresAt = new Date(Date.now() - 61 * 60_000);
+      await em.flush();
+
+      queryRequests.length = 0;
+      queryControl.momo = (body) => momoAnswer(body, 0, 5_100_000_001);
+      try {
+        const asked = await t.app.get(PaymentProviderSyncService).runOnce();
+        expect(asked).toBeGreaterThanOrEqual(1);
+      } finally {
+        queryControl.momo = undefined;
+      }
+      expect((await status(created)).status).toBe('PAID');
+      expect((await status(old)).status).toBe('EXPIRED');
+      expect(queryRequests.map((r) => r.body.orderId)).toContain(created.referenceCode);
+      expect(queryRequests.map((r) => r.body.orderId)).not.toContain(old.referenceCode);
+      // The IPN of the same transaction is then a no-op.
+      expect((await post(ipn(created, { transId: 5_100_000_001 }))).status).toBe(204);
+      expect(
+        (await notices(buyer.auth)).filter(
+          (n) => n.type === 'PAYMENT_PAID' && n.target?.id === requestId,
+        ),
+      ).toHaveLength(1);
+    });
+
+    it('does not fail an expired payment because MoMo reports a failure', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'MOMO')).body;
+      const em = db.orm.em.fork();
+      const row = await em.findOneOrFail(Payment, { referenceCode: created.referenceCode });
+      row.status = 'EXPIRED';
+      row.expiresAt = new Date(Date.now() - 5 * 60_000);
+      await em.flush();
+      queryControl.momo = (body) => momoAnswer(body, 1006, 0);
+      try {
+        const result = await t.app.get(PaymentsService).syncWithProvider(created.referenceCode);
+        expect(result).toMatchObject({ outcome: 'NOT_APPLIED' });
+      } finally {
+        queryControl.momo = undefined;
+      }
+      expect((await status(created)).status).toBe('EXPIRED');
+    });
+
+    it('sends the buyer to the status page even when MoMo says it is still processing', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'MOMO')).body;
+      const query = Object.fromEntries(
+        Object.entries(ipn(created, { resultCode: 7000 })).map(([k, v]) => [k, String(v)]),
+      );
+      const back = await t.request({
+        method: 'GET',
+        url: `/payments/return/momo?${new URLSearchParams(query)}`,
+      });
+      expect(back.status).toBe(302);
+      expect(back.headers.location).toBe(
+        `https://vcraft.test/vi/thanh-toan/${created.referenceCode}`,
+      );
+      expect((await status(created)).status).toBe('PENDING');
+    });
+
+    it('asks MoMo when the buyer returns with a valid signature', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'MOMO')).body;
+      queryControl.momo = (body) => momoAnswer(body, 0, 5_100_000_002);
+      try {
+        const query = Object.fromEntries(
+          Object.entries(ipn(created, { resultCode: 1006 })).map(([k, v]) => [k, String(v)]),
+        );
+        const back = await t.request({
+          method: 'GET',
+          url: `/payments/return/momo?${new URLSearchParams(query)}`,
+        });
+        expect(back.status).toBe(302);
+        expect((await status(created)).status).toBe('PAID');
+      } finally {
+        queryControl.momo = undefined;
+      }
     });
 
     it('marks a failed MoMo result failed', async () => {
