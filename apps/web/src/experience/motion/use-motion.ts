@@ -13,9 +13,18 @@ export function useRichMotion(options: { finePointer?: boolean; minWidth?: numbe
   const { finePointer, minWidth } = options;
   useEffect(() => {
     if (reduced) return setAllowed(false);
-    const fine = !finePointer || window.matchMedia('(pointer: fine)').matches;
-    const wide = !minWidth || window.innerWidth >= minWidth;
-    setAllowed(fine && wide);
+    const fine = finePointer ? window.matchMedia?.('(pointer: fine)') : undefined;
+    const update = () =>
+      setAllowed(
+        (!finePointer || fine?.matches === true) && (!minWidth || window.innerWidth >= minWidth),
+      );
+    update();
+    fine?.addEventListener('change', update);
+    if (minWidth) window.addEventListener('resize', update);
+    return () => {
+      fine?.removeEventListener('change', update);
+      if (minWidth) window.removeEventListener('resize', update);
+    };
   }, [reduced, finePointer, minWidth]);
   return allowed;
 }

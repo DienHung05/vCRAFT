@@ -12,7 +12,6 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
-import { Reveal } from '@/experience/motion/reveal';
 import { Link } from '@/i18n/navigation';
 import {
   type CatalogFilters,
@@ -306,16 +305,17 @@ export function CatalogExplorer({
             }
           />
         ) : (
-          <ul data-testid="product-grid" className="grid grid-cols-2 gap-8 md:grid-cols-4">
+          <ul
+            data-testid="product-grid"
+            className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-8"
+          >
             {items.map((product, index) => (
               <li key={product.id}>
-                <Reveal delay={(index % 4) * 40}>
-                  <ProductCard
-                    product={toProductCardView(product, locale)}
-                    heading="h2"
-                    priority={index < EAGER_CARD_COUNT}
-                  />
-                </Reveal>
+                <ProductCard
+                  product={toProductCardView(product, locale)}
+                  heading="h2"
+                  priority={index < EAGER_CARD_COUNT}
+                />
               </li>
             ))}
           </ul>
