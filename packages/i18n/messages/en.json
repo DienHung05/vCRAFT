@@ -1037,7 +1037,8 @@
           "reinstate": "Reinstated household",
           "reveal_id_number": "Viewed full citizen ID number",
           "certification_verify": "Verified a certification",
-          "certification_unverify": "Removed a certification's verification"
+          "certification_unverify": "Removed a certification's verification",
+          "resubmit": "Resubmit application"
         },
         "product": {
           "publish": "Published product",

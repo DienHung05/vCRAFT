@@ -1042,7 +1042,8 @@
           "reinstate": "Khôi phục hộ",
           "reveal_id_number": "Xem số CCCD đầy đủ",
           "certification_verify": "Xác minh chứng nhận",
-          "certification_unverify": "Bỏ xác minh chứng nhận"
+          "certification_unverify": "Bỏ xác minh chứng nhận",
+          "resubmit": "Gửi lại hồ sơ đã bổ sung"
         },
         "product": {
           "publish": "Xuất bản sản phẩm",
