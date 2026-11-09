@@ -74,6 +74,11 @@ import { ConsentService } from '../../privacy/application/consent.service';
 import { allocationTimeline } from './allocation-timeline';
 import { assertWithinCapacity, committedByHousehold, declaredCapacity } from './household-capacity';
 import { QuotationNotifier } from './quotation-notifier';
+import {
+  assertCoordinator,
+  assertCoordinatorOrBoard,
+  assertEligibleHouseholds,
+} from './request-access';
 
 /** All plan/input writes lock the request first, so changes cannot race with composition. */
 @Injectable()
@@ -1695,16 +1700,12 @@ export class RfqService {
   }
 
   private coordinator(actor: Actor, request: QuotationRequest) {
-    if (actor.role !== 'ADMIN' || request.coordinatorId !== actor.id || !request.coordinationOptIn)
-      throw notFound();
-    if (actor.locked) throw forbidden();
+    assertCoordinator(actor, request);
   }
 
   /** The coordinator of a coordinated request; any admin for a request nobody coordinates (T7 names "Admin"). */
   private coordinatorOrBoard(actor: Actor, request: QuotationRequest) {
-    if (request.coordinationOptIn) return this.coordinator(actor, request);
-    if (actor.role !== 'ADMIN') throw notFound();
-    if (actor.locked) throw forbidden();
+    assertCoordinatorOrBoard(actor, request);
   }
 
   private async ownHousehold(em: EntityManager, actor: Actor, writing = true) {
@@ -1856,18 +1857,7 @@ export class RfqService {
   }
 
   private async checkHouseholds(em: EntityManager, ids: readonly string[]) {
-    const uniqueIds = [...new Set(ids)];
-    const households = await em.find(
-      Household,
-      { id: { $in: uniqueIds } },
-      { populate: ['representative'] },
-    );
-    if (
-      households.length !== uniqueIds.length ||
-      households.some((h) => h.status !== 'APPROVED' || h.representative.status === 'LOCKED')
-    ) {
-      throw new AppError('RFQ_ARTISAN_NOT_ELIGIBLE');
-    }
+    await assertEligibleHouseholds(em, ids);
   }
 
   private completion(iso: string, request: QuotationRequest) {
