@@ -45,6 +45,8 @@ export async function generateMetadata({
   const locale = await resolveLocale(params);
   const { code } = await params;
   const result = await fetchTrace(code);
+  // The API failing says nothing about the code: keep the error page out of search results.
+  if (result.status === 'unavailable') return { robots: { index: false } };
   // A published trace code is indexable (NFR-PERF-02); unknown, withdrawn or locked codes are not.
   if (result.status === 'ok' && result.data.availability === 'VISIBLE')
     return { title: textFor(locale, result.data.product.name, result.data.product.nameEn) };
@@ -72,7 +74,10 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
     getTranslations('common'),
   ]);
   const result = await fetchTrace(code);
-  if (result.status === 'unavailable') return <DataUnavailable />;
+  if (result.status === 'unavailable') {
+    const errors = await getTranslations('errors.generic');
+    return <DataUnavailable heading={errors('title')} />;
+  }
   const trace = result.status === 'ok' ? result.data : null;
   // Mã không có, hoặc hộ làm ra nó đã bị khóa, là cảnh báo hàng không xác thực; sản phẩm tự rút thì chỉ là thông báo.
   const withdrawn = trace?.availability === 'UNAVAILABLE' && trace.reason === 'PRODUCT_WITHDRAWN';
