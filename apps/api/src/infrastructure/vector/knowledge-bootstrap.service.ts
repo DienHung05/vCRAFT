@@ -3,8 +3,9 @@ import { dirname, join, resolve } from 'node:path';
 import { MikroORM } from '@mikro-orm/core';
 import { Inject, Injectable, Logger, type OnApplicationBootstrap } from '@nestjs/common';
 import { Household, News, Product, publicDocuments } from '@vcraft/database';
+import type { Embedder, VectorStore } from '@vcraft/knowledge';
 import { InMemoryVectorStore, indexDocument, ingestKnowledgeBase } from '@vcraft/knowledge';
-import { EMBEDDER, type Embedder, VECTOR_STORE, type VectorStore } from './vector.module';
+import { EMBEDDER, VECTOR_STORE } from './vector.tokens';
 
 /** `docs/assistant-kb`, found by walking up from this file (src or dist), or `ASSISTANT_KB_DIR`. */
 function findKbDir(): string | null {
