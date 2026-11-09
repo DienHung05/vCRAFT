@@ -5,7 +5,7 @@ import { BaseEntity } from './base.entity.js';
 /**
  * One consent given by a person (NFR-SEC-07): to what (`purpose`), under which privacy policy text
  * (`policyVersion`), and when (`createdAt`, server time). Append-only: giving consent again for the same
- * purpose and version is a no-op, a new policy version adds a new row. `userId` has no foreign key so the
+ * purpose and version is a no-op while it stands, a new policy version adds a new row. `userId` has no foreign key so the
  * record does not depend on the account row; it is deleted with the person's data on account deletion.
  */
 @Entity({ tableName: 'consent_record' })
@@ -19,4 +19,11 @@ export class ConsentRecord extends BaseEntity {
 
   @Property({ type: 'string', length: 20 })
   policyVersion!: string;
+
+  /**
+   * Set when the person withdrew this consent (Decree 13/2023/ND-CP Art. 12). The row stays as history;
+   * a withdrawn row no longer counts as consent, and consenting again adds a new row.
+   */
+  @Property({ type: 'datetime', length: 3, nullable: true })
+  withdrawnAt?: Date | null;
 }

@@ -1043,6 +1043,7 @@
           "suspend": "Suspended household",
           "reinstate": "Reinstated household",
           "reveal_id_number": "Viewed full citizen ID number",
+          "set_id_number": "Set or changed citizen ID number",
           "certification_verify": "Verified a certification",
           "certification_unverify": "Removed a certification's verification",
           "resubmit": "Resubmit application"
@@ -1070,6 +1071,9 @@
         },
         "account": {
           "delete": "Account deleted by its owner"
+        },
+        "consent": {
+          "withdraw": "Consent withdrawn"
         },
         "allocation": {
           "reallocate": "Reallocate remaining pieces"
@@ -2768,6 +2772,34 @@
         "working": "Preparing…",
         "done": "Your data file was downloaded.",
         "failed": "Your data could not be downloaded. Try again in a few minutes."
+      },
+      "consents": {
+        "title": "Withdraw consent",
+        "text": "You can withdraw each consent at any time. Withdrawing does not affect data processed before, and it does not delete data already stored; to delete your data, delete your account below. You can consent again when you need the feature.",
+        "signUpNote": "Consent given at sign-up is the basis for having an account, so it cannot be withdrawn on its own; to withdraw it, delete your account below.",
+        "none": "You have no active consent to withdraw.",
+        "loadFailed": "Your consents could not be loaded. Try again in a few minutes.",
+        "purposes": {
+          "ID_DOCUMENT": {
+            "title": "Identity papers and citizen ID number",
+            "effect": "After withdrawing: you cannot upload more papers or set or change your ID number. Papers and the number already stored stay until you delete your account."
+          },
+          "RFQ_CONTACT": {
+            "title": "Delivery address and contact details in quotation requests",
+            "effect": "After withdrawing: you cannot send new quotation requests with a delivery address and contact details."
+          },
+          "MAKER_PROFILE": {
+            "title": "Showing a maker's name and role",
+            "effect": "After withdrawing: you cannot add or edit makers shown publicly on the household page."
+          }
+        },
+        "withdraw": "Withdraw",
+        "dialogTitle": "Withdraw this consent?",
+        "confirm": "Withdraw consent",
+        "cancel": "Keep it",
+        "working": "Withdrawing…",
+        "done": "Consent withdrawn.",
+        "failed": "The consent could not be withdrawn and nothing was changed. Try again in a few minutes."
       },
       "delete": {
         "title": "Delete account",

@@ -54,6 +54,7 @@ GET /api/v1/me AUTHENTICATED
 GET /api/v1/me/allocations ROLES(HOUSEHOLD)
 GET /api/v1/me/consents AUTHENTICATED
 POST /api/v1/me/consents AUTHENTICATED
+DELETE /api/v1/me/consents/:purpose AUTHENTICATED
 GET /api/v1/me/data-export AUTHENTICATED
 GET /api/v1/me/events ROLES(ADMIN,BUYER,HOUSEHOLD)
 GET /api/v1/me/favourites ROLES(ADMIN,BUYER,HOUSEHOLD)

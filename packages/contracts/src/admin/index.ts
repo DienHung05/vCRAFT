@@ -17,6 +17,7 @@ export const AUDIT_ACTIONS = [
   'household.suspend',
   'household.reinstate',
   'household.reveal_id_number',
+  'household.set_id_number',
   'household.certification_verify',
   'household.certification_unverify',
   'household.resubmit',
@@ -41,6 +42,8 @@ export const AUDIT_ACTIONS = [
   'news.unpublish',
   'news.delete',
   'account.delete',
+  // A person withdrew a consent (Decree 13/2023/ND-CP Art. 12, GH#418).
+  'consent.withdraw',
   // Account administration (FR-AUTH-03, FR-AUTH-10, GH#239).
   'user.suspend',
   'user.unsuspend',

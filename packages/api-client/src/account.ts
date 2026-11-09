@@ -187,6 +187,10 @@ export function createAccountClient(options: AccountClientOptions) {
         json: { purpose, policyVersion },
       });
     },
+    /** Withdraw the consent for `purpose`; answers with the refreshed list (Decree 13/2023/ND-CP Art. 12). */
+    withdrawConsent(purpose: ConsentPurposeDto) {
+      return request(`/me/consents/${purpose}`, ConsentListResponseSchema, { method: 'DELETE' });
+    },
     /** Everything the platform holds about the person, as one JSON document (NFR-SEC-07). */
     exportMyData() {
       return request('/me/data-export', DataExportSchema);

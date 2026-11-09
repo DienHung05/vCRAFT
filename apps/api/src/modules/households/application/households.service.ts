@@ -158,6 +158,10 @@ export class HouseholdsService {
 
   async apply(actor: Actor, input: ApplyHouseholdRequest): Promise<HouseholdDto> {
     if (actor.role !== 'ADMIN') await this.consents.require(actor.id, 'SIGN_UP');
+    // The citizen ID number is identity data: it needs the ID_DOCUMENT consent, like the papers do.
+    if (actor.role !== 'ADMIN' && input.idNumber) {
+      await this.consents.require(actor.id, 'ID_DOCUMENT');
+    }
     return this.orm.em.fork().transactional(async (em) => {
       if (actor.role === 'ADMIN') throw forbidden('administrators do not represent households');
       if (await em.findOne(Household, { representative: actor.id })) {
@@ -176,6 +180,7 @@ export class HouseholdsService {
           : null,
         representative: user,
       });
+      if (input.idNumber) this.auditSetIdNumber(em, actor, household.id);
       await em.flush();
       return toHouseholdDto(household, {
         artisans: [],
@@ -198,9 +203,23 @@ export class HouseholdsService {
   async setIdNumber(actor: Actor, input: SetIdNumberRequest): Promise<HouseholdDto> {
     const em = this.orm.em.fork();
     const household = await this.ownWritableHousehold(em, actor);
+    await this.consents.require(actor.id, 'ID_DOCUMENT', em);
     household.idNumberEnc = this.cipher.encrypt(input.idNumber, FIELD_CONTEXTS.householdIdNumber);
+    this.auditSetIdNumber(em, actor, household.id);
     await em.flush();
     return toHouseholdDto(household, await this.parts(em, household, false));
+  }
+
+  /** Audit entry for setting or changing the ID number: records who and which household, never the number. */
+  private auditSetIdNumber(em: EntityManager, actor: Actor, householdId: string): void {
+    em.create(AuditLog, {
+      actorId: actor.id,
+      action: 'household.set_id_number',
+      entity: 'household',
+      entityId: householdId,
+      before: null,
+      after: null,
+    });
   }
 
   /**
