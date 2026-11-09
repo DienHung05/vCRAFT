@@ -85,7 +85,7 @@ _Avoid_: Public news, social feed
 
 
 **Quotation request / Yêu cầu báo giá**:
-A buyer's private request for an offer to supply a specified quantity of work. The buyer sends it to selected households, asks the village administration to coordinate a response, or does both. With neither, the system invites up to ten households that work in the request's category.
+A buyer's private request for an offer to supply a specified quantity of work. The buyer sends it to selected households, asks the village administration to coordinate a response, or does both. With neither, the system invites up to ten households that work in the request's category. A request the administration coordinates is also open to qualifying households in its category before the bidding deadline (an _open coordinated request_): they see a redacted summary and may send a contribution offer without an invitation. It is never a public tender: buyer identity and prices stay hidden and offers stay sealed.
 _Avoid_: Order, public tender
 
 **Quotation / Báo giá**:
