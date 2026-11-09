@@ -301,4 +301,33 @@ describe('media pipeline: kiểm tra ở biên và tệp riêng tư', () => {
       expect(denied.status).toBe(404);
     }
   });
+
+  it('re-upload reuses a recent PROCESSING asset but re-enqueues a stuck one (GH#345)', async () => {
+    const owner = await t.createUser('HOUSEHOLD');
+    const png = Buffer.concat([PNG, Buffer.from('stuck-asset')]);
+    const first = await upload(owner.auth, 'JOURNAL', png, 'image/png');
+    expect(first.status).toBe(202);
+    const count = () => db.orm.em.fork().count(OutboxEvent, { type: 'media.uploaded' });
+    const before = await count();
+
+    const again = await upload(owner.auth, 'JOURNAL', png, 'image/png');
+    expect(again.body.id).toBe(first.body.id);
+    expect(await count()).toBe(before);
+
+    await db.orm.em
+      .fork()
+      .nativeUpdate(
+        MediaAsset,
+        { id: first.body.id },
+        { updatedAt: new Date(Date.now() - 11 * 60_000) },
+      );
+    const stuck = await upload(owner.auth, 'JOURNAL', png, 'image/png');
+    expect(stuck.body.id).toBe(first.body.id);
+    expect(stuck.body.status).toBe('PROCESSING');
+    expect(await count()).toBe(before + 1);
+
+    // The window restarts, so an immediate third upload does not enqueue again.
+    await upload(owner.auth, 'JOURNAL', png, 'image/png');
+    expect(await count()).toBe(before + 1);
+  });
 });

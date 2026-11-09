@@ -18,7 +18,7 @@ import {
 import { createNoticeLoader } from './processors/mail/load-notice';
 import { type HouseholdMailJob, sendHouseholdMail } from './processors/mail/send-household-mail';
 import { sendNoticeMail } from './processors/mail/send-notice-mail';
-import { processMediaAsset } from './processors/media/process-media';
+import { failMediaAsset, processMediaAsset } from './processors/media/process-media';
 import { newsImportConfigFromEnv, newsImportEnabled } from './processors/news-import/config';
 import { runNewsImport } from './processors/news-import/import-news';
 import { llmFromEnv } from './processors/news-import/llm';
@@ -177,9 +177,14 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       ),
     ];
     for (const worker of workers)
-      worker.on('failed', (job, error) =>
-        this.logger.warn(`${worker.name} job ${job?.id} failed: ${error.message}`),
-      );
+      worker.on('failed', (job, error) => {
+        this.logger.warn(`${worker.name} job ${job?.id} failed: ${error.message}`);
+        // Last attempt of a media job: stop the asset from staying PROCESSING forever (GH#345).
+        if (worker.name === MEDIA_QUEUE && job && job.attemptsMade >= (job.opts.attempts ?? 1))
+          failMediaAsset({ orm: this.orm }, (job.data as MediaJob).assetId, error).catch(
+            (e: unknown) => this.logger.error(`could not mark media asset failed: ${String(e)}`),
+          );
+      });
     await outbox.upsertJobScheduler('relay', { every: OUTBOX_RELAY_EVERY_MS });
     await scheduler.upsertJobScheduler(
       RFQ_EXPIRE_SWEEP_JOB,

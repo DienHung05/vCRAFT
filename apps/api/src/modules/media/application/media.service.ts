@@ -39,6 +39,9 @@ import { ConsentService } from '../../privacy/application/consent.service';
 /** Sự kiện outbox để worker chuyển đổi ảnh (ARCHITECTURE §7.1). */
 export const MEDIA_UPLOADED_EVENT = 'media.uploaded';
 
+/** A PROCESSING asset untouched for this long is treated as stuck and re-enqueued on re-upload (GH#345). */
+export const MEDIA_PROCESSING_STALE_MS = 10 * 60_000;
+
 /** `DOCUMENT` files are private papers and never reach the public API. */
 export type PublicLinkRole = Exclude<MediaLinkRole, 'DOCUMENT'>;
 
@@ -130,6 +133,20 @@ export class MediaService {
       status: { $ne: 'FAILED' },
     });
     if (existing) {
+      // GH#345: a PROCESSING asset that outlived the worker's retries is stuck, so re-uploading the
+      // same file re-enqueues it (bumping `updatedAt` restarts the window) instead of returning it.
+      if (
+        existing.status === 'PROCESSING' &&
+        existing.visibility === 'PUBLIC' &&
+        Date.now() - existing.updatedAt.getTime() > MEDIA_PROCESSING_STALE_MS
+      ) {
+        existing.updatedAt = new Date();
+        em.create(OutboxEvent, {
+          type: MEDIA_UPLOADED_EVENT,
+          payload: { assetId: existing.id },
+        });
+        await em.flush();
+      }
       if (
         purpose === 'CERTIFICATE' &&
         existing.certificateKind === 'UNKNOWN' &&
