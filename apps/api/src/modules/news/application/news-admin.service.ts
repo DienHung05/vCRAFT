@@ -12,6 +12,7 @@ import {
   MediaAsset,
   MediaLink,
   News,
+  Notification,
   notifyHouseholdsOfNews,
   queueKnowledgeChange,
 } from '@vcraft/database';
@@ -191,6 +192,8 @@ export class NewsAdminService {
       assertVersion(news, version);
       this.audit(em, actor, 'news.delete', news.id, auditValues(news), null);
       await em.nativeDelete(MediaLink, { targetType: 'NEWS', targetId: news.id });
+      // Inbox notices would otherwise keep linking to the deleted article (GH#381).
+      await em.nativeDelete(Notification, { type: 'NEWS_PUBLISHED', subjectId: news.id });
       em.remove(news);
       queueKnowledgeChange(em, 'NEWS', news.id);
       await em.flush();
