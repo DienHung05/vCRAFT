@@ -22,6 +22,7 @@ export const AUDIT_ACTIONS = [
   'product.publish',
   'product.withdraw',
   'product.republish',
+  'rfq.create',
   'rfq.claim',
   'rfq.invite',
   'rfq.quotation_submit',

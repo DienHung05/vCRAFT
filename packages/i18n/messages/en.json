@@ -1035,6 +1035,7 @@
           "republish": "Republished product"
         },
         "rfq": {
+          "create": "Created request for an off-platform customer",
           "claim": "Claimed coordination",
           "invite": "Invited households",
           "quotation_submit": "Submitted cooperative quotation",

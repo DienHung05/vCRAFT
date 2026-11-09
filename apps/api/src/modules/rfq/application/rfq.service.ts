@@ -109,6 +109,12 @@ export class RfqService {
             }
           : {}),
       });
+      if (forCustomer)
+        this.audit(em, actor, 'rfq.create', 'rfq', request.id, null, {
+          status: request.status,
+          onBehalfOfCustomer: true,
+          coordinatorId: request.coordinatorId,
+        });
       await em.flush();
       await this.setAttachments(em, actor, request, input.attachments);
       return withCustomer(

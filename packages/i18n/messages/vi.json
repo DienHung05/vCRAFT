@@ -1040,6 +1040,7 @@
           "republish": "Xuất bản lại sản phẩm"
         },
         "rfq": {
+          "create": "Tạo yêu cầu thay mặt khách ngoài hệ thống",
           "claim": "Nhận điều phối",
           "invite": "Mời thêm hộ",
           "quotation_submit": "Gửi chào giá liên kết",
