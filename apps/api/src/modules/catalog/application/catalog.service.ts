@@ -33,6 +33,7 @@ import {
   Workshop,
 } from '@vcraft/database';
 import {
+  effectiveCraftCategory,
   isVisitable,
   PRODUCT_CATEGORIES,
   PRODUCT_CATEGORY_LABELS,
@@ -449,6 +450,7 @@ export class CatalogService {
         slug: h.slug,
         village: h.village ?? null,
         craft: h.craft ?? null,
+        craftCategory: effectiveCraftCategory(h.craftCategory, h.craft),
         coverUrl: h.coverUrl ?? null,
         coverVariants: variantsOfUrl(
           h.coverUrl ?? null,

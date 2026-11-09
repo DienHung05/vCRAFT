@@ -2741,6 +2741,11 @@
         "CLAY": "Clay",
         "GLAZE": "Glaze",
         "GAS": "Gas"
+      },
+      "units": {
+        "tonne": "tonne",
+        "kg": "kg",
+        "cylinder12kg": "12 kg cylinder"
       }
     }
   },

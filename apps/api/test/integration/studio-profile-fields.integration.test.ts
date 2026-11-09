@@ -140,6 +140,10 @@ describe('Studio profile fields (GH#253)', () => {
     expect(picked.body).toMatchObject({ craft: 'men lam', craftCategory: 'NUNG' });
     const pub = await t.request({ method: 'GET', url: '/households/gom-ho-so' });
     expect(pub.body).toMatchObject({ craft: 'men lam', craftCategory: 'NUNG' });
+    const listed = await t.request({ method: 'GET', url: '/households' });
+    expect(listed.body.data).toEqual([
+      expect.objectContaining({ slug: 'gom-ho-so', craft: 'men lam', craftCategory: 'NUNG' }),
+    ]);
 
     expect((await patch({ craftCategory: 'NOPE' })).status).toBe(422);
     const cleared = await patch({ craftCategory: null });

@@ -3,10 +3,11 @@
 import type { MapPinDto } from '@vcraft/contracts';
 import { Button } from '@vcraft/ui';
 import dynamic from 'next/dynamic';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 import { EmptyState } from '@/components/states/empty-state';
 import { Reveal } from '@/experience/motion/reveal';
+import { craftLabel } from '@/features/catalog/craft-label';
 import { Link } from '@/i18n/navigation';
 import { useUntabbable } from '@/lib/a11y/use-untabbable';
 import {
@@ -50,6 +51,8 @@ export function VillageMapExplorer({
   initialSelectedId?: string;
 }) {
   const t = useTranslations('villageMap');
+  const tCraft = useTranslations('catalog.craftCategories');
+  const locale = useLocale();
   const format = useFormatter();
   // Chờ sau hydrate mới biết WebGL và giờ thật, để HTML máy chủ và trình duyệt khớp nhau.
   const [webgl, setWebgl] = useState<boolean | null>(null);
@@ -257,8 +260,10 @@ export function VillageMapExplorer({
                       <p className="text-small text-ash">
                         {pin.workshopName} · {pin.address}
                       </p>
-                      {pin.household.craft ? (
-                        <p className="text-small">{pin.household.craft}</p>
+                      {craftLabel(locale, pin.household, (category) => tCraft(category)) ? (
+                        <p className="text-small">
+                          {craftLabel(locale, pin.household, (category) => tCraft(category))}
+                        </p>
                       ) : null}
                       <p className="mt-1 flex flex-wrap items-center justify-between gap-2 text-small">
                         <OpenStatus pin={pin} now={now} />

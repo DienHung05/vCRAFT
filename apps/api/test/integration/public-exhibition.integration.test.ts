@@ -191,7 +191,13 @@ describe('Public exhibition and QR trace', () => {
         workshopName: 'Lò nung Minh Hải',
         visitable: false,
         visitingInfo: null,
-        household: { name: 'Gốm Minh Hải', slug: 'gom-minh-hai', craft: null, coverUrl: null },
+        household: {
+          name: 'Gốm Minh Hải',
+          slug: 'gom-minh-hai',
+          craft: null,
+          craftCategory: null,
+          coverUrl: null,
+        },
       }),
       expect.objectContaining({
         workshopName: 'Phòng trưng bày Minh Hải',

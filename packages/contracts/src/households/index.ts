@@ -666,6 +666,7 @@ export const MapPinSchema = z.object({
     name: z.string(),
     slug: z.string(),
     craft: z.string().nullable(),
+    craftCategory: z.enum(CRAFT_CATEGORIES).nullable().default(null),
     coverUrl: z.string().nullable(),
   }),
 });
