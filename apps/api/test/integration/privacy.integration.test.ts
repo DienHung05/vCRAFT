@@ -314,6 +314,8 @@ describe('Personal data: consent, export and deletion', () => {
       quantity: 1,
       unit: 'pc',
       destination: 'Somewhere',
+      biddingClosesAt: new Date(Date.now() - 20 * 86_400_000),
+      requiredBy: new Date(Date.now() - 5 * 86_400_000),
       status: 'DELIVERED',
     } as never);
     await em.flush();
