@@ -142,6 +142,30 @@ describe('who may pay what and when', () => {
     expect(paymentEligibility({ ...base, depositPaid: true })?.code).toBe('PAYMENT_ALREADY_PAID');
   });
 
+  it('takes a late deposit in production only when no deposit is required', () => {
+    const open = { ...base, depositRequired: false } as const;
+    for (const requestStatus of ['ACCEPTED', 'IN_PRODUCTION', 'DELIVERED'] as const) {
+      expect(paymentEligibility({ ...open, requestStatus })).toBeUndefined();
+      expect(paymentEligibility({ ...open, requestStatus, depositPaid: true })?.code).toBe(
+        'PAYMENT_ALREADY_PAID',
+      );
+    }
+    for (const requestStatus of ['DRAFT', 'SENT', 'BIDDING', 'CANCELLED', 'EXPIRED'] as const) {
+      expect(paymentEligibility({ ...open, requestStatus })?.code).toBe(
+        'PAYMENT_ORDER_NOT_PAYABLE',
+      );
+    }
+    for (const requestStatus of ['IN_PRODUCTION', 'DELIVERED'] as const) {
+      expect(paymentEligibility({ ...base, requestStatus, depositRequired: true })?.code).toBe(
+        'PAYMENT_ORDER_NOT_PAYABLE',
+      );
+      expect(
+        paymentEligibility({ ...base, requestStatus, depositRequired: true, depositPaid: true })
+          ?.code,
+      ).toBe('PAYMENT_ALREADY_PAID');
+    }
+  });
+
   it('takes the balance after the deposit, until delivery is confirmed', () => {
     const balance = { ...base, kind: 'BALANCE', depositPaid: true } as const;
     for (const requestStatus of ['ACCEPTED', 'IN_PRODUCTION', 'DELIVERED'] as const) {

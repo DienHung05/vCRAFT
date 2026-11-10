@@ -90,14 +90,23 @@ function Panel({
     summary.methods.length === 0 && !summary.depositRequired && summary.payments.length === 0;
   if (nothingToOffer) return null;
 
+  // The deposit is next while it is unpaid and still payable: on an accepted order, or later when this
+  // deployment does not require it (the server accepts a late deposit then).
+  const depositPayable =
+    orderStatus === 'ACCEPTED' ||
+    (!summary.depositRequired && (orderStatus === 'IN_PRODUCTION' || orderStatus === 'DELIVERED'));
   const kind: PaymentDto['kind'] | null = summary.depositPaidAt
     ? summary.balancePaidAt
       ? null
       : 'BALANCE'
-    : orderStatus === 'ACCEPTED'
+    : depositPayable
       ? 'DEPOSIT'
       : null;
   const amount = kind === 'DEPOSIT' ? summary.depositAmountVnd : summary.balanceAmountVnd;
+  // Before the deposit is paid, show the balance that remains after it (the server prices a balance at the
+  // whole total only when production started without any deposit).
+  const balanceShown =
+    kind === 'DEPOSIT' ? summary.totalVnd - summary.depositAmountVnd : summary.balanceAmountVnd;
   const day = (iso: string) => format.dateTime(new Date(iso), 'short');
 
   const cancel = async (payment: PaymentDto) => {
@@ -137,7 +146,7 @@ function Panel({
           </dd>
           <dt>{t('summary.balance')}</dt>
           <dd className="text-right sm:text-left">
-            {money(summary.balanceAmountVnd)}{' '}
+            {money(balanceShown)}{' '}
             <span className="block text-small text-ash sm:inline">
               {summary.balancePaidAt
                 ? t('summary.paidOn', { date: day(summary.balancePaidAt) })
