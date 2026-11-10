@@ -30,8 +30,9 @@ export function KilnShell({
   return (
     <div
       className={cn(
-        'relative z-[2] mx-auto flex min-h-[inherit] w-full max-w-editorial flex-col items-center gap-3 px-gutter pt-4 pb-16 md:pt-8',
-        !wide && 'lg:grid lg:grid-cols-12 lg:items-center lg:gap-x-8 lg:py-14',
+        // Compact vertical rhythm so the tile's inputs and primary action fit the first view on phones and laptops.
+        'relative z-[2] mx-auto flex min-h-[inherit] w-full max-w-editorial flex-col items-center gap-2 px-gutter pt-1 pb-10 md:pt-4 lg:gap-0 lg:pt-3 lg:pb-4',
+        !wide && 'lg:grid lg:grid-cols-12 lg:items-center lg:gap-x-8',
       )}
     >
       <div
