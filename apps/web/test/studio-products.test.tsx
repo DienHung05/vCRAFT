@@ -322,7 +322,7 @@ describe('ProductEditor', () => {
     const section = screen.getByRole('heading', { name: 'Người làm' }).parentElement as HTMLElement;
     fireEvent.click(within(section).getByRole('button', { name: 'Lưu' }));
     await waitFor(() =>
-      expect(api.setMakers).toHaveBeenCalledWith(`${ID}1`, {
+      expect(api.setMakers).toHaveBeenCalledWith(`${ID}1`, 1, {
         makers: [{ artisanId: `${ID}8`, contribution: 'Vuốt dáng' }],
       }),
     );
