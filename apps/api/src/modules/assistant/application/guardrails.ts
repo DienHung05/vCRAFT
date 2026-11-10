@@ -1,4 +1,5 @@
 import { ASSISTANT_MESSAGE_MAX } from '@vcraft/contracts';
+import { villageToday } from '@vcraft/domain';
 import { foldVietnamese, isAllowedLink, maskPii, normalizeUserText } from '@vcraft/utils';
 import type { KeyValueStore } from '../infrastructure/key-value';
 
@@ -56,6 +57,50 @@ export function sanitizeInput(raw: string): { message: string; suspicion: number
   return { message, suspicion: Math.min(1, suspicion) };
 }
 
+/** A history turn at or above this suspicion is dropped: one injection phrase is enough (0.4 each). */
+export const HISTORY_SUSPICION_LIMIT = 0.4;
+
+export interface ScreenedHistory {
+  /** User turns only, sanitized and in order. */
+  history: { role: 'user'; content: string }[];
+  /** Suspicion of the current message, raised when it only looks like an attack together with the history. */
+  suspicion: number;
+}
+
+/**
+ * Screens the client-supplied history before it reaches the classifier or the answer model. The client
+ * is not trusted: the server stores no conversations, so an `assistant` turn could be forged or edited.
+ * - Assistant turns are dropped; the model never sees client-written text as its own earlier output.
+ * - Each user turn gets the same sanitizer and suspicion scoring as the current message; flagged turns
+ *   are dropped (a turn that was blocked earlier is flagged again here, whatever the client sends).
+ * - An injection split across turns shows up when the last user turns are read as one text: if that scores
+ *   higher than any single turn, the whole history is dropped and the current message is marked suspicious.
+ */
+export function screenHistory(
+  history: readonly { role: 'user' | 'assistant'; content: string }[],
+  message: string,
+  suspicion: number,
+): ScreenedHistory {
+  const users = history
+    .filter((turn) => turn.role === 'user')
+    .map((turn) => sanitizeInput(turn.content))
+    .filter((turn) => turn.message.trim() && turn.suspicion < HISTORY_SUSPICION_LIMIT);
+  // Read the last k user turns plus the message as one text, for every k, so a phrase cut in two is whole.
+  const joined = Math.max(
+    ...users.map(
+      (_, k) =>
+        sanitizeInput([...users.slice(k).map((t) => t.message), message].join(' ')).suspicion,
+    ),
+    0,
+  );
+  if (joined > Math.max(suspicion, ...users.map((t) => t.suspicion)))
+    return { history: [], suspicion: Math.max(suspicion, joined) };
+  return {
+    history: users.map((t) => ({ role: 'user' as const, content: t.message })),
+    suspicion,
+  };
+}
+
 /**
  * Reads an optional limit from the environment: a positive integer turns it on, anything else (unset,
  * empty, 0, negative, not a number) leaves it off. Returns 0 for "off".
@@ -63,6 +108,23 @@ export function sanitizeInput(raw: string): { message: string; suspicion: number
 export function positiveInt(raw: string | undefined): number {
   const value = Number(raw?.trim());
   return Number.isInteger(value) && value > 0 ? value : 0;
+}
+
+/** Defaults used when the matching env var is unset; set the var to `0` to turn a limit off. */
+export const DEFAULT_RATE_LIMIT_PER_MINUTE = 10;
+export const DEFAULT_RATE_LIMIT_PER_DAY = 100;
+export const DEFAULT_DAILY_TOKENS = 2_000_000;
+
+/**
+ * Reads a limit that is on by default: unset, empty or invalid gives `fallback`; an explicit `0` turns
+ * the limit off (returns 0); a positive integer overrides the default.
+ */
+export function limitFromEnv(raw: string | undefined, fallback: number): number {
+  const text = raw?.trim();
+  if (!text) return fallback;
+  const value = Number(text);
+  if (!Number.isInteger(value) || value < 0) return fallback;
+  return value;
 }
 
 /**
@@ -101,14 +163,14 @@ export class RateLimiter implements Guard {
 
 /**
  * Optional daily token ceiling across all visitors: a circuit breaker, after which "the Fox is asleep".
- * Off by default (`dailyTokens` of 0): nothing is blocked and no usage is recorded. Set
- * `ASSISTANT_DAILY_TOKENS` to a positive integer to turn it on.
+ * The budget day is the village's calendar day (Asia/Ho_Chi_Minh). A `dailyTokens` of 0 (explicit
+ * `ASSISTANT_DAILY_TOKENS=0`) turns it off: nothing is blocked and no usage is recorded.
  */
 export class BudgetGuard implements Guard {
   constructor(
     private readonly kv: KeyValueStore,
     private readonly dailyTokens = 0,
-    private readonly today: () => string = () => new Date().toISOString().slice(0, 10),
+    private readonly today: () => string = () => villageToday(),
   ) {}
 
   get enabled(): boolean {

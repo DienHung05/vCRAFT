@@ -120,9 +120,33 @@ describe('QuotationInvitations', () => {
       .fn()
       .mockRejectedValueOnce(new QuotationApiError('INTERNAL_ERROR', 500))
       .mockResolvedValue([]);
-    renderVi(<QuotationInvitations client={asClient({ listInvitations })} />);
+    renderVi(
+      <QuotationInvitations
+        client={asClient({
+          listInvitations,
+          listOpenCoordinatedRequests: vi.fn().mockResolvedValue([]),
+        })}
+      />,
+    );
     fireEvent.click(await screen.findByRole('button', { name: 'Thử lại' }));
     expect(await screen.findByText('Hộ chưa có lời mời nào.')).toBeTruthy();
+  });
+
+  it('explains the BR-05 invitation rule in the empty state, with links to act on it', async () => {
+    renderVi(
+      <QuotationInvitations
+        client={asClient({ listInvitations: vi.fn().mockResolvedValue([]) })}
+      />,
+    );
+    const rule = await screen.findByTestId('invitation-rule');
+    expect(within(rule).getByText('Khi nào hộ được mời?')).toBeTruthy();
+    expect(within(rule).getByText(/đã được Ban quản lý duyệt/)).toBeTruthy();
+    expect(within(rule).getByText(/không bị khóa/)).toBeTruthy();
+    expect(within(rule).getByText(/có chọn nhóm sản phẩm/)).toBeTruthy();
+    expect(within(rule).getByText(/khai năng lực sản xuất cho nhóm đó/)).toBeTruthy();
+    expect(within(rule).getByText(/Ban quản lý sẽ tự chọn hộ/)).toBeTruthy();
+    expect(within(rule).getByRole('link', { name: 'Khai năng lực sản xuất' })).toBeTruthy();
+    expect(within(rule).getByRole('link', { name: 'Thêm sản phẩm' })).toBeTruthy();
   });
 });
 

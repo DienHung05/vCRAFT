@@ -56,6 +56,8 @@ function product(n: number, overrides: Partial<ProductDto> = {}): ProductDto {
     images: [],
     status: 'PUBLISHED',
     publishedAt: '2026-09-01T00:00:00.000Z',
+    withdrawnBy: null,
+    withdrawnReason: null,
     makers: [],
     postedBy: 'HOUSEHOLD_ADMINISTRATION',
     ...overrides,
@@ -276,7 +278,11 @@ describe('duplicate product', () => {
     const api = client();
     renderVi(<ProductEditor productId={`${ID}1`} client={api} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Nhân bản' }));
-    await waitFor(() => expect(api.duplicateProduct).toHaveBeenCalledWith(`${ID}1`));
+    await waitFor(() =>
+      expect(api.duplicateProduct).toHaveBeenCalledWith(`${ID}1`, {
+        idempotencyKey: expect.any(String),
+      }),
+    );
     await waitFor(() =>
       expect(push).toHaveBeenCalledWith({
         pathname: '/studio/san-pham/[id]',

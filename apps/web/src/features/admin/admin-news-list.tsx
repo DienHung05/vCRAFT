@@ -5,7 +5,7 @@ import type { AdminNewsDto, ListAdminNewsQuery } from '@vcraft/contracts';
 import { NEWS_ORIGINS } from '@vcraft/domain';
 import { Badge, Button, buttonVariants, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
@@ -27,22 +27,28 @@ export function AdminNewsList({ client: provided }: { client?: AdminClient }) {
   const [rows, setRows] = useState<readonly AdminNewsDto[] | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const [moreFailed, setMoreFailed] = useState(false);
+  // Only the newest request may write state; a slower response for old filters is dropped.
+  const requestId = useRef(0);
   const [deleting, setDeleting] = useState<AdminNewsDto | null>(null);
   const [deleteFailed, setDeleteFailed] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!client) return;
+    const id = ++requestId.current;
     setFailed(false);
+    setMoreFailed(false);
     try {
       const page = await client.listNews({
         ...(state ? { state } : {}),
         ...(origin ? { origin } : {}),
       });
+      if (id !== requestId.current) return;
       setRows(page.data);
       setCursor(page.nextCursor);
     } catch {
-      setFailed(true);
+      if (id === requestId.current) setFailed(true);
     }
   }, [client, state, origin]);
 
@@ -54,17 +60,22 @@ export function AdminNewsList({ client: provided }: { client?: AdminClient }) {
 
   const more = async () => {
     if (!client || !cursor || busy) return;
+    // Does not bump the id: a newer filter load must still be able to supersede this page.
+    const id = requestId.current;
     setBusy(true);
+    setMoreFailed(false);
     try {
       const page = await client.listNews({
         ...(state ? { state } : {}),
         ...(origin ? { origin } : {}),
         cursor,
       });
+      if (id !== requestId.current) return;
       setRows((current) => [...(current ?? []), ...page.data]);
       setCursor(page.nextCursor);
     } catch {
-      setFailed(true);
+      // Keep the loaded items; offer a retry next to the button instead of replacing the list.
+      if (id === requestId.current) setMoreFailed(true);
     } finally {
       setBusy(false);
     }
@@ -215,6 +226,14 @@ export function AdminNewsList({ client: provided }: { client?: AdminClient }) {
         >
           {t('more')}
         </Button>
+      ) : null}
+      {moreFailed && !failed ? (
+        <p role="alert" className="flex flex-wrap items-center gap-3 text-small text-seal">
+          {t('moreFailed')}
+          <Button type="button" variant="secondary" disabled={busy} onClick={() => void more()}>
+            {t('moreRetry')}
+          </Button>
+        </p>
       ) : null}
       <ConfirmDialog
         open={deleting !== null}

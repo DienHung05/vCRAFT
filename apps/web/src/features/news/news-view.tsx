@@ -176,7 +176,7 @@ export function NewsView({
       )}
 
       {counters ? (
-        <div className="mt-10 max-w-prose-vn">
+        <div className="mt-12">
           <UrlPagination
             kind="news"
             page={counters.page}

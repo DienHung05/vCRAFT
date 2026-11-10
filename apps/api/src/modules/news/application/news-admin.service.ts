@@ -12,6 +12,7 @@ import {
   MediaAsset,
   MediaLink,
   News,
+  Notification,
   notifyHouseholdsOfNews,
   queueKnowledgeChange,
 } from '@vcraft/database';
@@ -134,6 +135,7 @@ export class NewsAdminService {
       await this.saveCover(em, news.id, input);
       await this.notifyIfLive(em, news, now);
       this.audit(em, actor, 'news.create', news.id, null, auditValues(news));
+      this.markIndexed(news, now);
       queueKnowledgeChange(em, 'NEWS', news.id);
       await em.flush();
       return news.id;
@@ -177,6 +179,7 @@ export class NewsAdminService {
             ? 'news.unpublish'
             : 'news.update';
       this.audit(em, actor, action, news.id, before, auditValues(news));
+      this.markIndexed(news, now);
       queueKnowledgeChange(em, 'NEWS', news.id);
       await em.flush();
     });
@@ -191,6 +194,8 @@ export class NewsAdminService {
       assertVersion(news, version);
       this.audit(em, actor, 'news.delete', news.id, auditValues(news), null);
       await em.nativeDelete(MediaLink, { targetType: 'NEWS', targetId: news.id });
+      // Inbox notices would otherwise keep linking to the deleted article (GH#381).
+      await em.nativeDelete(Notification, { type: 'NEWS_PUBLISHED', subjectId: news.id });
       em.remove(news);
       queueKnowledgeChange(em, 'NEWS', news.id);
       await em.flush();
@@ -222,6 +227,12 @@ export class NewsAdminService {
   }
 
   /** Important news that is already live tells households now. Scheduled items wait for the worker. */
+  /** A live story is queued for the index right now; a scheduled one is left for the worker's sweep (GH#430). */
+  private markIndexed(news: News, now: Date) {
+    const live = news.status === 'PUBLISHED' && !!news.publishedAt && news.publishedAt <= now;
+    news.indexedAt = live ? now : null;
+  }
+
   private async notifyIfLive(em: EntityManager, news: News, now: Date) {
     if (
       news.important &&

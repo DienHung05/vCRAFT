@@ -1,5 +1,10 @@
 import type { MapPinDto } from '@vcraft/contracts';
-import { type OpenState, workshopOpenState } from '@vcraft/domain';
+import {
+  CRAFT_CATEGORIES,
+  type CraftCategory,
+  type OpenState,
+  workshopOpenState,
+} from '@vcraft/domain';
 
 export interface LatLng {
   lat: number;
@@ -18,7 +23,10 @@ export interface MapFilters {
   visitable: boolean;
   /** Only workshops that offer an experience (FR-MAP-03). */
   experience: boolean;
-  /** Nghề được chọn; chuỗi rỗng là mọi nghề. */
+  /**
+   * Selected craft; empty is every craft. A category code, or a free-text craft (also what an older
+   * value of the filter held, so it still matches).
+   */
   craft: string;
 }
 
@@ -38,14 +46,48 @@ export function filterPins(
       (!filters.openNow || pinOpenState(pin, now).open) &&
       (!filters.visitable || pin.visitable) &&
       (!filters.experience || pin.experience !== null) &&
-      (filters.craft === '' || pin.household.craft === filters.craft),
+      (filters.craft === '' ||
+        pin.household.craftCategory === filters.craft ||
+        pin.household.craft === filters.craft),
   );
 }
 
-/** Danh sách nghề để lọc, không trùng, theo thứ tự tiếng Việt. */
-export function craftsOf(pins: readonly MapPinDto[]): string[] {
-  const crafts = new Set(pins.flatMap((p) => (p.household.craft ? [p.household.craft] : [])));
-  return [...crafts].sort((a, b) => a.localeCompare(b, 'vi'));
+/** One option of the craft filter: a translated category, or a household's free text as a fallback. */
+export interface CraftOption {
+  /** Category code or free text; this is the value `MapFilters.craft` holds. */
+  value: string;
+  category: CraftCategory | null;
+}
+
+/**
+ * Craft filter options: the categories in use (domain order, labelled per locale by the UI), then the
+ * free-text crafts of pins that have no category, in Vietnamese order.
+ */
+export function craftsOf(pins: readonly MapPinDto[]): CraftOption[] {
+  const used = new Set<string>();
+  const freeText = new Set<string>();
+  for (const { household } of pins) {
+    if (household.craftCategory) used.add(household.craftCategory);
+    else if (household.craft) freeText.add(household.craft);
+  }
+  const categories = CRAFT_CATEGORIES.filter((c) => used.has(c)).map((value) => ({
+    value,
+    category: value as CraftCategory | null,
+  }));
+  const texts = [...freeText]
+    .filter((text) => !used.has(text))
+    .sort((a, b) => a.localeCompare(b, 'vi'))
+    .map((value) => ({ value, category: null }));
+  return [...categories, ...texts];
+}
+
+/** Village centre: `NEXT_PUBLIC_MAP_CENTER` ("lng,lat"), else Bát Tràng. */
+export function villageCenter(): LatLng {
+  const [lng = 105.9139, lat = 20.9758] = (process.env.NEXT_PUBLIC_MAP_CENTER ?? '')
+    .split(',')
+    .map((value) => Number.parseFloat(value))
+    .filter(Number.isFinite);
+  return { lat, lng };
 }
 
 export const inBounds = (pin: LatLng, b: MapBounds): boolean =>

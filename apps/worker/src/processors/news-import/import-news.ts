@@ -19,6 +19,7 @@ import {
 import type { NewsLlm } from './llm';
 import { type CommonsCandidate, choosePhoto, type PhotoChoice, searchCommons } from './photos';
 import { relevance } from './relevance';
+import { fetchCapped } from './safe-fetch';
 import { storyText } from './text';
 
 export interface NewsJobLogger {
@@ -47,6 +48,7 @@ export interface NewsImportReport {
 }
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_FEED_BYTES = 2 * 1024 * 1024;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const bump = (counts: Record<string, number>, reason: string) => {
@@ -58,12 +60,14 @@ async function fetchFeed(
   fetchImpl: typeof fetch,
 ): Promise<{ items: FeedItem[] } | { error: string }> {
   try {
-    const res = await fetchImpl(url, {
-      headers: { accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml' },
-      signal: AbortSignal.timeout(15_000),
+    const res = await fetchCapped(url, {
+      accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
+      maxBytes: MAX_FEED_BYTES,
+      timeoutMs: 15_000,
+      fetchImpl,
     });
     if (!res.ok) return { error: `http ${res.status}` };
-    return { items: parseFeed(await res.text()) };
+    return { items: parseFeed(res.text()) };
   } catch (error) {
     return { error: error instanceof Error ? error.message : String(error) };
   }
@@ -86,11 +90,15 @@ async function ingestPhoto(
 ): Promise<string | null> {
   const fetchImpl = deps.fetchImpl ?? fetch;
   try {
-    const res = await fetchImpl(photo.url, { signal: AbortSignal.timeout(20_000) });
-    const mime = res.headers.get('content-type')?.split(';')[0]?.trim() ?? '';
+    const res = await fetchCapped(photo.url, {
+      maxBytes: MAX_IMAGE_BYTES,
+      timeoutMs: 20_000,
+      fetchImpl,
+    });
+    const mime = res.contentType.split(';')[0]?.trim() ?? '';
     if (!res.ok || !/^image\/(jpeg|png|webp)$/.test(mime)) return null;
-    const bytes = new Uint8Array(await res.arrayBuffer());
-    if (bytes.byteLength === 0 || bytes.byteLength > MAX_IMAGE_BYTES) return null;
+    const bytes = res.bytes;
+    if (bytes.byteLength === 0) return null;
     const id = randomUUID();
     const em = deps.orm.em.fork();
     const asset = em.create(MediaAsset, {
@@ -169,6 +177,8 @@ async function saveStory(deps: NewsImportDeps, ownerId: string, story: NewStory)
     sourceUrl: story.source?.url.slice(0, 500) ?? null,
     sourcePublishedAt: story.source?.publishedAt ?? null,
   });
+  if (news.status === 'PUBLISHED' && news.publishedAt && news.publishedAt <= new Date())
+    news.indexedAt = new Date();
   if (assetId)
     em.create(MediaLink, {
       media: em.getReference(MediaAsset, assetId),

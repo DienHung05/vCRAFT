@@ -26,7 +26,8 @@ describe('Household resubmission lifecycle', () => {
       headers: { 'if-match': `"${version}"` },
     });
   const queue = async (query = 'status=PENDING_REVIEW') =>
-    (await t.request({ method: 'GET', url: `/admin/households?${query}`, auth: admin.auth })).body;
+    (await t.request({ method: 'GET', url: `/admin/households?${query}`, auth: admin.auth })).body
+      .data;
   const decide = (action: string, version: number, body: object = {}) =>
     t.request({
       method: 'POST',
@@ -51,6 +52,7 @@ describe('Household resubmission lifecycle', () => {
       body: { name: 'Gốm Gửi Lại', slug: 'gom-gui-lai', history: 'Khai báo.' },
     });
     household = applied.body;
+    await t.completeApplication(household.id);
   }, 120_000);
 
   afterAll(async () => {

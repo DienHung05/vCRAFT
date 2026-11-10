@@ -1,3 +1,4 @@
+import { Product } from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { addMilestone, createJournalPhoto } from './support/journal-photo.js';
 import { startTestApp, type TestApp } from './support/test-app.js';
@@ -15,6 +16,9 @@ describe('Public exhibition and QR trace', () => {
   let productId: string;
   let traceCode: string;
   const artisans: Record<string, string> = {};
+  /** The product's current version, for `If-Match`. */
+  const version = async () =>
+    String((await db.orm.em.fork().findOneOrFail(Product, productId)).version);
 
   beforeAll(async () => {
     db = await startTestDatabase();
@@ -113,6 +117,7 @@ describe('Public exhibition and QR trace', () => {
       method: 'PUT',
       url: `/me/household/products/${productId}/makers`,
       auth: rep.auth,
+      headers: { 'if-match': await version() },
       body: {
         makers: [
           { artisanId: artisans['Nguyễn Văn Bình'], contribution: 'Vuốt dáng' },
@@ -133,6 +138,7 @@ describe('Public exhibition and QR trace', () => {
       method: 'PUT',
       url: `/me/household/products/${productId}/makers`,
       auth: rep.auth,
+      headers: { 'if-match': await version() },
       body: { makers: [{ artisanId: crypto.randomUUID(), contribution: 'Nung' }] },
     });
     expect(outsider.status).toBe(422);
@@ -142,6 +148,7 @@ describe('Public exhibition and QR trace', () => {
       method: 'PUT',
       url: `/me/household/products/${productId}/makers`,
       auth: rep.auth,
+      headers: { 'if-match': await version() },
       body: {
         makers: [
           { artisanId: artisans['Trần Thị Lan'], contribution: 'Vẽ lam' },
@@ -152,13 +159,48 @@ describe('Public exhibition and QR trace', () => {
     expect(twice.body.code).toBe('MAKER_DUPLICATED');
   });
 
+  it('checks the product version and bumps it, like every other product change (GH#420)', async () => {
+    const before = Number(await version());
+    const makers = [{ artisanId: artisans['Nguyễn Văn Bình'], contribution: 'Vuốt dáng' }];
+    const missing = await t.request({
+      method: 'PUT',
+      url: `/me/household/products/${productId}/makers`,
+      auth: rep.auth,
+      body: { makers },
+    });
+    expect(missing.status).toBe(428);
+    const stale = await t.request({
+      method: 'PUT',
+      url: `/me/household/products/${productId}/makers`,
+      auth: rep.auth,
+      headers: { 'if-match': String(before - 1) },
+      body: { makers },
+    });
+    expect(stale.status).toBe(409);
+    const saved = await t.request({
+      method: 'PUT',
+      url: `/me/household/products/${productId}/makers`,
+      auth: rep.auth,
+      headers: { 'if-match': String(before) },
+      body: {
+        makers: [
+          { artisanId: artisans['Nguyễn Văn Bình'], contribution: 'Vuốt dáng' },
+          { artisanId: artisans['Trần Thị Lan'], contribution: 'Vẽ lam' },
+        ],
+      },
+    });
+    expect(saved.status).toBe(200);
+    expect(saved.body.version).toBe(before + 1);
+    expect(Number(await version())).toBe(before + 1);
+  });
+
   it('hồ sơ công khai tách phòng trưng bày đón khách khỏi xưởng sản xuất', async () => {
     await addMilestone(t, rep, productId, await createJournalPhoto(db, t, rep));
     await t.request({
       method: 'POST',
       url: `/products/${productId}/publish`,
       auth: rep.auth,
-      headers: { 'if-match': '1' },
+      headers: { 'if-match': await version() },
     });
     const res = await t.request({ method: 'GET', url: '/households/gom-minh-hai' });
     expect(res.status).toBe(200);
@@ -208,5 +250,58 @@ describe('Public exhibition and QR trace', () => {
         lng: 105.9131,
       }),
     ]);
+  });
+
+  describe('GET /map/workshops?bbox= (FR-MAP-04)', () => {
+    const names = (body: { data: { workshopName: string }[] }) =>
+      body.data.map((pin) => pin.workshopName);
+
+    it('returns only the workshops inside the viewport', async () => {
+      // Around the showroom (20.9752, 105.9131) but not the kiln (20.9771, 105.9155).
+      const res = await t.request({
+        method: 'GET',
+        url: '/map/workshops?bbox=105.912,20.974,105.914,20.976',
+      });
+      expect(res.status).toBe(200);
+      expect(names(res.body)).toEqual(['Phòng trưng bày Minh Hải']);
+      const both = await t.request({
+        method: 'GET',
+        url: '/map/workshops?bbox=105.9,20.97,105.92,20.98',
+      });
+      expect(names(both.body).sort()).toEqual(['Lò nung Minh Hải', 'Phòng trưng bày Minh Hải']);
+    });
+
+    it('returns an empty list for a viewport with no workshops', async () => {
+      const res = await t.request({ method: 'GET', url: '/map/workshops?bbox=100,10,100.5,10.5' });
+      expect(res.status).toBe(200);
+      expect(res.body.data).toEqual([]);
+    });
+
+    it('is cacheable and revalidates with the ETag', async () => {
+      const url = '/map/workshops?bbox=105.9,20.97,105.92,20.98';
+      const first = await t.request({ method: 'GET', url });
+      expect(String(first.headers['cache-control'])).toContain('public');
+      const etag = String(first.headers.etag);
+      const again = await t.request({ method: 'GET', url, headers: { 'if-none-match': etag } });
+      expect(again.status).toBe(304);
+    });
+
+    it('keeps the full list without a bbox', async () => {
+      const res = await t.request({ method: 'GET', url: '/map/workshops' });
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(2);
+    });
+
+    it.each([
+      ['not numbers', 'a,b,c,d'],
+      ['three values', '105.9,20.97,105.92'],
+      ['min not below max', '105.92,20.97,105.9,20.98'],
+      ['latitude out of range', '105.9,-91,105.92,20.98'],
+      ['longitude out of range', '105.9,20.97,181,21'],
+      ['empty part', '105.9,,105.92,20.98'],
+    ])('rejects a malformed bbox with a validation error (%s)', async (_label, bbox) => {
+      const res = await t.request({ method: 'GET', url: `/map/workshops?bbox=${bbox}` });
+      expect(res.status).toBe(422);
+    });
   });
 });

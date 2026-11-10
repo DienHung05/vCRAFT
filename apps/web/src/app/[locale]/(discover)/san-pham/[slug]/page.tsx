@@ -43,7 +43,7 @@ export async function generateMetadata({
   const locale = await resolveLocale(params);
   const { slug } = await params;
   const result = await fetchProduct(slug);
-  if (result.status !== 'ok') return {};
+  if (result.status !== 'ok') return { robots: { index: false } };
   const { product } = result.data;
   return pageMetadata({
     locale,
@@ -72,7 +72,10 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
     }
     notFound();
   }
-  if (result.status === 'unavailable') return <DataUnavailable />;
+  if (result.status === 'unavailable') {
+    const errors = await getTranslations('errors.generic');
+    return <DataUnavailable heading={errors('title')} />;
+  }
   const { product, household, journal } = result.data;
   const [t, common, stages, categories, preset, format, siblings, trace] = await Promise.all([
     getTranslations('product'),

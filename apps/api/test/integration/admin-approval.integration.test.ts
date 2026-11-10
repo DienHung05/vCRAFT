@@ -46,6 +46,7 @@ describe('Admin dashboard and household approval', () => {
       body: { name: 'Gốm Chờ Duyệt', slug: 'gom-cho-duyet', history: 'Khai báo.' },
     });
     household = applied.body;
+    await t.completeApplication(household.id, { withDocument: false });
     const boundary = 'vcraftboundary';
     const upload = await t.app.inject({
       method: 'POST',
@@ -74,7 +75,9 @@ describe('Admin dashboard and household approval', () => {
   it('chỉ Admin vào được; số liệu đếm hồ sơ chờ', async () => {
     const denied = await t.request({ method: 'GET', url: '/admin/dashboard', auth: buyer.auth });
     expect(denied.status).toBe(403);
+    const dayBefore = vietnamToday();
     const body = await dashboard();
+    const dayAfter = vietnamToday();
     expect(body).toEqual({
       activeHouseholds: 0,
       pendingApplications: 1,
@@ -86,8 +89,8 @@ describe('Admin dashboard and household approval', () => {
     // The trend covers the last 30 Vietnam calendar dates including today, oldest first, zero-filled.
     expect(body.trend).toHaveLength(30);
     const dates: string[] = body.trend.map((point: { date: string }) => point.date);
-    const today = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    expect(dates[29]).toBe(today);
+    // The Vietnam day can change between the request and the assertion (around 17:00 UTC), so accept either.
+    expect([dayBefore, dayAfter]).toContain(dates[29]);
     for (let i = 1; i < dates.length; i++) {
       expect(Date.parse(`${dates[i]}T00:00:00Z`) - Date.parse(`${dates[i - 1]}T00:00:00Z`)).toBe(
         24 * 60 * 60 * 1000,
@@ -99,12 +102,12 @@ describe('Admin dashboard and household approval', () => {
   it('hàng đợi lọc theo trạng thái và ngày nộp', async () => {
     const get = (qs: string) =>
       t.request({ method: 'GET', url: `/admin/households?${qs}`, auth: admin.auth });
-    expect((await get('status=PENDING_REVIEW')).body).toEqual([
+    expect((await get('status=PENDING_REVIEW')).body.data).toEqual([
       expect.objectContaining({ id: household.id, name: 'Gốm Chờ Duyệt' }),
     ]);
-    expect((await get('status=APPROVED')).body).toEqual([]);
-    expect((await get('to=2000-01-01')).body).toEqual([]);
-    expect((await get('from=2000-01-01')).body).toHaveLength(1);
+    expect((await get('status=APPROVED')).body.data).toEqual([]);
+    expect((await get('to=2000-01-01')).body.data).toEqual([]);
+    expect((await get('from=2000-01-01')).body.data).toHaveLength(1);
     expect((await get('from=khong-phai-ngay')).status).toBe(422);
   });
 
@@ -177,14 +180,19 @@ describe('Admin dashboard and household approval', () => {
       (await t.request({ method: 'GET', url: '/products' })).body.data.length;
     expect(await catalog()).toBe(1);
 
+    const dayBefore = vietnamToday();
     expect((await t.request({ method: 'POST', url: `/trace/${code}/scan` })).status).toBe(204);
     expect((await t.request({ method: 'POST', url: '/trace/ZZZZZZZZ/scan' })).status).toBe(204);
     const body = await dashboard();
+    const dayAfter = vietnamToday();
     expect(body.qrScans30Days).toBe(1);
-    // The scan lands in today's Vietnam calendar bucket; every other date stays zero.
-    const today = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const todayPoint = body.trend.find((point: { date: string }) => point.date === today);
-    expect(todayPoint?.count).toBe(1);
+    // The scan lands in today's Vietnam calendar bucket; every other date stays zero. The day may roll over
+    // between the scan request and the assertion, so the one scan must sit in the day before or after it.
+    const scanDays = new Set([dayBefore, dayAfter]);
+    const inScanDays = body.trend
+      .filter((point: { date: string }) => scanDays.has(point.date))
+      .reduce((sum: number, point: { count: number }) => sum + point.count, 0);
+    expect(inScanDays).toBe(1);
     expect(body.trend.reduce((sum: number, point: { count: number }) => sum + point.count, 0)).toBe(
       body.qrScans30Days,
     );
@@ -217,11 +225,12 @@ describe('Admin dashboard and household approval', () => {
     });
     expect(created.status).toBe(201);
 
+    const dayBefore = vietnamToday();
     const before = await dashboard();
     const countAt = (body: Awaited<ReturnType<typeof dashboard>>, date: string) =>
       (body.trend as { date: string; count: number }[]).find((p) => p.date === date)?.count ?? 0;
     const firstDate = trendFirstDate();
-    const today = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const today = dayBefore;
 
     // A scan one minute before the first window's Vietnam midnight sits outside the window; one
     // minute inside it and one now prove the UTC+7 bucketing, independent of the server's zone.
@@ -239,6 +248,9 @@ describe('Admin dashboard and household approval', () => {
     await em.flush();
 
     const body = await dashboard();
+    // The Vietnam day rolled over during the test (around 17:00 UTC): the window moved, so the exact
+    // bucket counts below no longer apply. The next run is deterministic again.
+    if (vietnamToday() !== dayBefore) return;
     // The scan before the window stays out; the two in-window scans land in their Vietnam buckets.
     expect(body.qrScans30Days).toBe(before.qrScans30Days + 2);
     expect(countAt(body, firstDate)).toBe(countAt(before, firstDate) + 1);
@@ -249,9 +261,14 @@ describe('Admin dashboard and household approval', () => {
   });
 });
 
+/** Today's date in Vietnam (UTC+7) as YYYY-MM-DD. */
+function vietnamToday(): string {
+  return new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 /** First date of the dashboard trend window: today's Vietnam date minus 29 days. */
 function trendFirstDate(): string {
-  const today = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const today = vietnamToday();
   return new Date(Date.parse(`${today}T00:00:00Z`) - 29 * 24 * 60 * 60 * 1000)
     .toISOString()
     .slice(0, 10);

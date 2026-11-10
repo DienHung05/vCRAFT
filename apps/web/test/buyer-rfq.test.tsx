@@ -4,6 +4,7 @@ import type { BuyerQuotationDto, RfqListItemDto, RfqResponse } from '@vcraft/con
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BuyerRfqDetail } from '@/features/rfq/buyer-rfq-detail';
 import { BuyerRfqList } from '@/features/rfq/buyer-rfq-list';
+import { DuplicateRequestButton } from '@/features/rfq/duplicate-request-button';
 import { RfqForm } from '@/features/rfq/rfq-form';
 import {
   EMPTY_RFQ_FORM,
@@ -11,6 +12,7 @@ import {
   rfqFormPayload,
   rfqFormProblems,
 } from '@/features/rfq/rfq-form-model';
+import { clearSignedInBrowserData } from '@/lib/auth/signed-out-cleanup';
 import { confirmDialog, openDialog } from './confirm';
 import { renderVi } from './render';
 
@@ -144,27 +146,67 @@ describe('RfqForm', () => {
 
   it('keeps an unfinished form in the browser and restores it', async () => {
     const api = client();
-    const { unmount } = renderVi(<RfqForm client={api} />);
+    const { unmount } = renderVi(<RfqForm client={api} ownerId="user-1" />);
     fireEvent.change(await screen.findByLabelText('Tiêu đề'), { target: { value: 'Half done' } });
     expect(
       await screen.findByText('Đã lưu tạm trên trình duyệt này', {}, { timeout: 2000 }),
     ).toBeTruthy();
     expect(api.createRequest).toBeUndefined();
     unmount();
-    renderVi(<RfqForm client={api} />);
+    renderVi(<RfqForm client={api} ownerId="user-1" />);
     await waitFor(() =>
       expect((screen.getByLabelText('Tiêu đề') as HTMLInputElement).value).toBe('Half done'),
     );
   });
 
-  it('seeds a new form from a product prefill and ignores a browser-kept draft', async () => {
+  it("never shows another person's browser-kept draft (GH#420)", async () => {
+    window.localStorage.setItem(
+      'vcraft.rfq-draft:user-1',
+      JSON.stringify({ id: null, values: { ...EMPTY_RFQ_FORM, destination: '12 Hàng Bạc' } }),
+    );
     window.localStorage.setItem(
       'vcraft.rfq-draft',
+      JSON.stringify({ id: null, values: { ...EMPTY_RFQ_FORM, destination: 'Old shared key' } }),
+    );
+    renderVi(<RfqForm client={client()} ownerId="user-2" />);
+    const destination = (await screen.findByLabelText('Nơi giao hàng')) as HTMLInputElement;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(destination.value).toBe('');
+  });
+
+  it('drops a kept draft whose server request cannot be loaded, without showing it (GH#420)', async () => {
+    window.localStorage.setItem(
+      'vcraft.rfq-draft:user-1',
+      JSON.stringify({ id: ID, values: { ...EMPTY_RFQ_FORM, destination: '12 Hàng Bạc' } }),
+    );
+    const getRequest = vi.fn().mockRejectedValue(new Error('forbidden'));
+    renderVi(<RfqForm client={client({ getRequest })} ownerId="user-1" />);
+    await waitFor(() => expect(getRequest).toHaveBeenCalledWith(ID));
+    await waitFor(() => expect(window.localStorage.getItem('vcraft.rfq-draft:user-1')).toBeNull());
+    expect((screen.getByLabelText('Nơi giao hàng') as HTMLInputElement).value).toBe('');
+  });
+
+  it('forgets every kept draft on sign-out (GH#420)', () => {
+    window.localStorage.setItem('vcraft.rfq-draft:user-1', '{}');
+    window.localStorage.setItem('vcraft.rfq-draft:user-2', '{}');
+    window.localStorage.setItem('vcraft.rfq-draft', '{}');
+    window.localStorage.setItem('vcraft.other', 'kept');
+    clearSignedInBrowserData();
+    expect(window.localStorage.getItem('vcraft.rfq-draft:user-1')).toBeNull();
+    expect(window.localStorage.getItem('vcraft.rfq-draft:user-2')).toBeNull();
+    expect(window.localStorage.getItem('vcraft.rfq-draft')).toBeNull();
+    expect(window.localStorage.getItem('vcraft.other')).toBe('kept');
+  });
+
+  it('seeds a new form from a product prefill and ignores a browser-kept draft', async () => {
+    window.localStorage.setItem(
+      'vcraft.rfq-draft:user-1',
       JSON.stringify({ id: null, values: { ...EMPTY_RFQ_FORM, title: 'Old draft' } }),
     );
     renderVi(
       <RfqForm
         client={client()}
+        ownerId="user-1"
         prefill={{
           title: 'Bình hoa men lam',
           category: 'VASE',
@@ -185,7 +227,9 @@ describe('RfqForm', () => {
     const createRequest = vi.fn().mockResolvedValue({ ...REQUEST, status: 'DRAFT', version: 1 });
     const updateRequest = vi.fn().mockResolvedValue({ ...REQUEST, status: 'DRAFT', version: 2 });
     const recordConsent = vi.fn().mockResolvedValue({});
-    renderVi(<RfqForm client={client({ createRequest, updateRequest, recordConsent })} />);
+    renderVi(
+      <RfqForm client={client({ createRequest, updateRequest, recordConsent })} ownerId="user-1" />,
+    );
     await fill();
     await waitFor(() => expect(createRequest).toHaveBeenCalledTimes(1), { timeout: 2000 });
     // Consent is recorded server-side once, before the first save of the address.
@@ -223,20 +267,81 @@ describe('RfqForm', () => {
     expect(submitRequest).not.toHaveBeenCalled();
   });
 
+  it('reuses a failed RFQ creation key and replaces it after an input change', async () => {
+    const createRequest = vi
+      .fn<QuotationClient['createRequest']>()
+      .mockRejectedValue(new TypeError('Timeout'));
+    renderVi(<RfqForm client={client({ createRequest })} />);
+    await fill();
+    const send = () => fireEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }));
+    send();
+    await screen.findByRole('alert');
+    send();
+    await waitFor(() => expect(createRequest).toHaveBeenCalledTimes(2));
+    const first = createRequest.mock.calls[0]?.[1]?.idempotencyKey;
+    expect(first).toEqual(expect.any(String));
+    expect(createRequest.mock.calls[1]?.[1]?.idempotencyKey).toBe(first);
+    fireEvent.change(screen.getByLabelText('Số lượng'), { target: { value: '200' } });
+    send();
+    await waitFor(() => expect(createRequest).toHaveBeenCalledTimes(3));
+    expect(createRequest.mock.calls[2]?.[1]?.idempotencyKey).not.toBe(first);
+  });
+
+  it('retries RFQ submission with the same key and version without saving the draft again', async () => {
+    const createRequest = vi.fn().mockResolvedValue({ ...REQUEST, status: 'DRAFT', version: 7 });
+    const updateRequest = vi.fn().mockResolvedValue({ ...REQUEST, status: 'DRAFT', version: 8 });
+    const submitRequest = vi
+      .fn<QuotationClient['submitRequest']>()
+      .mockRejectedValueOnce(new TypeError('Timeout'))
+      .mockResolvedValue({ ...REQUEST, status: 'SENT', version: 8 });
+    renderVi(
+      <RfqForm client={client({ createRequest, updateRequest, submitRequest })} ownerId="user-1" />,
+    );
+    await fill();
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }));
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }));
+    await waitFor(() => expect(submitRequest).toHaveBeenCalledTimes(2));
+    const first = submitRequest.mock.calls[0];
+    expect(first?.[2]?.idempotencyKey).toEqual(expect.any(String));
+    expect(submitRequest.mock.calls[1]).toEqual(first);
+    expect(updateRequest).not.toHaveBeenCalled();
+  });
+
   it('sends with the saved version, clears the kept draft and opens the request', async () => {
     const createRequest = vi.fn().mockResolvedValue({ ...REQUEST, status: 'DRAFT', version: 7 });
     const submitRequest = vi.fn().mockResolvedValue({ ...REQUEST, status: 'SENT', version: 8 });
     renderVi(<RfqForm client={client({ createRequest, submitRequest })} />);
     await fill();
     fireEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }));
-    await waitFor(() => expect(submitRequest).toHaveBeenCalledWith(ID, 7));
+    await waitFor(() =>
+      expect(submitRequest).toHaveBeenCalledWith(ID, 7, { idempotencyKey: expect.any(String) }),
+    );
     await waitFor(() =>
       expect(push).toHaveBeenCalledWith({
         pathname: '/yeu-cau-bao-gia/[code]',
         params: { code: ID },
       }),
     );
-    expect(window.localStorage.getItem('vcraft.rfq-draft')).toBeNull();
+    expect(window.localStorage.getItem('vcraft.rfq-draft:user-1')).toBeNull();
+  });
+});
+
+describe('DuplicateRequestButton', () => {
+  it('reuses the request duplication key after a timeout', async () => {
+    const duplicateRequest = vi
+      .fn<QuotationClient['duplicateRequest']>()
+      .mockRejectedValueOnce(new TypeError('Timeout'))
+      .mockResolvedValue({ ...REQUEST, status: 'DRAFT' });
+    renderVi(<DuplicateRequestButton requestId={ID} client={client({ duplicateRequest })} />);
+    const button = screen.getByRole('button');
+    fireEvent.click(button);
+    await screen.findByRole('alert');
+    fireEvent.click(button);
+    await waitFor(() => expect(duplicateRequest).toHaveBeenCalledTimes(2));
+    const first = duplicateRequest.mock.calls[0]?.[1]?.idempotencyKey;
+    expect(first).toEqual(expect.any(String));
+    expect(duplicateRequest.mock.calls[1]?.[1]?.idempotencyKey).toBe(first);
   });
 });
 
@@ -278,6 +383,31 @@ describe('BuyerRfqDetail', () => {
     HTMLDialogElement.prototype.close ??= vi.fn();
   });
 
+  it('reuses the accept quotation key after a client timeout', async () => {
+    const acceptQuotation = vi
+      .fn<QuotationClient['acceptQuotation']>()
+      .mockRejectedValueOnce(new TypeError('Timeout'))
+      .mockResolvedValue({ ...REQUEST, status: 'ACCEPTED' });
+    renderVi(
+      <BuyerRfqDetail
+        rfqId={ID}
+        client={client({
+          listBuyerQuotations: vi.fn().mockResolvedValue([quotation('a', 3_000_000)]),
+          acceptQuotation,
+        })}
+      />,
+    );
+    await screen.findByText('Household a');
+    fireEvent.click(screen.getByRole('button', { name: 'Chốt chào giá này' }));
+    confirmDialog('Chốt chào giá này');
+    await waitFor(() => expect(within(openDialog()).getByRole('alert')).toBeTruthy());
+    confirmDialog('Chốt chào giá này');
+    await waitFor(() => expect(acceptQuotation).toHaveBeenCalledTimes(2));
+    const first = acceptQuotation.mock.calls[0]?.[3]?.idempotencyKey;
+    expect(first).toEqual(expect.any(String));
+    expect(acceptQuotation.mock.calls[1]?.[3]?.idempotencyKey).toBe(first);
+  });
+
   it('compares quotations, marks the lowest total and accepts with the current version', async () => {
     const acceptQuotation = vi.fn().mockResolvedValue({ ...REQUEST, status: 'ACCEPTED' });
     renderVi(
@@ -303,7 +433,12 @@ describe('BuyerRfqDetail', () => {
     await act(async () => {
       fireEvent.click(confirm);
     });
-    expect(acceptQuotation).toHaveBeenCalledWith(ID, 4, { quotationId: 'a' });
+    expect(acceptQuotation).toHaveBeenCalledWith(
+      ID,
+      4,
+      { quotationId: 'a' },
+      { idempotencyKey: expect.any(String) },
+    );
   });
 
   it('closes the accept dialog with "Yêu cầu đã được chốt" when the other session accepted first (AC-2)', async () => {
@@ -415,7 +550,12 @@ describe('BuyerRfqDetail', () => {
     await act(async () => {
       fireEvent.click(confirm);
     });
-    expect(cancelOrder).toHaveBeenCalledWith(ID, 4, { reason: 'Plans changed' });
+    expect(cancelOrder).toHaveBeenCalledWith(
+      ID,
+      4,
+      { reason: 'Plans changed' },
+      { idempotencyKey: expect.any(String) },
+    );
   });
 
   it.each([
@@ -493,6 +633,40 @@ describe('BuyerRfqDetail', () => {
     expect(await screen.findByRole('button', { name: 'Xác nhận đã nhận hàng' })).toBeTruthy();
   });
 
+  it('offers receipt when cancelled and reallocated-declined shares sit next to done ones', async () => {
+    const allocation = (status: string, quantity: number) => ({
+      id: ID,
+      version: 1,
+      householdId: ID,
+      householdName: 'Gốm Minh Hải',
+      startedAt: '2099-01-01T00:00:00Z',
+      dueAt: '2100-01-01T00:00:00Z',
+      lateness: 'DONE',
+      expectedQty: quantity,
+      progressPercent: 100,
+      quantity,
+      completedQty: quantity,
+      status,
+    });
+    renderVi(
+      <BuyerRfqDetail
+        rfqId={ID}
+        client={client({
+          getRequest: vi.fn().mockResolvedValue({ ...REQUEST, status: 'IN_PRODUCTION' }),
+          listAllocations: vi
+            .fn()
+            .mockResolvedValue([
+              allocation('DONE', 60),
+              allocation('DONE', 40),
+              allocation('CANCELLED', 30),
+              allocation('DECLINED', 0),
+            ]),
+        })}
+      />,
+    );
+    expect(await screen.findByRole('button', { name: 'Xác nhận đã nhận hàng' })).toBeTruthy();
+  });
+
   it('duplicates a delivered request and opens the fresh draft for review', async () => {
     const duplicateRequest = vi
       .fn()
@@ -513,7 +687,7 @@ describe('BuyerRfqDetail', () => {
         params: { code: 'copy-id' },
       }),
     );
-    expect(duplicateRequest).toHaveBeenCalledWith(ID);
+    expect(duplicateRequest).toHaveBeenCalledWith(ID, { idempotencyKey: expect.any(String) });
   });
 
   it('continues a draft in the form and shows a cancelled request with its reason', async () => {

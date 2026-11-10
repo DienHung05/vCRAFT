@@ -343,4 +343,127 @@ describe('household capacity enforcement', () => {
       ).toEqual([expected]);
     }
   });
+
+  /** An order in production where `rep` holds an active share of `quantity` (counts against its capacity). */
+  const seedActiveShare = async (rep: Rep, quantity: number) => {
+    const em = db.orm.em.fork();
+    const now = Date.now();
+    const holder = await em.findOneOrFail(Household, rep.householdId);
+    const request = em.create(QuotationRequest, {
+      buyer: em.getReference(AppUser, buyer.id),
+      design: 'Other order',
+      category: 'TABLEWARE',
+      quantity,
+      unit: 'cup',
+      destination: 'Hanoi',
+      requiredBy: new Date(now + 20 * day),
+      biddingClosesAt: new Date(now - 10 * day),
+      invitedHouseholdIds: [holder.id],
+      status: 'IN_PRODUCTION',
+    });
+    const quotation = em.create(CooperativeQuotation, {
+      request,
+      status: 'ACCEPTED',
+      quantity,
+      parts: [
+        {
+          householdId: holder.id,
+          quantity,
+          unitPriceVnd: 30_000,
+          completionDate: new Date(now + 10 * day).toISOString(),
+          contributionVersion: 1,
+        },
+      ],
+      productionTotalVnd: quantity * 30_000,
+      totalVnd: quantity * 30_000,
+      deliveryTerms: 'INCLUDED',
+    });
+    em.create(OrderAllocation, {
+      quotation,
+      household: holder,
+      quantity,
+      completedQty: 0,
+      status: 'IN_PROGRESS',
+    });
+    await em.flush();
+  };
+
+  it('counts the other active allocations of a household against its remaining capacity', async () => {
+    const busy = await household('capacity-busy', { TABLEWARE: 1000 });
+    await seedActiveShare(busy, 800);
+    const request = await send([busy.householdId], true, 5000);
+    const over = await contribute(request.id, busy, 300);
+    expect(over.status).toBe(422);
+    expect(over.body.code).toBe('RFQ_CAPACITY_EXCEEDED');
+    const fits = await contribute(request.id, busy, 200);
+    expect(fits.status).toBe(201);
+    // A revision above the remaining capacity is refused too.
+    const revised = await t.request({
+      method: 'PUT',
+      url: `/contributions/${fits.body.id}`,
+      auth: busy.auth,
+      headers: { 'if-match': String(fits.body.version) },
+      body: { maxQuantity: 300, unitPriceVnd: 30_000, completionDate },
+    });
+    expect(revised.status).toBe(422);
+    expect(revised.body.code).toBe('RFQ_CAPACITY_EXCEEDED');
+  });
+
+  it('refuses to accept a cooperative quotation when a household lost its capacity meanwhile', async () => {
+    const shrinking = await household('capacity-shrinking', { TABLEWARE: 2000 });
+    const other = await household('capacity-other');
+    const request = await send([shrinking.householdId, other.householdId], true, 1000);
+    const claimed = await t.request({
+      method: 'POST',
+      url: `/rfqs/${request.id}/coordinate`,
+      auth: admin.auth,
+      headers: { 'if-match': String(request.version) },
+    });
+    expect(claimed.status).toBe(200);
+    const offerShrinking = await contribute(request.id, shrinking, 600);
+    const offerOther = await contribute(request.id, other, 400);
+    expect(offerShrinking.status).toBe(201);
+    expect(offerOther.status).toBe(201);
+    const current = await t.request({
+      method: 'GET',
+      url: `/rfqs/${request.id}`,
+      auth: buyer.auth,
+    });
+    const quoted = await t.request({
+      method: 'POST',
+      url: `/rfqs/${request.id}/quotations`,
+      auth: admin.auth,
+      headers: { 'if-match': String(current.body.version) },
+      body: {
+        parts: [
+          { rep: shrinking, offer: offerShrinking.body },
+          { rep: other, offer: offerOther.body },
+        ].map(({ rep, offer }) => ({
+          householdId: rep.householdId,
+          quantity: offer.maxQuantity,
+          unitPriceVnd: offer.unitPriceVnd,
+          completionDate: offer.completionDate,
+          contributionVersion: offer.version,
+        })),
+        additionalChargeVnd: 0,
+        deliveryTerms: 'SEPARATE',
+      },
+    });
+    expect(quoted.status).toBe(201);
+
+    // Another order takes 1700 of the 2000: only 300 is left for the 600 share.
+    await seedActiveShare(shrinking, 1700);
+    const latest = await t.request({ method: 'GET', url: `/rfqs/${request.id}`, auth: buyer.auth });
+    const accepted = await t.request({
+      method: 'POST',
+      url: `/rfqs/${request.id}/accept`,
+      auth: buyer.auth,
+      headers: { 'if-match': String(latest.body.version) },
+      body: { quotationId: quoted.body.id },
+    });
+    expect(accepted.status).toBe(422);
+    expect(accepted.body.code).toBe('RFQ_CAPACITY_EXCEEDED');
+    const after = await t.request({ method: 'GET', url: `/rfqs/${request.id}`, auth: buyer.auth });
+    expect(after.body.status).toBe('BIDDING');
+  });
 });

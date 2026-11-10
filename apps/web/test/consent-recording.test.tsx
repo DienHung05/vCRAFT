@@ -20,6 +20,7 @@ const account = vi.hoisted(() => ({
   recordConsent: vi.fn(),
   applyHousehold: vi.fn(),
   uploadCertificate: vi.fn(),
+  getMyDocuments: vi.fn(),
 }));
 vi.mock('@/lib/auth/supabase-browser', () => ({
   browserAccountClient: () => account,
@@ -33,6 +34,7 @@ beforeEach(() => {
   account.recordConsent.mockResolvedValue({});
   account.applyHousehold.mockResolvedValue({});
   account.uploadCertificate.mockResolvedValue({});
+  account.getMyDocuments.mockResolvedValue({ data: [] });
 });
 
 describe('WizardHouseholdStep consent', () => {

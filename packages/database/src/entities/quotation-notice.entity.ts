@@ -25,4 +25,12 @@ export class QuotationNotice extends BaseEntity {
 
   @Property({ type: 'datetime', length: 3, nullable: true })
   readAt?: Date | null;
+
+  /** Set when the notice mail is claimed for sending (GH#377); cleared again if the send fails. Doubles as the claim time. */
+  @Property({ type: 'datetime', length: 3, nullable: true })
+  emailedAt?: Date | null;
+
+  /** Set once the mail went out (GH#429); a claim without it that has gone stale can be taken over. */
+  @Property({ type: 'datetime', length: 3, nullable: true })
+  emailSentAt?: Date | null;
 }

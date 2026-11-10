@@ -1,6 +1,6 @@
 # ADR-0021: Online payment for orders (SePay, VNPay, MoMo)
 
-**Status:** Accepted 2026-11-07 (Release 2, sandbox only; owner answers recorded under "Owner decisions")
+**Status:** Accepted 2026-11-07 (Release 2, sandbox only; owner answers recorded under "Owner decisions"). Amended by [ADR-0024](0024-payment-gateways-in-production.md): the "sandbox only" decision for VNPay and MoMo no longer holds, each gateway now has its own mode.
 **Date:** 2026-11-07
 **Deciders:** Project owner, architecture team
 **Tracks:** GH#164 (Beads `vCRAFT-83g.40`), GH#194 (owner decisions), GH#205 (build)
@@ -149,7 +149,12 @@ Choices made while building slices 2-7 that refine, and in a few places differ f
 - **Order identifier.** The code has no separate order code: an order is its quotation request, so the routes are `POST|GET /orders/{requestId}/payments` and `GET /payments/{referenceCode}`.
 - **Deposit rounding.** The deposit is the configured share of the total rounded half up to a whole VND, at least 1 VND and below the total; the balance is the total minus the deposit that was paid (`PAYMENT_DEPOSIT_PERCENT`, default 30, whole percent 1-99).
 - **Late money.** A transfer with the exact amount and code that arrives after the payment expired still settles it (`EXPIRED` to `PAID`), because the money is already in the account. A transfer for a cancelled or failed payment, or a second one for an order already paid, is recorded on the row and logged for an administrator to handle by hand.
-- **Feature switches.** Everything is off while the environment is empty. Bank transfer turns on when the SePay account variables are set; it also switches on the deposit gate for production (`PAYMENTS_DEPOSIT_REQUIRED` overrides). VNPay and MoMo need `PAYMENTS_SANDBOX_GATEWAYS=true` plus their credentials and are absent from the API's method list otherwise.
+- **Feature switches.** Everything is off while the environment is empty. Bank transfer turns on when the SePay account variables are set; it also switches on the deposit gate for production (`PAYMENTS_DEPOSIT_REQUIRED` overrides). VNPay and MoMo originally needed `PAYMENTS_SANDBOX_GATEWAYS=true` plus their credentials; ADR-0024 replaces that flag with a mode per gateway (the flag is still read as a legacy alias for `sandbox`).
 - **Webhook auth.** The global auth guard ignores a non-Bearer `Authorization` header on public routes, so SePay's `Authorization: Apikey <key>` reaches its own check instead of failing token verification.
-- **Not built.** The worker does not query VNPay or MoMo for pending payments whose IPN was missed (it only expires them), and there is no gateway refund call by design. Card payment through the SePay gateway stays future work.
+- **Not built.** There is no gateway refund call by design (refunds stay manual, ADR-0024). Card payment through the SePay gateway stays future work. The worker still only expires pending payments; the missed-IPN query for VNPay and MoMo was built later, in the API, by ADR-0024.
 
+## Money to handle by hand (GH#417)
+
+- **Unapplied money.** A transfer with the wrong amount, one for a cancelled or failed payment, and a second payment of an order (or of a payment) already paid each create an `unapplied_payment` row: one per provider transaction (`(provider, provider_txn_id)` unique, so a webhook retry adds nothing), never overwritten by later events. The payment's `raw_last_event` is still updated for diagnosis. The board (the coordinator, or every active administrator) gets a `PAYMENT_UNAPPLIED` notice. Administrators see open rows on the Payments screen (`GET /admin/payments/unapplied`) and close each with a note on how the money was handled (`POST /admin/payments/unapplied/{id}/resolve`, `If-Match`, audit `payment.unapplied_resolve`). Unknown payment codes are still ignored: SePay reports every incoming transfer on the account, most of them unrelated.
+- **Refund due.** Cancelling an order with a `PAID` payment sets `payment.refund_due_at` and sends `PAYMENT_REFUND_DUE` to the buyer and the board. The payment stays `PAID` (the money is still held) and shows "refund due" to both sides until an administrator marks it refunded, which clears the flag. `GET /admin/payments?refundDue=true` lists what is owed back.
+- **Account deletion** replaces the provider payload of the person's unapplied rows like that of their payments; amounts stay for the board to give the money back.

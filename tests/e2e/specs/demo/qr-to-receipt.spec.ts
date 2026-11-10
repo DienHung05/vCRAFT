@@ -1,11 +1,5 @@
 import { type BrowserContext, devices, expect, type Page, test } from '@playwright/test';
-import {
-  callApi,
-  DEMO,
-  demoSkipReason,
-  loginContext,
-  type SupabaseSession,
-} from './support/demo-session';
+import { DEMO, demoSkipReason, loginContext } from './support/demo-session';
 
 /**
  * Kịch bản demo một mạch "QR → biên nhận" trên bản đã triển khai (vCRAFT-83g, GH#14).
@@ -15,8 +9,8 @@ import {
  * Dữ liệu: PHÁ dữ liệu đóng băng (duyệt hộ, chốt chào giá...). Chạy `pnpm demo:reset` TRƯỚC mỗi lần chạy.
  * Bỏ qua tự động khi thiếu E2E_BASE_URL hoặc thông tin đăng nhập, nên CI không có bản triển khai vẫn xanh.
  *
- * Bước chưa có màn hình ở web hiện tại (duyệt hộ của Admin, xuất bản của hộ)
- * gọi thẳng API bằng đúng phiên đã đăng nhập, ghi chú ngay tại bước; khi màn hình có, đổi sang thao tác UI.
+ * Mọi bước đều thao tác qua giao diện (duyệt hộ ở /admin/duyet-ho, xuất bản trong Studio); `callApi`
+ * (support/demo-session.ts) chỉ còn dành cho bước nào thật sự chưa có màn hình.
  *
  * Every irreversible UI action (accept a quotation, start production, confirm receipt) opens a native
  * `<dialog>` (`ConfirmDialog`). A closed `<dialog>` is hidden from the accessibility tree, so
@@ -42,8 +36,6 @@ test.describe('Demo: QR → biên nhận', () => {
   let buyerPage: Page;
   let phonePage: Page;
   let adminPage: Page;
-  let householdSession: SupabaseSession;
-  let adminSession: SupabaseSession;
 
   test.beforeAll(async ({ browser }) => {
     baseUrl = (process.env.E2E_BASE_URL ?? '').replace(/\/$/, '');
@@ -52,8 +44,8 @@ test.describe('Demo: QR → biên nhận', () => {
     phoneCtx = await browser.newContext({ ...devices['Pixel 7'], ...common });
     adminCtx = await browser.newContext({ ...devices['Desktop Chrome'], ...common });
     await loginContext(buyerCtx, 'buyer', baseUrl);
-    householdSession = await loginContext(phoneCtx, 'household', baseUrl);
-    adminSession = await loginContext(adminCtx, 'admin', baseUrl);
+    await loginContext(phoneCtx, 'household', baseUrl);
+    await loginContext(adminCtx, 'admin', baseUrl);
     [buyerPage, phonePage, adminPage] = await Promise.all([
       buyerCtx.newPage(),
       phoneCtx.newPage(),
@@ -72,45 +64,43 @@ test.describe('Demo: QR → biên nhận', () => {
     await expect(phonePage.locator('main')).toBeVisible();
   });
 
-  test('2. Admin duyệt hộ chờ duyệt (API: chưa có màn duyệt hộ)', async () => {
-    const list = await callApi<Array<{ id: string; version: number }>>(
-      adminSession,
-      baseUrl,
-      'GET',
-      '/admin/households?status=PENDING_REVIEW',
-    );
-    expect(list.status).toBe(200);
-    const pending = (Array.isArray(list.body) ? list.body : []).find(
-      (household) => household.id === DEMO.pendingHouseholdId,
-    );
-    expect(pending, 'hộ chờ duyệt phải còn trong hàng đợi; chạy pnpm demo:reset').toBeTruthy();
-    const approved = await callApi<{ status: string }>(
-      adminSession,
-      baseUrl,
-      'POST',
-      `/admin/households/${DEMO.pendingHouseholdId}/approve`,
-      { version: pending?.version ?? 0 },
-    );
-    expect(approved.status).toBe(200);
-    expect(approved.body.status).toBe('APPROVED');
+  test('2. Admin duyệt hộ chờ duyệt (UI)', async () => {
+    await adminPage.goto('/vi/admin/duyet-ho');
+    await expect(adminPage.getByRole('heading', { level: 1, name: 'Duyệt hộ' })).toBeVisible();
+    // household-queue.tsx: the queue defaults to PENDING_REVIEW; each row is a link to the review page.
+    await adminPage
+      .getByTestId('household-queue')
+      .getByRole('link', { name: /Gốm Bảo Châu/ })
+      .click();
+    await expect(adminPage.getByRole('heading', { level: 1, name: 'Gốm Bảo Châu' })).toBeVisible();
+    // household-review.tsx: the approve button opens a ConfirmDialog whose confirm button has the same label.
+    await adminPage.getByRole('button', { name: 'Duyệt', exact: true }).click();
+    const dialog = adminPage.getByRole('dialog', { name: 'Duyệt hộ này?' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Duyệt', exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(adminPage.getByText('Đã được duyệt, đang trưng bày công khai')).toBeVisible();
   });
 
-  test('3. Hộ (điện thoại) xuất bản một sản phẩm nháp (API: chưa có màn xuất bản)', async () => {
-    const mine = await callApi<{
-      products: Array<{ id: string; status: string; version: number }>;
-    }>(householdSession, baseUrl, 'GET', '/me/household');
-    expect(mine.status).toBe(200);
-    const draft = mine.body.products.find((product) => product.status === 'DRAFT');
-    expect(draft, 'hộ phải còn sản phẩm nháp; chạy pnpm demo:reset').toBeTruthy();
-    const published = await callApi<{ status: string }>(
-      householdSession,
-      baseUrl,
-      'POST',
-      `/products/${draft?.id}/publish`,
-      { version: draft?.version ?? 0 },
+  test('3. Hộ (điện thoại) xuất bản một sản phẩm nháp (UI)', async () => {
+    await phonePage.goto('/vi/studio/san-pham');
+    await expect(phonePage.getByRole('heading', { level: 1, name: 'Sản phẩm' })).toBeVisible();
+    // product-list.tsx: the status filter is a radio group; keep only the drafts.
+    await phonePage.getByRole('radio', { name: 'Nháp', exact: true }).check({ force: true });
+    const drafts = phonePage.getByTestId('studio-products').getByRole('link');
+    expect(await drafts.count(), 'hộ phải còn sản phẩm nháp; chạy pnpm demo:reset').toBeGreaterThan(
+      0,
     );
-    expect(published.status).toBe(200);
-    expect(published.body.status).toBe('PUBLISHED');
+    await drafts.first().click();
+    // product-editor.tsx (PublishSection): the publish button opens a ConfirmDialog with the same label.
+    await phonePage.getByRole('button', { name: 'Xuất bản', exact: true }).click();
+    const dialog = phonePage.getByRole('dialog', { name: 'Xuất bản sản phẩm này?' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Xuất bản', exact: true }).click();
+    await expect(dialog).toBeHidden();
+    // A published product offers "Lưu trữ" instead of "Xuất bản".
+    await expect(phonePage.getByRole('button', { name: 'Lưu trữ', exact: true })).toBeVisible();
+    await expect(phonePage.getByRole('button', { name: 'Xuất bản', exact: true })).toHaveCount(0);
   });
 
   test('4. Khám phá xưởng: trang hộ công khai mở được', async () => {

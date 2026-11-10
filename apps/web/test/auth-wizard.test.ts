@@ -35,14 +35,14 @@ describe('resolveWizardStart: nối lại đúng bước dang dở (FR-AUTH-02)'
     });
   });
 
-  it('hộ chờ duyệt chưa có xưởng sang vị trí xưởng, đã có xưởng sang giấy tờ', () => {
-    const viewer = { role: 'HOUSEHOLD', household: household('PENDING_REVIEW') } as const;
+  it('hộ nháp chưa có xưởng sang vị trí xưởng, đã có xưởng sang giấy tờ', () => {
+    const viewer = { role: 'HOUSEHOLD', household: household('DRAFT') } as const;
     expect(resolveWizardStart(viewer, 0)).toEqual({ kind: 'step', step: 'workshop' });
     expect(resolveWizardStart(viewer, 2)).toEqual({ kind: 'step', step: 'documents' });
   });
 
   it('hồ sơ đã được xử lý thì xem trạng thái thay vì đăng ký lại', () => {
-    for (const status of ['APPROVED', 'REJECTED', 'SUSPENDED'] as const) {
+    for (const status of ['PENDING_REVIEW', 'APPROVED', 'REJECTED', 'SUSPENDED'] as const) {
       expect(resolveWizardStart({ role: 'HOUSEHOLD', household: household(status) }, 1)).toEqual({
         kind: 'profile',
       });

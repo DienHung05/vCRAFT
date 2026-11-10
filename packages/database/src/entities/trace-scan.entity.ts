@@ -10,6 +10,8 @@ import { Product } from './product.entity.js';
 @Index({ properties: ['createdAt'] })
 // The `popular` catalog sort counts a product's scans in a time window (FR-CAT-02).
 @Index({ properties: ['product', 'createdAt'] })
+// GH#362: the dedupe lookup finds a visitor's recent scan of a product.
+@Index({ properties: ['product', 'visitorHash', 'createdAt'] })
 export class TraceScan extends BaseEntity {
   @ManyToOne({ entity: () => Product, deleteRule: 'cascade', index: true })
   product!: Product;
@@ -19,4 +21,8 @@ export class TraceScan extends BaseEntity {
 
   @Property({ type: 'string', length: 10, nullable: true })
   deviceType?: string | null;
+
+  /** sha256(code + ip + user agent + Vietnam day), hex; only used to count a visitor once per window (GH#362). */
+  @Property({ type: 'string', length: 64, nullable: true })
+  visitorHash?: string | null;
 }

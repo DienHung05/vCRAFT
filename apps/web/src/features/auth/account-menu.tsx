@@ -1,12 +1,13 @@
 'use client';
 
 import { Badge, buttonVariants, cn } from '@vcraft/ui';
+import { usePathname } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { workspacePath } from '@/lib/auth/access';
 import { hasUnfinishedHouseholdRegistration } from '@/lib/auth/household-intent';
-import { clearRememberPreference } from '@/lib/auth/remember';
+import { clearSignedInBrowserData } from '@/lib/auth/signed-out-cleanup';
 import { useAccount } from '@/lib/auth/use-account';
 
 /**
@@ -26,6 +27,16 @@ export function AccountMenu({
   const locale = useLocale();
   const account = useAccount();
   const menu = useRef<HTMLDetailsElement>(null);
+  const pathname = usePathname();
+  const closeMenu = () => {
+    if (menu.current) menu.current.open = false;
+  };
+
+  // Close after a client-side navigation: the header stays mounted across pages.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `pathname` is the trigger, not a value read here.
+  useEffect(() => {
+    if (menu.current) menu.current.open = false;
+  }, [pathname]);
   const [signingOut, setSigningOut] = useState(false);
 
   // Đóng menu khi bấm ra ngoài hoặc nhấn Escape.
@@ -87,7 +98,7 @@ export function AccountMenu({
       // Loaded on demand: the Supabase SDK is only needed once the visitor is signed in and leaves.
       const { browserSupabase } = await import('@/lib/auth/supabase-browser');
       await browserSupabase()?.auth.signOut();
-      clearRememberPreference();
+      clearSignedInBrowserData();
     } finally {
       // Tải lại toàn trang để Server Component bỏ phiên cũ.
       window.location.assign(`/${locale}`);
@@ -138,6 +149,7 @@ export function AccountMenu({
         {unfinishedHousehold ? (
           <Link
             href="/dang-ky-nghe-nhan"
+            onClick={closeMenu}
             className="mt-3 block rounded-input bg-glaze/8 px-2 py-2 text-small font-medium text-clay hover:bg-ink/6"
           >
             {t('nav.finishHousehold')}
@@ -146,6 +158,7 @@ export function AccountMenu({
         {me ? (
           <Link
             href={workspacePath(me.role)}
+            onClick={closeMenu}
             className="mt-3 block rounded-input px-2 py-2 text-small text-clay hover:bg-ink/6"
           >
             {t(`areas.${me.role}`)}

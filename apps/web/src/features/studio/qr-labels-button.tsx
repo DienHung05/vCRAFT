@@ -3,7 +3,7 @@
 import type { StudioClient } from '@vcraft/api-client';
 import { Button } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // The worker usually finishes in a second or two; give up politely after ~1 minute.
 const POLL_EVERY_MS = 1_500;
@@ -30,23 +30,36 @@ export function QrLabelsButton({
 }) {
   const t = useTranslations('studio.products.labels');
   const [state, setState] = useState<State>('idle');
+  // Bumped on unmount (and on every new run) so an old polling loop stops instead of acting late.
+  const runId = useRef(0);
+  useEffect(() => {
+    return () => {
+      runId.current += 1;
+    };
+  }, []);
 
   const run = async () => {
+    const id = ++runId.current;
+    const live = () => id === runId.current;
     setState('busy');
     try {
       const { requestId } = await client.requestQrLabels({ productIds: [...productIds], copies });
       for (let attempt = 0; attempt < POLL_ATTEMPTS; attempt++) {
+        if (!live()) return;
         await wait(POLL_EVERY_MS);
+        if (!live()) return;
         const status = await client.qrLabelsStatus(requestId);
+        if (!live()) return;
         if (status.status === 'READY' && status.url) {
-          window.location.assign(status.url);
+          // A new tab keeps this page (and its selection) in place.
+          window.open(status.url, '_blank', 'noopener');
           setState('idle');
           return;
         }
       }
       setState('timeout');
     } catch {
-      setState('failed');
+      if (live()) setState('failed');
     }
   };
 

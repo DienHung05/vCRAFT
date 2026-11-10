@@ -71,27 +71,79 @@ describe('live events (GH#93)', () => {
     expect(waits).toBeGreaterThanOrEqual(2);
   });
 
-  it('leaves the caller polling when the API has no live endpoint or the session is gone', async () => {
-    for (const response of [new Response('', { status: 404 }), new Response('', { status: 401 })]) {
-      const status = await new Promise<LiveStatus>((resolve) => {
-        subscribeLiveEvents({
-          getAccessToken: async () => 'tok',
-          onEvent: () => undefined,
-          onStatus: (s) => s === 'polling' && resolve(s),
-          fetch: vi.fn().mockResolvedValue(response),
-        });
-      });
-      expect(status).toBe('polling');
-    }
-    const signedOut = vi.fn();
-    await new Promise<void>((resolve) => {
+  it('stops for good only when the API has no live endpoint', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 404 }));
+    const status = await new Promise<LiveStatus>((resolve) => {
       subscribeLiveEvents({
-        getAccessToken: async () => null,
+        getAccessToken: async () => 'tok',
         onEvent: () => undefined,
-        onStatus: (s) => s === 'polling' && resolve(),
-        fetch: signedOut,
+        onStatus: (s) => s === 'polling' && resolve(s),
+        fetch: fetchImpl,
       });
     });
-    expect(signedOut).not.toHaveBeenCalled();
+    expect(status).toBe('polling');
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries after a 401 and reconnects once a token is available, reading it again each time', async () => {
+    const tokens = [null, 'stale', 'fresh'];
+    let t = 0;
+    const getAccessToken = vi.fn(async () => (t < tokens.length ? (tokens[t++] ?? null) : 'fresh'));
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('', { status: 401 }))
+      .mockResolvedValue(sse('data: {"type":"ready","retryMs":2000}\n\n'));
+    const statuses: LiveStatus[] = [];
+    const waits: number[] = [];
+    await new Promise<void>((resolve) => {
+      const stop = subscribeLiveEvents({
+        getAccessToken,
+        onEvent: (e) => {
+          if (e.type === 'ready') {
+            stop();
+            resolve();
+          }
+        },
+        onStatus: (s) => statuses.push(s),
+        fetch: fetchImpl,
+        sleep: async (ms) => {
+          waits.push(ms);
+        },
+        random: () => 0.5,
+      });
+    });
+    expect(getAccessToken).toHaveBeenCalledTimes(3);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(fetchImpl.mock.calls[1]?.[1].headers.authorization).toBe('Bearer fresh');
+    expect(waits).toEqual([1000, 2000]);
+    expect(statuses).toContain('polling');
+    expect(statuses.at(-1)).toBe('live');
+  });
+
+  it('backs off while the session is missing, growing then capping at 60 s', async () => {
+    const waits: number[] = [];
+    const fetchImpl = vi.fn();
+    await new Promise<void>((resolve) => {
+      const stop = subscribeLiveEvents({
+        getAccessToken: async () => null,
+        onEvent: () => undefined,
+        fetch: fetchImpl,
+        sleep: async (ms) => {
+          waits.push(ms);
+          if (waits.length === 10) {
+            stop();
+            resolve();
+          }
+        },
+        random: () => 0.5,
+      });
+    });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(waits.slice(0, 6)).toEqual([1000, 2000, 4000, 8000, 16000, 32000]);
+    expect(waits.slice(6)).toEqual([60000, 60000, 60000, 60000]);
+  });
+
+  it('caps the backoff at the given limit', () => {
+    expect(backoffMs(20, () => 0.5, 60_000)).toBe(60_000);
   });
 });

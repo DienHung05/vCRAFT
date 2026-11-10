@@ -15,6 +15,7 @@ The first release deferred the Fox assistant (E15) to keep the scope small: `vCR
 2. **Embeddings:** OpenAI `OPENAI_EMBEDDING_MODEL` (currently `text-embedding-3-large`) at `OPENAI_EMBEDDING_DIMENSIONS` = **1024** dimensions, which matches `knowledge_chunks.embedding vector(1024)`. The model supports Vietnamese and English in one space, so an English question finds Vietnamese content.
 3. **Vector store:** unchanged from ADR-13: pgvector on the Supabase project, separate from the business database, reached only through the `VectorStore` port.
 4. `ANTHROPIC_API_KEY` is no longer used by the assistant. It stays optional for the story-writing and translation suggestions (FR-ART-08, Could).
+   *Note (9 Nov 2026, #380): no code reads `ANTHROPIC_API_KEY`, so it was removed from `.env.example`. Add it back together with the feature if FR-ART-08 is built.*
 5. The deferral is reversed: E15 (#77–#82) is planned for release 2, with the guardrails of ARCHITECTURE §7.6 unchanged.
 
 ## Options considered
@@ -27,7 +28,7 @@ The first release deferred the Fox assistant (E15) to keep the scope small: `vCR
 
 ## Consequences
 
-- One provider, one key (`OPENAI_API_KEY`) for the assistant; the daily token budget guard and the rate limiter are opt-in (`ASSISTANT_DAILY_TOKENS`, `ASSISTANT_RATE_LIMIT_PER_MINUTE`, `ASSISTANT_RATE_LIMIT_PER_DAY`) and off by default (#200), so watch the OpenAI spend by hand until one is set.
+- One provider, one key (`OPENAI_API_KEY`) for the assistant; the daily token budget guard and the rate limiter are on by default (`ASSISTANT_DAILY_TOKENS`, `ASSISTANT_RATE_LIMIT_PER_MINUTE`, `ASSISTANT_RATE_LIMIT_PER_DAY`; #360 reversed the opt-in of #200) and an explicit `0` turns one off.
 - Changing `OPENAI_EMBEDDING_DIMENSIONS` means a migration of the vector column and a full `pnpm assistant:reindex`. The value stays 1024 while the column is `vector(1024)`.
 - Model names live in environment variables, so a model can be swapped without code changes, but the red-team suite (#82) must be re-run after any swap.
 - The docs that named Claude Haiku and Voyage AI for the assistant (PLAN E15, SRS §3.13/§4, ARCHITECTURE §7.6) now name OpenAI.

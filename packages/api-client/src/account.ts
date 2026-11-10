@@ -7,10 +7,8 @@ import {
   type CreateWorkshopRequest,
   CreateWorkshopRequestSchema,
   DataExportSchema,
-  type ErrorCode,
   FavouritesResponseSchema,
-  type FieldError,
-  formatVersionTag,
+  HouseholdDocumentListSchema,
   HouseholdResponseSchema,
   IdSchema,
   LoginEventListSchema,
@@ -20,7 +18,6 @@ import {
   NotificationListResponseSchema,
   NotificationPreferencesResponseSchema,
   NotificationResponseSchema,
-  ProblemDetailsSchema,
   ResubmitHouseholdResponseSchema,
   SlugAvailabilityResponseSchema,
   UnreadCountResponseSchema,
@@ -28,96 +25,22 @@ import {
   UpdateNotificationPreferencesRequestSchema,
   WorkshopResponseSchema,
 } from '@vcraft/contracts';
-import { fallbackErrorCode } from './http/fallback-error-code';
+import { ApiError, type AuthedClientOptions, createAuthedRequest } from './http/authed-request';
 
-/** Lỗi API của nhóm tài khoản: mã ổn định để giao diện tra i18n, kèm lỗi theo field (nếu có). */
-export class AccountApiError extends Error {
-  constructor(
-    readonly code: ErrorCode,
-    readonly status: number,
-    readonly fieldErrors: readonly FieldError[] = [],
-  ) {
-    super(code);
-    this.name = 'AccountApiError';
-  }
+/** Keeps existing account-specific catch handlers compatible with the shared API error. */
+export class AccountApiError extends ApiError {
+  override name = 'AccountApiError';
 }
 
-export interface AccountClientOptions {
-  getAccessToken: () => Promise<string | null>;
-  /** Mặc định `globalThis.fetch`. Server truyền bản ghép sẵn gốc `API_INTERNAL_URL`. */
-  fetch?: (url: string, init: RequestInit) => Promise<Response>;
-}
+export type AccountClientOptions = AuthedClientOptions;
+const noContent = { parse: (): void => undefined };
 
 /**
  * Client cho phiên và hồ sơ hộ (FR-AUTH-02, FR-AUTH-09): `/me`, `/me/household`, tải giấy tờ lên
  * bucket riêng tư, cùng thông báo và tùy chọn email của chính người dùng (GH#37). Token luôn lấy từ phiên Supabase hiện tại; không có token thì không gửi gì.
  */
 export function createAccountClient(options: AccountClientOptions) {
-  const fetcher = options.fetch ?? globalThis.fetch;
-
-  async function request<T>(
-    path: string,
-    schema: { parse: (data: unknown) => T },
-    init: { method?: string; json?: unknown; form?: FormData; version?: number } = {},
-  ): Promise<T> {
-    const token = await options.getAccessToken();
-    if (!token) throw new AccountApiError('AUTH_UNAUTHENTICATED', 401);
-    const response = await fetcher(`/api/v1${path}`, {
-      method: init.method ?? 'GET',
-      cache: 'no-store',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        // Multipart tự đặt Content-Type kèm boundary, nên chỉ JSON mới khai báo.
-        ...(init.json !== undefined ? { 'Content-Type': 'application/json' } : {}),
-        // Optimistic concurrency: endpoints that require `If-Match` (vCRAFT-8my.2 resubmit).
-        ...(init.version !== undefined ? { 'If-Match': formatVersionTag(init.version) } : {}),
-      },
-      ...(init.json !== undefined ? { body: JSON.stringify(init.json) } : {}),
-      ...(init.form ? { body: init.form } : {}),
-    });
-    let data: unknown;
-    try {
-      data = await response.json();
-    } catch {
-      throw new AccountApiError(fallbackErrorCode(response.status), response.status);
-    }
-    if (!response.ok) {
-      const problem = ProblemDetailsSchema.safeParse(data);
-      throw problem.success
-        ? new AccountApiError(problem.data.code, response.status, problem.data.errors)
-        : new AccountApiError(fallbackErrorCode(response.status), response.status);
-    }
-    return schema.parse(data);
-  }
-
-  /** For calls whose success answer has no JSON body (204). Errors are read like in {@link request}. */
-  async function requestVoid(
-    path: string,
-    init: { method: string; json?: unknown },
-  ): Promise<void> {
-    const token = await options.getAccessToken();
-    if (!token) throw new AccountApiError('AUTH_UNAUTHENTICATED', 401);
-    const response = await fetcher(`/api/v1${path}`, {
-      method: init.method,
-      cache: 'no-store',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...(init.json !== undefined ? { 'Content-Type': 'application/json' } : {}),
-      },
-      ...(init.json !== undefined ? { body: JSON.stringify(init.json) } : {}),
-    });
-    if (response.ok) return;
-    let data: unknown;
-    try {
-      data = await response.json();
-    } catch {
-      throw new AccountApiError(fallbackErrorCode(response.status), response.status);
-    }
-    const problem = ProblemDetailsSchema.safeParse(data);
-    throw problem.success
-      ? new AccountApiError(problem.data.code, response.status, problem.data.errors)
-      : new AccountApiError(fallbackErrorCode(response.status), response.status);
-  }
+  const request = createAuthedRequest(options, AccountApiError);
 
   return {
     /** Người đang đăng nhập, theo CSDL vCraft: nguồn cho guard vai trò. */
@@ -142,18 +65,26 @@ export function createAccountClient(options: AccountClientOptions) {
         SlugAvailabilityResponseSchema,
       );
     },
-    /** Nộp hồ sơ hộ (`PENDING_REVIEW`); tài khoản trở thành người đại diện hộ. */
+    /** Start the application as a draft (`DRAFT`); the account becomes a household representative. */
     applyHousehold(input: ApplyHouseholdRequest) {
       return request('/me/household', HouseholdResponseSchema, {
         method: 'POST',
-        json: ApplyHouseholdRequestSchema.parse(input),
+        body: ApplyHouseholdRequestSchema.parse(input),
       });
     },
     addWorkshop(input: CreateWorkshopRequest) {
       return request('/me/household/workshops', WorkshopResponseSchema, {
         method: 'POST',
-        json: CreateWorkshopRequestSchema.parse(input),
+        body: CreateWorkshopRequestSchema.parse(input),
       });
+    },
+    /** Final wizard step: send the draft application to the board (`PENDING_REVIEW`). */
+    submitHousehold() {
+      return request('/me/household/submit', HouseholdResponseSchema, { method: 'POST' });
+    },
+    /** The household's own uploaded documents, so the wizard shows them again after a reload. */
+    getMyDocuments() {
+      return request('/me/household/documents', HouseholdDocumentListSchema);
     },
     /** Explicit resubmission after edits (vCRAFT-8my.2); `If-Match` guards a stale write. */
     resubmitHousehold(version: number) {
@@ -184,8 +115,12 @@ export function createAccountClient(options: AccountClientOptions) {
     recordConsent(purpose: ConsentPurposeDto, policyVersion: string) {
       return request('/me/consents', ConsentResponseSchema, {
         method: 'POST',
-        json: { purpose, policyVersion },
+        body: { purpose, policyVersion },
       });
+    },
+    /** Withdraw the consent for `purpose`; answers with the refreshed list (Decree 13/2023/ND-CP Art. 12). */
+    withdrawConsent(purpose: ConsentPurposeDto) {
+      return request(`/me/consents/${purpose}`, ConsentListResponseSchema, { method: 'DELETE' });
     },
     /** Everything the platform holds about the person, as one JSON document (NFR-SEC-07). */
     exportMyData() {
@@ -193,7 +128,7 @@ export function createAccountClient(options: AccountClientOptions) {
     },
     /** Delete the account. `confirmation` is the account's own email, typed by the person. */
     deleteAccount(confirmation: string) {
-      return requestVoid('/me', { method: 'DELETE', json: { confirmation } });
+      return request('/me', noContent, { method: 'DELETE', body: { confirmation } });
     },
     /** Chuông thông báo: `limit` thông báo mới nhất kèm tổng số chưa đọc. */
     listNotifications(limit = 30) {
@@ -223,16 +158,18 @@ export function createAccountClient(options: AccountClientOptions) {
     },
     /** Idempotent: saving a product that is already saved succeeds. */
     addFavourite(productId: string) {
-      return requestVoid(`/me/favourites/${IdSchema.parse(productId)}`, { method: 'PUT' });
+      return request(`/me/favourites/${IdSchema.parse(productId)}`, noContent, { method: 'PUT' });
     },
     /** Idempotent: removing a product that is not saved succeeds. */
     removeFavourite(productId: string) {
-      return requestVoid(`/me/favourites/${IdSchema.parse(productId)}`, { method: 'DELETE' });
+      return request(`/me/favourites/${IdSchema.parse(productId)}`, noContent, {
+        method: 'DELETE',
+      });
     },
     saveNotificationPreferences(input: UpdateNotificationPreferencesRequest) {
       return request('/me/notification-preferences', NotificationPreferencesResponseSchema, {
         method: 'PUT',
-        json: UpdateNotificationPreferencesRequestSchema.parse(input),
+        body: UpdateNotificationPreferencesRequestSchema.parse(input),
       });
     },
   };

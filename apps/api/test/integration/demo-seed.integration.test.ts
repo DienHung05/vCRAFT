@@ -28,11 +28,13 @@ import {
   Product,
   QuotationRequest,
   RETIRED_DEMO_PHOTO_IDS,
+  refreshDemoCoordinates,
   refreshDemoText,
   seedDemoData,
   verifyDemoData,
+  Workshop,
 } from '@vcraft/database';
-import { type ChainEntry, verifyChain } from '@vcraft/domain';
+import { type ChainEntry, isInBatTrang, verifyChain } from '@vcraft/domain';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -240,6 +242,50 @@ describe('Demo seed and guarded reset', () => {
     );
     expect((await after.findOneOrFail(AppUser, rep.id)).fullName).toBe(repName);
     expect(await check()).toMatchObject({ ok: true });
+  });
+
+  it('GH#396: every seeded demo workshop pin lies inside the Bát Tràng boundary', async () => {
+    const workshops = await db.orm.em.fork().find(Workshop, {});
+    expect(workshops.length).toBeGreaterThanOrEqual(20);
+    const outside = workshops.filter(
+      (w) => !isInBatTrang({ lat: Number(w.lat), lng: Number(w.lng) }),
+    );
+    expect(outside.map((w) => w.id)).toEqual([]);
+  });
+
+  it('GH#396: demo:refresh-coordinates moves only outside pins, honours --dry-run and is idempotent', async () => {
+    const em = db.orm.em.fork();
+    const [moved, kept] = await em.find(Workshop, {}, { orderBy: { id: 'asc' } });
+    if (!moved || !kept) throw new Error('expected seeded workshops');
+    const keptBefore = { lat: kept.lat, lng: kept.lng };
+    const original = { lat: moved.lat, lng: moved.lng };
+    // The pre-fix seed placed pins like this one, west of the commune near the river.
+    moved.lat = '20.969870';
+    moved.lng = '105.913705';
+    await em.flush();
+    expect(isInBatTrang({ lat: 20.96987, lng: 105.913705 })).toBe(false);
+
+    const dry = await refreshDemoCoordinates(db.orm.em.fork(), { dryRun: true });
+    expect(dry).toMatchObject({ dryRun: true, changed: 1, changedWorkshopIds: [moved.id] });
+    expect((await db.orm.em.fork().findOneOrFail(Workshop, moved.id)).lat).toBe('20.969870');
+
+    const first = await refreshDemoCoordinates(db.orm.em.fork());
+    expect(first).toMatchObject({ dryRun: false, changed: 1, changedWorkshopIds: [moved.id] });
+    const after = db.orm.em.fork();
+    const fixed = await after.findOneOrFail(Workshop, moved.id);
+    expect(isInBatTrang({ lat: Number(fixed.lat), lng: Number(fixed.lng) })).toBe(true);
+    expect(await after.findOneOrFail(Workshop, kept.id)).toMatchObject(keptBefore);
+
+    const second = await refreshDemoCoordinates(db.orm.em.fork());
+    expect(second).toMatchObject({ changed: 0, changedWorkshopIds: [] });
+    expect(second.unchanged).toBe(second.found);
+
+    // Restore the seeded pin so later tests see untouched data.
+    const restore = db.orm.em.fork();
+    const row = await restore.findOneOrFail(Workshop, moved.id);
+    row.lat = original.lat;
+    row.lng = original.lng;
+    await restore.flush();
   });
 
   it('chưa chạy `demo:media` thì nhóm kiểm ảnh và giấy tờ báo đỏ', async () => {
@@ -543,7 +589,7 @@ describe('Demo seed and guarded reset', () => {
       auth: as('admin'),
     });
     expect(pending.status).toBe(200);
-    const target = (pending.body.data ?? pending.body).find(
+    const target = pending.body.data.find(
       (h: { id: string }) => h.id === DEMO_HOUSEHOLD_IDS.pending,
     );
     expect(target).toBeTruthy();

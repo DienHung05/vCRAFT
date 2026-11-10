@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { IdempotencyModule } from '../../common/idempotency/idempotency.module';
 import { AssistantModule } from '../assistant/assistant.module';
 import { MediaModule } from '../media/media.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -16,7 +17,7 @@ import {
 } from './households.controller';
 
 @Module({
-  imports: [MediaModule, NotificationsModule, ConsentModule, AssistantModule],
+  imports: [MediaModule, NotificationsModule, ConsentModule, AssistantModule, IdempotencyModule],
   controllers: [
     MyHouseholdController,
     ProductPublicationController,

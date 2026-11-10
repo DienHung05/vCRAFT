@@ -40,6 +40,7 @@ import {
   DEMO_QR_TRACE_CODE,
   DEMO_REQUEST_IDS,
 } from './accounts.js';
+import { fitCoordinateStrings } from './boundary-fit.js';
 import { artisanBio, householdStory } from './demo-text.js';
 import { newsSeedFields } from './news-seed.js';
 import {
@@ -798,11 +799,16 @@ export async function seedDemoData(
     const workshopCount = random.int(1, 2);
     for (let w = 0; w < workshopCount; w++) {
       const purpose = w === 0 ? (random.next() < 0.5 ? 'BOTH' : 'SHOWROOM') : 'PRODUCTION';
+      // Draw order (address part, lat, lng) is part of the frozen random stream.
+      const address = `${random.pick(VILLAGE_PARTS)}, Bát Tràng, Gia Lâm, Hà Nội`;
+      const pinLat = 20.9758 + (random.next() - 0.5) * 0.012;
+      const pinLng = 105.9139 + (random.next() - 0.1) * 0.009;
+      const pin = fitCoordinateStrings(pinLat.toFixed(6), pinLng.toFixed(6));
       const workshop = em.create(Workshop, {
         id: idOf('workshop', `${row.index}-${w}`),
         household,
         name: `${WORKSHOP_NAME_BY_PURPOSE[purpose]} ${row.seed.name}`,
-        address: `${random.pick(VILLAGE_PARTS)}, Bát Tràng, Gia Lâm, Hà Nội`,
+        address,
         purpose,
         acceptsVisitors: purpose !== 'PRODUCTION',
         openingHours: purpose === 'PRODUCTION' ? null : SHOWROOM_HOURS,
@@ -810,9 +816,8 @@ export async function seedDemoData(
           purpose === 'PRODUCTION'
             ? null
             : 'Mở cửa 8:00 – 17:00 hằng ngày, nên báo trước qua điện thoại.',
-        lat: (20.9758 + (random.next() - 0.5) * 0.012).toFixed(6),
-        // Lệch về phía đông: phía tây Bát Tràng là sông Hồng.
-        lng: (105.9139 + (random.next() - 0.1) * 0.009).toFixed(6),
+        // Drawn in a box around the village core (east-leaning: the Red River is to the west), then pulled inside the commune polygon (GH#396).
+        ...pin,
         createdAt: new Date(createdMs + w * HOUR),
         updatedAt: new Date(createdMs + w * HOUR),
       });

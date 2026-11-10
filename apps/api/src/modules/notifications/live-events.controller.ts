@@ -20,13 +20,19 @@ interface StreamRequest extends HttpRequest {
   readonly raw: { once(event: 'close', listener: () => void): unknown };
 }
 
-const sleep = (ms: number, signal: AbortSignal) =>
+/** Resolves after `ms` or as soon as `signal` aborts; leaves no timer or listener behind either way. */
+export const sleep = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve) => {
-    const timer = setTimeout(resolve, ms);
-    signal.addEventListener('abort', () => {
+    if (signal.aborted) return resolve();
+    const onAbort = () => {
       clearTimeout(timer);
       resolve();
-    });
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    signal.addEventListener('abort', onAbort, { once: true });
   });
 
 /**

@@ -266,6 +266,22 @@ describe('Account administration', () => {
       });
       expect(bySearch.body.items.map((u: { id: string }) => u.id)).toEqual([locked.id]);
     });
+
+    it('searches full names case-insensitively on both drivers (GH#427)', async () => {
+      const person = await t.createUser('HOUSEHOLD');
+      const fullName = `Nguyễn Gốm ${crypto.randomUUID().slice(0, 8)}`;
+      const em = db.orm.em.fork();
+      (await em.findOneOrFail(AppUser, person.id)).fullName = fullName;
+      await em.flush();
+      for (const q of [fullName.toLowerCase(), fullName.toUpperCase(), fullName]) {
+        const res = await t.request({
+          method: 'GET',
+          url: `/admin/users?q=${encodeURIComponent(q)}`,
+          auth: admin.auth,
+        });
+        expect(res.body.items.map((u: { id: string }) => u.id)).toEqual([person.id]);
+      }
+    });
   });
 
   describe('invitations (FR-AUTH-03)', () => {

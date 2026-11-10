@@ -3,7 +3,7 @@
 import { MEDIA_MAX_BYTES, PRIVACY_POLICY_VERSION } from '@vcraft/domain';
 import { Badge, Button, buttonVariants, cn } from '@vcraft/ui';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ConsentCheckbox } from '@/components/consent-checkbox';
 import { getPathname } from '@/i18n/navigation';
 import { browserAccountClient } from '@/lib/auth/supabase-browser';
@@ -29,7 +29,12 @@ type StoredKind = DocumentKind | 'UNKNOWN';
 
 interface UploadItem {
   readonly id: string;
-  readonly file: File;
+  /** Shown name: the picked file's name, or the caption of a document uploaded earlier. */
+  readonly name: string;
+  readonly sizeBytes: number;
+  /** Absent for a document loaded from the server: nothing to retry or re-send. */
+  readonly file?: File;
+  readonly earlier?: boolean;
   readonly kind: StoredKind;
   readonly status: ItemStatus;
   readonly error?: AuthErrorKey;
@@ -46,6 +51,8 @@ export function precheckDocument(file: Pick<File, 'type' | 'size'>): AuthErrorKe
  * Tải giấy tờ xác minh hộ lên bucket riêng tư qua `POST /media?purpose=CERTIFICATE` (FR-AUTH-02,
  * FR-MEDIA-04). Mỗi tệp có trạng thái riêng, lỗi một tệp không chặn tệp khác, thử lại được.
  * Bước này chỉ cho nộp hồ sơ khi có ít nhất một tệp đã tải xong và không còn tệp đang chạy.
+ * Giấy tờ đã tải lên từ lần trước được nạp lại từ `GET /me/household/documents`, nên người quay lại
+ * không phải tải lại (và không tạo bản trùng). Nút nộp gọi `POST /me/household/submit`.
  */
 export function DocumentUpload({ embedded = false }: { embedded?: boolean } = {}) {
   const t = useTranslations('auth.wizard.documents');
@@ -54,6 +61,8 @@ export function DocumentUpload({ embedded = false }: { embedded?: boolean } = {}
   const locale = useLocale();
   const [items, setItems] = useState<readonly UploadItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<AuthErrorKey | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   // Identity papers are only collected after the representative agrees to the privacy policy.
   const [consent, setConsent] = useState(false);
   /** What the picked files evidence; applied to every file added while it is selected. */
@@ -64,6 +73,29 @@ export function DocumentUpload({ embedded = false }: { embedded?: boolean } = {}
   const input = useRef<HTMLInputElement>(null);
   // The API refuses identity papers without a recorded consent, so it is recorded once, before the first file.
   const consentRecorded = useRef<Promise<unknown> | null>(null);
+
+  // Documents uploaded in an earlier visit: listed as done so the applicant does not upload them again.
+  useEffect(() => {
+    let active = true;
+    browserAccountClient()
+      .getMyDocuments()
+      .then((list) => {
+        if (!active) return;
+        const earlier: UploadItem[] = list.data.map((doc) => ({
+          id: doc.id,
+          name: doc.caption ?? t('uploadedEarlier'),
+          sizeBytes: doc.sizeBytes,
+          earlier: true,
+          kind: doc.certificateKind,
+          status: 'done',
+        }));
+        setItems((prev) => [...earlier.filter((e) => !prev.some((p) => p.id === e.id)), ...prev]);
+      })
+      .catch(() => active && setLoadFailed(true));
+    return () => {
+      active = false;
+    };
+  }, [t]);
 
   const patch = (id: string, change: Partial<Omit<UploadItem, 'id' | 'file'>>) =>
     setItems((prev) =>
@@ -87,6 +119,7 @@ export function DocumentUpload({ embedded = false }: { embedded?: boolean } = {}
       });
       // The answer carries the stored kind back; the server may keep a previous classification
       // when identical bytes were uploaded before (vCRAFT-8my.3).
+      if (!item.file) return;
       const asset = await browserAccountClient().uploadCertificate(
         item.file,
         item.file.name,
@@ -109,6 +142,8 @@ export function DocumentUpload({ embedded = false }: { embedded?: boolean } = {}
       const problem = precheckDocument(file);
       return {
         id: crypto.randomUUID(),
+        name: file.name,
+        sizeBytes: file.size,
         file,
         kind,
         status: problem ? 'error' : 'queued',
@@ -126,9 +161,18 @@ export function DocumentUpload({ embedded = false }: { embedded?: boolean } = {}
   const busy = items.some((item) => item.status === 'queued' || item.status === 'uploading');
   const canSubmit = done > 0 && !busy && !submitting;
 
-  const submit = () => {
+  const submit = async () => {
     setSubmitting(true);
-    // Hồ sơ đã ở `PENDING_REVIEW` từ bước thông tin hộ; chuyển tới trang trạng thái để hộ thấy kết quả.
+    setSubmitError(null);
+    try {
+      // The application stays a draft until now; this puts it in the board's queue.
+      await browserAccountClient().submitHousehold();
+    } catch (failure) {
+      setSubmitError(authErrorKey(failure));
+      setSubmitting(false);
+      return;
+    }
+    // Go to the status page so the household sees the result.
     window.location.assign(
       `${getPathname({ href: '/studio/ho-so', locale: locale as 'vi' | 'en' })}?submitted=1`,
     );
@@ -178,6 +222,7 @@ export function DocumentUpload({ embedded = false }: { embedded?: boolean } = {}
         <p className="text-small text-ash">{consent ? t('drop') : t('consentFirst')}</p>
       </div>
 
+      {loadFailed ? <FormAlert tone="info">{t('loadFailed')}</FormAlert> : null}
       {items.length === 0 ? (
         <p className="text-small text-ash">{t('empty')}</p>
       ) : (
@@ -188,11 +233,11 @@ export function DocumentUpload({ embedded = false }: { embedded?: boolean } = {}
               className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-card bg-ink/4 px-4 py-3"
             >
               <span className="min-w-0 flex-1 truncate text-small font-medium text-ink">
-                {item.file.name}
+                {item.name}
                 <span className="ml-2 font-normal text-ash">
-                  {item.file.size < 1024 * 1024
-                    ? `${format.number(Math.max(1, Math.round(item.file.size / 1024)))} KB`
-                    : `${format.number(item.file.size / 1024 / 1024, { maximumFractionDigits: 1 })} MB`}
+                  {item.sizeBytes < 1024 * 1024
+                    ? `${format.number(Math.max(1, Math.round(item.sizeBytes / 1024)))} KB`
+                    : `${format.number(item.sizeBytes / 1024 / 1024, { maximumFractionDigits: 1 })} MB`}
                 </span>
               </span>
               <Badge tone="outline">{t(`kindOption.${item.kind}`)}</Badge>
@@ -207,7 +252,7 @@ export function DocumentUpload({ embedded = false }: { embedded?: boolean } = {}
                   ? errors(item.error)
                   : t(`status.${item.status}`)}
               </span>
-              {item.status === 'error' && !precheckDocument(item.file) ? (
+              {item.status === 'error' && item.file && !precheckDocument(item.file) ? (
                 <Button type="button" variant="ghost" size="sm" onClick={() => void upload(item)}>
                   {t('retry')}
                 </Button>
@@ -217,7 +262,7 @@ export function DocumentUpload({ embedded = false }: { embedded?: boolean } = {}
                   type="button"
                   variant="ghost"
                   size="sm"
-                  aria-label={t('remove', { name: item.file.name })}
+                  aria-label={t('remove', { name: item.name })}
                   onClick={() => setItems((prev) => prev.filter((other) => other.id !== item.id))}
                 >
                   ×
@@ -234,8 +279,10 @@ export function DocumentUpload({ embedded = false }: { embedded?: boolean } = {}
         <FormAlert tone="info">{t('waitUploads')}</FormAlert>
       ) : null}
 
+      {submitError ? <FormAlert tone="error">{errors(submitError)}</FormAlert> : null}
+
       {!embedded ? (
-        <Button type="button" size="lg" onClick={submit} disabled={!canSubmit}>
+        <Button type="button" size="lg" onClick={() => void submit()} disabled={!canSubmit}>
           {submitting ? t('submitting') : t('submit')}
         </Button>
       ) : null}

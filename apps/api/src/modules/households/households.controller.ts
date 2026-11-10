@@ -9,6 +9,8 @@ import {
   Post,
   Put,
   Query,
+  Req,
+  Res,
 } from '@nestjs/common';
 import {
   type ApplyHouseholdRequest,
@@ -21,7 +23,10 @@ import {
   type CreateWorkshopRequest,
   CreateWorkshopRequestSchema,
   HouseholdDecisionRequestSchema,
+  type ListHouseholdsQuery,
   ListHouseholdsQuerySchema,
+  type MapPinsQuery,
+  MapPinsQuerySchema,
   type PriceSuggestionQuery,
   PriceSuggestionQuerySchema,
   type RecordScanRequest,
@@ -42,11 +47,15 @@ import {
 import type { HouseholdEvent } from '@vcraft/domain';
 import { type Actor, CurrentActor, Public, Roles } from '../../common/auth/auth.guard';
 import { notFound } from '../../common/errors/app-error';
+import type { HttpReply, HttpRequest } from '../../common/http/http-types';
 import { IfMatchVersion } from '../../common/http/if-match';
+import { withPublicCache } from '../../common/http/public-cache';
+import { Idempotent } from '../../common/idempotency/idempotent.decorator';
 import { UuidPipe } from '../../common/pipes/uuid.pipe';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { HouseholdsService } from './application/households.service';
 import { QrLabelsService } from './application/qr-labels.service';
+import { type ScanRequestLike, visitorIdentity } from './application/scan-visitor';
 import { StorySuggestionService } from './application/story-suggestion.service';
 
 /** Hồ sơ hộ của chính người đại diện (`/me/household`). */
@@ -105,6 +114,22 @@ export class MyHouseholdController {
   @Roles('HOUSEHOLD')
   get(@CurrentActor() actor: Actor) {
     return this.households.getMine(actor);
+  }
+
+  /** Final wizard step: the draft application enters the board's queue (needs profile, workshop, document). */
+  @Post('submit')
+  @HttpCode(200)
+  @Roles('HOUSEHOLD')
+  submit(@CurrentActor() actor: Actor) {
+    return this.households.submit(actor);
+  }
+
+  /** The household's own uploaded documents, so a returning wizard user does not upload them again. */
+  @Get('documents')
+  @Roles('HOUSEHOLD')
+  @Header('Cache-Control', 'private, no-store')
+  documents(@CurrentActor() actor: Actor) {
+    return this.households.documentsForMine(actor);
   }
 
   @Patch()
@@ -172,9 +197,10 @@ export class MyHouseholdController {
   setMakers(
     @CurrentActor() actor: Actor,
     @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
     @Body(new ZodValidationPipe(SetProductMakersRequestSchema)) body: SetProductMakersRequest,
   ) {
-    return this.households.setMakers(actor, id, body);
+    return this.households.setMakers(actor, id, version, body);
   }
 
   /** FR-TRC-06: scan statistics of one of the household's own products. */
@@ -198,6 +224,7 @@ export class MyHouseholdController {
 
   /** FR-PRD-06: a DRAFT copy without the production journal. */
   @Post('products/:id/duplicate')
+  @Idempotent()
   @Roles('HOUSEHOLD')
   duplicateProduct(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
     return this.households.duplicateProduct(actor, id);
@@ -215,6 +242,7 @@ export class MyHouseholdController {
   }
 
   @Post('products')
+  @Idempotent()
   @Roles('HOUSEHOLD')
   createProduct(
     @CurrentActor() actor: Actor,
@@ -313,7 +341,7 @@ export class AdminHouseholdsController {
   @Get()
   list(
     @Query(new ZodValidationPipe(ListHouseholdsQuerySchema))
-    query: ReturnType<typeof ListHouseholdsQuerySchema.parse>,
+    query: ListHouseholdsQuery,
   ) {
     return this.households.listForAdmin(query);
   }
@@ -401,10 +429,14 @@ export class PublicHouseholdsController {
     return this.households.getPublic(slug);
   }
 
-  /** Ghim bản đồ làng; trang luôn hiện kèm danh sách chữ. */
+  /** Ghim bản đồ làng; trang luôn hiện kèm danh sách chữ. `?bbox=` loads one viewport (FR-MAP-04). */
   @Get('map/workshops')
-  mapPins() {
-    return this.households.mapPins();
+  async mapPins(
+    @Query(new ZodValidationPipe(MapPinsQuerySchema)) query: MapPinsQuery,
+    @Req() request: HttpRequest,
+    @Res({ passthrough: true }) reply: HttpReply,
+  ) {
+    return withPublicCache(request, reply, await this.households.mapPins(query.bbox));
   }
 
   @Get('trace/:code')
@@ -421,7 +453,9 @@ export class PublicHouseholdsController {
   async scan(
     @Param('code') code: string,
     @Body(new ZodValidationPipe(RecordScanRequestSchema)) body: RecordScanRequest,
+    @Req() request: ScanRequestLike,
   ) {
-    await this.households.recordScan(code, body);
+    // GH#362: repeats from one visitor within 30 minutes count once; the answer is the same either way.
+    await this.households.recordScan(code, body, visitorIdentity(request));
   }
 }

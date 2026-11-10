@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import { SessionUnavailable } from '@/components/session-unavailable';
 import { AccountSecurity } from '@/features/account/account-security';
 import { ChangePasswordForm } from '@/features/account/change-password-form';
+import { ConsentWithdrawalCard } from '@/features/account/consent-withdrawal';
 import { EmailPreferencesForm } from '@/features/account/email-preferences-form';
 import { PersonalDataCard } from '@/features/account/personal-data';
 import { Link } from '@/i18n/navigation';
@@ -89,6 +90,9 @@ export default async function AccountPage({ params }: PageProps<'/[locale]/tai-k
           {privacy('account.link')}
         </Link>
         <div className="mt-6 border-ink/10 border-t pt-6">
+          <ConsentWithdrawalCard />
+        </div>
+        <div className="mt-6 border-ink/10 border-t pt-6">
           <PersonalDataCard email={viewer.email} accountRole={viewer.role} />
         </div>
       </Card>
@@ -111,7 +115,8 @@ export default async function AccountPage({ params }: PageProps<'/[locale]/tai-k
         </Link>
       </Card>
 
-      <Card className="p-5 md:p-8">
+      {/* Every email links here and names it in `List-Unsubscribe` (GH#420); keep the id in step with the worker. */}
+      <Card id="email-preferences" className="scroll-mt-24 p-5 md:p-8">
         <h2 className="font-display text-h3 text-glaze">{t('email.title')}</h2>
         <p className="mt-1 mb-5 text-ash text-small">{t('email.lead')}</p>
         <EmailPreferencesForm />

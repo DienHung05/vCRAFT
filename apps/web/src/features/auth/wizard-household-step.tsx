@@ -17,12 +17,12 @@ import { browserAccountClient } from '@/lib/auth/supabase-browser';
 import { notify } from '@/lib/notify';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
 import { FormAlert, TextAreaField, TextField } from './fields';
-import { type HouseholdStepValues, householdStepSchema } from './schemas';
+import { type HouseholdStepValues, householdStepSchema, serverFieldMessageKey } from './schemas';
 import { useValidationMessage } from './use-validation-message';
 
 /**
- * Bước 2 của wizard: thông tin hộ. Gửi `POST /me/household` ⇒ hồ sơ vào `PENDING_REVIEW` và tài khoản
- * thành người đại diện hộ (xưởng, giấy tờ ở hai bước sau cần vai trò đó). Đường dẫn trang tự sinh từ
+ * Bước 2 của wizard: thông tin hộ. Gửi `POST /me/household` ⇒ hồ sơ ở trạng thái `DRAFT` (chỉ vào
+ * hàng đợi duyệt khi nộp ở bước cuối) và tài khoản thành người đại diện hộ (xưởng, giấy tờ ở hai bước sau cần vai trò đó). Đường dẫn trang tự sinh từ
  * tên (bỏ dấu) cho tới khi người dùng tự sửa. Lỗi giữ nguyên mọi ô; lỗi theo field của API gắn đúng ô.
  */
 export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
@@ -103,7 +103,7 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
       onDone();
     } catch (failure) {
       if (failure instanceof AccountApiError && failure.fieldErrors.length > 0) {
-        for (const { path, message: text } of failure.fieldErrors) {
+        for (const { path, code } of failure.fieldErrors) {
           if (
             path === 'name' ||
             path === 'slug' ||
@@ -111,7 +111,7 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
             path === 'idNumber' ||
             path === 'history'
           ) {
-            setFieldError(path, { message: text });
+            setFieldError(path, { message: serverFieldMessageKey(path, code) });
           }
         }
         return;

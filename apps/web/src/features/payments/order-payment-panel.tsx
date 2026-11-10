@@ -8,11 +8,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { usePaymentClient } from '@/lib/api/use-payment-client';
 import { notify } from '@/lib/notify';
+import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { useMoney } from '@/lib/use-money';
 import {
   PaymentCheckout,
   PaymentLiveLine,
   PaymentStatusBadge,
+  RefundDueBadge,
   usePaymentPoll,
 } from './payment-parts';
 
@@ -54,6 +56,7 @@ function Panel({
   const [method, setMethod] = useState<Method | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const submitStart = useIdempotentAction();
 
   const load = useCallback(async () => {
     try {
@@ -94,8 +97,11 @@ function Panel({
     if (!kind || !chosen) return;
     setBusy(true);
     setError(null);
+    const body = { kind, method: chosen };
     try {
-      await client.createPayment(orderId, { kind, method: chosen });
+      await submitStart({ orderId, body }, (options) =>
+        client.createPayment(orderId, body, options),
+      );
       await load();
     } catch (cause) {
       const code = cause instanceof ApiError ? cause.code : 'default';
@@ -231,6 +237,7 @@ function Panel({
               .map((payment) => (
                 <li key={payment.id} className="flex flex-wrap items-center gap-3">
                   <PaymentStatusBadge status={payment.status} />
+                  <RefundDueBadge payment={payment} />
                   <span>
                     {t(`kind.${payment.kind}`)} · {money(payment.amountVnd)} ·{' '}
                     {t(`method.${payment.method}`)}

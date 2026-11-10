@@ -41,15 +41,19 @@ export function balanceAmountVnd(totalVnd: number, depositVnd: number): number {
   return totalVnd - depositVnd;
 }
 
-/** The amount of a payment of `kind`. A balance is the total minus the deposit that was (or would be) taken. */
+/**
+ * The amount of a payment of `kind`. A balance is the total minus the deposit actually PAID: when no deposit
+ * was paid (production may start without one when no deposit is required) it is the whole total. Pass
+ * `paidDepositVnd` as the paid deposit, or leave it out when none was paid.
+ */
 export function paymentAmountVnd(
   kind: PaymentKind,
   totalVnd: number,
   percent = DEFAULT_DEPOSIT_PERCENT,
   paidDepositVnd?: number,
 ): number {
-  const deposit = paidDepositVnd ?? depositAmountVnd(totalVnd, percent);
-  return kind === 'DEPOSIT' ? deposit : balanceAmountVnd(totalVnd, deposit);
+  if (kind === 'DEPOSIT') return paidDepositVnd ?? depositAmountVnd(totalVnd, percent);
+  return balanceAmountVnd(totalVnd, paidDepositVnd ?? 0);
 }
 
 /** An incoming amount settles a payment only when it equals the expected amount exactly (ADR-0021 rules). */

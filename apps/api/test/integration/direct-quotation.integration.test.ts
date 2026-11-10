@@ -2,7 +2,9 @@ import {
   AllocationResponseSchema,
   BuyerQuotationResponseSchema,
   DirectQuotationResponseSchema,
+  MyInvitationListSchema,
 } from '@vcraft/contracts';
+import { CooperativeQuotation, QuotationRequest } from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
@@ -166,6 +168,101 @@ describe('direct household quotations', () => {
       other.body.find((item: { request: { id: string } }) => item.request.id === rfq.id)
         .directQuotation,
     ).toBeNull();
+  });
+
+  it('lists only the household invitations, including ones older than many other requests', async () => {
+    const mine = await send([repC.householdId]);
+    for (let i = 0; i < 5; i += 1) await send([repB.householdId]);
+    const both = await send([repB.householdId, repC.householdId]);
+    const res = await t.request({ method: 'GET', url: '/me/invitations', auth: repC.auth });
+    expect(res.status).toBe(200);
+    const ids = res.body.map((item: { request: { id: string } }) => item.request.id);
+    expect(ids).toHaveLength(2);
+    expect(ids).toEqual(expect.arrayContaining([mine.id, both.id]));
+  });
+
+  it('keeps invitations and own quotations contract-valid when a legacy row has no parts', async () => {
+    // GH#445: a direct quotation stored without parts used to become unitPriceVnd 0 / completionDate '',
+    // which the strict response rejected and so broke the whole invitations list. The row must either be
+    // skipped (it cannot be shown as this household's offer) or read as nulls; neither may leave the
+    // response unparseable, and no other household may see it.
+    const rfq = await send([repA.householdId]);
+    const em = db.orm.em.fork();
+    em.create(CooperativeQuotation, {
+      request: em.getReference(QuotationRequest, rfq.id),
+      bidType: 'INDIVIDUAL',
+      status: 'SUBMITTED',
+      quantity: 100,
+      parts: [],
+      productionTotalVnd: 0,
+      totalVnd: 0,
+      deliveryTerms: 'SEPARATE',
+      note: 'Legacy row',
+    });
+    await em.flush();
+
+    const invitations = await t.request({ method: 'GET', url: '/me/invitations', auth: repA.auth });
+    expect(invitations.status).toBe(200);
+    const parsed = MyInvitationListSchema.parse(invitations.body);
+    const row = parsed.find((item) => item.request.id === rfq.id);
+    expect(row?.directQuotation ?? null).toBeNull();
+    const other = await t.request({ method: 'GET', url: '/me/invitations', auth: repB.auth });
+    expect(other.status).toBe(200);
+    expect(MyInvitationListSchema.safeParse(other.body).success).toBe(true);
+
+    const own = await t.request({
+      method: 'GET',
+      url: `/rfqs/${rfq.id}/direct-quotations`,
+      auth: repA.auth,
+    });
+    expect(own.status).toBe(200);
+    expect(DirectQuotationResponseSchema.array().parse(own.body)).toEqual([]);
+  });
+
+  it('reads a legacy stored part without a price or date as nulls, keeping the list contract-valid', async () => {
+    // GH#445: the JSON part column is data, so an old or hand-corrected row can lack unitPriceVnd and
+    // completionDate. The read must not invent 0/'' (which the strict response rejects and so breaks the
+    // whole invitations list); it states null, and the total it does hold stays.
+    const rfq = await send([repA.householdId]);
+    const em = db.orm.em.fork();
+    const quotation = em.create(CooperativeQuotation, {
+      request: em.getReference(QuotationRequest, rfq.id),
+      bidType: 'INDIVIDUAL',
+      status: 'SUBMITTED',
+      quantity: 100,
+      parts: [
+        { householdId: repA.householdId, quantity: 100, contributionVersion: 0 },
+      ] as unknown as CooperativeQuotation['parts'],
+      productionTotalVnd: 2_000_000,
+      totalVnd: 2_000_000,
+      deliveryTerms: 'SEPARATE',
+      note: 'Legacy row',
+    });
+    await em.flush();
+
+    const own = await t.request({
+      method: 'GET',
+      url: `/rfqs/${rfq.id}/direct-quotations`,
+      auth: repA.auth,
+    });
+    expect(own.status).toBe(200);
+    const [listed] = DirectQuotationResponseSchema.array().parse(own.body);
+    expect(listed).toMatchObject({
+      id: quotation.id,
+      quantity: 100,
+      unitPriceVnd: null,
+      completionDate: null,
+      totalVnd: 2_000_000,
+    });
+
+    const invitations = await t.request({ method: 'GET', url: '/me/invitations', auth: repA.auth });
+    expect(invitations.status).toBe(200);
+    const parsed = MyInvitationListSchema.parse(invitations.body);
+    expect(parsed.find((item) => item.request.id === rfq.id)?.directQuotation).toMatchObject({
+      id: quotation.id,
+      unitPriceVnd: null,
+      completionDate: null,
+    });
   });
 
   it('shows the buyer every active quotation with household name, unit price and total', async () => {

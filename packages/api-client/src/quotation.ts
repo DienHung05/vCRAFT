@@ -18,8 +18,6 @@ import {
   type CreateRfqRequest,
   CreateRfqRequestSchema,
   DirectQuotationResponseSchema,
-  type ErrorCode,
-  formatVersionTag,
   HouseholdListResponseSchema,
   HouseholdRatingSchema,
   IdSchema,
@@ -31,8 +29,8 @@ import {
   MediaReadUrlResponseSchema,
   MyAllocationListSchema,
   MyInvitationListSchema,
+  OpenCoordinatedRequestListSchema,
   PriceHintResponseSchema,
-  ProblemDetailsSchema,
   QuotationNoticeResponseSchema,
   type RateHouseholdRequest,
   RateHouseholdRequestSchema,
@@ -41,22 +39,20 @@ import {
   RfqListResponseSchema,
   RfqResponseSchema,
 } from '@vcraft/contracts';
-import { fallbackErrorCode } from './http/fallback-error-code';
+import { ApiError, type AuthedClientOptions, createAuthedRequest } from './http/authed-request';
 
-export class QuotationApiError extends Error {
-  constructor(
-    readonly code: ErrorCode,
-    readonly status: number,
-  ) {
-    super(code);
-    this.name = 'QuotationApiError';
-  }
+export class QuotationApiError extends ApiError {
+  override name = 'QuotationApiError';
 }
 
 /**
  * Per-call options of the state-changing RFQ actions. Each call sends an `Idempotency-Key` (BR-L5): a
  * fresh UUID generated when the call starts, or `idempotencyKey` when the caller already holds one for
  * this user action, so that a retry of the same action reuses it and the API runs it once.
+ *
+ * The creation calls (`createContribution`, `createDirectQuotation`, `submitQuotation`) are the ones a
+ * household or coordinator retries after a lost response: pass the retained key from
+ * `useIdempotentAction` (GH#444). Reads and edits carry no key.
  */
 export interface QuotationActionOptions {
   idempotencyKey?: string;
@@ -64,14 +60,11 @@ export interface QuotationActionOptions {
 
 const newIdempotencyKey = () => globalThis.crypto.randomUUID();
 
-export interface QuotationClientOptions {
-  getAccessToken: () => Promise<string | null>;
-  fetch?: (url: string, init: RequestInit) => Promise<Response>;
-}
+export type QuotationClientOptions = AuthedClientOptions;
 
 /** Private business data always travels through the API, with the current session token. */
 export function createQuotationClient(options: QuotationClientOptions) {
-  const fetcher = options.fetch ?? globalThis.fetch;
+  const send = createAuthedRequest(options, QuotationApiError);
   async function request<T>(
     path: string,
     schema: { parse: (data: unknown) => T },
@@ -80,33 +73,12 @@ export function createQuotationClient(options: QuotationClientOptions) {
     version?: number,
     idempotencyKey?: string,
   ): Promise<T> {
-    const token = await options.getAccessToken();
-    if (!token) throw new QuotationApiError('AUTH_UNAUTHENTICATED', 401);
-    const response = await fetcher(`/api/v1${path}`, {
+    return send(path, schema, {
       method,
-      cache: 'no-store',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-        ...(version !== undefined ? { 'If-Match': formatVersionTag(version) } : {}),
-        ...(idempotencyKey !== undefined ? { 'Idempotency-Key': idempotencyKey } : {}),
-      },
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      ...(body !== undefined ? { body } : {}),
+      ...(version !== undefined ? { version } : {}),
+      ...(idempotencyKey !== undefined ? { idempotencyKey } : {}),
     });
-    let data: unknown;
-    try {
-      data = await response.json();
-    } catch {
-      throw new QuotationApiError(fallbackErrorCode(response.status), response.status);
-    }
-    if (!response.ok) {
-      const problem = ProblemDetailsSchema.safeParse(data);
-      throw new QuotationApiError(
-        problem.success ? problem.data.code : fallbackErrorCode(response.status),
-        response.status,
-      );
-    }
-    return schema.parse(data);
   }
 
   return {
@@ -114,8 +86,15 @@ export function createQuotationClient(options: QuotationClientOptions) {
     recordConsent(purpose: ConsentPurposeDto, policyVersion: string) {
       return request('/me/consents', ConsentResponseSchema, 'POST', { purpose, policyVersion });
     },
-    duplicateRequest(id: string) {
-      return request(`/rfqs/${IdSchema.parse(id)}/duplicate`, RfqResponseSchema, 'POST');
+    duplicateRequest(id: string, options: QuotationActionOptions = {}) {
+      return request(
+        `/rfqs/${IdSchema.parse(id)}/duplicate`,
+        RfqResponseSchema,
+        'POST',
+        undefined,
+        undefined,
+        options.idempotencyKey ?? newIdempotencyKey(),
+      );
     },
     coordinate(id: string, version: number) {
       return request(
@@ -187,6 +166,10 @@ export function createQuotationClient(options: QuotationClientOptions) {
     listInvitations() {
       return request('/me/invitations', MyInvitationListSchema);
     },
+    /** BR-05a: redacted summaries of open coordinated requests the household may offer on. */
+    listOpenCoordinatedRequests() {
+      return request('/me/open-coordinated-requests', OpenCoordinatedRequestListSchema);
+    },
     declineInvitation(id: string) {
       return request(`/rfqs/${IdSchema.parse(id)}/decline`, RfqResponseSchema, 'POST');
     },
@@ -241,12 +224,18 @@ export function createQuotationClient(options: QuotationClientOptions) {
         ContributionResponseSchema.array(),
       );
     },
-    createContribution(id: string, input: CreateContributionRequest) {
+    createContribution(
+      id: string,
+      input: CreateContributionRequest,
+      options: QuotationActionOptions = {},
+    ) {
       return request(
         `/rfqs/${IdSchema.parse(id)}/contributions`,
         ContributionResponseSchema,
         'POST',
         CreateContributionRequestSchema.parse(input),
+        undefined,
+        options.idempotencyKey ?? newIdempotencyKey(),
       );
     },
     updateContribution(id: string, version: number, input: CreateContributionRequest) {
@@ -268,12 +257,18 @@ export function createQuotationClient(options: QuotationClientOptions) {
       );
     },
     /** FR-RFQ-04: an invited household quotes the whole request itself (no coordination). */
-    createDirectQuotation(id: string, input: CreateDirectQuotationRequest) {
+    createDirectQuotation(
+      id: string,
+      input: CreateDirectQuotationRequest,
+      options: QuotationActionOptions = {},
+    ) {
       return request(
         `/rfqs/${IdSchema.parse(id)}/direct-quotations`,
         DirectQuotationResponseSchema,
         'POST',
         CreateDirectQuotationRequestSchema.parse(input),
+        undefined,
+        options.idempotencyKey ?? newIdempotencyKey(),
       );
     },
     /** The household's own direct quotations on a request, newest first. */
@@ -301,13 +296,19 @@ export function createQuotationClient(options: QuotationClientOptions) {
         version,
       );
     },
-    submitQuotation(id: string, version: number, input: CreateCooperativeQuotationRequest) {
+    submitQuotation(
+      id: string,
+      version: number,
+      input: CreateCooperativeQuotationRequest,
+      options: QuotationActionOptions = {},
+    ) {
       return request(
         `/rfqs/${IdSchema.parse(id)}/quotations`,
         InternalQuotationResponseSchema,
         'POST',
         CreateCooperativeQuotationRequestSchema.parse(input),
         version,
+        options.idempotencyKey ?? newIdempotencyKey(),
       );
     },
     /** GH#11: buyer chốt chào giá đã chọn; version ở If-Match. */

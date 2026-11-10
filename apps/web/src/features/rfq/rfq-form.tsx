@@ -14,7 +14,9 @@ import { Reveal } from '@/experience/motion/reveal';
 import { useRouter } from '@/i18n/navigation';
 import { useAddressSuggestions } from '@/lib/address/use-address-suggestions';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
+import { useSessionUserId } from '@/lib/auth/use-session-user-id';
 import { notify } from '@/lib/notify';
+import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { AttachmentsField } from './rfq-attachments';
 import {
   clearStoredDraft,
@@ -54,6 +56,7 @@ export function RfqForm({
   prefill,
   upload,
   onBehalf = false,
+  ownerId: providedOwner,
 }: {
   client?: QuotationClient;
   draft?: RfqResponse;
@@ -61,13 +64,25 @@ export function RfqForm({
   /** Sends one attachment; replaced in tests. */
   upload?: (file: File) => Promise<RfqAttachmentValue>;
   onBehalf?: boolean;
+  /** The signed-in person, whose browser-kept draft this form uses; read from the session when omitted. */
+  ownerId?: string | null;
 }) {
   const t = useTranslations('rfq.form');
   const { client, loading } = useQuotationClient(provided);
+  const owner = useSessionUserId(providedOwner);
+  // The owner lookup reads the local session and does not hold up the form: a kept draft is restored once
+  // it is known, and nothing is written to the browser before that.
   if (loading) return <FormSkeleton label={t('saving')} />;
   if (!client) return <p className="px-gutter pt-8">{t(onBehalf ? 'signInAdmin' : 'signIn')}</p>;
   return (
-    <Form client={client} draft={draft} prefill={prefill} upload={upload} onBehalf={onBehalf} />
+    <Form
+      client={client}
+      draft={draft}
+      prefill={prefill}
+      upload={upload}
+      onBehalf={onBehalf}
+      ownerId={owner.userId}
+    />
   );
 }
 
@@ -77,12 +92,15 @@ function Form({
   prefill,
   upload,
   onBehalf,
+  ownerId,
 }: {
   client: QuotationClient;
   draft?: RfqResponse | undefined;
   prefill?: RfqFormPrefill | undefined;
   upload?: ((file: File) => Promise<RfqAttachmentValue>) | undefined;
   onBehalf: boolean;
+  /** Without a known person nothing is kept in the browser. */
+  ownerId: string | null;
 }) {
   const t = useTranslations('rfq.form');
   const categories = useTranslations('catalog.categories');
@@ -113,51 +131,75 @@ function Form({
   const saved = useRef<{ id: string; version: number } | null>(
     draft ? { id: draft.id, version: draft.version } : null,
   );
+  const createRequest = useIdempotentAction();
+  const submitRequest = useIdempotentAction();
+  const savedPayload = useRef<string | null>(
+    draft ? JSON.stringify(rfqFormPayload(rfqFormValues(draft), { onBehalf })) : null,
+  );
   const saving = useRef<Promise<void>>(Promise.resolve());
+  const autosaveTimer = useRef<number | null>(null);
+  // Set while a send is under way (and after it succeeded): autosave must not touch the draft any more.
+  const sent = useRef(false);
 
-  // A new form restores what this browser kept, including the server draft it belongs to.
+  // A new form restores what this browser kept for this person, including the server draft it belongs to.
+  // A draft tied to a server request is shown only once the server confirms it is still this person's draft.
   useEffect(() => {
-    if (draft || prefill || onBehalf) return;
-    const stored = readStoredDraft();
+    if (draft || prefill || onBehalf || !ownerId) return;
+    const stored = readStoredDraft(ownerId);
     if (!stored) return;
-    setValues(stored.values);
-    if (!stored.id) return;
+    if (!stored.id) {
+      setValues(stored.values);
+      return;
+    }
+    let active = true;
+    const forget = () => {
+      clearStoredDraft(ownerId);
+      if (active) setValues(EMPTY_RFQ_FORM);
+    };
     client
       .getRequest(stored.id)
       .then((request) => {
-        if (request.status === 'DRAFT')
-          saved.current = { id: request.id, version: request.version };
-        else {
-          clearStoredDraft();
-          setValues(EMPTY_RFQ_FORM);
-        }
+        if (request.status !== 'DRAFT') return forget();
+        if (!active) return;
+        saved.current = { id: request.id, version: request.version };
+        savedPayload.current = JSON.stringify(rfqFormPayload(rfqFormValues(request), { onBehalf }));
+        setValues(stored.values);
       })
-      .catch(() => clearStoredDraft());
-  }, [client, draft, prefill, onBehalf]);
+      .catch(forget);
+    return () => {
+      active = false;
+    };
+  }, [client, draft, prefill, onBehalf, ownerId]);
 
   const saveToServer = useCallback(
     (current: RfqFormValues) => {
       // Saves run one after another, so each one sends the version the previous one returned.
       saving.current = saving.current.then(async () => {
         const payload = rfqFormPayload(current, { onBehalf });
+        const serialized = JSON.stringify(payload);
+        // An unchanged Send retry must reach submit with the original draft version.
+        if (saved.current && savedPayload.current === serialized) return;
         // The request carries a delivery address: the consent is recorded before the first save.
         if (!saved.current && !onBehalf)
           await client.recordConsent('RFQ_CONTACT', PRIVACY_POLICY_VERSION);
         const response = saved.current
           ? await client.updateRequest(saved.current.id, saved.current.version, payload)
-          : await client.createRequest(payload);
+          : await createRequest(payload, (options) => client.createRequest(payload, options));
         saved.current = { id: response.id, version: response.version };
+        savedPayload.current = serialized;
       });
       return saving.current;
     },
-    [client, onBehalf],
+    [client, onBehalf, createRequest],
   );
 
   useEffect(() => {
     // An administrator's request is sent in one step, so no half-finished draft is left on the server.
     if (!touched || onBehalf) return;
     const timer = window.setTimeout(() => {
-      if (!draft) writeStoredDraft({ id: saved.current?.id ?? null, values });
+      autosaveTimer.current = null;
+      if (sent.current) return;
+      if (!draft && ownerId) writeStoredDraft(ownerId, { id: saved.current?.id ?? null, values });
       // Nothing personal (the delivery address) leaves this browser before the buyer consents.
       if (!consent || Object.keys(rfqFormProblems(values)).length > 0) {
         setSaveState('local');
@@ -166,7 +208,9 @@ function Form({
       setSaveState('saving');
       saveToServer(values)
         .then(() => {
-          if (!draft) writeStoredDraft({ id: saved.current?.id ?? null, values });
+          if (sent.current) return;
+          if (!draft && ownerId)
+            writeStoredDraft(ownerId, { id: saved.current?.id ?? null, values });
           setSaveState('saved');
         })
         .catch(() => {
@@ -175,8 +219,9 @@ function Form({
           setSaveState('failed');
         });
     }, AUTOSAVE_MS);
+    autosaveTimer.current = timer;
     return () => window.clearTimeout(timer);
-  }, [values, touched, consent, draft, saveToServer, onBehalf]);
+  }, [values, touched, consent, draft, saveToServer, onBehalf, ownerId]);
 
   const showHouseholds = onBehalf || !values.coordinate;
   useEffect(() => {
@@ -211,12 +256,23 @@ function Form({
       return;
     }
     setSending(true);
+    sent.current = true;
+    // A pending autosave would race this send with the same version; cancel it and let a running one finish.
+    if (autosaveTimer.current !== null) {
+      window.clearTimeout(autosaveTimer.current);
+      autosaveTimer.current = null;
+    }
     try {
+      await saving.current.catch(() => {
+        saving.current = Promise.resolve();
+      });
       await saveToServer(values);
       const target = saved.current;
       if (!target) throw new Error('draft was not saved');
-      const sent = await client.submitRequest(target.id, target.version);
-      clearStoredDraft();
+      const sent = await submitRequest([target.id, target.version], (options) =>
+        client.submitRequest(target.id, target.version, options),
+      );
+      if (ownerId) clearStoredDraft(ownerId);
       // With no chosen household the system matched some: the buyer is told how many (FR-RFQ-03).
       notify.success(
         onBehalf
@@ -229,6 +285,7 @@ function Form({
       else router.push({ pathname: '/yeu-cau-bao-gia/[code]', params: { code: sent.id } });
     } catch (error) {
       saving.current = Promise.resolve();
+      sent.current = false;
       setSendError(
         error instanceof QuotationApiError && error.code === 'AUTH_EMAIL_NOT_VERIFIED'
           ? 'emailNotVerified'

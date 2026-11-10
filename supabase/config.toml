@@ -54,7 +54,7 @@ max_frequency = "60s"
 otp_expiry = 3600
 
 # FR-AUTH-01/03/06: mẫu thư tiếng Việt mang thương hiệu vCraft. Liên kết trong thư dùng `token_hash`
-# (xem `supabase/templates/*.html`) trỏ tới `/auth/confirm`, `/vi/dat-lai-mat-khau`, `/vi/chap-nhan-loi-moi`.
+# (xem `supabase/templates/*.html`) trỏ tới `/auth/confirm`, `/<locale>/dat-lai-mat-khau`, `/<locale>/chap-nhan-loi-moi` (locale from `.Data.locale`, `vi` when absent).
 [auth.email.template.confirmation]
 subject = "Xác minh email để vào vCraft"
 content_path = "./supabase/templates/confirmation.html"

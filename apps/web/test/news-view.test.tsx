@@ -174,6 +174,21 @@ describe('NewsView', () => {
     expect(screen.queryByRole('link', { name: /Xem thêm tin/ })).toBeNull();
   });
 
+  it('does not cap the pager wrapper to the prose width, so the bar centres like the other lists (GH#390)', () => {
+    renderVi(
+      <NewsView
+        result={{
+          status: 'ok',
+          page: { ...page, nextCursor: null, page: 1, pageSize: 12, total: 30, totalPages: 3 },
+        }}
+      />,
+    );
+    const wrapper = screen.getByRole('navigation', { name: 'Phân trang tin tức' }).parentElement
+      ?.parentElement;
+    expect(wrapper?.className).toContain('mt-12');
+    expect(wrapper?.className).not.toContain('max-w-prose-vn');
+  });
+
   it('shows an empty state when there is no news', () => {
     const result: NewsResult = { status: 'ok', page: { data: [], nextCursor: null } };
     renderVi(<NewsView result={result} />);

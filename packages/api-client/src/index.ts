@@ -1,6 +1,7 @@
 export * from './account';
 export * from './admin';
 export * from './http/authed-request';
+export * from './map';
 export * from './payments';
 export * from './quotation';
 export * from './realtime/live-events';

@@ -1,6 +1,7 @@
 'use client';
 
 import type { AllocationScheduleDto } from '@vcraft/contracts';
+import { liveShares } from '@vcraft/domain';
 import { Badge } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
@@ -21,7 +22,7 @@ export function AllocationTimeline({
   const t = useTranslations('orderProgress');
   const status = useTranslations('order.allocation');
   const format = useFormatter();
-  const effective = shares.filter((share) => share.status !== 'CANCELLED');
+  const effective = liveShares(shares);
   const total = effective.reduce((sum, share) => sum + share.quantity, 0);
   const completed = effective.reduce((sum, share) => sum + share.completedQty, 0);
   const percent = total === 0 ? 0 : Math.min(100, Math.round((completed / total) * 100));

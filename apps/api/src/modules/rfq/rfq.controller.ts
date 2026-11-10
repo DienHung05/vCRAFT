@@ -60,6 +60,7 @@ export class RfqController {
   }
 
   @Post(':id/duplicate')
+  @Idempotent()
   @Roles('BUYER')
   duplicate(@CurrentActor() actor: Actor, @Param('id', new UuidPipe()) id: string) {
     return this.rfqs.duplicateRequest(actor, id);
@@ -303,6 +304,12 @@ export class MyQuotationWorkController {
   @Header('Cache-Control', 'private, no-store')
   invitations(@CurrentActor() actor: Actor) {
     return this.rfqs.listInvitations(actor);
+  }
+
+  @Get('open-coordinated-requests')
+  @Header('Cache-Control', 'private, no-store')
+  openCoordinatedRequests(@CurrentActor() actor: Actor) {
+    return this.rfqs.listOpenCoordinatedRequests(actor);
   }
 
   @Get('allocations')

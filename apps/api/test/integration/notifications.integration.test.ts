@@ -43,6 +43,8 @@ describe('notifications: bell inbox, ownership and email preferences', () => {
       body: { name: `Hộ ${slug}`, slug, history: '' },
     });
     expect(applied.status).toBe(201);
+    // Rejection needs a submitted application; approval completes it by itself.
+    await t.completeApplication(applied.body.id);
     const decided = await t.request({
       method: 'POST',
       url: `/admin/households/${applied.body.id}/${action}`,
@@ -101,7 +103,7 @@ describe('notifications: bell inbox, ownership and email preferences', () => {
       url: '/admin/households?status=APPROVED',
       auth: admin.auth,
     });
-    const household = current.body.find((h: { id: string }) => h.id === approved.householdId);
+    const household = current.body.data.find((h: { id: string }) => h.id === approved.householdId);
     const suspended = await t.request({
       method: 'POST',
       url: `/admin/households/${approved.householdId}/suspend`,

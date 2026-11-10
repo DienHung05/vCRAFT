@@ -9,9 +9,8 @@ import {
   type NewsPageDto,
   NewsPageResponseSchema,
 } from '@vcraft/contracts';
-
+import { fetchPublicJson } from '@/lib/api/fetch-public-json';
 import { apiBaseUrl } from '@/lib/api/internal-url';
-import { logApiFailure } from '@/lib/api/log-api-failure';
 
 export { apiBaseUrl };
 
@@ -28,8 +27,6 @@ export interface FetchNewsOptions {
   limit?: number | undefined;
 }
 
-const TIMEOUT_MS = 4000;
-
 /**
  * Lấy một trang tin công khai từ `GET /news`. API tắt, chậm hoặc trả sai dạng thì trả
  * `unavailable` để trang hiện thông báo thay vì lỗi 500.
@@ -41,24 +38,11 @@ export async function fetchNews(options: FetchNewsOptions = {}): Promise<NewsRes
   if (options.page) query.set('page', String(options.page));
   else if (options.cursor) query.set('cursor', options.cursor);
   const schema = options.page ? NewsPageResponseSchema : NewsListResponseSchema;
-  try {
-    const res = await fetch(`${apiBaseUrl()}/news?${query}`, {
-      headers: { accept: 'application/json' },
-      next: { revalidate: 30 },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-    if (!res.ok) {
-      logApiFailure('/news', { kind: 'http', status: res.status });
-      return { status: 'unavailable' };
-    }
-    const parsed = schema.safeParse(await res.json());
-    if (parsed.success) return { status: 'ok', page: parsed.data };
-    logApiFailure('/news', { kind: 'schema', issues: parsed.error.issues });
-    return { status: 'unavailable' };
-  } catch (error) {
-    logApiFailure('/news', { kind: 'error', error });
-    return { status: 'unavailable' };
-  }
+  const result = await fetchPublicJson(`/news?${query}`, schema, {
+    revalidate: 30,
+    logPath: '/news',
+  });
+  return result.status === 'ok' ? { status: 'ok', page: result.data } : { status: 'unavailable' };
 }
 
 export type NewsArticleResult =
@@ -66,47 +50,24 @@ export type NewsArticleResult =
   | { status: 'not-found' }
   | { status: 'unavailable' };
 
-/** One public item from `GET /news/{slug}`. A 404 may still be a village-only item. */
+/**
+ * One public item from `GET /news/{slug}`. A 404 may still be a village-only item.
+ * Read with `no-store`: a Data Cache entry would outlive the item's retirement, because Next keeps
+ * the old 200 when the API starts answering 404 (GH#395).
+ */
 export async function fetchNewsArticle(slug: string): Promise<NewsArticleResult> {
-  try {
-    const res = await fetch(`${apiBaseUrl()}/news/${encodeURIComponent(slug)}`, {
-      headers: { accept: 'application/json' },
-      next: { revalidate: 30 },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-    if (res.status === 404) return { status: 'not-found' };
-    if (!res.ok) {
-      logApiFailure('/news', { kind: 'http', status: res.status });
-      return { status: 'unavailable' };
-    }
-    const parsed = NewsDetailResponseSchema.safeParse(await res.json());
-    if (parsed.success) return { status: 'ok', article: parsed.data };
-    logApiFailure('/news', { kind: 'schema', issues: parsed.error.issues });
-    return { status: 'unavailable' };
-  } catch (error) {
-    logApiFailure('/news', { kind: 'error', error });
-    return { status: 'unavailable' };
-  }
+  const result = await fetchPublicJson(
+    `/news/${encodeURIComponent(slug)}`,
+    NewsDetailResponseSchema,
+    { logPath: '/news' },
+  );
+  return result.status === 'ok' ? { status: 'ok', article: result.data } : result;
 }
 
 /** Six months of material prices for the news page chart (PLAN E11); `null` when the API is down. */
 export async function fetchMaterialPrices(): Promise<MaterialPriceSeriesDto | null> {
-  try {
-    const res = await fetch(`${apiBaseUrl()}/news/material-prices`, {
-      headers: { accept: 'application/json' },
-      next: { revalidate: 300 },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-    if (!res.ok) {
-      logApiFailure('/news/material-prices', { kind: 'http', status: res.status });
-      return null;
-    }
-    const parsed = MaterialPriceSeriesResponseSchema.safeParse(await res.json());
-    if (parsed.success) return parsed.data;
-    logApiFailure('/news/material-prices', { kind: 'schema', issues: parsed.error.issues });
-    return null;
-  } catch (error) {
-    logApiFailure('/news/material-prices', { kind: 'error', error });
-    return null;
-  }
+  const result = await fetchPublicJson('/news/material-prices', MaterialPriceSeriesResponseSchema, {
+    revalidate: 300,
+  });
+  return result.status === 'ok' ? result.data : null;
 }

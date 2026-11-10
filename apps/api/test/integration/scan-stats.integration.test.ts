@@ -11,8 +11,16 @@ describe('QR scan statistics', () => {
   let other: { auth: string };
   let product: { id: string; traceCode: string };
 
-  const scan = (body?: unknown, code = product.traceCode) =>
-    t.request({ method: 'POST', url: `/trace/${code}/scan`, ...(body !== undefined && { body }) });
+  const KEY = 'test-internal-key';
+  let visitors = 0;
+  // Each call is a new visitor unless one is named, so the dedupe (GH#362) does not hide earlier scans.
+  const scan = (body?: unknown, code = product.traceCode, visitor = `198.51.100.${++visitors}`) =>
+    t.request({
+      method: 'POST',
+      url: `/trace/${code}/scan`,
+      headers: { 'x-internal-key': KEY, 'x-visitor-ip': visitor, 'x-visitor-ua': 'test' },
+      ...(body !== undefined && { body }),
+    });
   const stats = (auth: string | undefined, id = product.id) =>
     t.request({
       method: 'GET',
@@ -21,6 +29,7 @@ describe('QR scan statistics', () => {
     });
 
   beforeAll(async () => {
+    process.env.INTERNAL_API_KEY = KEY;
     db = await startTestDatabase();
     await db.migrate();
     t = await startTestApp(db);
@@ -57,6 +66,7 @@ describe('QR scan statistics', () => {
   }, 120_000);
 
   afterAll(async () => {
+    delete process.env.INTERNAL_API_KEY;
     await t?.close();
     await db?.stop();
   });
@@ -115,6 +125,32 @@ describe('QR scan statistics', () => {
         { deviceType: null, count: 1 },
       ]),
     );
+  });
+
+  it('counts a visitor once per window, a different visitor separately (GH#362)', async () => {
+    const count = () => db.orm.em.fork().count(TraceScan, { product: product.id });
+    const before = await count();
+    expect((await scan({ country: 'VN' }, product.traceCode, '192.0.2.1')).status).toBe(204);
+    expect((await scan({ country: 'VN' }, product.traceCode, '192.0.2.1')).status).toBe(204);
+    expect(await count()).toBe(before + 1);
+    expect((await scan({ country: 'VN' }, product.traceCode, '192.0.2.2')).status).toBe(204);
+    expect(await count()).toBe(before + 2);
+  });
+
+  it('does not trust or dedupe X-Visitor-IP without the shared secret (GH#362)', async () => {
+    const count = () => db.orm.em.fork().count(TraceScan, { product: product.id });
+    const before = await count();
+    const spoof = (ip: string) =>
+      t.request({
+        method: 'POST',
+        url: `/trace/${product.traceCode}/scan`,
+        headers: { 'x-visitor-ip': ip, 'x-internal-key': 'wrong' },
+      });
+    expect((await spoof('192.0.2.50')).status).toBe(204);
+    expect((await spoof('192.0.2.51')).status).toBe(204);
+    // Untrusted forwarded visitors are counted without dedupe (the web without the secret must not
+    // collapse every visitor into its own address); trusted ones dedupe as tested above.
+    expect(await count()).toBe(before + 2);
   });
 
   it("denies another household's product with an audited 403, and anonymous callers", async () => {

@@ -1,4 +1,4 @@
-import { type EntityManager, LockMode } from '@mikro-orm/core';
+import { type EntityManager, LockMode, type MikroORM } from '@mikro-orm/core';
 import { OutboxEvent } from '../entities/outbox-event.entity.js';
 
 /** Sau số lần thử này sự kiện chuyển `FAILED` và chờ người xem (BR-L8). */
@@ -59,4 +59,32 @@ export async function retryOutboxEvent(
       updatedAt: now,
     },
   );
+}
+
+/** `DONE` outbox events are kept 7 days for diagnosis, then deleted; `FAILED` ones are never deleted. */
+export const OUTBOX_DONE_RETENTION_DAYS = 7;
+
+/** Rows deleted per statement, so one purge never holds a long lock on a large backlog. */
+export const OUTBOX_PURGE_BATCH_SIZE = 500;
+
+/** Deletes `DONE` events last touched over 7 days ago, in batches; returns how many went. Run daily by the worker. */
+export async function purgeDoneOutboxEvents(orm: MikroORM, now = new Date()): Promise<number> {
+  const before = new Date(now.getTime() - OUTBOX_DONE_RETENTION_DAYS * 86_400_000);
+  const em = orm.em.fork();
+  let deleted = 0;
+  for (;;) {
+    const rows = await em.find(
+      OutboxEvent,
+      { status: 'DONE', updatedAt: { $lt: before } },
+      { fields: ['id'], limit: OUTBOX_PURGE_BATCH_SIZE },
+    );
+    if (rows.length === 0) return deleted;
+    deleted += await em.nativeDelete(OutboxEvent, { id: { $in: rows.map((row) => row.id) } });
+    em.clear();
+  }
+}
+
+/** How many events gave up after `OUTBOX_MAX_ATTEMPTS` and wait for a person (BR-L8). */
+export async function countFailedOutboxEvents(orm: MikroORM): Promise<number> {
+  return orm.em.fork().count(OutboxEvent, { status: 'FAILED' });
 }

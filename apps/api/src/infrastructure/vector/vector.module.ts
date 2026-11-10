@@ -7,13 +7,12 @@ import {
   SupabaseVectorStore,
   type VectorStore,
 } from '@vcraft/knowledge';
+import { KnowledgeBootstrapService } from './knowledge-bootstrap.service';
 
-/** DI token of the assistant's knowledge index (`VectorStore` port, ADR-13). */
-export const VECTOR_STORE = Symbol('VECTOR_STORE');
-/** DI token of the embedder that turns questions into query vectors (ADR-19). */
-export const EMBEDDER = Symbol('EMBEDDER');
+import { EMBEDDER, VECTOR_STORE } from './vector.tokens';
 
 export type { Embedder, VectorStore };
+export { EMBEDDER, VECTOR_STORE };
 
 /**
  * The `VectorStore` port for the API: `SupabaseVectorStore` (pgvector, secret key, backend only) when
@@ -24,6 +23,7 @@ export type { Embedder, VectorStore };
 @Global()
 @Module({
   providers: [
+    KnowledgeBootstrapService,
     {
       provide: VECTOR_STORE,
       useFactory: (): VectorStore => {

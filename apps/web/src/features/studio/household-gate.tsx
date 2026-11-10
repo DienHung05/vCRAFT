@@ -47,5 +47,14 @@ export function HouseholdGate({
   if (state.kind === 'error' || !client) {
     return <ErrorState className={box} message={t('loadFailed')} onRetry={() => void reload()} />;
   }
-  return children({ household: state.household, client, reload });
+  const content = children({ household: state.household, client, reload });
+  if (!state.refreshError) return content;
+  return (
+    <>
+      <p role="status" className={`${box} pb-0 text-small text-seal`}>
+        {t('refreshFailed')}
+      </p>
+      {content}
+    </>
+  );
 }

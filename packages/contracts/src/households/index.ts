@@ -13,7 +13,15 @@ import {
   VILLAGE_AREA_CODES,
 } from '@vcraft/domain';
 import { z } from 'zod';
-import { IdSchema, IsoDateSchema, IsoDateTimeSchema, SlugSchema, VersionSchema } from '../common';
+import {
+  CursorPageQuerySchema,
+  cursorPageSchema,
+  IdSchema,
+  IsoDateSchema,
+  IsoDateTimeSchema,
+  SlugSchema,
+  VersionSchema,
+} from '../common';
 import { JournalResponseSchema } from '../journal';
 import {
   CertificateKindSchema,
@@ -84,7 +92,8 @@ export const ResubmitHouseholdResponseSchema = z.object({
 });
 export type ResubmitHouseholdDto = z.infer<typeof ResubmitHouseholdResponseSchema>;
 
-export const ListHouseholdsQuerySchema = z.object({
+/** `GET /admin/households`: oldest application first, cursor-paged. */
+export const ListHouseholdsQuerySchema = CursorPageQuerySchema.extend({
   status: HouseholdStatusSchema.optional(),
   /** Ngày nộp hồ sơ, tính cả hai đầu. */
   from: IsoDateSchema.optional(),
@@ -102,7 +111,9 @@ export const AdminHouseholdSchema = z.object({
   submittedAt: IsoDateTimeSchema,
 });
 export type AdminHouseholdDto = z.infer<typeof AdminHouseholdSchema>;
-export const AdminHouseholdListSchema = z.array(AdminHouseholdSchema);
+export const AdminHouseholdPageSchema = cursorPageSchema(AdminHouseholdSchema);
+export type AdminHouseholdPageDto = z.infer<typeof AdminHouseholdPageSchema>;
+export type ListHouseholdsQuery = z.infer<typeof ListHouseholdsQuerySchema>;
 
 /** Giấy tờ xác minh riêng tư; nội dung chỉ đọc qua URL ký 5 phút (FR-MEDIA-04). */
 export const HouseholdDocumentSchema = z.object({
@@ -519,6 +530,10 @@ export const ProductResponseSchema = z.object({
   ),
   status: ProductStatusSchema,
   publishedAt: IsoDateTimeSchema.nullable(),
+  /** Who withdrew the product; null unless it is withdrawn (legacy rows stay null). */
+  withdrawnBy: z.enum(['OWNER', 'BOARD']).nullable().default(null),
+  /** Reason given at withdrawal; null unless the product is withdrawn. */
+  withdrawnReason: z.string().nullable().default(null),
   makers: z.array(MakerCreditSchema),
   /** Người đăng luôn là ban điều hành hộ, không phải người làm. */
   postedBy: z.literal('HOUSEHOLD_ADMINISTRATION'),
@@ -671,6 +686,50 @@ export const MapPinSchema = z.object({
   }),
 });
 export type MapPinDto = z.infer<typeof MapPinSchema>;
+
+/** Most pins one `GET /map/workshops?bbox=` answer carries (FR-MAP-04). */
+export const MAP_PINS_BBOX_LIMIT = 500;
+
+export interface MapBbox {
+  minLng: number;
+  minLat: number;
+  maxLng: number;
+  maxLat: number;
+}
+
+/**
+ * `bbox=minLng,minLat,maxLng,maxLat` in degrees (WGS84): four finite numbers, longitude in -180..180,
+ * latitude in -90..90, and min below max on both axes.
+ */
+export const MapBboxSchema = z.string().transform((value, ctx): MapBbox => {
+  const parts = value.split(',').map((part) => (part.trim() === '' ? Number.NaN : Number(part)));
+  const [minLng, minLat, maxLng, maxLat] = parts;
+  const valid =
+    parts.length === 4 &&
+    parts.every(Number.isFinite) &&
+    minLng !== undefined &&
+    minLat !== undefined &&
+    maxLng !== undefined &&
+    maxLat !== undefined &&
+    Math.abs(minLng) <= 180 &&
+    Math.abs(maxLng) <= 180 &&
+    Math.abs(minLat) <= 90 &&
+    Math.abs(maxLat) <= 90 &&
+    minLng < maxLng &&
+    minLat < maxLat;
+  if (!valid) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'bbox must be minLng,minLat,maxLng,maxLat in degrees with min below max',
+    });
+    return z.NEVER;
+  }
+  return { minLng, minLat, maxLng, maxLat };
+});
+
+/** `GET /map/workshops` query: no `bbox` is the full list (server render, no-WebGL list). */
+export const MapPinsQuerySchema = z.object({ bbox: MapBboxSchema.optional() });
+export type MapPinsQuery = z.infer<typeof MapPinsQuerySchema>;
 
 export const MapPinsResponseSchema = z.object({ data: z.array(MapPinSchema) });
 export type MapPinsDto = z.infer<typeof MapPinsResponseSchema>;

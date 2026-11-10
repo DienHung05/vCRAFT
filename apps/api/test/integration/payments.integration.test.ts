@@ -1,10 +1,17 @@
 import { createHmac } from 'node:crypto';
+import { LockMode } from '@mikro-orm/core';
 import {
   OrderPaymentsResponseSchema,
   type PaymentDto,
   PaymentResponseSchema,
 } from '@vcraft/contracts';
-import { expireDuePayments, Payment } from '@vcraft/database';
+import {
+  expireDuePayments,
+  Payment,
+  QuotationRequest,
+  resolveDbDriver,
+  UnappliedPayment,
+} from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   PAYMENT_HTTP,
@@ -20,9 +27,14 @@ const MOMO = { partner: 'MOMOTEST', access: 'access-key', secret: 'secret-key' }
 
 /** Stands in for MoMo's create endpoint: no request ever leaves the process. */
 const momoRequests: Array<Record<string, unknown>> = [];
+/** Lets a test hold the MoMo call open (`gate`), see it start (`entered`) or make it fail (`fail`). */
+const momoControl: { gate?: Promise<void>; entered?: () => void; fail?: boolean } = {};
 const fakeMomoHttp: PaymentHttp = async (_url, init) => {
   const body = JSON.parse(init.body) as Record<string, unknown>;
   momoRequests.push(body);
+  momoControl.entered?.();
+  await momoControl.gate;
+  if (momoControl.fail) throw new Error('MoMo is down');
   return {
     ok: true,
     status: 200,
@@ -261,6 +273,11 @@ describe('online payment of orders (ADR-0021)', () => {
         balanceAmountVnd: 7_000_000,
         depositRequired: true,
         methods: ['SEPAY_TRANSFER', 'VNPAY', 'MOMO'],
+        methodOptions: [
+          { method: 'SEPAY_TRANSFER', sandbox: false, minAmountVnd: 1, maxAmountVnd: null },
+          { method: 'VNPAY', sandbox: true, minAmountVnd: 5_000, maxAmountVnd: 999_999_999 },
+          { method: 'MOMO', sandbox: true, minAmountVnd: 1_000, maxAmountVnd: 50_000_000 },
+        ],
         simulateAvailable: true,
         payments: [],
       });
@@ -401,6 +418,107 @@ describe('online payment of orders (ADR-0021)', () => {
         mismatch: { expectedAmountVnd: 3_000_000, receivedAmountVnd: 3_000_001 },
       });
       expect(row.providerTxnId).toBeNull();
+    });
+
+    it('keeps every unapplied transfer as its own open record and tells the board, once (GH#417)', async () => {
+      const requestId = await acceptedOrder();
+      const payment = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+      const short = sepayEvent(payment, { transferAmount: payment.amountVnd - 1_000 });
+      const long = sepayEvent(payment, { transferAmount: payment.amountVnd + 5_000 });
+      await sepayWebhook(short);
+      await sepayWebhook(long);
+      // SePay retries: the same transaction is neither recorded nor announced again.
+      await sepayWebhook(short);
+      const rows = await db.orm.em
+        .fork()
+        .find(
+          UnappliedPayment,
+          { referenceCode: payment.referenceCode },
+          { orderBy: { amountVnd: 'asc' } },
+        );
+      expect(
+        rows.map((row) => [row.reason, row.amountVnd, row.expectedAmountVnd, row.status]),
+      ).toEqual([
+        ['AMOUNT_MISMATCH', 2_999_000, 3_000_000, 'OPEN'],
+        ['AMOUNT_MISMATCH', 3_005_000, 3_000_000, 'OPEN'],
+      ]);
+      expect(rows[0]?.providerTxnId).toBe(String(short.id));
+      expect(
+        (await notices(admin.auth)).filter(
+          (n) => n.type === 'PAYMENT_UNAPPLIED' && n.target?.id === requestId,
+        ),
+      ).toHaveLength(2);
+      expect((await notices(buyer.auth)).some((n) => n.type === 'PAYMENT_UNAPPLIED')).toBe(false);
+
+      // The right amount still settles the payment afterwards.
+      await sepayWebhook(sepayEvent(payment));
+      expect((await status(payment)).status).toBe('PAID');
+      // A further transfer for the settled payment is money to give back too.
+      await sepayWebhook(sepayEvent(payment));
+      expect(
+        await db.orm.em.fork().count(UnappliedPayment, {
+          referenceCode: payment.referenceCode,
+          reason: 'ALREADY_PAID',
+        }),
+      ).toBe(1);
+
+      const listed = await t.request({
+        method: 'GET',
+        url: '/admin/payments/unapplied',
+        auth: admin.auth,
+      });
+      expect(listed.status).toBe(200);
+      const mine = (listed.body.data as Array<Record<string, unknown>>).filter(
+        (row) => row.referenceCode === payment.referenceCode,
+      );
+      expect(mine).toHaveLength(3);
+      expect(mine[0]).toMatchObject({ orderId: requestId, paymentId: payment.id, status: 'OPEN' });
+      expect(mine[0]).not.toHaveProperty('raw');
+      expect(
+        (await t.request({ method: 'GET', url: '/admin/payments/unapplied', auth: buyer.auth }))
+          .status,
+      ).toBe(403);
+
+      const target = mine[0] as { id: string; version: number };
+      const missing = await t.request({
+        method: 'POST',
+        url: `/admin/payments/unapplied/${target.id}/resolve`,
+        auth: admin.auth,
+        body: { resolution: 'Returned to the buyer' },
+      });
+      expect(missing.status).toBe(428);
+      const resolved = await t.request({
+        method: 'POST',
+        url: `/admin/payments/unapplied/${target.id}/resolve`,
+        auth: admin.auth,
+        headers: { 'if-match': String(target.version) },
+        body: { resolution: 'Returned to the buyer by transfer' },
+      });
+      expect(resolved.status).toBe(200);
+      expect(resolved.body).toMatchObject({
+        status: 'RESOLVED',
+        resolution: 'Returned to the buyer by transfer',
+      });
+      const twice = await t.request({
+        method: 'POST',
+        url: `/admin/payments/unapplied/${target.id}/resolve`,
+        auth: admin.auth,
+        headers: { 'if-match': String(resolved.body.version) },
+        body: { resolution: 'Again' },
+      });
+      expect(twice.status).toBe(409);
+      const open = await t.request({
+        method: 'GET',
+        url: '/admin/payments/unapplied?status=OPEN',
+        auth: admin.auth,
+      });
+      expect(open.body.data.some((row: { id: string }) => row.id === target.id)).toBe(false);
+      const audit = await t.request({
+        method: 'GET',
+        url: '/admin/audit-log?action=payment.unapplied_resolve',
+        auth: admin.auth,
+      });
+      expect(audit.body.data[0]).toMatchObject({ entityId: target.id });
     });
 
     it('ignores outgoing transfers, other accounts and unknown payment codes', async () => {
@@ -707,9 +825,71 @@ describe('online payment of orders (ADR-0021)', () => {
       });
       expect(cancelled.status).toBe(200);
       expect((await status(payment)).status).toBe('CANCELLED');
-      // Money that still arrives is not applied to the cancelled order.
+      // Money that still arrives is not applied to the cancelled order, but kept for the board (GH#417).
       await sepayWebhook(sepayEvent(payment));
       expect((await status(payment)).status).toBe('CANCELLED');
+      const kept = await db.orm.em
+        .fork()
+        .findOneOrFail(UnappliedPayment, { referenceCode: payment.referenceCode });
+      expect(kept).toMatchObject({ reason: 'PAYMENT_NOT_PENDING', amountVnd: payment.amountVnd });
+      expect(
+        (await notices(admin.auth)).some(
+          (n) => n.type === 'PAYMENT_UNAPPLIED' && n.target?.id === requestId,
+        ),
+      ).toBe(true);
+    });
+
+    it('flags a paid deposit of a cancelled order as owed back and tells the buyer and the board (GH#417)', async () => {
+      const requestId = await acceptedOrder();
+      const payment = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+      await sepayWebhook(sepayEvent(payment));
+      expect((await status(payment)).status).toBe('PAID');
+      const read = await t.request({ method: 'GET', url: `/rfqs/${requestId}`, auth: admin.auth });
+      const cancelled = await t.request({
+        method: 'POST',
+        url: `/rfqs/${requestId}/cancel`,
+        auth: admin.auth,
+        headers: { 'if-match': String(read.body.version) },
+        body: { reason: 'Workshop flooded' },
+      });
+      expect(cancelled.status).toBe(200);
+      const owed = await status(payment);
+      expect(owed.status).toBe('PAID');
+      expect(owed.refundDueAt).not.toBeNull();
+      for (const auth of [buyer.auth, admin.auth]) {
+        expect(
+          (await notices(auth)).some(
+            (n) => n.type === 'PAYMENT_REFUND_DUE' && n.target?.id === requestId,
+          ),
+        ).toBe(true);
+      }
+      const due = await t.request({
+        method: 'GET',
+        url: '/admin/payments?refundDue=true',
+        auth: admin.auth,
+      });
+      expect(due.body.data.map((p: { id: string }) => p.id)).toContain(payment.id);
+      expect(
+        (due.body.data as Array<{ status: string; refundDueAt: string | null }>).every(
+          (p) => p.status === 'PAID' && p.refundDueAt !== null,
+        ),
+      ).toBe(true);
+
+      const refunded = await t.request({
+        method: 'POST',
+        url: `/admin/payments/${payment.id}/refund`,
+        auth: admin.auth,
+        headers: { 'if-match': String(owed.version) },
+        body: { reason: 'Deposit returned by transfer' },
+      });
+      expect(refunded.status).toBe(200);
+      expect(refunded.body).toMatchObject({ status: 'REFUNDED', refundDueAt: null });
+      const after = await t.request({
+        method: 'GET',
+        url: '/admin/payments?refundDue=true',
+        auth: admin.auth,
+      });
+      expect(after.body.data.map((p: { id: string }) => p.id)).not.toContain(payment.id);
     });
 
     it('lists payments newest first with filters and a cursor, for administrators only', async () => {
@@ -928,6 +1108,68 @@ describe('online payment of orders (ADR-0021)', () => {
       );
     });
 
+    it('calls MoMo outside the order lock, so a slow provider does not block the order', async () => {
+      const requestId = await acceptedOrder();
+      let release!: () => void;
+      let entered!: () => void;
+      const calling = new Promise<void>((resolve) => {
+        entered = resolve;
+      });
+      momoControl.gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      momoControl.entered = entered;
+      try {
+        const pending = startPayment(requestId, 'DEPOSIT', 'MOMO');
+        await calling;
+        // The provider call is open now: the order row must be lockable at once (short wait, then it would fail).
+        await db.orm.em.fork().transactional(async (em) => {
+          await em
+            .getConnection()
+            .execute(
+              resolveDbDriver(process.env) === 'mysql'
+                ? 'SET SESSION innodb_lock_wait_timeout = 1'
+                : "SET LOCAL lock_timeout = '1s'",
+              [],
+              'run',
+              em.getTransactionContext(),
+            );
+          const locked = await em.findOne(
+            QuotationRequest,
+            { id: requestId },
+            { lockMode: LockMode.PESSIMISTIC_WRITE },
+          );
+          expect(locked?.id).toBe(requestId);
+        });
+        // A second start of the same payment while the provider is still answering is refused, not duplicated.
+        const second = await startPayment(requestId, 'DEPOSIT', 'MOMO');
+        expect(second.status).toBe(409);
+        release();
+        const created = await pending;
+        expect(created.status).toBe(201);
+        expect(created.body.checkout).toMatchObject({ type: 'REDIRECT' });
+      } finally {
+        release();
+        momoControl.gate = undefined;
+        momoControl.entered = undefined;
+      }
+    });
+
+    it('marks the payment FAILED and answers 503 when MoMo cannot be reached', async () => {
+      const requestId = await acceptedOrder();
+      momoControl.fail = true;
+      try {
+        const failed = await startPayment(requestId, 'DEPOSIT', 'MOMO');
+        expect(failed.status).toBe(503);
+      } finally {
+        momoControl.fail = false;
+      }
+      const stored = await db.orm.em.fork().find(Payment, { order: requestId });
+      expect(stored.map((p) => p.status)).toEqual(['FAILED']);
+      const retry = await startPayment(requestId, 'DEPOSIT', 'MOMO');
+      expect(retry.status).toBe(201);
+    });
+
     it('marks a failed MoMo result failed', async () => {
       const requestId = await acceptedOrder();
       const created = (await startPayment(requestId, 'DEPOSIT', 'MOMO')).body;
@@ -935,6 +1177,113 @@ describe('online payment of orders (ADR-0021)', () => {
         204,
       );
       expect((await status(created)).status).toBe('FAILED');
+    });
+  });
+
+  describe('modes, limits and expiry (ADR-0024)', () => {
+    const restore = (...names: string[]) => {
+      for (const name of names) vi.stubEnv(name, '');
+    };
+
+    it('refuses an amount outside the limits of the method with PAYMENT_AMOUNT_OUT_OF_RANGE', async () => {
+      const requestId = await acceptedOrder();
+      vi.stubEnv('MOMO_MAX_AMOUNT_VND', '2000000');
+      vi.stubEnv('VNPAY_MAX_AMOUNT_VND', '2999999');
+      try {
+        for (const method of ['MOMO', 'VNPAY'] as const) {
+          const res = await startPayment(requestId, 'DEPOSIT', method);
+          expect(res.status).toBe(409);
+          expect(res.body.code).toBe('PAYMENT_AMOUNT_OUT_OF_RANGE');
+        }
+        const summary = await t.request({
+          method: 'GET',
+          url: `/orders/${requestId}/payments`,
+          auth: buyer.auth,
+        });
+        expect(summary.body.methodOptions).toMatchObject([
+          { method: 'SEPAY_TRANSFER', maxAmountVnd: null },
+          { method: 'VNPAY', maxAmountVnd: 2_999_999 },
+          { method: 'MOMO', maxAmountVnd: 2_000_000 },
+        ]);
+        // Bank transfer has no upper limit.
+        expect((await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).status).toBe(201);
+        // No payment row was left behind by the refused starts.
+        const rows = await db.orm.em.fork().find(Payment, { order: requestId });
+        expect(rows.map((p) => p.method)).toEqual(['SEPAY_TRANSFER']);
+      } finally {
+        restore('MOMO_MAX_AMOUNT_VND', 'VNPAY_MAX_AMOUNT_VND');
+      }
+    });
+
+    it('gives a wallet payment the short expiry and a bank transfer the long one', async () => {
+      const requestId = await acceptedOrder();
+      const wallet = (await startPayment(requestId, 'DEPOSIT', 'VNPAY')).body;
+      const em = db.orm.em.fork();
+      const walletRow = await em.findOneOrFail(Payment, { referenceCode: wallet.referenceCode });
+      const walletMs = (walletRow.expiresAt as Date).getTime() - walletRow.createdAt.getTime();
+      expect(Math.abs(walletMs - 30 * 60_000)).toBeLessThan(5_000);
+      // The VNPay URL carries the same expiry.
+      expect(new URL(wallet.checkout.url).searchParams.get('vnp_ExpireDate')).toMatch(/^\d{14}$/);
+
+      vi.stubEnv('PAYMENT_WALLET_EXPIRES_IN_MINUTES', '10');
+      try {
+        const momo = (await startPayment(requestId, 'DEPOSIT', 'MOMO')).body;
+        const row = await em.findOneOrFail(Payment, { referenceCode: momo.referenceCode });
+        const ms = (row.expiresAt as Date).getTime() - row.createdAt.getTime();
+        expect(Math.abs(ms - 10 * 60_000)).toBeLessThan(5_000);
+      } finally {
+        restore('PAYMENT_WALLET_EXPIRES_IN_MINUTES');
+      }
+      const bank = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+      const bankRow = await em.findOneOrFail(Payment, { referenceCode: bank.referenceCode });
+      const bankMs = (bankRow.expiresAt as Date).getTime() - bankRow.createdAt.getTime();
+      expect(Math.abs(bankMs - 24 * 3_600_000)).toBeLessThan(5_000);
+    });
+
+    it('offers VNPay in production mode on the URLs from the environment, flagged as real money', async () => {
+      vi.stubEnv('VNPAY_MODE', 'production');
+      vi.stubEnv('VNPAY_PAY_URL', 'https://pay.vnpay.test/vpcpay.html');
+      vi.stubEnv('VNPAY_API_URL', 'https://api.vnpay.test/transaction');
+      try {
+        const requestId = await acceptedOrder();
+        const summary = await t.request({
+          method: 'GET',
+          url: `/orders/${requestId}/payments`,
+          auth: buyer.auth,
+        });
+        expect(OrderPaymentsResponseSchema.safeParse(summary.body).success).toBe(true);
+        expect(summary.body.methodOptions).toMatchObject([
+          { method: 'SEPAY_TRANSFER', sandbox: false },
+          { method: 'VNPAY', sandbox: false },
+          { method: 'MOMO', sandbox: true },
+        ]);
+        const created = await startPayment(requestId, 'DEPOSIT', 'VNPAY');
+        expect(created.status).toBe(201);
+        expect(new URL(created.body.checkout.url).origin).toBe('https://pay.vnpay.test');
+      } finally {
+        restore('VNPAY_MODE', 'VNPAY_PAY_URL', 'VNPAY_API_URL');
+      }
+    });
+
+    it('never offers a sandbox gateway while APP_ENV=production', async () => {
+      vi.stubEnv('APP_ENV', 'production');
+      try {
+        const requestId = await acceptedOrder();
+        const summary = await t.request({
+          method: 'GET',
+          url: `/orders/${requestId}/payments`,
+          auth: buyer.auth,
+        });
+        expect(summary.body.methods).toEqual(['SEPAY_TRANSFER']);
+        expect(summary.body.simulateAvailable).toBe(false);
+        for (const method of ['VNPAY', 'MOMO'] as const) {
+          const res = await startPayment(requestId, 'DEPOSIT', method);
+          expect(res.status).toBe(409);
+          expect(res.body.code).toBe('PAYMENT_METHOD_UNAVAILABLE');
+        }
+      } finally {
+        vi.stubEnv('APP_ENV', 'development');
+      }
     });
   });
 
@@ -974,6 +1323,44 @@ describe('online payment of orders (ADR-0021)', () => {
         expect((await sepayWebhook({ id: 1 })).status).toBe(401);
         await confirmAllocations(requestId);
         expect((await startProduction(requestId)).status).toBe(200);
+      } finally {
+        vi.stubEnv('SEPAY_WEBHOOK_API_KEY', SEPAY_KEY);
+      }
+    });
+
+    it('owes the whole total as the balance when production started without a deposit (#426)', async () => {
+      vi.stubEnv('SEPAY_WEBHOOK_API_KEY', '');
+      try {
+        const requestId = await acceptedOrder();
+        await confirmAllocations(requestId);
+        expect((await startProduction(requestId)).status).toBe(200);
+        const summary = await t.request({
+          method: 'GET',
+          url: `/orders/${requestId}/payments`,
+          auth: buyer.auth,
+        });
+        expect(summary.body).toMatchObject({
+          depositRequired: false,
+          depositPaidAt: null,
+          balanceAmountVnd: 10_000_000,
+        });
+        // An online balance is priced at the whole total, and so is the offline one that replaces it.
+        const pending = (await startPayment(requestId, 'BALANCE', 'VNPAY')).body;
+        expect(pending.amountVnd).toBe(10_000_000);
+        const recorded = await t.request({
+          method: 'POST',
+          url: `/admin/orders/${requestId}/payments/offline`,
+          auth: admin.auth,
+          body: { note: 'Paid in full at the office' },
+        });
+        expect(recorded.status).toBe(201);
+        expect(recorded.body).toMatchObject({ kind: 'BALANCE', amountVnd: 10_000_000 });
+        const after = await t.request({
+          method: 'GET',
+          url: `/orders/${requestId}/payments`,
+          auth: buyer.auth,
+        });
+        expect(after.body.balancePaidAt).not.toBeNull();
       } finally {
         vi.stubEnv('SEPAY_WEBHOOK_API_KEY', SEPAY_KEY);
       }

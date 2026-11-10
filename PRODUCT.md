@@ -37,7 +37,7 @@ Confirmed capability groups: auth and accounts with Supabase as identity provide
 
 Constraints: three students, about nine weeks. Grading is a live demo plus oral defense with no slide deck, so everything must be visible or pointable in code fast. Map uses MapLibre or an equivalent open library. Stack is settled: Next.js 16 with React 19, NestJS with Fastify adapter, MikroORM on Supabase Postgres 17 with a MySQL 8.4 independence check, BullMQ with Redis, Supabase Storage over S3, Zod 4 contracts shared by frontend and backend.
 
-Out of scope for this version: online payment, shipping integration, native mobile apps, e-invoices. Online payment of orders is planned for Release 2, sandbox only until the village has a merchant contract ([ADR-0021](docs/adr/0021-online-payment-for-orders.md)).
+Out of scope for this version: shipping integration, native mobile apps, e-invoices. Online payment of orders (deposit and balance by bank transfer or VietQR, VNPay, MoMo) is available when the deployment configures it; each method stays off until the village has the matching account or merchant contract ([ADR-0021](docs/adr/0021-online-payment-for-orders.md), [ADR-0024](docs/adr/0024-payment-gateways-in-production.md)).
 
 Undecided: whether any live village pilot follows the defense, and which village and households would join it.
 

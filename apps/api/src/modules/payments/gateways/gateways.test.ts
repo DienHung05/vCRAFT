@@ -1,6 +1,11 @@
 import { createHmac } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { availableMethods, paymentsConfig } from '../payments.config';
+import {
+  availableMethods,
+  methodLimits,
+  paymentsConfig,
+  paymentsConfigIssues,
+} from '../payments.config';
 import { MomoGateway } from './momo.gateway';
 import type { PaymentHttp, PaymentSnapshot } from './payment-gateway';
 import { SepayGateway } from './sepay.gateway';
@@ -50,6 +55,16 @@ beforeEach(() => {
     'MOMO_ACCESS_KEY',
     'MOMO_SECRET_KEY',
     'PAYMENTS_SANDBOX_GATEWAYS',
+    'VNPAY_MODE',
+    'MOMO_MODE',
+    'VNPAY_PAY_URL',
+    'VNPAY_API_URL',
+    'VNPAY_SERVER_IP',
+    'MOMO_ENDPOINT',
+    'MOMO_QUERY_ENDPOINT',
+    'VNPAY_MAX_AMOUNT_VND',
+    'MOMO_MAX_AMOUNT_VND',
+    'PAYMENT_WALLET_EXPIRES_IN_MINUTES',
     'PAYMENTS_DEPOSIT_REQUIRED',
     'PAYMENT_DEPOSIT_PERCENT',
     'PAYMENT_EXPIRES_IN_HOURS',
@@ -67,7 +82,7 @@ describe('payments config', () => {
     expect(config.vnpay).toBeNull();
     expect(config.momo).toBeNull();
     expect(config.depositRequired).toBe(false);
-    expect(config.sandboxGateways).toBe(false);
+    expect(config.walletExpiryMs).toBe(30 * 60_000);
     expect(config.depositPercent).toBe(30);
     expect(config.expiryMs).toBe(24 * 3_600_000);
     expect(availableMethods(config)).toEqual([]);
@@ -82,7 +97,7 @@ describe('payments config', () => {
     expect(paymentsConfig().depositRequired).toBe(false);
   });
 
-  it('hides VNPay and MoMo unless the sandbox flag is on, even with credentials', () => {
+  it('hides VNPay and MoMo unless the legacy sandbox flag is on, even with credentials', () => {
     setEnv({ ...SEPAY_ENV, ...VNPAY_ENV, ...MOMO_ENV });
     expect(availableMethods(paymentsConfig())).toEqual(['SEPAY_TRANSFER']);
     vi.stubEnv('PAYMENTS_SANDBOX_GATEWAYS', 'true');
@@ -106,6 +121,207 @@ describe('payments config', () => {
     expect(paymentsConfig().sandbox).toBe(true);
     vi.stubEnv('APP_ENV', 'production');
     expect(paymentsConfig().sandbox).toBe(false);
+  });
+});
+
+describe('payments config: gateway modes', () => {
+  const sandboxEnv = { APP_URL: 'https://vcraft.example' };
+  const vnpayProduction = {
+    VNPAY_MODE: 'production',
+    ...VNPAY_ENV,
+    VNPAY_PAY_URL: 'https://pay.vnpay.example/vpcpay.html',
+    VNPAY_API_URL: 'https://api.vnpay.example/merchant_webapi/api/transaction',
+  };
+  const momoProduction = {
+    MOMO_MODE: 'production',
+    ...MOMO_ENV,
+    MOMO_ENDPOINT: 'https://payment.momo.example/v2/gateway/api/create',
+  };
+  const withAppUrl = { APP_URL: 'https://vcraft.example' };
+
+  it.each([
+    ['nothing set', {}, null, null],
+    ['legacy flag only (no credentials)', { PAYMENTS_SANDBOX_GATEWAYS: 'true' }, null, null],
+    [
+      'legacy flag with credentials',
+      { PAYMENTS_SANDBOX_GATEWAYS: 'true', ...VNPAY_ENV, ...MOMO_ENV },
+      'sandbox',
+      'sandbox',
+    ],
+    ['credentials without any mode', { ...VNPAY_ENV, ...MOMO_ENV }, null, null],
+    [
+      'explicit sandbox without the legacy flag',
+      { VNPAY_MODE: 'sandbox', MOMO_MODE: 'SANDBOX', ...VNPAY_ENV, ...MOMO_ENV },
+      'sandbox',
+      'sandbox',
+    ],
+    [
+      'explicit off beats the legacy flag',
+      { PAYMENTS_SANDBOX_GATEWAYS: 'true', VNPAY_MODE: 'off', ...VNPAY_ENV, ...MOMO_ENV },
+      null,
+      'sandbox',
+    ],
+    [
+      'an unknown mode is off',
+      { VNPAY_MODE: 'live', MOMO_MODE: 'prod', ...VNPAY_ENV, ...MOMO_ENV },
+      null,
+      null,
+    ],
+  ])('resolves the mode: %s', (_name, env, vnpay, momo) => {
+    const config = paymentsConfig({ ...sandboxEnv, ...env });
+    expect(config.vnpay?.mode ?? null).toBe(vnpay);
+    expect(config.momo?.mode ?? null).toBe(momo);
+  });
+
+  it('reports an unknown mode and a mode that lacks credentials', () => {
+    const issues = paymentsConfigIssues({ VNPAY_MODE: 'live', MOMO_MODE: 'sandbox' });
+    expect(issues.join('\n')).toMatch(/VNPAY_MODE must be off, sandbox or production/);
+    expect(issues.join('\n')).toMatch(/MOMO_PARTNER_CODE/);
+  });
+
+  it('uses the sandbox URLs by default and lets the environment override them', () => {
+    const config = paymentsConfig({
+      ...sandboxEnv,
+      VNPAY_MODE: 'sandbox',
+      MOMO_MODE: 'sandbox',
+      ...VNPAY_ENV,
+      ...MOMO_ENV,
+    });
+    expect(config.vnpay).toMatchObject({
+      payUrl: 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
+      apiUrl: 'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction',
+    });
+    expect(config.momo).toMatchObject({
+      endpoint: 'https://test-payment.momo.vn/v2/gateway/api/create',
+      queryEndpoint: 'https://test-payment.momo.vn/v2/gateway/api/query',
+    });
+    const overridden = paymentsConfig({
+      ...sandboxEnv,
+      MOMO_MODE: 'sandbox',
+      ...MOMO_ENV,
+      MOMO_ENDPOINT: 'http://localhost:9000/create',
+      MOMO_QUERY_ENDPOINT: 'http://localhost:9000/lookup',
+    });
+    expect(overridden.momo).toMatchObject({
+      endpoint: 'http://localhost:9000/create',
+      queryEndpoint: 'http://localhost:9000/lookup',
+    });
+  });
+
+  it('refuses a sandbox gateway while APP_ENV=production, and says so', () => {
+    const env = {
+      APP_ENV: 'production',
+      APP_URL: 'https://vcraft.example',
+      PAYMENTS_SANDBOX_GATEWAYS: 'true',
+      ...VNPAY_ENV,
+      ...MOMO_ENV,
+    };
+    const config = paymentsConfig(env);
+    expect(config.vnpay).toBeNull();
+    expect(config.momo).toBeNull();
+    expect(availableMethods(config)).toEqual([]);
+    expect(paymentsConfigIssues(env).filter((i) => /sandbox mode/.test(i))).toHaveLength(2);
+  });
+
+  it('takes production URLs from the environment only, and needs https', () => {
+    const config = paymentsConfig({ ...withAppUrl, ...vnpayProduction, ...momoProduction });
+    expect(config.vnpay).toMatchObject({
+      mode: 'production',
+      payUrl: 'https://pay.vnpay.example/vpcpay.html',
+      apiUrl: 'https://api.vnpay.example/merchant_webapi/api/transaction',
+    });
+    // The MoMo query endpoint is derived from the create endpoint.
+    expect(config.momo).toMatchObject({
+      mode: 'production',
+      endpoint: 'https://payment.momo.example/v2/gateway/api/create',
+      queryEndpoint: 'https://payment.momo.example/v2/gateway/api/query',
+    });
+    // Missing URLs: never fall back to a sandbox URL.
+    const { VNPAY_API_URL: _api, ...noApi } = vnpayProduction;
+    const { MOMO_ENDPOINT: _endpoint, ...noEndpoint } = momoProduction;
+    const missing = { ...withAppUrl, ...noApi, ...noEndpoint };
+    expect(paymentsConfig(missing).vnpay).toBeNull();
+    expect(paymentsConfig(missing).momo).toBeNull();
+    expect(paymentsConfigIssues(missing).join('\n')).toMatch(/VNPAY_API_URL/);
+    expect(paymentsConfigIssues(missing).join('\n')).toMatch(/MOMO_ENDPOINT/);
+    // Plain http URLs.
+    const insecure = {
+      ...withAppUrl,
+      ...vnpayProduction,
+      VNPAY_PAY_URL: 'http://pay.vnpay.example/vpcpay.html',
+      ...momoProduction,
+      MOMO_ENDPOINT: 'http://payment.momo.example/v2/gateway/api/create',
+    };
+    expect(paymentsConfig(insecure).vnpay).toBeNull();
+    expect(paymentsConfig(insecure).momo).toBeNull();
+    expect(paymentsConfigIssues(insecure).join('\n')).toMatch(/https/);
+  });
+
+  it('needs an https APP_URL for a production gateway', () => {
+    const env = { APP_URL: 'http://vcraft.example', ...vnpayProduction };
+    expect(paymentsConfig(env).vnpay).toBeNull();
+    expect(paymentsConfigIssues(env).join('\n')).toMatch(/APP_URL/);
+    expect(paymentsConfig({ ...vnpayProduction }).vnpay).toBeNull(); // the default localhost URL is not https
+  });
+
+  it('turns MoMo off in production when the query endpoint cannot be derived', () => {
+    const env = {
+      ...withAppUrl,
+      ...momoProduction,
+      MOMO_ENDPOINT: 'https://payment.momo.example/v2/gateway/api/pay',
+    };
+    expect(paymentsConfig(env).momo).toBeNull();
+    expect(paymentsConfigIssues(env).join('\n')).toMatch(/MOMO_QUERY_ENDPOINT/);
+    const explicit = { ...env, MOMO_QUERY_ENDPOINT: 'https://payment.momo.example/lookup' };
+    expect(paymentsConfig(explicit).momo?.queryEndpoint).toBe(
+      'https://payment.momo.example/lookup',
+    );
+  });
+
+  it('reads the wallet expiry and the amount limits, falling back on bad values with an issue', () => {
+    expect(paymentsConfig({}).walletExpiryMs).toBe(30 * 60_000);
+    expect(paymentsConfig({ PAYMENT_WALLET_EXPIRES_IN_MINUTES: '45' }).walletExpiryMs).toBe(
+      45 * 60_000,
+    );
+    const bad = {
+      PAYMENT_WALLET_EXPIRES_IN_MINUTES: '0',
+      VNPAY_MAX_AMOUNT_VND: 'lots',
+      MOMO_MAX_AMOUNT_VND: '12.5',
+    };
+    const config = paymentsConfig(bad);
+    expect(config.walletExpiryMs).toBe(30 * 60_000);
+    expect(methodLimits(config)).toEqual({
+      SEPAY_TRANSFER: { minVnd: 1, maxVnd: null },
+      VNPAY: { minVnd: 5_000, maxVnd: 999_999_999 },
+      MOMO: { minVnd: 1_000, maxVnd: 50_000_000 },
+    });
+    expect(paymentsConfigIssues(bad)).toHaveLength(3);
+    const custom = paymentsConfig({
+      VNPAY_MAX_AMOUNT_VND: '20000000',
+      MOMO_MAX_AMOUNT_VND: '10000000',
+    });
+    expect(methodLimits(custom).VNPAY.maxVnd).toBe(20_000_000);
+    expect(methodLimits(custom).MOMO.maxVnd).toBe(10_000_000);
+  });
+
+  it('never puts a secret value in an issue', () => {
+    const env = {
+      APP_ENV: 'production',
+      APP_URL: 'http://vcraft.example',
+      SEPAY_WEBHOOK_API_KEY: 'sepay-secret-value',
+      VNPAY_MODE: 'production',
+      VNPAY_TMN_CODE: 'tmn-secret-value',
+      VNPAY_HASH_SECRET: 'vnpay-secret-value',
+      MOMO_MODE: 'sandbox',
+      MOMO_PARTNER_CODE: 'momo-partner-value',
+      MOMO_ACCESS_KEY: 'momo-access-value',
+      MOMO_SECRET_KEY: 'momo-secret-value',
+    };
+    const issues = paymentsConfigIssues(env).join('\n');
+    expect(issues.length).toBeGreaterThan(0);
+    for (const value of Object.values(env).filter((v) => /value$/.test(v))) {
+      expect(issues).not.toContain(value);
+    }
   });
 });
 
@@ -220,6 +436,8 @@ describe('SePay gateway', () => {
 });
 
 describe('VNPay gateway', () => {
+  // The legacy flag switches the sandbox mode on for credentials that come without an explicit mode.
+  beforeEach(() => vi.stubEnv('PAYMENTS_SANDBOX_GATEWAYS', 'true'));
   const gateway = new VnpayGateway();
   const signedQuery = (fields: Record<string, string>) => {
     // Independent of the adapter: the documented scheme, sorted `key=value` joined by `&`, HMAC-SHA512.
@@ -322,6 +540,7 @@ describe('VNPay gateway', () => {
 });
 
 describe('MoMo gateway', () => {
+  beforeEach(() => vi.stubEnv('PAYMENTS_SANDBOX_GATEWAYS', 'true'));
   const sign = (data: string) =>
     createHmac('sha256', MOMO_ENV.MOMO_SECRET_KEY).update(data, 'utf8').digest('hex');
   const ipn = (overrides: Record<string, string | number> = {}) => {

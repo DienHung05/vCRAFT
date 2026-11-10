@@ -159,6 +159,8 @@ export function toProductDto(
     })),
     status: p.status,
     publishedAt: p.publishedAt?.toISOString() ?? null,
+    withdrawnBy: p.status === 'WITHDRAWN' ? (p.withdrawnBy ?? null) : null,
+    withdrawnReason: p.status === 'WITHDRAWN' ? (p.withdrawnReason ?? null) : null,
     makers: makers.map(toMakerCreditDto),
     postedBy: POSTED_BY_ADMINISTRATION,
   };

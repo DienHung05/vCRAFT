@@ -7,6 +7,7 @@ import {
 } from '@vcraft/contracts';
 import { type Actor, CurrentActor, Roles } from '../../common/auth/auth.guard';
 import { IfMatchVersion } from '../../common/http/if-match';
+import { Idempotent } from '../../common/idempotency/idempotent.decorator';
 import { UuidPipe } from '../../common/pipes/uuid.pipe';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { JournalService } from './application/journal.service';
@@ -24,6 +25,7 @@ export class ProductionLogsController {
 
   /** Ghi thêm một mốc; có `supersedesEntryId` thì là mốc đính chính. */
   @Post('me/household/products/:id/journal')
+  @Idempotent()
   append(
     @CurrentActor() actor: Actor,
     @Param('id', new UuidPipe()) productId: string,

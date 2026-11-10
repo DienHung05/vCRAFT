@@ -47,6 +47,8 @@ export const ERROR_CATALOG = {
   // --- HOUSEHOLD: duyệt hộ & xuất bản (vCRAFT-9hg.3) ---
   /** Hộ chưa được Ban quản lý chấp nhận hoặc đang tạm ngừng nên không xuất bản / nhận báo giá được. */
   HOUSEHOLD_NOT_APPROVED: { status: 409, title: 'Household is not approved' },
+  /** The application misses a required part (profile, workshop or document); `errors[].path` names each. */
+  APPLICATION_INCOMPLETE: { status: 422, title: 'Application is incomplete' },
   /** Tài khoản đại diện bị khóa: nhật ký bị đóng băng, trang đã xuất bản vẫn còn. */
   HOUSEHOLD_ACCOUNT_LOCKED: { status: 403, title: 'Representative account is locked' },
   /** Ghi công người làm: phải có ít nhất một người, thuộc hộ, mỗi người một lần. */
@@ -74,6 +76,11 @@ export const ERROR_CATALOG = {
   PRODUCT_JOURNAL_REQUIRED: {
     status: 409,
     title: 'Add a production-log milestone before publishing',
+  },
+  /** GH#428: the board withdrew this product, so only the board can republish it. */
+  PRODUCT_WITHDRAWN_BY_BOARD: {
+    status: 409,
+    title: 'The board withdrew this product; only the board can republish it',
   },
 
   // --- RFQ: yêu cầu báo giá, chào giá, phân bổ (SRS §4) ---
@@ -103,8 +110,13 @@ export const ERROR_CATALOG = {
   RFQ_OFFER_QUANTITY_EXCEEDED: { status: 409, title: 'Quantity is above the household offer' },
 
   // --- PAYMENT: online payment of orders (ADR-0021, GH#205) ---
-  /** The method is switched off or not configured in this deployment (VNPay and MoMo are sandbox-only behind a flag). */
+  /** The method is switched off or not configured in this deployment (ADR-0021, ADR-0024). */
   PAYMENT_METHOD_UNAVAILABLE: { status: 409, title: 'Payment method is not available' },
+  /** The payment amount is below the minimum or above the maximum of the chosen method (ADR-0024). */
+  PAYMENT_AMOUNT_OUT_OF_RANGE: {
+    status: 409,
+    title: 'Amount is outside the limits of this payment method',
+  },
   /** The order is not in a state that takes this payment (deposit before production, balance until delivery). */
   PAYMENT_ORDER_NOT_PAYABLE: { status: 409, title: 'Order cannot take this payment now' },
   /** The deposit or the balance of this order is already paid. */

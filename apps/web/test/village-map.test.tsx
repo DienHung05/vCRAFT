@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import type { MapPinDto } from '@vcraft/contracts';
+import type { CraftCategory } from '@vcraft/domain';
 import { describe, expect, it, vi } from 'vitest';
 import {
   craftsOf,
@@ -39,6 +40,10 @@ function pin(id: string, overrides: Partial<MapPinDto> = {}, craft = 'men lam'):
     household: { name: `Hộ ${id}`, slug: `ho-${id}`, craft, craftCategory: null, coverUrl: null },
     ...overrides,
   };
+}
+
+function withCategory(p: MapPinDto, craftCategory: CraftCategory): MapPinDto {
+  return { ...p, household: { ...p.household, craftCategory } };
 }
 
 // Thứ hai 10:00 giờ Việt Nam
@@ -86,8 +91,39 @@ describe('map-model', () => {
     expect(toFeatureCollection([closed], MONDAY).features[0]?.properties.status).toBe('closed');
   });
 
-  it('danh sách nghề không trùng', () => {
-    expect(craftsOf(pins)).toEqual(['men lam', 'men ngọc']);
+  it('lists free-text crafts only for pins without a category, without duplicates', () => {
+    expect(craftsOf(pins)).toEqual([
+      { value: 'men lam', category: null },
+      { value: 'men ngọc', category: null },
+    ]);
+  });
+
+  it('groups by craft category in domain order, with free text of uncategorised pins last', () => {
+    const mixed = [
+      withCategory(pin('1', {}, 'gốm men rạn'), 'VE_GOM'),
+      withCategory(pin('2', {}, 'gốm sứ'), 'GOM_SU'),
+      withCategory(pin('3', {}, 'gốm sứ cao cấp'), 'GOM_SU'),
+      pin('4', {}, 'đồ thủ công'),
+    ];
+    expect(craftsOf(mixed)).toEqual([
+      { value: 'GOM_SU', category: 'GOM_SU' },
+      { value: 'VE_GOM', category: 'VE_GOM' },
+      { value: 'đồ thủ công', category: null },
+    ]);
+  });
+
+  it('filters by category code, and still by an old free-text value', () => {
+    const mixed = [
+      withCategory(pin('1', {}, 'gốm men rạn'), 'GOM_SU'),
+      withCategory(pin('2', {}, 'gốm sứ'), 'GOM_SU'),
+      withCategory(pin('3', {}, 'men ngọc'), 'MEN'),
+      pin('4', {}, 'đồ thủ công'),
+    ];
+    const names = (craft: string) =>
+      filterPins(mixed, { ...NO_FILTER, craft }, MONDAY).map((p) => p.workshopName);
+    expect(names('GOM_SU')).toEqual(['Xưởng 1', 'Xưởng 2']);
+    expect(names('men ngọc')).toEqual(['Xưởng 3']);
+    expect(names('đồ thủ công')).toEqual(['Xưởng 4']);
   });
 
   it('sắp theo khoảng cách và kiểm tra trong khung nhìn', () => {
@@ -125,6 +161,27 @@ describe('VillageMapExplorer', () => {
     const list = screen.getByTestId('workshop-list');
     expect(within(list).getAllByRole('listitem')).toHaveLength(1);
     expect(within(list).getByText('Hộ 3')).toBeTruthy();
+  });
+
+  it('shows translated category labels in the craft filter and filters by them', () => {
+    renderVi(
+      <VillageMapExplorer
+        pins={[
+          withCategory(pin('1', {}, 'gốm men rạn'), 'GOM_SU'),
+          withCategory(pin('2', {}, 'men ngọc'), 'MEN'),
+          pin('3', {}, 'đồ thủ công'),
+        ]}
+      />,
+    );
+    const select = screen.getByRole('combobox');
+    const labels = within(select)
+      .getAllByRole('option')
+      .map((o) => o.textContent);
+    expect(labels).toEqual(['Mọi nghề', 'Gốm sứ', 'Men gốm', 'đồ thủ công']);
+    fireEvent.change(select, { target: { value: 'MEN' } });
+    const list = screen.getByTestId('workshop-list');
+    expect(within(list).getAllByRole('listitem')).toHaveLength(1);
+    expect(within(list).getByText('Hộ 2')).toBeTruthy();
   });
 
   it('lists the experience and the closure reason, and the experience filter narrows the list', () => {

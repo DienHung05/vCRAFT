@@ -5,8 +5,18 @@ import { TabBrush } from '@/experience/motion/tab-brush';
 import { Link, usePathname } from '@/i18n/navigation';
 
 export interface HeaderNavItem {
-  href: '/san-pham' | '/nghe-nhan' | '/ban-do' | '/tin-tuc' | '/yeu-cau-bao-gia' | '/yeu-thich';
+  href:
+    | '/san-pham'
+    | '/nghe-nhan'
+    | '/ban-do'
+    | '/tin-tuc'
+    | '/yeu-cau-bao-gia'
+    | '/studio/bao-gia'
+    | '/admin/dieu-phoi'
+    | '/yeu-thich';
   label: string;
+  /** A count next to the label (open invitations); `label` is the screen-reader text for it. */
+  badge?: { count: number; label: string } | undefined;
 }
 
 /**
@@ -35,7 +45,7 @@ export function HeaderNavLinks({
   return (
     <>
       <ul className={brush ? 'flex items-center gap-1' : undefined}>
-        {items.map(({ href, label }) => {
+        {items.map(({ href, label, badge }) => {
           const active = isNavActive(pathname, href);
           return (
             <li key={href}>
@@ -50,6 +60,17 @@ export function HeaderNavLinks({
                 )}
               >
                 {label}
+                {badge ? (
+                  <>
+                    <span
+                      aria-hidden="true"
+                      className="ml-1.5 inline-block min-w-5 rounded-full bg-clay px-1.5 text-center text-xs font-medium text-paper"
+                    >
+                      {badge.count}
+                    </span>
+                    <span className="sr-only">{badge.label}</span>
+                  </>
+                ) : null}
               </Link>
             </li>
           );
