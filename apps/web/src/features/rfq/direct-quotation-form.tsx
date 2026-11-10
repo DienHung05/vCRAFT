@@ -8,6 +8,7 @@ import { AmountInWords } from '@/components/amount-in-words';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { notify } from '@/lib/notify';
 import { useMoney } from '@/lib/use-money';
+import { endOfDay, endOfDayTime } from './rfq-form-model';
 
 export interface DirectQuotationFormProps {
   rfqCode: string;
@@ -68,7 +69,7 @@ export function DirectQuotationForm({
   const priceValid = Number.isSafeInteger(price) && price >= 1;
   const problems: string[] = [];
   if (!priceValid) problems.push(t('problem.price'));
-  const completion = completionDate === '' ? null : time(`${completionDate}T00:00:00Z`);
+  const completion = endOfDayTime(completionDate);
   if (completion === null) problems.push(t('problem.dateMissing'));
   else if (closing !== null && completion <= closing)
     problems.push(
@@ -98,7 +99,7 @@ export function DirectQuotationForm({
       () =>
         onSubmit({
           unitPriceVnd: price,
-          completionDate: `${completionDate}T00:00:00.000Z`,
+          completionDate: endOfDay(completionDate).toISOString(),
           ...(note.trim() ? { note: note.trim() } : {}),
         }),
       t(editing ? 'updatedToast' : 'sentToast'),

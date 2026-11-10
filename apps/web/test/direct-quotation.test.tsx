@@ -404,7 +404,7 @@ describe('household quotation form (studio)', () => {
         ID,
         {
           unitPriceVnd: 30_000,
-          completionDate: '2100-01-01T00:00:00.000Z',
+          completionDate: '2100-01-01T16:59:59.000Z',
           note: 'Fired twice',
         },
         { idempotencyKey: expect.any(String) },
@@ -473,7 +473,7 @@ describe('household quotation form (studio)', () => {
     await waitFor(() =>
       expect(client.reviseDirectQuotation).toHaveBeenCalledWith(ID, 3, {
         unitPriceVnd: 27_000,
-        completionDate: '2100-01-01T00:00:00.000Z',
+        completionDate: '2100-01-01T16:59:59.000Z',
       }),
     );
     expect(client.createDirectQuotation).not.toHaveBeenCalled();
@@ -581,7 +581,7 @@ describe('household quotation form (studio)', () => {
     await waitFor(() =>
       expect(client.reviseDirectQuotation).toHaveBeenCalledWith(ID, 3, {
         unitPriceVnd: 27_000,
-        completionDate: '2100-01-01T00:00:00.000Z',
+        completionDate: '2100-01-01T16:59:59.000Z',
       }),
     );
     expect(client.createDirectQuotation).not.toHaveBeenCalled();
@@ -635,7 +635,7 @@ describe('coordinated contribution creation (studio)', () => {
     const body = {
       maxQuantity: 100,
       unitPriceVnd: 30_000,
-      completionDate: '2100-01-01T00:00:00.000Z',
+      completionDate: '2100-01-01T16:59:59.000Z',
     };
     expect(createContribution).toHaveBeenNthCalledWith(1, ID, body, {
       idempotencyKey: expect.any(String),
