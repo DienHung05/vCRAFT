@@ -1,4 +1,5 @@
 import type { EntityManager, MikroORM } from '@mikro-orm/core';
+import { AppUser } from '../entities/app-user.entity.js';
 import { Household } from '../entities/household.entity.js';
 import { JournalEntry } from '../entities/journal-entry.entity.js';
 import { MediaAsset } from '../entities/media-asset.entity.js';
@@ -123,7 +124,7 @@ export interface FindOrphansOptions {
 
 /**
  * Assets nothing refers to: no `media_link` row, no `mediaId`/URL/hash in household, product, journal or progress
- * data, not a demo asset, and not touched for {@link MEDIA_ORPHAN_GRACE_DAYS} days. The grace period runs from
+ * data, not a demo asset, not a CERTIFICATE document of an existing owner, and not touched for {@link MEDIA_ORPHAN_GRACE_DAYS} days. The grace period runs from
  * `updatedAt` (stamped on upload and again when the worker marks the file READY), so a file uploaded during a form
  * fill is never swept before the form has had a week to link it. Oldest first, at most `limit`.
  */
@@ -158,8 +159,22 @@ export async function findOrphanMediaAssets(
         )
       ).map((link) => link.media.id),
     );
+    // CERTIFICATE documents never get a media_link: they are found by (ownerId, purpose) for as long as the
+    // owner exists (household approval reads them that way), so they are never orphans while it does (GH#456).
+    // RFQ_ATTACHMENT is always linked via media_link; JOURNAL and PRODUCT are found by id, hash or URL above.
+    const certificateOwners = [
+      ...new Set(page.filter((a) => a.purpose === 'CERTIFICATE').map((a) => a.ownerId)),
+    ];
+    const liveOwners = new Set(
+      certificateOwners.length > 0
+        ? (await em.find(AppUser, { id: { $in: certificateOwners } }, { fields: ['id'] })).map(
+            (user) => user.id,
+          )
+        : [],
+    );
     for (const asset of page) {
       if (orphans.length >= limit) break;
+      if (asset.purpose === 'CERTIFICATE' && liveOwners.has(asset.ownerId)) continue;
       if (skip.has(asset.id) || linked.has(asset.id) || isReferenced(asset, refs)) continue;
       orphans.push(asset);
     }
