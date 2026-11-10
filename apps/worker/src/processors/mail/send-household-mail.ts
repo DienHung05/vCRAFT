@@ -50,6 +50,13 @@ export function buildHouseholdMail({
   return { subject: copy.subject, text: lines.join('\n\n') };
 }
 
+/** The part of `createMailClaim` this processor uses. */
+export interface HouseholdMailClaim {
+  claim(key: string): Promise<boolean>;
+  markSent(key: string): Promise<void>;
+  release(key: string): Promise<void>;
+}
+
 export interface HouseholdMailJob {
   householdId: string;
   decision: HouseholdDecision;
@@ -61,8 +68,16 @@ export interface HouseholdMailJob {
  * đã tắt email cho loại này (FR-NOTI-02) cũng bỏ qua.
  */
 export async function sendHouseholdMail(
-  deps: { orm: MikroORM; transport: MailTransport; from: string; appUrl: string },
+  deps: {
+    orm: MikroORM;
+    transport: MailTransport;
+    from: string;
+    appUrl: string;
+    claim: HouseholdMailClaim;
+  },
   job: HouseholdMailJob,
+  /** Claim key: the BullMQ job id, which the outbox derives from the outbox event id (GH#429). */
+  claimKey: string,
 ): Promise<boolean> {
   const em = deps.orm.em.fork();
   const household = await em.findOne(Household, job.householdId);
@@ -81,6 +96,14 @@ export async function sendHouseholdMail(
     reason: job.reason,
     appUrl: deps.appUrl,
   });
-  await deps.transport.sendMail({ from: deps.from, to: user.email, subject, text });
+  if (!(await deps.claim.claim(claimKey))) return false;
+  try {
+    await deps.transport.sendMail({ from: deps.from, to: user.email, subject, text });
+  } catch (error) {
+    await deps.claim.release(claimKey);
+    throw error;
+  }
+  // The mail is out: a failed marker must not fail the job, that would only invite a resend.
+  await deps.claim.markSent(claimKey).catch(() => undefined);
   return true;
 }

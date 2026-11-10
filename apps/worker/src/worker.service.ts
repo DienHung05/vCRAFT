@@ -10,11 +10,13 @@ import { notifyDueImportantNews } from '@vcraft/database';
 import type { ObjectStorage } from '@vcraft/storage';
 import { type ConnectionOptions, Queue, Worker } from 'bullmq';
 import { createTransport } from 'nodemailer';
+import { logConnectionErrors } from './connection-errors';
 import {
   type AssistantIngestJob,
   ingestSource,
   knowledgeFromEnv,
 } from './processors/assistant/ingest';
+import { createMailClaim } from './processors/mail/claim-mail';
 import { createNoticeClaim } from './processors/mail/claim-notice';
 import { createNoticeLoader } from './processors/mail/load-notice';
 import { type HouseholdMailJob, sendHouseholdMail } from './processors/mail/send-household-mail';
@@ -110,6 +112,11 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
     });
     const knowledge = { orm: this.orm, ...knowledgeFromEnv() };
     const outbox = new Queue(OUTBOX_QUEUE, { connection, defaultJobOptions: OUTBOX_JOB_OPTIONS });
+    // A Redis hiccup must be logged, not crash the process as an unhandled 'error' event (GH#429).
+    logConnectionErrors(
+      [media, mail, qrLabels, scheduler, assistant, newsImport, outbox],
+      this.logger,
+    );
     // Free space first: a full Redis refuses the writes below (issue #153).
     await trimFinishedJobs(
       [media, mail, qrLabels, scheduler, assistant, newsImport, outbox],
@@ -123,6 +130,7 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       from: process.env.MAIL_FROM ?? 'vCraft <no-reply@vcraft.local>',
       appUrl: process.env.APP_URL ?? 'http://localhost:8080',
     };
+    const householdClaim = createMailClaim(this.orm);
 
     const newsImportConfig = newsImportConfigFromEnv();
     const workers = [
@@ -141,8 +149,11 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
                   transport: mailDeps.transport,
                   from: mailDeps.from,
                   appUrl: mailDeps.appUrl,
+                  claim: householdClaim,
                 },
                 job.data as HouseholdMailJob,
+                // The job id comes from the outbox event id (`mail-household-<id>`).
+                String(job.id),
               )
             : sendNoticeMail(mailDeps, (job.data as MailJob).noticeId),
         {
@@ -196,6 +207,7 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
         { connection },
       ),
     ];
+    logConnectionErrors(workers, this.logger);
     for (const worker of workers)
       worker.on('failed', (job, error) => {
         this.logger.warn(`${worker.name} job ${job?.id} failed: ${error.message}`);

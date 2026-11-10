@@ -12,6 +12,7 @@ export * from './household-rating.entity.js';
 export * from './idempotency-key.entity.js';
 export * from './journal-entry.entity.js';
 export * from './login-event.entity.js';
+export * from './mail-claim.entity.js';
 export * from './media-asset.entity.js';
 export * from './media-link.entity.js';
 export * from './news.entity.js';

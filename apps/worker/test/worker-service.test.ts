@@ -3,16 +3,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const state = vi.hoisted(() => ({
   queues: [] as Array<{
     name: string;
+    on: ReturnType<typeof vi.fn>;
     upsertJobScheduler: ReturnType<typeof vi.fn>;
     removeJobScheduler: ReturnType<typeof vi.fn>;
     close: ReturnType<typeof vi.fn>;
   }>,
-  workers: [] as Array<{ name: string; opts: { concurrency?: number } }>,
+  workers: [] as Array<{
+    name: string;
+    on: ReturnType<typeof vi.fn>;
+    opts: { concurrency?: number };
+  }>,
 }));
 
 vi.mock('bullmq', () => ({
   Queue: class {
     name: string;
+    on = vi.fn();
     upsertJobScheduler = vi.fn().mockResolvedValue(undefined);
     removeJobScheduler = vi.fn().mockResolvedValue(true);
     close = vi.fn().mockResolvedValue(undefined);
@@ -78,6 +84,14 @@ describe('WorkerService news import queue', () => {
     expect(queue('news-import').upsertJobScheduler).not.toHaveBeenCalled();
     expect(queue('news-import').removeJobScheduler).toHaveBeenCalledWith(NEWS_JOB);
     expect(queue('scheduler').removeJobScheduler).toHaveBeenCalledWith(NEWS_JOB);
+  });
+
+  it('logs error events of every queue and worker instead of letting them crash the process', async () => {
+    await boot(undefined);
+    expect(state.queues.length).toBeGreaterThan(0);
+    expect(state.workers.length).toBeGreaterThan(0);
+    for (const source of [...state.queues, ...state.workers])
+      expect(source.on.mock.calls.map((call) => call[0])).toContain('error');
   });
 
   it('closes the news import queue and worker on shutdown', async () => {

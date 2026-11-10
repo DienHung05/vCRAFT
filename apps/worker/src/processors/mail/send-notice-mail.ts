@@ -23,6 +23,8 @@ export interface MailDeps {
   claim(noticeId: string): Promise<boolean>;
   /** Clears the claim after a failed send so the retry can send. */
   release(noticeId: string): Promise<void>;
+  /** Marks the mail as sent, so the claim is never taken over after its lease runs out (GH#429). */
+  markSent(noticeId: string): Promise<void>;
   transport: MailTransport;
   from: string;
   appUrl: string;
@@ -45,5 +47,7 @@ export async function sendNoticeMail(deps: MailDeps, noticeId: string): Promise<
     await deps.release(noticeId);
     throw error;
   }
+  // The mail is out: a failed marker must not fail the job, that would only invite a resend.
+  await deps.markSent(noticeId).catch(() => undefined);
   return true;
 }
