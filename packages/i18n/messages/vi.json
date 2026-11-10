@@ -309,6 +309,13 @@
   "trace": {
     "home": "Về trang chủ vCraft",
     "book": "Sổ nghề",
+    "navigation": "Khám phá ngoài sổ nghề",
+    "backToProduct": "Về trang sản phẩm",
+    "browseProducts": "Khám phá sản phẩm",
+    "viewHousehold": "Gặp hộ làm nghề",
+    "contents": "Mục lục sổ nghề",
+    "checkJournal": "Toàn vẹn nhật ký",
+    "readJournal": "Nhật ký sản xuất",
     "notFoundTitle": "Mã này không có trong vCraft",
     "notFoundText": "Không tìm thấy mã {code}. Món đồ này có thể không do làng nghề trên vCraft làm ra, hoặc tem đã bị làm giả. Hãy kiểm lại mã dưới đáy sản phẩm.",
     "scanned": "Bạn vừa quét ấn của",

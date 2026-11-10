@@ -1,7 +1,9 @@
 'use client';
 
 import { cn, durMs, easeCss } from '@vcraft/ui';
+import { useReducedMotion } from 'motion/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import './tab-brush.css';
 
 /** Width of the stroke in its own box; `scaleX` stretches it to the active tab. */
 const BASE = 100;
@@ -10,7 +12,7 @@ const BASE = 100;
  * Brush underline that runs to the active tab (BRAND §6.3 micro-interactions, "tab underline"). Place it
  * next to the tab list, inside the positioned element the tabs measure their offsets from: it finds the
  * `[aria-current="page"]` item there and slides with transform only, within 280 ms so it suits Studio and Admin (§6.4). It appears in place on
- * first paint; under reduced motion the global CSS cuts the slide to an instant jump. Decorative.
+ * first paint; under reduced motion it jumps into place and keeps a fully drawn stroke. Decorative.
  */
 export function TabBrush({
   activeKey,
@@ -21,6 +23,7 @@ export function TabBrush({
   className?: string;
 }) {
   const [box, setBox] = useState<{ x: number; width: number } | null>(null);
+  const reduced = useReducedMotion();
   const placed = useRef(false);
   const self = useRef<SVGSVGElement>(null);
 
@@ -65,10 +68,16 @@ export function TabBrush({
         width: BASE,
         opacity: box ? 1 : 0,
         transform: box ? `translateX(${box.x}px) scaleX(${box.width / BASE})` : undefined,
-        transition: placed.current ? `transform ${durMs.base}ms ${easeCss.clay}` : 'none',
+        transition:
+          placed.current && !reduced ? `transform ${durMs.base}ms ${easeCss.clay}` : 'none',
       }}
     >
       <path
+        key={activeKey}
+        className="tab-brush-stroke"
+        pathLength={1}
+        strokeDasharray={1}
+        strokeDashoffset={0}
         d="M3 5 C 22 2.5, 45 6.5, 66 4 S 92 3.5, 97 5"
         fill="none"
         stroke="currentColor"
