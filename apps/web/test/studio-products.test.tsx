@@ -322,12 +322,31 @@ describe('ProductEditor', () => {
     const section = screen.getByRole('heading', { name: 'Người làm' }).parentElement as HTMLElement;
     fireEvent.click(within(section).getByRole('button', { name: 'Lưu' }));
     await waitFor(() =>
-      expect(api.setMakers).toHaveBeenCalledWith(`${ID}1`, 1, {
+      expect(api.setMakers).toHaveBeenCalledWith(`${ID}1`, 2, {
         makers: [{ artisanId: `${ID}8`, contribution: 'Vuốt dáng' }],
       }),
     );
     expect(screen.getByTestId('qr')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Tải PNG' })).toBeTruthy();
+  });
+
+  it('reloads and says so when the makers were saved against an old product version (GH#420)', async () => {
+    const api = client({
+      setMakers: vi.fn(async () => {
+        throw new ApiError('STALE_VERSION', 409);
+      }) as never,
+    });
+    renderVi(<ProductEditor productId={`${ID}1`} client={api} />);
+    fireEvent.change(await screen.findByLabelText('Phần việc của Bình'), {
+      target: { value: 'Vuốt dáng' },
+    });
+    const section = screen.getByRole('heading', { name: 'Người làm' }).parentElement as HTMLElement;
+    fireEvent.click(within(section).getByRole('button', { name: 'Lưu' }));
+    expect((await within(section).findByRole('alert')).textContent).toMatch(
+      /vừa được sửa ở nơi khác/,
+    );
+    // The editor reloads the product to show the version the next save must name.
+    expect(api.getHousehold).toHaveBeenCalledTimes(2);
   });
 
   it('records the maker consent on the server before adding a person', async () => {
