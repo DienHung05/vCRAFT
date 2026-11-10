@@ -86,10 +86,19 @@ The village administration's bank account receives the money through SePay's ban
 4. **Production gate.** With SePay configured (or `PAYMENTS_DEPOSIT_REQUIRED=true`) an order cannot start production until its deposit is `PAID`. Leave SePay unset and nothing changes for existing orders.
 5. **Wallet callbacks.** IPN URLs are `https://<domain>/api/v1/payments/webhooks/vnpay` (GET) and `.../webhooks/momo` (POST); the browser returns to `.../payments/return/{vnpay,momo}`, which redirects to the web status page (`/vi/thanh-toan/<code>`).
 6. **Missed IPNs.** A payment is never marked paid from the browser return itself, but the API asks the provider directly (VNPay `querydr`, MoMo `query`) when the buyer returns with a valid signature, when the buyer's status page polls a payment older than 30 s, and every `PAYMENTS_PROVIDER_SYNC_EVERY_SECONDS` for payments still pending or expired within the hour. At most one query per payment every 20 s. Each query logs `provider query <PROVIDER> ref <code>: <PAID|FAILED|PENDING|UNKNOWN>`; a settled one adds `reconciled: PAID`. A provider answer that fails its checksum is logged as a warning and ignored. A later IPN with the same transaction id is a duplicate and changes nothing.
-7. **Boot log.** At start the API logs one line, `online payment methods on: SEPAY_TRANSFER, VNPAY(production), MOMO(sandbox)` (or `online payment is off`), and a warning for every problem that keeps a method off: missing credential or production URL, non-`https` URL, sandbox refused under `APP_ENV=production`. Check it after every deploy. Warnings never contain secret values.
+7. **Boot log.** At start the API logs one line, `online payment methods on: SEPAY_TRANSFER, VNPAY(production), MOMO(sandbox)` (or `online payment is off`), and a warning for every problem that keeps a method off: missing credential or production URL, non-`https` URL, sandbox refused under `APP_ENV=production`, a half-filled SePay account. Check it after every deploy. Warnings never contain secret values.
 8. **Simulate transfer.** Where `APP_ENV` is not `production`, an administrator sees "Simulate transfer (sandbox)" on a pending bank-transfer payment; it applies a synthetic SePay event through the same reconciliation. Production sets `APP_ENV=production` in `vcraft-shared`, which removes the button and refuses the endpoint.
 9. **Secrets** (`SEPAY_WEBHOOK_API_KEY`, `VNPAY_HASH_SECRET`, `MOMO_SECRET_KEY`, `MOMO_ACCESS_KEY`) are set in the Render dashboard for `vcraft-api` only. The worker needs none of them. CI and tests use signed fake webhooks and fake provider answers and never call a gateway.
 10. **Refunds are manual.** No gateway refund call exists. Return the money from the provider's merchant portal (or the bank), then use "mark refunded" on the payment in the administration with the reason.
+
+**Go-live checklist.** Do one method at a time, on `APP_ENV=production` with an `https` `APP_URL`.
+
+- **SePay (bank transfer and VietQR).**
+  1. The real village administration account is linked in SePay.
+  2. In SePay's payment-code settings set the prefix `VCP`, so SePay detects our code in the transfer content (`code` in the webhook).
+  3. Create the "Bank account transactions" webhook with the URL above and the API key; set the four `SEPAY_*` variables on `vcraft-api`.
+  4. `APP_ENV=production` (no simulate button). Make one real small deposit end to end (pay, see it `PAID`, notices sent), then refund it by hand.
+- **After every go-live.** The boot log has no warning left for that method; trigger a payment, close the browser tab before returning, and confirm within a few minutes that the log shows the provider query settling it if the IPN did not.
 
 **CA của pooler.** Mặc định `render.yaml` đặt `DB_SSL_CA_FILE=/opt/render/project/src/infra/certs/supabase-root-2021.crt` (Render clone repo vào `/opt/render/project/src`). Nếu muốn dán PEM thay cho file: xóa `DB_SSL_CA_FILE` khỏi nhóm biến `vcraft-shared` trên Render, rồi đặt `DB_SSL_CA` ở cả hai service (chỉ đặt MỘT trong hai, nếu không API từ chối khởi động).
 
