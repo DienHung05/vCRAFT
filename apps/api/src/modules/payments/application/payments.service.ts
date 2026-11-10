@@ -145,7 +145,10 @@ export class PaymentsService {
     const config = paymentsConfig();
     const paidDeposit = payments.find((p) => p.kind === 'DEPOSIT' && p.status === 'PAID');
     const paidBalance = payments.find((p) => p.kind === 'BALANCE' && p.status === 'PAID');
-    const depositFirst = config.depositRequired && request.status === 'ACCEPTED';
+    // An order still waiting for production shows the expected split (deposit, then the rest) before the deposit
+    // is paid, whether or not production is gated on it. Once production has started without a deposit the
+    // balance is the whole total (#426), because that is what a balance payment is priced at.
+    const depositFirst = request.status === 'ACCEPTED';
     const depositPreview = depositFirst
       ? paymentAmountVnd('DEPOSIT', quotation.totalVnd, config.depositPercent)
       : undefined;

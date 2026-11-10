@@ -77,8 +77,9 @@ export interface PaymentEligibilityInput {
 
 /**
  * Whether the order can take a payment of this kind now (undefined means yes). The deposit is paid while the
- * order waits for production (`ACCEPTED`); the balance from then on, until delivery is confirmed, and after a
- * deposit when a deposit is required.
+ * order waits for production (`ACCEPTED`), and, when no deposit is required, also late (`IN_PRODUCTION`,
+ * `DELIVERED`) so the order can still be paid in the usual split. The balance is paid from `ACCEPTED` on, until
+ * delivery is confirmed, and after a deposit when a deposit is required.
  */
 export function paymentEligibility(
   input: PaymentEligibilityInput,
@@ -86,7 +87,10 @@ export function paymentEligibility(
   if (input.kind === 'DEPOSIT') {
     if (input.depositPaid)
       return new DomainError('PAYMENT_ALREADY_PAID', 'The deposit is already paid');
-    return input.requestStatus === 'ACCEPTED'
+    const late =
+      !input.depositRequired &&
+      (input.requestStatus === 'IN_PRODUCTION' || input.requestStatus === 'DELIVERED');
+    return input.requestStatus === 'ACCEPTED' || late
       ? undefined
       : new DomainError(
           'PAYMENT_ORDER_NOT_PAYABLE',
