@@ -49,7 +49,37 @@ describe('WizardHouseholdStep consent', () => {
     account.listConsents.mockResolvedValue({ currentPolicyVersion: POLICY, data: [] });
     const done = vi.fn();
     renderVi(<WizardHouseholdStep onDone={done} />);
-    const box = await screen.findByRole('checkbox', { name: /Chính sách quyền riêng tư/ });
+    await screen.findAllByRole('checkbox', { name: /Chính sách quyền riêng tư/ });
+    const [box, idBox] = screen.getAllByRole('checkbox') as [HTMLElement, HTMLElement];
+    fillName();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu và tiếp tục' }));
+    expect(await screen.findAllByText(/Hãy đồng ý với Chính sách quyền riêng tư/)).toHaveLength(2);
+    expect(account.applyHousehold).not.toHaveBeenCalled();
+    expect(account.recordConsent).not.toHaveBeenCalled();
+
+    fireEvent.click(box);
+    fireEvent.click(idBox);
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu và tiếp tục' }));
+    await waitFor(() => expect(done).toHaveBeenCalled());
+    expect(account.recordConsent).toHaveBeenCalledWith('SIGN_UP', POLICY);
+    expect(account.recordConsent).toHaveBeenCalledWith('ID_DOCUMENT', POLICY);
+    for (const call of account.recordConsent.mock.invocationCallOrder) {
+      expect(call).toBeLessThan(account.applyHousehold.mock.invocationCallOrder[0] ?? 0);
+    }
+  });
+
+  it('needs its own ID-document consent before applying, and records it first (GH#455)', async () => {
+    account.listConsents.mockResolvedValue({
+      currentPolicyVersion: POLICY,
+      data: [
+        { id: 'x', purpose: 'SIGN_UP', policyVersion: POLICY, givenAt: '2026-11-01T00:00:00Z' },
+      ],
+    });
+    const done = vi.fn();
+    renderVi(<WizardHouseholdStep onDone={done} />);
+    const box = await screen.findByRole('checkbox', { name: /số CCCD/ });
+    expect(screen.getAllByRole('checkbox')).toHaveLength(1);
     fillName();
 
     fireEvent.click(screen.getByRole('button', { name: 'Lưu và tiếp tục' }));
@@ -60,7 +90,8 @@ describe('WizardHouseholdStep consent', () => {
     fireEvent.click(box);
     fireEvent.click(screen.getByRole('button', { name: 'Lưu và tiếp tục' }));
     await waitFor(() => expect(done).toHaveBeenCalled());
-    expect(account.recordConsent).toHaveBeenCalledWith('SIGN_UP', POLICY);
+    expect(account.recordConsent).toHaveBeenCalledTimes(1);
+    expect(account.recordConsent).toHaveBeenCalledWith('ID_DOCUMENT', POLICY);
     expect(account.recordConsent.mock.invocationCallOrder[0]).toBeLessThan(
       account.applyHousehold.mock.invocationCallOrder[0] ?? 0,
     );
@@ -71,6 +102,7 @@ describe('WizardHouseholdStep consent', () => {
       currentPolicyVersion: POLICY,
       data: [
         { id: 'x', purpose: 'SIGN_UP', policyVersion: POLICY, givenAt: '2026-11-01T00:00:00Z' },
+        { id: 'y', purpose: 'ID_DOCUMENT', policyVersion: POLICY, givenAt: '2026-11-01T00:00:00Z' },
       ],
     });
     const done = vi.fn();
@@ -89,6 +121,7 @@ describe('WizardHouseholdStep consent', () => {
       currentPolicyVersion: POLICY,
       data: [
         { id: 'x', purpose: 'SIGN_UP', policyVersion: POLICY, givenAt: '2026-11-01T00:00:00Z' },
+        { id: 'y', purpose: 'ID_DOCUMENT', policyVersion: POLICY, givenAt: '2026-11-01T00:00:00Z' },
       ],
     });
     account.applyHousehold.mockRejectedValue(new AccountApiError('CONSENT_REQUIRED', 403));
