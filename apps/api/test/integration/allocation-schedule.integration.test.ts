@@ -336,6 +336,7 @@ describe('Allocation timeline and reallocation', () => {
       unit: 'cốc',
       destination: 'Hà Nội',
       requiredBy: new Date(Date.now() + 20 * DAY),
+      biddingClosesAt: new Date(Date.now() + 10 * DAY),
       invitedHouseholdIds: [],
       status: 'DRAFT',
     });
