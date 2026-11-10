@@ -9,6 +9,23 @@ import {
 export interface NoticeMail {
   subject: string;
   text: string;
+  /** `List-Unsubscribe` pointing at the email choices (GH#420). */
+  headers: Record<string, string>;
+}
+
+/** The account page section where the person turns emails off, per kind (FR-NOTI-02). */
+export function emailPreferencesLink(appUrl: string): string {
+  return `${appUrl.replace(/\/+$/, '')}/vi/tai-khoan#email-preferences`;
+}
+
+/** The last lines of every mail: where to stop these emails. */
+export function unsubscribeFooter(appUrl: string): string {
+  return `Không muốn nhận những thư này nữa? Chọn loại thư bạn nhận tại: ${emailPreferencesLink(appUrl)}`;
+}
+
+/** Mail headers that let mail clients offer "unsubscribe" next to the sender (RFC 2369). */
+export function unsubscribeHeaders(appUrl: string): Record<string, string> {
+  return { 'List-Unsubscribe': `<${emailPreferencesLink(appUrl)}>` };
 }
 
 /** Nội dung từng loại thông báo: tiêu đề thư và một câu mô tả sự kiện. */
@@ -157,6 +174,10 @@ export function buildNoticeMail(input: {
       '',
       ...(target ? [`Xem chi tiết: ${noticeLink(input.appUrl, target)}`, ''] : []),
       'vCraft',
+      '',
+      '--',
+      unsubscribeFooter(input.appUrl),
     ].join('\n'),
+    headers: unsubscribeHeaders(input.appUrl),
   };
 }

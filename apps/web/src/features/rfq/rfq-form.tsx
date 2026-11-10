@@ -14,6 +14,7 @@ import { Reveal } from '@/experience/motion/reveal';
 import { useRouter } from '@/i18n/navigation';
 import { useAddressSuggestions } from '@/lib/address/use-address-suggestions';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
+import { useSessionUserId } from '@/lib/auth/use-session-user-id';
 import { notify } from '@/lib/notify';
 import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { AttachmentsField } from './rfq-attachments';
@@ -55,6 +56,7 @@ export function RfqForm({
   prefill,
   upload,
   onBehalf = false,
+  ownerId: providedOwner,
 }: {
   client?: QuotationClient;
   draft?: RfqResponse;
@@ -62,13 +64,25 @@ export function RfqForm({
   /** Sends one attachment; replaced in tests. */
   upload?: (file: File) => Promise<RfqAttachmentValue>;
   onBehalf?: boolean;
+  /** The signed-in person, whose browser-kept draft this form uses; read from the session when omitted. */
+  ownerId?: string | null;
 }) {
   const t = useTranslations('rfq.form');
   const { client, loading } = useQuotationClient(provided);
+  const owner = useSessionUserId(providedOwner);
+  // The owner lookup reads the local session and does not hold up the form: a kept draft is restored once
+  // it is known, and nothing is written to the browser before that.
   if (loading) return <FormSkeleton label={t('saving')} />;
   if (!client) return <p className="px-gutter pt-8">{t(onBehalf ? 'signInAdmin' : 'signIn')}</p>;
   return (
-    <Form client={client} draft={draft} prefill={prefill} upload={upload} onBehalf={onBehalf} />
+    <Form
+      client={client}
+      draft={draft}
+      prefill={prefill}
+      upload={upload}
+      onBehalf={onBehalf}
+      ownerId={owner.userId}
+    />
   );
 }
 
@@ -78,12 +92,15 @@ function Form({
   prefill,
   upload,
   onBehalf,
+  ownerId,
 }: {
   client: QuotationClient;
   draft?: RfqResponse | undefined;
   prefill?: RfqFormPrefill | undefined;
   upload?: ((file: File) => Promise<RfqAttachmentValue>) | undefined;
   onBehalf: boolean;
+  /** Without a known person nothing is kept in the browser. */
+  ownerId: string | null;
 }) {
   const t = useTranslations('rfq.form');
   const categories = useTranslations('catalog.categories');
@@ -124,28 +141,35 @@ function Form({
   // Set while a send is under way (and after it succeeded): autosave must not touch the draft any more.
   const sent = useRef(false);
 
-  // A new form restores what this browser kept, including the server draft it belongs to.
+  // A new form restores what this browser kept for this person, including the server draft it belongs to.
+  // A draft tied to a server request is shown only once the server confirms it is still this person's draft.
   useEffect(() => {
-    if (draft || prefill || onBehalf) return;
-    const stored = readStoredDraft();
+    if (draft || prefill || onBehalf || !ownerId) return;
+    const stored = readStoredDraft(ownerId);
     if (!stored) return;
-    setValues(stored.values);
-    if (!stored.id) return;
+    if (!stored.id) {
+      setValues(stored.values);
+      return;
+    }
+    let active = true;
+    const forget = () => {
+      clearStoredDraft(ownerId);
+      if (active) setValues(EMPTY_RFQ_FORM);
+    };
     client
       .getRequest(stored.id)
       .then((request) => {
-        if (request.status === 'DRAFT') {
-          saved.current = { id: request.id, version: request.version };
-          savedPayload.current = JSON.stringify(
-            rfqFormPayload(rfqFormValues(request), { onBehalf }),
-          );
-        } else {
-          clearStoredDraft();
-          setValues(EMPTY_RFQ_FORM);
-        }
+        if (request.status !== 'DRAFT') return forget();
+        if (!active) return;
+        saved.current = { id: request.id, version: request.version };
+        savedPayload.current = JSON.stringify(rfqFormPayload(rfqFormValues(request), { onBehalf }));
+        setValues(stored.values);
       })
-      .catch(() => clearStoredDraft());
-  }, [client, draft, prefill, onBehalf]);
+      .catch(forget);
+    return () => {
+      active = false;
+    };
+  }, [client, draft, prefill, onBehalf, ownerId]);
 
   const saveToServer = useCallback(
     (current: RfqFormValues) => {
@@ -175,7 +199,7 @@ function Form({
     const timer = window.setTimeout(() => {
       autosaveTimer.current = null;
       if (sent.current) return;
-      if (!draft) writeStoredDraft({ id: saved.current?.id ?? null, values });
+      if (!draft && ownerId) writeStoredDraft(ownerId, { id: saved.current?.id ?? null, values });
       // Nothing personal (the delivery address) leaves this browser before the buyer consents.
       if (!consent || Object.keys(rfqFormProblems(values)).length > 0) {
         setSaveState('local');
@@ -185,7 +209,8 @@ function Form({
       saveToServer(values)
         .then(() => {
           if (sent.current) return;
-          if (!draft) writeStoredDraft({ id: saved.current?.id ?? null, values });
+          if (!draft && ownerId)
+            writeStoredDraft(ownerId, { id: saved.current?.id ?? null, values });
           setSaveState('saved');
         })
         .catch(() => {
@@ -196,7 +221,7 @@ function Form({
     }, AUTOSAVE_MS);
     autosaveTimer.current = timer;
     return () => window.clearTimeout(timer);
-  }, [values, touched, consent, draft, saveToServer, onBehalf]);
+  }, [values, touched, consent, draft, saveToServer, onBehalf, ownerId]);
 
   const showHouseholds = onBehalf || !values.coordinate;
   useEffect(() => {
@@ -247,7 +272,7 @@ function Form({
       const sent = await submitRequest([target.id, target.version], (options) =>
         client.submitRequest(target.id, target.version, options),
       );
-      clearStoredDraft();
+      if (ownerId) clearStoredDraft(ownerId);
       // With no chosen household the system matched some: the buyer is told how many (FR-RFQ-03).
       notify.success(
         onBehalf

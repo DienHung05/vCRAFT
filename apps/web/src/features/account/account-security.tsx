@@ -6,7 +6,7 @@ import { Badge, Button } from '@vcraft/ui';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { clearRememberPreference } from '@/lib/auth/remember';
+import { clearSignedInBrowserData } from '@/lib/auth/signed-out-cleanup';
 import { browserAccountClient, browserSupabase } from '@/lib/auth/supabase-browser';
 
 const KNOWN_METHODS = ['password', 'oauth', 'otp', 'recovery', 'invite'] as const;
@@ -60,7 +60,7 @@ export function AccountSecurity({
   const signOutEverywhere = async () => {
     setBusy(true);
     await browserSupabase()?.auth.signOut({ scope: 'global' });
-    clearRememberPreference();
+    clearSignedInBrowserData();
     window.location.assign(`/${locale}`);
   };
 
