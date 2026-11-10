@@ -15,7 +15,7 @@ import {
 } from '@vcraft/domain';
 import { Badge, Button, buttonVariants, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { ImageSlot } from '@/components/image-slot';
@@ -27,6 +27,7 @@ import { useMediaWatch } from '@/features/media/use-media-watch';
 import { Link } from '@/i18n/navigation';
 import { browserAccessToken } from '@/lib/api/live-session';
 import { notify } from '@/lib/notify';
+import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { HouseholdGate } from './household-gate';
 import { inputClass } from './workshop-editor';
 
@@ -120,6 +121,10 @@ function EntryForm({
     'idle' | 'photo' | 'saving' | 'photo-missing' | 'photo-failed' | 'failed'
   >('idle');
   const [confirming, setConfirming] = useState<'old-photo' | 'seal' | null>(null);
+  const submitEntry = useIdempotentAction();
+  const uploadedPhoto = useRef<{ file: File; images: ReturnType<typeof journalImageOf>[] } | null>(
+    null,
+  );
   // A published product's journal only grows: a saved milestone can be corrected, never removed.
   const sealed = product.publishedAt !== null;
 
@@ -148,24 +153,33 @@ function EntryForm({
     }
     setStatus('photo');
     try {
-      const getToken = browserAccessToken() ?? (async () => null);
-      const uploaded = await sendMedia(
-        photo,
-        'JOURNAL',
-        getToken,
-        () => {},
-        new AbortController().signal,
-      );
-      const images = [journalImageOf(await waitBriefly(client, uploaded))];
+      if (uploadedPhoto.current?.file !== photo) {
+        const getToken = browserAccessToken() ?? (async () => null);
+        const uploaded = await sendMedia(
+          photo,
+          'JOURNAL',
+          getToken,
+          () => {},
+          new AbortController().signal,
+        );
+        uploadedPhoto.current = {
+          file: photo,
+          images: [journalImageOf(await waitBriefly(client, uploaded))],
+        };
+      }
+      const { images } = uploadedPhoto.current;
       setStatus('saving');
-      const updated = await client.appendJournalEntry(product.id, {
+      const body = {
         stage,
         declaredDate: date,
         note: noteWithTime(note, time),
         images,
         ...(needsReason && skipReason.trim() ? { skipReason: skipReason.trim() } : {}),
         ...(corrects ? { supersedesEntryId: corrects.id } : {}),
-      });
+      };
+      const updated = await submitEntry([product.id, body], (options) =>
+        client.appendJournalEntry(product.id, body, options),
+      );
       notify.success(t(corrects ? 'correctedToast' : 'savedToast'));
       onSaved(updated);
     } catch (error) {

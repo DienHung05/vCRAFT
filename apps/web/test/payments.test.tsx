@@ -95,10 +95,11 @@ describe('buyer payment panel', () => {
     expect(screen.queryByText('MoMo (sandbox)')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục' }));
     await waitFor(() =>
-      expect(createPayment).toHaveBeenCalledWith(ORDER, {
-        kind: 'DEPOSIT',
-        method: 'SEPAY_TRANSFER',
-      }),
+      expect(createPayment).toHaveBeenCalledWith(
+        ORDER,
+        { kind: 'DEPOSIT', method: 'SEPAY_TRANSFER' },
+        { idempotencyKey: expect.any(String) },
+      ),
     );
     // The bank panel: QR, the exact amount and the payment code to type as the transfer content.
     expect(await screen.findByTestId('bank-details')).toBeTruthy();
@@ -120,6 +121,70 @@ describe('buyer payment panel', () => {
     );
     expect(await screen.findByText('VNPay (sandbox)')).toBeTruthy();
     expect(screen.getByText('MoMo (sandbox)')).toBeTruthy();
+  });
+
+  it('reuses the start key after a client failure and rotates it when the method changes', async () => {
+    const orderPayments = vi
+      .fn()
+      .mockResolvedValue({ ...SUMMARY, methods: ['SEPAY_TRANSFER', 'VNPAY', 'MOMO'] });
+    const createPayment = vi.fn().mockRejectedValue(new TypeError('Request timed out'));
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="ACCEPTED"
+        client={asClient({ orderPayments, createPayment })}
+      />,
+    );
+    await screen.findByRole('button', { name: 'Tiếp tục' });
+    const start = () => fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục' }));
+    start();
+    await screen.findByRole('alert');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Tiếp tục' }).hasAttribute('disabled')).toBe(false),
+    );
+    start();
+    await waitFor(() => expect(createPayment).toHaveBeenCalledTimes(2));
+    const first = createPayment.mock.calls[0]?.[2]?.idempotencyKey;
+    expect(first).toEqual(expect.any(String));
+    expect(createPayment.mock.calls[1]?.[2]?.idempotencyKey).toBe(first);
+
+    fireEvent.click(screen.getByLabelText('VNPay (sandbox)'));
+    start();
+    await waitFor(() => expect(createPayment).toHaveBeenCalledTimes(3));
+    expect(createPayment.mock.calls[2]?.[1]).toEqual({ kind: 'DEPOSIT', method: 'VNPAY' });
+    expect(createPayment.mock.calls[2]?.[2]?.idempotencyKey).not.toBe(first);
+  });
+
+  it('gives the payment form a fresh start key after a start succeeds', async () => {
+    const orderPayments = vi.fn().mockResolvedValue(SUMMARY);
+    const createPayment = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Request timed out'))
+      .mockResolvedValue(BANK_PAYMENT);
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="ACCEPTED"
+        client={asClient({ orderPayments, createPayment })}
+      />,
+    );
+    await screen.findByRole('button', { name: 'Tiếp tục' });
+    const start = () => fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục' }));
+    start();
+    await screen.findByRole('alert');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Tiếp tục' }).hasAttribute('disabled')).toBe(false),
+    );
+    start();
+    await waitFor(() => expect(createPayment).toHaveBeenCalledTimes(2));
+    const retried = createPayment.mock.calls[1]?.[2]?.idempotencyKey;
+    expect(createPayment.mock.calls[0]?.[2]?.idempotencyKey).toBe(retried);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Tiếp tục' }).hasAttribute('disabled')).toBe(false),
+    );
+    start();
+    await waitFor(() => expect(createPayment).toHaveBeenCalledTimes(3));
+    expect(createPayment.mock.calls[2]?.[2]?.idempotencyKey).not.toBe(retried);
   });
 });
 
@@ -185,10 +250,11 @@ describe('administration payment panel', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Ghi nhận phần còn lại' }));
     await waitFor(() =>
-      expect(recordOfflinePayment).toHaveBeenCalledWith(ORDER, {
-        kind: 'BALANCE',
-        note: 'Tiền mặt, biên lai 7',
-      }),
+      expect(recordOfflinePayment).toHaveBeenCalledWith(
+        ORDER,
+        { kind: 'BALANCE', note: 'Tiền mặt, biên lai 7' },
+        { idempotencyKey: expect.any(String) },
+      ),
     );
   });
 
@@ -251,5 +317,68 @@ describe('administration payment panel', () => {
     );
     fireEvent.click(await screen.findByRole('button', { name: 'Giả lập chuyển khoản (sandbox)' }));
     await waitFor(() => expect(simulateTransfer).toHaveBeenCalledWith(BANK_PAYMENT.id));
+  });
+
+  it('reuses the offline-payment key after a client failure and rotates it when the note changes', async () => {
+    const orderPayments = vi
+      .fn()
+      .mockResolvedValue({ ...SUMMARY, depositPaidAt: paid.paidAt, payments: [paid] });
+    const recordOfflinePayment = vi.fn().mockRejectedValue(new TypeError('Request timed out'));
+    renderVi(
+      <AdminOrderPayments
+        orderId={ORDER}
+        client={asClient({ orderPayments, recordOfflinePayment })}
+      />,
+    );
+    const input = (await screen.findByLabelText('Cách thanh toán')) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Tiền mặt, biên lai 8' } });
+    const submit = () =>
+      fireEvent.click(screen.getByRole('button', { name: 'Ghi nhận phần còn lại' }));
+    submit();
+    await screen.findByRole('alert');
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Ghi nhận phần còn lại' }).hasAttribute('disabled'),
+      ).toBe(false),
+    );
+    submit();
+    await waitFor(() => expect(recordOfflinePayment).toHaveBeenCalledTimes(2));
+    const first = recordOfflinePayment.mock.calls[0]?.[2]?.idempotencyKey;
+    expect(first).toEqual(expect.any(String));
+    expect(recordOfflinePayment.mock.calls[1]?.[2]?.idempotencyKey).toBe(first);
+
+    fireEvent.change(input, { target: { value: 'Tiền mặt, biên lai 9' } });
+    submit();
+    await waitFor(() => expect(recordOfflinePayment).toHaveBeenCalledTimes(3));
+    expect(recordOfflinePayment.mock.calls[2]?.[1]).toEqual({
+      kind: 'BALANCE',
+      note: 'Tiền mặt, biên lai 9',
+    });
+    expect(recordOfflinePayment.mock.calls[2]?.[2]?.idempotencyKey).not.toBe(first);
+  });
+
+  it('gives the offline payment form a fresh key after it succeeds', async () => {
+    const orderPayments = vi
+      .fn()
+      .mockResolvedValue({ ...SUMMARY, depositPaidAt: paid.paidAt, payments: [paid] });
+    const recordOfflinePayment = vi.fn().mockResolvedValue({});
+    renderVi(
+      <AdminOrderPayments
+        orderId={ORDER}
+        client={asClient({ orderPayments, recordOfflinePayment })}
+      />,
+    );
+    const input = (await screen.findByLabelText('Cách thanh toán')) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Tiền mặt, biên lai 7' } });
+    const submit = () =>
+      fireEvent.click(screen.getByRole('button', { name: 'Ghi nhận phần còn lại' }));
+    submit();
+    await waitFor(() => expect(recordOfflinePayment).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(input.value).toBe(''));
+    fireEvent.change(input, { target: { value: 'Tiền mặt, biên lai 7' } });
+    submit();
+    await waitFor(() => expect(recordOfflinePayment).toHaveBeenCalledTimes(2));
+    const first = recordOfflinePayment.mock.calls[0]?.[2]?.idempotencyKey;
+    expect(recordOfflinePayment.mock.calls[1]?.[2]?.idempotencyKey).not.toBe(first);
   });
 });

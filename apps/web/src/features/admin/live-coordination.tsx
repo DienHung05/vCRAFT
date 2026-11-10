@@ -19,6 +19,7 @@ import { Link } from '@/i18n/navigation';
 import { useLiveEvents } from '@/lib/api/live-events';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { notify } from '@/lib/notify';
+import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { useMoney } from '@/lib/use-money';
 import { AllocationBoard, type BoardSubmitPayload } from './allocation-board';
 
@@ -82,6 +83,14 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
   const [reasonMissing, setReasonMissing] = useState(false);
   // The quotation the administrator is about to accept for an off-platform customer.
   const [accepting, setAccepting] = useState<InternalQuotationDto | null>(null);
+  // GH#444: a plan whose submit lost its response keeps its key and the version it was sent against,
+  // even when polling later shows a newer (possibly our own committed) version. A changed plan starts over.
+  const failedPlanRef = useRef<{ body: string; version: number } | null>(null);
+  // GH#444: each retryable order action has its own action identity, so their keys never mix.
+  const submitPlan = useIdempotentAction();
+  const acceptCustomer = useIdempotentAction();
+  const receiveOrder = useIdempotentAction();
+  const cancelAcceptedOrder = useIdempotentAction();
   // A new offer, claim or allocation notice: reload now rather than at the next 10 s poll (GH#93).
   useLiveEvents((event) => {
     if (event.type === 'activity' && !document.hidden) setRefresh((n) => n + 1);
@@ -214,15 +223,26 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
   const draft = pending && pending.baseVersion !== request.version ? pending : null;
   const activeOffers = contributions.filter((offer) => offer.status === 'ACTIVE');
   const submit = async (payload: BoardSubmitPayload) => {
+    const body = {
+      parts: [...payload.parts],
+      additionalChargeVnd: payload.additionalChargeVnd,
+      deliveryTerms: payload.deliveryTerms,
+    };
+    const serialized = JSON.stringify(body);
+    const failed = failedPlanRef.current;
+    // A retry of the same plan keeps the version it first failed against, even after a poll shows a
+    // newer one (which may be our own committed write); a new plan uses the board's version.
+    const version = failed && failed.body === serialized ? failed.version : payload.requestVersion;
     try {
-      await client.submitQuotation(rfqId, payload.requestVersion, {
-        parts: [...payload.parts],
-        additionalChargeVnd: payload.additionalChargeVnd,
-        deliveryTerms: payload.deliveryTerms,
-      });
+      // The target, version and body make the retained action: a changed plan gets a new key.
+      await submitPlan([rfqId, version, body], (options) =>
+        client.submitQuotation(rfqId, version, body, options),
+      );
+      failedPlanRef.current = null;
       draftRef.current = null;
     } catch (error) {
       if (error instanceof QuotationApiError && error.code === 'STALE_VERSION') {
+        failedPlanRef.current = null;
         // The board remounts on the new request version: hand the typed plan back to it.
         draftRef.current = {
           baseVersion: payload.requestVersion,
@@ -233,6 +253,8 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
         setRefresh((value) => value + 1);
         throw new Error(t('stale'));
       }
+      // A lost response is retryable: keep the plan and the version it was first sent against.
+      failedPlanRef.current = { body: serialized, version };
       if (error instanceof QuotationApiError && error.code === 'RFQ_CAPACITY_EXCEEDED')
         throw new Error(t('capacityExceeded'));
       if (error instanceof QuotationApiError && error.code === 'RFQ_OFFER_QUANTITY_EXCEEDED')
@@ -258,7 +280,9 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
   };
   const receive = async () => {
     try {
-      await client.confirmReceipt(rfqId, request.version);
+      await receiveOrder([rfqId, request.version], (options) =>
+        client.confirmReceipt(rfqId, request.version, options),
+      );
       setRefresh((value) => value + 1);
       notify.success(t('receivedToast'));
     } catch (error) {
@@ -268,7 +292,9 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
   const acceptForCustomer = async (quotation: InternalQuotationDto) => {
     setAccepting(null);
     try {
-      await client.acceptQuotation(rfqId, request.version, { quotationId: quotation.id });
+      await acceptCustomer([rfqId, request.version, quotation.id], (options) =>
+        client.acceptQuotation(rfqId, request.version, { quotationId: quotation.id }, options),
+      );
       setRefresh((value) => value + 1);
       notify.success(t('acceptedToast'));
     } catch (error) {
@@ -288,7 +314,10 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
     }
     closeDialog();
     try {
-      await client.cancelOrder(rfqId, request.version, { reason: text });
+      // The reason is part of the retained action: a corrected reason is a different cancellation.
+      await cancelAcceptedOrder([rfqId, request.version, text], (options) =>
+        client.cancelOrder(rfqId, request.version, { reason: text }, options),
+      );
       setRefresh((value) => value + 1);
       notify.success(t('cancelledToast'));
     } catch (error) {

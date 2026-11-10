@@ -9,6 +9,7 @@ import {
   journalImageOf,
   noteWithTime,
 } from '@/features/studio/journal-editor';
+import { NewProductForm } from '@/features/studio/new-product-form';
 import { ProductEditor, toProductUpdate } from '@/features/studio/product-editor';
 import { EMPTY_PRODUCT, parseNewProduct } from '@/features/studio/product-fields';
 import { ProductList } from '@/features/studio/product-list';
@@ -188,6 +189,29 @@ describe('ProductList', () => {
   });
 });
 
+describe('NewProductForm', () => {
+  it('retains the product submission key on retry and replaces it for changed input', async () => {
+    const create = vi
+      .fn<StudioClient['createProduct']>()
+      .mockRejectedValue(new TypeError('Timeout'));
+    renderVi(<NewProductForm client={client({ createProduct: create })} />);
+    const name = await screen.findByLabelText('Tên sản phẩm');
+    fireEvent.change(name, { target: { value: 'Bình' } });
+    const save = () => fireEvent.click(screen.getByRole('button', { name: 'Tạo sản phẩm' }));
+    save();
+    await screen.findByRole('alert');
+    save();
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(2));
+    const first = create.mock.calls[0]?.[1]?.idempotencyKey;
+    expect(first).toEqual(expect.any(String));
+    expect(create.mock.calls[1]?.[1]?.idempotencyKey).toBe(first);
+    fireEvent.change(name, { target: { value: 'Bình lớn' } });
+    save();
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(3));
+    expect(create.mock.calls[2]?.[1]?.idempotencyKey).not.toBe(first);
+  });
+});
+
 describe('biểu mẫu sản phẩm', () => {
   it('lô phải có cỡ lô; vật đơn chiếc thì không', () => {
     expect(parseNewProduct({ ...EMPTY_PRODUCT, name: 'Bình' }).success).toBe(true);
@@ -206,6 +230,23 @@ describe('biểu mẫu sản phẩm', () => {
 });
 
 describe('ProductEditor', () => {
+  it('reuses the duplicate product key after a timeout', async () => {
+    const duplicate = vi
+      .fn<StudioClient['duplicateProduct']>()
+      .mockRejectedValueOnce(new TypeError('Timeout'))
+      .mockResolvedValue(product(4));
+    renderVi(
+      <ProductEditor productId={`${ID}1`} client={client({ duplicateProduct: duplicate })} />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Nhân bản' }));
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('button', { name: 'Nhân bản' }));
+    await waitFor(() => expect(duplicate).toHaveBeenCalledTimes(2));
+    const first = duplicate.mock.calls[0]?.[1]?.idempotencyKey;
+    expect(first).toEqual(expect.any(String));
+    expect(duplicate.mock.calls[1]?.[1]?.idempotencyKey).toBe(first);
+  });
+
   beforeEach(() => {
     qrDownload.mockClear();
     qrOptions.mockClear();
@@ -382,6 +423,93 @@ describe('ProductEditor', () => {
 });
 
 describe('JournalEditor', () => {
+  it('reuses the journal submission key after a client timeout', async () => {
+    const append = vi
+      .fn<StudioClient['appendJournalEntry']>()
+      .mockRejectedValueOnce(new TypeError('Request timed out'))
+      .mockResolvedValue(JOURNAL);
+    renderVi(
+      <JournalEditor productId={`${ID}1`} client={client({ appendJournalEntry: append })} />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Thêm mốc' }));
+    const form = screen.getByTestId('journal-form');
+    fireEvent.change(within(form).getByLabelText('Ghi chú'), { target: { value: 'Vuốt xong' } });
+    await pickPhoto(form);
+    fireEvent.click(within(form).getByRole('button', { name: 'Lưu mốc' }));
+    await waitFor(() => expect(append).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(within(form).getByRole('button', { name: 'Lưu mốc' }).hasAttribute('disabled')).toBe(
+        false,
+      ),
+    );
+    fireEvent.click(within(form).getByRole('button', { name: 'Lưu mốc' }));
+    await waitFor(() => expect(append).toHaveBeenCalledTimes(2));
+    const first = append.mock.calls[0]?.[2]?.idempotencyKey;
+    expect(first).toEqual(expect.any(String));
+    expect(append.mock.calls[1]?.[2]?.idempotencyKey).toBe(first);
+  });
+
+  it('starts a new journal submission after the note changes or an entry succeeds', async () => {
+    const append = vi
+      .fn<StudioClient['appendJournalEntry']>()
+      .mockRejectedValueOnce(new TypeError('Timeout'))
+      .mockResolvedValue(JOURNAL);
+    renderVi(
+      <JournalEditor productId={`${ID}1`} client={client({ appendJournalEntry: append })} />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Thêm mốc' }));
+    let form = screen.getByTestId('journal-form');
+    fireEvent.change(within(form).getByLabelText('Ghi chú'), { target: { value: 'Vuốt xong' } });
+    await pickPhoto(form);
+    fireEvent.click(within(form).getByRole('button', { name: 'Lưu mốc' }));
+    await waitFor(() => expect(within(form).getByRole('alert')).toBeTruthy());
+    fireEvent.change(within(form).getByLabelText('Ghi chú'), {
+      target: { value: 'Vuốt hoàn tất' },
+    });
+    fireEvent.click(within(form).getByRole('button', { name: 'Lưu mốc' }));
+    await waitFor(() => expect(screen.queryByTestId('journal-form')).toBeNull());
+    expect(append.mock.calls[1]?.[2]?.idempotencyKey).not.toBe(
+      append.mock.calls[0]?.[2]?.idempotencyKey,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Thêm mốc' }));
+    form = screen.getByTestId('journal-form');
+    fireEvent.change(within(form).getByLabelText('Ghi chú'), {
+      target: { value: 'Vuốt hoàn tất' },
+    });
+    await pickPhoto(form);
+    fireEvent.click(within(form).getByRole('button', { name: 'Lưu mốc' }));
+    await waitFor(() => expect(append).toHaveBeenCalledTimes(3));
+    expect(append.mock.calls[2]?.[2]?.idempotencyKey).not.toBe(
+      append.mock.calls[1]?.[2]?.idempotencyKey,
+    );
+  });
+
+  it('keeps the journal payload and key when a photo becomes ready between retries', async () => {
+    const append = vi
+      .fn<StudioClient['appendJournalEntry']>()
+      .mockRejectedValueOnce(new TypeError('Timeout'))
+      .mockResolvedValue(JOURNAL);
+    const api = client({
+      appendJournalEntry: append,
+      getMedia: vi
+        .fn()
+        .mockRejectedValueOnce(new TypeError('Offline'))
+        .mockResolvedValue(READY_PHOTO),
+    });
+    renderVi(<JournalEditor productId={`${ID}1`} client={api} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Thêm mốc' }));
+    const form = screen.getByTestId('journal-form');
+    fireEvent.change(within(form).getByLabelText('Ghi chú'), { target: { value: 'Vuốt xong' } });
+    await pickPhoto(form);
+    media.sendMedia.mockResolvedValue({ ...READY_PHOTO, status: 'PROCESSING', variants: [] });
+    fireEvent.click(within(form).getByRole('button', { name: 'Lưu mốc' }));
+    await waitFor(() => expect(within(form).getByRole('alert')).toBeTruthy());
+    fireEvent.click(within(form).getByRole('button', { name: 'Lưu mốc' }));
+    await waitFor(() => expect(append).toHaveBeenCalledTimes(2));
+    expect(append.mock.calls[0]?.[1].images).toEqual([{ sha256: READY_PHOTO.sha256 }]);
+    expect(append.mock.calls[1]).toEqual(append.mock.calls[0]);
+  });
+
   it('nạp mẫu công đoạn theo danh mục; đề xuất công đoạn kế tiếp', async () => {
     const api = client();
     renderVi(<JournalEditor productId={`${ID}1`} client={api} />);
@@ -399,12 +527,16 @@ describe('JournalEditor', () => {
     await pickPhoto(form);
     fireEvent.click(within(form).getByRole('button', { name: 'Lưu mốc' }));
     await waitFor(() =>
-      expect(api.appendJournalEntry).toHaveBeenCalledWith(`${ID}1`, {
-        stage: 'throw',
-        declaredDate: '2026-09-03',
-        note: '14:30 · Vuốt xong',
-        images: [PHOTO_IMAGE],
-      }),
+      expect(api.appendJournalEntry).toHaveBeenCalledWith(
+        `${ID}1`,
+        {
+          stage: 'throw',
+          declaredDate: '2026-09-03',
+          note: '14:30 · Vuốt xong',
+          images: [PHOTO_IMAGE],
+        },
+        { idempotencyKey: expect.any(String) },
+      ),
     );
   });
 
@@ -442,6 +574,7 @@ describe('JournalEditor', () => {
       expect(api.appendJournalEntry).toHaveBeenCalledWith(
         `${ID}1`,
         expect.objectContaining({ images: [PHOTO_IMAGE] }),
+        { idempotencyKey: expect.any(String) },
       ),
     );
   });
@@ -497,6 +630,7 @@ describe('JournalEditor', () => {
       expect(sealed.appendJournalEntry).toHaveBeenCalledWith(
         `${ID}2`,
         expect.objectContaining({ stage: 'clay', supersedesEntryId: `${ID}5` }),
+        { idempotencyKey: expect.any(String) },
       ),
     );
   });

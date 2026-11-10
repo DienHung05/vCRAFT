@@ -49,6 +49,10 @@ export class QuotationApiError extends ApiError {
  * Per-call options of the state-changing RFQ actions. Each call sends an `Idempotency-Key` (BR-L5): a
  * fresh UUID generated when the call starts, or `idempotencyKey` when the caller already holds one for
  * this user action, so that a retry of the same action reuses it and the API runs it once.
+ *
+ * The creation calls (`createContribution`, `createDirectQuotation`, `submitQuotation`) are the ones a
+ * household or coordinator retries after a lost response: pass the retained key from
+ * `useIdempotentAction` (GH#444). Reads and edits carry no key.
  */
 export interface QuotationActionOptions {
   idempotencyKey?: string;
@@ -220,12 +224,18 @@ export function createQuotationClient(options: QuotationClientOptions) {
         ContributionResponseSchema.array(),
       );
     },
-    createContribution(id: string, input: CreateContributionRequest) {
+    createContribution(
+      id: string,
+      input: CreateContributionRequest,
+      options: QuotationActionOptions = {},
+    ) {
       return request(
         `/rfqs/${IdSchema.parse(id)}/contributions`,
         ContributionResponseSchema,
         'POST',
         CreateContributionRequestSchema.parse(input),
+        undefined,
+        options.idempotencyKey ?? newIdempotencyKey(),
       );
     },
     updateContribution(id: string, version: number, input: CreateContributionRequest) {
@@ -247,12 +257,18 @@ export function createQuotationClient(options: QuotationClientOptions) {
       );
     },
     /** FR-RFQ-04: an invited household quotes the whole request itself (no coordination). */
-    createDirectQuotation(id: string, input: CreateDirectQuotationRequest) {
+    createDirectQuotation(
+      id: string,
+      input: CreateDirectQuotationRequest,
+      options: QuotationActionOptions = {},
+    ) {
       return request(
         `/rfqs/${IdSchema.parse(id)}/direct-quotations`,
         DirectQuotationResponseSchema,
         'POST',
         CreateDirectQuotationRequestSchema.parse(input),
+        undefined,
+        options.idempotencyKey ?? newIdempotencyKey(),
       );
     },
     /** The household's own direct quotations on a request, newest first. */
@@ -280,13 +296,19 @@ export function createQuotationClient(options: QuotationClientOptions) {
         version,
       );
     },
-    submitQuotation(id: string, version: number, input: CreateCooperativeQuotationRequest) {
+    submitQuotation(
+      id: string,
+      version: number,
+      input: CreateCooperativeQuotationRequest,
+      options: QuotationActionOptions = {},
+    ) {
       return request(
         `/rfqs/${IdSchema.parse(id)}/quotations`,
         InternalQuotationResponseSchema,
         'POST',
         CreateCooperativeQuotationRequestSchema.parse(input),
         version,
+        options.idempotencyKey ?? newIdempotencyKey(),
       );
     },
     /** GH#11: buyer chốt chào giá đã chọn; version ở If-Match. */

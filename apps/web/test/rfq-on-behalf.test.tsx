@@ -163,12 +163,15 @@ describe('RfqForm for a customer', () => {
     await screen.findByLabelText('Tên khách hàng');
     fill();
     fireEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }));
-    await waitFor(() => expect(submitRequest).toHaveBeenCalledWith(ID, 1));
+    await waitFor(() =>
+      expect(submitRequest).toHaveBeenCalledWith(ID, 1, { idempotencyKey: expect.any(String) }),
+    );
     expect(createRequest).toHaveBeenCalledWith(
       expect.objectContaining({
         coordinationOptIn: true,
         onBehalfOf: { name: 'Nguyen Van An', phone: '0912 345 678' },
       }),
+      { idempotencyKey: expect.any(String) },
     );
     expect(recordConsent).not.toHaveBeenCalled();
     await waitFor(() =>

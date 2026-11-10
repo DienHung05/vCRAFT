@@ -220,7 +220,9 @@ describe('RfqForm: send versus autosave (GH#431)', () => {
     fill();
     // Send before the 800 ms autosave timer fires.
     fireEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }));
-    await waitFor(() => expect(api.submitRequest).toHaveBeenCalledWith(ID, 1));
+    await waitFor(() =>
+      expect(api.submitRequest).toHaveBeenCalledWith(ID, 1, { idempotencyKey: expect.any(String) }),
+    );
     await waitFor(() => expect(push).toHaveBeenCalled());
     await new Promise((resolve) => setTimeout(resolve, 1_200));
     expect(api.createRequest).toHaveBeenCalledTimes(1);
@@ -230,20 +232,27 @@ describe('RfqForm: send versus autosave (GH#431)', () => {
     expect(window.localStorage.getItem('vcraft.rfq-draft')).toBeNull();
   });
 
-  it('waits for an autosave already in flight, then submits the version it returned', async () => {
+  it('waits for an in-flight autosave, saves later edits, then submits the returned version', async () => {
     const firstSave = deferred<unknown>();
     const api = apiWith({ createRequest: vi.fn().mockReturnValue(firstSave.promise) });
     renderVi(<RfqForm client={api as unknown as QuotationClient} />);
     await screen.findByLabelText('Tiêu đề');
     fill();
     await waitFor(() => expect(api.createRequest).toHaveBeenCalledTimes(1), { timeout: 2_000 });
+    fireEvent.change(screen.getByLabelText('Tiêu đề'), { target: { value: 'Edited cups' } });
     fireEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }));
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(api.submitRequest).not.toHaveBeenCalled();
     await act(async () => firstSave.resolve({ ...draftRow, version: 1 }));
-    await waitFor(() => expect(api.submitRequest).toHaveBeenCalledWith(ID, 2));
+    await waitFor(() =>
+      expect(api.submitRequest).toHaveBeenCalledWith(ID, 2, { idempotencyKey: expect.any(String) }),
+    );
     expect(api.createRequest).toHaveBeenCalledTimes(1);
-    expect(api.updateRequest).toHaveBeenCalledWith(ID, 1, expect.anything());
+    expect(api.updateRequest).toHaveBeenCalledWith(
+      ID,
+      1,
+      expect.objectContaining({ title: 'Edited cups' }),
+    );
     await waitFor(() => expect(push).toHaveBeenCalled());
     expect(window.localStorage.getItem('vcraft.rfq-draft')).toBeNull();
   });

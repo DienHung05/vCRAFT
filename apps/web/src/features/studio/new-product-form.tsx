@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Link, useRouter } from '@/i18n/navigation';
 import { notify } from '@/lib/notify';
+import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { HouseholdGate } from './household-gate';
 import { EMPTY_PRODUCT, ProductFields, parseNewProduct } from './product-fields';
 
@@ -19,6 +20,7 @@ export function NewProductForm({ client: provided }: { client?: StudioClient }) 
   const [draft, setDraft] = useState(EMPTY_PRODUCT);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const createProduct = useIdempotentAction();
   return (
     <HouseholdGate client={provided}>
       {({ client, household }) =>
@@ -48,7 +50,9 @@ export function NewProductForm({ client: provided }: { client?: StudioClient }) 
               setSaving(true);
               setError(null);
               try {
-                const product = await client.createProduct(parsed.data);
+                const product = await createProduct([household.id, parsed.data], (options) =>
+                  client.createProduct(parsed.data, options),
+                );
                 notify.success(t('createdToast'));
                 router.push({ pathname: '/studio/san-pham/[id]', params: { id: product.id } });
               } catch {
