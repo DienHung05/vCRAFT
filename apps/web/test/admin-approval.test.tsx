@@ -294,6 +294,23 @@ describe('HouseholdReview', () => {
     expect(screen.getByRole('button', { name: 'Tạm khóa hộ' })).toBeTruthy();
   });
 
+  it('says what an incomplete application still lacks when approving is refused (GH#459)', async () => {
+    const api = client({
+      decide: vi.fn(async () => {
+        throw new ApiError('APPLICATION_INCOMPLETE', 422, [
+          { path: 'workshops', code: 'required', message: 'add at least one workshop' },
+          { path: 'documents', code: 'required', message: 'upload at least one document' },
+        ]);
+      }),
+    });
+    renderVi(<HouseholdReview householdId={ID} client={api} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Duyệt' }));
+    confirmDialog('Duyệt');
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Hồ sơ còn thiếu nên chưa duyệt được: ít nhất một xưởng, ít nhất một giấy tờ.',
+    );
+  });
+
   it('từ chối và yêu cầu bổ sung phải có lý do', async () => {
     const api = client();
     renderVi(<HouseholdReview householdId={ID} client={api} />);

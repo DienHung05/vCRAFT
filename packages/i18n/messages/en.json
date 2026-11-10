@@ -920,6 +920,12 @@
       "saved": "Decision saved.",
       "stale": "This application just changed. We loaded the latest version; check it and decide again.",
       "failed_action": "We could not save the decision.",
+      "incomplete": "The application cannot be approved yet; it is missing {missing}.",
+      "missingPart": {
+        "profile": "the household profile",
+        "workshops": "at least one workshop",
+        "documents": "at least one document"
+      },
       "actions": {
         "approve": "Approve",
         "reject": "Reject",
@@ -1046,12 +1052,15 @@
           "set_id_number": "Set or changed citizen ID number",
           "certification_verify": "Verified a certification",
           "certification_unverify": "Removed a certification's verification",
-          "resubmit": "Resubmit application"
+          "resubmit": "Resubmit application",
+          "submit": "Submitted the household application"
         },
         "product": {
           "publish": "Published product",
           "withdraw": "Withdrew product",
-          "republish": "Republished product"
+          "republish": "Republished product",
+          "mark_sold": "Marked a product sold",
+          "back_on_sale": "Put a product back on sale"
         },
         "rfq": {
           "create": "Created request for an off-platform customer",
