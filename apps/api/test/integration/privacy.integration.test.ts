@@ -1,23 +1,33 @@
 import { DataExportSchema } from '@vcraft/contracts';
 import {
+  AccountInvitation,
   AppUser,
   Artisan,
   AuditLog,
   ConsentRecord,
   CooperativeQuotation,
   Household,
+  HouseholdRating,
   JournalEntry,
+  LoginEvent,
   MediaAsset,
   News,
   Notification,
   OrderAllocation,
   OutboxEvent,
+  Payment,
+  Product,
+  ProductFavourite,
   QuotationRequest,
   Workshop,
 } from '@vcraft/database';
 import { verifyChain } from '@vcraft/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { REMOVED_ADDRESS } from '../../src/modules/privacy/application/account-deletion.service.js';
+import {
+  ANONYMOUS_RATER_ID,
+  REDACTED_PAYMENT_EVENT,
+  REMOVED_ADDRESS,
+} from '../../src/modules/privacy/application/account-deletion.service.js';
 import { toChainEntry } from '../../src/modules/production-logs/application/journal.queries.js';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
@@ -94,13 +104,6 @@ describe('Personal data: consent, export and deletion', () => {
       body: { name: `Household ${label}`, slug: `household-${label}`, history: `History ${label}` },
     });
     expect(applied.status).toBe(201);
-    const approved = await t.request({
-      method: 'POST',
-      url: `/admin/households/${applied.body.id}/approve`,
-      auth: admin.auth,
-      headers: { 'if-match': `"${applied.body.version}"` },
-    });
-    expect(approved.status).toBe(200);
     const workshop = await t.request({
       method: 'POST',
       url: '/me/household/workshops',
@@ -108,6 +111,13 @@ describe('Personal data: consent, export and deletion', () => {
       body: { name: `Workshop ${label}`, address: `${label} Workshop Lane` },
     });
     expect(workshop.status).toBe(201);
+    const approved = await t.request({
+      method: 'POST',
+      url: `/admin/households/${applied.body.id}/approve`,
+      auth: admin.auth,
+      headers: { 'if-match': `"${applied.body.version}"` },
+    });
+    expect(approved.status).toBe(200);
     const artisan = await t.request({
       method: 'POST',
       url: '/me/household/artisans',
@@ -290,6 +300,75 @@ describe('Personal data: consent, export and deletion', () => {
     });
   });
 
+  /** A delivered order with a payment, a rating, a favourite, a sign-in and an invitation for `buyer`. */
+  async function seedBuyerHistory(
+    buyer: { id: string; email: string },
+    target: { householdId: string; productId: string },
+    tag: string,
+  ) {
+    const em = db.orm.em.fork();
+    const request = em.create(QuotationRequest, {
+      buyer: em.getReference(AppUser, buyer.id),
+      title: `Order ${tag}`,
+      design: 'Design',
+      quantity: 1,
+      unit: 'pc',
+      destination: 'Somewhere',
+      requiredBy: new Date(Date.now() - 2 * DAY),
+      biddingClosesAt: new Date(Date.now() - 10 * DAY),
+      status: 'DELIVERED',
+    } as never);
+    await em.flush();
+    const payment = em.create(Payment, {
+      order: request,
+      kind: 'DEPOSIT',
+      method: 'SEPAY_TRANSFER',
+      provider: 'SEPAY',
+      amountVnd: 150_000,
+      referenceCode: `REF-${tag}`,
+      status: 'PAID',
+      paidAt: new Date(),
+      rawLastEvent: { content: `Nguyen Van A chuyen khoan ${tag}` },
+      note: `note-${tag}`,
+      refundReason: `reason-${tag}`,
+    } as never);
+    em.create(HouseholdRating, {
+      request,
+      household: em.getReference(Household, target.householdId),
+      raterId: buyer.id,
+      stars: 4,
+      comment: `comment-${tag}`,
+    });
+    em.create(ProductFavourite, {
+      userId: buyer.id,
+      product: em.getReference(Product, target.productId),
+    });
+    em.create(LoginEvent, {
+      userId: buyer.id,
+      sessionId: `session-${tag}`,
+      method: 'password',
+      aal: 'aal1',
+      browser: 'Chrome',
+      country: 'VN',
+    });
+    const invitation = em.create(AccountInvitation, {
+      email: buyer.email.toLowerCase(),
+      role: 'BUYER',
+      invitedBy: admin.id,
+    });
+    await em.flush();
+    em.create(AuditLog, {
+      actorId: admin.id,
+      action: 'user.invite',
+      entity: 'account_invitation',
+      entityId: invitation.id,
+      before: null,
+      after: { email: buyer.email.toLowerCase(), role: 'BUYER', status: 'PENDING' },
+    });
+    await em.flush();
+    return { requestId: request.id, paymentId: payment.id, invitationId: invitation.id };
+  }
+
   describe('GET /me/data-export', () => {
     it('requires a signed-in user', async () => {
       expect((await t.request({ method: 'GET', url: '/me/data-export' })).status).toBe(401);
@@ -354,6 +433,36 @@ describe('Personal data: consent, export and deletion', () => {
       }
     });
 
+    it("exports a buyer's payments, ratings given, favourites and sign-in history, and only their own", async () => {
+      const target = await approvedHousehold('exp-r');
+      const buyer = await t.createUser('BUYER');
+      const other = await t.createUser('BUYER');
+      await seedBuyerHistory(buyer, target, 'mine');
+      await seedBuyerHistory(other, target, 'theirs');
+
+      const res = await t.request({ method: 'GET', url: '/me/data-export', auth: buyer.auth });
+      const doc = DataExportSchema.parse(res.body);
+      expect(doc.payments).toHaveLength(1);
+      expect(doc.payments[0]).toMatchObject({
+        kind: 'DEPOSIT',
+        method: 'SEPAY_TRANSFER',
+        status: 'PAID',
+        amountVnd: 150_000,
+        note: 'note-mine',
+        refundReason: 'reason-mine',
+      });
+      expect(doc.ratingsGiven).toEqual([
+        expect.objectContaining({ stars: 4, comment: 'comment-mine' }),
+      ]);
+      expect(doc.favourites).toEqual([expect.objectContaining({ productId: target.productId })]);
+      expect(doc.signIns).toEqual([
+        expect.objectContaining({ method: 'password', browser: 'Chrome', country: 'VN' }),
+      ]);
+      const text = JSON.stringify(res.body);
+      expect(text).not.toContain('chuyen khoan');
+      expect(text).not.toContain('theirs');
+    });
+
     it("returns a buyer's requests and notifications", async () => {
       const buyer = await t.createUser('BUYER');
       const other = await t.createUser('BUYER');
@@ -383,6 +492,28 @@ describe('Personal data: consent, export and deletion', () => {
       expect(wrong.body.errors[0].path).toBe('confirmation');
       expect(t.authAdmin.deleted).not.toContain(user.id);
       expect((await db.orm.em.fork().findOneOrFail(AppUser, user.id)).status).toBe('ACTIVE');
+    });
+
+    it('keeps a never-submitted household a draft, out of the review queue (GH#459)', async () => {
+      const rep = await t.createUser('BUYER');
+      const applied = await t.request({
+        method: 'POST',
+        url: '/me/household',
+        auth: rep.auth,
+        body: { name: 'Draft only', slug: 'draft-only-459', history: '' },
+      });
+      expect(applied.status).toBe(201);
+      expect(applied.body.status).toBe('DRAFT');
+      expect((await remove(rep.auth, rep.email)).status).toBe(204);
+      const household = await db.orm.em.fork().findOneOrFail(Household, applied.body.id);
+      expect(household).toMatchObject({ status: 'DRAFT', name: 'Removed household' });
+      const admin = await t.createUser('ADMIN');
+      const queue = await t.request({
+        method: 'GET',
+        url: '/admin/households?status=SUSPENDED',
+        auth: admin.auth,
+      });
+      expect(queue.body.data.some((h: { id: string }) => h.id === applied.body.id)).toBe(false);
     });
 
     it('refuses administrator accounts', async () => {
@@ -520,6 +651,35 @@ describe('Personal data: consent, export and deletion', () => {
       ).toMatchObject({ actorName: null });
     });
 
+    it('scrubs payment payloads, rating comments and the invitation, and keeps amounts and scores', async () => {
+      const target = await approvedHousehold('del-r');
+      const buyer = await t.createUser('BUYER');
+      const seeded = await seedBuyerHistory(buyer, target, 'gone');
+
+      expect((await remove(buyer.auth, buyer.email)).status).toBe(204);
+
+      const check = db.orm.em.fork();
+      expect(await check.findOneOrFail(Payment, seeded.paymentId)).toMatchObject({
+        amountVnd: 150_000,
+        status: 'PAID',
+        kind: 'DEPOSIT',
+        rawLastEvent: REDACTED_PAYMENT_EVENT,
+        note: null,
+        refundReason: null,
+      });
+      const rating = await check.findOneOrFail(HouseholdRating, { request: seeded.requestId });
+      expect(rating).toMatchObject({ stars: 4, comment: null, raterId: ANONYMOUS_RATER_ID });
+      expect(await check.count(ProductFavourite, { userId: buyer.id })).toBe(0);
+      expect(await check.count(LoginEvent, { userId: buyer.id })).toBe(0);
+      expect(await check.findOne(AccountInvitation, seeded.invitationId)).toBeNull();
+      const invite = await check.findOneOrFail(AuditLog, {
+        action: 'user.invite',
+        entityId: seeded.invitationId,
+      });
+      expect(JSON.stringify(invite)).not.toContain(buyer.email.toLowerCase());
+      expect(invite.after).toMatchObject({ role: 'BUYER', status: 'PENDING' });
+    });
+
     it('deletes a household: personal data and files go, the journal stays valid', async () => {
       const rep = await approvedHousehold('del');
       const bystander = await approvedHousehold('stay');
@@ -603,6 +763,46 @@ describe('Personal data: consent, export and deletion', () => {
       expect(
         (await t.request({ method: 'GET', url: `/households/${bystander.slug}` })).status,
       ).toBe(200);
+    });
+
+    it('keeps a never-submitted DRAFT household out of the admin queue (GH#459)', async () => {
+      const rep = await t.createUser('BUYER');
+      const applied = await t.request({
+        method: 'POST',
+        url: '/me/household',
+        auth: rep.auth,
+        body: { name: 'Household draft', slug: 'household-draft', history: 'History draft' },
+      });
+      expect(applied.status).toBe(201);
+      expect(applied.body.status).toBe('DRAFT');
+      const workshop = await t.request({
+        method: 'POST',
+        url: '/me/household/workshops',
+        auth: rep.auth,
+        body: { name: 'Workshop draft', address: 'Draft Workshop Lane' },
+      });
+      expect(workshop.status).toBe(201);
+
+      expect((await remove(rep.auth, rep.email)).status).toBe(204);
+
+      const after = db.orm.em.fork();
+      const household = await after.findOneOrFail(Household, applied.body.id);
+      expect(household).toMatchObject({
+        name: 'Removed household',
+        slug: `removed-${household.id}`,
+        history: '',
+        status: 'DRAFT',
+      });
+      expect(await after.count(Workshop, { household: household.id })).toBe(0);
+      for (const status of [undefined, 'SUSPENDED']) {
+        const queue = await t.request({
+          method: 'GET',
+          url: status ? `/admin/households?status=${status}` : '/admin/households',
+          auth: admin.auth,
+        });
+        expect(queue.status).toBe(200);
+        expect(queue.body.data.map((h: { id: string }) => h.id)).not.toContain(household.id);
+      }
     });
   });
 });

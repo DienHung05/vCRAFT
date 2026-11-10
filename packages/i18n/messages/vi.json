@@ -53,6 +53,9 @@
     "map": "Bản đồ",
     "news": "Tin tức",
     "quotes": "Yêu cầu báo giá",
+    "invitations": "Lời mời báo giá",
+    "coordination": "Điều phối",
+    "openInvitations": "{count, plural, one {# lời mời đang mở} other {# lời mời đang mở}}",
     "theme": "Đổi giao diện sáng/tối",
     "themeToDark": "Chuyển sang giao diện tối",
     "themeToLight": "Chuyển sang giao diện sáng",
@@ -306,6 +309,13 @@
   "trace": {
     "home": "Về trang chủ vCraft",
     "book": "Sổ nghề",
+    "navigation": "Khám phá ngoài sổ nghề",
+    "backToProduct": "Về trang sản phẩm",
+    "browseProducts": "Khám phá sản phẩm",
+    "viewHousehold": "Gặp hộ làm nghề",
+    "contents": "Mục lục sổ nghề",
+    "checkJournal": "Toàn vẹn nhật ký",
+    "readJournal": "Nhật ký sản xuất",
     "notFoundTitle": "Mã này không có trong vCraft",
     "notFoundText": "Không tìm thấy mã {code}. Món đồ này có thể không do làng nghề trên vCraft làm ra, hoặc tem đã bị làm giả. Hãy kiểm lại mã dưới đáy sản phẩm.",
     "scanned": "Bạn vừa quét ấn của",
@@ -845,6 +855,10 @@
         "failed": "Chưa tải được số liệu của trợ lý.",
         "turns": "Lượt hỏi",
         "blockRate": "Tỉ lệ bị chặn",
+        "limited": "Vượt giới hạn",
+        "disabled": "Trợ lý đang tắt",
+        "failures": "Lỗi hệ thống",
+        "unansweredCount": "Chưa trả lời được",
         "feedback": "Đánh giá",
         "feedbackValue": "👍 {up} · 👎 {down}",
         "latency": "Chữ đầu tiên (p50 / p95)",
@@ -918,6 +932,12 @@
       "saved": "Đã lưu quyết định.",
       "stale": "Hồ sơ vừa thay đổi. Đã tải lại bản mới, bạn kiểm tra rồi quyết định lại.",
       "failed_action": "Chưa lưu được quyết định.",
+      "incomplete": "Hồ sơ chưa đầy đủ nên chưa thể duyệt. Còn thiếu: {parts}. Hãy yêu cầu hộ bổ sung rồi gửi lại.",
+      "incompleteParts": {
+        "profile": "Thông tin hộ",
+        "workshops": "Ít nhất một xưởng",
+        "documents": "Ít nhất một giấy tờ"
+      },
       "actions": {
         "approve": "Duyệt",
         "reject": "Từ chối",
@@ -966,7 +986,36 @@
       "revealIdNumber": "Xem số đầy đủ",
       "hideIdNumber": "Ẩn",
       "revealAudited": "Mỗi lần xem số đầy đủ đều được ghi vào nhật ký kiểm toán.",
-      "idNumberFailed": "Chưa xem được số CCCD."
+      "idNumberFailed": "Chưa xem được số CCCD.",
+      "products": "Sản phẩm của hộ",
+      "productsHint": "Ban quản lý có thể gỡ sản phẩm khỏi trang công khai (kèm lý do, được ghi vào nhật ký kiểm toán) và đưa lại sản phẩm do chính Ban gỡ.",
+      "noProducts": "Hộ chưa có sản phẩm.",
+      "withdrawnBy": {
+        "OWNER": "Hộ tự lưu trữ",
+        "BOARD": "Ban quản lý đã gỡ"
+      },
+      "withdrawnByUnknown": "Đã lưu trữ",
+      "withdrawnReason": "Lý do: {reason}",
+      "withdrawProduct": "Gỡ sản phẩm",
+      "withdrawProductNamed": "Gỡ sản phẩm “{name}”",
+      "republishProduct": "Đưa lại",
+      "republishProductNamed": "Đưa lại sản phẩm “{name}”",
+      "productConfirm": {
+        "withdraw": {
+          "title": "Gỡ sản phẩm này?",
+          "text": "Sản phẩm {name} sẽ ngừng hiện công khai và hộ không tự đưa lại được.",
+          "confirm": "Gỡ sản phẩm"
+        },
+        "republish": {
+          "title": "Đưa sản phẩm trở lại?",
+          "text": "Sản phẩm {name} sẽ hiện công khai trở lại.",
+          "confirm": "Đưa lại"
+        }
+      },
+      "productWithdrawn": "Đã gỡ sản phẩm.",
+      "productRepublished": "Đã đưa sản phẩm trở lại.",
+      "productFailed": "Chưa cập nhật được sản phẩm. Bạn thử lại.",
+      "productStale": "Sản phẩm vừa thay đổi. Đã tải lại bản mới, bạn kiểm tra rồi thử lại."
     },
     "coordinationQueue": {
       "title": "Điều phối",
@@ -1041,13 +1090,18 @@
           "suspend": "Tạm ngừng hộ",
           "reinstate": "Khôi phục hộ",
           "reveal_id_number": "Xem số CCCD đầy đủ",
+          "set_id_number": "Đặt hoặc đổi số CCCD",
           "certification_verify": "Xác minh chứng nhận",
-          "certification_unverify": "Bỏ xác minh chứng nhận"
+          "certification_unverify": "Bỏ xác minh chứng nhận",
+          "resubmit": "Gửi lại hồ sơ đã bổ sung",
+          "submit": "Gửi hồ sơ"
         },
         "product": {
           "publish": "Xuất bản sản phẩm",
           "withdraw": "Rút sản phẩm",
-          "republish": "Xuất bản lại sản phẩm"
+          "republish": "Xuất bản lại sản phẩm",
+          "mark_sold": "Đánh dấu sản phẩm đã bán",
+          "back_on_sale": "Mở bán lại sản phẩm"
         },
         "rfq": {
           "create": "Tạo yêu cầu thay mặt khách ngoài hệ thống",
@@ -1068,6 +1122,9 @@
         "account": {
           "delete": "Xóa tài khoản"
         },
+        "consent": {
+          "withdraw": "Rút lại sự đồng ý"
+        },
         "allocation": {
           "reallocate": "Chia lại phần còn lại"
         },
@@ -1077,7 +1134,8 @@
         "payment": {
           "record_offline": "Ghi nhận thanh toán ngoài hệ thống",
           "refund": "Đánh dấu hoàn lại một khoản thanh toán",
-          "simulate_transfer": "Giả lập chuyển khoản (sandbox)"
+          "simulate_transfer": "Giả lập chuyển khoản (sandbox)",
+          "unapplied_resolve": "Ghi nhận đã xử lý khoản tiền chưa khớp"
         },
         "user": {
           "suspend": "Tạm khóa tài khoản",
@@ -1222,6 +1280,7 @@
       "status": "Trạng thái",
       "method": "Phương thức",
       "kind": "Loại",
+      "refundDueOnly": "Chỉ khoản cần hoàn lại (đơn đã hủy)",
       "columns": {
         "when": "Tạo lúc",
         "order": "Đơn hàng",
@@ -1233,6 +1292,30 @@
         "reference": "Mã thanh toán"
       },
       "openOrder": "Mở đơn hàng",
+      "unapplied": {
+        "title": "{count, plural, other {# khoản tiền về chưa khớp}}",
+        "lead": "Tiền đã về tài khoản nhưng không áp được vào khoản thanh toán nào. Hãy hoàn lại hoặc xử lý thủ công, rồi ghi lại cách đã xử lý.",
+        "failed": "Không tải được các khoản tiền chưa khớp.",
+        "retry": "Thử lại",
+        "reason": {
+          "AMOUNT_MISMATCH": "Sai số tiền",
+          "PAYMENT_NOT_PENDING": "Khoản đã hủy hoặc thất bại",
+          "ALREADY_PAID": "Đơn đã thanh toán"
+        },
+        "expected": "Cần {expected}",
+        "openOrder": "Mở đơn hàng",
+        "resolve": "Ghi nhận đã xử lý",
+        "resolutionLabel": "Đã xử lý thế nào",
+        "resolutionPlaceholder": "Đã chuyển trả 3.000.000 đ cho người mua ngày 12/11",
+        "confirm": "Lưu",
+        "cancel": "Hủy",
+        "resolved": "Đã ghi nhận cách xử lý khoản tiền.",
+        "error": {
+          "short": "Hãy ghi cách xử lý (ít nhất 3 ký tự).",
+          "stale": "Khoản này vừa được người khác cập nhật. Danh sách đã được tải lại.",
+          "failed": "Chưa lưu được. Hãy thử lại."
+        }
+      },
       "panel": {
         "title": "Thanh toán của đơn hàng này",
         "lead": "Đặt cọc và phần còn lại. Tiền cọc thanh toán trực tuyến trước khi sản xuất; phần còn lại thanh toán trực tuyến hoặc ghi nhận tại đây.",
@@ -1411,6 +1494,7 @@
     "withdrawnToast": "Đã rút báo giá.",
     "visibleToBuyer": "Bên mua thấy tên hộ, đơn giá, tổng tiền và ngày hoàn thành của báo giá này. Các hộ khác không thấy.",
     "active": "Báo giá đang chờ bên mua: {price} một {unit}, tổng {total}.",
+    "missingTerms": "Báo giá này thiếu đơn giá hoặc ngày hoàn thành, tổng {total}. Cập nhật lại để bổ sung.",
     "withdrawn": "Báo giá đã rút. Gửi lại để tham gia lại.",
     "accepted": "Bên mua đã chốt báo giá của hộ. Xác nhận phần việc trong mục Đơn hàng.",
     "rejected": "Bên mua đã chọn hộ khác.",
@@ -1545,7 +1629,8 @@
       "SEPAY_TRANSFER": "Quét mã VietQR bằng ứng dụng ngân hàng hoặc chuyển khoản thủ công. Hệ thống tự xác nhận khi tiền về.",
       "VNPAY": "Thẻ ATM nội địa, Internet Banking, thẻ quốc tế hoặc VNPAY-QR.",
       "MOMO": "Thanh toán bằng ví MoMo trên điện thoại."
-    }
+    },
+    "refundDue": "Cần hoàn lại"
   },
   "rating": {
     "title": "Đánh giá các hộ",
@@ -1668,6 +1753,8 @@
       "PAYMENT_PAID": "Đã nhận một khoản thanh toán cho đơn hàng.",
       "PAYMENT_EXPIRED": "Một khoản thanh toán của đơn hàng đã hết hạn trước khi tiền về.",
       "PAYMENT_REFUNDED": "Một khoản thanh toán của đơn hàng đã được đánh dấu hoàn lại.",
+      "PAYMENT_UNAPPLIED": "Có khoản tiền về không khớp khoản thanh toán nào, cần hoàn lại hoặc xử lý thủ công.",
+      "PAYMENT_REFUND_DUE": "Đơn hàng đã hủy có khoản thanh toán cần hoàn lại.",
       "NEWS_PUBLISHED": "Ban quản lý vừa đăng một tin quan trọng."
     }
   },
@@ -1802,7 +1889,19 @@
     "legendClosed": "Đang đóng cửa",
     "legendProduction": "Chỉ sản xuất",
     "pinButton": "{name}: xem thông tin",
-    "viewOnFullMap": "Xem trên bản đồ làng"
+    "viewOnFullMap": "Xem trên bản đồ làng",
+    "routeSuggest": "Gợi ý tuyến đi bộ",
+    "routeTitle": "Tuyến đi bộ gợi ý",
+    "routeClear": "Xóa tuyến",
+    "routeStart": {
+      "location": "Xuất phát từ vị trí của bạn",
+      "workshop": "Xuất phát từ xưởng đang chọn",
+      "village": "Xuất phát từ trung tâm làng"
+    },
+    "routeSummary": "{count, plural, one {# điểm dừng} other {# điểm dừng}} · khoảng {km} km",
+    "routeEmpty": "Hiện chưa có xưởng nào đang mở cửa để gợi ý tuyến.",
+    "routeOpenUntil": "Mở đến {time}",
+    "routeLimited": "Chỉ hiện {count} điểm dừng gần nhất."
   },
   "catalog": {
     "filtersLabel": "Lọc sản phẩm",
@@ -1936,7 +2035,10 @@
       "latInvalid": "Vĩ độ phải là số từ -90 đến 90.",
       "lngInvalid": "Kinh độ phải là số từ -180 đến 180.",
       "consentRequired": "Hãy đồng ý với Chính sách quyền riêng tư để tạo tài khoản.",
-      "idNumberInvalid": "Số CCCD gồm đúng 12 chữ số, không có dấu cách."
+      "idNumberInvalid": "Số CCCD gồm đúng 12 chữ số, không có dấu cách.",
+      "villageTooLong": "Tên làng quá dài: tối đa 160 ký tự.",
+      "historyTooLong": "Phần giới thiệu quá dài: tối đa 10.000 ký tự.",
+      "fieldInvalid": "Giá trị này chưa được chấp nhận. Bạn kiểm tra lại rồi thử lại nhé."
     },
     "username": {
       "checking": "Đang kiểm tra tên đăng nhập...",
@@ -1972,6 +2074,7 @@
       "mediaResolution": "Ảnh có hơn 50 megapixel. Hãy chụp lại ở độ phân giải thấp hơn.",
       "mediaUnsupported": "Chỉ nhận ảnh JPG, PNG, WebP, AVIF hoặc tệp PDF.",
       "apiDown": "Không gọi được máy chủ vCraft. Bạn thử lại sau ít phút nhé.",
+      "applicationIncomplete": "Hồ sơ còn thiếu phần bắt buộc: thông tin hộ, ít nhất một xưởng và ít nhất một giấy tờ. Bạn hoàn thành các bước trước rồi nộp lại nhé.",
       "consentRequired": "Cần đồng ý với Chính sách quyền riêng tư trước khi thực hiện thao tác này. Hãy tích ô đồng ý rồi thử lại.",
       "captcha": "Hãy hoàn tất bước xác minh \"Tôi không phải robot\" phía trên rồi thử lại."
     },
@@ -2142,6 +2245,8 @@
         "submitting": "Đang nộp…",
         "needOne": "Cần tải lên ít nhất một giấy tờ trước khi nộp hồ sơ.",
         "waitUploads": "Đợi các tệp tải xong rồi nộp hồ sơ.",
+        "uploadedEarlier": "Đã tải lên trước đó",
+        "loadFailed": "Không tải được các giấy tờ bạn đã gửi trước đó. Bạn tải lại trang để xem nhé.",
         "consentFirst": "Hãy đồng ý với Chính sách quyền riêng tư ở trên trước khi chọn tệp."
       },
       "alreadyAdmin": "Tài khoản quản trị viên không đại diện cho hộ nào. Hãy đăng xuất rồi dùng email khác để đăng ký hộ.",
@@ -2152,6 +2257,7 @@
       "submitted": "Đã nộp hồ sơ. Ban quản lý sẽ xem xét và trạng thái ở trang này sẽ đổi khi có kết quả.",
       "statusLabel": "Trạng thái hồ sơ",
       "status": {
+        "DRAFT": "Bản nháp, chưa nộp",
         "PENDING_REVIEW": "Chờ duyệt",
         "APPROVED": "Đã chấp nhận",
         "REJECTED": "Chưa được chấp nhận",
@@ -2203,7 +2309,8 @@
       "locked": "Tài khoản của bạn đang bị tạm khóa nên không vào được khu làm việc. Hãy liên hệ Ban quản lý để được hỗ trợ.",
       "lead": "Khu vực này dành cho một vai trò khác. Đăng nhập bằng tài khoản phù hợp, hoặc quay về trang chủ.",
       "home": "Về trang chủ",
-      "switch": "Đăng nhập tài khoản khác"
+      "switch": "Đăng nhập tài khoản khác",
+      "ownArea": "Đến {area}"
     },
     "serviceDown": {
       "title": "Chưa kiểm tra được phiên đăng nhập",
@@ -2240,7 +2347,7 @@
       "label": "Điều hướng Studio",
       "home": "Trang chủ",
       "products": "Sản phẩm",
-      "quotations": "Báo giá",
+      "quotations": "Lời mời báo giá",
       "orders": "Đơn hàng",
       "profile": "Hồ sơ"
     },
@@ -2258,6 +2365,7 @@
       "title": "Chào {household}",
       "status": "Trạng thái hồ sơ",
       "statuses": {
+        "DRAFT": "Bản nháp, chưa nộp",
         "PENDING_REVIEW": "Đang chờ Ban quản lý duyệt",
         "APPROVED": "Đã được duyệt, đang trưng bày công khai",
         "REJECTED": "Chưa được chấp nhận",
@@ -2285,7 +2393,12 @@
         "openingHours": "Giờ mở cửa",
         "capacity": "Năng lực sản xuất"
       },
-      "newProduct": "Thêm sản phẩm"
+      "newProduct": "Thêm sản phẩm",
+      "invitations": "Lời mời báo giá",
+      "invitationsOpen": "{count, plural, =0 {Chưa có lời mời đang mở} other {# lời mời đang mở}}",
+      "invitationsNone": "Hiện chưa có lời mời nào cần trả lời.",
+      "invitationsNearest": "Hạn gần nhất: {deadline}",
+      "invitationsLink": "Xem lời mời"
     },
     "profile": {
       "title": "Hồ sơ của hộ",
@@ -2505,6 +2618,8 @@
       "withdrawReason": "Lý do lưu trữ",
       "notApproved": "Hộ cần được duyệt trước khi xuất bản.",
       "publishFailed": "Chưa đổi được trạng thái. Bạn thử lại sau.",
+      "boardWithdrawn": "Ban quản lý đã gỡ sản phẩm này nên bạn không thể xuất bản lại tại đây. Bạn có thể chỉnh sửa và liên hệ Ban quản lý; chỉ Ban quản lý mới đưa sản phẩm trở lại trưng bày.",
+      "boardWithdrawnReason": "Lý do của Ban quản lý: {reason}",
       "publishJournalRequired": "Hãy thêm ít nhất một mốc nhật ký sản xuất (kèm ảnh) trước khi xuất bản.",
       "qr": "Mã QR",
       "qrLead": "In mã này lên tem dán đáy sản phẩm. Mã không đổi khi đổi tên.",
@@ -2633,9 +2748,28 @@
       "closed": "Đã đóng",
       "emptyHint": "Khi người mua hoặc Ban quản lý mời hộ báo giá, lời mời sẽ hiện ở đây.",
       "emptyAction": "Hoàn thiện hồ sơ hộ",
+      "emptyRuleTitle": "Khi nào hộ được mời?",
+      "emptyRuleLead": "Hệ thống chỉ mời hộ báo giá khi đủ các điều kiện sau:",
+      "emptyRule1": "Hồ sơ hộ đã được Ban quản lý duyệt.",
+      "emptyRule2": "Tài khoản người đại diện không bị khóa.",
+      "emptyRule3": "Yêu cầu của người mua có chọn nhóm sản phẩm.",
+      "emptyRule4": "Hộ đã khai năng lực sản xuất cho nhóm đó, hoặc đang trưng bày ít nhất một sản phẩm thuộc nhóm đó.",
+      "emptyRuleNote": "Mỗi yêu cầu chỉ mời tối đa 10 hộ phù hợp nhất (theo năng lực, sản phẩm và điểm đánh giá). Với yêu cầu nhờ Ban quản lý điều phối, Ban quản lý sẽ tự chọn hộ để mời.",
+      "emptyCapacity": "Khai năng lực sản xuất",
+      "emptyAddProduct": "Thêm sản phẩm",
       "directActive": "Đã báo giá: {price} một {unit}, tổng {total}",
+      "directMissingTerms": "Báo giá thiếu đơn giá hoặc ngày hoàn thành, tổng {total}",
       "directAccepted": "Bên mua đã chốt báo giá của hộ",
-      "directRejected": "Bên mua đã chọn hộ khác"
+      "directRejected": "Bên mua đã chọn hộ khác",
+      "openTitle": "Yêu cầu mở",
+      "openLead": "Các yêu cầu Ban quản lý đang điều phối và phù hợp nghề của hộ. Hộ có thể gửi đề xuất mà không cần lời mời. Thông tin bên mua được ẩn.",
+      "openLoading": "Đang tải yêu cầu mở…",
+      "openFailed": "Không tải được các yêu cầu mở.",
+      "openEmpty": "Hiện chưa có yêu cầu mở nào phù hợp với hộ.",
+      "openEmptyHint": "Một yêu cầu điều phối mở cho hộ khi Ban quản lý đã nhận điều phối, chưa quá hạn chào giá, và hộ đã được duyệt, có khai năng lực hoặc có sản phẩm đã đăng trong nhóm đó. Các yêu cầu hộ đã được mời nằm ở danh sách phía trên.",
+      "openRequest": "{category}: cần {quantity} {unit}",
+      "openOffer": "Gửi đề xuất",
+      "openHide": "Ẩn biểu mẫu"
     },
     "allocations": {
       "title": "Đơn hàng",
@@ -2731,7 +2865,7 @@
       },
       "retention": {
         "title": "Chúng tôi giữ dữ liệu bao lâu",
-        "text": "Trong thời gian tài khoản còn hoạt động. Khi bạn tự xóa tài khoản trong trang Tài khoản, email, họ tên, các sự đồng ý, thông báo, lựa chọn email và mọi tệp bạn đã tải lên (kể cả ảnh giấy tờ) bị xóa; hồ sơ hộ, xưởng, người làm và tin của hộ được gỡ bỏ. Đơn hàng, chào giá và nhật ký sản xuất của sản phẩm vẫn được giữ, không còn gắn với tên bạn, vì người khác dựa vào những bản ghi đó; địa chỉ nhận hàng ở các yêu cầu cũ bị xóa. Tài khoản còn đơn hàng đang thực hiện chưa thể xóa cho tới khi đơn xong hoặc Ban quản lý hủy đơn."
+        "text": "Trong thời gian tài khoản còn hoạt động. Khi bạn tự xóa tài khoản trong trang Tài khoản, email, họ tên, các sự đồng ý, thông báo, lựa chọn email và mọi tệp bạn đã tải lên (kể cả ảnh giấy tờ) bị xóa; hồ sơ hộ, xưởng, người làm và tin của hộ được gỡ bỏ. Đơn hàng, chào giá và nhật ký sản xuất của sản phẩm vẫn được giữ, không còn gắn với tên bạn, vì người khác dựa vào những bản ghi đó; địa chỉ nhận hàng ở các yêu cầu cũ bị xóa. Tài khoản còn đơn hàng đang thực hiện chưa thể xóa cho tới khi đơn xong hoặc Ban quản lý hủy đơn. Lịch sử đăng nhập được giữ 12 tháng và bản ghi lượt quét QR được giữ 24 tháng, sau đó tự động xóa."
       },
       "security": {
         "title": "Chúng tôi bảo vệ dữ liệu thế nào",
@@ -2771,6 +2905,34 @@
         "working": "Đang chuẩn bị…",
         "done": "Đã tải xuống tệp dữ liệu của bạn.",
         "failed": "Chưa tải được dữ liệu. Bạn thử lại sau ít phút."
+      },
+      "consents": {
+        "title": "Rút lại sự đồng ý",
+        "text": "Bạn có thể rút lại từng sự đồng ý bất cứ lúc nào. Việc rút lại không ảnh hưởng đến dữ liệu đã được xử lý trước đó và không xóa dữ liệu đã có; muốn xóa dữ liệu, hãy xóa tài khoản ở bên dưới. Bạn có thể đồng ý lại khi cần dùng tính năng đó.",
+        "signUpNote": "Sự đồng ý khi đăng ký là cơ sở để có tài khoản nên không rút riêng được; muốn rút, hãy xóa tài khoản ở bên dưới.",
+        "none": "Bạn chưa có sự đồng ý nào đang hiệu lực để rút.",
+        "loadFailed": "Chưa tải được danh sách sự đồng ý. Bạn thử lại sau ít phút.",
+        "purposes": {
+          "ID_DOCUMENT": {
+            "title": "Giấy tờ xác minh và số CCCD",
+            "effect": "Sau khi rút: không tải thêm giấy tờ và không đặt hoặc đổi số CCCD được. Giấy tờ và số đã lưu vẫn còn cho đến khi bạn xóa tài khoản."
+          },
+          "RFQ_CONTACT": {
+            "title": "Địa chỉ nhận hàng và liên hệ trong yêu cầu báo giá",
+            "effect": "Sau khi rút: không gửi được yêu cầu báo giá mới có địa chỉ nhận hàng và thông tin liên hệ."
+          },
+          "MAKER_PROFILE": {
+            "title": "Hiển thị tên và vai trò người làm",
+            "effect": "Sau khi rút: không thêm hoặc sửa người làm hiển thị công khai trên trang hộ."
+          }
+        },
+        "withdraw": "Rút lại",
+        "dialogTitle": "Rút lại sự đồng ý này?",
+        "confirm": "Rút lại sự đồng ý",
+        "cancel": "Giữ nguyên",
+        "working": "Đang rút…",
+        "done": "Đã rút lại sự đồng ý.",
+        "failed": "Chưa rút được sự đồng ý và chưa có gì bị thay đổi. Bạn thử lại sau ít phút."
       },
       "delete": {
         "title": "Xóa tài khoản",

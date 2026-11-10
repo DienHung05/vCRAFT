@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { ApiError, type StudioClient } from '@vcraft/api-client';
+import { ApiError, type QuotationClient, type StudioClient } from '@vcraft/api-client';
 import type { HouseholdDto } from '@vcraft/contracts';
 import { describe, expect, it, vi } from 'vitest';
 import { ProfileEditor } from '@/features/studio/profile-editor';
@@ -71,6 +71,39 @@ function fakeClient(overrides: Partial<StudioClient> = {}): StudioClient {
 }
 
 describe('StudioHome', () => {
+  const quotations = (rows: object[]) =>
+    ({ listInvitations: vi.fn().mockResolvedValue(rows) }) as unknown as QuotationClient;
+  const invite = (id: string, closes: string, declined = false) => ({
+    request: { id, status: 'SENT', biddingClosesAt: closes },
+    contribution: null,
+    declined,
+  });
+
+  it('shows the open invitations with the nearest deadline in Vietnam time (GH#388)', async () => {
+    renderVi(
+      <StudioHome
+        client={fakeClient()}
+        quotationClient={quotations([
+          invite('a', '2099-06-02T00:00:00.000Z'),
+          invite('b', '2099-06-01T17:30:00.000Z'),
+          invite('c', '2099-05-01T00:00:00.000Z', true),
+          invite('d', '2000-01-01T00:00:00.000Z'),
+        ])}
+      />,
+    );
+    const card = await screen.findByTestId('invitations-card');
+    await waitFor(() => expect(within(card).getByText('2 lời mời đang mở')).toBeTruthy());
+    // 17:30 UTC on 1 June is already 2 June in Vietnam (UTC+7).
+    expect(within(card).getByText(/Hạn gần nhất: 02\/06\/2099/)).toBeTruthy();
+    expect(within(card).getByRole('link', { name: 'Xem lời mời' })).toBeTruthy();
+  });
+
+  it('shows a calm line when there are no open invitations', async () => {
+    renderVi(<StudioHome client={fakeClient()} quotationClient={quotations([])} />);
+    const card = await screen.findByTestId('invitations-card');
+    expect(within(card).getByText('Hiện chưa có lời mời nào cần trả lời.')).toBeTruthy();
+  });
+
   it('hiện trạng thái hồ sơ, phần trăm và gợi ý mục còn thiếu', async () => {
     renderVi(<StudioHome client={fakeClient()} />);
     expect(await screen.findByText('Đang chờ Ban quản lý duyệt')).toBeTruthy();

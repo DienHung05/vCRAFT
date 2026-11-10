@@ -24,13 +24,19 @@ describe('Orphan media assets', () => {
   const old = new Date(now.getTime() - 8 * DAY_MS);
   const ids: Record<string, string> = {};
 
-  async function asset(name: string, updatedAt: Date, id?: string) {
+  async function asset(
+    name: string,
+    updatedAt: Date,
+    id?: string,
+    extra: Partial<Pick<MediaAsset, 'ownerId' | 'purpose' | 'visibility'>> = {},
+  ) {
     const em = db.orm.em.fork();
     const created = em.create(MediaAsset, {
       ...(id ? { id } : {}),
       ownerId: crypto.randomUUID(),
       purpose: 'PRODUCT',
       visibility: 'PUBLIC',
+      ...extra,
       status: 'READY',
       mimeType: 'image/webp',
       sizeBytes: 1,
@@ -104,6 +110,12 @@ describe('Orphan media assets', () => {
     await asset('recent-orphan', new Date(now.getTime() - 2 * DAY_MS));
     await asset('demo-photo', old, demoPhotoAssetId(DEMO_PHOTOS[0]?.id ?? ''));
     await asset('old-orphan', old);
+    // Certificates have no media_link: they are found by (ownerId, purpose) while the owner exists.
+    await asset('certificate-of-household', old, undefined, {
+      ownerId: rep.id,
+      purpose: 'CERTIFICATE',
+      visibility: 'PRIVATE',
+    });
   });
 
   afterAll(async () => {
@@ -114,6 +126,13 @@ describe('Orphan media assets', () => {
     const orphans = await findOrphanMediaAssets(db.orm, { now });
     expect(orphans.map((a) => a.id)).toEqual([ids['old-orphan']]);
     expect(orphans[0]?.variants[0]?.key).toBe('v/old-orphan-320.webp');
+  });
+
+  it('never selects an old certificate document whose owner still exists', async () => {
+    const orphans = await findOrphanMediaAssets(db.orm, {
+      now: new Date(now.getTime() + 365 * DAY_MS),
+    });
+    expect(orphans.map((a) => a.id)).not.toContain(ids['certificate-of-household']);
   });
 
   it('respects the exclude list and the batch limit', async () => {
@@ -136,6 +155,6 @@ describe('Orphan media assets', () => {
       ),
     ).toBe(2);
     expect(await findOrphanMediaAssets(db.orm, { now: later })).toEqual([]);
-    expect(await db.orm.em.fork().count(MediaAsset)).toBe(5);
+    expect(await db.orm.em.fork().count(MediaAsset)).toBe(6);
   });
 });

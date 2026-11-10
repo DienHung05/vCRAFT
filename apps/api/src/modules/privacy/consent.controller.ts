@@ -1,5 +1,10 @@
-import { Body, Controller, Get, Header, Post } from '@nestjs/common';
-import { type RecordConsentRequest, RecordConsentRequestSchema } from '@vcraft/contracts';
+import { Body, Controller, Delete, Get, Header, Param, Post } from '@nestjs/common';
+import {
+  ConsentPurposeSchema,
+  type RecordConsentRequest,
+  RecordConsentRequestSchema,
+} from '@vcraft/contracts';
+import type { ConsentPurpose } from '@vcraft/domain';
 import { type Actor, CurrentActor } from '../../common/auth/auth.guard';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { ConsentService } from './application/consent.service';
@@ -21,5 +26,14 @@ export class ConsentController {
     @Body(new ZodValidationPipe(RecordConsentRequestSchema)) body: RecordConsentRequest,
   ) {
     return this.consents.record(actor, body);
+  }
+
+  /** Withdraw one consent (Decree 13/2023/ND-CP Art. 12). Answers with the refreshed list. */
+  @Delete(':purpose')
+  withdraw(
+    @CurrentActor() actor: Actor,
+    @Param('purpose', new ZodValidationPipe(ConsentPurposeSchema)) purpose: ConsentPurpose,
+  ) {
+    return this.consents.withdraw(actor, purpose);
   }
 }

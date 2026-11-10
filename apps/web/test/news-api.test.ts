@@ -85,16 +85,17 @@ describe('fetchNews', () => {
 });
 
 describe('news stays up to date without a redeploy (GH#181)', () => {
-  it('list and article are cached for at most 30 seconds', async () => {
+  it('list is cached for at most 30 seconds and the article is not cached (GH#395)', async () => {
     vi.stubEnv('API_INTERNAL_URL', 'http://api.test/api/v1/');
     const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 503 }));
     vi.stubGlobal('fetch', fetchMock);
     await fetchNews();
     await fetchNewsArticle('a');
     for (const [, init] of fetchMock.mock.calls) {
-      const revalidate = (init as { next?: { revalidate?: number } }).next?.revalidate;
-      expect(revalidate).toBeGreaterThan(0);
-      expect(revalidate).toBeLessThanOrEqual(30);
+      const { cache, next } = init as { cache?: string; next?: { revalidate?: number } };
+      if (cache === 'no-store') continue;
+      expect(next?.revalidate).toBeGreaterThan(0);
+      expect(next?.revalidate).toBeLessThanOrEqual(30);
     }
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });

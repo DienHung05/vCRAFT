@@ -23,6 +23,9 @@ export const ConsentResponseSchema = z.strictObject({
   purpose: ConsentPurposeSchema,
   policyVersion: z.string(),
   givenAt: IsoDateTimeSchema,
+  /** When the person withdrew this consent; `null` while it stands. */
+  // Defaults to null so responses from before GH#418 (no field) still parse.
+  withdrawnAt: IsoDateTimeSchema.nullable().default(null),
 });
 export type ConsentDto = z.infer<typeof ConsentResponseSchema>;
 
@@ -32,6 +35,17 @@ export const ConsentListResponseSchema = z.strictObject({
   data: z.array(ConsentResponseSchema),
 });
 export type ConsentListResponse = z.infer<typeof ConsentListResponseSchema>;
+
+/**
+ * `DELETE /me/consents/:purpose`: withdraw the consent for one purpose. Answers with the refreshed list.
+ * `SIGN_UP` cannot be withdrawn on its own: it is the basis for having an account, so the API refuses
+ * and points to account deletion.
+ */
+export const WITHDRAWABLE_CONSENT_PURPOSES = [
+  'ID_DOCUMENT',
+  'RFQ_CONTACT',
+  'MAKER_PROFILE',
+] as const;
 
 /**
  * `DELETE /me`: `confirmation` must be the account's own email (compared case-insensitively), so a
@@ -100,6 +114,14 @@ export const DataExportSchema = z.strictObject({
   notifications: z.array(ExportRowSchema),
   emailPreferences: z.array(ExportRowSchema),
   consents: z.array(ConsentResponseSchema),
+  /** Payments on the person's own orders; raw provider payloads are not included. */
+  payments: z.array(ExportRowSchema).default([]),
+  /** Ratings the person gave to households, with their comments. */
+  ratingsGiven: z.array(ExportRowSchema).default([]),
+  /** Products the person saved to their favourites. */
+  favourites: z.array(ExportRowSchema).default([]),
+  /** Sign-in history (kept 12 months). */
+  signIns: z.array(ExportRowSchema).default([]),
   media: z.array(ExportedMediaSchema),
 });
 export type DataExportDto = z.infer<typeof DataExportSchema>;

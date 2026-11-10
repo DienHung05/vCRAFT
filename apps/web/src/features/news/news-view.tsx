@@ -1,6 +1,6 @@
 import type { NewsCategoryDto } from '@vcraft/contracts';
 import { NEWS_CATEGORIES } from '@vcraft/domain';
-import { Badge, buttonVariants, Card } from '@vcraft/ui';
+import { Badge, buttonVariants } from '@vcraft/ui';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { DataUnavailable } from '@/components/data-unavailable';
@@ -114,30 +114,32 @@ export function NewsView({
       {items.length > 0 && (
         <ul
           aria-label={t('listLabel')}
-          className="mt-8 grid grid-cols-1 items-start gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          className="mt-8 divide-y divide-ink/10 border-ink/10 border-t"
         >
           {items.map((n, index) => (
             <li key={n.slug} className="min-w-0">
               <Reveal delay={(index % 3) * 40}>
-                <Card className="p-5 motion-safe:transition-transform motion-safe:duration-(--duration-quick) motion-safe:ease-clay motion-safe:hover:-translate-y-0.5 md:p-6">
-                  <article className="flex flex-col gap-2">
+                {/* One chronological row: cover, story, provenance. Grid placement keeps the text
+                    column aligned whether or not the story has a photo. */}
+                <article className="grid grid-cols-1 gap-4 py-6 sm:grid-cols-[14rem_minmax(0,1fr)] sm:gap-x-6 sm:gap-y-2 lg:grid-cols-[16rem_minmax(0,1fr)_14rem]">
+                  <div className="sm:row-span-2 lg:row-span-1">
                     {n.cover ? (
-                      <div className="mb-2 shrink-0">
-                        <ImageSlot
-                          alt={altFor(locale, n.cover.alt || n.title, n.cover.altEn)}
-                          tint={tintOf(n.slug)}
-                          ratio="3/2"
-                          {...slotPhoto(
-                            photoFromUrl(
-                              n.cover.url,
-                              altFor(locale, n.cover.alt || n.title, n.cover.altEn),
-                              n.cover.variants,
-                            ),
-                          )}
-                          sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw"
-                        />
-                      </div>
+                      <ImageSlot
+                        alt={altFor(locale, n.cover.alt || n.title, n.cover.altEn)}
+                        tint={tintOf(n.slug)}
+                        ratio="3/2"
+                        {...slotPhoto(
+                          photoFromUrl(
+                            n.cover.url,
+                            altFor(locale, n.cover.alt || n.title, n.cover.altEn),
+                            n.cover.variants,
+                          ),
+                        )}
+                        sizes="(min-width: 1024px) 16rem, (min-width: 640px) 14rem, 100vw"
+                      />
                     ) : null}
+                  </div>
+                  <div className="flex min-w-0 flex-col gap-2">
                     <div className="flex flex-wrap items-center gap-2 text-small text-ash">
                       {n.pinned && <Badge tone="seal">{t('pinned')}</Badge>}
                       <Badge tone="clay">{category(n.category)}</Badge>
@@ -153,7 +155,7 @@ export function NewsView({
                         {n.title}
                       </Link>
                     </h2>
-                    <p className="text-ash">{n.summary}</p>
+                    <p className="max-w-prose-vn text-ash">{n.summary}</p>
                     <p className="text-small text-ash">
                       {n.householdSlug && n.householdName ? (
                         <Link
@@ -166,9 +168,11 @@ export function NewsView({
                         t('village')
                       )}
                     </p>
+                  </div>
+                  <div className="text-small text-ash lg:text-right">
                     <NewsSourceLine item={n} />
-                  </article>
-                </Card>
+                  </div>
+                </article>
               </Reveal>
             </li>
           ))}
@@ -176,7 +180,7 @@ export function NewsView({
       )}
 
       {counters ? (
-        <div className="mt-10 max-w-prose-vn">
+        <div className="mt-12">
           <UrlPagination
             kind="news"
             page={counters.page}

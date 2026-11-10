@@ -5,7 +5,13 @@ import {
   type PaymentDto,
   PaymentResponseSchema,
 } from '@vcraft/contracts';
-import { expireDuePayments, Payment, QuotationRequest, resolveDbDriver } from '@vcraft/database';
+import {
+  expireDuePayments,
+  Payment,
+  QuotationRequest,
+  resolveDbDriver,
+  UnappliedPayment,
+} from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { PaymentProviderSyncService } from '../../src/modules/payments/application/payment-provider-sync.service.js';
 import { PaymentsService } from '../../src/modules/payments/application/payments.service.js';
@@ -312,9 +318,22 @@ describe('online payment of orders (ADR-0021)', () => {
 
   const notices = async (auth: string) =>
     (await t.request({ method: 'GET', url: '/me/notifications', auth })).body.data as Array<{
+      id: string;
       type: string;
-      target: { id: string } | null;
+      target: { page: string; id: string | null } | null;
     }>;
+
+  // Admin payment notices point at the payments page and carry no order id (GH#457), so a test
+  // takes the ids it already sees and counts the new ones afterwards. The inbox shows only the
+  // newest 30, so counting totals would stall once older notices drop out.
+  const boardNotices = async (type: string) =>
+    new Set(
+      (await notices(admin.auth))
+        .filter((n) => n.type === type && n.target?.page === 'ADMIN_PAYMENTS')
+        .map((n) => n.id),
+    );
+  const boardNoticesSince = async (type: string, before: Set<string>) =>
+    [...(await boardNotices(type))].filter((id) => !before.has(id)).length;
 
   it('migration matches the entities: no schema drift after running the migrations', async () => {
     expect((await db.orm.schema.getUpdateSchemaSQL()).trim()).toBe('');
@@ -434,6 +453,7 @@ describe('online payment of orders (ADR-0021)', () => {
     it('marks the deposit paid from a signed webhook, once, and tells the buyer and the board', async () => {
       const requestId = await acceptedOrder();
       const payment = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+      const boardBefore = await boardNotices('PAYMENT_PAID');
       const event = sepayEvent(payment);
       const first = await sepayWebhook(event);
       expect(first.status).toBe(200);
@@ -449,11 +469,7 @@ describe('online payment of orders (ADR-0021)', () => {
         (n) => n.type === 'PAYMENT_PAID' && n.target?.id === requestId,
       );
       expect(owned).toHaveLength(1);
-      expect(
-        (await notices(admin.auth)).filter(
-          (n) => n.type === 'PAYMENT_PAID' && n.target?.id === requestId,
-        ),
-      ).toHaveLength(1);
+      expect(await boardNoticesSince('PAYMENT_PAID', boardBefore)).toBe(1);
 
       // A second transfer for the same code (new SePay id) is already settled and changes nothing.
       await sepayWebhook(sepayEvent(payment));
@@ -482,6 +498,104 @@ describe('online payment of orders (ADR-0021)', () => {
         mismatch: { expectedAmountVnd: 3_000_000, receivedAmountVnd: 3_000_001 },
       });
       expect(row.providerTxnId).toBeNull();
+    });
+
+    it('keeps every unapplied transfer as its own open record and tells the board, once (GH#417)', async () => {
+      const requestId = await acceptedOrder();
+      const payment = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+      const short = sepayEvent(payment, { transferAmount: payment.amountVnd - 1_000 });
+      const long = sepayEvent(payment, { transferAmount: payment.amountVnd + 5_000 });
+      const boardBefore = await boardNotices('PAYMENT_UNAPPLIED');
+      await sepayWebhook(short);
+      await sepayWebhook(long);
+      // SePay retries: the same transaction is neither recorded nor announced again.
+      await sepayWebhook(short);
+      const rows = await db.orm.em
+        .fork()
+        .find(
+          UnappliedPayment,
+          { referenceCode: payment.referenceCode },
+          { orderBy: { amountVnd: 'asc' } },
+        );
+      expect(
+        rows.map((row) => [row.reason, row.amountVnd, row.expectedAmountVnd, row.status]),
+      ).toEqual([
+        ['AMOUNT_MISMATCH', 2_999_000, 3_000_000, 'OPEN'],
+        ['AMOUNT_MISMATCH', 3_005_000, 3_000_000, 'OPEN'],
+      ]);
+      expect(rows[0]?.providerTxnId).toBe(String(short.id));
+      expect(await boardNoticesSince('PAYMENT_UNAPPLIED', boardBefore)).toBe(2);
+      expect((await notices(buyer.auth)).some((n) => n.type === 'PAYMENT_UNAPPLIED')).toBe(false);
+
+      // The right amount still settles the payment afterwards.
+      await sepayWebhook(sepayEvent(payment));
+      expect((await status(payment)).status).toBe('PAID');
+      // A further transfer for the settled payment is money to give back too.
+      await sepayWebhook(sepayEvent(payment));
+      expect(
+        await db.orm.em.fork().count(UnappliedPayment, {
+          referenceCode: payment.referenceCode,
+          reason: 'ALREADY_PAID',
+        }),
+      ).toBe(1);
+
+      const listed = await t.request({
+        method: 'GET',
+        url: '/admin/payments/unapplied',
+        auth: admin.auth,
+      });
+      expect(listed.status).toBe(200);
+      const mine = (listed.body.data as Array<Record<string, unknown>>).filter(
+        (row) => row.referenceCode === payment.referenceCode,
+      );
+      expect(mine).toHaveLength(3);
+      expect(mine[0]).toMatchObject({ orderId: requestId, paymentId: payment.id, status: 'OPEN' });
+      expect(mine[0]).not.toHaveProperty('raw');
+      expect(
+        (await t.request({ method: 'GET', url: '/admin/payments/unapplied', auth: buyer.auth }))
+          .status,
+      ).toBe(403);
+
+      const target = mine[0] as { id: string; version: number };
+      const missing = await t.request({
+        method: 'POST',
+        url: `/admin/payments/unapplied/${target.id}/resolve`,
+        auth: admin.auth,
+        body: { resolution: 'Returned to the buyer' },
+      });
+      expect(missing.status).toBe(428);
+      const resolved = await t.request({
+        method: 'POST',
+        url: `/admin/payments/unapplied/${target.id}/resolve`,
+        auth: admin.auth,
+        headers: { 'if-match': String(target.version) },
+        body: { resolution: 'Returned to the buyer by transfer' },
+      });
+      expect(resolved.status).toBe(200);
+      expect(resolved.body).toMatchObject({
+        status: 'RESOLVED',
+        resolution: 'Returned to the buyer by transfer',
+      });
+      const twice = await t.request({
+        method: 'POST',
+        url: `/admin/payments/unapplied/${target.id}/resolve`,
+        auth: admin.auth,
+        headers: { 'if-match': String(resolved.body.version) },
+        body: { resolution: 'Again' },
+      });
+      expect(twice.status).toBe(409);
+      const open = await t.request({
+        method: 'GET',
+        url: '/admin/payments/unapplied?status=OPEN',
+        auth: admin.auth,
+      });
+      expect(open.body.data.some((row: { id: string }) => row.id === target.id)).toBe(false);
+      const audit = await t.request({
+        method: 'GET',
+        url: '/admin/audit-log?action=payment.unapplied_resolve',
+        auth: admin.auth,
+      });
+      expect(audit.body.data[0]).toMatchObject({ entityId: target.id });
     });
 
     it('ignores outgoing transfers, other accounts and unknown payment codes', async () => {
@@ -788,9 +902,68 @@ describe('online payment of orders (ADR-0021)', () => {
       });
       expect(cancelled.status).toBe(200);
       expect((await status(payment)).status).toBe('CANCELLED');
-      // Money that still arrives is not applied to the cancelled order.
+      // Money that still arrives is not applied to the cancelled order, but kept for the board (GH#417).
+      const boardBefore = await boardNotices('PAYMENT_UNAPPLIED');
       await sepayWebhook(sepayEvent(payment));
       expect((await status(payment)).status).toBe('CANCELLED');
+      const kept = await db.orm.em
+        .fork()
+        .findOneOrFail(UnappliedPayment, { referenceCode: payment.referenceCode });
+      expect(kept).toMatchObject({ reason: 'PAYMENT_NOT_PENDING', amountVnd: payment.amountVnd });
+      expect(await boardNoticesSince('PAYMENT_UNAPPLIED', boardBefore)).toBe(1);
+    });
+
+    it('flags a paid deposit of a cancelled order as owed back and tells the buyer and the board (GH#417)', async () => {
+      const requestId = await acceptedOrder();
+      const payment = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+      await sepayWebhook(sepayEvent(payment));
+      expect((await status(payment)).status).toBe('PAID');
+      const boardBefore = await boardNotices('PAYMENT_REFUND_DUE');
+      const read = await t.request({ method: 'GET', url: `/rfqs/${requestId}`, auth: admin.auth });
+      const cancelled = await t.request({
+        method: 'POST',
+        url: `/rfqs/${requestId}/cancel`,
+        auth: admin.auth,
+        headers: { 'if-match': String(read.body.version) },
+        body: { reason: 'Workshop flooded' },
+      });
+      expect(cancelled.status).toBe(200);
+      const owed = await status(payment);
+      expect(owed.status).toBe('PAID');
+      expect(owed.refundDueAt).not.toBeNull();
+      expect(
+        (await notices(buyer.auth)).some(
+          (n) => n.type === 'PAYMENT_REFUND_DUE' && n.target?.id === requestId,
+        ),
+      ).toBe(true);
+      expect(await boardNoticesSince('PAYMENT_REFUND_DUE', boardBefore)).toBe(1);
+      const due = await t.request({
+        method: 'GET',
+        url: '/admin/payments?refundDue=true',
+        auth: admin.auth,
+      });
+      expect(due.body.data.map((p: { id: string }) => p.id)).toContain(payment.id);
+      expect(
+        (due.body.data as Array<{ status: string; refundDueAt: string | null }>).every(
+          (p) => p.status === 'PAID' && p.refundDueAt !== null,
+        ),
+      ).toBe(true);
+
+      const refunded = await t.request({
+        method: 'POST',
+        url: `/admin/payments/${payment.id}/refund`,
+        auth: admin.auth,
+        headers: { 'if-match': String(owed.version) },
+        body: { reason: 'Deposit returned by transfer' },
+      });
+      expect(refunded.status).toBe(200);
+      expect(refunded.body).toMatchObject({ status: 'REFUNDED', refundDueAt: null });
+      const after = await t.request({
+        method: 'GET',
+        url: '/admin/payments?refundDue=true',
+        auth: admin.auth,
+      });
+      expect(after.body.data.map((p: { id: string }) => p.id)).not.toContain(payment.id);
     });
 
     it('lists payments newest first with filters and a cursor, for administrators only', async () => {
@@ -1457,6 +1630,44 @@ describe('online payment of orders (ADR-0021)', () => {
         expect((await sepayWebhook({ id: 1 })).status).toBe(401);
         await confirmAllocations(requestId);
         expect((await startProduction(requestId)).status).toBe(200);
+      } finally {
+        vi.stubEnv('SEPAY_WEBHOOK_API_KEY', SEPAY_KEY);
+      }
+    });
+
+    it('owes the whole total as the balance when production started without a deposit (#426)', async () => {
+      vi.stubEnv('SEPAY_WEBHOOK_API_KEY', '');
+      try {
+        const requestId = await acceptedOrder();
+        await confirmAllocations(requestId);
+        expect((await startProduction(requestId)).status).toBe(200);
+        const summary = await t.request({
+          method: 'GET',
+          url: `/orders/${requestId}/payments`,
+          auth: buyer.auth,
+        });
+        expect(summary.body).toMatchObject({
+          depositRequired: false,
+          depositPaidAt: null,
+          balanceAmountVnd: 10_000_000,
+        });
+        // An online balance is priced at the whole total, and so is the offline one that replaces it.
+        const pending = (await startPayment(requestId, 'BALANCE', 'VNPAY')).body;
+        expect(pending.amountVnd).toBe(10_000_000);
+        const recorded = await t.request({
+          method: 'POST',
+          url: `/admin/orders/${requestId}/payments/offline`,
+          auth: admin.auth,
+          body: { note: 'Paid in full at the office' },
+        });
+        expect(recorded.status).toBe(201);
+        expect(recorded.body).toMatchObject({ kind: 'BALANCE', amountVnd: 10_000_000 });
+        const after = await t.request({
+          method: 'GET',
+          url: `/orders/${requestId}/payments`,
+          auth: buyer.auth,
+        });
+        expect(after.body.balancePaidAt).not.toBeNull();
       } finally {
         vi.stubEnv('SEPAY_WEBHOOK_API_KEY', SEPAY_KEY);
       }

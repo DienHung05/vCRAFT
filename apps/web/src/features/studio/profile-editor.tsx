@@ -1048,7 +1048,7 @@ function CapacitySection({ household, client, reload }: SectionProps) {
   const [values, setValues] = useState<Partial<Record<ProductCategory, string>>>(capacityValues);
   const { state, save } = useSection(household, client, reload, () => setValues(capacityValues()));
   return (
-    <Card className="flex flex-col gap-4 p-5">
+    <Card id="capacity" className="flex scroll-mt-24 flex-col gap-4 p-5">
       <h2 className="text-h3">{t('capacity')}</h2>
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-5">
         {PRODUCT_CATEGORIES.map((category) => (

@@ -8,8 +8,8 @@
 - **Đã có và đã chạy thử:** seeder dữ liệu mẫu, `pnpm demo:reset` có cổng chặn, `pnpm demo:verify`, bộ kiểm tra `demo-seed.integration.test.ts` (chạy qua API thật trên cả PostgreSQL và MySQL), script tạo tài khoản Supabase Auth, script đo ảnh 12 MB, script đua hai tab.
 - **Tin tức đã có:** entity `News`, API công khai `GET /api/v1/news` (+ `/news/:slug`) và trang `/vi/tin-tuc` (EN: `/en/news`). Trang này đọc API thật phía server qua `API_INTERNAL_URL` (xem `.env.example`; API không gọi được thì trang hiện thông báo, không lỗi). Seed loads 21 real village stories with their sources (GH#314, GH#333).
 - **Ảnh có giấy phép đã nằm trong CSDL và Supabase Storage** (GH#26, §1B): `pnpm demo:media` tải ảnh minh hoạ lên `vcraft-media`, giấy tờ mẫu lên `vcraft-private` và nối vào seed kèm ghi công (`media_link`, mô tả vi/en). `demo:media` cũng đặt `coverUrl`/`coverAlt`/`coverAltEn` của 210 sản phẩm (`BT7K2QXM`, `84PZKVJU` và 208 sản phẩm có ảnh riêng `pp-<mã>` hoặc `pp2-<mã>`) và `coverUrl` của 4 hộ về URL trong bucket nên API công khai (GH#47) trả ảnh Supabase. Nhật ký không còn ảnh nào (xem quy tắc bên dưới).
-- **Trang công khai của `apps/web` đọc API thật** (trang chủ, sản phẩm, nghệ nhân, truy xuất, bản đồ, tin tức). `apps/web/src/lib/demo/data.ts` chỉ còn phục vụ các màn yêu cầu báo giá và điều phối đang dùng dữ liệu minh họa.
-- Một số bước chưa có màn hình (duyệt hộ của Admin, xuất bản của hộ): kịch bản e2e gọi thẳng API bằng đúng phiên đã đăng nhập và ghi chú ở từng bước.
+- **Trang công khai của `apps/web` đọc API thật** (trang chủ, sản phẩm, nghệ nhân, truy xuất, bản đồ, tin tức). Màn yêu cầu báo giá và điều phối cũng đọc API thật; `apps/web/src/lib/demo/data.ts` chỉ còn được import cho kiểu dữ liệu (`LogStage`, `DemoPhotoRef`) ở trang chủ, trình kiểm chuỗi nhật ký, `ImageSlot` và `lib/demo/stage-photos.ts` (ảnh và ghi công nằm riêng ở `photo-credits.ts`), không còn là nguồn dữ liệu của màn nào.
+- Mọi bước của kịch bản e2e đều thao tác qua màn hình: Admin duyệt hộ ở `/admin/duyet-ho` (`household-review.tsx`: Duyệt, Từ chối, Yêu cầu bổ sung) và hộ xuất bản sản phẩm trong Studio (`product-list.tsx`, `product-editor.tsx`).
 - **Triển khai production (GH#39):** web trên Vercel, API + worker + Redis trên Render, CSDL/Auth/Storage ở Supabase ([ADR-16](../adr/0016-deploy-vercel-render.md)); cấu hình nằm trong repo (`render.yaml`, `apps/web/vercel.json`, `next.config.ts`), các bước tạo project và dán biến môi trường ở [docs/operations/deploy.md](../operations/deploy.md). Đã chạy thử local: build production và khởi động API/worker bằng đúng lệnh start, rewrite `/api/*`. **Chưa** chạy trên Vercel/Render thật vì cần tài khoản của nhóm.
 - **Chưa kiểm chứng được ở máy phát triển:** chạy trên URL đã triển khai, Lighthouse, tạo người dùng trên Supabase Auth thật, dựng Supabase cục bộ. Các mục này nằm trong checklist §7 để làm một lần trước ngày thi.
 
@@ -208,6 +208,17 @@ pnpm assistant:reindex                # then rebuild the Fox assistant's knowled
 pnpm demo:verify -- --offline         # the check "No demo disclaimer text" must pass
 ```
 
+### Moving the demo workshop pins inside the commune boundary (GH#396)
+
+The drawn Bát Tràng commune polygon (OpenStreetMap, post-2025 merger, about 7 km by 9 km, `packages/domain/src/village/bat-trang-boundary.json`) is the source of truth for "in the commune"; it is not too tight. The old seed drew workshop pins from a small box around the old village core and 14 of the 22 landed outside the polygon, so the admin review flagged approved demo households with "Pinned outside Bát Tràng commune". The seed now pulls every pin that falls outside to the nearest point inside the polygon with a ~30 m inward margin (`boundary-fit.ts`); pins already inside are unchanged and the random stream (so every frozen id and trace code) is unchanged.
+
+`pnpm demo:refresh-coordinates [-- --dry-run]` applies the same fit to a live database without a reset. It writes only `workshop.lat` and `workshop.lng` of the workshops with deterministic demo ids, in one transaction, and is idempotent (a second run reports `changed: 0`). A dry run is read-only; a real run needs the `demo:reset` guard (`APP_ENV=demo` and `DEMO_RESET_CONFIRM=<host>:<port>/<db>`).
+
+```bash
+pnpm demo:refresh-coordinates -- --dry-run   # prints counts and the ids of the workshops it would move; writes nothing
+pnpm demo:refresh-coordinates                # applies the change
+```
+
 ### Swapping the seed news for the real stories on a live database (GH#314)
 
 `pnpm demo:reset` wipes every business table, so a live database gets the real stories with `pnpm news:swap` instead. The command is keyed on the stable news ids (UUID v5 of the seed key in `pools.ts`), idempotent and non-destructive: it creates or updates the `news` rows of the seed pool (text, publish date, publisher, link and original date), links their covers from `photo-manifest.ts` with Vietnamese and English alt text, and sets the old invented stories (`LEGACY_NEWS_KEYS` in `news-seed.ts`) that are no longer in the pool back to draft. It never deletes a row and writes nothing outside `news`, the news cover rows of `media_link` and the outbox event that makes the assistant reindex. Stories of a household that does not exist in the target database are skipped and counted.
@@ -227,10 +238,10 @@ Một dòng một bước. Cột "Giám khảo thấy gì" là điều để ki�
 
 | # | Bước | Giám khảo thấy gì trên màn hình | Vai trò thao tác | Dữ liệu / trạng thái hiện tại |
 | --- | --- | --- | --- | --- |
-| 1 | Quét QR trên cốc | Điện thoại mở `/q/DF6P3WZE` → trang truy xuất: dòng thời gian 7 mốc lửa, "Nhật ký toàn vẹn" xanh | Giám khảo (khách vãng lai) | API `/trace/DF6P3WZE` chạy trên dữ liệu seed (test tích hợp). Trang web hiển thị dữ liệu minh họa tĩnh cho tới khi nối API |
-| 2 | Duyệt hộ | Hàng đợi có "Gốm Bảo Châu"; sau duyệt hộ thành `APPROVED`, ghi nhật ký thao tác | Admin | Có API; **chưa có màn hình** (nav Admin ghi "Hàng đợi duyệt: sắp có"). E2E gọi API |
-| 3 | Hộ xuất bản sản phẩm | Điện thoại hộ: sản phẩm nháp chuyển `PUBLISHED`, trang QR của nó mở được thay vì "không tìm thấy" | Hộ (điện thoại) | Có API và 2 bản nháp 7 mốc sẵn sàng; **chưa có màn hình** |
-| 4 | Khám phá xưởng | Trang hộ Lò Đức Phát, bản đồ làng có ghim xưởng, giờ mở cửa | Giám khảo / Buyer | Trang web dùng dữ liệu tĩnh; API `/households/lo-duc-phat`, `/map/workshops` có dữ liệu seed |
+| 1 | Quét QR trên cốc | Điện thoại mở `/q/DF6P3WZE` → trang truy xuất: dòng thời gian 7 mốc lửa, "Nhật ký toàn vẹn" xanh | Giám khảo (khách vãng lai) | API `/trace/DF6P3WZE` chạy trên dữ liệu seed (test tích hợp). Trang web đọc API thật |
+| 2 | Duyệt hộ | Hàng đợi có "Gốm Bảo Châu"; sau duyệt hộ thành `APPROVED`, ghi nhật ký thao tác | Admin | Có màn `/vi/admin/duyet-ho` (hàng đợi và trang duyệt từng hộ); E2E thao tác qua UI |
+| 3 | Hộ xuất bản sản phẩm | Điện thoại hộ: sản phẩm nháp chuyển `PUBLISHED`, trang QR của nó mở được thay vì "không tìm thấy" | Hộ (điện thoại) | Có màn xuất bản trong Studio (`/vi/studio/san-pham`) và 2 bản nháp 7 mốc sẵn sàng; E2E thao tác qua UI |
+| 4 | Khám phá xưởng | Trang hộ Lò Đức Phát, bản đồ làng có ghim xưởng, giờ mở cửa | Giám khảo / Buyer | Trang web đọc API thật (`/households/lo-duc-phat`, `/map/workshops`) trên dữ liệu seed |
 | 5 | Tin tức | Trang tin có 15+ bài, gồm tin chung của làng và tin theo từng hộ | Buyer | Có màn `/vi/tin-tuc` đọc API thật, 21 real village stories with sources (GH#314, GH#333; no household stories, no price table); lọc theo hộ qua `?household=<slug>` |
 | 6 | Buyer báo giá | `/vi/yeu-cau-bao-gia/<biddingToAccept>`: chào giá chia 4 hộ, tổng tiền, phụ phí, điều khoản vận chuyển; sau khi chốt, đơn "Đã chốt" và 4 phân bổ chờ xác nhận | Buyer (Chrome) | Có màn xem và nút "Chốt chào giá này" (mở hộp thoại xác nhận); E2E thao tác qua UI |
 | 7 | Admin điều phối | `/vi/admin/dieu-phoi/<sentOptIn>`: nút "Nhận điều phối" biến mất sau khi nhận; yêu cầu `sentCoordinated` hiện các đề xuất hộ | Admin (Edge) | Có màn (`LiveCoordination`) |
@@ -412,6 +423,7 @@ Sau khi chuyển sang local, nhớ: dữ liệu local độc lập với Supabas
 | `pnpm demo:media [-- --force \| --check]` | Tải ảnh có giấy phép + giấy tờ mẫu lên Storage và nối vào seed (cần `APP_ENV=demo`; chạy sau mỗi `demo:reset`, §1B) |
 | `pnpm demo:verify [-- --offline]` | Kiểm dữ liệu demo còn nguyên, gồm ảnh và giấy tờ (chỉ đọc; `--offline` bỏ HEAD tới URL ảnh) |
 | `pnpm demo:refresh-text [-- --dry-run]` | Rewrite household stories, artisan bios and news text in place and strip the old sample-data disclaimers (text only, §3); then `pnpm assistant:reindex` |
+| `pnpm demo:refresh-coordinates [-- --dry-run]` | Move demo workshop pins that lie outside the Bát Tràng boundary to the nearest point inside it (lat/lng only, §3) |
 | `pnpm demo:auth [-- --check]` | Tạo/kiểm 4 người dùng Supabase Auth với id cố định |
 | `pnpm demo:e2e` | Kịch bản QR → biên nhận trên `E2E_BASE_URL` (làm bẩn dữ liệu, reset sau) |
 | `pnpm demo:e2e:preexam` | WCAG, đáp ứng, không nạp lại trang, bàn phím (đặt `DEMO_PREEXAM=1` tự động) |

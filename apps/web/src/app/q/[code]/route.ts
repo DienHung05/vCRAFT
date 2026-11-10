@@ -71,6 +71,12 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/q/[code]'>):
   const location = `/${locale}${pathnames['/truy-xuat/[code]'][locale].replace('[code]', encodeURIComponent(code))}`;
   return new Response(null, {
     status: 308,
-    headers: { Location: location, Vary: 'Accept-Language, Cookie' },
+    // Browsers cache a 308 indefinitely; without `no-store` a repeat scan from the same phone would
+    // skip this route and never be counted.
+    headers: {
+      Location: location,
+      'Cache-Control': 'private, no-store',
+      Vary: 'Accept-Language, Cookie',
+    },
   });
 }

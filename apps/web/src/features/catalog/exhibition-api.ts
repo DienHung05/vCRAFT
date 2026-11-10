@@ -10,8 +10,7 @@ import {
   VillageStatsSchema,
 } from '@vcraft/contracts';
 import { cache } from 'react';
-import { apiBaseUrl } from '@/features/news/news-api';
-import { logApiFailure } from '@/lib/api/log-api-failure';
+import { fetchPublicJson, type JsonSchemaLike } from '@/lib/api/fetch-public-json';
 import { type ProductFilters, productsQueryString } from './exhibition-query';
 
 /** `not-found` là 404 thật của API; `unavailable` là API tắt, chậm hoặc trả sai dạng (hiện thử lại). */
@@ -20,38 +19,14 @@ export type ApiResult<T> =
   | { status: 'not-found' }
   | { status: 'unavailable' };
 
-async function getJson<T>(
+function getJson<T>(
   path: string,
-  schema: {
-    safeParse: (
-      value: unknown,
-    ) =>
-      | { success: true; data: T }
-      | { success: false; error: { issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey> }> } };
-  },
+  schema: JsonSchemaLike<T>,
   /** Slow-changing helpers (redirects, village stats) opt back into ISR; everything else is
    * `no-store` so a suspension or withdrawal is visible on the very next request (vCRAFT-8my.1). */
   next: { revalidate: number } | undefined = undefined,
 ): Promise<ApiResult<T>> {
-  try {
-    const res = await fetch(`${apiBaseUrl()}${path}`, {
-      headers: { accept: 'application/json' },
-      ...(next ? { next } : { cache: 'no-store' }),
-      signal: AbortSignal.timeout(4000),
-    });
-    if (res.status === 404) return { status: 'not-found' };
-    if (!res.ok) {
-      logApiFailure(path, { kind: 'http', status: res.status });
-      return { status: 'unavailable' };
-    }
-    const parsed = schema.safeParse(await res.json());
-    if (parsed.success) return { status: 'ok', data: parsed.data };
-    logApiFailure(path, { kind: 'schema', issues: parsed.error.issues });
-    return { status: 'unavailable' };
-  } catch (error) {
-    logApiFailure(path, { kind: 'error', error });
-    return { status: 'unavailable' };
-  }
+  return fetchPublicJson(path, schema, next ? { revalidate: next.revalidate } : {});
 }
 
 export const fetchProducts = (filters: ProductFilters = {}) =>

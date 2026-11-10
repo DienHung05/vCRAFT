@@ -14,7 +14,7 @@ import { WizardWorkshopStep } from './wizard-workshop-step';
 /**
  * Wizard đăng ký hộ (FR-AUTH-02): Tài khoản → Thông tin hộ → Vị trí xưởng → Giấy tờ xác minh.
  * `initialStep` do server suy từ CSDL (xem `resolveWizardStart`), nên mở lại giữa chừng thì nối đúng
- * bước dang dở. Hồ sơ vào `PENDING_REVIEW` ngay khi nộp thông tin hộ; bước cuối đưa tới trang trạng thái.
+ * bước dang dở. Hồ sơ là `DRAFT` từ khi nộp thông tin hộ và chỉ vào `PENDING_REVIEW` khi nộp ở bước cuối.
  */
 export function HouseholdWizard({
   initialStep,

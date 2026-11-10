@@ -21,7 +21,7 @@ export async function generateMetadata({
   return { title: t('title'), robots: { index: false } };
 }
 
-type Status = HouseholdDto['status'];
+type Status = Exclude<HouseholdDto['status'], 'DRAFT'>;
 
 const BADGE_TONE: Record<Status, NonNullable<BadgeProps['tone']>> = {
   PENDING_REVIEW: 'lacquer',
@@ -61,6 +61,9 @@ export default async function HouseholdProfilePage({
   const household = viewer?.household;
   // Vai trò hộ mà chưa có hồ sơ không xảy ra bình thường; đưa về wizard để nộp.
   if (!household) return redirect({ href: '/dang-ky-nghe-nhan', locale });
+
+  // A draft application is finished in the wizard, not here.
+  if (household.status === 'DRAFT') return redirect({ href: '/dang-ky-nghe-nhan', locale });
 
   if (household.status === 'APPROVED' && firstParam(query.submitted) !== '1') {
     return <ProfileEditor />;

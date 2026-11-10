@@ -15,9 +15,11 @@ import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
 import { TableSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
+import { useLatestRequest } from '@/lib/use-latest-request';
 import { useAdminClient } from './admin-dashboard';
 
-const inputClass = 'rounded-input border border-ink/20 bg-surface px-2 py-1.5';
+// `max-w-full`: a select is as wide as its longest option, which overflowed 360 px screens in English (GH#393).
+const inputClass = 'max-w-full rounded-input border border-ink/20 bg-surface px-2 py-1.5';
 
 type Filters = Pick<Partial<AuditLogQuery>, 'actorId' | 'action' | 'from' | 'to'>;
 
@@ -79,18 +81,22 @@ export function AuditLogView({ client: provided }: { client?: AdminClient }) {
   const [cursor, setCursor] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const latest = useLatestRequest();
 
   const load = useCallback(async () => {
     if (!client) return;
+    const id = latest.begin();
     setFailed(false);
+    setLoadingMore(false);
     try {
       const page = await client.auditLog(filters);
+      if (!latest.isCurrent(id)) return;
       setRows(page.data);
       setCursor(page.nextCursor);
     } catch {
-      setFailed(true);
+      if (latest.isCurrent(id)) setFailed(true);
     }
-  }, [client, filters]);
+  }, [client, filters, latest]);
 
   useEffect(() => {
     void load();
@@ -112,15 +118,18 @@ export function AuditLogView({ client: provided }: { client?: AdminClient }) {
 
   const more = async () => {
     if (!client || !cursor || loadingMore) return;
+    // Does not begin a new request: a filter change must still supersede this page.
+    const id = latest.peek();
     setLoadingMore(true);
     try {
       const page = await client.auditLog({ ...filters, cursor });
+      if (!latest.isCurrent(id)) return;
       setRows((current) => [...(current ?? []), ...page.data]);
       setCursor(page.nextCursor);
     } catch {
-      setFailed(true);
+      if (latest.isCurrent(id)) setFailed(true);
     } finally {
-      setLoadingMore(false);
+      if (latest.isCurrent(id)) setLoadingMore(false);
     }
   };
 
@@ -135,7 +144,7 @@ export function AuditLogView({ client: provided }: { client?: AdminClient }) {
         className="flex flex-wrap items-end gap-4"
         onSubmit={(event) => event.preventDefault()}
       >
-        <label className="flex flex-col gap-1 text-small">
+        <label className="flex min-w-0 max-w-full flex-col gap-1 text-small">
           {t('actor')}
           <select
             value={filters.actorId ?? ''}
@@ -152,7 +161,7 @@ export function AuditLogView({ client: provided }: { client?: AdminClient }) {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-small">
+        <label className="flex min-w-0 max-w-full flex-col gap-1 text-small">
           {t('action')}
           <select
             value={filters.action ?? ''}
@@ -172,7 +181,7 @@ export function AuditLogView({ client: provided }: { client?: AdminClient }) {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-small">
+        <label className="flex min-w-0 max-w-full flex-col gap-1 text-small">
           {t('from')}
           <input
             type="date"
@@ -181,7 +190,7 @@ export function AuditLogView({ client: provided }: { client?: AdminClient }) {
             className={inputClass}
           />
         </label>
-        <label className="flex flex-col gap-1 text-small">
+        <label className="flex min-w-0 max-w-full flex-col gap-1 text-small">
           {t('to')}
           <input
             type="date"

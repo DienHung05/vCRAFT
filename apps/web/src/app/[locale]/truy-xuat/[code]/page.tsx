@@ -13,7 +13,6 @@ import { getTranslations } from 'next-intl/server';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
-import { Reveal } from '@/experience/motion/reveal';
 import { fetchHousehold, fetchTrace } from '@/features/catalog/exhibition-api';
 import {
   altFor,
@@ -28,7 +27,7 @@ import { MakerCredits } from '@/features/exhibition/maker-credits';
 import { VisitSection } from '@/features/exhibition/visit-section';
 import { ChainVerifier } from '@/features/traceability/chain-verifier';
 import { FireTimeline } from '@/features/traceability/fire-timeline';
-import { pieceKindOf } from '@/features/traceability/piece-shapes';
+import '@/features/traceability/trace-story.css';
 import { TraceQr } from '@/features/traceability/trace-qr';
 import { Link } from '@/i18n/navigation';
 import { frameRatioOf } from '@/lib/images';
@@ -74,10 +73,8 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
     getTranslations('common'),
   ]);
   const result = await fetchTrace(code);
-  if (result.status === 'unavailable') {
-    const errors = await getTranslations('errors.generic');
-    return <DataUnavailable heading={errors('title')} />;
-  }
+  const unavailableHeading =
+    result.status === 'unavailable' ? (await getTranslations('errors.generic'))('title') : null;
   const trace = result.status === 'ok' ? result.data : null;
   // Mã không có, hoặc hộ làm ra nó đã bị khóa, là cảnh báo hàng không xác thực; sản phẩm tự rút thì chỉ là thông báo.
   const withdrawn = trace?.availability === 'UNAVAILABLE' && trace.reason === 'PRODUCT_WITHDRAWN';
@@ -101,20 +98,73 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
 
   return (
     <div
-      className={`mx-auto min-h-svh bg-paper ${visible ? 'trace-notebook max-w-6xl' : 'max-w-xl'}`}
+      className={`mx-auto min-h-svh bg-paper ${visible ? 'trace-notebook max-w-editorial' : 'max-w-xl'}`}
     >
-      <header className="flex items-center justify-between gap-3 px-5 py-4">
-        <Link href="/" aria-label={t('home')} className="shrink-0">
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-ink/10 px-5 py-3">
+        <Link
+          href="/"
+          className="flex min-h-11 items-center gap-2 text-small text-ink hover:text-clay"
+        >
           <Logo size={26} />
+          <span>{t('home')}</span>
         </Link>
-        <span className="min-w-0 truncate font-mono text-[0.7rem] tracking-[0.25em] text-ash uppercase">
-          {t('book')}
-        </span>
+        <span className="text-small text-ash">{t('book')}</span>
         <LocaleSwitcher />
       </header>
+      <nav
+        aria-label={t('navigation')}
+        className="trace-navigation flex flex-wrap items-center gap-2 px-5 py-3"
+      >
+        {visible ? (
+          <Link
+            href={{ pathname: '/san-pham/[slug]', params: { slug: visible.product.slug } }}
+            className={buttonVariants({ variant: 'secondary' })}
+          >
+            {t('backToProduct')}
+          </Link>
+        ) : null}
+        <Link href="/san-pham" className={buttonVariants({ variant: 'ghost' })}>
+          {t('browseProducts')}
+        </Link>
+        {visible ? (
+          <Link
+            href={{ pathname: '/nghe-nhan/[slug]', params: { slug: visible.household.slug } }}
+            className={buttonVariants({ variant: 'ghost' })}
+          >
+            {t('viewHousehold')}
+          </Link>
+        ) : null}
+      </nav>
+      {visible ? (
+        <nav
+          aria-label={t('contents')}
+          className="flex flex-wrap gap-x-5 gap-y-1 border-y border-ink/10 px-5 py-1 text-small text-clay"
+        >
+          <a
+            href="#verify-title"
+            className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
+          >
+            {t('checkJournal')}
+          </a>
+          <a
+            href="#journey-title"
+            className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
+          >
+            {t('readJournal')}
+          </a>
+          <a
+            href="#workshop"
+            className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
+          >
+            {t('ctaVisit')}
+          </a>
+        </nav>
+      ) : null}
 
       <main id="main">
-        {withdrawn ? (
+        {unavailableHeading ? (
+          <DataUnavailable heading={unavailableHeading} />
+        ) : withdrawn ? (
           <section className="mx-5 mt-6 rounded-card border border-ink/15 p-8 text-center">
             <VaseFigure className="mx-auto h-20 opacity-60" body="var(--color-ash)" />
             <h1 className="mt-6 text-h2">{t('withdrawnTitle')}</h1>
@@ -142,106 +192,108 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
           </section>
         ) : (
           <>
-            <section className="trace-intro mx-auto max-w-xl px-5 pt-6 lg:grid lg:max-w-none lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-center lg:gap-12">
-              <div>
-                <p className="text-small text-ash">{t('scanned')}</p>
-                <h1 className="mt-1 break-words text-h1">{productName}</h1>
-                <p className="mt-2 text-ash">{visible.household.name}</p>
-                {visible.product.status === 'SOLD' ? (
-                  <Badge tone="outline" className="mt-3">
-                    {common('sold')}
-                  </Badge>
-                ) : null}
+            <div className="trace-spread">
+              <div className="trace-summary">
+                <section className="trace-intro px-5 pt-6">
+                  <div>
+                    <p className="text-small text-ash">{t('scanned')}</p>
+                    <h1 className="mt-1 break-words text-h2">{productName}</h1>
+                    <p className="mt-2 text-ash">{visible.household.name}</p>
+                    {visible.product.status === 'SOLD' ? (
+                      <Badge tone="outline" className="mt-3">
+                        {common('sold')}
+                      </Badge>
+                    ) : null}
+                  </div>
+                  {image ? (
+                    <figure className="trace-product-photo">
+                      <ImageSlot
+                        alt={image.alt}
+                        tint={tintOf(visible.product.traceCode)}
+                        ratio={image.variants ? frameRatioOf(image.variants) : '4/5'}
+                        fit="contain"
+                        {...slotPhoto(image)}
+                        priority
+                        sizes="(min-width: 1024px) 16rem, (min-width: 640px) 12rem, 40vw"
+                      />
+                    </figure>
+                  ) : null}
+                </section>
+
+                {/* Biến thể C: mở ngay bằng ấn và nhật ký. Ấn chỉ đóng khi trình duyệt tự kiểm chuỗi băm khớp. */}
+                <ChainVerifier
+                  productId={visible.journal.productId}
+                  entries={toLogEntries(visible.journal)}
+                  household={visible.household.name}
+                  householdVerified={visible.household.status === 'APPROVED'}
+                />
+                <p className="mt-3 px-5 text-small text-ash">
+                  {t('scans', { count: visible.scanCount })}
+                </p>
               </div>
-              {image ? (
-                <figure className="mt-5 max-w-xs">
-                  <ImageSlot
-                    alt={image.alt}
-                    tint={tintOf(visible.product.traceCode)}
-                    ratio={image.variants ? frameRatioOf(image.variants) : '4/5'}
-                    fit="contain"
-                    {...slotPhoto(image)}
-                    priority
-                    sizes="(min-width: 640px) 20rem, 80vw"
-                  />
-                </figure>
-              ) : null}
-            </section>
-
-            {/* Biến thể C: mở ngay bằng ấn và nhật ký. Ấn chỉ đóng khi trình duyệt tự kiểm chuỗi băm khớp. */}
-            <ChainVerifier
-              productId={visible.journal.productId}
-              entries={toLogEntries(visible.journal)}
-              household={visible.household.name}
-              householdVerified={visible.household.status === 'APPROVED'}
-            />
-            <p className="mt-3 px-5 text-small text-ash">
-              {t('scans', { count: visible.scanCount })}
-            </p>
-
-            <section aria-labelledby="journey-title" className="trace-journey px-5 pt-12">
-              <Reveal>
+              <section aria-labelledby="journey-title" className="trace-journey px-5 pt-10">
                 <h2 id="journey-title">{t('timelineTitle')}</h2>
                 <p className="mt-2 mb-8 text-small text-ash">{t('timelineLead')}</p>
-              </Reveal>
-              <FireTimeline
-                entries={toLogEntries(visible.journal)}
+                <FireTimeline
+                  entries={toLogEntries(visible.journal)}
+                  household={visible.household.name}
+                />
+              </section>
+            </div>
+            <div className="trace-context">
+              <div>
+                <MakerCredits
+                  compact
+                  className="trace-makers px-5 pt-12"
+                  household={visible.household.name}
+                  makers={visible.product.makers.map((m) => ({
+                    name: m.name,
+                    detail: m.contribution,
+                  }))}
+                />
+
+                {/* Đi ngược về món đồ và hộ làm ra nó. */}
+                <section aria-labelledby="household-title" className="px-5 pt-12">
+                  <h2 id="household-title">{ex('householdTitle')}</h2>
+                  <ImageSlot
+                    alt={householdAlt}
+                    tint={tintOf(visible.household.slug)}
+                    ratio="3/2"
+                    {...slotPhoto(householdImage)}
+                    sizes="(min-width: 640px) 32rem, 100vw"
+                    className="mt-6 grid place-items-center"
+                  >
+                    {householdImage ? null : (
+                      <ProductFigure
+                        kind="generic"
+                        className="h-1/2"
+                        body="var(--color-paper)"
+                        band={tintOf(visible.household.slug)}
+                      />
+                    )}
+                  </ImageSlot>
+                  {visible.product.artisanNote ? (
+                    <blockquote className="mt-6 font-display text-h3 leading-snug text-ink type-soft">
+                      “{visible.product.artisanNote}”
+                    </blockquote>
+                  ) : null}
+                  <Link
+                    href={{
+                      pathname: '/nghe-nhan/[slug]',
+                      params: { slug: visible.household.slug },
+                    }}
+                    className={`${buttonVariants({ variant: 'secondary' })} mt-6`}
+                  >
+                    {ex('householdCta', { household: visible.household.name })}
+                  </Link>
+                </section>
+              </div>
+              <VisitSection
+                className="px-5 pt-12"
                 household={visible.household.name}
-                pieceKind={pieceKindOf(visible.product.category, visible.product.name)}
-                glaze={tintOf(visible.product.traceCode)}
+                workshops={profile?.status === 'ok' ? toVisitWorkshops(profile.data.workshops) : []}
               />
-            </section>
-
-            <MakerCredits
-              compact
-              className="px-5 pt-12"
-              household={visible.household.name}
-              makers={visible.product.makers.map((m) => ({
-                name: m.name,
-                detail: m.contribution,
-              }))}
-            />
-
-            {/* Đi ngược về món đồ và hộ làm ra nó. */}
-            <section aria-labelledby="household-title" className="px-5 pt-12">
-              <Reveal>
-                <h2 id="household-title">{ex('householdTitle')}</h2>
-                <ImageSlot
-                  alt={householdAlt}
-                  tint={tintOf(visible.household.slug)}
-                  ratio="3/2"
-                  {...slotPhoto(householdImage)}
-                  sizes="(min-width: 640px) 32rem, 100vw"
-                  className="mt-6 grid place-items-center"
-                >
-                  {householdImage ? null : (
-                    <ProductFigure
-                      kind="generic"
-                      className="h-1/2"
-                      body="var(--color-paper)"
-                      band={tintOf(visible.household.slug)}
-                    />
-                  )}
-                </ImageSlot>
-                {visible.product.artisanNote ? (
-                  <blockquote className="mt-6 font-display text-h3 leading-snug text-ink type-soft">
-                    “{visible.product.artisanNote}”
-                  </blockquote>
-                ) : null}
-                <Link
-                  href={{ pathname: '/nghe-nhan/[slug]', params: { slug: visible.household.slug } }}
-                  className={`${buttonVariants({ variant: 'secondary' })} mt-6`}
-                >
-                  {ex('householdCta', { household: visible.household.name })}
-                </Link>
-              </Reveal>
-            </section>
-
-            <VisitSection
-              className="px-5 pt-12"
-              household={visible.household.name}
-              workshops={profile?.status === 'ok' ? toVisitWorkshops(profile.data.workshops) : []}
-            />
+            </div>
 
             {profile?.status === 'ok' && profile.data.certifications.some((c) => c.verified) ? (
               <section aria-labelledby="certs-title" className="px-5 pt-12">
@@ -283,7 +335,10 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
               </Link>
             </section>
 
-            <nav className="sticky bottom-0 z-30 mt-12 flex gap-3 border-ink/10 border-t bg-paper/90 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-md">
+            <nav
+              aria-label={t('ctaVisit')}
+              className="trace-actions sticky bottom-0 z-30 mt-12 flex gap-3 border-ink/10 border-t bg-paper/90 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-md"
+            >
               {/* Both labels share the row and wrap when the English text is long (GH#257). */}
               <a href="#workshop" className={`${buttonVariants({ size: 'lg' })} ${CTA_FIT}`}>
                 {t('ctaVisit')}

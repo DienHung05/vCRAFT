@@ -110,7 +110,7 @@ export async function loginContext(
   return session;
 }
 
-/** Gọi API `/api/v1` bằng phiên đã đăng nhập (cho bước chưa có màn hình: duyệt hộ, xuất bản, chốt chào giá). */
+/** Gọi API `/api/v1` bằng phiên đã đăng nhập (chỉ cho bước thật sự chưa có màn hình; hiện không bước nào của kịch bản demo dùng). */
 export async function callApi<T = unknown>(
   session: SupabaseSession,
   baseUrl: string,

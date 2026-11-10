@@ -17,12 +17,12 @@ import { browserAccountClient } from '@/lib/auth/supabase-browser';
 import { notify } from '@/lib/notify';
 import { type AuthErrorKey, authErrorKey } from './auth-errors';
 import { FormAlert, TextAreaField, TextField } from './fields';
-import { type HouseholdStepValues, householdStepSchema } from './schemas';
+import { type HouseholdStepValues, householdStepSchema, serverFieldMessageKey } from './schemas';
 import { useValidationMessage } from './use-validation-message';
 
 /**
- * Bước 2 của wizard: thông tin hộ. Gửi `POST /me/household` ⇒ hồ sơ vào `PENDING_REVIEW` và tài khoản
- * thành người đại diện hộ (xưởng, giấy tờ ở hai bước sau cần vai trò đó). Đường dẫn trang tự sinh từ
+ * Bước 2 của wizard: thông tin hộ. Gửi `POST /me/household` ⇒ hồ sơ ở trạng thái `DRAFT` (chỉ vào
+ * hàng đợi duyệt khi nộp ở bước cuối) và tài khoản thành người đại diện hộ (xưởng, giấy tờ ở hai bước sau cần vai trò đó). Đường dẫn trang tự sinh từ
  * tên (bỏ dấu) cho tới khi người dùng tự sửa. Lỗi giữ nguyên mọi ô; lỗi theo field của API gắn đúng ô.
  */
 export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
@@ -36,6 +36,10 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
   const [needsConsent, setNeedsConsent] = useState(false);
   const [consent, setConsent] = useState(false);
   const [consentMissing, setConsentMissing] = useState(false);
+  // The citizen ID number is required here, and the API needs the ID_DOCUMENT consent to take it (GH#455).
+  const [needsIdConsent, setNeedsIdConsent] = useState(true);
+  const [idConsent, setIdConsent] = useState(false);
+  const [idConsentMissing, setIdConsentMissing] = useState(false);
   useEffect(() => {
     let active = true;
     browserAccountClient()
@@ -44,7 +48,16 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
         const given = list.data.some(
           (item) => item.purpose === 'SIGN_UP' && item.policyVersion === list.currentPolicyVersion,
         );
-        if (active) setNeedsConsent(!given);
+        const idGiven = list.data.some(
+          (item) =>
+            item.purpose === 'ID_DOCUMENT' &&
+            item.policyVersion === list.currentPolicyVersion &&
+            !item.withdrawnAt,
+        );
+        if (active) {
+          setNeedsConsent(!given);
+          setNeedsIdConsent(!idGiven);
+        }
       })
       .catch(() => active && setNeedsConsent(true));
     return () => {
@@ -82,13 +95,15 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
 
   const onSubmit = handleSubmit(async (values) => {
     setError(null);
-    if (needsConsent && !consent) {
-      setConsentMissing(true);
-      return;
-    }
+    if (needsConsent && !consent) setConsentMissing(true);
+    if (needsIdConsent && !idConsent) setIdConsentMissing(true);
+    if ((needsConsent && !consent) || (needsIdConsent && !idConsent)) return;
     try {
       if (needsConsent) {
         await browserAccountClient().recordConsent('SIGN_UP', PRIVACY_POLICY_VERSION);
+      }
+      if (needsIdConsent) {
+        await browserAccountClient().recordConsent('ID_DOCUMENT', PRIVACY_POLICY_VERSION);
       }
       await browserAccountClient().applyHousehold({
         name: values.name,
@@ -103,7 +118,7 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
       onDone();
     } catch (failure) {
       if (failure instanceof AccountApiError && failure.fieldErrors.length > 0) {
-        for (const { path, message: text } of failure.fieldErrors) {
+        for (const { path, code } of failure.fieldErrors) {
           if (
             path === 'name' ||
             path === 'slug' ||
@@ -111,7 +126,7 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
             path === 'idNumber' ||
             path === 'history'
           ) {
-            setFieldError(path, { message: text });
+            setFieldError(path, { message: serverFieldMessageKey(path, code) });
           }
         }
         return;
@@ -189,6 +204,18 @@ export function WizardHouseholdStep({ onDone }: { onDone: () => void }) {
         error={message(errors.idNumber)}
         {...register('idNumber')}
       />
+      {needsIdConsent ? (
+        <ConsentCheckbox
+          id="household-id-consent"
+          purpose="household"
+          checked={idConsent}
+          onChange={(event) => {
+            setIdConsent(event.target.checked);
+            setIdConsentMissing(false);
+          }}
+          error={idConsentMissing ? t('validation.consentRequired') : undefined}
+        />
+      ) : null}
       <TextAreaField
         label={t('wizard.household.history')}
         optionalLabel={t('fields.optional')}

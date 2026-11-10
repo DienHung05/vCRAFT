@@ -1,4 +1,4 @@
-import { type EntityManager, MikroORM } from '@mikro-orm/core';
+import { type EntityManager, type FilterQuery, MikroORM } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type {
   AdminDashboardDto,
@@ -8,9 +8,11 @@ import type {
   CreateArtisanRequest,
   CreateProductRequest,
   CreateWorkshopRequest,
+  FieldError,
   HouseholdDocumentDto,
   HouseholdDto,
   ListHouseholdsQuery,
+  MapBbox,
   MapPinsDto,
   PriceSuggestionDto,
   ProductDto,
@@ -26,6 +28,7 @@ import type {
   UpdateHouseholdProfileRequest,
   UpdateProductRequest,
 } from '@vcraft/contracts';
+import { MAP_PINS_BBOX_LIMIT } from '@vcraft/contracts';
 import {
   AppUser,
   Artisan,
@@ -156,6 +159,10 @@ export class HouseholdsService {
 
   async apply(actor: Actor, input: ApplyHouseholdRequest): Promise<HouseholdDto> {
     if (actor.role !== 'ADMIN') await this.consents.require(actor.id, 'SIGN_UP');
+    // The citizen ID number is identity data: it needs the ID_DOCUMENT consent, like the papers do.
+    if (actor.role !== 'ADMIN' && input.idNumber) {
+      await this.consents.require(actor.id, 'ID_DOCUMENT');
+    }
     return this.orm.em.fork().transactional(async (em) => {
       if (actor.role === 'ADMIN') throw forbidden('administrators do not represent households');
       if (await em.findOne(Household, { representative: actor.id })) {
@@ -173,7 +180,10 @@ export class HouseholdsService {
           ? this.cipher.encrypt(input.idNumber, FIELD_CONTEXTS.householdIdNumber)
           : null,
         representative: user,
+        // Stays a draft until the representative submits at the last wizard step.
+        status: 'DRAFT',
       });
+      if (input.idNumber) this.auditSetIdNumber(em, actor, household.id);
       await em.flush();
       return toHouseholdDto(household, {
         artisans: [],
@@ -183,6 +193,39 @@ export class HouseholdsService {
         idNumberMasked: input.idNumber ? maskIdNumber(input.idNumber) : null,
       });
     });
+  }
+
+  /**
+   * Final wizard step: a draft application becomes `PENDING_REVIEW` and enters the board's queue.
+   * Refused with `APPLICATION_INCOMPLETE` while the profile, a workshop or a document is missing.
+   */
+  async submit(actor: Actor): Promise<HouseholdDto> {
+    return this.orm.em.fork().transactional(async (em) => {
+      const household = await this.ownWritableHousehold(em, actor);
+      const before = household.status;
+      // Checked first so a repeated submit answers INVALID_TRANSITION rather than a completeness error.
+      const next = unwrap(householdTransition(before, 'SUBMIT', { actorRole: actor.role }));
+      await this.assertComplete(em, household);
+      household.status = next;
+      household.statusReason = null;
+      em.create(AuditLog, {
+        actorId: actor.id,
+        action: 'household.submit',
+        entity: 'household',
+        entityId: household.id,
+        before: { status: before },
+        after: { status: household.status },
+      });
+      await em.flush();
+      return toHouseholdDto(household, await this.parts(em, household, false));
+    });
+  }
+
+  /** The household's own private documents (the same list the board reads), so the wizard can reload them. */
+  async documentsForMine(actor: Actor): Promise<{ data: HouseholdDocumentDto[] }> {
+    const em = this.orm.em.fork();
+    const household = await this.ownHousehold(em, actor);
+    return this.documentsOf(em, household);
   }
 
   /** Bản ghi riêng: luôn đọc được kể cả khi hộ bị tạm ngừng hay từ chối. */
@@ -196,9 +239,23 @@ export class HouseholdsService {
   async setIdNumber(actor: Actor, input: SetIdNumberRequest): Promise<HouseholdDto> {
     const em = this.orm.em.fork();
     const household = await this.ownWritableHousehold(em, actor);
+    await this.consents.require(actor.id, 'ID_DOCUMENT', em);
     household.idNumberEnc = this.cipher.encrypt(input.idNumber, FIELD_CONTEXTS.householdIdNumber);
+    this.auditSetIdNumber(em, actor, household.id);
     await em.flush();
     return toHouseholdDto(household, await this.parts(em, household, false));
+  }
+
+  /** Audit entry for setting or changing the ID number: records who and which household, never the number. */
+  private auditSetIdNumber(em: EntityManager, actor: Actor, householdId: string): void {
+    em.create(AuditLog, {
+      actorId: actor.id,
+      action: 'household.set_id_number',
+      entity: 'household',
+      entityId: householdId,
+      before: null,
+      after: null,
+    });
   }
 
   /**
@@ -662,9 +719,13 @@ export class HouseholdsService {
         householdStatus: household.status,
         reason,
         kind: product.kind,
+        withdrawnBy: product.withdrawnBy,
       });
       if (!next.ok && next.error.code === 'HOUSEHOLD_NOT_APPROVED') {
         throw new AppError('HOUSEHOLD_NOT_APPROVED');
+      }
+      if (!next.ok && next.error.code === 'BOARD_WITHDRAWN') {
+        throw new AppError('PRODUCT_WITHDRAWN_BY_BOARD');
       }
       // FR-PRD-03 / GH#251: a product needs at least one production-log milestone before it goes public.
       if (
@@ -680,8 +741,10 @@ export class HouseholdsService {
       if (product.status === 'PUBLISHED') {
         product.publishedAt ??= new Date();
         product.withdrawnReason = null;
+        product.withdrawnBy = null;
       } else if (product.status === 'WITHDRAWN') {
         product.withdrawnReason = reason ?? null;
+        product.withdrawnBy = actor.role === 'ADMIN' ? 'BOARD' : 'OWNER';
       }
       // A one-of-a-kind piece has one unit: selling it empties the stock, undoing the sale restores it.
       if (event === 'MARK_SOLD') product.stock = 0;
@@ -693,7 +756,11 @@ export class HouseholdsService {
           entity: 'product',
           entityId: product.id,
           before: { status: before },
-          after: { status: product.status, reason: reason ?? null },
+          after: {
+            status: product.status,
+            reason: reason ?? null,
+            ...(product.status === 'WITHDRAWN' ? { withdrawnBy: product.withdrawnBy } : {}),
+          },
         });
       }
       queueKnowledgeChange(em, 'PRODUCT', product.id);
@@ -702,15 +769,23 @@ export class HouseholdsService {
     });
   }
 
-  /** Ghi công người làm (thay cả danh sách). Người đăng không bao giờ được ghi là người làm. */
+  /**
+   * Ghi công người làm (thay cả danh sách). Người đăng không bao giờ được ghi là người làm. Like every other
+   * product change it checks `If-Match` and bumps the product version (GH#420), so two editors cannot
+   * silently overwrite each other's credits.
+   */
   async setMakers(
     actor: Actor,
     productId: string,
+    expectedVersion: number,
     input: SetProductMakersRequest,
   ): Promise<ProductDto> {
     return this.orm.em.fork().transactional(async (em) => {
       const household = await this.ownWritableHousehold(em, actor);
       const product = await this.ownProduct(em, actor, household, productId);
+      assertVersion(product, expectedVersion);
+      // The credits live in their own rows: touching the product makes the flush bump its version.
+      product.updatedAt = new Date();
       const artisans = await em.find(Artisan, { household });
       unwrap(checkMakerCredits(input.makers, new Set(artisans.map((a) => a.id))));
       for (const maker of await em.find(ProductMaker, { product })) em.remove(maker);
@@ -737,6 +812,8 @@ export class HouseholdsService {
   async listForAdmin(query: ListHouseholdsQuery): Promise<AdminHouseholdPageDto> {
     const em = this.orm.em.fork();
     const where: Record<string, unknown>[] = [];
+    // Drafts are still being written in the wizard: the board never sees them.
+    where.push({ status: { $ne: 'DRAFT' } });
     if (query.status) where.push({ status: query.status });
     if (query.from || query.to) {
       where.push({
@@ -781,7 +858,7 @@ export class HouseholdsService {
   async getForAdmin(householdId: string): Promise<HouseholdDto> {
     const em = this.orm.em.fork();
     const household = await em.findOne(Household, householdId);
-    if (!household) throw notFound();
+    if (!household || household.status === 'DRAFT') throw notFound();
     return toHouseholdDto(household, await this.parts(em, household, false));
   }
 
@@ -790,6 +867,14 @@ export class HouseholdsService {
     const em = this.orm.em.fork();
     const household = await em.findOne(Household, householdId);
     if (!household) throw notFound();
+    return this.documentsOf(em, household);
+  }
+
+  private async documentsOf(
+    em: EntityManager,
+    household: Household,
+  ): Promise<{ data: HouseholdDocumentDto[] }> {
+    const householdId = household.id;
     const assets = await em.find(
       MediaAsset,
       { ownerId: household.representative.id, purpose: 'CERTIFICATE', visibility: 'PRIVATE' },
@@ -958,9 +1043,12 @@ export class HouseholdsService {
       if (!household) throw notFound();
       assertVersion(household, expectedVersion);
       const before = household.status;
-      household.status = unwrap(
-        householdTransition(before, event, { actorRole: actor.role, reason }),
-      );
+      const next = unwrap(householdTransition(before, event, { actorRole: actor.role, reason }));
+      // Approval needs the required parts; reinstating an already approved household does not.
+      if (event === 'APPROVE' && before === 'PENDING_REVIEW') {
+        await this.assertComplete(em, household);
+      }
+      household.status = next;
       household.statusReason = household.status === 'APPROVED' ? null : (reason ?? null);
       if (household.status === 'APPROVED') household.approvedAt ??= new Date();
       em.create(AuditLog, {
@@ -1044,18 +1132,63 @@ export class HouseholdsService {
     };
   }
 
-  /** Ghim bản đồ làng: xưởng có tọa độ của mọi hộ đang được duyệt. */
-  async mapPins(): Promise<MapPinsDto> {
+  /**
+   * Ghim bản đồ làng: xưởng có tọa độ của mọi hộ đang được duyệt. With a `bbox` only the workshops
+   * inside it, at most `MAP_PINS_BBOX_LIMIT` (FR-MAP-04); without one, the full list.
+   */
+  async mapPins(bbox?: MapBbox): Promise<MapPinsDto> {
     const em = this.orm.em.fork();
-    const workshops = await em.find(
-      Workshop,
-      { household: { status: 'APPROVED' }, lat: { $ne: null }, lng: { $ne: null } },
-      { populate: ['household'], orderBy: { household: { name: 'asc' }, name: 'asc' } },
-    );
+    // lat/lng are DECIMAL columns the ORM types as strings; the database compares them numerically.
+    const where: FilterQuery<Workshop> = bbox
+      ? {
+          household: { status: 'APPROVED' },
+          lat: { $gte: String(bbox.minLat), $lte: String(bbox.maxLat) },
+          lng: { $gte: String(bbox.minLng), $lte: String(bbox.maxLng) },
+        }
+      : { household: { status: 'APPROVED' }, lat: { $ne: null }, lng: { $ne: null } };
+    const workshops = await em.find(Workshop, where, {
+      populate: ['household'],
+      orderBy: { household: { name: 'asc' }, name: 'asc' },
+      ...(bbox ? { limit: MAP_PINS_BBOX_LIMIT } : {}),
+    });
     return { data: workshops.map(toMapPinDto) };
   }
 
   // --- Nội bộ ---
+
+  /** Required parts of an application: profile (name, page address), a workshop and a document. */
+  private async assertComplete(em: EntityManager, household: Household): Promise<void> {
+    const missing: FieldError[] = [];
+    if (household.name.trim().length === 0 || household.slug.trim().length === 0) {
+      missing.push({
+        path: 'profile',
+        code: 'required',
+        message: 'household profile is incomplete',
+      });
+    }
+    if ((await em.count(Workshop, { household })) === 0) {
+      missing.push({ path: 'workshops', code: 'required', message: 'add at least one workshop' });
+    }
+    const documents = await em.count(MediaAsset, {
+      ownerId: household.representative.id,
+      purpose: 'CERTIFICATE',
+      visibility: 'PRIVATE',
+    });
+    if (documents === 0) {
+      missing.push({
+        path: 'documents',
+        code: 'required',
+        message: 'upload at least one document',
+      });
+    }
+    if (missing.length > 0) {
+      throw new AppError(
+        'APPLICATION_INCOMPLETE',
+        'the application is missing required parts',
+        missing,
+      );
+    }
+  }
 
   private async ownHousehold(em: EntityManager, actor: Actor): Promise<Household> {
     const household = await em.findOne(Household, { representative: actor.id });

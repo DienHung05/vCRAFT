@@ -21,6 +21,7 @@ import {
   type ListAdminNewsQuery,
   MediaAssetResponseSchema,
   MediaReadUrlResponseSchema,
+  ProductResponseSchema,
   type ReallocateRequest,
   RevealedIdNumberResponseSchema,
   RfqResponseSchema,
@@ -127,6 +128,16 @@ export function createAdminClient(options: AuthedClientOptions) {
           body: { verified },
         },
       ),
+    /** The board takes a product off the public catalog; the reason is required and the call is audited. */
+    withdrawProduct: (id: string, version: number, reason: string) =>
+      request(`/products/${id}/withdraw`, ProductResponseSchema, {
+        method: 'POST',
+        version,
+        body: { reason },
+      }),
+    /** Brings a product the board withdrew back to the catalog (the owner cannot undo that). */
+    republishProduct: (id: string, version: number) =>
+      request(`/products/${id}/republish`, ProductResponseSchema, { method: 'POST', version }),
     decide: (id: string, action: HouseholdAction, version: number, reason?: string) =>
       request(`/admin/households/${id}/${action}`, HouseholdResponseSchema, {
         method: 'POST',

@@ -1,10 +1,11 @@
 'use client';
 
+import { createMapClient } from '@vcraft/api-client';
 import type { MapPinDto } from '@vcraft/contracts';
 import { Button } from '@vcraft/ui';
 import dynamic from 'next/dynamic';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { EmptyState } from '@/components/states/empty-state';
 import { Reveal } from '@/experience/motion/reveal';
 import { craftLabel } from '@/features/catalog/craft-label';
@@ -16,9 +17,14 @@ import {
   inBounds,
   type LatLng,
   type MapBounds,
+  pinStatus,
   sortByDistance,
+  villageCenter,
 } from './map-model';
 import { ExperienceSummary, OpenStatus } from './pin-popup';
+import { type FetchViewportPins, useViewportPins } from './use-viewport-pins';
+import { nearestNeighbourOrder } from './walking-route';
+import { WalkingRoutePanel } from './walking-route-panel';
 
 const MapCanvas = dynamic(() => import('./map-canvas'), {
   ssr: false,
@@ -36,16 +42,31 @@ function supportsWebGL(): boolean {
 
 type LocationState = 'idle' | 'locating' | 'denied';
 
+type RouteStart = 'location' | 'workshop' | 'village';
+
+interface WalkingRoute {
+  start: LatLng;
+  startKind: RouteStart;
+  stops: MapPinDto[];
+}
+
+const mapClient = createMapClient();
+const fetchViewportPins: FetchViewportPins = async (bbox, signal) =>
+  (await mapClient.pinsInBbox(bbox, signal)).data;
+
 /**
  * Bản đồ làng và danh sách xưởng đồng bộ hai chiều (FR-MAP-01…07). Danh sách luôn nằm trong trang,
  * nên không có WebGL hay dùng trình đọc màn hình vẫn đọc được đủ xưởng; chỉ khi người dùng tự kéo
  * bản đồ thì danh sách mới thu theo khung nhìn, và có nút trả lại toàn bộ.
  */
 export function VillageMapExplorer({
-  pins,
+  pins: initialPins,
   initialSelectedId,
+  fetchPinsInViewport = fetchViewportPins,
 }: {
   pins: readonly MapPinDto[];
+  /** Loads the pins of a viewport (FR-MAP-04); a seam for tests. */
+  fetchPinsInViewport?: FetchViewportPins;
   /** Workshop whose card is open when the page loads (`/ban-do?xuong=`). */
   initialSelectedId?: string;
 }) {
@@ -53,6 +74,7 @@ export function VillageMapExplorer({
   const tCraft = useTranslations('catalog.craftCategories');
   const locale = useLocale();
   const format = useFormatter();
+  const viewport = useViewportPins(fetchPinsInViewport);
   // Chờ sau hydrate mới biết WebGL và giờ thật, để HTML máy chủ và trình duyệt khớp nhau.
   const [webgl, setWebgl] = useState<boolean | null>(null);
   const [now, setNow] = useState(() => new Date());
@@ -63,12 +85,14 @@ export function VillageMapExplorer({
   const [bounds, setBounds] = useState<MapBounds | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(
-    initialSelectedId && pins.some((pin) => pin.workshopId === initialSelectedId)
+    initialSelectedId && initialPins.some((pin) => pin.workshopId === initialSelectedId)
       ? initialSelectedId
       : null,
   );
   const [origin, setOrigin] = useState<LatLng | null>(null);
   const [locationState, setLocationState] = useState<LocationState>('idle');
+  const [route, setRoute] = useState<WalkingRoute | null>(null);
+  const routeRequest = useRef(0);
 
   useEffect(() => {
     setWebgl(supportsWebGL());
@@ -77,7 +101,17 @@ export function VillageMapExplorer({
     return () => window.clearInterval(timer);
   }, []);
 
-  const crafts = useMemo(() => craftsOf(pins), [pins]);
+  // The server render carries every workshop; once the map is moved, its viewport answer replaces
+  // them, keeping the open card's workshop so it does not vanish from under the visitor.
+  const pins = useMemo<readonly MapPinDto[]>(() => {
+    if (!viewport.pins) return initialPins;
+    const keep = selectedId ? initialPins.find((pin) => pin.workshopId === selectedId) : undefined;
+    return keep && !viewport.pins.some((pin) => pin.workshopId === keep.workshopId)
+      ? [...viewport.pins, keep]
+      : viewport.pins;
+  }, [initialPins, viewport.pins, selectedId]);
+
+  const crafts = useMemo(() => craftsOf(initialPins), [initialPins]);
   const filtered = useMemo(
     () => filterPins(pins, { openNow, visitable, experience, craft }, now),
     [pins, openNow, visitable, experience, craft, now],
@@ -87,6 +121,50 @@ export function VillageMapExplorer({
     return origin ? sortByDistance(inView, origin) : inView;
   }, [filtered, bounds, origin]);
   const selected = filtered.find((pin) => pin.workshopId === selectedId) ?? null;
+
+  const buildRoute = (start: LatLng, startKind: RouteStart, excludeId?: string) => {
+    const open = filtered.filter(
+      (pin) => pin.workshopId !== excludeId && pinStatus(pin, now) === 'open',
+    );
+    setRoute({ start, startKind, stops: nearestNeighbourOrder(start, open) });
+  };
+
+  // Start: the visitor's location when allowed, else the selected workshop, else the village centre.
+  const suggestRoute = () => {
+    const fallback = () =>
+      selected
+        ? buildRoute({ lat: selected.lat, lng: selected.lng }, 'workshop', selected.workshopId)
+        : buildRoute(villageCenter(), 'village');
+    if (origin) {
+      buildRoute(origin, 'location');
+      return;
+    }
+    if (!('geolocation' in navigator)) {
+      fallback();
+      return;
+    }
+    const request = ++routeRequest.current;
+    setLocationState('locating');
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setLocationState('idle');
+        if (request !== routeRequest.current) return;
+        const here = { lat: coords.latitude, lng: coords.longitude };
+        setOrigin(here);
+        buildRoute(here, 'location');
+      },
+      () => {
+        setLocationState('denied');
+        if (request === routeRequest.current) fallback();
+      },
+      { timeout: 8000 },
+    );
+  };
+
+  const clearRoute = () => {
+    routeRequest.current++;
+    setRoute(null);
+  };
 
   const locate = () => {
     if (!('geolocation' in navigator)) {
@@ -157,6 +235,14 @@ export function VillageMapExplorer({
           >
             {locationState === 'locating' ? t('locating') : t('myLocation')}
           </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={suggestRoute}
+            disabled={locationState === 'locating'}
+          >
+            {t('routeSuggest')}
+          </Button>
           {locationState === 'denied' ? (
             <p role="status" className="text-small text-seal">
               {t('locationDenied')}
@@ -187,16 +273,21 @@ export function VillageMapExplorer({
                   highlightId={highlightId}
                   selected={selected}
                   userLocation={origin}
+                  route={route ? [route.start, ...route.stops] : null}
                   now={now}
                   onHighlight={setHighlightId}
                   onSelect={setSelectedId}
-                  onUserMove={setBounds}
+                  onUserMove={(next) => {
+                    setBounds(next);
+                    viewport.schedule(next);
+                  }}
                 />
               ) : null}
             </section>
           )}
 
           <section aria-labelledby="workshop-list-title">
+            {route ? <WalkingRoutePanel route={route} now={now} onClear={clearRoute} /> : null}
             <div className="flex items-baseline justify-between gap-3">
               <h2
                 id="workshop-list-title"
@@ -210,7 +301,10 @@ export function VillageMapExplorer({
                 <button
                   type="button"
                   className="text-small text-clay underline underline-offset-4"
-                  onClick={() => setBounds(null)}
+                  onClick={() => {
+                    setBounds(null);
+                    viewport.reset();
+                  }}
                 >
                   {t('showAll')}
                 </button>
@@ -231,6 +325,7 @@ export function VillageMapExplorer({
                       setExperience(false);
                       setCraft('');
                       setBounds(null);
+                      viewport.reset();
                     }}
                   >
                     {t('clearFilters')}

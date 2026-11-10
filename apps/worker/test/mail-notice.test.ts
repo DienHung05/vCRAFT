@@ -56,8 +56,10 @@ describe('outbox dispatcher: quotation.notice', () => {
 /** In-memory stand-in for the `emailed_at` conditional update. */
 function claims() {
   const claimed = new Set<string>();
+  const sentIds = new Set<string>();
   return {
     claimed,
+    sentIds,
     async claim(id: string) {
       if (claimed.has(id)) return false;
       claimed.add(id);
@@ -65,6 +67,9 @@ function claims() {
     },
     async release(id: string) {
       claimed.delete(id);
+    },
+    async markSent(id: string) {
+      sentIds.add(id);
     },
   };
 }
@@ -108,6 +113,9 @@ describe('sendNoticeMail', () => {
       subject: '[vCraft] Bạn có phần sản xuất cần xác nhận',
     });
     expect(sent[0]?.text).toContain('http://localhost:8080/vi/studio/de-xuat-tham-gia/req-1');
+    expect(sent[0]?.headers).toEqual({
+      'List-Unsubscribe': '<http://localhost:8080/vi/tai-khoan#email-preferences>',
+    });
   });
 
   it('does not send when the recipient turned email off for this kind', async () => {
@@ -189,7 +197,25 @@ describe('sendNoticeMail', () => {
     };
     await expect(sendNoticeMail(deps, 'n1')).rejects.toThrow('smtp down');
     expect(c.claimed.has('n1')).toBe(false);
+    expect(c.sentIds.has('n1')).toBe(false);
     fail = false;
+    expect(await sendNoticeMail(deps, 'n1')).toBe(true);
+    expect(sent).toHaveLength(1);
+    expect(c.sentIds.has('n1')).toBe(true);
+  });
+
+  it('still reports success when only the sent marker fails to save', async () => {
+    const { transport, sent } = fakeTransport();
+    const deps = {
+      loadNotice: async () => recipient,
+      ...claims(),
+      markSent: async () => {
+        throw new Error('db down');
+      },
+      transport,
+      from: 'x',
+      appUrl: 'http://x',
+    };
     expect(await sendNoticeMail(deps, 'n1')).toBe(true);
     expect(sent).toHaveLength(1);
   });

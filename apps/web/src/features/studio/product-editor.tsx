@@ -24,6 +24,7 @@ import { TraceQr } from '@/features/traceability/trace-qr';
 import { Link, useRouter } from '@/i18n/navigation';
 import { notify } from '@/lib/notify';
 import { traceShortUrl } from '@/lib/site';
+import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { HouseholdGate } from './household-gate';
 import { PriceSuggestionHint } from './price-suggestion-hint';
 import { type ProductDraft, ProductFields, toProductDraft } from './product-fields';
@@ -139,10 +140,10 @@ function MakersSection({ product, household, client, reload }: SectionProps) {
   const [role, setRole] = useState('');
   // Adding a person publishes their name on the household page, so the household confirms they agree.
   const [artisanConsent, setArtisanConsent] = useState(false);
-  const [state, setState] = useState<'idle' | 'failed'>('idle');
+  const [state, setState] = useState<'idle' | 'stale' | 'failed'>('idle');
   const save = async () => {
     try {
-      await client.setMakers(product.id, {
+      await client.setMakers(product.id, product.version, {
         makers: household.artisans.flatMap((a) => {
           const contribution = parts[a.id]?.trim();
           return contribution ? [{ artisanId: a.id, contribution }] : [];
@@ -151,8 +152,11 @@ function MakersSection({ product, household, client, reload }: SectionProps) {
       await reload();
       setState('idle');
       notify.success(common('saved'));
-    } catch {
-      setState('failed');
+    } catch (error) {
+      // Someone else changed the product meanwhile: show the current version before saving again.
+      const stale = error instanceof ApiError && error.status === 409;
+      if (stale) await reload();
+      setState(stale ? 'stale' : 'failed');
     }
   };
   const addArtisan = async () => {
@@ -199,9 +203,9 @@ function MakersSection({ product, household, client, reload }: SectionProps) {
         >
           {common('save')}
         </Button>
-        {state === 'failed' ? (
+        {state === 'stale' || state === 'failed' ? (
           <p role="alert" className="text-small text-seal">
-            {common('saveFailed')}
+            {common(state === 'stale' ? 'stale' : 'saveFailed')}
           </p>
         ) : null}
       </div>
@@ -245,7 +249,9 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
   const t = useTranslations('studio.products');
   const common = useTranslations('studio');
   const [reason, setReason] = useState('');
-  const [failed, setFailed] = useState<'generic' | 'journal-required' | null>(null);
+  const [failed, setFailed] = useState<'generic' | 'journal-required' | 'board-withdrawn' | null>(
+    null,
+  );
   const [confirm, setConfirm] = useState<'publish' | 'withdraw' | 'sold' | 'back' | null>(null);
   // BRAND §6.3 #2: publishing presses the seal once, right after it succeeds.
   const [stamped, setStamped] = useState(false);
@@ -259,15 +265,16 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
       setStamped(stamp);
       notify.success(success);
     } catch (error) {
-      setFailed(
-        error instanceof ApiError && error.code === 'PRODUCT_JOURNAL_REQUIRED'
-          ? 'journal-required'
-          : 'generic',
-      );
+      if (error instanceof ApiError && error.code === 'PRODUCT_JOURNAL_REQUIRED')
+        setFailed('journal-required');
+      else if (error instanceof ApiError && error.code === 'PRODUCT_WITHDRAWN_BY_BOARD')
+        setFailed('board-withdrawn');
+      else setFailed('generic');
     }
   };
   const approved = household.status === 'APPROVED';
   const live = product.status === 'PUBLISHED' || product.status === 'SOLD';
+  const boardWithdrawn = product.status === 'WITHDRAWN' && product.withdrawnBy === 'BOARD';
   return (
     <Card
       className={cn(
@@ -324,6 +331,17 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
             {t('withdraw')}
           </Button>
         </div>
+      ) : boardWithdrawn ? (
+        <div className="flex flex-col gap-1 text-small">
+          <p role="status" className="text-ash">
+            {t('boardWithdrawn')}
+          </p>
+          {product.withdrawnReason ? (
+            <p className="text-ash">
+              {t('boardWithdrawnReason', { reason: product.withdrawnReason })}
+            </p>
+          ) : null}
+        </div>
       ) : (
         <div>
           <Button type="button" disabled={!approved} onClick={() => setConfirm('publish')}>
@@ -334,7 +352,13 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
       )}
       {failed ? (
         <p role="alert" className="text-small text-seal">
-          {t(failed === 'journal-required' ? 'publishJournalRequired' : 'publishFailed')}
+          {t(
+            failed === 'journal-required'
+              ? 'publishJournalRequired'
+              : failed === 'board-withdrawn'
+                ? 'boardWithdrawn'
+                : 'publishFailed',
+          )}
         </p>
       ) : null}
       <ConfirmDialog
@@ -450,10 +474,13 @@ function DuplicateButton({ product, client }: { product: ProductDto; client: Stu
   const t = useTranslations('studio.products');
   const router = useRouter();
   const [state, setState] = useState<'idle' | 'busy' | 'failed'>('idle');
+  const duplicateProduct = useIdempotentAction();
   const duplicate = async () => {
     setState('busy');
     try {
-      const copy = await client.duplicateProduct(product.id);
+      const copy = await duplicateProduct([product.id, product.version], (options) =>
+        client.duplicateProduct(product.id, options),
+      );
       notify.success(t('duplicatedToast'));
       router.push({ pathname: '/studio/san-pham/[id]', params: { id: copy.id } });
     } catch {

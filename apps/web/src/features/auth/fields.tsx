@@ -17,7 +17,7 @@ export const STANDALONE_LINK =
   'inline-flex min-h-11 items-center self-start text-clay underline underline-offset-4';
 
 const controlClass =
-  'h-11 w-full rounded-input border bg-surface px-3 text-body text-ink placeholder:text-ash ' +
+  'h-10 w-full rounded-input border bg-surface px-3 text-body text-ink placeholder:text-ash ' +
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glaze ' +
   'disabled:opacity-45';
 
@@ -36,7 +36,7 @@ function FieldFrame({ label, hint, error, optionalLabel, children, className }: 
   const errorId = `${id}-error`;
   const describedBy = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ');
   return (
-    <div className={cn('kiln-field flex flex-col gap-1.5', className)}>
+    <div className={cn('kiln-field flex flex-col gap-1', className)}>
       <label htmlFor={id} className="text-small font-medium text-ink">
         {label}
         {optionalLabel ? (

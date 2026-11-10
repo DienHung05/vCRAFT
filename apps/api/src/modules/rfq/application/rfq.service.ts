@@ -16,6 +16,7 @@ import type {
   ListRfqsQuery,
   MyAllocationDto,
   MyInvitationDto,
+  OpenCoordinatedRequestDto,
   PriceHintDto,
   RateHouseholdRequest,
   ReportProgressRequest,
@@ -48,7 +49,11 @@ import {
   checkProgressReport,
   hasAcceptWindowElapsed,
   isCompletionDateValid,
+  isEligibleForOpenRequest,
+  isOpenCoordinatedRequest,
   isRatingEditable,
+  liveShares,
+  type ProductCategory,
   paymentTransition,
   projectBuyerQuotation,
   RATING_EDIT_WINDOW_DAYS,
@@ -64,15 +69,24 @@ import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
 import { ratingSummaries } from '../../households/household-rating-stats';
 import { MediaService } from '../../media/application/media.service';
+import { NotificationPublisher } from '../../notifications/application/notification-publisher';
 import { paymentsConfig } from '../../payments/payments.config';
 import { ConsentService } from '../../privacy/application/consent.service';
 import { allocationTimeline } from './allocation-timeline';
 import { assertWithinCapacity, committedByHousehold, declaredCapacity } from './household-capacity';
 import { QuotationNotifier } from './quotation-notifier';
+import {
+  assertCoordinator,
+  assertCoordinatorOrBoard,
+  assertEligibleHouseholds,
+} from './request-access';
 
 /** All plan/input writes lock the request first, so changes cannot race with composition. */
 @Injectable()
 export class RfqService {
+  /** Stateless; payment notices of order cancellation go through it (GH#417). */
+  private readonly publisher = new NotificationPublisher();
+
   constructor(
     private readonly orm: MikroORM,
     private readonly notifier: QuotationNotifier,
@@ -326,6 +340,55 @@ export class RfqService {
       });
   }
 
+  /**
+   * BR-05a: coordinated requests an administrator claimed that still take offers and that match the
+   * household's craft categories, as redacted summaries. Requests the household is already invited to
+   * are left out (they are in its invitations). Never carries buyer identity, budget or free text.
+   */
+  async listOpenCoordinatedRequests(actor: Actor): Promise<OpenCoordinatedRequestDto[]> {
+    const em = this.orm.em.fork();
+    const household = await this.ownHousehold(em, actor, false);
+    if (household.status !== 'APPROVED' || actor.locked) return [];
+    const published = await this.publishedByCategory(em, household.id);
+    const categories = new Set<ProductCategory>(published.keys());
+    for (const [category, capacity] of Object.entries(household.capacityByCategory ?? {}))
+      if ((capacity ?? 0) > 0) categories.add(category as ProductCategory);
+    if (categories.size === 0) return [];
+    const now = new Date();
+    const requests = await em.find(
+      QuotationRequest,
+      {
+        coordinationOptIn: true,
+        coordinatorId: { $ne: null },
+        status: { $in: ['SENT', 'BIDDING'] },
+        biddingClosesAt: { $gt: now },
+        category: { $in: [...categories] },
+      },
+      { orderBy: { biddingClosesAt: 'asc' } },
+    );
+    return requests
+      .filter(
+        (request) =>
+          isOpenCoordinatedRequest(request, now) &&
+          !request.invitedHouseholdIds.includes(household.id) &&
+          isEligibleForOpenRequest({
+            householdStatus: household.status,
+            representativeLocked: false,
+            requestCategory: request.category,
+            declaredCapacity: declaredCapacity(household, request.category),
+            publishedProducts: published.get(request.category as ProductCategory) ?? 0,
+          }),
+      )
+      .map((request) => ({
+        id: request.id,
+        category: request.category as ProductCategory,
+        quantity: request.quantity,
+        unit: request.unit,
+        biddingClosesAt: request.biddingClosesAt.toISOString(),
+        requiredBy: request.requiredBy.toISOString(),
+      }));
+  }
+
   /** An invited household says no (FR-RFQ-04). It can still send an offer before the deadline. */
   async declineInvitation(actor: Actor, id: string) {
     return this.orm.em.fork().transactional(async (em) => {
@@ -509,7 +572,22 @@ export class RfqService {
       const request = await this.request(em, requestId, true);
       this.open(request);
       const household = await this.ownHousehold(em, actor);
-      if (!request.invitedHouseholdIds.includes(household.id)) throw notFound();
+      if (!request.invitedHouseholdIds.includes(household.id)) {
+        // BR-05a: without an invitation the request stays invisible unless it is an open coordinated one.
+        if (!isOpenCoordinatedRequest(request)) throw notFound();
+        const published = await this.publishedByCategory(em, household.id);
+        if (
+          !isEligibleForOpenRequest({
+            householdStatus: household.status,
+            representativeLocked: actor.locked,
+            requestCategory: request.category,
+            declaredCapacity: declaredCapacity(household, request.category),
+            publishedProducts: published.get(request.category as ProductCategory) ?? 0,
+          })
+        )
+          throw new AppError('RFQ_ARTISAN_NOT_ELIGIBLE');
+        request.invitedHouseholdIds = [...request.invitedHouseholdIds, household.id];
+      }
       if (household.status !== 'APPROVED') throw new AppError('HOUSEHOLD_NOT_APPROVED');
       this.completion(input.completionDate, request);
       const committed = await committedByHousehold(
@@ -1285,6 +1363,24 @@ export class RfqService {
           paymentTransition('PENDING', 'CANCEL', { actor: owner ? 'BUYER_OWNER' : 'ADMIN' }),
         );
       }
+      // Paid money of a cancelled order is owed back: flag it and tell the buyer and the board (GH#417).
+      const owedBack = await em.find(Payment, { order: request, status: 'PAID' });
+      if (owedBack.length > 0) {
+        const now = new Date();
+        for (const payment of owedBack) payment.refundDueAt ??= now;
+        const board = request.coordinatorId
+          ? [request.coordinatorId]
+          : (await em.find(AppUser, { role: 'ADMIN', status: 'ACTIVE' }, { fields: ['id'] })).map(
+              (admin) => admin.id,
+            );
+        this.publisher.publish(em, {
+          type: 'PAYMENT_REFUND_DUE',
+          subjectId: request.id,
+          // Nobody is left out: the person who cancelled must still see that money is owed back.
+          actorId: 'system',
+          recipientIds: [request.buyer.id, ...board],
+        });
+      }
       const accepted = await em.findOne(CooperativeQuotationEntity, {
         request,
         status: 'ACCEPTED',
@@ -1294,7 +1390,12 @@ export class RfqService {
         const allocations = await em.find(OrderAllocationEntity, { quotation: accepted });
         for (const allocation of allocations) {
           householdIds.push(allocation.household.id);
-          if (allocation.status !== 'DECLINED' && allocation.status !== 'CANCELLED') {
+          // DONE has no exit: finished shares stay DONE when the order is cancelled.
+          if (
+            allocation.status !== 'DECLINED' &&
+            allocation.status !== 'CANCELLED' &&
+            allocation.status !== 'DONE'
+          ) {
             allocation.status = unwrap(allocationTransition(allocation.status, 'CANCEL', {}));
           }
         }
@@ -1326,11 +1427,11 @@ export class RfqService {
     return this.orm.em.fork().transactional(async (em) => {
       const request = await this.request(em, requestId, true);
       const owner = this.isOwner(actor, request);
-      const admin = actor.role === 'ADMIN' && request.coordinationOptIn;
+      const admin = actor.role === 'ADMIN';
       if (!owner && !admin) throw notFound();
       if (actor.locked) throw forbidden();
       assertVersion(request, version);
-      if (admin && request.coordinatorId !== actor.id) throw notFound();
+      if (!owner && request.coordinationOptIn) this.coordinator(actor, request);
       const accepted = await em.findOne(
         CooperativeQuotationEntity,
         { request, status: 'ACCEPTED' },
@@ -1343,6 +1444,8 @@ export class RfqService {
         { quotation: accepted },
         { populate: ['household'] },
       );
+      // Nobody coordinates a direct order, so the board only steps in once a reallocation split it.
+      if (!owner && !request.coordinationOptIn && !this.isSplit(allocations)) throw notFound();
       const statusBefore = request.status;
       request.status = unwrap(
         transition(request.status, 'CONFIRM_DELIVERY', {
@@ -1442,7 +1545,7 @@ export class RfqService {
       const request = await this.request(em, requestId, true);
       if (actor.locked) throw forbidden();
       assertVersion(request, version);
-      if (actor.role === 'ADMIN') this.coordinator(actor, request);
+      if (actor.role === 'ADMIN' && request.coordinationOptIn) this.coordinator(actor, request);
       const accepted = await em.findOneOrFail(
         CooperativeQuotationEntity,
         { request, status: 'ACCEPTED' },
@@ -1457,6 +1560,9 @@ export class RfqService {
         liveShares(allocations).map((allocation) => allocation.household.id),
       );
       let householdId: string | undefined;
+      // Nobody coordinates a direct order, so the board only steps in once a reallocation split it.
+      if (actor.role === 'ADMIN' && !request.coordinationOptIn && households.size < 2)
+        throw notFound();
       if (actor.role === 'HOUSEHOLD') {
         householdId = (await this.ownHousehold(em, actor, false)).id;
       } else if (actor.role !== 'ADMIN') throw notFound();
@@ -1625,17 +1731,18 @@ export class RfqService {
     return actor.role === 'BUYER' || (actor.role === 'ADMIN' && Boolean(request.onBehalfName));
   }
 
+  /** More than one household holds a live share, i.e. a reallocation split the order. */
+  private isSplit(allocations: readonly OrderAllocationEntity[]): boolean {
+    return new Set(liveShares(allocations).map((a) => a.household.id)).size > 1;
+  }
+
   private coordinator(actor: Actor, request: QuotationRequest) {
-    if (actor.role !== 'ADMIN' || request.coordinatorId !== actor.id || !request.coordinationOptIn)
-      throw notFound();
-    if (actor.locked) throw forbidden();
+    assertCoordinator(actor, request);
   }
 
   /** The coordinator of a coordinated request; any admin for a request nobody coordinates (T7 names "Admin"). */
   private coordinatorOrBoard(actor: Actor, request: QuotationRequest) {
-    if (request.coordinationOptIn) return this.coordinator(actor, request);
-    if (actor.role !== 'ADMIN') throw notFound();
-    if (actor.locked) throw forbidden();
+    assertCoordinatorOrBoard(actor, request);
   }
 
   private async ownHousehold(em: EntityManager, actor: Actor, writing = true) {
@@ -1773,19 +1880,21 @@ export class RfqService {
     return household;
   }
 
-  private async checkHouseholds(em: EntityManager, ids: readonly string[]) {
-    const uniqueIds = [...new Set(ids)];
-    const households = await em.find(
-      Household,
-      { id: { $in: uniqueIds } },
-      { populate: ['representative'] },
+  /** Published products of a household per craft category. */
+  private async publishedByCategory(em: EntityManager, householdId: string) {
+    const products = await em.find(
+      Product,
+      { status: 'PUBLISHED', household: householdId },
+      { fields: ['category'] },
     );
-    if (
-      households.length !== uniqueIds.length ||
-      households.some((h) => h.status !== 'APPROVED' || h.representative.status === 'LOCKED')
-    ) {
-      throw new AppError('RFQ_ARTISAN_NOT_ELIGIBLE');
-    }
+    const counts = new Map<ProductCategory, number>();
+    for (const product of products)
+      counts.set(product.category, (counts.get(product.category) ?? 0) + 1);
+    return counts;
+  }
+
+  private async checkHouseholds(em: EntityManager, ids: readonly string[]) {
+    await assertEligibleHouseholds(em, ids);
   }
 
   private completion(iso: string, request: QuotationRequest) {
@@ -1844,18 +1953,6 @@ function decodeRequestCursor(raw: string): { t: string; id: string } {
  * T8 (GH#244): a request nobody quoted expires at its bidding deadline; one with quotations stays open for the
  * buyer's 7-day accept window after it, the same bound the T3 guard uses.
  */
-/**
- * Shares that still count toward the order: a cancelled share and a declined share whose quantity has
- * been reallocated (GH#246) are history, so they neither block production nor delivery.
- */
-function liveShares<T extends { status: string; quantity: number }>(
-  allocations: readonly T[],
-): T[] {
-  return allocations.filter(
-    (a) => a.status !== 'CANCELLED' && !(a.status === 'DECLINED' && a.quantity === 0),
-  );
-}
-
 function requestExpired(request: QuotationRequest): boolean {
   const now = new Date();
   if (request.status === 'SENT') return now.getTime() >= request.biddingClosesAt.getTime();
@@ -1925,6 +2022,11 @@ function toRatingDto(rating: HouseholdRating): HouseholdRatingDto {
   };
 }
 
+/**
+ * GH#445: a direct quotation whose stored part is missing (legacy row, or one hand-corrected in the JSON
+ * column) has no unit price or completion date. The response states `null` for those two rather than the
+ * invalid `0` / `''` sentinels that the strict contract rejects and that would break the whole list read.
+ */
 function toDirectQuotationDto(quotation: CooperativeQuotationEntity): DirectQuotationDto {
   const part = quotation.parts[0];
   return {
@@ -1932,9 +2034,9 @@ function toDirectQuotationDto(quotation: CooperativeQuotationEntity): DirectQuot
     version: quotation.version,
     status: quotationStatus(quotation),
     quantity: quotation.quantity,
-    unitPriceVnd: part?.unitPriceVnd ?? 0,
+    unitPriceVnd: part?.unitPriceVnd ?? null,
     totalVnd: quotation.totalVnd,
-    completionDate: part?.completionDate ?? '',
+    completionDate: part?.completionDate ?? null,
     note: quotation.note ?? null,
   };
 }

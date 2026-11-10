@@ -6,15 +6,17 @@ import {
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from '@nestjs/common';
-import { notifyDueImportantNews } from '@vcraft/database';
+import { notifyDueImportantNews, queueNewlyLiveNews } from '@vcraft/database';
 import type { ObjectStorage } from '@vcraft/storage';
 import { type ConnectionOptions, Queue, Worker } from 'bullmq';
 import { createTransport } from 'nodemailer';
+import { logConnectionErrors } from './connection-errors';
 import {
   type AssistantIngestJob,
   ingestSource,
   knowledgeFromEnv,
 } from './processors/assistant/ingest';
+import { createMailClaim } from './processors/mail/claim-mail';
 import { createNoticeClaim } from './processors/mail/claim-notice';
 import { createNoticeLoader } from './processors/mail/load-notice';
 import { type HouseholdMailJob, sendHouseholdMail } from './processors/mail/send-household-mail';
@@ -30,8 +32,10 @@ import {
   ASSISTANT_LOG_PURGE_EVERY_MS,
   ASSISTANT_LOG_PURGE_JOB,
   COORDINATION_CHECK_EVERY_MS,
+  DATA_RETENTION_PURGE_EVERY_MS,
   IDEMPOTENCY_PURGE_EVERY_MS,
   IDEMPOTENCY_PURGE_JOB,
+  LOGIN_EVENT_PURGE_JOB,
   MEDIA_ORPHAN_SWEEP_EVERY_MS,
   MEDIA_ORPHAN_SWEEP_JOB,
   NEWS_IMPORT_JOB,
@@ -43,6 +47,7 @@ import {
   RFQ_EXPIRE_SWEEP_JOB,
   RFQ_SWEEP_EVERY_MS,
   runSchedulerJob,
+  TRACE_SCAN_PURGE_JOB,
 } from './processors/scheduler/rfq-jobs';
 import { DEFAULT_JOB_OPTIONS, OUTBOX_JOB_OPTIONS, trimFinishedJobs } from './queue-retention';
 import {
@@ -110,6 +115,11 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
     });
     const knowledge = { orm: this.orm, ...knowledgeFromEnv() };
     const outbox = new Queue(OUTBOX_QUEUE, { connection, defaultJobOptions: OUTBOX_JOB_OPTIONS });
+    // A Redis hiccup must be logged, not crash the process as an unhandled 'error' event (GH#429).
+    logConnectionErrors(
+      [media, mail, qrLabels, scheduler, assistant, newsImport, outbox],
+      this.logger,
+    );
     // Free space first: a full Redis refuses the writes below (issue #153).
     await trimFinishedJobs(
       [media, mail, qrLabels, scheduler, assistant, newsImport, outbox],
@@ -123,6 +133,7 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       from: process.env.MAIL_FROM ?? 'vCraft <no-reply@vcraft.local>',
       appUrl: process.env.APP_URL ?? 'http://localhost:8080',
     };
+    const householdClaim = createMailClaim(this.orm);
 
     const newsImportConfig = newsImportConfigFromEnv();
     const workers = [
@@ -141,8 +152,11 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
                   transport: mailDeps.transport,
                   from: mailDeps.from,
                   appUrl: mailDeps.appUrl,
+                  claim: householdClaim,
                 },
                 job.data as HouseholdMailJob,
+                // The job id comes from the outbox event id (`mail-household-<id>`).
+                String(job.id),
               )
             : sendNoticeMail(mailDeps, (job.data as MailJob).noticeId),
         {
@@ -191,11 +205,13 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
         OUTBOX_QUEUE,
         async () => {
           await notifyDueImportantNews(this.orm);
+          await queueNewlyLiveNews(this.orm);
           return relayOutbox(this.orm, dispatch);
         },
         { connection },
       ),
     ];
+    logConnectionErrors(workers, this.logger);
     for (const worker of workers)
       worker.on('failed', (job, error) => {
         this.logger.warn(`${worker.name} job ${job?.id} failed: ${error.message}`);
@@ -231,6 +247,9 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       { every: OUTBOX_PRUNE_EVERY_MS },
       { name: OUTBOX_PRUNE_JOB },
     );
+    for (const name of [LOGIN_EVENT_PURGE_JOB, TRACE_SCAN_PURGE_JOB]) {
+      await scheduler.upsertJobScheduler(name, { every: DATA_RETENTION_PURGE_EVERY_MS }, { name });
+    }
     await scheduler.upsertJobScheduler(
       MEDIA_ORPHAN_SWEEP_JOB,
       { every: MEDIA_ORPHAN_SWEEP_EVERY_MS },

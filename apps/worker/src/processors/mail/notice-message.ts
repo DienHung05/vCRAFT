@@ -9,6 +9,23 @@ import {
 export interface NoticeMail {
   subject: string;
   text: string;
+  /** `List-Unsubscribe` pointing at the email choices (GH#420). */
+  headers: Record<string, string>;
+}
+
+/** The account page section where the person turns emails off, per kind (FR-NOTI-02). */
+export function emailPreferencesLink(appUrl: string): string {
+  return `${appUrl.replace(/\/+$/, '')}/vi/tai-khoan#email-preferences`;
+}
+
+/** The last lines of every mail: where to stop these emails. */
+export function unsubscribeFooter(appUrl: string): string {
+  return `Không muốn nhận những thư này nữa? Chọn loại thư bạn nhận tại: ${emailPreferencesLink(appUrl)}`;
+}
+
+/** Mail headers that let mail clients offer "unsubscribe" next to the sender (RFC 2369). */
+export function unsubscribeHeaders(appUrl: string): Record<string, string> {
+  return { 'List-Unsubscribe': `<${emailPreferencesLink(appUrl)}>` };
 }
 
 /** Nội dung từng loại thông báo: tiêu đề thư và một câu mô tả sự kiện. */
@@ -113,6 +130,14 @@ const COPY: Record<NotificationType, { subject: string; body: string }> = {
     subject: 'Khoản thanh toán đã hết hạn',
     body: 'Khoản thanh toán chưa nhận được tiền trong thời hạn nên đã hết hạn. Bạn có thể tạo lại khoản thanh toán trong trang đơn hàng.',
   },
+  PAYMENT_UNAPPLIED: {
+    subject: 'Có khoản tiền chưa khớp cần xử lý',
+    body: 'Một khoản tiền vừa về nhưng không khớp với khoản thanh toán nào đang chờ (sai số tiền, khoản đã hủy hoặc đơn đã thanh toán). Hãy xem và hoàn lại hoặc xử lý thủ công trong trang Thanh toán.',
+  },
+  PAYMENT_REFUND_DUE: {
+    subject: 'Đơn hàng đã hủy có khoản tiền cần hoàn lại',
+    body: 'Đơn hàng đã bị hủy trong khi đã có khoản thanh toán. Ban quản lý sẽ hoàn lại số tiền này; xem tình trạng trong trang đơn hàng.',
+  },
   PAYMENT_REFUNDED: {
     subject: 'Khoản thanh toán đã được hoàn lại',
     body: 'Ban quản lý đã đánh dấu hoàn lại một khoản thanh toán của đơn hàng. Xem lý do trong trang đơn hàng.',
@@ -128,6 +153,7 @@ const PAGE_PATH: Record<NotificationTargetPage, string> = {
   BUYER_RFQ: 'yeu-cau-bao-gia/{id}',
   STUDIO_CONTRIBUTION: 'studio/de-xuat-tham-gia/{id}',
   ADMIN_COORDINATION: 'admin/dieu-phoi/{id}',
+  ADMIN_PAYMENTS: 'admin/thanh-toan',
   ADMIN_HOUSEHOLD_REVIEW: 'admin/duyet-ho/{id}',
   STUDIO_APPLICATION: 'studio/ho-so',
   NEWS_ARTICLE: 'tin-tuc/{id}',
@@ -157,6 +183,10 @@ export function buildNoticeMail(input: {
       '',
       ...(target ? [`Xem chi tiết: ${noticeLink(input.appUrl, target)}`, ''] : []),
       'vCraft',
+      '',
+      '--',
+      unsubscribeFooter(input.appUrl),
     ].join('\n'),
+    headers: unsubscribeHeaders(input.appUrl),
   };
 }

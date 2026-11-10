@@ -27,6 +27,7 @@ import {
   IdempotencyKey,
   JournalEntry,
   LoginEvent,
+  MailClaim,
   MediaAsset,
   MediaLink,
   News,
@@ -42,6 +43,7 @@ import {
   QuotationRequest,
   SlugRedirect,
   TraceScan,
+  UnappliedPayment,
   Workshop,
 } from './entities/index.js';
 
@@ -146,6 +148,7 @@ export function createMikroOrmOptions(
       Household,
       HouseholdRating,
       IdempotencyKey,
+      MailClaim,
       Artisan,
       Workshop,
       Product,
@@ -158,6 +161,7 @@ export function createMikroOrmOptions(
       CooperativeQuotation,
       OrderAllocation,
       Payment,
+      UnappliedPayment,
       MediaAsset,
       MediaLink,
       News,

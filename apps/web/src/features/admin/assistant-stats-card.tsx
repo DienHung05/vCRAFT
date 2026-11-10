@@ -71,6 +71,24 @@ export function AssistantStatsCard({ client }: { client: AdminClient }) {
               </dd>
             </div>
           </dl>
+          <dl className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div>
+              <dt className="text-small text-ash">{t('limited')}</dt>
+              <dd className="font-display text-h3">{format.number(stats.limited)}</dd>
+            </div>
+            <div>
+              <dt className="text-small text-ash">{t('disabled')}</dt>
+              <dd className="font-display text-h3">{format.number(stats.disabled)}</dd>
+            </div>
+            <div>
+              <dt className="text-small text-ash">{t('failures')}</dt>
+              <dd className="font-display text-h3">{format.number(stats.failures)}</dd>
+            </div>
+            <div>
+              <dt className="text-small text-ash">{t('unansweredCount')}</dt>
+              <dd className="font-display text-h3">{format.number(stats.unansweredCount)}</dd>
+            </div>
+          </dl>
           <div>
             <h3 className="mb-2 font-medium">{t('unansweredTitle')}</h3>
             {stats.unanswered.length === 0 ? (

@@ -4,6 +4,8 @@ import {
   PAYMENT_METHODS,
   PAYMENT_PROVIDERS,
   PAYMENT_STATUSES,
+  UNAPPLIED_PAYMENT_REASONS,
+  UNAPPLIED_PAYMENT_STATUSES,
 } from '@vcraft/domain';
 import { z } from 'zod';
 import {
@@ -76,6 +78,8 @@ export const PaymentResponseSchema = z.strictObject({
   note: z.string().nullable(),
   /** How to pay; present only while the payment is `PENDING`. */
   checkout: PaymentCheckoutSchema.nullable(),
+  /** Set when the order was cancelled while this payment was paid: the money is owed back (GH#417). */
+  refundDueAt: IsoDateTimeSchema.nullable().optional(),
 });
 export type PaymentDto = z.infer<typeof PaymentResponseSchema>;
 
@@ -123,11 +127,12 @@ export const RefundPaymentRequestSchema = z.strictObject({
 });
 export type RefundPaymentRequest = z.infer<typeof RefundPaymentRequestSchema>;
 
-/** `GET /admin/payments`: newest first. */
+/** `GET /admin/payments`: newest first. `refundDue=true` keeps paid payments of cancelled orders (GH#417). */
 export const AdminPaymentListQuerySchema = CursorPageQuerySchema.extend({
   status: PaymentStatusSchema.optional(),
   method: PaymentMethodSchema.optional(),
   kind: PaymentKindSchema.optional(),
+  refundDue: z.literal('true').optional(),
 });
 export type AdminPaymentListQuery = z.infer<typeof AdminPaymentListQuerySchema>;
 
@@ -138,6 +143,47 @@ export const AdminPaymentSchema = PaymentResponseSchema.extend({
 export type AdminPaymentDto = z.infer<typeof AdminPaymentSchema>;
 export const AdminPaymentPageSchema = cursorPageSchema(AdminPaymentSchema);
 export type AdminPaymentPageDto = z.infer<typeof AdminPaymentPageSchema>;
+
+export const UnappliedPaymentReasonSchema = z.enum(UNAPPLIED_PAYMENT_REASONS);
+export const UnappliedPaymentStatusSchema = z.enum(UNAPPLIED_PAYMENT_STATUSES);
+
+/**
+ * Money a provider reported that could not be applied (GH#417): one record per provider transaction, never
+ * overwritten. The raw provider payload stays on the server.
+ */
+export const UnappliedPaymentSchema = z.strictObject({
+  id: IdSchema,
+  version: VersionSchema,
+  paymentId: IdSchema.nullable(),
+  orderId: IdSchema.nullable(),
+  orderTitle: z.string().nullable(),
+  provider: PaymentProviderSchema,
+  providerTxnId: z.string(),
+  referenceCode: z.string(),
+  amountVnd: VndSchema,
+  /** What the payment expected, for an amount mismatch. */
+  expectedAmountVnd: VndSchema.nullable(),
+  reason: UnappliedPaymentReasonSchema,
+  status: UnappliedPaymentStatusSchema,
+  receivedAt: IsoDateTimeSchema,
+  resolvedAt: IsoDateTimeSchema.nullable(),
+  resolution: z.string().nullable(),
+});
+export type UnappliedPaymentDto = z.infer<typeof UnappliedPaymentSchema>;
+
+/** `GET /admin/payments/unapplied`: newest first; open ones by default. */
+export const UnappliedPaymentListQuerySchema = CursorPageQuerySchema.extend({
+  status: UnappliedPaymentStatusSchema.default('OPEN'),
+});
+export type UnappliedPaymentListQuery = z.infer<typeof UnappliedPaymentListQuerySchema>;
+export const UnappliedPaymentPageSchema = cursorPageSchema(UnappliedPaymentSchema);
+export type UnappliedPaymentPageDto = z.infer<typeof UnappliedPaymentPageSchema>;
+
+/** `POST /admin/payments/unapplied/{id}/resolve`: how the money was handled (given back, applied by hand). */
+export const ResolveUnappliedPaymentRequestSchema = z.strictObject({
+  resolution: z.string().trim().min(3, 'Ghi chú cần ít nhất 3 ký tự').max(500),
+});
+export type ResolveUnappliedPaymentRequest = z.infer<typeof ResolveUnappliedPaymentRequestSchema>;
 
 // --- Provider webhooks. Providers add fields over time, so each payload is read loosely. ---
 

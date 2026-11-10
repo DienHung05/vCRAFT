@@ -103,7 +103,7 @@ export function SignInForm({
   );
 
   return (
-    <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-2.5 md:gap-3">
       {linkInvalid ? <FormAlert tone="error">{t('signIn.notice.linkInvalid')}</FormAlert> : null}
       {oauthFailed ? <FormAlert tone="error">{t('google.failed')}</FormAlert> : null}
       {needSignIn && !error ? <FormAlert tone="info">{t('signIn.needSignIn')}</FormAlert> : null}

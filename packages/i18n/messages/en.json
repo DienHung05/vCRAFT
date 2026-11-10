@@ -53,6 +53,9 @@
     "map": "Map",
     "news": "News",
     "quotes": "Quote requests",
+    "invitations": "Quote invitations",
+    "coordination": "Coordination",
+    "openInvitations": "{count, plural, one {# open invitation} other {# open invitations}}",
     "theme": "Switch light/dark theme",
     "themeToDark": "Switch to dark theme",
     "themeToLight": "Switch to light theme",
@@ -306,6 +309,13 @@
   "trace": {
     "home": "Back to the vCraft home page",
     "book": "Craft book",
+    "navigation": "Explore beyond this craft book",
+    "backToProduct": "Back to the product",
+    "browseProducts": "Browse products",
+    "viewHousehold": "Meet the household",
+    "contents": "Inside this craft book",
+    "checkJournal": "Journal integrity",
+    "readJournal": "Production journal",
     "notFoundTitle": "This code isn't in vCraft",
     "notFoundText": "We couldn't find code {code}. This piece may not come from a craft village on vCraft, or the label may be counterfeit. Please check the code under the product again.",
     "scanned": "You just scanned the seal of",
@@ -368,7 +378,12 @@
     "counts": "{done}/{total} {unit} · expected {expected} · promised {due}",
     "started": "Started",
     "empty": "No allocations yet.",
-    "lateness": { "DONE": "Done", "ON_TRACK": "On track", "BEHIND": "Behind", "OVERDUE": "Overdue" }
+    "lateness": {
+      "DONE": "Done",
+      "ON_TRACK": "On track",
+      "BEHIND": "Behind",
+      "OVERDUE": "Overdue"
+    }
   },
   "rfq": {
     "duplicate": {
@@ -840,6 +855,10 @@
         "failed": "The assistant figures could not be loaded.",
         "turns": "Questions",
         "blockRate": "Blocked",
+        "limited": "Over the limit",
+        "disabled": "Assistant off",
+        "failures": "Errors",
+        "unansweredCount": "Unanswered",
         "feedback": "Ratings",
         "feedbackValue": "👍 {up} · 👎 {down}",
         "latency": "First token (p50 / p95)",
@@ -913,6 +932,12 @@
       "saved": "Decision saved.",
       "stale": "This application just changed. We loaded the latest version; check it and decide again.",
       "failed_action": "We could not save the decision.",
+      "incomplete": "The application is incomplete, so it cannot be approved. Still missing: {parts}. Ask the household to complete it and submit again.",
+      "incompleteParts": {
+        "profile": "Household profile",
+        "workshops": "At least one workshop",
+        "documents": "At least one document"
+      },
       "actions": {
         "approve": "Approve",
         "reject": "Reject",
@@ -961,7 +986,36 @@
       "revealIdNumber": "Show full number",
       "hideIdNumber": "Hide",
       "revealAudited": "Every time the full number is shown it is written to the audit log.",
-      "idNumberFailed": "The ID number could not be shown."
+      "idNumberFailed": "The ID number could not be shown.",
+      "products": "Household products",
+      "productsHint": "The board can take a product off the public pages (with a reason, written to the audit log) and bring back a product the board withdrew.",
+      "noProducts": "The household has no products yet.",
+      "withdrawnBy": {
+        "OWNER": "Archived by the household",
+        "BOARD": "Withdrawn by the board"
+      },
+      "withdrawnByUnknown": "Archived",
+      "withdrawnReason": "Reason: {reason}",
+      "withdrawProduct": "Withdraw product",
+      "withdrawProductNamed": "Withdraw product “{name}”",
+      "republishProduct": "Republish",
+      "republishProductNamed": "Republish product “{name}”",
+      "productConfirm": {
+        "withdraw": {
+          "title": "Withdraw this product?",
+          "text": "{name} will stop showing publicly and the household cannot bring it back on its own.",
+          "confirm": "Withdraw product"
+        },
+        "republish": {
+          "title": "Republish this product?",
+          "text": "{name} will show publicly again.",
+          "confirm": "Republish"
+        }
+      },
+      "productWithdrawn": "Product withdrawn.",
+      "productRepublished": "Product republished.",
+      "productFailed": "The product could not be updated. Please try again.",
+      "productStale": "The product just changed. The latest version is loaded; check it and try again."
     },
     "coordinationQueue": {
       "title": "Coordination",
@@ -1036,13 +1090,18 @@
           "suspend": "Suspended household",
           "reinstate": "Reinstated household",
           "reveal_id_number": "Viewed full citizen ID number",
+          "set_id_number": "Set or changed citizen ID number",
           "certification_verify": "Verified a certification",
-          "certification_unverify": "Removed a certification's verification"
+          "certification_unverify": "Removed a certification's verification",
+          "resubmit": "Resubmit application",
+          "submit": "Submitted application"
         },
         "product": {
           "publish": "Published product",
           "withdraw": "Withdrew product",
-          "republish": "Republished product"
+          "republish": "Republished product",
+          "mark_sold": "Marked product as sold",
+          "back_on_sale": "Put product back on sale"
         },
         "rfq": {
           "create": "Created request for an off-platform customer",
@@ -1063,6 +1122,9 @@
         "account": {
           "delete": "Account deleted by its owner"
         },
+        "consent": {
+          "withdraw": "Consent withdrawn"
+        },
         "allocation": {
           "reallocate": "Reallocate remaining pieces"
         },
@@ -1072,7 +1134,8 @@
         "payment": {
           "record_offline": "Recorded an offline payment",
           "refund": "Marked a payment refunded",
-          "simulate_transfer": "Simulated a sandbox transfer"
+          "simulate_transfer": "Simulated a sandbox transfer",
+          "unapplied_resolve": "Recorded how unmatched money was handled"
         },
         "user": {
           "suspend": "Suspend account",
@@ -1217,6 +1280,7 @@
       "status": "Status",
       "method": "Method",
       "kind": "Kind",
+      "refundDueOnly": "Only refunds due (cancelled orders)",
       "columns": {
         "when": "Created",
         "order": "Order",
@@ -1228,6 +1292,30 @@
         "reference": "Payment code"
       },
       "openOrder": "Open order",
+      "unapplied": {
+        "title": "{count, plural, one {# unmatched incoming amount} other {# unmatched incoming amounts}}",
+        "lead": "Money reached the account but could not be applied to any payment. Give it back or handle it by hand, then record what was done.",
+        "failed": "Could not load the unmatched amounts.",
+        "retry": "Retry",
+        "reason": {
+          "AMOUNT_MISMATCH": "Wrong amount",
+          "PAYMENT_NOT_PENDING": "Payment cancelled or failed",
+          "ALREADY_PAID": "Order already paid"
+        },
+        "expected": "Expected {expected}",
+        "openOrder": "Open order",
+        "resolve": "Record as handled",
+        "resolutionLabel": "How it was handled",
+        "resolutionPlaceholder": "Returned 3,000,000 VND to the buyer on 12 Nov",
+        "confirm": "Save",
+        "cancel": "Cancel",
+        "resolved": "Recorded how the money was handled.",
+        "error": {
+          "short": "Write how it was handled (at least 3 characters).",
+          "stale": "Someone just updated this amount. The list was reloaded.",
+          "failed": "Could not save. Please try again."
+        }
+      },
       "panel": {
         "title": "Payments of this order",
         "lead": "Deposit and balance. The deposit is paid online before production starts; the balance online or recorded here.",
@@ -1406,6 +1494,7 @@
     "withdrawnToast": "Quotation withdrawn.",
     "visibleToBuyer": "The buyer sees your household name, unit price, total and completion date. Other households do not.",
     "active": "Quotation waiting for the buyer: {price} per {unit}, total {total}.",
+    "missingTerms": "This quotation has no unit price or completion date, total {total}. Update it to fill them in.",
     "withdrawn": "Quotation withdrawn. Send it again to take part again.",
     "accepted": "The buyer accepted your quotation. Confirm your share under Orders.",
     "rejected": "The buyer chose another household.",
@@ -1540,7 +1629,8 @@
       "SEPAY_TRANSFER": "Scan the VietQR code with your banking app, or transfer by hand. The system confirms automatically when the money arrives.",
       "VNPAY": "Domestic ATM cards, Internet Banking, international cards or VNPAY-QR.",
       "MOMO": "Pay with the MoMo wallet on your phone."
-    }
+    },
+    "refundDue": "Refund due"
   },
   "rating": {
     "title": "Rate the households",
@@ -1663,6 +1753,8 @@
       "PAYMENT_PAID": "A payment for the order was received.",
       "PAYMENT_EXPIRED": "A payment for the order expired before the money arrived.",
       "PAYMENT_REFUNDED": "A payment for the order was marked refunded.",
+      "PAYMENT_UNAPPLIED": "Money arrived that matches no waiting payment and needs a refund or manual handling.",
+      "PAYMENT_REFUND_DUE": "A cancelled order has a paid amount to give back.",
       "NEWS_PUBLISHED": "The management board published important news."
     }
   },
@@ -1797,7 +1889,19 @@
     "legendClosed": "Closed now",
     "legendProduction": "Production only",
     "pinButton": "{name}: show details",
-    "viewOnFullMap": "View on the village map"
+    "viewOnFullMap": "View on the village map",
+    "routeSuggest": "Suggest a walking route",
+    "routeTitle": "Suggested walking route",
+    "routeClear": "Clear route",
+    "routeStart": {
+      "location": "Starting from your location",
+      "workshop": "Starting from the selected workshop",
+      "village": "Starting from the village centre"
+    },
+    "routeSummary": "{count, plural, one {# stop} other {# stops}} · about {km} km",
+    "routeEmpty": "No workshop is open right now, so there is no route to suggest.",
+    "routeOpenUntil": "Open until {time}",
+    "routeLimited": "Showing the nearest {count} stops only."
   },
   "catalog": {
     "filtersLabel": "Filter products",
@@ -1931,7 +2035,10 @@
       "latInvalid": "Latitude must be a number between -90 and 90.",
       "lngInvalid": "Longitude must be a number between -180 and 180.",
       "consentRequired": "Agree to the Privacy policy to create an account.",
-      "idNumberInvalid": "The ID number is exactly 12 digits, without spaces."
+      "idNumberInvalid": "The ID number is exactly 12 digits, without spaces.",
+      "villageTooLong": "The village name is too long: 160 characters at most.",
+      "historyTooLong": "The story is too long: 10,000 characters at most.",
+      "fieldInvalid": "This value is not accepted. Check it and try again."
     },
     "username": {
       "checking": "Checking username...",
@@ -1967,6 +2074,7 @@
       "mediaResolution": "The image has more than 50 megapixels. Retake it at a lower resolution.",
       "mediaUnsupported": "Only JPG, PNG, WebP, AVIF images or PDF files are accepted.",
       "apiDown": "Cannot reach the vCraft server. Please try again in a few minutes.",
+      "applicationIncomplete": "The application is still missing a required part: the household information, at least one workshop and at least one document. Complete the earlier steps and submit again.",
       "consentRequired": "You need to agree to the Privacy policy before doing this. Tick the consent box and try again.",
       "captcha": "Please complete the \"I am not a robot\" check above, then try again."
     },
@@ -2137,7 +2245,9 @@
         "submitting": "Submitting…",
         "needOne": "Upload at least one document before submitting.",
         "waitUploads": "Wait for the files to finish uploading, then submit.",
-        "consentFirst": "Agree to the Privacy policy above before choosing files."
+        "consentFirst": "Agree to the Privacy policy above before choosing files.",
+        "uploadedEarlier": "Uploaded earlier",
+        "loadFailed": "Could not load the documents you uploaded earlier. Reload the page to see them."
       },
       "alreadyAdmin": "An administrator account does not represent a household. Sign out and use another email to register a household.",
       "alreadyApplied": "This account has already submitted a household application."
@@ -2147,6 +2257,7 @@
       "submitted": "Application submitted. The village administration will review it, and this page changes when there is a result.",
       "statusLabel": "Application status",
       "status": {
+        "DRAFT": "Draft, not submitted yet",
         "PENDING_REVIEW": "Pending review",
         "APPROVED": "Accepted",
         "REJECTED": "Not accepted",
@@ -2198,7 +2309,8 @@
       "locked": "Your account is temporarily locked, so workspaces are closed. Contact the village administration for help.",
       "lead": "This area is for another role. Sign in with a suitable account, or go back home.",
       "home": "Back to home",
-      "switch": "Sign in with another account"
+      "switch": "Sign in with another account",
+      "ownArea": "Go to {area}"
     },
     "serviceDown": {
       "title": "Cannot check your session right now",
@@ -2235,7 +2347,7 @@
       "label": "Studio navigation",
       "home": "Home",
       "products": "Products",
-      "quotations": "Quotations",
+      "quotations": "Quote invitations",
       "orders": "Orders",
       "profile": "Profile"
     },
@@ -2253,6 +2365,7 @@
       "title": "Welcome, {household}",
       "status": "Application status",
       "statuses": {
+        "DRAFT": "Draft, not submitted yet",
         "PENDING_REVIEW": "Waiting for the village board to review",
         "APPROVED": "Approved and on public display",
         "REJECTED": "Not accepted",
@@ -2280,7 +2393,12 @@
         "openingHours": "Opening hours",
         "capacity": "Production capacity"
       },
-      "newProduct": "Add product"
+      "newProduct": "Add product",
+      "invitations": "Quote invitations",
+      "invitationsOpen": "{count, plural, =0 {No open invitations} one {# open invitation} other {# open invitations}}",
+      "invitationsNone": "No invitations need an answer right now.",
+      "invitationsNearest": "Nearest deadline: {deadline}",
+      "invitationsLink": "View invitations"
     },
     "profile": {
       "title": "Household profile",
@@ -2500,6 +2618,8 @@
       "withdrawReason": "Reason for archiving",
       "notApproved": "Your household must be approved before publishing.",
       "publishFailed": "We could not change the status. Please try again later.",
+      "boardWithdrawn": "The village board withdrew this product, so it cannot be republished from here. Edit it if needed and contact the board; only the board can put it back on display.",
+      "boardWithdrawnReason": "Reason given by the board: {reason}",
       "publishJournalRequired": "Add at least one production-journal milestone (with a photo) before publishing.",
       "qr": "QR code",
       "qrLead": "Print this on the label under the piece. The code stays the same if the name changes.",
@@ -2628,9 +2748,28 @@
       "closed": "Closed",
       "emptyHint": "When a buyer or the Management Board invites your household to quote, the invitation shows up here.",
       "emptyAction": "Complete the household profile",
+      "emptyRuleTitle": "When is a household invited?",
+      "emptyRuleLead": "A household is invited to quote only when all of the following hold:",
+      "emptyRule1": "The household profile is approved by the Management Board.",
+      "emptyRule2": "The representative account is not locked.",
+      "emptyRule3": "The buyer's request has a product category.",
+      "emptyRule4": "The household declared production capacity for that category, or has a published product in it.",
+      "emptyRuleNote": "Each request invites at most the 10 best-matching households (by capacity, products and rating). On requests handed to the Management Board for coordination, the board picks the households to invite.",
+      "emptyCapacity": "Declare production capacity",
+      "emptyAddProduct": "Add a product",
       "directActive": "Quoted: {price} per {unit}, total {total}",
+      "directMissingTerms": "The quotation has no unit price or completion date; total {total}",
       "directAccepted": "The buyer accepted the quotation",
-      "directRejected": "The buyer chose another household"
+      "directRejected": "The buyer chose another household",
+      "openTitle": "Open requests",
+      "openLead": "Requests the Management Board is coordinating that match your craft. You can offer without an invitation. Buyer details stay hidden.",
+      "openLoading": "Loading open requests…",
+      "openFailed": "The open requests could not be loaded.",
+      "openEmpty": "No open requests match your household right now.",
+      "openEmptyHint": "A coordinated request is open to your household when the Management Board has claimed it, its bidding deadline has not passed, and your household is approved and has declared capacity or a published product in its category. Requests you are already invited to are listed above.",
+      "openRequest": "{category}: needs {quantity} {unit}",
+      "openOffer": "Send an offer",
+      "openHide": "Hide the form"
     },
     "allocations": {
       "title": "Orders",
@@ -2726,7 +2865,7 @@
       },
       "retention": {
         "title": "How long we keep it",
-        "text": "While your account is active. When you delete your account yourself on the Account page, your email, name, consents, notifications, email choices and every file you uploaded (identity papers included) are deleted, and the household profile, workshops, makers and news are taken down. Orders, quotations and the production journal of products are kept without your name, because other people rely on those records; delivery addresses on past requests are erased. An account with an order in progress cannot be deleted until the order is finished or the Management Board cancels it."
+        "text": "While your account is active. When you delete your account yourself on the Account page, your email, name, consents, notifications, email choices and every file you uploaded (identity papers included) are deleted, and the household profile, workshops, makers and news are taken down. Orders, quotations and the production journal of products are kept without your name, because other people rely on those records; delivery addresses on past requests are erased. An account with an order in progress cannot be deleted until the order is finished or the Management Board cancels it. Sign-in history is kept for 12 months and QR scan records for 24 months, then deleted automatically."
       },
       "security": {
         "title": "How we protect it",
@@ -2766,6 +2905,34 @@
         "working": "Preparing…",
         "done": "Your data file was downloaded.",
         "failed": "Your data could not be downloaded. Try again in a few minutes."
+      },
+      "consents": {
+        "title": "Withdraw consent",
+        "text": "You can withdraw each consent at any time. Withdrawing does not affect data processed before, and it does not delete data already stored; to delete your data, delete your account below. You can consent again when you need the feature.",
+        "signUpNote": "Consent given at sign-up is the basis for having an account, so it cannot be withdrawn on its own; to withdraw it, delete your account below.",
+        "none": "You have no active consent to withdraw.",
+        "loadFailed": "Your consents could not be loaded. Try again in a few minutes.",
+        "purposes": {
+          "ID_DOCUMENT": {
+            "title": "Identity papers and citizen ID number",
+            "effect": "After withdrawing: you cannot upload more papers or set or change your ID number. Papers and the number already stored stay until you delete your account."
+          },
+          "RFQ_CONTACT": {
+            "title": "Delivery address and contact details in quotation requests",
+            "effect": "After withdrawing: you cannot send new quotation requests with a delivery address and contact details."
+          },
+          "MAKER_PROFILE": {
+            "title": "Showing a maker's name and role",
+            "effect": "After withdrawing: you cannot add or edit makers shown publicly on the household page."
+          }
+        },
+        "withdraw": "Withdraw",
+        "dialogTitle": "Withdraw this consent?",
+        "confirm": "Withdraw consent",
+        "cancel": "Keep it",
+        "working": "Withdrawing…",
+        "done": "Consent withdrawn.",
+        "failed": "The consent could not be withdrawn and nothing was changed. Try again in a few minutes."
       },
       "delete": {
         "title": "Delete account",

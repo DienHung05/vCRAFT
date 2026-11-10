@@ -236,7 +236,8 @@ describe('Studio household profile', () => {
     const mine = await t.request({ method: 'GET', url: '/me/household', auth: owner.auth });
     expect(mine.body.completeness).toEqual({ percent: 100, missing: [] });
     const pub = await t.request({ method: 'GET', url: '/households/gom-ho-so' });
-    expect(pub.body.workshops[0].address).toBe('Số 12 đường Gốm, Bát Tràng');
+    const shown = pub.body.workshops.find((w: { id: string }) => w.id === created.body.id);
+    expect(shown.address).toBe('Số 12 đường Gốm, Bát Tràng');
   });
 
   it('xưởng: trải nghiệm và tạm đóng cửa được lưu, hiện công khai trên hộ và bản đồ, rồi gỡ được (GH#236)', async () => {

@@ -11,6 +11,7 @@ import { ErrorState } from '@/components/states/error-state';
 import { ListSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
+import { useLatestRequest } from '@/lib/use-latest-request';
 
 /** The signed-in buyer's requests from `GET /rfqs`, with a status filter and cursor paging. */
 export function BuyerRfqList({ client: provided }: { client?: QuotationClient }) {
@@ -31,6 +32,7 @@ function List({ client }: { client: QuotationClient }) {
   const [cursor, setCursor] = useState<string | null>(null);
   const [state, setState] = useState<'ok' | 'failed' | 'signed-out'>('ok');
   const [loadingMore, setLoadingMore] = useState(false);
+  const latest = useLatestRequest();
 
   const fail = useCallback(
     (error: unknown) =>
@@ -41,16 +43,19 @@ function List({ client }: { client: QuotationClient }) {
   );
 
   const load = useCallback(async () => {
+    const id = latest.begin();
     setState('ok');
     setRows(null);
+    setLoadingMore(false);
     try {
       const result = await client.listRequests({ ...(status ? { status } : {}) });
+      if (!latest.isCurrent(id)) return;
       setRows(result.data);
       setCursor(result.nextCursor);
     } catch (error) {
-      fail(error);
+      if (latest.isCurrent(id)) fail(error);
     }
-  }, [client, status, fail]);
+  }, [client, status, fail, latest]);
 
   useEffect(() => {
     void load();
@@ -58,15 +63,18 @@ function List({ client }: { client: QuotationClient }) {
 
   const more = async () => {
     if (!cursor || loadingMore) return;
+    // Does not begin a new request: a filter change must still supersede this page.
+    const id = latest.peek();
     setLoadingMore(true);
     try {
       const result = await client.listRequests({ ...(status ? { status } : {}), cursor });
+      if (!latest.isCurrent(id)) return;
       setRows((current) => [...(current ?? []), ...result.data]);
       setCursor(result.nextCursor);
     } catch (error) {
-      fail(error);
+      if (latest.isCurrent(id)) fail(error);
     } finally {
-      setLoadingMore(false);
+      if (latest.isCurrent(id)) setLoadingMore(false);
     }
   };
 

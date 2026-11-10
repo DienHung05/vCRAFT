@@ -43,6 +43,8 @@ describe('notifications: bell inbox, ownership and email preferences', () => {
       body: { name: `Hộ ${slug}`, slug, history: '' },
     });
     expect(applied.status).toBe(201);
+    // Rejection needs a submitted application; approval completes it by itself.
+    await t.completeApplication(applied.body.id);
     const decided = await t.request({
       method: 'POST',
       url: `/admin/households/${applied.body.id}/${action}`,

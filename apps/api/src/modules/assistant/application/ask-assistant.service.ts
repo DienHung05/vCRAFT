@@ -34,6 +34,7 @@ import {
   RateLimiter,
   StreamingOutputFilter,
   sanitizeInput,
+  screenHistory,
 } from './guardrails';
 import { chatMessages, classifierPrompt } from './prompt';
 import { siteHelpQuery } from './site-help';
@@ -79,6 +80,8 @@ const OUT_OF_SCOPE = {
 interface Turn {
   intent: string;
   blocked?: BlockReason;
+  /** The turn ended in an error event; stored in `blockReason` of a row that is not blocked. */
+  failed?: 'UPSTREAM' | 'TIMEOUT';
   answered: boolean;
   firstTokenMs: number | null;
   tokens: number;
@@ -100,6 +103,18 @@ async function* drain({ iterator, first }: AnswerStream): AsyncGenerator<LlmChun
     yield step.value;
     step = await iterator.next();
   }
+}
+
+const EN_PATHS: readonly (readonly [string, string])[] = [
+  ['/vi/san-pham/', '/en/products/'],
+  ['/vi/nghe-nhan/', '/en/artisans/'],
+  ['/vi/tin-tuc/', '/en/news/'],
+];
+
+/** Points a Vietnamese-indexed document at its English page, so an English visitor's citation stays in English. */
+function localizeMatch(m: KnowledgeMatch): KnowledgeMatch {
+  const [from, to] = EN_PATHS.find(([prefix]) => m.url.startsWith(prefix)) ?? [];
+  return from && to ? { ...m, url: to + m.url.slice(from.length) } : m;
 }
 
 const citationOf = (m: KnowledgeMatch): CitationDto => ({
@@ -139,7 +154,12 @@ export class AskAssistantService {
   ): AsyncGenerator<AssistantEvent> {
     const started = Date.now();
     yield { type: 'thinking' };
-    const { message, suspicion } = sanitizeInput(input.message);
+    const current = sanitizeInput(input.message);
+    const { message } = current;
+    // Client history is untrusted: user turns are screened like the message, assistant turns dropped.
+    const screened = screenHistory(input.history, message, current.suspicion);
+    const suspicion = screened.suspicion;
+    const safeInput: AssistantMessageRequest = { ...input, history: screened.history };
     const log = (turn: Turn) => this.log(input, message, ipHash, turn);
     const blocked = async function* (reason: BlockReason, intent: string, retryAfter?: number) {
       const id = await log({
@@ -229,7 +249,7 @@ export class AskAssistantService {
       .classify(
         [
           { role: 'system', content: classifierPrompt(suspicion) },
-          ...input.history.slice(-4).map((t) => ({ role: t.role, content: t.content })),
+          ...safeInput.history.slice(-4).map((t) => ({ role: t.role, content: t.content })),
           { role: 'user', content: message },
         ],
         signal,
@@ -247,7 +267,7 @@ export class AskAssistantService {
         discarded
           ? null
           : answer(
-              chatMessages(input, message, canary, { matches: found, tools: [], page }),
+              chatMessages(safeInput, message, canary, { matches: found, tools: [], page }),
               this.config.maxAnswerTokens,
             ),
     );
@@ -260,7 +280,13 @@ export class AskAssistantService {
     if (!classified) {
       discardSpeculation();
       yield { type: 'error', code: 'UPSTREAM' };
-      await log({ intent: 'unknown', answered: false, firstTokenMs: null, tokens: 0 });
+      await log({
+        intent: 'unknown',
+        failed: 'UPSTREAM',
+        answered: false,
+        firstTokenMs: null,
+        tokens: 0,
+      });
       return;
     }
     await this.budget.record(classified.tokens);
@@ -302,7 +328,7 @@ export class AskAssistantService {
       .slice(0, 8);
 
     const filter = new StreamingOutputFilter(canary, this.config.allowedOrigins);
-    const messages = chatMessages(input, message, canary, {
+    const messages = chatMessages(safeInput, message, canary, {
       matches: context,
       tools: toolResults,
       page,
@@ -334,8 +360,15 @@ export class AskAssistantService {
       await this.budget.record(tokens);
       if (signal?.aborted) return;
       this.logger.warn(`assistant answer failed: ${String(error)}`);
-      yield { type: 'error', code: timeout.aborted ? 'TIMEOUT' : 'UPSTREAM' };
-      await log({ intent, answered: false, firstTokenMs, tokens: classified.tokens + tokens });
+      const failed = timeout.aborted ? 'TIMEOUT' : 'UPSTREAM';
+      yield { type: 'error', code: failed };
+      await log({
+        intent,
+        failed,
+        answered: false,
+        firstTokenMs,
+        tokens: classified.tokens + tokens,
+      });
       return;
     }
     await this.budget.record(tokens);
@@ -375,13 +408,20 @@ export class AskAssistantService {
       const work = (async () => {
         const [embedding] = await this.embedder.embed([message]);
         if (!embedding) return [];
+        // Products, households and news are indexed in Vietnamese only (ADR-19), so English visitors search
+        // both languages; Vietnamese guides are dropped below because English ones cover the same topics.
         const found = await this.vectors.search(embedding, {
-          locale,
-          limit: RETRIEVAL_LIMIT,
+          locales: locale === 'en' ? ['en', 'vi'] : ['vi'],
+          limit: locale === 'en' ? RETRIEVAL_LIMIT * 2 : RETRIEVAL_LIMIT,
           minSimilarity: MIN_SIMILARITY,
           ...(guidesOnly && { sourceType: 'FAQ' as const }),
         });
-        return found;
+        return locale === 'en'
+          ? found
+              .filter((m) => m.sourceType !== 'FAQ' || !m.sourceId.endsWith('.vi'))
+              .map(localizeMatch)
+              .slice(0, RETRIEVAL_LIMIT)
+          : found;
       })();
       const timeout = new Promise<KnowledgeMatch[]>((resolve) =>
         setTimeout(() => resolve([]), TOOL_TIMEOUT_MS).unref(),
@@ -406,7 +446,7 @@ export class AskAssistantService {
       question: maskPii(message).slice(0, 300),
       intent: turn.intent,
       blocked: turn.blocked !== undefined,
-      blockReason: turn.blocked ?? null,
+      blockReason: turn.blocked ?? turn.failed ?? null,
       answered: turn.answered,
       firstTokenMs: turn.firstTokenMs,
       tokens: turn.tokens,

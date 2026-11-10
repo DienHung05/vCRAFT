@@ -5,6 +5,7 @@ import { Button } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useRouter } from '@/i18n/navigation';
+import { useIdempotentAction } from '@/lib/use-idempotent-action';
 
 export function DuplicateRequestButton({
   requestId,
@@ -17,11 +18,14 @@ export function DuplicateRequestButton({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const duplicateRequest = useIdempotentAction();
   async function duplicate() {
     setBusy(true);
     setFailed(false);
     try {
-      const draft = await client.duplicateRequest(requestId);
+      const draft = await duplicateRequest(requestId, (options) =>
+        client.duplicateRequest(requestId, options),
+      );
       router.push({ pathname: '/yeu-cau-bao-gia/[code]', params: { code: draft.id } });
     } catch {
       setFailed(true);

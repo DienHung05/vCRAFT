@@ -179,6 +179,7 @@ describe('RfqForm requirements, attachments and matching', () => {
     await waitFor(() => expect(createRequest).toHaveBeenCalledTimes(1), { timeout: 3000 });
     expect(createRequest).toHaveBeenCalledWith(
       expect.objectContaining({ customRequirements: 'Print our logo', attachments: [ID] }),
+      { idempotencyKey: expect.any(String) },
     );
   });
 
@@ -338,7 +339,14 @@ describe('BuyerRfqDetail with household quotations', () => {
       screen.getAllByRole('button', { name: 'Chốt chào giá này', hidden: true })[1] as HTMLElement,
     );
     confirmDialog('Chốt chào giá này');
-    await waitFor(() => expect(acceptQuotation).toHaveBeenCalledWith(ID, 4, { quotationId: 'b' }));
+    await waitFor(() =>
+      expect(acceptQuotation).toHaveBeenCalledWith(
+        ID,
+        4,
+        { quotationId: 'b' },
+        { idempotencyKey: expect.any(String) },
+      ),
+    );
   });
 });
 
@@ -392,12 +400,55 @@ describe('household quotation form (studio)', () => {
     });
     fireEvent.click(send);
     await waitFor(() =>
-      expect(client.createDirectQuotation).toHaveBeenCalledWith(ID, {
-        unitPriceVnd: 30_000,
-        completionDate: '2100-01-01T00:00:00.000Z',
-        note: 'Fired twice',
-      }),
+      expect(client.createDirectQuotation).toHaveBeenCalledWith(
+        ID,
+        {
+          unitPriceVnd: 30_000,
+          completionDate: '2100-01-01T16:59:59.000Z',
+          note: 'Fired twice',
+        },
+        { idempotencyKey: expect.any(String) },
+      ),
     );
+  });
+
+  // GH#444: the first send can lose its response; retrying it must reuse the key so the API runs it once.
+  it('retains the direct quotation key after a failed send and replaces it when the input changes', async () => {
+    const client = workspace({
+      createDirectQuotation: vi
+        .fn()
+        .mockRejectedValueOnce(new TypeError('Request timed out'))
+        .mockResolvedValue(QUOTATION),
+    });
+    renderVi(<LiveContributionWorkspace rfqId={ID} client={client} />);
+    const send = await screen.findByRole('button', { name: 'Gửi báo giá' });
+    const fill = (price: string) => {
+      fireEvent.change(screen.getByLabelText('Đơn giá (VND)'), { target: { value: price } });
+      fireEvent.change(screen.getByLabelText('Ngày hoàn thành'), {
+        target: { value: '2100-01-01' },
+      });
+    };
+    fill('30000');
+    fireEvent.click(send);
+    await waitFor(() => expect(client.createDirectQuotation).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi báo giá' }));
+    await waitFor(() => expect(client.createDirectQuotation).toHaveBeenCalledTimes(2));
+
+    const first = (client.createDirectQuotation as ReturnType<typeof vi.fn>).mock.calls[0]?.[2]
+      ?.idempotencyKey;
+    expect(first).toEqual(expect.any(String));
+    expect(
+      (client.createDirectQuotation as ReturnType<typeof vi.fn>).mock.calls[1]?.[2]?.idempotencyKey,
+    ).toBe(first);
+
+    // A different price is a different offer: it gets a new key.
+    fill('29000');
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi báo giá' }));
+    await waitFor(() => expect(client.createDirectQuotation).toHaveBeenCalledTimes(3));
+    expect(
+      (client.createDirectQuotation as ReturnType<typeof vi.fn>).mock.calls[2]?.[2]?.idempotencyKey,
+    ).not.toBe(first);
   });
 
   it('refuses a completion date outside the window', async () => {
@@ -422,7 +473,7 @@ describe('household quotation form (studio)', () => {
     await waitFor(() =>
       expect(client.reviseDirectQuotation).toHaveBeenCalledWith(ID, 3, {
         unitPriceVnd: 27_000,
-        completionDate: '2100-01-01T00:00:00.000Z',
+        completionDate: '2100-01-01T16:59:59.000Z',
       }),
     );
     expect(client.createDirectQuotation).not.toHaveBeenCalled();
@@ -482,5 +533,115 @@ describe('household quotation form (studio)', () => {
       await screen.findByText(/Đã báo giá: 30\.000\s*₫ một cup, tổng 3\.000\.000/),
     ).toBeTruthy();
     expect(screen.getByText('Bên mua đã chốt báo giá của hộ')).toBeTruthy();
+  });
+
+  it('says a legacy quotation without a price or date has no terms, instead of showing zero', async () => {
+    // GH#445: a stored quotation without parts reads as nulls. The invitation list must still render,
+    // and it must not claim a 0 ₫ price or an empty date.
+    const rows: MyInvitationDto[] = [
+      {
+        request: REQUEST,
+        contribution: null,
+        declined: false,
+        directQuotation: {
+          ...QUOTATION,
+          unitPriceVnd: null,
+          completionDate: null,
+          totalVnd: 3_000_000,
+        },
+      },
+    ];
+    renderVi(
+      <QuotationInvitations
+        client={asClient({ listInvitations: vi.fn().mockResolvedValue(rows) })}
+      />,
+    );
+    expect(await screen.findByTestId('invitations')).toBeTruthy();
+    expect(screen.queryByText(/Đã báo giá: 0\s*₫/)).toBeNull();
+    expect(screen.getByText(/Báo giá thiếu đơn giá hoặc ngày hoàn thành/)).toBeTruthy();
+  });
+
+  it('keeps editing a legacy quotation without a price or date, repairing both terms', async () => {
+    // GH#445: the stored part still names this household, so the API would refuse a second quotation
+    // ("already exists"). The form must keep it editable and send a revision that supplies both terms.
+    const legacy = { ...QUOTATION, unitPriceVnd: null, completionDate: null };
+    const client = workspace({
+      listOwnDirectQuotations: vi.fn().mockResolvedValue([legacy]),
+    });
+    renderVi(<LiveContributionWorkspace rfqId={ID} client={client} />);
+    expect(await screen.findByRole('button', { name: 'Cập nhật báo giá' })).toBeTruthy();
+    expect(
+      screen.getByText(/Báo giá này thiếu đơn giá hoặc ngày hoàn thành, tổng 3\.000\.000/),
+    ).toBeTruthy();
+    const price = screen.getByLabelText('Đơn giá (VND)') as HTMLInputElement;
+    expect(price.value).toBe('');
+    fireEvent.change(price, { target: { value: '27000' } });
+    fireEvent.change(screen.getByLabelText('Ngày hoàn thành'), { target: { value: '2100-01-01' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cập nhật báo giá' }));
+    await waitFor(() =>
+      expect(client.reviseDirectQuotation).toHaveBeenCalledWith(ID, 3, {
+        unitPriceVnd: 27_000,
+        completionDate: '2100-01-01T16:59:59.000Z',
+      }),
+    );
+    expect(client.createDirectQuotation).not.toHaveBeenCalled();
+  });
+});
+
+// GH#444: the household's own contribution on a coordinated request is retried with the same key.
+describe('coordinated contribution creation (studio)', () => {
+  const coordinated = { ...REQUEST, coordinationOptIn: true };
+  const contribution = {
+    id: ID,
+    version: 1,
+    householdId: ID,
+    maxQuantity: 100,
+    unitPriceVnd: 30_000,
+    completionDate: '2100-01-01T00:00:00.000Z',
+    status: 'ACTIVE' as const,
+  };
+
+  const fill = () => {
+    fireEvent.change(screen.getByLabelText('Mức tối đa (cup)'), { target: { value: '100' } });
+    fireEvent.change(screen.getByLabelText('Đơn giá (VND)'), { target: { value: '30000' } });
+    fireEvent.change(screen.getByLabelText('Ngày hoàn thành'), { target: { value: '2100-01-01' } });
+  };
+
+  it('sends the offer with its target, body and the held key, and reuses the key after a failure', async () => {
+    const createContribution = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Request timed out'))
+      .mockResolvedValue(contribution);
+    const client = asClient({
+      getRequest: vi.fn().mockResolvedValue(coordinated),
+      listOwnContributions: vi.fn().mockResolvedValue([]),
+      priceHint: vi.fn().mockResolvedValue({ hint: null }),
+      createContribution,
+    });
+    renderVi(<LiveContributionWorkspace rfqId={ID} client={client} />);
+    await screen.findByRole('button', { name: 'Gửi đề xuất' });
+    fill();
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi đề xuất' }));
+    // The form locks while sending; after the failure it offers the same submit again.
+    await waitFor(() => expect(createContribution).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(
+        (screen.getByRole('button', { name: 'Gửi đề xuất' }) as HTMLButtonElement).disabled,
+      ).toBe(false),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi đề xuất' }));
+    await waitFor(() => expect(createContribution).toHaveBeenCalledTimes(2));
+
+    const body = {
+      maxQuantity: 100,
+      unitPriceVnd: 30_000,
+      completionDate: '2100-01-01T16:59:59.000Z',
+    };
+    expect(createContribution).toHaveBeenNthCalledWith(1, ID, body, {
+      idempotencyKey: expect.any(String),
+    });
+    const first = createContribution.mock.calls[0]?.[2]?.idempotencyKey;
+    expect(first).toEqual(expect.any(String));
+    expect(createContribution.mock.calls[1]?.[2]?.idempotencyKey).toBe(first);
   });
 });

@@ -31,7 +31,12 @@ export type ProductGuardCode =
   | 'FORBIDDEN_ACTOR'
   | 'HOUSEHOLD_NOT_APPROVED'
   | 'REASON_REQUIRED'
-  | 'NOT_ONE_OF_A_KIND';
+  | 'NOT_ONE_OF_A_KIND'
+  | 'BOARD_WITHDRAWN'
+  | 'NOT_BOARD_WITHDRAWN';
+
+/** Who withdrew a product; stored on the product so a board withdrawal cannot be undone by the owner. */
+export type ProductWithdrawnBy = 'OWNER' | 'BOARD';
 
 /** Product kinds the lifecycle cares about; mirrors the database `ProductKind`. */
 export type ProductLifecycleKind = 'OBJECT' | 'BATCH';
@@ -44,6 +49,8 @@ export interface ProductContext {
   readonly reason?: string | undefined;
   /** Required by `MARK_SOLD`: only a one-of-a-kind (`OBJECT`) product can be sold. */
   readonly kind?: ProductLifecycleKind | undefined;
+  /** Used by `REPUBLISH`; null or absent (legacy rows) is treated as an owner withdrawal. */
+  readonly withdrawnBy?: ProductWithdrawnBy | null | undefined;
 }
 
 /** Người đại diện hộ xuất bản sản phẩm của mình; Ban quản lý chỉ được rút (ẩn), không xuất bản thay hộ. */
@@ -80,6 +87,29 @@ function reasonRequired(ctx: ProductContext): DomainError<ProductGuardCode> | un
     : new DomainError('REASON_REQUIRED', 'a reason is required');
 }
 
+/**
+ * Republishing: the owner may bring back a product the owner withdrew; a product the board withdrew
+ * stays withdrawn until the board itself republishes it.
+ */
+function republishActor(ctx: ProductContext): DomainError<ProductGuardCode> | undefined {
+  const boardWithdrawn = ctx.withdrawnBy === 'BOARD';
+  if (ctx.actorRole === 'ADMIN') {
+    return boardWithdrawn
+      ? undefined
+      : new DomainError(
+          'NOT_BOARD_WITHDRAWN',
+          'the board only republishes a product it withdrew itself',
+        );
+  }
+  if (boardWithdrawn) {
+    return new DomainError(
+      'BOARD_WITHDRAWN',
+      'a product withdrawn by the board can only be republished by the board',
+    );
+  }
+  return ownerOnly(ctx);
+}
+
 export const PRODUCT_TRANSITIONS = {
   DRAFT: {
     PUBLISH: { to: 'PUBLISHED', guards: [ownerOnly, householdApproved] },
@@ -93,7 +123,7 @@ export const PRODUCT_TRANSITIONS = {
     WITHDRAW: { to: 'WITHDRAWN', guards: [ownerOrAdmin], inputGuards: [reasonRequired] },
   },
   WITHDRAWN: {
-    REPUBLISH: { to: 'PUBLISHED', guards: [ownerOnly, householdApproved] },
+    REPUBLISH: { to: 'PUBLISHED', guards: [republishActor, householdApproved] },
   },
 } as const satisfies TransitionTable<ProductStatus, ProductEvent, ProductContext, ProductGuardCode>;
 
@@ -128,7 +158,13 @@ export function publicProductAvailability(
 ): PublicAvailability {
   if (productStatus === 'DRAFT') return 'MISSING';
   // Hộ chưa duyệt / bị từ chối thì chưa từng có gì công khai, kể cả sản phẩm đã rút
-  if (householdStatus === 'PENDING_REVIEW' || householdStatus === 'REJECTED') return 'MISSING';
+  if (
+    householdStatus === 'DRAFT' ||
+    householdStatus === 'PENDING_REVIEW' ||
+    householdStatus === 'REJECTED'
+  ) {
+    return 'MISSING';
+  }
   if (householdStatus === 'SUSPENDED' || productStatus === 'WITHDRAWN') return 'UNAVAILABLE';
   return 'VISIBLE';
 }

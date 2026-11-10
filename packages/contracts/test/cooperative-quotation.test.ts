@@ -4,6 +4,7 @@ import {
   CreateContributionRequestSchema,
   CreateCooperativeQuotationRequestSchema,
   CreateDirectQuotationRequestSchema,
+  DirectQuotationResponseSchema,
 } from '../src';
 
 const validContribution = {
@@ -117,5 +118,43 @@ describe('direct quotation input', () => {
       CreateDirectQuotationRequestSchema.safeParse({ unitPriceVnd: 1, completionDate, quantity: 5 })
         .success,
     ).toBe(false);
+  });
+});
+
+describe('direct quotation response (GH#445)', () => {
+  const completionDate = '2027-02-01T00:00:00.000Z';
+  const direct = {
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    version: 2,
+    status: 'SUBMITTED',
+    quantity: 100,
+    unitPriceVnd: 30_000,
+    totalVnd: 3_000_000,
+    completionDate,
+    note: null,
+  };
+
+  it('accepts a quotation read from its stored part', () => {
+    expect(DirectQuotationResponseSchema.safeParse(direct).success).toBe(true);
+  });
+
+  it('accepts a quotation stored without parts as nulls, not sentinels', () => {
+    const parsed = DirectQuotationResponseSchema.safeParse({
+      ...direct,
+      unitPriceVnd: null,
+      completionDate: null,
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success)
+      expect(parsed.data).toMatchObject({ unitPriceVnd: null, completionDate: null });
+  });
+
+  it('still refuses a zero price, an empty date and an absent total', () => {
+    for (const broken of [
+      { ...direct, unitPriceVnd: 0 },
+      { ...direct, completionDate: '' },
+      { ...direct, totalVnd: undefined },
+    ])
+      expect(DirectQuotationResponseSchema.safeParse(broken).success).toBe(false);
   });
 });

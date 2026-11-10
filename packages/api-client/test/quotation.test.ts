@@ -248,3 +248,116 @@ describe('Idempotency-Key on state-changing RFQ calls (BR-L5)', () => {
     expect(keys).toEqual([null, null]);
   });
 });
+
+/** GH#444: a household offer or a coordinator's plan can be retried after a lost response. */
+describe('Idempotency-Key on quotation creation (BR-L5, GH#444)', () => {
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  const contributionInput = {
+    maxQuantity: 10,
+    unitPriceVnd: 30_000,
+    completionDate: '2027-02-01T00:00:00.000Z',
+  };
+  const directInput = {
+    unitPriceVnd: 30_000,
+    completionDate: '2027-02-01T00:00:00.000Z',
+  };
+  const plan = {
+    parts: [
+      {
+        householdId: requestId,
+        quantity: 10,
+        unitPriceVnd: 30_000,
+        completionDate: '2027-02-01T00:00:00.000Z',
+        contributionVersion: 1,
+      },
+    ],
+    additionalChargeVnd: 0,
+    deliveryTerms: 'SEPARATE' as const,
+  };
+  const contribution = {
+    id: requestId,
+    version: 1,
+    householdId: requestId,
+    maxQuantity: 10,
+    unitPriceVnd: 30_000,
+    completionDate: '2027-02-01T00:00:00.000Z',
+    status: 'ACTIVE',
+  };
+  const direct = {
+    id: requestId,
+    version: 1,
+    status: 'SUBMITTED',
+    quantity: 10,
+    unitPriceVnd: 30_000,
+    totalVnd: 300_000,
+    completionDate: '2027-02-01T00:00:00.000Z',
+    note: null,
+  };
+  const quotation = {
+    id: requestId,
+    version: 1,
+    status: 'SUBMITTED',
+    quantity: 10,
+    parts: [
+      {
+        householdId: requestId,
+        householdName: 'Gốm Minh Hải',
+        quantity: 10,
+        unitPriceVnd: 30_000,
+        completionDate: '2027-02-01T00:00:00.000Z',
+        contributionVersion: 1,
+      },
+    ],
+    productionTotalVnd: 300_000,
+    additionalChargeVnd: 0,
+    totalVnd: 300_000,
+    deliveryTerms: 'SEPARATE',
+  };
+
+  function recordingClient() {
+    const keys: Array<string | null> = [];
+    const client = createQuotationClient({
+      getAccessToken: async () => 'session-token',
+      fetch: async (url, options) => {
+        keys.push(new Request(`https://vcraft.test${url}`, options).headers.get('idempotency-key'));
+        if (url.includes('/contributions')) return Response.json(contribution);
+        if (url.includes('/direct-quotations')) return Response.json(direct);
+        return Response.json(quotation);
+      },
+    });
+    return { client, keys };
+  }
+
+  it('sends a fresh UUID with each household creation call', async () => {
+    const { client, keys } = recordingClient();
+    await client.createContribution(requestId, contributionInput);
+    await client.createDirectQuotation(requestId, directInput);
+    await client.submitQuotation(requestId, 1, plan);
+
+    expect(keys).toHaveLength(3);
+    for (const key of keys) expect(key).toMatch(uuid);
+    expect(new Set(keys).size).toBe(3);
+  });
+
+  it('sends the key the caller holds, so a retry reuses it', async () => {
+    const { client, keys } = recordingClient();
+    await client.createContribution(requestId, contributionInput, {
+      idempotencyKey: 'contribution-1',
+    });
+    await client.createContribution(requestId, contributionInput, {
+      idempotencyKey: 'contribution-1',
+    });
+    await client.createDirectQuotation(requestId, directInput, { idempotencyKey: 'direct-1' });
+    await client.submitQuotation(requestId, 1, plan, { idempotencyKey: 'plan-1' });
+
+    expect(keys).toEqual(['contribution-1', 'contribution-1', 'direct-1', 'plan-1']);
+  });
+
+  it('sends no key with an edit or a withdrawal', async () => {
+    const { client, keys } = recordingClient();
+    await client.updateContribution(requestId, 1, contributionInput);
+    await client.withdrawContribution(requestId, 1);
+
+    expect(keys).toEqual([null, null]);
+  });
+});

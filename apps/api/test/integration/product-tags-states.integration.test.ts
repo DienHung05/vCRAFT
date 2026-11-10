@@ -1,4 +1,4 @@
-import { Household } from '@vcraft/database';
+import { AuditLog, Household, Product } from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { addMilestone, createJournalPhoto } from './support/journal-photo.js';
 import { startTestApp, type TestApp } from './support/test-app.js';
@@ -325,6 +325,7 @@ describe('Product tags, sold state, duplication and price suggestion', () => {
             method: 'PUT',
             url: `/me/household/products/${source.id}/makers`,
             auth: rep.auth,
+            headers: { 'if-match': String(source.version) },
             body: { makers: [{ artisanId, contribution: 'Vuốt dáng' }] },
           })
         ).status,
@@ -486,6 +487,56 @@ describe('Product tags, sold state, duplication and price suggestion', () => {
         .filter((p: { name: string }) => p.name === 'Cây sơn 1')
         .map((p: { priceVnd: number }) => p.priceVnd);
       expect(prices).toEqual([100_000]);
+    });
+  });
+
+  describe('board withdrawal (GH#428)', () => {
+    let piece: ProductBody;
+
+    beforeAll(async () => {
+      piece = await publish(
+        await create({ name: 'Bình bị gỡ', category: 'TEA', priceVnd: 200_000, stock: 1 }),
+      );
+    });
+
+    it('records the board as the one who withdrew and blocks the owner from republishing', async () => {
+      const withdrawn = await act(piece, 'withdraw', admin.auth, { reason: 'Counterfeit listing' });
+      expect(withdrawn.status).toBe(200);
+      expect(withdrawn.body).toMatchObject({
+        status: 'WITHDRAWN',
+        withdrawnBy: 'BOARD',
+        withdrawnReason: 'Counterfeit listing',
+      });
+      piece = withdrawn.body;
+      const refused = await act(piece, 'republish');
+      expect(refused.status).toBe(409);
+      expect(refused.body.code).toBe('PRODUCT_WITHDRAWN_BY_BOARD');
+      const stored = await db.orm.em.fork().findOneOrFail(Product, piece.id);
+      expect(stored.status).toBe('WITHDRAWN');
+    });
+
+    it('lets the board republish and writes an audit entry', async () => {
+      expect((await act(piece, 'republish', other.auth)).status).toBe(403);
+      const back = await act(piece, 'republish', admin.auth);
+      expect(back.status).toBe(200);
+      expect(back.body).toMatchObject({ status: 'PUBLISHED', withdrawnBy: null });
+      piece = back.body;
+      const audit = await db.orm.em
+        .fork()
+        .find(AuditLog, { action: 'product.republish', entityId: piece.id });
+      expect(audit).toHaveLength(1);
+    });
+
+    it('still lets the owner republish a product the owner withdrew', async () => {
+      const own = await act(piece, 'withdraw', rep.auth, { reason: 'Seasonal break' });
+      expect(own.status).toBe(200);
+      expect(own.body).toMatchObject({ status: 'WITHDRAWN', withdrawnBy: 'OWNER' });
+      const back = await act(own.body, 'republish');
+      expect(back.status).toBe(200);
+      expect(back.body.status).toBe('PUBLISHED');
+      // The board cannot republish what the owner withdrew.
+      const again = await act(back.body, 'withdraw', rep.auth, { reason: 'Seasonal break' });
+      expect((await act(again.body, 'republish', admin.auth)).status).toBe(409);
     });
   });
 });

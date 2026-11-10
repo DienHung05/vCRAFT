@@ -119,10 +119,11 @@ describe('buyer payment panel', () => {
     expect(screen.queryByText('Ví MoMo')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Hiện thông tin chuyển khoản' }));
     await waitFor(() =>
-      expect(createPayment).toHaveBeenCalledWith(ORDER, {
-        kind: 'DEPOSIT',
-        method: 'SEPAY_TRANSFER',
-      }),
+      expect(createPayment).toHaveBeenCalledWith(
+        ORDER,
+        { kind: 'DEPOSIT', method: 'SEPAY_TRANSFER' },
+        { idempotencyKey: expect.any(String) },
+      ),
     );
     // The bank panel: QR, the exact amount and the payment code to type as the transfer content.
     expect(await screen.findByTestId('bank-details')).toBeTruthy();
@@ -241,7 +242,11 @@ describe('buyer payment panel', () => {
     const button = screen.getByRole('button', { name: 'Thanh toán qua MoMo' });
     fireEvent.click(button);
     await waitFor(() => expect(assign).toHaveBeenCalledWith('https://test-payment.momo.vn/pay/1'));
-    expect(createPayment).toHaveBeenCalledWith(ORDER, { kind: 'DEPOSIT', method: 'MOMO' });
+    expect(createPayment).toHaveBeenCalledWith(
+      ORDER,
+      { kind: 'DEPOSIT', method: 'MOMO' },
+      { idempotencyKey: expect.any(String) },
+    );
     expect(screen.getByText('Đang chuyển tới MoMo…')).toBeTruthy();
     expect(
       (screen.getByRole('button', { name: 'Thanh toán qua MoMo' }) as HTMLButtonElement).disabled,
@@ -368,6 +373,82 @@ describe('payment result page', () => {
       expect(screen.getByText(/Vẫn chưa có kết quả/)).toBeTruthy();
     });
   });
+
+  it('reuses the start key after a client failure and rotates it when the method changes', async () => {
+    const orderPayments = vi.fn().mockResolvedValue(walletSummary());
+    const createPayment = vi.fn().mockRejectedValue(new TypeError('Request timed out'));
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="ACCEPTED"
+        client={asClient({ orderPayments, createPayment })}
+      />,
+    );
+    await screen.findByRole('button', { name: 'Hiện thông tin chuyển khoản' });
+    const start = () =>
+      fireEvent.click(screen.getByRole('button', { name: 'Hiện thông tin chuyển khoản' }));
+    start();
+    await screen.findByRole('alert');
+    await waitFor(() =>
+      expect(
+        screen
+          .getByRole('button', { name: 'Hiện thông tin chuyển khoản' })
+          .hasAttribute('disabled'),
+      ).toBe(false),
+    );
+    start();
+    await waitFor(() => expect(createPayment).toHaveBeenCalledTimes(2));
+    const first = createPayment.mock.calls[0]?.[2]?.idempotencyKey;
+    expect(first).toEqual(expect.any(String));
+    expect(createPayment.mock.calls[1]?.[2]?.idempotencyKey).toBe(first);
+
+    fireEvent.click(screen.getByRole('radio', { name: /VNPay/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Thanh toán qua VNPay' }));
+    await waitFor(() => expect(createPayment).toHaveBeenCalledTimes(3));
+    expect(createPayment.mock.calls[2]?.[1]).toEqual({ kind: 'DEPOSIT', method: 'VNPAY' });
+    expect(createPayment.mock.calls[2]?.[2]?.idempotencyKey).not.toBe(first);
+  });
+
+  it('gives the payment form a fresh start key after a start succeeds', async () => {
+    const orderPayments = vi.fn().mockResolvedValue(walletSummary());
+    const createPayment = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Request timed out'))
+      .mockResolvedValue(BANK_PAYMENT);
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="ACCEPTED"
+        client={asClient({ orderPayments, createPayment })}
+      />,
+    );
+    await screen.findByRole('button', { name: 'Hiện thông tin chuyển khoản' });
+    const start = () =>
+      fireEvent.click(screen.getByRole('button', { name: 'Hiện thông tin chuyển khoản' }));
+    start();
+    await screen.findByRole('alert');
+    await waitFor(() =>
+      expect(
+        screen
+          .getByRole('button', { name: 'Hiện thông tin chuyển khoản' })
+          .hasAttribute('disabled'),
+      ).toBe(false),
+    );
+    start();
+    await waitFor(() => expect(createPayment).toHaveBeenCalledTimes(2));
+    const retried = createPayment.mock.calls[1]?.[2]?.idempotencyKey;
+    expect(createPayment.mock.calls[0]?.[2]?.idempotencyKey).toBe(retried);
+    await waitFor(() =>
+      expect(
+        screen
+          .getByRole('button', { name: 'Hiện thông tin chuyển khoản' })
+          .hasAttribute('disabled'),
+      ).toBe(false),
+    );
+    start();
+    await waitFor(() => expect(createPayment).toHaveBeenCalledTimes(3));
+    expect(createPayment.mock.calls[2]?.[2]?.idempotencyKey).not.toBe(retried);
+  });
 });
 
 describe('payment status polling', () => {
@@ -432,11 +513,40 @@ describe('administration payment panel', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Ghi nhận phần còn lại' }));
     await waitFor(() =>
-      expect(recordOfflinePayment).toHaveBeenCalledWith(ORDER, {
-        kind: 'BALANCE',
-        note: 'Tiền mặt, biên lai 7',
-      }),
+      expect(recordOfflinePayment).toHaveBeenCalledWith(
+        ORDER,
+        { kind: 'BALANCE', note: 'Tiền mặt, biên lai 7' },
+        { idempotencyKey: expect.any(String) },
+      ),
     );
+  });
+
+  it('links the note input to its error and moves focus to it when submit fails', async () => {
+    const orderPayments = vi.fn().mockResolvedValue({ ...SUMMARY, payments: [paid] });
+    renderVi(<AdminOrderPayments orderId={ORDER} client={asClient({ orderPayments })} />);
+    const input = (await screen.findByLabelText('Cách thanh toán')) as HTMLInputElement;
+    expect(input.getAttribute('aria-invalid')).toBe('false');
+    fireEvent.click(screen.getByRole('button', { name: 'Ghi nhận phần còn lại' }));
+    const alert = await screen.findByText('Hãy ghi một ghi chú ngắn (ít nhất 3 ký tự).');
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(input.getAttribute('aria-describedby')).toBe(alert.id);
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('links the refund reason to its error and focuses it when the reason is missing', async () => {
+    const orderPayments = vi
+      .fn()
+      .mockResolvedValue({ ...SUMMARY, depositPaidAt: paid.paidAt, payments: [paid] });
+    renderVi(<AdminOrderPayments orderId={ORDER} client={asClient({ orderPayments })} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Đánh dấu hoàn lại' }));
+    const dialog = await screen.findByRole('dialog');
+    const reason = dialog.querySelector('textarea') as HTMLTextAreaElement;
+    fireEvent.click(dialog.querySelectorAll('button')[1] as HTMLButtonElement);
+    await waitFor(() => expect(reason.getAttribute('aria-invalid')).toBe('true'));
+    const describedBy = reason.getAttribute('aria-describedby') ?? '';
+    expect(describedBy).not.toBe('');
+    expect(document.getElementById(describedBy)?.textContent).toContain('3 ký tự');
+    expect(document.activeElement).toBe(reason);
   });
 
   it('marks a paid payment refunded with a reason, at the version it was read', async () => {
@@ -470,5 +580,68 @@ describe('administration payment panel', () => {
     );
     fireEvent.click(await screen.findByRole('button', { name: 'Giả lập chuyển khoản (sandbox)' }));
     await waitFor(() => expect(simulateTransfer).toHaveBeenCalledWith(BANK_PAYMENT.id));
+  });
+
+  it('reuses the offline-payment key after a client failure and rotates it when the note changes', async () => {
+    const orderPayments = vi
+      .fn()
+      .mockResolvedValue({ ...SUMMARY, depositPaidAt: paid.paidAt, payments: [paid] });
+    const recordOfflinePayment = vi.fn().mockRejectedValue(new TypeError('Request timed out'));
+    renderVi(
+      <AdminOrderPayments
+        orderId={ORDER}
+        client={asClient({ orderPayments, recordOfflinePayment })}
+      />,
+    );
+    const input = (await screen.findByLabelText('Cách thanh toán')) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Tiền mặt, biên lai 8' } });
+    const submit = () =>
+      fireEvent.click(screen.getByRole('button', { name: 'Ghi nhận phần còn lại' }));
+    submit();
+    await screen.findByRole('alert');
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Ghi nhận phần còn lại' }).hasAttribute('disabled'),
+      ).toBe(false),
+    );
+    submit();
+    await waitFor(() => expect(recordOfflinePayment).toHaveBeenCalledTimes(2));
+    const first = recordOfflinePayment.mock.calls[0]?.[2]?.idempotencyKey;
+    expect(first).toEqual(expect.any(String));
+    expect(recordOfflinePayment.mock.calls[1]?.[2]?.idempotencyKey).toBe(first);
+
+    fireEvent.change(input, { target: { value: 'Tiền mặt, biên lai 9' } });
+    submit();
+    await waitFor(() => expect(recordOfflinePayment).toHaveBeenCalledTimes(3));
+    expect(recordOfflinePayment.mock.calls[2]?.[1]).toEqual({
+      kind: 'BALANCE',
+      note: 'Tiền mặt, biên lai 9',
+    });
+    expect(recordOfflinePayment.mock.calls[2]?.[2]?.idempotencyKey).not.toBe(first);
+  });
+
+  it('gives the offline payment form a fresh key after it succeeds', async () => {
+    const orderPayments = vi
+      .fn()
+      .mockResolvedValue({ ...SUMMARY, depositPaidAt: paid.paidAt, payments: [paid] });
+    const recordOfflinePayment = vi.fn().mockResolvedValue({});
+    renderVi(
+      <AdminOrderPayments
+        orderId={ORDER}
+        client={asClient({ orderPayments, recordOfflinePayment })}
+      />,
+    );
+    const input = (await screen.findByLabelText('Cách thanh toán')) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Tiền mặt, biên lai 7' } });
+    const submit = () =>
+      fireEvent.click(screen.getByRole('button', { name: 'Ghi nhận phần còn lại' }));
+    submit();
+    await waitFor(() => expect(recordOfflinePayment).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(input.value).toBe(''));
+    fireEvent.change(input, { target: { value: 'Tiền mặt, biên lai 7' } });
+    submit();
+    await waitFor(() => expect(recordOfflinePayment).toHaveBeenCalledTimes(2));
+    const first = recordOfflinePayment.mock.calls[0]?.[2]?.idempotencyKey;
+    expect(recordOfflinePayment.mock.calls[1]?.[2]?.idempotencyKey).not.toBe(first);
   });
 });

@@ -8,11 +8,13 @@ import { useCallback, useEffect, useId, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { usePaymentClient } from '@/lib/api/use-payment-client';
 import { notify } from '@/lib/notify';
+import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { useMoney } from '@/lib/use-money';
 import {
   PaymentCheckout,
   PaymentLiveLine,
   PaymentStatusBadge,
+  RefundDueBadge,
   usePaymentPoll,
 } from './payment-parts';
 
@@ -183,6 +185,7 @@ function Panel({
               .map((payment) => (
                 <li key={payment.id} className="flex flex-wrap items-center gap-3">
                   <PaymentStatusBadge status={payment.status} />
+                  <RefundDueBadge payment={payment} />
                   <span>
                     {t(`kind.${payment.kind}`)} · {money(payment.amountVnd)} ·{' '}
                     {t(`method.${payment.method}`)}
@@ -257,6 +260,7 @@ function MethodPicker({
   const [busy, setBusy] = useState(false);
   const [leaving, setLeaving] = useState<Method | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const submitStart = useIdempotentAction();
 
   // Coming back with the browser's back button can restore this page frozen mid-redirect.
   useEffect(() => {
@@ -281,8 +285,11 @@ function MethodPicker({
     setBusy(true);
     setError(null);
     let navigating = false;
+    const body = { kind, method: chosen.method };
     try {
-      const payment = await client.createPayment(orderId, { kind, method: chosen.method });
+      const payment = await submitStart({ orderId, body }, (options) =>
+        client.createPayment(orderId, body, options),
+      );
       if (payment.checkout?.type === 'REDIRECT') {
         navigating = true;
         setLeaving(chosen.method);

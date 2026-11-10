@@ -25,6 +25,12 @@ import {
   transition,
 } from '../src';
 
+/** Exact check with BigInt that `deposit` is `percent` % of `total` rounded half up (no float error). */
+function isHalfUpShare(total: number, percent: number, deposit: number): boolean {
+  const exact = BigInt(total) * BigInt(percent);
+  return BigInt(deposit) === (exact + 50n) / 100n;
+}
+
 describe('deposit and balance amounts (ADR-0021)', () => {
   it('takes 30 % of the order total by default', () => {
     expect(DEFAULT_DEPOSIT_PERCENT).toBe(30);
@@ -64,11 +70,18 @@ describe('deposit and balance amounts (ADR-0021)', () => {
           expect(deposit).toBeGreaterThanOrEqual(1);
           expect(deposit).toBeLessThanOrEqual(total);
           expect(deposit + balanceAmountVnd(total, deposit)).toBe(total);
-          // Within half a VND of the exact share (totals stay far below the float-precision limit).
-          expect(Math.abs(deposit - (total / 100) * percent)).toBeLessThanOrEqual(0.5000001);
+          expect(isHalfUpShare(total, percent, deposit)).toBe(true);
         },
       ),
     );
+  });
+
+  it('regression: rounds exactly for the total that broke a float-based property check', () => {
+    // fast-check seed 994102764 found [63140692730, 95]; the float comparison was off by 7.6e-6.
+    const deposit = depositAmountVnd(63_140_692_730, 95);
+    expect(deposit).toBe(59_983_658_094);
+    expect(isHalfUpShare(63_140_692_730, 95, deposit)).toBe(true);
+    expect(deposit + balanceAmountVnd(63_140_692_730, deposit)).toBe(63_140_692_730);
   });
 
   it('keeps deposit plus balance exact for the largest safe totals', () => {
@@ -85,8 +98,13 @@ describe('deposit and balance amounts (ADR-0021)', () => {
 
   it('prices a balance from the deposit that was actually paid', () => {
     expect(paymentAmountVnd('DEPOSIT', 10_000_000)).toBe(3_000_000);
-    expect(paymentAmountVnd('BALANCE', 10_000_000)).toBe(7_000_000);
+    expect(paymentAmountVnd('BALANCE', 10_000_000, 30, 3_000_000)).toBe(7_000_000);
     expect(paymentAmountVnd('BALANCE', 10_000_000, 30, 2_500_000)).toBe(7_500_000);
+  });
+
+  it('charges the whole total as the balance when no deposit was paid', () => {
+    expect(paymentAmountVnd('BALANCE', 10_000_000)).toBe(10_000_000);
+    expect(paymentAmountVnd('BALANCE', 10_000_000, 50)).toBe(10_000_000);
   });
 
   it('matches amounts exactly', () => {

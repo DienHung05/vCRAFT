@@ -56,7 +56,7 @@ export function ChooseUsernameForm({ next }: { next: string | null }) {
     }
   });
   return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-5">
+    <form onSubmit={submit} noValidate className="flex flex-col gap-2.5 md:gap-3">
       {error ? <FormAlert tone="error">{t(`errors.${error}`)}</FormAlert> : null}
       <TextField
         label={t('fields.username')}

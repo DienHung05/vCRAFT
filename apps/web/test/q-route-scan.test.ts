@@ -54,3 +54,17 @@ describe('/q/[code] scan forwarding (GH#362)', () => {
     });
   });
 });
+
+describe('/q/[code] redirect caching (GH#432)', () => {
+  it('is never cached by the browser, so every repeat scan reaches the route', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response(null, { status: 204 }))),
+    );
+    const response = await call({ 'user-agent': 'Visitor/1' });
+    afterTasks.splice(0);
+    expect(response.status).toBe(308);
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+    expect(response.headers.get('Vary')).toBe('Accept-Language, Cookie');
+  });
+});

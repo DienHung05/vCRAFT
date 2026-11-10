@@ -3,10 +3,105 @@
  * globals.css (`.fire-story`); this file only adapts it to the screen it is read on.
  */
 
-/* Keep the craft book's reading column on direct QR loads, independent of product-page CSS. */
-.trace-notebook > main > :not(.trace-journey, .trace-intro) {
+/* The book keeps one reading column until both pages have room to breathe. */
+.trace-notebook > main > :not(.trace-spread, .trace-context, .trace-actions),
+.trace-spread,
+.trace-context {
   max-width: 42rem;
   margin-inline: auto;
+}
+
+@media (max-width: 39.999rem) {
+  .trace-navigation {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trace-navigation > a {
+    height: auto;
+    min-height: 2.75rem;
+    min-width: 0;
+    padding-inline: 0.5rem;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .trace-navigation > a:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.trace-intro:has(.trace-product-photo) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(7rem, 0.7fr);
+  align-items: center;
+  gap: 1rem;
+}
+
+.trace-product-photo {
+  width: 100%;
+  max-width: 16rem;
+  justify-self: end;
+}
+
+.trace-makers > ul {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+}
+
+.trace-notebook :where(#verify-title, #journey-title, #household-title) {
+  scroll-margin-top: 1.5rem;
+}
+
+@media (min-width: 64rem) {
+  .trace-spread,
+  .trace-context {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    max-width: none;
+    align-items: start;
+    column-gap: 2rem;
+  }
+
+  .trace-spread {
+    padding-block: 2rem;
+    border-bottom: 1px solid color-mix(in oklch, var(--color-ink) 10%, transparent);
+  }
+
+  .trace-summary,
+  .trace-context > * {
+    min-width: 0;
+  }
+
+  .trace-spread .trace-intro {
+    padding-top: 0;
+  }
+
+  .trace-journey {
+    min-width: 0;
+    padding-top: 0;
+    padding-inline: 2rem;
+    border-inline-start: 1px solid color-mix(in oklch, var(--color-ink) 10%, transparent);
+  }
+
+  .trace-context #workshop > .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trace-actions {
+    justify-content: center;
+  }
+
+  .trace-actions > a {
+    max-width: 20rem;
+  }
+}
+
+/* On shorter screens the summary scrolls normally, keeping every integrity detail reachable. */
+@media (min-width: 64rem) and (min-height: 56rem) {
+  .trace-summary {
+    position: sticky;
+    top: 1.5rem;
+  }
 }
 
 .fire-story .fire-steps {

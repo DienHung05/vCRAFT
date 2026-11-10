@@ -4,6 +4,7 @@ import {
   Notification,
   notifyDueImportantNews,
   OutboxEvent,
+  queueNewlyLiveNews,
 } from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startTestApp, type TestApp } from './support/test-app.js';
@@ -325,6 +326,26 @@ describe('Admin news', () => {
     const em = db.orm.em.fork();
     expect((await em.findOneOrFail(News, item.id)).notifiedAt).toBeTruthy();
     expect(await em.count(OutboxEvent, { type: 'notification.created' })).toBeGreaterThan(0);
+  });
+
+  it('queues scheduled news for the assistant index once it goes live (GH#430)', async () => {
+    const item = await create({
+      title: 'Scheduled for index',
+      publishAt: new Date(Date.now() + 3_600_000).toISOString(),
+    });
+    const queued = async () =>
+      (await db.orm.em.fork().find(OutboxEvent, { type: 'knowledge.changed' })).filter(
+        (e) => (e.payload as { sourceId?: string }).sourceId === item.id,
+      ).length;
+    expect(await queued()).toBe(1);
+    await queueNewlyLiveNews(db.orm);
+    expect(await queued()).toBe(1);
+
+    const later = new Date(Date.now() + 2 * 3_600_000);
+    await queueNewlyLiveNews(db.orm, later);
+    expect(await queued()).toBe(2);
+    await queueNewlyLiveNews(db.orm, later);
+    expect(await queued()).toBe(2);
   });
 
   it('returns related news from the same category', async () => {

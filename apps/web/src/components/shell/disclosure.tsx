@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@vcraft/ui';
+import { usePathname } from 'next/navigation';
 import { type ReactNode, useEffect, useRef } from 'react';
 
 export interface DisclosureProps {
@@ -30,6 +31,13 @@ export function Disclosure({
   children,
 }: DisclosureProps) {
   const root = useRef<HTMLDetailsElement>(null);
+  const pathname = usePathname();
+
+  // A client-side navigation keeps this component mounted, so close the panel when the page changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `pathname` is the trigger, not a value read here.
+  useEffect(() => {
+    if (root.current) root.current.open = false;
+  }, [pathname]);
 
   useEffect(() => {
     const close = (event: Event) => {
