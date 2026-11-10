@@ -179,6 +179,49 @@ describe('Product sold state', () => {
   });
 });
 
+describe('Product republish after a withdrawal', () => {
+  const owner: ProductContext = {
+    actorRole: 'HOUSEHOLD',
+    isOwner: true,
+    householdStatus: 'APPROVED',
+  };
+  const board: ProductContext = { ...owner, actorRole: 'ADMIN', isOwner: false };
+
+  it('the owner republishes a product the owner withdrew, or a legacy row with no record', () => {
+    for (const withdrawnBy of ['OWNER', null, undefined] as const) {
+      expect(productTransition('WITHDRAWN', 'REPUBLISH', { ...owner, withdrawnBy })).toEqual({
+        ok: true,
+        value: 'PUBLISHED',
+      });
+    }
+  });
+
+  it('the owner cannot republish a product the board withdrew', () => {
+    const r = productTransition('WITHDRAWN', 'REPUBLISH', { ...owner, withdrawnBy: 'BOARD' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('BOARD_WITHDRAWN');
+  });
+
+  it('the board republishes only what the board withdrew', () => {
+    expect(productTransition('WITHDRAWN', 'REPUBLISH', { ...board, withdrawnBy: 'BOARD' })).toEqual(
+      { ok: true, value: 'PUBLISHED' },
+    );
+    const r = productTransition('WITHDRAWN', 'REPUBLISH', { ...board, withdrawnBy: 'OWNER' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('NOT_BOARD_WITHDRAWN');
+  });
+
+  it('a board republish still needs an approved household', () => {
+    const r = productTransition('WITHDRAWN', 'REPUBLISH', {
+      ...board,
+      withdrawnBy: 'BOARD',
+      householdStatus: 'SUSPENDED',
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('HOUSEHOLD_NOT_APPROVED');
+  });
+});
+
 describe('normalizeTags', () => {
   it('trims, collapses spaces, keeps diacritics and drops case-insensitive duplicates', () => {
     expect(normalizeTags(['  Gốm   Bát Tràng ', 'gốm bát tràng', 'GỐM', 'gom', ''])).toEqual([

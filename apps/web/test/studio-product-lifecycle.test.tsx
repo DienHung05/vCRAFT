@@ -56,6 +56,8 @@ function product(n: number, overrides: Partial<ProductDto> = {}): ProductDto {
     images: [],
     status: 'PUBLISHED',
     publishedAt: '2026-09-01T00:00:00.000Z',
+    withdrawnBy: null,
+    withdrawnReason: null,
     makers: [],
     postedBy: 'HOUSEHOLD_ADMINISTRATION',
     ...overrides,

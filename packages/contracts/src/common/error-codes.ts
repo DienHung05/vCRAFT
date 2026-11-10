@@ -77,6 +77,11 @@ export const ERROR_CATALOG = {
     status: 409,
     title: 'Add a production-log milestone before publishing',
   },
+  /** GH#428: the board withdrew this product, so only the board can republish it. */
+  PRODUCT_WITHDRAWN_BY_BOARD: {
+    status: 409,
+    title: 'The board withdrew this product; only the board can republish it',
+  },
 
   // --- RFQ: yêu cầu báo giá, chào giá, phân bổ (SRS §4) ---
   /** BR-L3: mỗi hộ tối đa một bid cho mỗi RFQ (sửa = tăng revision). */

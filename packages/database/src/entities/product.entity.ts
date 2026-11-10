@@ -132,4 +132,8 @@ export class Product extends BaseEntity {
 
   @Property({ type: 'string', length: 500, nullable: true })
   withdrawnReason?: string | null;
+
+  /** Who withdrew the product; a board withdrawal can only be undone by the board (GH#428). */
+  @Property({ type: 'string', length: 10, nullable: true })
+  withdrawnBy?: 'OWNER' | 'BOARD' | null;
 }
