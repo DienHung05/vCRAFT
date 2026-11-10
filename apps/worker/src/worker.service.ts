@@ -6,7 +6,7 @@ import {
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from '@nestjs/common';
-import { notifyDueImportantNews } from '@vcraft/database';
+import { notifyDueImportantNews, queueNewlyLiveNews } from '@vcraft/database';
 import type { ObjectStorage } from '@vcraft/storage';
 import { type ConnectionOptions, Queue, Worker } from 'bullmq';
 import { createTransport } from 'nodemailer';
@@ -191,6 +191,7 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
         OUTBOX_QUEUE,
         async () => {
           await notifyDueImportantNews(this.orm);
+          await queueNewlyLiveNews(this.orm);
           return relayOutbox(this.orm, dispatch);
         },
         { connection },

@@ -65,6 +65,10 @@ export class News extends BaseEntity {
   @Property({ type: 'datetime', length: 3, nullable: true })
   notifiedAt?: Date | null;
 
+  /** Set when the story was last queued for the assistant index while live; null = still to queue (GH#430). */
+  @Property({ type: 'datetime', length: 3, nullable: true })
+  indexedAt?: Date | null;
+
   @Property({ type: 'string', length: 20 })
   category!: NewsCategory;
 

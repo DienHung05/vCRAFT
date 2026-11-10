@@ -36,7 +36,10 @@ vi.mock('bullmq', () => ({
 }));
 
 vi.mock('nodemailer', () => ({ createTransport: () => ({ close: vi.fn() }) }));
-vi.mock('@vcraft/database', () => ({ notifyDueImportantNews: vi.fn() }));
+vi.mock('@vcraft/database', () => ({
+  notifyDueImportantNews: vi.fn(),
+  queueNewlyLiveNews: vi.fn(),
+}));
 
 import { WorkerService } from '../src/worker.service';
 

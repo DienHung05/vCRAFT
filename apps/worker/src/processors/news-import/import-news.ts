@@ -177,6 +177,8 @@ async function saveStory(deps: NewsImportDeps, ownerId: string, story: NewStory)
     sourceUrl: story.source?.url.slice(0, 500) ?? null,
     sourcePublishedAt: story.source?.publishedAt ?? null,
   });
+  if (news.status === 'PUBLISHED' && news.publishedAt && news.publishedAt <= new Date())
+    news.indexedAt = new Date();
   if (assetId)
     em.create(MediaLink, {
       media: em.getReference(MediaAsset, assetId),
