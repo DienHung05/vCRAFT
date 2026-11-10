@@ -10,12 +10,16 @@ import {
   FIELD_CONTEXTS,
   FieldCipher,
   Household,
+  HouseholdRating,
   JournalEntry,
+  LoginEvent,
   MediaLink,
   Notification,
   NotificationPreference,
   OrderAllocation,
+  Payment,
   Product,
+  ProductFavourite,
   QuotationNotice,
   QuotationRequest,
   Workshop,
@@ -187,6 +191,56 @@ export class DataExportService {
           { orderBy: { createdAt: 'asc', id: 'asc' } },
         )
       ).map(toConsentDto),
+      payments: requests.length
+        ? (
+            await em.find(
+              Payment,
+              { order: { $in: requests } },
+              { orderBy: { createdAt: 'asc', id: 'asc' } },
+            )
+          ).map((payment) => ({
+            id: payment.id,
+            orderId: payment.order.id,
+            kind: payment.kind,
+            method: payment.method,
+            status: payment.status,
+            amountVnd: payment.amountVnd,
+            referenceCode: payment.referenceCode,
+            note: payment.note ?? null,
+            expiresAt: iso(payment.expiresAt),
+            paidAt: iso(payment.paidAt),
+            refundedAt: iso(payment.refundedAt),
+            refundReason: payment.refundReason ?? null,
+            createdAt: iso(payment.createdAt),
+          }))
+        : [],
+      ratingsGiven: (
+        await em.find(HouseholdRating, { raterId: user.id }, { orderBy: { createdAt: 'asc' } })
+      ).map((rating) => ({
+        id: rating.id,
+        requestId: rating.request.id,
+        householdId: rating.household.id,
+        stars: rating.stars,
+        comment: rating.comment ?? null,
+        createdAt: iso(rating.createdAt),
+      })),
+      favourites: (
+        await em.find(ProductFavourite, { userId: user.id }, { orderBy: { createdAt: 'asc' } })
+      ).map((favourite) => ({
+        productId: favourite.product.id,
+        createdAt: iso(favourite.createdAt),
+      })),
+      signIns: (
+        await em.find(LoginEvent, { userId: user.id }, { orderBy: { createdAt: 'asc', id: 'asc' } })
+      ).map((event) => ({
+        id: event.id,
+        method: event.method,
+        aal: event.aal,
+        browser: event.browser ?? null,
+        country: event.country ?? null,
+        revokedAt: iso(event.revokedAt),
+        createdAt: iso(event.createdAt),
+      })),
       media: await this.media.exportOwned(user.id),
     };
   }

@@ -2745,7 +2745,7 @@
       },
       "retention": {
         "title": "How long we keep it",
-        "text": "While your account is active. When you delete your account yourself on the Account page, your email, name, consents, notifications, email choices and every file you uploaded (identity papers included) are deleted, and the household profile, workshops, makers and news are taken down. Orders, quotations and the production journal of products are kept without your name, because other people rely on those records; delivery addresses on past requests are erased. An account with an order in progress cannot be deleted until the order is finished or the Management Board cancels it."
+        "text": "While your account is active. When you delete your account yourself on the Account page, your email, name, consents, notifications, email choices and every file you uploaded (identity papers included) are deleted, and the household profile, workshops, makers and news are taken down. Orders, quotations and the production journal of products are kept without your name, because other people rely on those records; delivery addresses on past requests are erased. An account with an order in progress cannot be deleted until the order is finished or the Management Board cancels it. Sign-in history is kept for 12 months and QR scan records for 24 months, then deleted automatically."
       },
       "security": {
         "title": "How we protect it",
