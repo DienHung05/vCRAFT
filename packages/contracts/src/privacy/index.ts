@@ -114,6 +114,14 @@ export const DataExportSchema = z.strictObject({
   notifications: z.array(ExportRowSchema),
   emailPreferences: z.array(ExportRowSchema),
   consents: z.array(ConsentResponseSchema),
+  /** Payments on the person's own orders; raw provider payloads are not included. */
+  payments: z.array(ExportRowSchema).default([]),
+  /** Ratings the person gave to households, with their comments. */
+  ratingsGiven: z.array(ExportRowSchema).default([]),
+  /** Products the person saved to their favourites. */
+  favourites: z.array(ExportRowSchema).default([]),
+  /** Sign-in history (kept 12 months). */
+  signIns: z.array(ExportRowSchema).default([]),
   media: z.array(ExportedMediaSchema),
 });
 export type DataExportDto = z.infer<typeof DataExportSchema>;

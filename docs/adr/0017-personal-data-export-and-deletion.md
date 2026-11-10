@@ -20,7 +20,7 @@ NFR-SEC-07 asks for a privacy policy, consent when ID documents are collected, a
 
 ### Export
 
-`GET /me/data-export` returns one JSON document (`DataExportSchema`): account, household (profile, workshops, makers, products with their journal), quotation requests, offers, allocations, notifications, email choices, consents, and every uploaded file with a link (signed, 5 minutes, for private files). Every query is scoped to the caller, and quotations are summarised without other households' parts or prices.
+`GET /me/data-export` returns one JSON document (`DataExportSchema`): account, household (profile, workshops, makers, products with their journal), quotation requests, offers, allocations, notifications, email choices, consents, and every uploaded file with a link (signed, 5 minutes, for private files). GH#419 adds the buyer's payments (amounts, kind, method, status, dates, refund reason and note; never raw provider payloads), ratings given with their comments, favourites and sign-in history. Every query is scoped to the caller, and quotations are summarised without other households' parts or prices.
 
 The representative's citizen ID number is stored encrypted ([ADR-18](0018-field-level-encryption.md)); the export service decrypts it for the owner, and any new encrypted column must be added there too.
 
@@ -30,6 +30,7 @@ The representative's citizen ID number is stored encrypted ([ADR-18](0018-field-
 
 - **Blocked** (409) while the person has an order in progress: as buyer a request in `ACCEPTED` or `IN_PRODUCTION`; as household representative an allocation `PROPOSED`, `CONFIRMED` or `IN_PROGRESS` (`ACCOUNT_DELETION_ACTIVE_ORDERS`). The message points to finishing the order or asking the Management Board to cancel it (admin cancel), after which deletion works. Administrator accounts are not deleted by self-service (`ACCOUNT_DELETION_ADMIN`).
 - **Deleted:** email and name (the `app_user` row stays as a tombstone `deleted-<id>@deleted.invalid`, status `DELETED`, so foreign keys hold); consents; notifications, notices and email choices; every uploaded file and `media_link` (rows and stored objects, identity papers included); a household's workshops, makers (artisans), news and profile text; buyer draft requests; queued emails and image jobs for those.
+- **Scrubbed (GH#419):** `payment.raw_last_event` becomes `{"redacted":true}` and `payment.note` and `refund_reason` are cleared, while amount, kind, method, status and dates stay for accounting; ratings the person gave keep their stars (household averages) but lose the comment and the author link (`rater_id` becomes the nil UUID); the `account_invitation` row for the person's email is deleted and the email is removed from its `user.invite` audit entries; favourites and sign-in history are deleted.
 - **Cancelled:** buyer requests still `SENT` or `BIDDING` (submitted quotations withdrawn, invited households notified); the household's active offers on open requests (withdrawn, with the usual history entry).
 - **Anonymized and kept:** the household row (renamed "Removed household", slug `removed-<id>`, `SUSPENDED`, so it leaves every public page), its products (withdrawn, personal text and images cleared), the delivery address of kept requests.
 - **Kept untouched:** orders, quotations, allocations, offers, and the production journal with the public photos its entries reference (matched by SHA-256), so `verifyChain` still passes and the record stays checkable. These hold no personal data of the person once the above is done. Whether keeping them is covered by the legal-obligation / legitimate-interest exception of Decree 13 needs legal review.
@@ -52,3 +53,14 @@ The representative's citizen ID number is stored encrypted ([ADR-18](0018-field-
 - New migration `consent_record` (both drivers); existing accounts have no consent until they act (they see the checkbox again). The demo seed records every consent for its sample accounts.
 - `ObjectStorage` gains `delete`.
 - Existing integration helpers create users with all consents by default; tests of the gates create users with `{ consent: false }`.
+
+## Retention of data kept without an account action (GH#419)
+
+The worker deletes old rows daily, whether or not the person deleted their account:
+
+| Data | Kept | Job |
+|---|---|---|
+| Sign-in history (`login_event`) | 12 months | `privacy.purge-login-events` |
+| QR scan rows (`trace_scan`) | 24 months | `privacy.purge-trace-scans` |
+
+The privacy policy page states these periods. The periods are constants in `packages/database/src/repositories/data-retention.ts`; no earlier document fixed them, so they are a product decision that needs legal confirmation.

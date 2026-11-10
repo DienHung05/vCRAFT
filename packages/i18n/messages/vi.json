@@ -2750,7 +2750,7 @@
       },
       "retention": {
         "title": "Chúng tôi giữ dữ liệu bao lâu",
-        "text": "Trong thời gian tài khoản còn hoạt động. Khi bạn tự xóa tài khoản trong trang Tài khoản, email, họ tên, các sự đồng ý, thông báo, lựa chọn email và mọi tệp bạn đã tải lên (kể cả ảnh giấy tờ) bị xóa; hồ sơ hộ, xưởng, người làm và tin của hộ được gỡ bỏ. Đơn hàng, chào giá và nhật ký sản xuất của sản phẩm vẫn được giữ, không còn gắn với tên bạn, vì người khác dựa vào những bản ghi đó; địa chỉ nhận hàng ở các yêu cầu cũ bị xóa. Tài khoản còn đơn hàng đang thực hiện chưa thể xóa cho tới khi đơn xong hoặc Ban quản lý hủy đơn."
+        "text": "Trong thời gian tài khoản còn hoạt động. Khi bạn tự xóa tài khoản trong trang Tài khoản, email, họ tên, các sự đồng ý, thông báo, lựa chọn email và mọi tệp bạn đã tải lên (kể cả ảnh giấy tờ) bị xóa; hồ sơ hộ, xưởng, người làm và tin của hộ được gỡ bỏ. Đơn hàng, chào giá và nhật ký sản xuất của sản phẩm vẫn được giữ, không còn gắn với tên bạn, vì người khác dựa vào những bản ghi đó; địa chỉ nhận hàng ở các yêu cầu cũ bị xóa. Tài khoản còn đơn hàng đang thực hiện chưa thể xóa cho tới khi đơn xong hoặc Ban quản lý hủy đơn. Lịch sử đăng nhập được giữ 12 tháng và bản ghi lượt quét QR được giữ 24 tháng, sau đó tự động xóa."
       },
       "security": {
         "title": "Chúng tôi bảo vệ dữ liệu thế nào",
