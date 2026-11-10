@@ -28,6 +28,7 @@ const BANK_PAYMENT: PaymentDto = {
   createdAt: '2026-11-09T10:00:00.000Z',
   refundedAt: null,
   refundReason: null,
+  refundNeededAt: null,
   note: null,
   checkout: {
     type: 'BANK_TRANSFER',

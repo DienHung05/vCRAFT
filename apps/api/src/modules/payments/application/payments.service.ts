@@ -10,6 +10,10 @@ import type {
   PaymentDto,
   RecordOfflinePaymentRequest,
   RefundPaymentRequest,
+  ResolveUnappliedPaymentRequest,
+  UnappliedPaymentDto,
+  UnappliedPaymentListQuery,
+  UnappliedPaymentPageDto,
 } from '@vcraft/contracts';
 import {
   AppUser,
@@ -18,6 +22,8 @@ import {
   Payment,
   type PaymentCheckoutData,
   QuotationRequest,
+  UnappliedPaymentEvent,
+  type UnappliedPaymentReason,
 } from '@vcraft/database';
 import {
   newReferenceCode,
@@ -40,7 +46,7 @@ import type {
 import { SepayGateway } from '../gateways/sepay.gateway';
 import { VnpayGateway } from '../gateways/vnpay.gateway';
 import { availableMethods, paymentsConfig } from '../payments.config';
-import { toPaymentDto } from './payment-view';
+import { toPaymentDto, toUnappliedDto } from './payment-view';
 
 /** The system is the actor of provider-driven changes; nobody is excluded from its notices. */
 const SYSTEM_ACTOR = 'system';
@@ -398,10 +404,13 @@ export class PaymentsService {
       }
 
       if (payment.status === 'PAID' || payment.status === 'REFUNDED') {
+        // A different transfer (the same one is a DUPLICATE above) onto a payment that is already settled.
+        await this.keepUnapplied(em, payment, event, 'PAYMENT_ALREADY_SETTLED', now);
         return { outcome: 'ALREADY_SETTLED', paymentId: payment.id };
       }
       if (payment.status !== 'PENDING' && payment.status !== 'EXPIRED') {
         record({ unapplied: `payment is ${payment.status}` });
+        await this.keepUnapplied(em, payment, event, 'PAYMENT_NOT_PAYABLE', now);
         this.logger.warn(
           `transfer ${event.providerTxnId} hit ${payment.status} payment ${payment.referenceCode}`,
         );
@@ -413,6 +422,7 @@ export class PaymentsService {
         receivedAmountVnd: event.amountVnd,
       });
       if (!confirmed.ok) {
+        await this.keepUnapplied(em, payment, event, 'AMOUNT_MISMATCH', now);
         record({
           mismatch: { expectedAmountVnd: payment.amountVnd, receivedAmountVnd: event.amountVnd },
         });
@@ -429,6 +439,7 @@ export class PaymentsService {
       });
       if (twin > 0) {
         record({ unapplied: 'the order already has a paid payment of this kind' });
+        await this.keepUnapplied(em, payment, event, 'ORDER_ALREADY_PAID', now);
         this.logger.warn(
           `payment ${payment.referenceCode}: order already paid, needs a manual refund`,
         );
@@ -443,7 +454,121 @@ export class PaymentsService {
     });
   }
 
+  /**
+   * Keeps money that no payment could take as its own row (GH#417) and tells the administrators, once per
+   * provider transaction: a webhook retry finds the row and adds nothing.
+   */
+  private async keepUnapplied(
+    em: EntityManager,
+    payment: Payment,
+    event: VerifiedPaymentEvent,
+    reason: UnappliedPaymentReason,
+    now: Date,
+  ) {
+    const known = await em.count(UnappliedPaymentEvent, {
+      provider: event.provider,
+      providerTxnId: event.providerTxnId,
+    });
+    if (known > 0) return;
+    em.create(UnappliedPaymentEvent, {
+      provider: event.provider,
+      providerTxnId: event.providerTxnId,
+      amountVnd: event.amountVnd,
+      rawPayload: { ...event.raw, receivedAt: now.toISOString() },
+      payment,
+      order: payment.order,
+      reason,
+    });
+    this.publisher.publish(em, {
+      type: 'PAYMENT_UNAPPLIED',
+      subjectId: payment.order.id,
+      actorId: SYSTEM_ACTOR,
+      recipientIds: await this.adminIds(em),
+    });
+  }
+
+  private async adminIds(em: EntityManager): Promise<string[]> {
+    return (await em.find(AppUser, { role: 'ADMIN', status: 'ACTIVE' }, { fields: ['id'] })).map(
+      (admin) => admin.id,
+    );
+  }
+
   // --- administration ---
+
+  /** Unapplied incoming money, newest first. */
+  async unappliedList(query: UnappliedPaymentListQuery): Promise<UnappliedPaymentPageDto> {
+    const em = this.orm.em.fork();
+    const where: Record<string, unknown>[] = [];
+    if (query.status) where.push({ status: query.status });
+    if (query.cursor) {
+      const cursor = decodeCursor(query.cursor);
+      const at = new Date(cursor.t);
+      where.push({ $or: [{ createdAt: { $lt: at } }, { createdAt: at, id: { $lt: cursor.id } }] });
+    }
+    const rows = await em.find(
+      UnappliedPaymentEvent,
+      { $and: where },
+      {
+        populate: ['payment', 'order'],
+        orderBy: { createdAt: 'desc', id: 'desc' },
+        limit: query.limit + 1,
+      },
+    );
+    const page = rows.slice(0, query.limit);
+    const last = page.at(-1);
+    return {
+      data: page.map(toUnappliedDto),
+      nextCursor:
+        rows.length > query.limit && last
+          ? Buffer.from(
+              JSON.stringify({
+                t: last.createdAt.toISOString(),
+                id: last.id,
+              } satisfies CursorValue),
+            ).toString('base64url')
+          : null,
+    };
+  }
+
+  /** An administrator says the money was handled by hand (returned, matched elsewhere). Audit-logged. */
+  async resolveUnapplied(
+    actor: Actor,
+    id: string,
+    version: number,
+    input: ResolveUnappliedPaymentRequest,
+  ): Promise<UnappliedPaymentDto> {
+    return this.orm.em.fork().transactional(async (em) => {
+      const row = await em.findOne(UnappliedPaymentEvent, id, {
+        lockMode: LockMode.PESSIMISTIC_WRITE,
+        populate: ['payment', 'order'],
+      });
+      if (!row) throw notFound();
+      if (actor.locked) throw forbidden();
+      assertVersion(row, version);
+      if (row.status !== 'OPEN') throw new AppError('INVALID_TRANSITION');
+      row.status = 'RESOLVED';
+      row.resolvedBy = actor.id;
+      row.resolvedAt = new Date();
+      row.resolvedNote = input.note;
+      em.create(AuditLog, {
+        actorId: actor.id,
+        action: 'payment.resolve_unapplied',
+        entity: 'unapplied_payment_event',
+        entityId: row.id,
+        before: { status: 'OPEN' },
+        after: {
+          status: 'RESOLVED',
+          note: input.note,
+          provider: row.provider,
+          providerTxnId: row.providerTxnId,
+          amountVnd: row.amountVnd,
+          reason: row.reason,
+        },
+      });
+      await em.flush();
+      return toUnappliedDto(row);
+    });
+  }
 
   /** An administrator records a balance paid outside the site. Audit-logged; the buyer is told. */
   async recordOffline(

@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
 import { ListSkeleton } from '@/components/states/skeletons';
+import { AdminUnappliedPayments } from '@/features/admin/admin-unapplied-payments';
 import { PaymentStatusBadge } from '@/features/payments/payment-parts';
 import { Link } from '@/i18n/navigation';
 import { usePaymentClient } from '@/lib/api/use-payment-client';
@@ -18,7 +19,7 @@ const STATUSES = ['PENDING', 'PAID', 'FAILED', 'EXPIRED', 'CANCELLED', 'REFUNDED
 const METHODS = ['SEPAY_TRANSFER', 'VNPAY', 'MOMO', 'OFFLINE'] as const;
 const KINDS = ['DEPOSIT', 'BALANCE'] as const;
 
-/** All payments of all orders, newest first, with filters (ADR-0021 slice 6). Read-only. */
+/** All payments of all orders, newest first, with filters (ADR-0021 slice 6). Open unapplied money sits on top. */
 export function AdminPaymentsList({ client: provided }: { client?: PaymentClient }) {
   const t = useTranslations('admin.payments');
   const kinds = useTranslations('payments.kind');
@@ -101,6 +102,7 @@ export function AdminPaymentsList({ client: provided }: { client?: PaymentClient
         <h1 className="text-h2">{t('title')}</h1>
         <p className="text-ash">{t('lead')}</p>
       </header>
+      <AdminUnappliedPayments client={client} />
       <fieldset className="flex flex-wrap gap-4">
         <legend className="sr-only">{t('filters')}</legend>
         {select('status', t('status'), t('allStatuses'), STATUSES, (value) =>
@@ -153,6 +155,9 @@ export function AdminPaymentsList({ client: provided }: { client?: PaymentClient
                   <td className="p-3 text-right">{money(payment.amountVnd)}</td>
                   <td className="p-3">
                     <PaymentStatusBadge status={payment.status} />
+                    {payment.refundNeededAt && payment.status === 'PAID' ? (
+                      <p className="mt-1 font-medium text-red-700">{t('refundNeeded')}</p>
+                    ) : null}
                   </td>
                   <td className="p-3 font-mono">{payment.referenceCode}</td>
                 </tr>

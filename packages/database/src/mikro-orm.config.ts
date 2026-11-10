@@ -43,6 +43,7 @@ import {
   QuotationRequest,
   SlugRedirect,
   TraceScan,
+  UnappliedPaymentEvent,
   Workshop,
 } from './entities/index.js';
 
@@ -164,6 +165,7 @@ export function createMikroOrmOptions(
       MediaLink,
       News,
       TraceScan,
+      UnappliedPaymentEvent,
       Notification,
       NotificationPreference,
       ConsentRecord,

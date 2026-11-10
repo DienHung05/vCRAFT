@@ -33,11 +33,15 @@ export type HouseholdNoticeKind = (typeof HOUSEHOLD_NOTICE_KINDS)[number];
  * | `PAYMENT_PAID`      | Người mua (money confirmed), admin điều phối       |
  * | `PAYMENT_EXPIRED`   | Người mua (the payment ran out of time)            |
  * | `PAYMENT_REFUNDED`  | Người mua (an administrator marked it refunded)    |
+ * | `PAYMENT_UNAPPLIED` | Admin (money arrived that no payment could take)   |
+ * | `PAYMENT_REFUND_NEEDED` | Người mua, admin (a paid payment of a cancelled order must be refunded) |
  */
 export const PAYMENT_NOTICE_KINDS = [
   'PAYMENT_PAID',
   'PAYMENT_EXPIRED',
   'PAYMENT_REFUNDED',
+  'PAYMENT_UNAPPLIED',
+  'PAYMENT_REFUND_NEEDED',
 ] as const;
 export type PaymentNoticeKind = (typeof PAYMENT_NOTICE_KINDS)[number];
 
@@ -89,6 +93,7 @@ export const NOTIFICATION_TYPES_BY_ROLE: Record<AccountRole, readonly Notificati
     'PAYMENT_PAID',
     'PAYMENT_EXPIRED',
     'PAYMENT_REFUNDED',
+    'PAYMENT_REFUND_NEEDED',
     // The coordinator confirms receipt on the buyer's behalf (GH#248 s5-12).
     'ORDER_RECEIVED',
   ],
@@ -122,6 +127,8 @@ export const NOTIFICATION_TYPES_BY_ROLE: Record<AccountRole, readonly Notificati
     'PROGRESS_REPORTED',
     'ORDER_RECEIVED',
     'PAYMENT_PAID',
+    'PAYMENT_UNAPPLIED',
+    'PAYMENT_REFUND_NEEDED',
     // An administrator who owns a request made for an off-platform customer is its buyer too (GH#248 s5-10).
     'QUOTATION_RECEIVED',
     'BIDDING_CLOSED',

@@ -718,6 +718,179 @@ describe('online payment of orders (ADR-0021)', () => {
       expect((await status(payment)).status).toBe('CANCELLED');
     });
 
+    describe('unapplied money (GH#417)', () => {
+      type Row = {
+        id: string;
+        version: number;
+        providerTxnId: string;
+        reason: string;
+        amountVnd: number;
+        referenceCode: string | null;
+        expectedAmountVnd: number | null;
+      };
+      const unapplied = async (query = 'status=OPEN') =>
+        (
+          await t.request({
+            method: 'GET',
+            url: `/admin/unapplied-payments?${query}`,
+            auth: admin.auth,
+          })
+        ).body.data as Row[];
+      const ownRows = async (payment: PaymentDto) =>
+        (await unapplied()).filter((row) => row.referenceCode === payment.referenceCode);
+
+      it('keeps each wrong-amount transfer as its own row, once per transaction, and tells the admins', async () => {
+        const otherAdmin = await t.createUser('ADMIN');
+        const requestId = await acceptedOrder();
+        const payment = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+        const short = sepayEvent(payment, { id: 710_001, transferAmount: payment.amountVnd - 1 });
+        await sepayWebhook(short);
+        await sepayWebhook(short);
+        await sepayWebhook(
+          sepayEvent(payment, { id: 710_002, transferAmount: payment.amountVnd + 5 }),
+        );
+        expect((await status(payment)).status).toBe('PENDING');
+
+        const rows = await ownRows(payment);
+        expect(rows.map((r) => r.providerTxnId).sort()).toEqual(['710001', '710002']);
+        expect(rows).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              reason: 'AMOUNT_MISMATCH',
+              amountVnd: payment.amountVnd - 1,
+              expectedAmountVnd: payment.amountVnd,
+            }),
+          ]),
+        );
+        for (const auth of [admin.auth, otherAdmin.auth]) {
+          expect(
+            (await notices(auth)).filter(
+              (n) => n.type === 'PAYMENT_UNAPPLIED' && n.target?.id === requestId,
+            ),
+          ).toHaveLength(2);
+        }
+        expect((await notices(buyer.auth)).some((n) => n.type === 'PAYMENT_UNAPPLIED')).toBe(false);
+      });
+
+      it('keeps a transfer to a cancelled payment', async () => {
+        const requestId = await acceptedOrder();
+        const payment = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+        await t.request({
+          method: 'POST',
+          url: `/payments/${payment.referenceCode}/cancel`,
+          auth: buyer.auth,
+        });
+        await sepayWebhook(sepayEvent(payment, { id: 720_001 }));
+        expect((await status(payment)).status).toBe('CANCELLED');
+        expect(await ownRows(payment)).toEqual([
+          expect.objectContaining({ reason: 'PAYMENT_NOT_PAYABLE', amountVnd: payment.amountVnd }),
+        ]);
+      });
+
+      it('keeps a second payment of the same kind and a second transfer to a paid payment', async () => {
+        const requestId = await acceptedOrder();
+        const first = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+        const em = db.orm.em.fork();
+        const row = await em.findOneOrFail(Payment, { referenceCode: first.referenceCode });
+        row.expiresAt = new Date(Date.now() - 1_000);
+        await em.flush();
+        const second = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+        await sepayWebhook(sepayEvent(second, { id: 730_001 }));
+        expect((await status(second)).status).toBe('PAID');
+
+        // The late transfer to the replaced payment: the order already has a paid deposit.
+        await sepayWebhook(sepayEvent(first, { id: 730_002 }));
+        expect((await status(first)).status).toBe('EXPIRED');
+        expect(await ownRows(first)).toEqual([
+          expect.objectContaining({ reason: 'ORDER_ALREADY_PAID' }),
+        ]);
+        // A different transfer to the payment that is already paid.
+        await sepayWebhook(sepayEvent(second, { id: 730_003 }));
+        expect(await ownRows(second)).toEqual([
+          expect.objectContaining({ reason: 'PAYMENT_ALREADY_SETTLED', providerTxnId: '730003' }),
+        ]);
+      });
+
+      it('lets an administrator mark a row handled with a note, audit-logged, once', async () => {
+        const requestId = await acceptedOrder();
+        const payment = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+        await sepayWebhook(sepayEvent(payment, { id: 740_001, transferAmount: 1000 }));
+        const [item] = await ownRows(payment);
+        if (!item) throw new Error('no unapplied row was kept');
+        const resolve = (auth: string, version: number, note: string) =>
+          t.request({
+            method: 'POST',
+            url: `/admin/unapplied-payments/${item.id}/resolve`,
+            auth,
+            headers: { 'if-match': String(version) },
+            body: { note },
+          });
+        expect((await resolve(buyer.auth, item.version, 'Returned by transfer')).status).toBe(403);
+        expect((await resolve(admin.auth, item.version, ' ')).status).toBe(422);
+        expect((await resolve(admin.auth, item.version + 5, 'Returned')).status).toBe(409);
+        const done = await resolve(admin.auth, item.version, 'Returned by transfer');
+        expect(done.status).toBe(200);
+        expect(done.body).toMatchObject({
+          status: 'RESOLVED',
+          resolvedNote: 'Returned by transfer',
+        });
+        expect(await ownRows(payment)).toEqual([]);
+        expect((await unapplied('status=RESOLVED')).some((row) => row.id === item.id)).toBe(true);
+        expect((await resolve(admin.auth, done.body.version, 'Again')).status).toBe(409);
+        const audit = await t.request({
+          method: 'GET',
+          url: '/admin/audit-log?action=payment.resolve_unapplied',
+          auth: admin.auth,
+        });
+        expect(audit.body.data[0]).toMatchObject({
+          entityId: item.id,
+          before: { status: 'OPEN' },
+          after: { status: 'RESOLVED', note: 'Returned by transfer' },
+        });
+      });
+
+      it('refuses the list to non-administrators', async () => {
+        const res = await t.request({
+          method: 'GET',
+          url: '/admin/unapplied-payments',
+          auth: buyer.auth,
+        });
+        expect(res.status).toBe(403);
+      });
+    });
+
+    it('flags a paid payment for refund when the order is cancelled, and tells the buyer and the other admins', async () => {
+      const otherAdmin = await t.createUser('ADMIN');
+      const { requestId, deposit } = await paidOrder();
+      const read = await t.request({ method: 'GET', url: `/rfqs/${requestId}`, auth: admin.auth });
+      const cancelled = await t.request({
+        method: 'POST',
+        url: `/rfqs/${requestId}/cancel`,
+        auth: admin.auth,
+        headers: { 'if-match': String(read.body.version) },
+        body: { reason: 'Buyer withdrew the order' },
+      });
+      expect(cancelled.status).toBe(200);
+      const after = await status(deposit);
+      expect(after.status).toBe('PAID');
+      expect(after.refundNeededAt).not.toBeNull();
+      const listed = await t.request({
+        method: 'GET',
+        url: '/admin/payments?status=PAID&kind=DEPOSIT',
+        auth: admin.auth,
+      });
+      expect(
+        listed.body.data.find((p: { id: string }) => p.id === deposit.id).refundNeededAt,
+      ).not.toBeNull();
+      for (const auth of [buyer.auth, otherAdmin.auth]) {
+        expect(
+          (await notices(auth)).filter(
+            (n) => n.type === 'PAYMENT_REFUND_NEEDED' && n.target?.id === requestId,
+          ),
+        ).toHaveLength(1);
+      }
+    });
+
     it('lists payments newest first with filters and a cursor, for administrators only', async () => {
       const first = await t.request({
         method: 'GET',

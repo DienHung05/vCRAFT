@@ -69,6 +69,7 @@ import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
 import { ratingSummaries } from '../../households/household-rating-stats';
 import { MediaService } from '../../media/application/media.service';
+import { NotificationPublisher } from '../../notifications/application/notification-publisher';
 import { paymentsConfig } from '../../payments/payments.config';
 import { ConsentService } from '../../privacy/application/consent.service';
 import { allocationTimeline } from './allocation-timeline';
@@ -88,6 +89,7 @@ export class RfqService {
     private readonly notifier: QuotationNotifier,
     private readonly media: MediaService,
     private readonly consents: ConsentService,
+    private readonly publisher: NotificationPublisher,
   ) {}
 
   /**
@@ -1358,6 +1360,28 @@ export class RfqService {
         payment.status = unwrap(
           paymentTransition('PENDING', 'CANCEL', { actor: owner ? 'BUYER_OWNER' : 'ADMIN' }),
         );
+      }
+      // A paid payment cannot be undone by the cancellation: flag it so an administrator returns the money
+      // by hand, and tell the buyer and the administrators (GH#417).
+      const paidPayments = await em.find(Payment, {
+        order: request,
+        status: 'PAID',
+        refundNeededAt: null,
+      });
+      if (paidPayments.length > 0) {
+        const flaggedAt = new Date();
+        for (const payment of paidPayments) payment.refundNeededAt = flaggedAt;
+        const admins = await em.find(
+          AppUser,
+          { role: 'ADMIN', status: 'ACTIVE' },
+          { fields: ['id'] },
+        );
+        this.publisher.publish(em, {
+          type: 'PAYMENT_REFUND_NEEDED',
+          subjectId: request.id,
+          actorId: actor.id,
+          recipientIds: [request.buyer.id, ...admins.map((admin) => admin.id)],
+        });
       }
       const accepted = await em.findOne(CooperativeQuotationEntity, {
         request,

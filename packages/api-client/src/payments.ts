@@ -10,6 +10,11 @@ import {
   RecordOfflinePaymentRequestSchema,
   type RefundPaymentRequest,
   RefundPaymentRequestSchema,
+  type ResolveUnappliedPaymentRequest,
+  ResolveUnappliedPaymentRequestSchema,
+  type UnappliedPaymentListQuery,
+  UnappliedPaymentPageSchema,
+  UnappliedPaymentSchema,
 } from '@vcraft/contracts';
 import {
   type ActionOptions,
@@ -64,6 +69,20 @@ export function createPaymentClient(options: AuthedClientOptions) {
         method: 'POST',
         version,
         body: RefundPaymentRequestSchema.parse(body),
+      }),
+    /** Money that arrived but no payment could take, newest first (GH#417). */
+    unappliedPayments: (filters: Partial<UnappliedPaymentListQuery> = {}) => {
+      const query = new URLSearchParams();
+      for (const [key, value] of Object.entries(filters))
+        if (value !== undefined && value !== '') query.set(key, String(value));
+      const suffix = query.size > 0 ? `?${query}` : '';
+      return request(`/admin/unapplied-payments${suffix}`, UnappliedPaymentPageSchema);
+    },
+    resolveUnappliedPayment: (id: string, version: number, body: ResolveUnappliedPaymentRequest) =>
+      request(`/admin/unapplied-payments/${IdSchema.parse(id)}/resolve`, UnappliedPaymentSchema, {
+        method: 'POST',
+        version,
+        body: ResolveUnappliedPaymentRequestSchema.parse(body),
       }),
     /** Sandbox only: transfers the exact amount of a pending SePay payment. */
     simulateTransfer: (paymentId: string) =>

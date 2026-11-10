@@ -117,6 +117,14 @@ const COPY: Record<NotificationType, { subject: string; body: string }> = {
     subject: 'Khoản thanh toán đã được hoàn lại',
     body: 'Ban quản lý đã đánh dấu hoàn lại một khoản thanh toán của đơn hàng. Xem lý do trong trang đơn hàng.',
   },
+  PAYMENT_UNAPPLIED: {
+    subject: 'Có khoản tiền chưa áp dụng được cho đơn hàng',
+    body: 'Một khoản chuyển tiền không khớp với khoản thanh toán nào (sai số tiền, khoản đã hủy hoặc đã thanh toán). Mở trang thanh toán để xử lý thủ công.',
+  },
+  PAYMENT_REFUND_NEEDED: {
+    subject: 'Đơn hàng đã hủy cần hoàn lại tiền đã thanh toán',
+    body: 'Đơn hàng đã bị hủy nhưng có khoản đã thanh toán. Ban quản lý sẽ hoàn lại tiền thủ công; xem tình trạng trong trang đơn hàng.',
+  },
   NEWS_PUBLISHED: {
     subject: 'Ban quản lý vừa đăng một tin quan trọng',
     body: 'Ban quản lý làng nghề vừa đăng một tin quan trọng dành cho các hộ.',

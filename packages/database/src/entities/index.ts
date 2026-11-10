@@ -28,4 +28,5 @@ export * from './quotation-notice.entity.js';
 export * from './quotation-request.entity.js';
 export * from './slug-redirect.entity.js';
 export * from './trace-scan.entity.js';
+export * from './unapplied-payment-event.entity.js';
 export * from './workshop.entity.js';

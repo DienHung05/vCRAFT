@@ -1084,6 +1084,7 @@
         "payment": {
           "record_offline": "Recorded an offline payment",
           "refund": "Marked a payment refunded",
+          "resolve_unapplied": "Marked unapplied money as handled",
           "simulate_transfer": "Simulated a sandbox transfer"
         },
         "user": {
@@ -1240,6 +1241,30 @@
         "reference": "Payment code"
       },
       "openOrder": "Open order",
+      "unapplied": {
+        "title": "Money that needs manual handling",
+        "lead": "Transfers that arrived but no payment could take: a wrong amount, a cancelled or failed payment, or a second payment of the same kind. Return or match the money by hand, then mark it handled with a note.",
+        "empty": "No unapplied money is waiting.",
+        "failed": "The unapplied money could not be loaded.",
+        "reasons": {
+          "AMOUNT_MISMATCH": "Wrong amount",
+          "PAYMENT_NOT_PAYABLE": "Payment cancelled or failed",
+          "ORDER_ALREADY_PAID": "Order already paid for this kind",
+          "PAYMENT_ALREADY_SETTLED": "Payment already settled"
+        },
+        "received": "Received {amount}, expected {expected}",
+        "receivedOnly": "Received {amount}",
+        "txn": "Transaction {id}",
+        "code": "Payment code {code}",
+        "noteLabel": "How it was handled",
+        "noteRequired": "Write a short note (at least 3 characters).",
+        "resolve": "Mark handled",
+        "resolving": "Saving…",
+        "resolved": "Marked as handled.",
+        "resolveFailed": "It could not be marked as handled.",
+        "stale": "Someone else updated this item. Reload and try again."
+      },
+      "refundNeeded": "Refund needed",
       "panel": {
         "title": "Payments of this order",
         "lead": "Deposit and balance. The deposit is paid online before production starts; the balance online or recorded here.",
@@ -1633,6 +1658,8 @@
       "PAYMENT_PAID": "A payment for the order was received.",
       "PAYMENT_EXPIRED": "A payment for the order expired before the money arrived.",
       "PAYMENT_REFUNDED": "A payment for the order was marked refunded.",
+      "PAYMENT_UNAPPLIED": "Money arrived that no payment could take. Open Payments to handle it.",
+      "PAYMENT_REFUND_NEEDED": "The order was cancelled and a payment must be refunded.",
       "NEWS_PUBLISHED": "The management board published important news."
     }
   },

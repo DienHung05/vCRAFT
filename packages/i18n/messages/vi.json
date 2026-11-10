@@ -1089,6 +1089,7 @@
         "payment": {
           "record_offline": "Ghi nhận thanh toán ngoài hệ thống",
           "refund": "Đánh dấu hoàn lại một khoản thanh toán",
+          "resolve_unapplied": "Đánh dấu đã xử lý khoản tiền chưa áp dụng",
           "simulate_transfer": "Giả lập chuyển khoản (sandbox)"
         },
         "user": {
@@ -1245,6 +1246,30 @@
         "reference": "Mã thanh toán"
       },
       "openOrder": "Mở đơn hàng",
+      "unapplied": {
+        "title": "Khoản tiền cần xử lý thủ công",
+        "lead": "Các khoản chuyển tiền đã về nhưng không khoản thanh toán nào nhận được: sai số tiền, khoản đã hủy hoặc thất bại, hoặc thanh toán trùng loại. Hãy hoàn trả hoặc đối soát thủ công rồi đánh dấu đã xử lý kèm ghi chú.",
+        "empty": "Không có khoản tiền nào đang chờ xử lý.",
+        "failed": "Không tải được các khoản tiền chưa áp dụng.",
+        "reasons": {
+          "AMOUNT_MISMATCH": "Sai số tiền",
+          "PAYMENT_NOT_PAYABLE": "Khoản thanh toán đã hủy hoặc thất bại",
+          "ORDER_ALREADY_PAID": "Đơn đã thanh toán loại này",
+          "PAYMENT_ALREADY_SETTLED": "Khoản thanh toán đã hoàn tất"
+        },
+        "received": "Nhận {amount}, cần {expected}",
+        "receivedOnly": "Nhận {amount}",
+        "txn": "Giao dịch {id}",
+        "code": "Mã thanh toán {code}",
+        "noteLabel": "Đã xử lý thế nào",
+        "noteRequired": "Hãy viết ghi chú ngắn (ít nhất 3 ký tự).",
+        "resolve": "Đánh dấu đã xử lý",
+        "resolving": "Đang lưu…",
+        "resolved": "Đã đánh dấu xử lý.",
+        "resolveFailed": "Không thể đánh dấu đã xử lý.",
+        "stale": "Mục này vừa được người khác cập nhật. Hãy tải lại rồi thử lại."
+      },
+      "refundNeeded": "Cần hoàn tiền",
       "panel": {
         "title": "Thanh toán của đơn hàng này",
         "lead": "Đặt cọc và phần còn lại. Tiền cọc thanh toán trực tuyến trước khi sản xuất; phần còn lại thanh toán trực tuyến hoặc ghi nhận tại đây.",
@@ -1638,6 +1663,8 @@
       "PAYMENT_PAID": "Đã nhận một khoản thanh toán cho đơn hàng.",
       "PAYMENT_EXPIRED": "Một khoản thanh toán của đơn hàng đã hết hạn trước khi tiền về.",
       "PAYMENT_REFUNDED": "Một khoản thanh toán của đơn hàng đã được đánh dấu hoàn lại.",
+      "PAYMENT_UNAPPLIED": "Có khoản tiền chuyển đến nhưng không khoản thanh toán nào nhận được. Mở trang thanh toán để xử lý.",
+      "PAYMENT_REFUND_NEEDED": "Đơn hàng đã hủy và có khoản thanh toán cần hoàn lại.",
       "NEWS_PUBLISHED": "Ban quản lý vừa đăng một tin quan trọng."
     }
   },

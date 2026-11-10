@@ -82,4 +82,12 @@ export class Payment extends BaseEntity {
 
   @Property({ type: 'string', length: 500, nullable: true })
   refundReason?: string | null;
+
+  /**
+   * Set when the order was cancelled while this payment was `PAID` (GH#417): the money is still held and must be
+   * returned by hand. A flag rather than a status, so the state machine and its consumers stay as they are;
+   * marking the payment refunded ends the need.
+   */
+  @Property({ type: 'datetime', length: 3, nullable: true })
+  refundNeededAt?: Date | null;
 }

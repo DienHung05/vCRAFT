@@ -35,6 +35,7 @@ export const AUDIT_ACTIONS = [
   // Payments (ADR-0021, GH#205).
   'payment.record_offline',
   'payment.refund',
+  'payment.resolve_unapplied',
   'payment.simulate_transfer',
   'news.create',
   'news.update',

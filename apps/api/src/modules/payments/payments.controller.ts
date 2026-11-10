@@ -8,6 +8,10 @@ import {
   RecordOfflinePaymentRequestSchema,
   type RefundPaymentRequest,
   RefundPaymentRequestSchema,
+  type ResolveUnappliedPaymentRequest,
+  ResolveUnappliedPaymentRequestSchema,
+  type UnappliedPaymentListQuery,
+  UnappliedPaymentListQuerySchema,
 } from '@vcraft/contracts';
 import { type Actor, CurrentActor, Roles } from '../../common/auth/auth.guard';
 import { notFound } from '../../common/errors/app-error';
@@ -100,6 +104,28 @@ export class AdminPaymentsController {
     @Body(new ZodValidationPipe(RefundPaymentRequestSchema)) body: RefundPaymentRequest,
   ) {
     return this.payments.refund(actor, id, version, body);
+  }
+
+  /** Money that arrived but no payment could take (GH#417). */
+  @Get('unapplied-payments')
+  @Header('Cache-Control', 'private, no-store')
+  unapplied(
+    @Query(new ZodValidationPipe(UnappliedPaymentListQuerySchema)) query: UnappliedPaymentListQuery,
+  ) {
+    return this.payments.unappliedList(query);
+  }
+
+  /** Marks unapplied money as handled by hand, with a note. Audit-logged. */
+  @Post('unapplied-payments/:id/resolve')
+  @HttpCode(200)
+  resolveUnapplied(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+    @Body(new ZodValidationPipe(ResolveUnappliedPaymentRequestSchema))
+    body: ResolveUnappliedPaymentRequest,
+  ) {
+    return this.payments.resolveUnapplied(actor, id, version, body);
   }
 
   /** Sandbox only: stands in for the bank and transfers the exact amount of a pending SePay payment. */

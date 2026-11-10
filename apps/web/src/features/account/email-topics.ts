@@ -31,6 +31,8 @@ const TOPIC_OF: Record<NotificationTypeDto, EmailTopic> = {
   PAYMENT_PAID: 'order',
   PAYMENT_EXPIRED: 'order',
   PAYMENT_REFUNDED: 'order',
+  PAYMENT_UNAPPLIED: 'order',
+  PAYMENT_REFUND_NEEDED: 'order',
   NEWS_PUBLISHED: 'news',
 };
 
