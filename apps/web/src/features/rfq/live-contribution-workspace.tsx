@@ -16,6 +16,7 @@ import { ErrorState } from '@/components/states/error-state';
 import { FormSkeleton } from '@/components/states/skeletons';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { notify } from '@/lib/notify';
+import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { ContributionForm, type ContributionFormValues } from './contribution-form';
 import { DirectQuotationForm } from './direct-quotation-form';
 import { RequestAttachments } from './rfq-attachments';
@@ -56,6 +57,9 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
   const [declineFailed, setDeclineFailed] = useState(false);
   const [confirmDecline, setConfirmDecline] = useState(false);
   const [priceHint, setPriceHint] = useState<PriceHintDto['hint']>(null);
+  // GH#444: a create is retried with the same key; an edit is not idempotency-keyed.
+  const createOffer = useIdempotentAction();
+  const createQuotation = useIdempotentAction();
   // The hint is a nicety: loaded once, and a failure just leaves it out.
   useEffect(() => {
     let active = true;
@@ -140,7 +144,10 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
     try {
       if (contribution)
         await client.updateContribution(contribution.id, contribution.version, values);
-      else await client.createContribution(rfqId, values);
+      else
+        await createOffer([rfqId, values], (options) =>
+          client.createContribution(rfqId, values, options),
+        );
       setRefresh((value) => value + 1);
     } catch (error) {
       throw new Error(sendError(error));
@@ -150,7 +157,10 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
     try {
       if (quotation?.status === 'SUBMITTED')
         await client.reviseDirectQuotation(quotation.id, quotation.version, values);
-      else await client.createDirectQuotation(rfqId, values);
+      else
+        await createQuotation([rfqId, values], (options) =>
+          client.createDirectQuotation(rfqId, values, options),
+        );
       setRefresh((value) => value + 1);
     } catch (error) {
       throw new Error(sendError(error));

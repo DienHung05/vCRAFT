@@ -24,6 +24,7 @@ import { TraceQr } from '@/features/traceability/trace-qr';
 import { Link, useRouter } from '@/i18n/navigation';
 import { notify } from '@/lib/notify';
 import { traceShortUrl } from '@/lib/site';
+import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { HouseholdGate } from './household-gate';
 import { PriceSuggestionHint } from './price-suggestion-hint';
 import { type ProductDraft, ProductFields, toProductDraft } from './product-fields';
@@ -470,10 +471,13 @@ function DuplicateButton({ product, client }: { product: ProductDto; client: Stu
   const t = useTranslations('studio.products');
   const router = useRouter();
   const [state, setState] = useState<'idle' | 'busy' | 'failed'>('idle');
+  const duplicateProduct = useIdempotentAction();
   const duplicate = async () => {
     setState('busy');
     try {
-      const copy = await client.duplicateProduct(product.id);
+      const copy = await duplicateProduct([product.id, product.version], (options) =>
+        client.duplicateProduct(product.id, options),
+      );
       notify.success(t('duplicatedToast'));
       router.push({ pathname: '/studio/san-pham/[id]', params: { id: copy.id } });
     } catch {

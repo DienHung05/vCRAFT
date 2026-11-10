@@ -15,6 +15,7 @@ import { useRouter } from '@/i18n/navigation';
 import { useAddressSuggestions } from '@/lib/address/use-address-suggestions';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { notify } from '@/lib/notify';
+import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { AttachmentsField } from './rfq-attachments';
 import {
   clearStoredDraft,
@@ -113,6 +114,11 @@ function Form({
   const saved = useRef<{ id: string; version: number } | null>(
     draft ? { id: draft.id, version: draft.version } : null,
   );
+  const createRequest = useIdempotentAction();
+  const submitRequest = useIdempotentAction();
+  const savedPayload = useRef<string | null>(
+    draft ? JSON.stringify(rfqFormPayload(rfqFormValues(draft), { onBehalf })) : null,
+  );
   const saving = useRef<Promise<void>>(Promise.resolve());
   const autosaveTimer = useRef<number | null>(null);
   // Set while a send is under way (and after it succeeded): autosave must not touch the draft any more.
@@ -128,9 +134,12 @@ function Form({
     client
       .getRequest(stored.id)
       .then((request) => {
-        if (request.status === 'DRAFT')
+        if (request.status === 'DRAFT') {
           saved.current = { id: request.id, version: request.version };
-        else {
+          savedPayload.current = JSON.stringify(
+            rfqFormPayload(rfqFormValues(request), { onBehalf }),
+          );
+        } else {
           clearStoredDraft();
           setValues(EMPTY_RFQ_FORM);
         }
@@ -143,17 +152,21 @@ function Form({
       // Saves run one after another, so each one sends the version the previous one returned.
       saving.current = saving.current.then(async () => {
         const payload = rfqFormPayload(current, { onBehalf });
+        const serialized = JSON.stringify(payload);
+        // An unchanged Send retry must reach submit with the original draft version.
+        if (saved.current && savedPayload.current === serialized) return;
         // The request carries a delivery address: the consent is recorded before the first save.
         if (!saved.current && !onBehalf)
           await client.recordConsent('RFQ_CONTACT', PRIVACY_POLICY_VERSION);
         const response = saved.current
           ? await client.updateRequest(saved.current.id, saved.current.version, payload)
-          : await client.createRequest(payload);
+          : await createRequest(payload, (options) => client.createRequest(payload, options));
         saved.current = { id: response.id, version: response.version };
+        savedPayload.current = serialized;
       });
       return saving.current;
     },
-    [client, onBehalf],
+    [client, onBehalf, createRequest],
   );
 
   useEffect(() => {
@@ -231,7 +244,9 @@ function Form({
       await saveToServer(values);
       const target = saved.current;
       if (!target) throw new Error('draft was not saved');
-      const sent = await client.submitRequest(target.id, target.version);
+      const sent = await submitRequest([target.id, target.version], (options) =>
+        client.submitRequest(target.id, target.version, options),
+      );
       clearStoredDraft();
       // With no chosen household the system matched some: the buyer is told how many (FR-RFQ-03).
       notify.success(

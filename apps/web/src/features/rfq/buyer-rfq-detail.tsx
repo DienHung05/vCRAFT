@@ -27,6 +27,7 @@ import { Link } from '@/i18n/navigation';
 import { useLiveEvents } from '@/lib/api/live-events';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { notify } from '@/lib/notify';
+import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { useMoney } from '@/lib/use-money';
 import { BidRow, CountUpMoney } from './bid-motion';
 import { DeadlineCountdown } from './deadline-countdown';
@@ -90,6 +91,9 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
   const format = useFormatter();
   const money = useMoney();
   const [state, setState] = useState<State>({ kind: 'loading' });
+  const acceptQuotation = useIdempotentAction();
+  const cancelOrder = useIdempotentAction();
+  const confirmReceipt = useIdempotentAction();
   const [dialog, setDialog] = useState<
     | { kind: 'accept'; quotation: BuyerQuotationDto }
     | { kind: 'cancel' }
@@ -246,7 +250,10 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
       return;
     }
     void run(
-      () => client.cancelOrder(rfqId, request.version, text ? { reason: text } : {}),
+      () =>
+        cancelOrder([rfqId, request.version, text], (options) =>
+          client.cancelOrder(rfqId, request.version, text ? { reason: text } : {}, options),
+        ),
       t('cancelFailed'),
       t('cancelledToast'),
     );
@@ -506,9 +513,16 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
           if (dialog?.kind === 'accept')
             void run(
               () =>
-                client.acceptQuotation(rfqId, request.version, {
-                  quotationId: dialog.quotation.id,
-                }),
+                acceptQuotation([rfqId, request.version, dialog.quotation.id], (options) =>
+                  client.acceptQuotation(
+                    rfqId,
+                    request.version,
+                    {
+                      quotationId: dialog.quotation.id,
+                    },
+                    options,
+                  ),
+                ),
               t('acceptFailed'),
               t('acceptedToast'),
               dialog.quotation.id,
@@ -540,7 +554,10 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
         onClose={closeDialog}
         onConfirm={() =>
           void run(
-            () => client.confirmReceipt(rfqId, request.version),
+            () =>
+              confirmReceipt([rfqId, request.version], (options) =>
+                client.confirmReceipt(rfqId, request.version, options),
+              ),
             order('stale'),
             t('receivedToast'),
           )

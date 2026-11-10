@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { PaymentStatusBadge } from '@/features/payments/payment-parts';
 import { usePaymentClient } from '@/lib/api/use-payment-client';
 import { notify } from '@/lib/notify';
+import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { useMoney } from '@/lib/use-money';
 
 /**
@@ -47,6 +48,7 @@ function Panel({ orderId, client }: { orderId: string; client: PaymentClient }) 
   const noteErrorId = useId();
   const reasonErrorId = useId();
   const [error, setError] = useState<string | null>(null);
+  const submitRecord = useIdempotentAction();
 
   const load = useCallback(async () => {
     try {
@@ -98,9 +100,13 @@ function Panel({ orderId, client }: { orderId: string; client: PaymentClient }) 
       return;
     }
     setNoteError(false);
+    const body = { kind: 'BALANCE' as const, note: note.trim() };
     if (
       await act(
-        () => client.recordOfflinePayment(orderId, { kind: 'BALANCE', note: note.trim() }),
+        () =>
+          submitRecord({ orderId, body }, (options) =>
+            client.recordOfflinePayment(orderId, body, options),
+          ),
         t('recorded'),
         t('recordFailed'),
       )

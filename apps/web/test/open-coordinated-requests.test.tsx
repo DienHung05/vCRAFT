@@ -72,11 +72,15 @@ describe('Open coordinated requests in Studio (BR-05a)', () => {
     fireEvent.change(screen.getByLabelText('Ngày hoàn thành'), { target: { value: '2100-01-01' } });
     fireEvent.click(screen.getByRole('button', { name: 'Gửi đề xuất' }));
     await waitFor(() =>
-      expect(createContribution).toHaveBeenCalledWith(ID, {
-        maxQuantity: 100,
-        unitPriceVnd: 30_000,
-        completionDate: expect.stringMatching(/^2100-01-01/),
-      }),
+      expect(createContribution).toHaveBeenCalledWith(
+        ID,
+        {
+          maxQuantity: 100,
+          unitPriceVnd: 30_000,
+          completionDate: expect.stringMatching(/^2100-01-01/),
+        },
+        { idempotencyKey: expect.any(String) },
+      ),
     );
     await waitFor(() => expect(listInvitations).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(listOpen).toHaveBeenCalledTimes(2));
@@ -99,5 +103,115 @@ describe('Open coordinated requests in Studio (BR-05a)', () => {
     expect(screen.getByText('Hộ chưa có lời mời nào.')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Thử lại' }));
     expect(await screen.findByText(/Bát đĩa: cần 500 cup/)).toBeTruthy();
+  });
+
+  // GH#444: claiming and offering is a state change; a retry after a lost response keeps its key.
+  it('sends the offer with its target, body and the held key, reusing the key after a failure', async () => {
+    const createContribution = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Request timed out'))
+      .mockResolvedValue({});
+    renderVi(
+      <QuotationInvitations
+        client={asClient({
+          listInvitations: vi.fn().mockResolvedValue([]),
+          listOpenCoordinatedRequests: vi.fn().mockResolvedValue([OPEN]),
+          createContribution,
+        })}
+      />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Gửi đề xuất' }));
+    const fill = () => {
+      fireEvent.change(screen.getByLabelText('Mức tối đa (cup)'), { target: { value: '100' } });
+      fireEvent.change(screen.getByLabelText('Đơn giá (VND)'), { target: { value: '30000' } });
+      fireEvent.change(screen.getByLabelText('Ngày hoàn thành'), {
+        target: { value: '2100-01-01' },
+      });
+    };
+    fill();
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi đề xuất' }));
+    await waitFor(() => expect(createContribution).toHaveBeenCalledTimes(1));
+    await screen.findByRole('alert');
+    // The panel stays open after a failure; sending again is the retry of the same offer.
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi đề xuất' }));
+    await waitFor(() => expect(createContribution).toHaveBeenCalledTimes(2));
+
+    const body = {
+      maxQuantity: 100,
+      unitPriceVnd: 30_000,
+      completionDate: expect.stringMatching(/^2100-01-01/),
+    };
+    expect(createContribution).toHaveBeenNthCalledWith(1, ID, body, {
+      idempotencyKey: expect.any(String),
+    });
+    const first = createContribution.mock.calls[0]?.[2]?.idempotencyKey;
+    expect(first).toEqual(expect.any(String));
+    expect(createContribution.mock.calls[1]?.[2]?.idempotencyKey).toBe(first);
+  });
+
+  // GH#444: a failed offer for one row must not lose its key when another row is attempted meanwhile.
+  it('retains a failed offer key per request while other open requests are attempted', async () => {
+    const other: OpenCoordinatedRequestDto = {
+      ...OPEN,
+      id: '223e4567-e89b-12d3-a456-426614174000',
+      category: 'TEA',
+    };
+    const createContribution = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Request timed out'))
+      .mockRejectedValueOnce(new TypeError('Request timed out'))
+      .mockResolvedValue({});
+    renderVi(
+      <QuotationInvitations
+        client={asClient({
+          listInvitations: vi.fn().mockResolvedValue([]),
+          listOpenCoordinatedRequests: vi.fn().mockResolvedValue([OPEN, other]),
+          createContribution,
+        })}
+      />,
+    );
+    const fill = () => {
+      fireEvent.change(screen.getByLabelText('Mức tối đa (cup)'), { target: { value: '100' } });
+      fireEvent.change(screen.getByLabelText('Đơn giá (VND)'), { target: { value: '30000' } });
+      fireEvent.change(screen.getByLabelText('Ngày hoàn thành'), {
+        target: { value: '2100-01-01' },
+      });
+    };
+    const cards = () =>
+      within(screen.getByTestId('open-requests'))
+        .getAllByRole('listitem')
+        .map((item) => within(item));
+    const openOffer = (index: number) =>
+      cards()[index]?.getByRole('button', { name: 'Gửi đề xuất' }) as HTMLElement;
+    const sendOffer = (index: number) => {
+      const card = cards()[index] as ReturnType<typeof within>;
+      fireEvent.click(card.getByRole('button', { name: 'Gửi đề xuất' }) as HTMLElement);
+    };
+
+    // Open the first request's offer form and make its send fail.
+    await screen.findAllByRole('button', { name: 'Gửi đề xuất' });
+    fireEvent.click(openOffer(0));
+    fill();
+    sendOffer(0);
+    await waitFor(() => expect(createContribution).toHaveBeenCalledTimes(1));
+    const aKey = createContribution.mock.calls[0]?.[2]?.idempotencyKey;
+    expect(aKey).toEqual(expect.any(String));
+
+    // The second request gets its own form and its own failing attempt.
+    fireEvent.click(openOffer(1));
+    fill();
+    sendOffer(1);
+    await waitFor(() => expect(createContribution).toHaveBeenCalledTimes(2));
+    const bKey = createContribution.mock.calls[1]?.[2]?.idempotencyKey;
+    expect(bKey).toEqual(expect.any(String));
+    expect(bKey).not.toBe(aKey);
+
+    // Back on the first request, its retry keeps the original key.
+    fireEvent.click(openOffer(0));
+    fill();
+    sendOffer(0);
+    await waitFor(() => expect(createContribution).toHaveBeenCalledTimes(3));
+    expect(createContribution.mock.calls[2]?.[0]).toBe(OPEN.id);
+    expect(createContribution.mock.calls[2]?.[2]?.idempotencyKey).toBe(aKey);
   });
 });
