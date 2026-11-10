@@ -184,7 +184,7 @@ pnpm demo:media                                               # nối lại ản
 pnpm demo:verify                                              # kiểm dữ liệu còn nguyên (chỉ đọc)
 ```
 
-`demo:reset` xóa **mọi** bảng nghiệp vụ (kể cả bản ghi do tập dượt, hộp thư, outbox, `media_asset`) theo thứ tự con trước cha rồi nạp lại, trong một giao dịch (lỗi giữa chừng thì không mất gì). Không đụng bảng migration, schema `auth`/`storage` của Supabase hay tệp trong bucket: vì vậy sau reset phải chạy `pnpm demo:media` để dựng lại `media_asset`, `media_link` và ảnh của nhật ký (chạy lại được, §1B).
+`demo:reset` xóa **mọi** bảng nghiệp vụ (kể cả bản ghi do tập dượt, hộp thư, outbox, `media_asset`) theo thứ tự con trước cha rồi nạp lại, trong một giao dịch (lỗi giữa chừng thì không mất gì). Danh sách bảng nằm ở `CLEARED_ENTITIES` (`packages/database/src/seeders/demo/reset.ts`, có test chống lệch với khóa ngoại). Cố ý giữ lại `knowledge_chunks`, `assistant_message_log`, `login_event`, `idempotency_keys`, `mail_claim`, `slug_redirect`, `notification_preference`, `unapplied_payment`. Không đụng bảng migration, schema `auth`/`storage` của Supabase hay tệp trong bucket: vì vậy sau reset phải chạy `pnpm demo:media` để dựng lại `media_asset`, `media_link` và ảnh của nhật ký (chạy lại được, §1B).
 
 **Cổng chặn** (hàm thuần `evaluateDemoResetGuard`, có unit test; chạy **trước** khi mở kết nối). Phải thỏa đồng thời:
 

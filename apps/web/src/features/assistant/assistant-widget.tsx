@@ -165,16 +165,14 @@ export function AssistantWidget() {
     ),
   };
 
-  // Above the sticky call-to-action bar of the QR trace page, above the Studio tab bar on phones (GH#257),
-  // and above the iOS home bar everywhere. The map page uses the normal corner (GH#297); while its phone
-  // bottom sheet is open the launcher and the hello bubble hide instead (see `MAP_SHEET_HIDDEN`).
+  // Above the Studio tab bar on phones (GH#257) and above the iOS home bar everywhere. The map page uses the
+  // normal corner (GH#297); while its phone bottom sheet is open the launcher and the hello bubble hide
+  // instead (see `MAP_SHEET_HIDDEN`). The QR trace page keeps the corner too (GH#485): its sticky call-to-action
+  // bar leaves room for the launcher instead (`.trace-actions` in trace-story.css).
   const studio = /^\/(vi|en)\/studio(\/|$)/.test(pathname);
-  const lift =
-    page === 'trace'
-      ? 'bottom-[calc(env(safe-area-inset-bottom)+6.5rem)]'
-      : studio
-        ? 'bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] md:bottom-[calc(env(safe-area-inset-bottom)+1rem)]'
-        : 'bottom-[calc(env(safe-area-inset-bottom)+1rem)]';
+  const lift = studio
+    ? 'bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] md:bottom-[calc(env(safe-area-inset-bottom)+1rem)]'
+    : 'bottom-[calc(env(safe-area-inset-bottom)+1rem)]';
 
   return (
     <>

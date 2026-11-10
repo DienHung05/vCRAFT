@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  AccountInvitation,
   AppUser,
   Artisan,
   CooperativeQuotation,
@@ -19,18 +20,22 @@ import {
   FIELD_CONTEXTS,
   FieldCipher,
   Household,
+  HouseholdRating,
   JournalEntry,
   linkDemoMedia,
   MediaAsset,
   MediaLink,
   News,
+  Notification,
   OrderAllocation,
   Product,
+  ProductFavourite,
   QuotationRequest,
   RETIRED_DEMO_PHOTO_IDS,
   refreshDemoCoordinates,
   refreshDemoText,
   seedDemoData,
+  TraceScan,
   verifyDemoData,
   Workshop,
 } from '@vcraft/database';
@@ -565,6 +570,39 @@ describe('Demo seed and guarded reset', () => {
     await reset();
     await reset();
     expect(await snapshot()).toEqual(first);
+  });
+
+  it('reset xóa cả các bảng có khóa ngoại tới bảng nghiệp vụ (yêu thích, đánh giá hộ, lượt quét, thông báo, lời mời)', async () => {
+    const setup = db.orm.em.fork();
+    const [product] = await setup.find(Product, {}, { limit: 1 });
+    const [request] = await setup.find(QuotationRequest, {}, { limit: 1 });
+    const [household] = await setup.find(Household, {}, { limit: 1 });
+    if (!product || !request || !household) throw new Error('seed rỗng');
+    const userId = DEMO_ACCOUNTS.buyer.id;
+    setup.create(ProductFavourite, { userId, product });
+    setup.create(HouseholdRating, { request, household, raterId: userId, stars: 5 });
+    setup.create(TraceScan, { product });
+    setup.create(Notification, {
+      recipientId: userId,
+      type: 'NEWS_PUBLISHED',
+      subjectId: request.id,
+    });
+    setup.create(AccountInvitation, {
+      email: 'reset-check@example.com',
+      role: 'BUYER',
+      invitedBy: DEMO_ACCOUNTS.admin.id,
+    });
+    await setup.flush();
+
+    await reset();
+
+    const em = db.orm.em.fork();
+    expect(await em.count(ProductFavourite)).toBe(0);
+    expect(await em.count(HouseholdRating)).toBe(0);
+    expect(await em.count(TraceScan)).toBe(0);
+    expect(await em.count(Notification)).toBe(0);
+    expect(await em.count(AccountInvitation)).toBe(0);
+    expect(await em.count(Product)).toBeGreaterThanOrEqual(200);
   });
 
   it('seed lần hai khi chưa reset bị từ chối (không nhân đôi dữ liệu)', async () => {
