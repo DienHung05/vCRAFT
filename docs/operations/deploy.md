@@ -75,6 +75,7 @@ Tất cả lấy từ Supabase Dashboard (đường dẫn trong ngoặc theo `.e
 | `VNPAY_MAX_AMOUNT_VND`, `MOMO_MAX_AMOUNT_VND` | API | Optional positive whole numbers. Upper limit of one payment (defaults `999999999` and `50000000`; minimums are fixed at `5000` and `1000`). An order part outside the limits cannot be paid with that method (`PAYMENT_AMOUNT_OUT_OF_RANGE`), the buyer picks bank transfer |
 | `MOMO_PARTNER_CODE`, `MOMO_ACCESS_KEY`, `MOMO_SECRET_KEY` | API | MoMo credentials (test credentials from developers.momo.vn, or the production keys from the contract). `MOMO_SECRET_KEY` is a secret. Needed whenever `MOMO_MODE` is not `off` |
 | `MOMO_ENDPOINT`, `MOMO_QUERY_ENDPOINT` | API | MoMo `captureWallet` create endpoint and status query endpoint. Default to the test environment in `sandbox` mode. **`MOMO_ENDPOINT` is required in `production` mode** (from the MoMo contract); `MOMO_QUERY_ENDPOINT` defaults to it with a trailing `/create` replaced by `/query`, and must be set when that is not possible. Both must be `https` |
+| `PAYMENTS_DEMO_MODE` | API | Optional, default off; `true` turns on **demo payment mode** (ADR-0025). All three methods are offered with no credentials; each payment shows a QR of a link to our own confirm page, which a phone opens to confirm, and nothing is sent to SePay, VNPay or MoMo. Allowed under `APP_ENV=production`, labelled as a rehearsal on every screen. The deposit gate defaults to off (an explicit `PAYMENTS_DEPOSIT_REQUIRED` still wins). **Unset it before any real-money method is switched on.** The boot log says `online payment is in DEMO mode` |
 | `PAYMENTS_PROVIDER_SYNC_EVERY_SECONDS` | API | Optional, default `120`; `0` turns it off. How often the API asks VNPay and MoMo about payments still pending (older than 2 minutes) or expired within the last hour, in case an IPN never arrived. API only: the worker holds no gateway secrets. Always off under `NODE_ENV=test` |
 
 ### Online payment (ADR-0021, ADR-0024, GH#205)
@@ -91,6 +92,16 @@ The village administration's bank account receives the money through SePay's ban
 8. **Simulate transfer.** Where `APP_ENV` is not `production`, an administrator sees "Simulate transfer (sandbox)" on a pending bank-transfer payment; it applies a synthetic SePay event through the same reconciliation. Production sets `APP_ENV=production` in `vcraft-shared`, which removes the button and refuses the endpoint.
 9. **Secrets** (`SEPAY_WEBHOOK_API_KEY`, `VNPAY_HASH_SECRET`, `MOMO_SECRET_KEY`, `MOMO_ACCESS_KEY`) are set in the Render dashboard for `vcraft-api` only. The worker needs none of them. CI and tests use signed fake webhooks and fake provider answers and never call a gateway.
 10. **Refunds are manual.** No gateway refund call exists. Return the money from the provider's merchant portal (or the bank), then use "mark refunded" on the payment in the administration with the reason.
+
+#### Demo payment mode (ADR-0025)
+
+For the project defense and the live demo, where no merchant contract exists. Set `PAYMENTS_DEMO_MODE=true` on `vcraft-api` (it works with `APP_ENV=production`; no payment credential is needed).
+
+1. The buyer picks bank transfer, VNPay or MoMo and presses "Tạo mã QR thanh toán". The page shows a QR that encodes `https://<domain>/vi/thanh-toan/thu/<code>?k=<secret>`, a page of ours. It is never a VietQR or bank code.
+2. The buyer scans it with a phone, presses "Xác nhận thanh toán" (or "Hủy giao dịch thử"), and the desktop page flips to paid within a few seconds (it polls every 3 s). The payment goes through the normal reconciliation, so the order, the notices and the deposit state behave as for a real payment; `raw_last_event` of the row holds `{"demo": true, "source": "demo-confirm"}` and the transaction id is `DEMO-<code>`.
+3. Nothing is sent to SePay, VNPay or MoMo, even if their credentials are set, and the provider sweep skips these payments. Every method counts as "sandbox" in the method list; the amount limits stay; a demo payment expires after `PAYMENT_WALLET_EXPIRES_IN_MINUTES` whatever the method.
+4. Anyone holding the QR or its link can confirm that one payment. That is accepted because no money moves. The API logs every view and confirmation with the payment code and the outcome (`DemoPayments` logger), never the secret.
+5. **Switch it off** (unset `PAYMENTS_DEMO_MODE`) before turning on any real method; confirm links then answer 404 and pending demo payments just expire. The boot log shows `online payment is in DEMO mode` and a warning while it is on.
 
 **Go-live checklist.** Do one method at a time, on `APP_ENV=production` with an `https` `APP_URL`.
 

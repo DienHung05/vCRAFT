@@ -37,6 +37,7 @@ import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
 import { NotificationPublisher } from '../../notifications/application/notification-publisher';
+import { DemoGateway } from '../gateways/demo.gateway';
 import { MomoGateway } from '../gateways/momo.gateway';
 import type {
   PaymentGateway,
@@ -125,6 +126,7 @@ export class PaymentsService {
     private readonly sepay: SepayGateway,
     private readonly vnpay: VnpayGateway,
     private readonly momo: MomoGateway,
+    private readonly demo: DemoGateway,
   ) {}
 
   // --- reads ---
@@ -170,6 +172,7 @@ export class PaymentsService {
       methods: availableMethods(config),
       methodOptions: this.methodOptions(config),
       simulateAvailable: config.sandbox && config.sepay !== null,
+      demo: config.demo,
       payments: payments.map(toPaymentDto),
     };
   }
@@ -187,6 +190,7 @@ export class PaymentsService {
     // The buyer is waiting on a wallet: if the IPN has not come yet, ask the provider (throttled, not awaited).
     if (
       (payment.provider === 'VNPAY' || payment.provider === 'MOMO') &&
+      payment.checkout?.type !== 'DEMO' &&
       payment.status === 'PENDING' &&
       Date.now() - payment.createdAt.getTime() > POLL_SYNC_AFTER_MS
     ) {
@@ -316,7 +320,9 @@ export class PaymentsService {
         referenceCode: await this.freshReference(em),
         expiresAt: new Date(
           now.getTime() +
-            (input.method === 'SEPAY_TRANSFER' ? config.expiryMs : config.walletExpiryMs),
+            (input.method === 'SEPAY_TRANSFER' && !config.demo
+              ? config.expiryMs
+              : config.walletExpiryMs),
         ),
       });
       await em.flush();
@@ -507,6 +513,8 @@ export class PaymentsService {
     try {
       const payment = await this.orm.em.fork().findOne(Payment, { referenceCode });
       if (!payment) return null;
+      // A demo payment never reaches a provider (ADR-0025): only its confirm page settles it.
+      if (payment.checkout?.type === 'DEMO') return null;
       const gateway =
         payment.provider === 'VNPAY' ? this.vnpay : payment.provider === 'MOMO' ? this.momo : null;
       if (!gateway?.queryStatus || !gateway.isConfigured()) return null;
@@ -822,8 +830,9 @@ export class PaymentsService {
     const limits = methodLimits(config);
     return availableMethods(config).map((method) => ({
       method,
-      sandbox:
-        method === 'VNPAY'
+      sandbox: config.demo
+        ? true
+        : method === 'VNPAY'
           ? config.vnpay?.mode === 'sandbox'
           : method === 'MOMO'
             ? config.momo?.mode === 'sandbox'
@@ -841,6 +850,8 @@ export class PaymentsService {
   private gatewayFor(
     method: CreatePaymentRequest['method'],
   ): Pick<PaymentGateway<unknown>, 'createCheckout'> {
+    // Demo mode never uses a real gateway, even one that is configured (ADR-0025).
+    if (paymentsConfig().demo) return this.demo;
     switch (method) {
       case 'SEPAY_TRANSFER':
         return this.sepay;

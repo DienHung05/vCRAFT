@@ -1,12 +1,15 @@
 import { Logger, Module, type OnModuleInit } from '@nestjs/common';
 import { IdempotencyModule } from '../../common/idempotency/idempotency.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { DemoPaymentsService } from './application/demo-payments.service';
 import { PaymentProviderSyncService } from './application/payment-provider-sync.service';
 import { PaymentsService } from './application/payments.service';
+import { DemoGateway } from './gateways/demo.gateway';
 import { MomoGateway } from './gateways/momo.gateway';
 import { PAYMENT_HTTP, type PaymentHttp } from './gateways/payment-gateway';
 import { SepayGateway } from './gateways/sepay.gateway';
 import { VnpayGateway } from './gateways/vnpay.gateway';
+import { PaymentDemoController } from './payment-demo.controller';
 import { PaymentReturnController } from './payment-return.controller';
 import { PaymentWebhooksController } from './payment-webhooks.controller';
 import { describePaymentsConfig, paymentsConfig, paymentsConfigIssues } from './payments.config';
@@ -23,10 +26,13 @@ const realHttp: PaymentHttp = (url, init) =>
     AdminPaymentsController,
     PaymentWebhooksController,
     PaymentReturnController,
+    PaymentDemoController,
   ],
   providers: [
     PaymentsService,
     PaymentProviderSyncService,
+    DemoPaymentsService,
+    DemoGateway,
     SepayGateway,
     VnpayGateway,
     MomoGateway,

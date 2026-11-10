@@ -2,10 +2,11 @@
 
 import type { PaymentClient } from '@vcraft/api-client';
 import type { PaymentDto } from '@vcraft/contracts';
-import { Badge, Button, buttonVariants } from '@vcraft/ui';
+import { Badge, Button, buttonVariants, cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { useMoney } from '@/lib/use-money';
+import { DemoQr } from './demo-qr';
 
 /** How often a pending payment is read again (ADR-0021: every 3 s, stop on a final state). */
 export const PAYMENT_POLL_MS = 3_000;
@@ -13,6 +14,9 @@ export const PAYMENT_POLL_MS = 3_000;
 /** VNPay and MoMo: the buyer pays on the provider's page and the server asks the provider for the result. */
 export const isWallet = (payment: Pick<PaymentDto, 'method'>) =>
   payment.method === 'VNPAY' || payment.method === 'MOMO';
+
+/** A rehearsal payment of demo payment mode (ADR-0025): confirmed on a phone, never by a provider. */
+export const isDemo = (payment: Pick<PaymentDto, 'checkout'>) => payment.checkout?.type === 'DEMO';
 
 export const isFinalPayment = (status: PaymentDto['status']) => status !== 'PENDING';
 
@@ -200,7 +204,67 @@ export function PaymentCheckout({ payment }: { payment: PaymentDto }) {
     );
   }
 
+  if (checkout.type === 'DEMO') {
+    return <DemoCheckout payment={payment} confirmUrl={checkout.confirmUrl} />;
+  }
+
   return <RedirectCheckout payment={payment} url={checkout.url} deeplink={checkout.deeplink} />;
+}
+
+/**
+ * Demo payment mode (ADR-0025): a QR of the link to our own confirm page, to scan with a phone. Labelled as a
+ * rehearsal everywhere; no provider logo or look-alike branding.
+ */
+function DemoCheckout({ payment, confirmUrl }: { payment: PaymentDto; confirmUrl: string }) {
+  const t = useTranslations('payments.demo');
+  const method = useTranslations('payments.method');
+  const short = useTranslations('payments.methodShort');
+  const money = useMoney();
+  const wallet = payment.method === 'VNPAY' || payment.method === 'MOMO';
+  return (
+    <section aria-labelledby={`demo-${payment.id}`} className="flex flex-col gap-4">
+      <h3 id={`demo-${payment.id}`} className="text-h4">
+        {wallet ? t('titleWallet', { method: short(payment.method) }) : t('title')}
+      </h3>
+      <p>
+        <Badge tone="outline" data-testid="demo-notice">
+          {t('notice')}
+        </Badge>
+      </p>
+      <div className="flex flex-col gap-6 md:flex-row md:items-start">
+        <DemoQr url={confirmUrl} label={t('qrLabel')} />
+        <div className="flex min-w-0 flex-col gap-4">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
+            <dt className="text-small text-ash">{t('amount')}</dt>
+            <dd className="font-medium">{money(payment.amountVnd)}</dd>
+            <dt className="text-small text-ash">{t('method')}</dt>
+            <dd className="font-medium">{method(payment.method)}</dd>
+            <dt className="text-small text-ash">{t('reference')}</dt>
+            <dd className="break-all font-medium font-mono" data-testid="demo-reference">
+              {payment.referenceCode}
+            </dd>
+          </dl>
+          <ol
+            aria-label={t('stepsLabel')}
+            className="flex list-decimal flex-col gap-1 pl-5 text-ash"
+          >
+            <li>{t('step1')}</li>
+            <li>{t('step2')}</li>
+            <li>{t('step3')}</li>
+          </ol>
+          <a
+            href={confirmUrl}
+            target="_blank"
+            rel="noopener"
+            data-testid="demo-open-here"
+            className={cn(buttonVariants({ variant: 'secondary' }), 'self-start')}
+          >
+            {t('openHere')}
+          </a>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function RedirectCheckout({
@@ -251,9 +315,11 @@ export function PaymentLiveLine({ payment }: { payment: PaymentDto }) {
             className="mt-[9px] size-2 shrink-0 rounded-full bg-clay motion-safe:animate-pulse"
           />
           <span>
-            {isWallet(payment)
-              ? t('waitingWallet', { method: short(payment.method) })
-              : t('waiting')}{' '}
+            {isDemo(payment)
+              ? t('waitingDemo')
+              : isWallet(payment)
+                ? t('waitingWallet', { method: short(payment.method) })
+                : t('waiting')}{' '}
             {payment.expiresAt ? t('expiresAt', { time: stamp(payment.expiresAt) }) : ''}
           </span>
         </p>

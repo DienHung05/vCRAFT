@@ -1547,6 +1547,9 @@
       "redirecting": "Taking you to {method}…",
       "testBadge": "Test mode",
       "sandboxNote": "Test mode: {methods} do not take real money.",
+      "startDemo": "Create a payment QR code",
+      "demoNote": "Demo mode: no real transactions take place.",
+      "demoHint": "Create a QR code, then scan it with your phone to confirm the demo payment.",
       "overMax": "The amount is over the {max} limit of this method",
       "underMin": "The amount is under the {min} minimum of this method",
       "noneFit": "This amount does not fit the limits of any method. The management board will tell you how to pay."
@@ -1580,7 +1583,8 @@
       "cancelled": "This payment was cancelled.",
       "refunded": "The management board marked this payment as refunded.",
       "refundReason": "Reason: {reason}",
-      "waitingWallet": "Waiting for {method} to confirm. This page updates by itself."
+      "waitingWallet": "Waiting for {method} to confirm. This page updates by itself.",
+      "waitingDemo": "Waiting for you to confirm on your phone. This page updates by itself."
     },
     "cancel": "Cancel this payment",
     "cancelling": "Cancelling…",
@@ -1630,7 +1634,41 @@
       "VNPAY": "Domestic ATM cards, Internet Banking, international cards or VNPAY-QR.",
       "MOMO": "Pay with the MoMo wallet on your phone."
     },
-    "refundDue": "Refund due"
+    "refundDue": "Refund due",
+    "demo": {
+      "title": "Scan the code to pay (demo)",
+      "titleWallet": "Demo payment with {method}",
+      "notice": "Demo payment — no real money is taken",
+      "qrLabel": "QR code that opens the demo payment confirmation page",
+      "amount": "Amount",
+      "method": "Method",
+      "reference": "Payment code",
+      "stepsLabel": "Steps of the demo payment",
+      "step1": "Open the camera or a QR scanner app on your phone.",
+      "step2": "Tap “Confirm payment” on the page that opens.",
+      "step3": "This page updates by itself once you have confirmed.",
+      "openHere": "Open the confirmation page on this device",
+      "paidToast": "Payment received"
+    },
+    "demoConfirm": {
+      "title": "Confirm the demo payment",
+      "loading": "Loading the demo payment…",
+      "amount": "Amount",
+      "method": "Method",
+      "kind": "Type",
+      "reference": "Payment code",
+      "confirm": "Confirm payment",
+      "decline": "Cancel the demo payment",
+      "sending": "Sending…",
+      "invalid": "This link is not valid or has expired. Create the QR code again on the payment page.",
+      "alreadyPaid": "This payment has already been paid",
+      "ended": "This demo payment has ended ({status}). Create a new QR code on the payment page.",
+      "confirmed": "Confirmed. Go back to your computer or the order page to see the result.",
+      "declined": "The demo payment was cancelled.",
+      "viewResult": "View the payment result",
+      "error": "The confirmation could not be sent. Please try again.",
+      "retry": "Try again"
+    }
   },
   "rating": {
     "title": "Rate the households",

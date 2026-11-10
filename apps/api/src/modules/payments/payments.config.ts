@@ -1,6 +1,7 @@
 import {
   DEFAULT_DEPOSIT_PERCENT,
   isValidDepositPercent,
+  ONLINE_PAYMENT_METHODS,
   type OnlinePaymentMethod,
   PAYMENT_EXPIRY_MS,
 } from '@vcraft/domain';
@@ -55,8 +56,14 @@ export interface PaymentsConfig {
   expiryMs: number;
   /** How long a pending VNPay or MoMo payment waits (`PAYMENT_WALLET_EXPIRES_IN_MINUTES`, default 30). */
   walletExpiryMs: number;
-  /** Production waits for a paid deposit. Defaults to on whenever SePay is configured. */
+  /** Production waits for a paid deposit. Defaults to on whenever SePay is configured, and off in demo mode. */
   depositRequired: boolean;
+  /**
+   * Demo payment mode (`PAYMENTS_DEMO_MODE=true`, ADR-0025): every method is offered without credentials and
+   * rehearsed through our own confirm page; no provider is called and no money moves. Allowed under
+   * `APP_ENV=production`, because it is its own explicit flag.
+   */
+  demo: boolean;
   /** `APP_ENV` is not `production`: the administrator "simulate transfer" button works. */
   sandbox: boolean;
   /** Public origin of the web (and of `/api/v1` behind its rewrite), for return and IPN URLs. */
@@ -253,6 +260,9 @@ function resolvePayments(env: NodeJS.ProcessEnv): { config: PaymentsConfig; issu
     }
   }
 
+  const demo = env.PAYMENTS_DEMO_MODE?.trim().toLowerCase() === 'true';
+  if (demo) issues.push('demo payment mode is on: no real money moves');
+
   const required = env.PAYMENTS_DEPOSIT_REQUIRED?.trim().toLowerCase();
   const config: PaymentsConfig = {
     depositPercent: isValidDepositPercent(percent) ? percent : DEFAULT_DEPOSIT_PERCENT,
@@ -260,7 +270,8 @@ function resolvePayments(env: NodeJS.ProcessEnv): { config: PaymentsConfig; issu
     walletExpiryMs:
       positiveInteger('PAYMENT_WALLET_EXPIRES_IN_MINUTES', DEFAULT_WALLET_EXPIRY_MINUTES) * 60_000,
     depositRequired:
-      required === undefined || required === '' ? sepay !== null : required === 'true',
+      required === undefined || required === '' ? sepay !== null && !demo : required === 'true',
+    demo,
     sandbox: !appEnvProduction,
     appUrl,
     vnpayMaxVnd: positiveInteger('VNPAY_MAX_AMOUNT_VND', VNPAY_DEFAULT_MAX_VND),
@@ -286,6 +297,7 @@ export function paymentsConfigIssues(env: NodeJS.ProcessEnv = process.env): stri
 
 /** The online methods this deployment offers right now. */
 export function availableMethods(config: PaymentsConfig) {
+  if (config.demo) return [...ONLINE_PAYMENT_METHODS];
   const methods: OnlinePaymentMethod[] = [];
   if (config.sepay) methods.push('SEPAY_TRANSFER');
   if (config.vnpay) methods.push('VNPAY');
@@ -310,6 +322,9 @@ export function methodLimits(config: PaymentsConfig): Record<OnlinePaymentMethod
 
 /** One line for the boot log: which methods are on and in which mode. */
 export function describePaymentsConfig(config: PaymentsConfig): string {
+  if (config.demo) {
+    return 'online payment is in DEMO mode: all methods are rehearsed on a confirm page, no real money moves';
+  }
   const parts = [
     config.sepay ? 'SEPAY_TRANSFER' : null,
     config.vnpay ? `VNPAY(${config.vnpay.mode})` : null,

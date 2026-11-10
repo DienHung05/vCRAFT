@@ -1594,6 +1594,272 @@ describe('online payment of orders (ADR-0021)', () => {
     });
   });
 
+  describe('demo payment mode (ADR-0025)', () => {
+    const CREDENTIALS = [
+      'SEPAY_WEBHOOK_API_KEY',
+      'VNPAY_TMN_CODE',
+      'VNPAY_HASH_SECRET',
+      'MOMO_PARTNER_CODE',
+      'MOMO_ACCESS_KEY',
+      'MOMO_SECRET_KEY',
+      'PAYMENTS_SANDBOX_GATEWAYS',
+    ];
+    const outbound = () => queryRequests.length + momoRequests.length;
+
+    beforeAll(() => {
+      // The live site: production, no payment credential of any kind, demo flag on.
+      vi.stubEnv('APP_ENV', 'production');
+      for (const name of CREDENTIALS) vi.stubEnv(name, '');
+      vi.stubEnv('PAYMENTS_DEMO_MODE', 'true');
+    });
+    afterAll(() => {
+      vi.stubEnv('APP_ENV', 'development');
+      vi.stubEnv('PAYMENTS_DEMO_MODE', '');
+      vi.stubEnv('SEPAY_WEBHOOK_API_KEY', SEPAY_KEY);
+      vi.stubEnv('VNPAY_TMN_CODE', 'TESTTMN1');
+      vi.stubEnv('VNPAY_HASH_SECRET', VNPAY_SECRET);
+      vi.stubEnv('MOMO_PARTNER_CODE', MOMO.partner);
+      vi.stubEnv('MOMO_ACCESS_KEY', MOMO.access);
+      vi.stubEnv('MOMO_SECRET_KEY', MOMO.secret);
+      vi.stubEnv('PAYMENTS_SANDBOX_GATEWAYS', 'true');
+    });
+
+    const tokenOf = (payment: PaymentDto) => {
+      if (payment.checkout?.type !== 'DEMO') throw new Error('expected a DEMO checkout');
+      return new URL(payment.checkout.confirmUrl).searchParams.get('k') as string;
+    };
+    const view = (payment: PaymentDto, k: string | null = tokenOf(payment)) =>
+      t.request({
+        method: 'GET',
+        url: `/payments/demo/${payment.referenceCode}${k === null ? '' : `?k=${encodeURIComponent(k)}`}`,
+      });
+    const confirm = (
+      payment: PaymentDto,
+      outcome: 'PAID' | 'FAILED' = 'PAID',
+      token: string = tokenOf(payment),
+    ) =>
+      t.request({
+        method: 'POST',
+        url: `/payments/demo/${payment.referenceCode}/confirm`,
+        body: { token, outcome },
+      });
+
+    it('offers all three methods with no credentials and no deposit gate, all flagged as sandbox', async () => {
+      const requestId = await acceptedOrder();
+      const summary = await t.request({
+        method: 'GET',
+        url: `/orders/${requestId}/payments`,
+        auth: buyer.auth,
+      });
+      expect(OrderPaymentsResponseSchema.safeParse(summary.body).success).toBe(true);
+      expect(summary.body).toMatchObject({
+        demo: true,
+        depositRequired: false,
+        methods: ['SEPAY_TRANSFER', 'VNPAY', 'MOMO'],
+        methodOptions: [
+          { method: 'SEPAY_TRANSFER', sandbox: true, minAmountVnd: 1, maxAmountVnd: null },
+          { method: 'VNPAY', sandbox: true, minAmountVnd: 5_000, maxAmountVnd: 999_999_999 },
+          { method: 'MOMO', sandbox: true, minAmountVnd: 1_000, maxAmountVnd: 50_000_000 },
+        ],
+        simulateAvailable: false,
+      });
+    });
+
+    it('starts every method as a DEMO checkout: our own confirm link, no provider called', async () => {
+      const requestId = await acceptedOrder();
+      const before = outbound();
+      for (const method of ['SEPAY_TRANSFER', 'VNPAY', 'MOMO'] as const) {
+        const created = await startPayment(requestId, 'DEPOSIT', method);
+        expect(created.status).toBe(201);
+        expect(PaymentResponseSchema.safeParse(created.body).success).toBe(true);
+        expect(created.body).toMatchObject({ method, status: 'PENDING', amountVnd: 3_000_000 });
+        const url = new URL(created.body.checkout.confirmUrl);
+        expect(created.body.checkout.type).toBe('DEMO');
+        expect(url.origin + url.pathname).toBe(
+          `https://vcraft.test/vi/thanh-toan/thu/${created.body.referenceCode}`,
+        );
+        expect(url.searchParams.get('k')).toMatch(/^[A-Za-z0-9_-]{32}$/);
+        expect(created.body.checkout).not.toHaveProperty('qrPayload');
+        // A wallet-length expiry for every method, bank transfer included.
+        const row = await db.orm.em.fork().findOneOrFail(Payment, {
+          referenceCode: created.body.referenceCode,
+        });
+        const ms = (row.expiresAt as Date).getTime() - row.createdAt.getTime();
+        expect(Math.abs(ms - 30 * 60_000)).toBeLessThan(5_000);
+      }
+      expect(outbound()).toBe(before);
+    });
+
+    it('shows only the payment to a matching token and answers 404 otherwise', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'VNPAY')).body;
+      const ok = await view(created);
+      expect(ok.status).toBe(200);
+      expect(ok.body).toEqual({
+        referenceCode: created.referenceCode,
+        amountVnd: 3_000_000,
+        method: 'VNPAY',
+        kind: 'DEPOSIT',
+        status: 'PENDING',
+        expiresAt: created.expiresAt,
+      });
+      expect((await view(created, 'not-the-token')).status).toBe(404);
+      expect((await view(created, null)).status).toBe(404);
+      expect((await view({ ...created, referenceCode: 'VCPNOSUCHCODE' }, 'x')).status).toBe(404);
+      expect((await confirm(created, 'PAID', 'not-the-token')).status).toBe(404);
+      expect((await status(created)).status).toBe('PENDING');
+    });
+
+    it('confirms PAID: the payment is paid, the deposit counts, the buyer is told, and nothing leaves the process', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'MOMO')).body;
+      const before = outbound();
+      const paid = await confirm(created, 'PAID');
+      expect(paid.status).toBe(200);
+      expect(paid.body).toMatchObject({ referenceCode: created.referenceCode, status: 'PAID' });
+      expect(paid.body).not.toHaveProperty('orderId');
+      expect((await status(created)).status).toBe('PAID');
+      const summary = await t.request({
+        method: 'GET',
+        url: `/orders/${requestId}/payments`,
+        auth: buyer.auth,
+      });
+      expect(summary.body.depositPaidAt).not.toBeNull();
+      expect(
+        (await notices(buyer.auth)).filter(
+          (n) => n.type === 'PAYMENT_PAID' && n.target?.id === requestId,
+        ),
+      ).toHaveLength(1);
+      const row = await db.orm.em.fork().findOneOrFail(Payment, {
+        referenceCode: created.referenceCode,
+      });
+      expect(row.rawLastEvent).toMatchObject({ demo: true, source: 'demo-confirm' });
+      expect(row.providerTxnId).toBe(`DEMO-${created.referenceCode}`);
+      expect(outbound()).toBe(before);
+    });
+
+    it('answers a second confirm with the current state, and a decline cannot undo a payment', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+      expect((await confirm(created, 'PAID')).body.status).toBe('PAID');
+      const again = await confirm(created, 'PAID');
+      expect(again.status).toBe(200);
+      expect(again.body.status).toBe('PAID');
+      const declined = await confirm(created, 'FAILED');
+      expect(declined.status).toBe(200);
+      expect(declined.body.status).toBe('PAID');
+      expect(
+        (await notices(buyer.auth)).filter(
+          (n) => n.type === 'PAYMENT_PAID' && n.target?.id === requestId,
+        ),
+      ).toHaveLength(1);
+      expect(
+        await db.orm.em.fork().count(UnappliedPayment, { referenceCode: created.referenceCode }),
+      ).toBe(0);
+    });
+
+    it('confirms FAILED on a pending payment, and a later PAID changes nothing', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'VNPAY')).body;
+      const declined = await confirm(created, 'FAILED');
+      expect(declined.status).toBe(200);
+      expect(declined.body.status).toBe('FAILED');
+      expect((await status(created)).status).toBe('FAILED');
+      expect((await confirm(created, 'PAID')).body.status).toBe('FAILED');
+    });
+
+    it('does not accept a confirmation after the payment ran out of time', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'MOMO')).body;
+      await db.orm.em
+        .fork()
+        .nativeUpdate(
+          Payment,
+          { referenceCode: created.referenceCode },
+          { expiresAt: new Date(Date.now() - 60_000) },
+        );
+      const res = await confirm(created, 'PAID');
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('EXPIRED');
+      expect((await view(created)).body.status).toBe('EXPIRED');
+    });
+
+    it('validates the confirm body', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'VNPAY')).body;
+      const bad = await t.request({
+        method: 'POST',
+        url: `/payments/demo/${created.referenceCode}/confirm`,
+        body: { token: tokenOf(created), outcome: 'REFUNDED' },
+      });
+      expect(bad.status).toBe(422);
+    });
+
+    it('ignores DEMO payments when it asks providers what became of a payment', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'VNPAY')).body;
+      // Even with real VNPay credentials switched on, a DEMO payment is never asked about.
+      // Real credentials, and (so the gateway is not refused as sandbox-in-production) a non-production APP_ENV.
+      vi.stubEnv('APP_ENV', 'development');
+      vi.stubEnv('VNPAY_MODE', 'sandbox');
+      vi.stubEnv('VNPAY_TMN_CODE', 'TESTTMN1');
+      vi.stubEnv('VNPAY_HASH_SECRET', VNPAY_SECRET);
+      try {
+        const asked = () =>
+          queryRequests.filter(
+            (q) =>
+              q.body.vnp_TxnRef === created.referenceCode ||
+              q.body.orderId === created.referenceCode,
+          ).length;
+        const later = new Date(Date.now() + 5 * 60_000);
+        expect(
+          await t.app.get(PaymentsService).syncWithProvider(created.referenceCode, later),
+        ).toBeNull();
+        await t.app.get(PaymentProviderSyncService).runOnce(later);
+        // Other pending payments of earlier tests may be asked about; this one never is.
+        expect(asked()).toBe(0);
+        expect((await status(created)).status).toBe('PENDING');
+      } finally {
+        vi.stubEnv('APP_ENV', 'production');
+        vi.stubEnv('VNPAY_MODE', '');
+        vi.stubEnv('VNPAY_TMN_CODE', '');
+        vi.stubEnv('VNPAY_HASH_SECRET', '');
+      }
+    });
+
+    it('uses the demo gateway even when real credentials are configured', async () => {
+      // Real credentials, and (so the gateway is not refused as sandbox-in-production) a non-production APP_ENV.
+      vi.stubEnv('APP_ENV', 'development');
+      vi.stubEnv('VNPAY_MODE', 'sandbox');
+      vi.stubEnv('VNPAY_TMN_CODE', 'TESTTMN1');
+      vi.stubEnv('VNPAY_HASH_SECRET', VNPAY_SECRET);
+      try {
+        const requestId = await acceptedOrder();
+        const created = await startPayment(requestId, 'DEPOSIT', 'VNPAY');
+        expect(created.status).toBe(201);
+        expect(created.body.checkout.type).toBe('DEMO');
+      } finally {
+        vi.stubEnv('APP_ENV', 'production');
+        vi.stubEnv('VNPAY_MODE', '');
+        vi.stubEnv('VNPAY_TMN_CODE', '');
+        vi.stubEnv('VNPAY_HASH_SECRET', '');
+      }
+    });
+
+    it('answers 404 to the confirm page once demo mode is off', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'VNPAY')).body;
+      vi.stubEnv('PAYMENTS_DEMO_MODE', '');
+      try {
+        expect((await view(created)).status).toBe(404);
+        expect((await confirm(created, 'PAID')).status).toBe(404);
+        expect((await status(created)).status).toBe('PENDING');
+      } finally {
+        vi.stubEnv('PAYMENTS_DEMO_MODE', 'true');
+      }
+    });
+  });
+
   describe('feature flag', () => {
     it('hides VNPay and MoMo and refuses them while PAYMENTS_SANDBOX_GATEWAYS is off', async () => {
       vi.stubEnv('PAYMENTS_SANDBOX_GATEWAYS', 'false');

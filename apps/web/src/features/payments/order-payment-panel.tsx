@@ -11,6 +11,7 @@ import { notify } from '@/lib/notify';
 import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { useMoney } from '@/lib/use-money';
 import {
+  isDemo,
   PaymentCheckout,
   PaymentLiveLine,
   PaymentStatusBadge,
@@ -55,6 +56,8 @@ function Panel({
   const [summary, setSummary] = useState<OrderPaymentsDto | null>(null);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** Said once through the live region (and as a toast) when a demo payment the panel was polling turns paid. */
+  const [announcement, setAnnouncement] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -72,7 +75,14 @@ function Panel({
   }, [load]);
 
   const pending = summary?.payments.find((payment) => payment.status === 'PENDING') ?? null;
-  usePaymentPoll(client, pending, () => void load());
+  usePaymentPoll(client, pending, (fresh) => {
+    if (fresh.status === 'PAID' && isDemo(fresh)) {
+      const message = t('demo.paidToast');
+      notify.success(message);
+      setAnnouncement(message);
+    }
+    void load();
+  });
 
   if (failed) return <p className="text-small text-ash">{t('loadFailed')}</p>;
   if (!summary) return null;
@@ -109,6 +119,9 @@ function Panel({
       data-testid="payment-panel"
     >
       <h2 id="payment-title">{t('summary.title')}</h2>
+      <p role="status" className="sr-only" data-testid="payment-announcement">
+        {announcement}
+      </p>
       <Card className="flex flex-col gap-5 p-5 md:p-6">
         <dl className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-2">
           <dt>{t('summary.total')}</dt>
@@ -168,6 +181,7 @@ function Panel({
                 kind={kind}
                 amount={amount}
                 options={optionsOf(summary)}
+                demo={summary.demo}
                 client={client}
                 onStarted={load}
               />
@@ -211,7 +225,7 @@ function optionsOf(summary: OrderPaymentsDto): MethodOption[] {
   if (detailed && detailed.length > 0) return detailed;
   return summary.methods.map((method) => ({
     method,
-    sandbox: false,
+    sandbox: summary.demo === true,
     minAmountVnd: 0,
     maxAmountVnd: null,
   }));
@@ -242,6 +256,7 @@ function MethodPicker({
   kind,
   amount,
   options,
+  demo,
   client,
   onStarted,
 }: {
@@ -249,6 +264,8 @@ function MethodPicker({
   kind: PaymentDto['kind'];
   amount: number;
   options: MethodOption[];
+  /** Demo payment mode: every method is a rehearsal confirmed on a phone (ADR-0025). */
+  demo: boolean;
   client: PaymentClient;
   onStarted: () => Promise<void>;
 }) {
@@ -372,7 +389,7 @@ function MethodPicker({
                   ) : null}
                 </span>
                 <span id={`${id}-hint`} className="text-small text-ash">
-                  {t(`methodHint.${option.method}`)}
+                  {demo ? t('pay.demoHint') : t(`methodHint.${option.method}`)}
                 </span>
                 {limit ? (
                   <span id={`${id}-reason`} className="text-small font-medium text-ink">
@@ -386,14 +403,20 @@ function MethodPicker({
           );
         })}
       </div>
-      {sandboxNames.length > 0 ? (
+      {demo ? (
+        <p className="text-small text-ash">{t('pay.demoNote')}</p>
+      ) : sandboxNames.length > 0 ? (
         <p className="text-small text-ash">
           {t('pay.sandboxNote', { methods: format.list(sandboxNames, { type: 'conjunction' }) })}
         </p>
       ) : null}
       {chosen ? (
         <Button type="button" className="self-start" disabled={busy} onClick={() => void start()}>
-          {busy && !leaving ? t('pay.starting') : t(`pay.startBy.${chosen.method}`)}
+          {busy && !leaving
+            ? t('pay.starting')
+            : demo
+              ? t('pay.startDemo')
+              : t(`pay.startBy.${chosen.method}`)}
         </Button>
       ) : (
         <p className="text-ash">{t('pay.noneFit')}</p>
