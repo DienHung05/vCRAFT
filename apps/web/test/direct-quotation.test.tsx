@@ -483,4 +483,56 @@ describe('household quotation form (studio)', () => {
     ).toBeTruthy();
     expect(screen.getByText('Bên mua đã chốt báo giá của hộ')).toBeTruthy();
   });
+
+  it('says a legacy quotation without a price or date has no terms, instead of showing zero', async () => {
+    // GH#445: a stored quotation without parts reads as nulls. The invitation list must still render,
+    // and it must not claim a 0 ₫ price or an empty date.
+    const rows: MyInvitationDto[] = [
+      {
+        request: REQUEST,
+        contribution: null,
+        declined: false,
+        directQuotation: {
+          ...QUOTATION,
+          unitPriceVnd: null,
+          completionDate: null,
+          totalVnd: 3_000_000,
+        },
+      },
+    ];
+    renderVi(
+      <QuotationInvitations
+        client={asClient({ listInvitations: vi.fn().mockResolvedValue(rows) })}
+      />,
+    );
+    expect(await screen.findByTestId('invitations')).toBeTruthy();
+    expect(screen.queryByText(/Đã báo giá: 0\s*₫/)).toBeNull();
+    expect(screen.getByText(/Báo giá thiếu đơn giá hoặc ngày hoàn thành/)).toBeTruthy();
+  });
+
+  it('keeps editing a legacy quotation without a price or date, repairing both terms', async () => {
+    // GH#445: the stored part still names this household, so the API would refuse a second quotation
+    // ("already exists"). The form must keep it editable and send a revision that supplies both terms.
+    const legacy = { ...QUOTATION, unitPriceVnd: null, completionDate: null };
+    const client = workspace({
+      listOwnDirectQuotations: vi.fn().mockResolvedValue([legacy]),
+    });
+    renderVi(<LiveContributionWorkspace rfqId={ID} client={client} />);
+    expect(await screen.findByRole('button', { name: 'Cập nhật báo giá' })).toBeTruthy();
+    expect(
+      screen.getByText(/Báo giá này thiếu đơn giá hoặc ngày hoàn thành, tổng 3\.000\.000/),
+    ).toBeTruthy();
+    const price = screen.getByLabelText('Đơn giá (VND)') as HTMLInputElement;
+    expect(price.value).toBe('');
+    fireEvent.change(price, { target: { value: '27000' } });
+    fireEvent.change(screen.getByLabelText('Ngày hoàn thành'), { target: { value: '2100-01-01' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cập nhật báo giá' }));
+    await waitFor(() =>
+      expect(client.reviseDirectQuotation).toHaveBeenCalledWith(ID, 3, {
+        unitPriceVnd: 27_000,
+        completionDate: '2100-01-01T00:00:00.000Z',
+      }),
+    );
+    expect(client.createDirectQuotation).not.toHaveBeenCalled();
+  });
 });

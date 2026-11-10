@@ -91,15 +91,19 @@ export const QuotationStatusSchema = z.enum([
   'LAPSED',
 ]);
 
-/** A household's own direct quotation, as that household reads it. */
+/**
+ * A household's own direct quotation, as that household reads it. A quotation written before GH#445
+ * can hold no parts: its unit price and completion date are then `null` rather than the invalid
+ * sentinels `0` and `''` that the strict response would reject. `totalVnd` is always stored.
+ */
 export const DirectQuotationResponseSchema = z.strictObject({
   id: IdSchema,
   version: VersionSchema,
   status: QuotationStatusSchema,
   quantity: PositiveQuantitySchema,
-  unitPriceVnd: PositiveVndSchema,
+  unitPriceVnd: PositiveVndSchema.nullable(),
   totalVnd: VndSchema,
-  completionDate: IsoDateTimeSchema,
+  completionDate: IsoDateTimeSchema.nullable(),
   note: z.string().nullable(),
 });
 export type DirectQuotationDto = z.infer<typeof DirectQuotationResponseSchema>;

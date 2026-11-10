@@ -48,12 +48,14 @@ export function DirectQuotationForm({
   const format = useFormatter();
   const money = useMoney();
   const formId = useId();
-  // A withdrawn, rejected or expired quotation is history: the form starts fresh for a new one.
+  // A withdrawn, rejected or expired quotation is history: the form starts fresh for a new one. A legacy
+  // quotation whose stored part lost its price or date is still this household's active bid (GH#445), so
+  // it stays editable: sending repairs both terms instead of colliding with the one-active rule.
   const editing = quotation?.status === 'SUBMITTED' ? quotation : null;
-  const [unitPrice, setUnitPrice] = useState(editing ? String(editing.unitPriceVnd) : '');
-  const [completionDate, setCompletionDate] = useState(
-    editing ? editing.completionDate.slice(0, 10) : '',
+  const [unitPrice, setUnitPrice] = useState(
+    editing?.unitPriceVnd != null ? String(editing.unitPriceVnd) : '',
   );
+  const [completionDate, setCompletionDate] = useState(editing?.completionDate?.slice(0, 10) ?? '');
   const [note, setNote] = useState(editing?.note ?? '');
   const [state, setState] = useState<'idle' | 'sending' | 'error'>('idle');
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
@@ -105,11 +107,13 @@ export function DirectQuotationForm({
 
   const status = quotation
     ? quotation.status === 'SUBMITTED'
-      ? t('active', {
-          price: money(quotation.unitPriceVnd),
-          unit,
-          total: money(quotation.totalVnd),
-        })
+      ? quotation.unitPriceVnd !== null && quotation.completionDate !== null
+        ? t('active', {
+            price: money(quotation.unitPriceVnd),
+            unit,
+            total: money(quotation.totalVnd),
+          })
+        : t('missingTerms', { total: money(quotation.totalVnd) })
       : quotation.status === 'ACCEPTED'
         ? t('accepted')
         : quotation.status === 'REJECTED'
