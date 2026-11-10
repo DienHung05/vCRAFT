@@ -114,6 +114,18 @@ describe('Consent withdrawal and the ID number consent', () => {
         body: { name: 'Hộ CCCD', slug, history: '', ...(idNumber && { idNumber }) },
       });
 
+    it('fails without any ID_DOCUMENT consent on record, then succeeds once it is given (GH#455)', async () => {
+      // No blanket consents: this is the state of a brand-new applicant.
+      const user = await t.createUser('BUYER', { consent: false });
+      expect((await consent(user.auth, 'SIGN_UP')).status).toBe(201);
+      const refused = await apply(user.auth, 'ho-cccd-new-applicant', ID);
+      expect(refused.status).toBe(403);
+      expect(refused.body.code).toBe('CONSENT_REQUIRED');
+
+      expect((await consent(user.auth, 'ID_DOCUMENT')).status).toBe(201);
+      expect((await apply(user.auth, 'ho-cccd-new-applicant', ID)).status).toBe(201);
+    });
+
     it('needs ID_DOCUMENT consent to apply with a number, and audits the entry', async () => {
       const user = await t.createUser('BUYER');
       await withdraw(user.auth, 'ID_DOCUMENT');
