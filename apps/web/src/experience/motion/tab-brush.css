@@ -1,0 +1,15 @@
+/* A newly selected tab draws its own mark while the underline moves into place. */
+@media (prefers-reduced-motion: no-preference) {
+  .tab-brush-stroke {
+    animation: tab-brush-draw var(--duration-base) var(--ease-clay) both;
+  }
+}
+
+@keyframes tab-brush-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
