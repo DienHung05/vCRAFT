@@ -1505,6 +1505,7 @@
     "history": "Các khoản thanh toán của đơn",
     "errors": {
       "PAYMENT_METHOD_UNAVAILABLE": "Phương thức thanh toán này hiện không dùng được.",
+      "PAYMENT_AMOUNT_OUT_OF_RANGE": "Số tiền này nằm ngoài hạn mức của phương thức thanh toán đã chọn. Hãy chọn cách khác.",
       "PAYMENT_ORDER_NOT_PAYABLE": "Đơn hàng chưa thể nhận khoản thanh toán này.",
       "PAYMENT_ALREADY_PAID": "Phần này của đơn đã được thanh toán.",
       "PAYMENT_DEPOSIT_REQUIRED": "Hãy đặt cọc trước.",

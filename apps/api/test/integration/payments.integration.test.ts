@@ -267,6 +267,11 @@ describe('online payment of orders (ADR-0021)', () => {
         balanceAmountVnd: 7_000_000,
         depositRequired: true,
         methods: ['SEPAY_TRANSFER', 'VNPAY', 'MOMO'],
+        methodOptions: [
+          { method: 'SEPAY_TRANSFER', sandbox: false, minAmountVnd: 1, maxAmountVnd: null },
+          { method: 'VNPAY', sandbox: true, minAmountVnd: 5_000, maxAmountVnd: 999_999_999 },
+          { method: 'MOMO', sandbox: true, minAmountVnd: 1_000, maxAmountVnd: 50_000_000 },
+        ],
         simulateAvailable: true,
         payments: [],
       });
@@ -1003,6 +1008,113 @@ describe('online payment of orders (ADR-0021)', () => {
         204,
       );
       expect((await status(created)).status).toBe('FAILED');
+    });
+  });
+
+  describe('modes, limits and expiry (ADR-0024)', () => {
+    const restore = (...names: string[]) => {
+      for (const name of names) vi.stubEnv(name, '');
+    };
+
+    it('refuses an amount outside the limits of the method with PAYMENT_AMOUNT_OUT_OF_RANGE', async () => {
+      const requestId = await acceptedOrder();
+      vi.stubEnv('MOMO_MAX_AMOUNT_VND', '2000000');
+      vi.stubEnv('VNPAY_MAX_AMOUNT_VND', '2999999');
+      try {
+        for (const method of ['MOMO', 'VNPAY'] as const) {
+          const res = await startPayment(requestId, 'DEPOSIT', method);
+          expect(res.status).toBe(409);
+          expect(res.body.code).toBe('PAYMENT_AMOUNT_OUT_OF_RANGE');
+        }
+        const summary = await t.request({
+          method: 'GET',
+          url: `/orders/${requestId}/payments`,
+          auth: buyer.auth,
+        });
+        expect(summary.body.methodOptions).toMatchObject([
+          { method: 'SEPAY_TRANSFER', maxAmountVnd: null },
+          { method: 'VNPAY', maxAmountVnd: 2_999_999 },
+          { method: 'MOMO', maxAmountVnd: 2_000_000 },
+        ]);
+        // Bank transfer has no upper limit.
+        expect((await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).status).toBe(201);
+        // No payment row was left behind by the refused starts.
+        const rows = await db.orm.em.fork().find(Payment, { order: requestId });
+        expect(rows.map((p) => p.method)).toEqual(['SEPAY_TRANSFER']);
+      } finally {
+        restore('MOMO_MAX_AMOUNT_VND', 'VNPAY_MAX_AMOUNT_VND');
+      }
+    });
+
+    it('gives a wallet payment the short expiry and a bank transfer the long one', async () => {
+      const requestId = await acceptedOrder();
+      const wallet = (await startPayment(requestId, 'DEPOSIT', 'VNPAY')).body;
+      const em = db.orm.em.fork();
+      const walletRow = await em.findOneOrFail(Payment, { referenceCode: wallet.referenceCode });
+      const walletMs = (walletRow.expiresAt as Date).getTime() - walletRow.createdAt.getTime();
+      expect(Math.abs(walletMs - 30 * 60_000)).toBeLessThan(5_000);
+      // The VNPay URL carries the same expiry.
+      expect(new URL(wallet.checkout.url).searchParams.get('vnp_ExpireDate')).toMatch(/^\d{14}$/);
+
+      vi.stubEnv('PAYMENT_WALLET_EXPIRES_IN_MINUTES', '10');
+      try {
+        const momo = (await startPayment(requestId, 'DEPOSIT', 'MOMO')).body;
+        const row = await em.findOneOrFail(Payment, { referenceCode: momo.referenceCode });
+        const ms = (row.expiresAt as Date).getTime() - row.createdAt.getTime();
+        expect(Math.abs(ms - 10 * 60_000)).toBeLessThan(5_000);
+      } finally {
+        restore('PAYMENT_WALLET_EXPIRES_IN_MINUTES');
+      }
+      const bank = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+      const bankRow = await em.findOneOrFail(Payment, { referenceCode: bank.referenceCode });
+      const bankMs = (bankRow.expiresAt as Date).getTime() - bankRow.createdAt.getTime();
+      expect(Math.abs(bankMs - 24 * 3_600_000)).toBeLessThan(5_000);
+    });
+
+    it('offers VNPay in production mode on the URLs from the environment, flagged as real money', async () => {
+      vi.stubEnv('VNPAY_MODE', 'production');
+      vi.stubEnv('VNPAY_PAY_URL', 'https://pay.vnpay.test/vpcpay.html');
+      vi.stubEnv('VNPAY_API_URL', 'https://api.vnpay.test/transaction');
+      try {
+        const requestId = await acceptedOrder();
+        const summary = await t.request({
+          method: 'GET',
+          url: `/orders/${requestId}/payments`,
+          auth: buyer.auth,
+        });
+        expect(OrderPaymentsResponseSchema.safeParse(summary.body).success).toBe(true);
+        expect(summary.body.methodOptions).toMatchObject([
+          { method: 'SEPAY_TRANSFER', sandbox: false },
+          { method: 'VNPAY', sandbox: false },
+          { method: 'MOMO', sandbox: true },
+        ]);
+        const created = await startPayment(requestId, 'DEPOSIT', 'VNPAY');
+        expect(created.status).toBe(201);
+        expect(new URL(created.body.checkout.url).origin).toBe('https://pay.vnpay.test');
+      } finally {
+        restore('VNPAY_MODE', 'VNPAY_PAY_URL', 'VNPAY_API_URL');
+      }
+    });
+
+    it('never offers a sandbox gateway while APP_ENV=production', async () => {
+      vi.stubEnv('APP_ENV', 'production');
+      try {
+        const requestId = await acceptedOrder();
+        const summary = await t.request({
+          method: 'GET',
+          url: `/orders/${requestId}/payments`,
+          auth: buyer.auth,
+        });
+        expect(summary.body.methods).toEqual(['SEPAY_TRANSFER']);
+        expect(summary.body.simulateAvailable).toBe(false);
+        for (const method of ['VNPAY', 'MOMO'] as const) {
+          const res = await startPayment(requestId, 'DEPOSIT', method);
+          expect(res.status).toBe(409);
+          expect(res.body.code).toBe('PAYMENT_METHOD_UNAVAILABLE');
+        }
+      } finally {
+        vi.stubEnv('APP_ENV', 'development');
+      }
     });
   });
 
