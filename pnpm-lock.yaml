@@ -636,6 +636,9 @@ importers:
       '@vcraft/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@vcraft/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@vcraft/knowledge':
         specifier: workspace:*
         version: link:../../packages/knowledge

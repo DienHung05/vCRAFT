@@ -227,7 +227,7 @@ describe('RfqForm: send versus autosave (GH#431)', () => {
     expect(api.updateRequest).not.toHaveBeenCalled();
     expect(api.submitRequest).toHaveBeenCalledTimes(1);
     // The timer must not write the local draft back after it was cleared.
-    expect(window.localStorage.getItem('vcraft.rfq-draft')).toBeNull();
+    expect(window.localStorage.getItem('vcraft.rfq-draft:anonymous')).toBeNull();
   });
 
   it('waits for an autosave already in flight, then submits the version it returned', async () => {
@@ -245,7 +245,7 @@ describe('RfqForm: send versus autosave (GH#431)', () => {
     expect(api.createRequest).toHaveBeenCalledTimes(1);
     expect(api.updateRequest).toHaveBeenCalledWith(ID, 1, expect.anything());
     await waitFor(() => expect(push).toHaveBeenCalled());
-    expect(window.localStorage.getItem('vcraft.rfq-draft')).toBeNull();
+    expect(window.localStorage.getItem('vcraft.rfq-draft:anonymous')).toBeNull();
   });
 });
 

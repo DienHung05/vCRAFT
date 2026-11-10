@@ -11,6 +11,7 @@ import {
   rfqFormPayload,
   rfqFormProblems,
 } from '@/features/rfq/rfq-form-model';
+import { clearAllStoredRfqDrafts } from '@/lib/rfq-draft-storage';
 import { confirmDialog, openDialog } from './confirm';
 import { renderVi } from './render';
 
@@ -157,9 +158,51 @@ describe('RfqForm', () => {
     );
   });
 
+  it('keeps drafts per user, ignores the legacy shared key and never shows a different user draft', async () => {
+    const stored = (title: string) =>
+      JSON.stringify({ id: null, values: { ...EMPTY_RFQ_FORM, title } });
+    window.localStorage.setItem('vcraft.rfq-draft', stored('Legacy'));
+    window.localStorage.setItem('vcraft.rfq-draft:user-a', stored('For A'));
+    window.localStorage.setItem('vcraft.rfq-draft:user-b', stored('For B'));
+    renderVi(<RfqForm client={client()} userId="user-b" />);
+    await waitFor(() =>
+      expect((screen.getByLabelText('Tiêu đề') as HTMLInputElement).value).toBe('For B'),
+    );
+    expect(window.localStorage.getItem('vcraft.rfq-draft')).toBeNull();
+    expect(window.localStorage.getItem('vcraft.rfq-draft:user-a')).not.toBeNull();
+  });
+
+  it('resets the form to empty values when the server cannot confirm the stored draft', async () => {
+    window.localStorage.setItem(
+      'vcraft.rfq-draft:user-a',
+      JSON.stringify({
+        id: ID,
+        values: { ...EMPTY_RFQ_FORM, title: 'Someone', destination: 'Private address' },
+      }),
+    );
+    const getRequest = vi.fn().mockRejectedValue(new Error('forbidden'));
+    renderVi(<RfqForm client={client({ getRequest })} userId="user-a" />);
+    await waitFor(() => expect(getRequest).toHaveBeenCalled());
+    await waitFor(() =>
+      expect((screen.getByLabelText('Tiêu đề') as HTMLInputElement).value).toBe(''),
+    );
+    expect((screen.getByLabelText('Nơi giao hàng') as HTMLInputElement).value).toBe('');
+    expect(window.localStorage.getItem('vcraft.rfq-draft:user-a')).toBeNull();
+  });
+
+  it('clears every browser-kept draft on sign-out', () => {
+    window.localStorage.setItem('vcraft.rfq-draft', 'x');
+    window.localStorage.setItem('vcraft.rfq-draft:user-a', 'x');
+    window.localStorage.setItem('other', 'keep');
+    clearAllStoredRfqDrafts();
+    expect(window.localStorage.getItem('vcraft.rfq-draft')).toBeNull();
+    expect(window.localStorage.getItem('vcraft.rfq-draft:user-a')).toBeNull();
+    expect(window.localStorage.getItem('other')).toBe('keep');
+  });
+
   it('seeds a new form from a product prefill and ignores a browser-kept draft', async () => {
     window.localStorage.setItem(
-      'vcraft.rfq-draft',
+      'vcraft.rfq-draft:anonymous',
       JSON.stringify({ id: null, values: { ...EMPTY_RFQ_FORM, title: 'Old draft' } }),
     );
     renderVi(
@@ -236,7 +279,7 @@ describe('RfqForm', () => {
         params: { code: ID },
       }),
     );
-    expect(window.localStorage.getItem('vcraft.rfq-draft')).toBeNull();
+    expect(window.localStorage.getItem('vcraft.rfq-draft:anonymous')).toBeNull();
   });
 });
 

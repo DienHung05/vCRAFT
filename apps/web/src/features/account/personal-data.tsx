@@ -9,6 +9,7 @@ import { FormAlert } from '@/features/auth/fields';
 import { getPathname } from '@/i18n/navigation';
 import { browserAccountClient, browserSupabase } from '@/lib/auth/supabase-browser';
 import { notify } from '@/lib/notify';
+import { clearAllStoredRfqDrafts } from '@/lib/rfq-draft-storage';
 
 const inputClass = 'w-full rounded-input border border-ink/20 bg-surface px-3 py-2';
 
@@ -107,6 +108,7 @@ export function PersonalDataCard({
       await provideOnDeleted();
       return;
     }
+    clearAllStoredRfqDrafts();
     try {
       // The identity is already gone at Supabase, so only the local session is dropped.
       await browserSupabase()?.auth.signOut({ scope: 'local' });

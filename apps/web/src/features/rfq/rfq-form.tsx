@@ -54,8 +54,11 @@ export function RfqForm({
   prefill,
   upload,
   onBehalf = false,
+  userId: providedUserId,
 }: {
   client?: QuotationClient;
+  /** Owner of the browser-kept draft; defaults to the signed-in user's id. */
+  userId?: string;
   draft?: RfqResponse;
   prefill?: RfqFormPrefill;
   /** Sends one attachment; replaced in tests. */
@@ -64,21 +67,60 @@ export function RfqForm({
 }) {
   const t = useTranslations('rfq.form');
   const { client, loading } = useQuotationClient(provided);
-  if (loading) return <FormSkeleton label={t('saving')} />;
+  const userId = useDraftOwner(providedUserId, provided !== undefined);
+  if (loading || userId === undefined) return <FormSkeleton label={t('saving')} />;
   if (!client) return <p className="px-gutter pt-8">{t(onBehalf ? 'signInAdmin' : 'signIn')}</p>;
   return (
-    <Form client={client} draft={draft} prefill={prefill} upload={upload} onBehalf={onBehalf} />
+    <Form
+      client={client}
+      userId={userId}
+      draft={draft}
+      prefill={prefill}
+      upload={upload}
+      onBehalf={onBehalf}
+    />
   );
+}
+
+/** Anonymous owner used when no session user is known (an injected client, as in tests). */
+const NO_USER = 'anonymous';
+
+/** The user id that scopes the browser-kept draft; `undefined` while the session is being read. */
+function useDraftOwner(
+  provided: string | undefined,
+  hasInjectedClient: boolean,
+): string | undefined {
+  const [resolved, setResolved] = useState<string | undefined>(
+    provided ?? (hasInjectedClient ? NO_USER : undefined),
+  );
+  useEffect(() => {
+    if (provided !== undefined || hasInjectedClient) return;
+    let active = true;
+    void import('@/lib/auth/supabase-browser')
+      .then(async ({ browserSupabase }) => {
+        const { data } = (await browserSupabase()?.auth.getSession()) ?? { data: null };
+        if (active) setResolved(data?.session?.user.id ?? NO_USER);
+      })
+      .catch(() => {
+        if (active) setResolved(NO_USER);
+      });
+    return () => {
+      active = false;
+    };
+  }, [provided, hasInjectedClient]);
+  return provided ?? resolved;
 }
 
 function Form({
   client,
+  userId,
   draft,
   prefill,
   upload,
   onBehalf,
 }: {
   client: QuotationClient;
+  userId: string;
   draft?: RfqResponse | undefined;
   prefill?: RfqFormPrefill | undefined;
   upload?: ((file: File) => Promise<RfqAttachmentValue>) | undefined;
@@ -121,7 +163,7 @@ function Form({
   // A new form restores what this browser kept, including the server draft it belongs to.
   useEffect(() => {
     if (draft || prefill || onBehalf) return;
-    const stored = readStoredDraft();
+    const stored = readStoredDraft(userId);
     if (!stored) return;
     setValues(stored.values);
     if (!stored.id) return;
@@ -131,12 +173,16 @@ function Form({
         if (request.status === 'DRAFT')
           saved.current = { id: request.id, version: request.version };
         else {
-          clearStoredDraft();
+          clearStoredDraft(userId);
           setValues(EMPTY_RFQ_FORM);
         }
       })
-      .catch(() => clearStoredDraft());
-  }, [client, draft, prefill, onBehalf]);
+      .catch(() => {
+        // The server could not confirm the draft: do not keep showing what the browser held.
+        clearStoredDraft(userId);
+        setValues(EMPTY_RFQ_FORM);
+      });
+  }, [client, userId, draft, prefill, onBehalf]);
 
   const saveToServer = useCallback(
     (current: RfqFormValues) => {
@@ -162,7 +208,7 @@ function Form({
     const timer = window.setTimeout(() => {
       autosaveTimer.current = null;
       if (sent.current) return;
-      if (!draft) writeStoredDraft({ id: saved.current?.id ?? null, values });
+      if (!draft) writeStoredDraft(userId, { id: saved.current?.id ?? null, values });
       // Nothing personal (the delivery address) leaves this browser before the buyer consents.
       if (!consent || Object.keys(rfqFormProblems(values)).length > 0) {
         setSaveState('local');
@@ -172,7 +218,7 @@ function Form({
       saveToServer(values)
         .then(() => {
           if (sent.current) return;
-          if (!draft) writeStoredDraft({ id: saved.current?.id ?? null, values });
+          if (!draft) writeStoredDraft(userId, { id: saved.current?.id ?? null, values });
           setSaveState('saved');
         })
         .catch(() => {
@@ -183,7 +229,7 @@ function Form({
     }, AUTOSAVE_MS);
     autosaveTimer.current = timer;
     return () => window.clearTimeout(timer);
-  }, [values, touched, consent, draft, saveToServer, onBehalf]);
+  }, [values, touched, consent, draft, userId, saveToServer, onBehalf]);
 
   const showHouseholds = onBehalf || !values.coordinate;
   useEffect(() => {
@@ -232,7 +278,7 @@ function Form({
       const target = saved.current;
       if (!target) throw new Error('draft was not saved');
       const sent = await client.submitRequest(target.id, target.version);
-      clearStoredDraft();
+      clearStoredDraft(userId);
       // With no chosen household the system matched some: the buyer is told how many (FR-RFQ-03).
       notify.success(
         onBehalf

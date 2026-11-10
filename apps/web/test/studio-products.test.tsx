@@ -281,12 +281,27 @@ describe('ProductEditor', () => {
     const section = screen.getByRole('heading', { name: 'Người làm' }).parentElement as HTMLElement;
     fireEvent.click(within(section).getByRole('button', { name: 'Lưu' }));
     await waitFor(() =>
-      expect(api.setMakers).toHaveBeenCalledWith(`${ID}1`, {
+      expect(api.setMakers).toHaveBeenCalledWith(`${ID}1`, 2, {
         makers: [{ artisanId: `${ID}8`, contribution: 'Vuốt dáng' }],
       }),
     );
     expect(screen.getByTestId('qr')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Tải PNG' })).toBeTruthy();
+  });
+
+  it('shows the stale message when the makers update hits a newer product version', async () => {
+    const api = client({
+      setMakers: vi.fn(async () => {
+        throw new ApiError('STALE_VERSION', 409);
+      }),
+    });
+    renderVi(<ProductEditor productId={`${ID}1`} client={api} />);
+    fireEvent.change(await screen.findByLabelText('Phần việc của Bình'), {
+      target: { value: 'Vuốt dáng' },
+    });
+    const section = screen.getByRole('heading', { name: 'Người làm' }).parentElement as HTMLElement;
+    fireEvent.click(within(section).getByRole('button', { name: 'Lưu' }));
+    expect(await within(section).findByText(/vừa được sửa ở nơi khác/)).toBeTruthy();
   });
 
   it('records the maker consent on the server before adding a person', async () => {

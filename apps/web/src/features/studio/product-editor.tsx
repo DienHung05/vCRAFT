@@ -139,10 +139,10 @@ function MakersSection({ product, household, client, reload }: SectionProps) {
   const [role, setRole] = useState('');
   // Adding a person publishes their name on the household page, so the household confirms they agree.
   const [artisanConsent, setArtisanConsent] = useState(false);
-  const [state, setState] = useState<'idle' | 'failed'>('idle');
+  const [state, setState] = useState<'idle' | 'stale' | 'failed'>('idle');
   const save = async () => {
     try {
-      await client.setMakers(product.id, {
+      await client.setMakers(product.id, product.version, {
         makers: household.artisans.flatMap((a) => {
           const contribution = parts[a.id]?.trim();
           return contribution ? [{ artisanId: a.id, contribution }] : [];
@@ -151,8 +151,11 @@ function MakersSection({ product, household, client, reload }: SectionProps) {
       await reload();
       setState('idle');
       notify.success(common('saved'));
-    } catch {
-      setState('failed');
+    } catch (error) {
+      const stale = error instanceof ApiError && error.status === 409;
+      // Show the current server values before the household tries again.
+      if (stale) await reload();
+      setState(stale ? 'stale' : 'failed');
     }
   };
   const addArtisan = async () => {
@@ -199,9 +202,9 @@ function MakersSection({ product, household, client, reload }: SectionProps) {
         >
           {common('save')}
         </Button>
-        {state === 'failed' ? (
+        {state === 'failed' || state === 'stale' ? (
           <p role="alert" className="text-small text-seal">
-            {common('saveFailed')}
+            {common(state === 'stale' ? 'stale' : 'saveFailed')}
           </p>
         ) : null}
       </div>

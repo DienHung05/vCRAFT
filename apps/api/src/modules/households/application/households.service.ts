@@ -764,6 +764,8 @@ export class HouseholdsService {
         });
       }
       queueKnowledgeChange(em, 'PRODUCT', product.id);
+      // The makers live in their own table; touching the product makes the optimistic lock bump its version.
+      product.updatedAt = new Date();
       await em.flush();
       return toProductDto(product, (await this.makersOf(em, [product])).get(product.id));
     });
@@ -773,11 +775,13 @@ export class HouseholdsService {
   async setMakers(
     actor: Actor,
     productId: string,
+    expectedVersion: number,
     input: SetProductMakersRequest,
   ): Promise<ProductDto> {
     return this.orm.em.fork().transactional(async (em) => {
       const household = await this.ownWritableHousehold(em, actor);
       const product = await this.ownProduct(em, actor, household, productId);
+      assertVersion(product, expectedVersion);
       const artisans = await em.find(Artisan, { household });
       unwrap(checkMakerCredits(input.makers, new Set(artisans.map((a) => a.id))));
       for (const maker of await em.find(ProductMaker, { product })) em.remove(maker);

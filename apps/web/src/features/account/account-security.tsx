@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { clearRememberPreference } from '@/lib/auth/remember';
 import { browserAccountClient, browserSupabase } from '@/lib/auth/supabase-browser';
+import { clearAllStoredRfqDrafts } from '@/lib/rfq-draft-storage';
 
 const KNOWN_METHODS = ['password', 'oauth', 'otp', 'recovery', 'invite'] as const;
 
@@ -61,6 +62,7 @@ export function AccountSecurity({
     setBusy(true);
     await browserSupabase()?.auth.signOut({ scope: 'global' });
     clearRememberPreference();
+    clearAllStoredRfqDrafts();
     window.location.assign(`/${locale}`);
   };
 

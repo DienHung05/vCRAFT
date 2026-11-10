@@ -18,6 +18,17 @@ describe('thư quyết định duyệt hộ', () => {
     expect(mail.text).toContain('https://vcraft.test/vi/studio/ho-so');
   });
 
+  it('adds the preferences link and a List-Unsubscribe header', () => {
+    const mail = buildHouseholdMail({
+      decision: 'APPROVE',
+      householdName: 'Gốm A',
+      reason: null,
+      appUrl: 'https://vcraft.test/',
+    });
+    expect(mail.text).toContain('https://vcraft.test/vi/tai-khoan');
+    expect(mail.headers).toEqual({ 'List-Unsubscribe': '<https://vcraft.test/vi/tai-khoan>' });
+  });
+
   it('duyệt không có dòng lý do', () => {
     const mail = buildHouseholdMail({
       decision: 'APPROVE',
@@ -103,6 +114,9 @@ describe('sendHouseholdMail và tùy chọn email', () => {
     const on = deps({ emailEnabled: true });
     expect(await sendHouseholdMail(on.deps, job, 'k1')).toBe(true);
     expect(on.sent).toHaveLength(1);
+    expect(on.sent[0]).toMatchObject({
+      headers: { 'List-Unsubscribe': '<http://x/vi/tai-khoan>' },
+    });
   });
 
   it('bỏ qua khi người nhận đã tắt email cho loại này', async () => {

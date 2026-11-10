@@ -178,7 +178,7 @@ describe('RfqForm for a customer', () => {
       }),
     );
     // Nothing is kept in the browser for the next buyer form.
-    expect(window.localStorage.getItem('vcraft.rfq-draft')).toBeNull();
+    expect(window.localStorage.getItem('vcraft.rfq-draft:anonymous')).toBeNull();
   });
 
   it('does not autosave a half-filled customer request to the server', async () => {

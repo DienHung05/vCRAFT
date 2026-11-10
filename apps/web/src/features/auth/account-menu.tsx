@@ -9,6 +9,7 @@ import { workspacePath } from '@/lib/auth/access';
 import { hasUnfinishedHouseholdRegistration } from '@/lib/auth/household-intent';
 import { clearRememberPreference } from '@/lib/auth/remember';
 import { useAccount } from '@/lib/auth/use-account';
+import { clearAllStoredRfqDrafts } from '@/lib/rfq-draft-storage';
 
 /**
  * Chỗ đăng nhập trong header: khách thấy liên kết Đăng nhập / Đăng ký; người đã đăng nhập thấy thẻ
@@ -99,6 +100,7 @@ export function AccountMenu({
       const { browserSupabase } = await import('@/lib/auth/supabase-browser');
       await browserSupabase()?.auth.signOut();
       clearRememberPreference();
+      clearAllStoredRfqDrafts();
     } finally {
       // Tải lại toàn trang để Server Component bỏ phiên cũ.
       window.location.assign(`/${locale}`);

@@ -113,6 +113,11 @@ describe('sendNoticeMail', () => {
       subject: '[vCraft] Bạn có phần sản xuất cần xác nhận',
     });
     expect(sent[0]?.text).toContain('http://localhost:8080/vi/studio/de-xuat-tham-gia/req-1');
+    // The footer links to the notification preferences and the header offers the same URL.
+    expect(sent[0]?.text).toContain('http://localhost:8080/vi/tai-khoan');
+    expect(sent[0]?.headers).toEqual({
+      'List-Unsubscribe': '<http://localhost:8080/vi/tai-khoan>',
+    });
   });
 
   it('does not send when the recipient turned email off for this kind', async () => {

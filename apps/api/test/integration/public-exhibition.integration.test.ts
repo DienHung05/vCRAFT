@@ -113,6 +113,7 @@ describe('Public exhibition and QR trace', () => {
       method: 'PUT',
       url: `/me/household/products/${productId}/makers`,
       auth: rep.auth,
+      headers: { 'if-match': '1' },
       body: {
         makers: [
           { artisanId: artisans['Nguyễn Văn Bình'], contribution: 'Vuốt dáng' },
@@ -126,6 +127,24 @@ describe('Public exhibition and QR trace', () => {
       expect.objectContaining({ name: 'Trần Thị Lan', contribution: 'Vẽ lam' }),
     ]);
     expect(res.body.postedBy).toBe('HOUSEHOLD_ADMINISTRATION');
+    // The makers update bumps the product version like any other product mutation.
+    expect(res.body.version).toBe(2);
+  });
+
+  it('rejects a makers update with a missing or stale version', async () => {
+    const body = { makers: [{ artisanId: artisans['Trần Thị Lan'], contribution: 'Vẽ lam' }] };
+    const url = `/me/household/products/${productId}/makers`;
+    const stale = await t.request({
+      method: 'PUT',
+      url,
+      auth: rep.auth,
+      headers: { 'if-match': '1' },
+      body,
+    });
+    expect(stale.status).toBe(409);
+    expect(stale.body.code).toBe('STALE_VERSION');
+    const missing = await t.request({ method: 'PUT', url, auth: rep.auth, body });
+    expect(missing.status).toBe(428);
   });
 
   it('không ghi công người ngoài hộ hoặc ghi trùng', async () => {
@@ -133,6 +152,7 @@ describe('Public exhibition and QR trace', () => {
       method: 'PUT',
       url: `/me/household/products/${productId}/makers`,
       auth: rep.auth,
+      headers: { 'if-match': '2' },
       body: { makers: [{ artisanId: crypto.randomUUID(), contribution: 'Nung' }] },
     });
     expect(outsider.status).toBe(422);
@@ -142,6 +162,7 @@ describe('Public exhibition and QR trace', () => {
       method: 'PUT',
       url: `/me/household/products/${productId}/makers`,
       auth: rep.auth,
+      headers: { 'if-match': '2' },
       body: {
         makers: [
           { artisanId: artisans['Trần Thị Lan'], contribution: 'Vẽ lam' },
@@ -158,7 +179,7 @@ describe('Public exhibition and QR trace', () => {
       method: 'POST',
       url: `/products/${productId}/publish`,
       auth: rep.auth,
-      headers: { 'if-match': '1' },
+      headers: { 'if-match': '2' },
     });
     const res = await t.request({ method: 'GET', url: '/households/gom-minh-hai' });
     expect(res.status).toBe(200);

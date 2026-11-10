@@ -5,10 +5,31 @@ import {
   type NotificationType,
   notificationTarget,
 } from '@vcraft/domain';
+import { defaultLocale, type Locale, pathnames } from '@vcraft/i18n/routing';
 
 export interface NoticeMail {
   subject: string;
   text: string;
+  /** Mail headers, including `List-Unsubscribe`. */
+  headers: Record<string, string>;
+}
+
+/**
+ * Link to the notification preferences (the email switches live on the account page), in the recipient's
+ * locale. The account does not store a locale yet, so mails use the default one, like their copy.
+ */
+export function preferencesLink(appUrl: string, locale: Locale = defaultLocale): string {
+  return `${appUrl.replace(/\/+$/, '')}/${locale}${pathnames['/tai-khoan'][locale]}`;
+}
+
+/** Footer lines pointing at the preferences page; also added to transactional mails. */
+export function preferencesFooter(appUrl: string, locale: Locale = defaultLocale): string[] {
+  return ['', `Quản lý thông báo email: ${preferencesLink(appUrl, locale)}`];
+}
+
+/** `List-Unsubscribe` pointing at the preferences page (an https URL; no one-click POST endpoint exists). */
+export function unsubscribeHeaders(appUrl: string, locale: Locale = defaultLocale) {
+  return { 'List-Unsubscribe': `<${preferencesLink(appUrl, locale)}>` };
 }
 
 /** Nội dung từng loại thông báo: tiêu đề thư và một câu mô tả sự kiện. */
@@ -157,6 +178,8 @@ export function buildNoticeMail(input: {
       '',
       ...(target ? [`Xem chi tiết: ${noticeLink(input.appUrl, target)}`, ''] : []),
       'vCraft',
+      ...preferencesFooter(input.appUrl),
     ].join('\n'),
+    headers: unsubscribeHeaders(input.appUrl),
   };
 }

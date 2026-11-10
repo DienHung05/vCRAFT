@@ -1,6 +1,7 @@
 import type { MikroORM } from '@mikro-orm/core';
 import { AppUser, Household, NotificationPreference } from '@vcraft/database';
 import { householdNoticeKind } from '@vcraft/domain';
+import { preferencesFooter, unsubscribeHeaders } from './notice-message';
 import type { MailTransport } from './send-notice-mail';
 
 export type HouseholdDecision = 'APPROVE' | 'REJECT' | 'REQUEST_INFO' | 'SUSPEND' | 'REINSTATE';
@@ -47,7 +48,12 @@ export function buildHouseholdMail({
     ...(reason ? [`Lý do: ${reason}`] : []),
     `Xem chi tiết: ${appUrl.replace(/\/+$/, '')}/vi/studio/ho-so`,
   ];
-  return { subject: copy.subject, text: lines.join('\n\n') };
+  // A decision mail is transactional and is sent whatever the switch says, but the link is still offered.
+  return {
+    subject: copy.subject,
+    text: [lines.join('\n\n'), ...preferencesFooter(appUrl)].join('\n'),
+    headers: unsubscribeHeaders(appUrl),
+  };
 }
 
 /** The part of `createMailClaim` this processor uses. */
@@ -90,7 +96,7 @@ export async function sendHouseholdMail(
     type: householdNoticeKind(job.decision),
   });
   if (preference && !preference.emailEnabled) return false;
-  const { subject, text } = buildHouseholdMail({
+  const { subject, text, headers } = buildHouseholdMail({
     decision: job.decision,
     householdName: household.name,
     reason: job.reason,
@@ -98,7 +104,7 @@ export async function sendHouseholdMail(
   });
   if (!(await deps.claim.claim(claimKey))) return false;
   try {
-    await deps.transport.sendMail({ from: deps.from, to: user.email, subject, text });
+    await deps.transport.sendMail({ from: deps.from, to: user.email, subject, text, headers });
   } catch (error) {
     await deps.claim.release(claimKey);
     throw error;
