@@ -110,15 +110,24 @@ export function CardGridSkeleton({
   className = PAGE_BOX,
   count = 6,
   withHeader = true,
-}: SkeletonProps & { count?: number; withHeader?: boolean }) {
+  ratio = '4/5',
+  gridClassName = 'grid grid-cols-2 gap-6 md:grid-cols-3',
+}: SkeletonProps & {
+  count?: number;
+  withHeader?: boolean;
+  /** Cover ratio of the placeholder, matching the real cards. */
+  ratio?: string;
+  /** Grid classes, matching the real list's columns. */
+  gridClassName?: string;
+}) {
   return (
     <LoadingStatus label={label} className={cn('flex flex-col gap-10', className)}>
       {withHeader ? <HeaderSkeleton /> : null}
-      <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
+      <div className={gridClassName}>
         {Array.from({ length: count }, (_, index) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: identical placeholders, never reordered.
           <div key={index}>
-            <Skeleton className="aspect-[4/5] rounded-card" />
+            <Skeleton className="rounded-card" style={{ aspectRatio: ratio }} />
             <Skeleton className="mt-3 h-4 w-3/4" />
           </div>
         ))}
