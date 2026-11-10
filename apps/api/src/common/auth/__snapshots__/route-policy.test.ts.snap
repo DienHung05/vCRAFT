@@ -112,6 +112,8 @@ GET /api/v1/orders/:id/payments ROLES(ADMIN,BUYER)
 POST /api/v1/orders/:id/payments ROLES(BUYER)
 GET /api/v1/payments/:ref ROLES(ADMIN,BUYER)
 POST /api/v1/payments/:ref/cancel ROLES(BUYER)
+GET /api/v1/payments/demo/:ref PUBLIC
+POST /api/v1/payments/demo/:ref/confirm PUBLIC
 GET /api/v1/payments/return/momo PUBLIC
 GET /api/v1/payments/return/vnpay PUBLIC
 POST /api/v1/payments/webhooks/momo PUBLIC

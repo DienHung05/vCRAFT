@@ -1547,6 +1547,9 @@
       "redirecting": "Đang chuyển tới {method}…",
       "testBadge": "Thử nghiệm",
       "sandboxNote": "Chế độ thử nghiệm: {methods} không trừ tiền thật.",
+      "startDemo": "Tạo mã QR thanh toán",
+      "demoNote": "Chế độ demo: không có giao dịch tiền thật.",
+      "demoHint": "Tạo mã QR rồi quét bằng điện thoại để xác nhận thanh toán thử.",
       "overMax": "Số tiền vượt hạn mức {max} của phương thức này",
       "underMin": "Số tiền dưới mức tối thiểu {min}",
       "noneFit": "Số tiền này chưa phù hợp với hạn mức của phương thức nào. Ban quản lý sẽ hướng dẫn bạn cách thanh toán."
@@ -1580,7 +1583,8 @@
       "cancelled": "Khoản thanh toán này đã bị hủy.",
       "refunded": "Ban quản lý đã đánh dấu khoản thanh toán này là đã hoàn lại.",
       "refundReason": "Lý do: {reason}",
-      "waitingWallet": "Đang chờ {method} xác nhận. Trang này tự cập nhật."
+      "waitingWallet": "Đang chờ {method} xác nhận. Trang này tự cập nhật.",
+      "waitingDemo": "Đang chờ bạn xác nhận trên điện thoại. Trang này tự cập nhật."
     },
     "cancel": "Hủy khoản thanh toán này",
     "cancelling": "Đang hủy…",
@@ -1630,7 +1634,41 @@
       "VNPAY": "Thẻ ATM nội địa, Internet Banking, thẻ quốc tế hoặc VNPAY-QR.",
       "MOMO": "Thanh toán bằng ví MoMo trên điện thoại."
     },
-    "refundDue": "Cần hoàn lại"
+    "refundDue": "Cần hoàn lại",
+    "demo": {
+      "title": "Quét mã để thanh toán thử",
+      "titleWallet": "Thanh toán thử qua {method}",
+      "notice": "Thanh toán thử — không trừ tiền thật",
+      "qrLabel": "Mã QR mở trang xác nhận thanh toán thử",
+      "amount": "Số tiền",
+      "method": "Phương thức",
+      "reference": "Mã thanh toán",
+      "stepsLabel": "Các bước thanh toán thử",
+      "step1": "Mở camera hoặc ứng dụng quét QR trên điện thoại.",
+      "step2": "Bấm “Xác nhận thanh toán” trên trang vừa mở.",
+      "step3": "Trang này tự cập nhật khi xác nhận xong.",
+      "openHere": "Mở trang xác nhận trên máy này",
+      "paidToast": "Đã nhận thanh toán"
+    },
+    "demoConfirm": {
+      "title": "Xác nhận thanh toán thử",
+      "loading": "Đang tải giao dịch thử…",
+      "amount": "Số tiền",
+      "method": "Phương thức",
+      "kind": "Loại",
+      "reference": "Mã thanh toán",
+      "confirm": "Xác nhận thanh toán",
+      "decline": "Hủy giao dịch thử",
+      "sending": "Đang gửi…",
+      "invalid": "Liên kết không hợp lệ hoặc đã hết hạn. Hãy tạo lại mã QR trên trang thanh toán.",
+      "alreadyPaid": "Khoản này đã được thanh toán",
+      "ended": "Giao dịch thử này đã kết thúc ({status}). Hãy tạo mã QR mới trên trang thanh toán.",
+      "confirmed": "Đã xác nhận. Quay lại máy tính hoặc trang đơn hàng để xem kết quả.",
+      "declined": "Đã hủy giao dịch thử.",
+      "viewResult": "Xem kết quả thanh toán",
+      "error": "Chưa gửi được xác nhận. Hãy thử lại.",
+      "retry": "Thử lại"
+    }
   },
   "rating": {
     "title": "Đánh giá các hộ",

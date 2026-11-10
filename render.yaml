@@ -86,6 +86,8 @@ services:
       # (+ optional PAYMENT_WALLET_EXPIRES_IN_MINUTES, VNPAY_MAX_AMOUNT_VND, MOMO_MAX_AMOUNT_VND,
       # PAYMENTS_PROVIDER_SYNC_EVERY_SECONDS). Production URLs come from the provider contract; a sandbox gateway is
       # never offered under APP_ENV=production. See docs/operations/deploy.md.
+      # PAYMENTS_DEMO_MODE=true (ADR-0025): demo payment mode for the defense; all methods rehearsed on a QR confirm page,
+      # no provider called, no real money, allowed under APP_ENV=production. Unset it before any real method goes live.
       # Fox assistant (ADR-19). Without OPENAI_API_KEY the assistant only answers greetings, date and weather.
       # Must be the same key as the worker's: both embed with it, and query/document vectors must come from one model.
       - key: OPENAI_API_KEY

@@ -10,6 +10,7 @@ import { ListSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
 import { usePaymentClient } from '@/lib/api/use-payment-client';
 import {
+  isDemo,
   isWallet,
   PaymentCheckout,
   PaymentLiveLine,
@@ -58,7 +59,7 @@ export function PaymentStatusPage({
 
   usePaymentPoll(client, payment, setPayment);
 
-  const waitingOnWallet = payment?.status === 'PENDING' && isWallet(payment);
+  const waitingOnWallet = payment?.status === 'PENDING' && isWallet(payment) && !isDemo(payment);
   const [slow, setSlow] = useState(false);
   useEffect(() => {
     if (!waitingOnWallet) {

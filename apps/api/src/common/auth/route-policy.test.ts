@@ -22,6 +22,9 @@ const PUBLIC_WRITES = new Set([
   // credential (SePay API key header) or HMAC signature (MoMo IPN) and applied idempotently.
   'POST /api/v1/payments/webhooks/sepay',
   'POST /api/v1/payments/webhooks/momo',
+  // Demo payment mode (ADR-0025): the person who scanned the QR confirms a rehearsal payment. The per-payment secret
+  // in the link is the credential, the route answers 404 unless PAYMENTS_DEMO_MODE is on, and no money moves.
+  'POST /api/v1/payments/demo/:ref/confirm',
 ]);
 
 /**

@@ -2,10 +2,12 @@ import { createHmac } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   availableMethods,
+  describePaymentsConfig,
   methodLimits,
   paymentsConfig,
   paymentsConfigIssues,
 } from '../payments.config';
+import { DEMO_CONFIRM_PATH, DemoGateway } from './demo.gateway';
 import { MomoGateway, momoQuerySigningData } from './momo.gateway';
 import type { PaymentHttp, PaymentSnapshot } from './payment-gateway';
 import { SepayGateway } from './sepay.gateway';
@@ -71,6 +73,7 @@ beforeEach(() => {
     'MOMO_MAX_AMOUNT_VND',
     'PAYMENT_WALLET_EXPIRES_IN_MINUTES',
     'PAYMENTS_DEPOSIT_REQUIRED',
+    'PAYMENTS_DEMO_MODE',
     'PAYMENT_DEPOSIT_PERCENT',
     'PAYMENT_EXPIRES_IN_HOURS',
     'APP_URL',
@@ -126,6 +129,77 @@ describe('payments config', () => {
     expect(paymentsConfig().sandbox).toBe(true);
     vi.stubEnv('APP_ENV', 'production');
     expect(paymentsConfig().sandbox).toBe(false);
+  });
+});
+
+describe('payments config: demo mode (ADR-0025)', () => {
+  it('is off unless PAYMENTS_DEMO_MODE is true', () => {
+    expect(paymentsConfig().demo).toBe(false);
+    vi.stubEnv('PAYMENTS_DEMO_MODE', 'yes');
+    expect(paymentsConfig().demo).toBe(false);
+    vi.stubEnv('PAYMENTS_DEMO_MODE', ' TRUE ');
+    expect(paymentsConfig().demo).toBe(true);
+  });
+
+  it('offers all three methods with no credentials, also under APP_ENV=production', () => {
+    setEnv({ APP_ENV: 'production', PAYMENTS_DEMO_MODE: 'true' });
+    const config = paymentsConfig();
+    expect(config.sepay).toBeNull();
+    expect(config.vnpay).toBeNull();
+    expect(config.momo).toBeNull();
+    expect(availableMethods(config)).toEqual(['SEPAY_TRANSFER', 'VNPAY', 'MOMO']);
+    expect(config.sandbox).toBe(false);
+  });
+
+  it('keeps the amount limits of each method', () => {
+    setEnv({ PAYMENTS_DEMO_MODE: 'true', MOMO_MAX_AMOUNT_VND: '2000000' });
+    const limits = methodLimits(paymentsConfig());
+    expect(limits.MOMO).toEqual({ minVnd: 1_000, maxVnd: 2_000_000 });
+    expect(limits.VNPAY.minVnd).toBe(5_000);
+    expect(limits.SEPAY_TRANSFER.maxVnd).toBeNull();
+  });
+
+  it('does not require a deposit by default, even with SePay configured; an explicit flag wins', () => {
+    setEnv({ ...SEPAY_ENV, PAYMENTS_DEMO_MODE: 'true' });
+    expect(paymentsConfig().depositRequired).toBe(false);
+    vi.stubEnv('PAYMENTS_DEPOSIT_REQUIRED', 'true');
+    expect(paymentsConfig().depositRequired).toBe(true);
+  });
+
+  it('warns that no real money moves and says demo in the boot line', () => {
+    expect(paymentsConfigIssues({})).toEqual([]);
+    const env = { PAYMENTS_DEMO_MODE: 'true' };
+    expect(paymentsConfigIssues(env).join('\n')).toMatch(/demo payment mode is on/);
+    expect(describePaymentsConfig(paymentsConfig(env))).toMatch(/DEMO/);
+  });
+
+  it('still refuses a sandbox gateway under APP_ENV=production', () => {
+    const env = {
+      APP_ENV: 'production',
+      PAYMENTS_DEMO_MODE: 'true',
+      VNPAY_MODE: 'sandbox',
+      ...VNPAY_ENV,
+    };
+    expect(paymentsConfig(env).vnpay).toBeNull();
+    expect(paymentsConfigIssues(env).join('\n')).toMatch(/sandbox mode/);
+  });
+});
+
+describe('Demo gateway', () => {
+  it('builds a link to our own confirm page with a fresh secret, never a bank code', async () => {
+    vi.stubEnv('APP_URL', 'https://vcraft.example/');
+    const gateway = new DemoGateway();
+    const first = await gateway.createCheckout(snapshot);
+    const second = await gateway.createCheckout(snapshot);
+    expect(first.type).toBe('DEMO');
+    if (first.type !== 'DEMO' || second.type !== 'DEMO') throw new Error('expected DEMO');
+    const url = new URL(first.confirmUrl);
+    expect(url.origin).toBe('https://vcraft.example');
+    expect(url.pathname).toBe(`${DEMO_CONFIRM_PATH}/${snapshot.referenceCode}`);
+    const token = url.searchParams.get('k');
+    expect(token).toMatch(/^[A-Za-z0-9_-]{32}$/);
+    expect(new URL(second.confirmUrl).searchParams.get('k')).not.toBe(token);
+    expect(first.confirmUrl).not.toMatch(/vietqr|napas|qr\.sepay/i);
   });
 });
 
