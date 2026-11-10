@@ -2,6 +2,7 @@ import { type EntityManager, MikroORM } from '@mikro-orm/core';
 import { Injectable, Logger } from '@nestjs/common';
 import type { DeleteAccountRequest } from '@vcraft/contracts';
 import {
+  AccountInvitation,
   AppUser,
   Artisan,
   AuditLog,
@@ -9,6 +10,7 @@ import {
   ContributionOffer,
   CooperativeQuotation,
   Household,
+  HouseholdRating,
   JournalEntry,
   LoginEvent,
   MediaAsset,
@@ -18,6 +20,7 @@ import {
   NotificationPreference,
   OrderAllocation,
   OutboxEvent,
+  Payment,
   Product,
   ProductFavourite,
   ProductMaker,
@@ -36,6 +39,11 @@ import { QuotationNotifier } from '../../rfq/application/quotation-notifier';
 export const REMOVED_ADDRESS = "Removed at the buyer's request";
 /** Name of a household whose representative deleted their account. */
 export const REMOVED_HOUSEHOLD_NAME = 'Removed household';
+
+/** `HouseholdRating.raterId` of a rating whose author deleted their account (the nil UUID). */
+export const ANONYMOUS_RATER_ID = '00000000-0000-0000-0000-000000000000';
+/** Replaces the provider payload of a payment of a deleted buyer. */
+export const REDACTED_PAYMENT_EVENT = { redacted: true } as const;
 
 const ACTIVE_ALLOCATIONS = ['PROPOSED', 'CONFIRMED', 'IN_PROGRESS'] as const;
 const OPEN_REQUESTS = ['SENT', 'BIDDING'] as const;
@@ -170,6 +178,45 @@ export class AccountDeletionService {
         });
       }
       request.destination = REMOVED_ADDRESS;
+    }
+    await this.scrubPayments(em, requests);
+    await this.anonymiseRatingsGiven(em, user.id);
+    await this.removeInvitation(em, user);
+  }
+
+  /** Amounts, kind, status and dates stay for accounting; provider payloads and free text go. */
+  private async scrubPayments(em: EntityManager, requests: QuotationRequest[]): Promise<void> {
+    if (requests.length === 0) return;
+    for (const payment of await em.find(Payment, { order: { $in: requests } })) {
+      if (payment.rawLastEvent) payment.rawLastEvent = { ...REDACTED_PAYMENT_EVENT };
+      payment.note = null;
+      payment.refundReason = null;
+    }
+  }
+
+  /** The score stays for the household's average; the comment and the link to the author go. */
+  private async anonymiseRatingsGiven(em: EntityManager, userId: string): Promise<void> {
+    for (const rating of await em.find(HouseholdRating, { raterId: userId })) {
+      rating.comment = null;
+      rating.raterId = ANONYMOUS_RATER_ID;
+    }
+  }
+
+  /** Deletes the invitation sent to this address and masks the address in the `user.invite` audit entries. */
+  private async removeInvitation(em: EntityManager, user: AppUser): Promise<void> {
+    const email = user.email.trim().toLowerCase();
+    const invitations = await em.find(AccountInvitation, { email });
+    for (const invitation of invitations) {
+      for (const entry of await em.find(AuditLog, {
+        action: 'user.invite',
+        entity: 'account_invitation',
+        entityId: invitation.id,
+      })) {
+        if (entry.after && 'email' in entry.after) entry.after = { ...entry.after, email: null };
+        if (entry.before && 'email' in entry.before)
+          entry.before = { ...entry.before, email: null };
+      }
+      em.remove(invitation);
     }
   }
 
