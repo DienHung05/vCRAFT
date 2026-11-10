@@ -36,6 +36,8 @@ export const AUDIT_ACTIONS = [
   'payment.record_offline',
   'payment.refund',
   'payment.simulate_transfer',
+  // Unapplied incoming money handled by hand (GH#417).
+  'payment.unapplied_resolve',
   'news.create',
   'news.update',
   'news.publish',

@@ -69,6 +69,7 @@ import { assertVersion, unwrap } from '../../../common/domain/unwrap';
 import { AppError, forbidden, notFound } from '../../../common/errors/app-error';
 import { ratingSummaries } from '../../households/household-rating-stats';
 import { MediaService } from '../../media/application/media.service';
+import { NotificationPublisher } from '../../notifications/application/notification-publisher';
 import { paymentsConfig } from '../../payments/payments.config';
 import { ConsentService } from '../../privacy/application/consent.service';
 import { allocationTimeline } from './allocation-timeline';
@@ -83,6 +84,9 @@ import {
 /** All plan/input writes lock the request first, so changes cannot race with composition. */
 @Injectable()
 export class RfqService {
+  /** Stateless; payment notices of order cancellation go through it (GH#417). */
+  private readonly publisher = new NotificationPublisher();
+
   constructor(
     private readonly orm: MikroORM,
     private readonly notifier: QuotationNotifier,
@@ -1358,6 +1362,24 @@ export class RfqService {
         payment.status = unwrap(
           paymentTransition('PENDING', 'CANCEL', { actor: owner ? 'BUYER_OWNER' : 'ADMIN' }),
         );
+      }
+      // Paid money of a cancelled order is owed back: flag it and tell the buyer and the board (GH#417).
+      const owedBack = await em.find(Payment, { order: request, status: 'PAID' });
+      if (owedBack.length > 0) {
+        const now = new Date();
+        for (const payment of owedBack) payment.refundDueAt ??= now;
+        const board = request.coordinatorId
+          ? [request.coordinatorId]
+          : (await em.find(AppUser, { role: 'ADMIN', status: 'ACTIVE' }, { fields: ['id'] })).map(
+              (admin) => admin.id,
+            );
+        this.publisher.publish(em, {
+          type: 'PAYMENT_REFUND_DUE',
+          subjectId: request.id,
+          // Nobody is left out: the person who cancelled must still see that money is owed back.
+          actorId: 'system',
+          recipientIds: [request.buyer.id, ...board],
+        });
       }
       const accepted = await em.findOne(CooperativeQuotationEntity, {
         request,
