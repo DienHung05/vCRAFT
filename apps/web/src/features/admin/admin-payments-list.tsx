@@ -8,11 +8,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
 import { ListSkeleton } from '@/components/states/skeletons';
-import { PaymentStatusBadge } from '@/features/payments/payment-parts';
+import { PaymentStatusBadge, RefundDueBadge } from '@/features/payments/payment-parts';
 import { Link } from '@/i18n/navigation';
 import { usePaymentClient } from '@/lib/api/use-payment-client';
 import { useLatestRequest } from '@/lib/use-latest-request';
 import { useMoney } from '@/lib/use-money';
+import { AdminUnappliedPayments } from './admin-unapplied-payments';
 
 const STATUSES = ['PENDING', 'PAID', 'FAILED', 'EXPIRED', 'CANCELLED', 'REFUNDED'] as const;
 const METHODS = ['SEPAY_TRANSFER', 'VNPAY', 'MOMO', 'OFFLINE'] as const;
@@ -27,9 +28,9 @@ export function AdminPaymentsList({ client: provided }: { client?: PaymentClient
   const format = useFormatter();
   const money = useMoney();
   const { client, loading } = usePaymentClient(provided);
-  const [filters, setFilters] = useState<Pick<AdminPaymentListQuery, 'status' | 'method' | 'kind'>>(
-    {},
-  );
+  const [filters, setFilters] = useState<
+    Pick<AdminPaymentListQuery, 'status' | 'method' | 'kind' | 'refundDue'>
+  >({});
   const [rows, setRows] = useState<AdminPaymentDto[]>([]);
   const [next, setNext] = useState<string | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error' | 'signed-out'>('loading');
@@ -65,7 +66,7 @@ export function AdminPaymentsList({ client: provided }: { client?: PaymentClient
     void load();
   }, [client, load, loading]);
 
-  const select = <K extends keyof typeof filters>(
+  const select = <K extends 'status' | 'method' | 'kind'>(
     key: K,
     label: string,
     all: string,
@@ -110,7 +111,23 @@ export function AdminPaymentsList({ client: provided }: { client?: PaymentClient
           methods(value as 'OFFLINE'),
         )}
         {select('kind', t('kind'), t('allKinds'), KINDS, (value) => kinds(value as 'DEPOSIT'))}
+        <label className="flex items-center gap-2 self-end pb-2 text-small">
+          <input
+            type="checkbox"
+            checked={filters.refundDue === 'true'}
+            onChange={(event) => {
+              const checked = event.target.checked;
+              setFilters(({ refundDue: _removed, ...rest }) =>
+                checked ? { ...rest, refundDue: 'true' } : rest,
+              );
+            }}
+          />
+          {t('refundDueOnly')}
+        </label>
       </fieldset>
+      {client && typeof client.unappliedPayments === 'function' ? (
+        <AdminUnappliedPayments client={client} />
+      ) : null}
       {state === 'loading' ? <ListSkeleton label="…" className="" rows={3} /> : null}
       {state === 'signed-out' ? <p>{t('signIn')}</p> : null}
       {state === 'error' ? <ErrorState message={t('failed')} onRetry={() => void load()} /> : null}
@@ -152,7 +169,10 @@ export function AdminPaymentsList({ client: provided }: { client?: PaymentClient
                   <td className="p-3">{methods(payment.method)}</td>
                   <td className="p-3 text-right">{money(payment.amountVnd)}</td>
                   <td className="p-3">
-                    <PaymentStatusBadge status={payment.status} />
+                    <span className="flex flex-wrap gap-1">
+                      <PaymentStatusBadge status={payment.status} />
+                      <RefundDueBadge payment={payment} />
+                    </span>
                   </td>
                   <td className="p-3 font-mono">{payment.referenceCode}</td>
                 </tr>

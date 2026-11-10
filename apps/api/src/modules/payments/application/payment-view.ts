@@ -20,5 +20,6 @@ export function toPaymentDto(payment: Payment): PaymentDto {
     refundReason: payment.refundReason ?? null,
     note: payment.note ?? null,
     checkout: payment.status === 'PENDING' ? (payment.checkout ?? null) : null,
+    refundDueAt: payment.refundDueAt?.toISOString() ?? null,
   };
 }

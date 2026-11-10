@@ -1084,7 +1084,8 @@
         "payment": {
           "record_offline": "Recorded an offline payment",
           "refund": "Marked a payment refunded",
-          "simulate_transfer": "Simulated a sandbox transfer"
+          "simulate_transfer": "Simulated a sandbox transfer",
+          "unapplied_resolve": "Recorded how unmatched money was handled"
         },
         "user": {
           "suspend": "Suspend account",
@@ -1229,6 +1230,7 @@
       "status": "Status",
       "method": "Method",
       "kind": "Kind",
+      "refundDueOnly": "Only refunds due (cancelled orders)",
       "columns": {
         "when": "Created",
         "order": "Order",
@@ -1240,6 +1242,30 @@
         "reference": "Payment code"
       },
       "openOrder": "Open order",
+      "unapplied": {
+        "title": "{count, plural, one {# unmatched incoming amount} other {# unmatched incoming amounts}}",
+        "lead": "Money reached the account but could not be applied to any payment. Give it back or handle it by hand, then record what was done.",
+        "failed": "Could not load the unmatched amounts.",
+        "retry": "Retry",
+        "reason": {
+          "AMOUNT_MISMATCH": "Wrong amount",
+          "PAYMENT_NOT_PENDING": "Payment cancelled or failed",
+          "ALREADY_PAID": "Order already paid"
+        },
+        "expected": "Expected {expected}",
+        "openOrder": "Open order",
+        "resolve": "Record as handled",
+        "resolutionLabel": "How it was handled",
+        "resolutionPlaceholder": "Returned 3,000,000 VND to the buyer on 12 Nov",
+        "confirm": "Save",
+        "cancel": "Cancel",
+        "resolved": "Recorded how the money was handled.",
+        "error": {
+          "short": "Write how it was handled (at least 3 characters).",
+          "stale": "Someone just updated this amount. The list was reloaded.",
+          "failed": "Could not save. Please try again."
+        }
+      },
       "panel": {
         "title": "Payments of this order",
         "lead": "Deposit and balance. The deposit is paid online before production starts; the balance online or recorded here.",
@@ -1512,7 +1538,8 @@
       "title": "Payment result",
       "back": "Back to the order",
       "allOrders": "All requests"
-    }
+    },
+    "refundDue": "Refund due"
   },
   "rating": {
     "title": "Rate the households",
@@ -1635,6 +1662,8 @@
       "PAYMENT_PAID": "A payment for the order was received.",
       "PAYMENT_EXPIRED": "A payment for the order expired before the money arrived.",
       "PAYMENT_REFUNDED": "A payment for the order was marked refunded.",
+      "PAYMENT_UNAPPLIED": "Money arrived that matches no waiting payment and needs a refund or manual handling.",
+      "PAYMENT_REFUND_DUE": "A cancelled order has a paid amount to give back.",
       "NEWS_PUBLISHED": "The management board published important news."
     }
   },

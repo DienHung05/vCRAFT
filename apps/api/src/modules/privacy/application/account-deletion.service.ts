@@ -27,6 +27,7 @@ import {
   QuotationNotice,
   QuotationRequest,
   queueKnowledgeChange,
+  UnappliedPayment,
   Workshop,
 } from '@vcraft/database';
 import type { Actor } from '../../../common/auth/auth.guard';
@@ -187,11 +188,16 @@ export class AccountDeletionService {
   /** Amounts, kind, status and dates stay for accounting; provider payloads and free text go. */
   private async scrubPayments(em: EntityManager, requests: QuotationRequest[]): Promise<void> {
     if (requests.length === 0) return;
-    for (const payment of await em.find(Payment, { order: { $in: requests } })) {
+    const payments = await em.find(Payment, { order: { $in: requests } });
+    for (const payment of payments) {
       if (payment.rawLastEvent) payment.rawLastEvent = { ...REDACTED_PAYMENT_EVENT };
       payment.note = null;
       payment.refundReason = null;
     }
+    // Unapplied money keeps its amount for the board to give back, not the transfer text (GH#417).
+    if (payments.length > 0)
+      for (const row of await em.find(UnappliedPayment, { payment: { $in: payments } }))
+        if (row.raw) row.raw = { ...REDACTED_PAYMENT_EVENT };
   }
 
   /** The score stays for the household's average; the comment and the link to the author go. */

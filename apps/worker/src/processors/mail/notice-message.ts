@@ -130,6 +130,14 @@ const COPY: Record<NotificationType, { subject: string; body: string }> = {
     subject: 'Khoản thanh toán đã hết hạn',
     body: 'Khoản thanh toán chưa nhận được tiền trong thời hạn nên đã hết hạn. Bạn có thể tạo lại khoản thanh toán trong trang đơn hàng.',
   },
+  PAYMENT_UNAPPLIED: {
+    subject: 'Có khoản tiền chưa khớp cần xử lý',
+    body: 'Một khoản tiền vừa về nhưng không khớp với khoản thanh toán nào đang chờ (sai số tiền, khoản đã hủy hoặc đơn đã thanh toán). Hãy xem và hoàn lại hoặc xử lý thủ công trong trang Thanh toán.',
+  },
+  PAYMENT_REFUND_DUE: {
+    subject: 'Đơn hàng đã hủy có khoản tiền cần hoàn lại',
+    body: 'Đơn hàng đã bị hủy trong khi đã có khoản thanh toán. Ban quản lý sẽ hoàn lại số tiền này; xem tình trạng trong trang đơn hàng.',
+  },
   PAYMENT_REFUNDED: {
     subject: 'Khoản thanh toán đã được hoàn lại',
     body: 'Ban quản lý đã đánh dấu hoàn lại một khoản thanh toán của đơn hàng. Xem lý do trong trang đơn hàng.',

@@ -5,7 +5,13 @@ import {
   type PaymentDto,
   PaymentResponseSchema,
 } from '@vcraft/contracts';
-import { expireDuePayments, Payment, QuotationRequest, resolveDbDriver } from '@vcraft/database';
+import {
+  expireDuePayments,
+  Payment,
+  QuotationRequest,
+  resolveDbDriver,
+  UnappliedPayment,
+} from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   PAYMENT_HTTP,
@@ -414,6 +420,107 @@ describe('online payment of orders (ADR-0021)', () => {
       expect(row.providerTxnId).toBeNull();
     });
 
+    it('keeps every unapplied transfer as its own open record and tells the board, once (GH#417)', async () => {
+      const requestId = await acceptedOrder();
+      const payment = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+      const short = sepayEvent(payment, { transferAmount: payment.amountVnd - 1_000 });
+      const long = sepayEvent(payment, { transferAmount: payment.amountVnd + 5_000 });
+      await sepayWebhook(short);
+      await sepayWebhook(long);
+      // SePay retries: the same transaction is neither recorded nor announced again.
+      await sepayWebhook(short);
+      const rows = await db.orm.em
+        .fork()
+        .find(
+          UnappliedPayment,
+          { referenceCode: payment.referenceCode },
+          { orderBy: { amountVnd: 'asc' } },
+        );
+      expect(
+        rows.map((row) => [row.reason, row.amountVnd, row.expectedAmountVnd, row.status]),
+      ).toEqual([
+        ['AMOUNT_MISMATCH', 2_999_000, 3_000_000, 'OPEN'],
+        ['AMOUNT_MISMATCH', 3_005_000, 3_000_000, 'OPEN'],
+      ]);
+      expect(rows[0]?.providerTxnId).toBe(String(short.id));
+      expect(
+        (await notices(admin.auth)).filter(
+          (n) => n.type === 'PAYMENT_UNAPPLIED' && n.target?.id === requestId,
+        ),
+      ).toHaveLength(2);
+      expect((await notices(buyer.auth)).some((n) => n.type === 'PAYMENT_UNAPPLIED')).toBe(false);
+
+      // The right amount still settles the payment afterwards.
+      await sepayWebhook(sepayEvent(payment));
+      expect((await status(payment)).status).toBe('PAID');
+      // A further transfer for the settled payment is money to give back too.
+      await sepayWebhook(sepayEvent(payment));
+      expect(
+        await db.orm.em.fork().count(UnappliedPayment, {
+          referenceCode: payment.referenceCode,
+          reason: 'ALREADY_PAID',
+        }),
+      ).toBe(1);
+
+      const listed = await t.request({
+        method: 'GET',
+        url: '/admin/payments/unapplied',
+        auth: admin.auth,
+      });
+      expect(listed.status).toBe(200);
+      const mine = (listed.body.data as Array<Record<string, unknown>>).filter(
+        (row) => row.referenceCode === payment.referenceCode,
+      );
+      expect(mine).toHaveLength(3);
+      expect(mine[0]).toMatchObject({ orderId: requestId, paymentId: payment.id, status: 'OPEN' });
+      expect(mine[0]).not.toHaveProperty('raw');
+      expect(
+        (await t.request({ method: 'GET', url: '/admin/payments/unapplied', auth: buyer.auth }))
+          .status,
+      ).toBe(403);
+
+      const target = mine[0] as { id: string; version: number };
+      const missing = await t.request({
+        method: 'POST',
+        url: `/admin/payments/unapplied/${target.id}/resolve`,
+        auth: admin.auth,
+        body: { resolution: 'Returned to the buyer' },
+      });
+      expect(missing.status).toBe(428);
+      const resolved = await t.request({
+        method: 'POST',
+        url: `/admin/payments/unapplied/${target.id}/resolve`,
+        auth: admin.auth,
+        headers: { 'if-match': String(target.version) },
+        body: { resolution: 'Returned to the buyer by transfer' },
+      });
+      expect(resolved.status).toBe(200);
+      expect(resolved.body).toMatchObject({
+        status: 'RESOLVED',
+        resolution: 'Returned to the buyer by transfer',
+      });
+      const twice = await t.request({
+        method: 'POST',
+        url: `/admin/payments/unapplied/${target.id}/resolve`,
+        auth: admin.auth,
+        headers: { 'if-match': String(resolved.body.version) },
+        body: { resolution: 'Again' },
+      });
+      expect(twice.status).toBe(409);
+      const open = await t.request({
+        method: 'GET',
+        url: '/admin/payments/unapplied?status=OPEN',
+        auth: admin.auth,
+      });
+      expect(open.body.data.some((row: { id: string }) => row.id === target.id)).toBe(false);
+      const audit = await t.request({
+        method: 'GET',
+        url: '/admin/audit-log?action=payment.unapplied_resolve',
+        auth: admin.auth,
+      });
+      expect(audit.body.data[0]).toMatchObject({ entityId: target.id });
+    });
+
     it('ignores outgoing transfers, other accounts and unknown payment codes', async () => {
       const requestId = await acceptedOrder();
       const payment = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
@@ -718,9 +825,71 @@ describe('online payment of orders (ADR-0021)', () => {
       });
       expect(cancelled.status).toBe(200);
       expect((await status(payment)).status).toBe('CANCELLED');
-      // Money that still arrives is not applied to the cancelled order.
+      // Money that still arrives is not applied to the cancelled order, but kept for the board (GH#417).
       await sepayWebhook(sepayEvent(payment));
       expect((await status(payment)).status).toBe('CANCELLED');
+      const kept = await db.orm.em
+        .fork()
+        .findOneOrFail(UnappliedPayment, { referenceCode: payment.referenceCode });
+      expect(kept).toMatchObject({ reason: 'PAYMENT_NOT_PENDING', amountVnd: payment.amountVnd });
+      expect(
+        (await notices(admin.auth)).some(
+          (n) => n.type === 'PAYMENT_UNAPPLIED' && n.target?.id === requestId,
+        ),
+      ).toBe(true);
+    });
+
+    it('flags a paid deposit of a cancelled order as owed back and tells the buyer and the board (GH#417)', async () => {
+      const requestId = await acceptedOrder();
+      const payment = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+      await sepayWebhook(sepayEvent(payment));
+      expect((await status(payment)).status).toBe('PAID');
+      const read = await t.request({ method: 'GET', url: `/rfqs/${requestId}`, auth: admin.auth });
+      const cancelled = await t.request({
+        method: 'POST',
+        url: `/rfqs/${requestId}/cancel`,
+        auth: admin.auth,
+        headers: { 'if-match': String(read.body.version) },
+        body: { reason: 'Workshop flooded' },
+      });
+      expect(cancelled.status).toBe(200);
+      const owed = await status(payment);
+      expect(owed.status).toBe('PAID');
+      expect(owed.refundDueAt).not.toBeNull();
+      for (const auth of [buyer.auth, admin.auth]) {
+        expect(
+          (await notices(auth)).some(
+            (n) => n.type === 'PAYMENT_REFUND_DUE' && n.target?.id === requestId,
+          ),
+        ).toBe(true);
+      }
+      const due = await t.request({
+        method: 'GET',
+        url: '/admin/payments?refundDue=true',
+        auth: admin.auth,
+      });
+      expect(due.body.data.map((p: { id: string }) => p.id)).toContain(payment.id);
+      expect(
+        (due.body.data as Array<{ status: string; refundDueAt: string | null }>).every(
+          (p) => p.status === 'PAID' && p.refundDueAt !== null,
+        ),
+      ).toBe(true);
+
+      const refunded = await t.request({
+        method: 'POST',
+        url: `/admin/payments/${payment.id}/refund`,
+        auth: admin.auth,
+        headers: { 'if-match': String(owed.version) },
+        body: { reason: 'Deposit returned by transfer' },
+      });
+      expect(refunded.status).toBe(200);
+      expect(refunded.body).toMatchObject({ status: 'REFUNDED', refundDueAt: null });
+      const after = await t.request({
+        method: 'GET',
+        url: '/admin/payments?refundDue=true',
+        auth: admin.auth,
+      });
+      expect(after.body.data.map((p: { id: string }) => p.id)).not.toContain(payment.id);
     });
 
     it('lists payments newest first with filters and a cursor, for administrators only', async () => {
