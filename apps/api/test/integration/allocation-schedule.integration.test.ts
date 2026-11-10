@@ -325,6 +325,36 @@ describe('Allocation timeline and reallocation', () => {
       auth: repC?.auth,
     });
     expect(file.status).toBe(200);
+
+    // GH#427: the same file also linked to a draft request must not hide it from an invited household.
+    const draftEm = db.orm.em.fork();
+    const draft = await draftEm.findOneOrFail(QuotationRequest, requestId);
+    const extra = draftEm.create(QuotationRequest, {
+      buyer: draft.buyer,
+      design: 'Draft sharing the file',
+      quantity: 10,
+      unit: 'cốc',
+      destination: 'Hà Nội',
+      requiredBy: new Date(Date.now() + 20 * DAY),
+      biddingClosesAt: new Date(Date.now() + 10 * DAY),
+      invitedHouseholdIds: [],
+      status: 'DRAFT',
+    });
+    await draftEm.flush();
+    draftEm.create(MediaLink, {
+      media: draftEm.getReference(MediaAsset, attachmentId),
+      targetType: 'RFQ',
+      targetId: extra.id,
+      role: 'DOCUMENT',
+      position: 0,
+    });
+    await draftEm.flush();
+    const withDraftLink = await t.request({
+      method: 'GET',
+      url: `/media/${attachmentId}/read-url`,
+      auth: repC?.auth,
+    });
+    expect(withDraftLink.status).toBe(200);
     // Production shares are already in progress. Recipients learn about the extra work without
     // being asked to confirm a proposal; the source household learns that its remaining work moved.
     const recipients = [

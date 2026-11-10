@@ -499,14 +499,20 @@ export class MediaService {
     if (!asset) throw notFound();
     if (asset.ownerId === actor.id || actor.role === 'ADMIN') return asset;
     if (asset.purpose === 'RFQ_ATTACHMENT' && actor.role === 'HOUSEHOLD') {
-      const link = await em.findOne(MediaLink, { media: asset, targetType: 'RFQ' });
-      const request = link ? await em.findOne(QuotationRequest, link.targetId) : null;
-      const household = request ? await em.findOne(Household, { representative: actor.id }) : null;
+      // A file can be linked to several requests (e.g. a draft and a sent one): any readable link grants access.
+      const links = await em.find(MediaLink, { media: asset, targetType: 'RFQ' });
+      const household = links.length
+        ? await em.findOne(Household, { representative: actor.id })
+        : null;
+      const requests = household
+        ? await em.find(QuotationRequest, { id: { $in: links.map((link) => link.targetId) } })
+        : [];
       if (
-        request &&
         household &&
-        request.status !== 'DRAFT' &&
-        request.invitedHouseholdIds.includes(household.id)
+        requests.some(
+          (request) =>
+            request.status !== 'DRAFT' && request.invitedHouseholdIds.includes(household.id),
+        )
       )
         return asset;
     }

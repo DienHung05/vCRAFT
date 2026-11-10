@@ -1,4 +1,4 @@
-import { type EntityManager, type FilterQuery, MikroORM } from '@mikro-orm/core';
+import { type EntityManager, type FilterQuery, MikroORM, raw } from '@mikro-orm/core';
 import { Injectable } from '@nestjs/common';
 import type {
   AdminUserDto,
@@ -59,13 +59,14 @@ export class AccountAdminService {
     if (query.role) and.push({ role: query.role });
     const term = query.q?.trim();
     if (term) {
-      // Emails and usernames are stored in lowercase; names are matched as typed.
+      // Emails and usernames are stored in lowercase; names are lowered in SQL so the search is
+      // case-insensitive on both drivers (PostgreSQL `like` is case-sensitive, MySQL's is not).
       const lower = `%${likeLiteral(term.toLowerCase())}%`;
       and.push({
         $or: [
           { email: { $like: lower } },
           { username: { $like: lower } },
-          { fullName: { $like: `%${likeLiteral(term)}%` } },
+          { [raw((alias) => `lower(${alias}.full_name)`)]: { $like: lower } },
         ],
       });
     }
