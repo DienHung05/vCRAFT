@@ -30,6 +30,23 @@ describe('notificationTarget', () => {
     }
   });
 
+  it('sends admin payment notices to the payments page and keeps buyer targets', () => {
+    for (const kind of ['PAYMENT_PAID', 'PAYMENT_UNAPPLIED', 'PAYMENT_REFUND_DUE'] as const) {
+      expect(notificationTarget(kind, 'ADMIN', requestId)).toEqual({
+        page: 'ADMIN_PAYMENTS',
+        id: null,
+      });
+    }
+    expect(notificationTarget('PAYMENT_PAID', 'BUYER', requestId)).toEqual({
+      page: 'BUYER_RFQ',
+      id: requestId,
+    });
+    expect(notificationTarget('PAYMENT_REFUND_DUE', 'BUYER', requestId)).toEqual({
+      page: 'BUYER_RFQ',
+      id: requestId,
+    });
+  });
+
   it('sends every household decision to the application status page', () => {
     for (const kind of HOUSEHOLD_NOTICE_KINDS) {
       expect(notificationTarget(kind, 'HOUSEHOLD', null)).toEqual({

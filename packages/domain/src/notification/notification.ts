@@ -145,6 +145,8 @@ export const NOTIFICATION_TARGET_PAGES = [
   'STUDIO_CONTRIBUTION',
   /** Admin: màn điều phối của yêu cầu. */
   'ADMIN_COORDINATION',
+  /** Admin: the payments page (no id); payment notices of direct orders have no coordination screen (GH#457). */
+  'ADMIN_PAYMENTS',
   /** Admin: the review screen of one household (the resubmission signal, vCRAFT-8my.2). */
   'ADMIN_HOUSEHOLD_REVIEW',
   /** Hộ: trạng thái hồ sơ đã nộp (kết quả duyệt). */
@@ -182,6 +184,10 @@ export function notificationTarget(
   }
   if ((HOUSEHOLD_NOTICE_KINDS as readonly string[]).includes(type)) {
     return { page: 'STUDIO_APPLICATION', id: null };
+  }
+  // Payment notices for admins go to the payments page: direct orders have no coordination screen (GH#457).
+  if (role === 'ADMIN' && (PAYMENT_NOTICE_KINDS as readonly string[]).includes(type)) {
+    return { page: 'ADMIN_PAYMENTS', id: null };
   }
   if (!subjectId) return null;
   if (type === 'NEWS_PUBLISHED') return { page: 'NEWS_ARTICLE', id: subjectId };

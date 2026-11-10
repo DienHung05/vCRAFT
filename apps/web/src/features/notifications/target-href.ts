@@ -5,6 +5,7 @@ export type NotificationHref =
   | { pathname: '/yeu-cau-bao-gia/[code]'; params: { code: string } }
   | { pathname: '/studio/de-xuat-tham-gia/[id]'; params: { id: string } }
   | { pathname: '/admin/dieu-phoi/[code]'; params: { code: string } }
+  | { pathname: '/admin/thanh-toan' }
   | { pathname: '/admin/duyet-ho/[id]'; params: { id: string } }
   | { pathname: '/studio/ho-so' }
   | { pathname: '/tin-tuc/[slug]'; params: { slug: string } };
@@ -28,6 +29,8 @@ export function notificationHref(target: NotificationTargetDto | null): Notifica
       return target.id
         ? { pathname: '/admin/dieu-phoi/[code]', params: { code: target.id } }
         : null;
+    case 'ADMIN_PAYMENTS':
+      return { pathname: '/admin/thanh-toan' };
     case 'ADMIN_HOUSEHOLD_REVIEW':
       return target.id ? { pathname: '/admin/duyet-ho/[id]', params: { id: target.id } } : null;
     case 'STUDIO_APPLICATION':
