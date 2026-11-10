@@ -248,16 +248,22 @@ describe('online payment of orders (ADR-0021)', () => {
 
   const notices = async (auth: string) =>
     (await t.request({ method: 'GET', url: '/me/notifications', auth })).body.data as Array<{
+      id: string;
       type: string;
       target: { page: string; id: string | null } | null;
     }>;
 
-  // Admin payment notices point at the payments page and carry no order id (GH#457), so they are
-  // counted before and after an action instead of being matched by order.
+  // Admin payment notices point at the payments page and carry no order id (GH#457), so a test
+  // takes the ids it already sees and counts the new ones afterwards. The inbox shows only the
+  // newest 30, so counting totals would stall once older notices drop out.
   const boardNotices = async (type: string) =>
-    (await notices(admin.auth)).filter(
-      (n) => n.type === type && n.target?.page === 'ADMIN_PAYMENTS',
-    ).length;
+    new Set(
+      (await notices(admin.auth))
+        .filter((n) => n.type === type && n.target?.page === 'ADMIN_PAYMENTS')
+        .map((n) => n.id),
+    );
+  const boardNoticesSince = async (type: string, before: Set<string>) =>
+    [...(await boardNotices(type))].filter((id) => !before.has(id)).length;
 
   it('migration matches the entities: no schema drift after running the migrations', async () => {
     expect((await db.orm.schema.getUpdateSchemaSQL()).trim()).toBe('');
@@ -393,7 +399,7 @@ describe('online payment of orders (ADR-0021)', () => {
         (n) => n.type === 'PAYMENT_PAID' && n.target?.id === requestId,
       );
       expect(owned).toHaveLength(1);
-      expect((await boardNotices('PAYMENT_PAID')) - boardBefore).toBe(1);
+      expect(await boardNoticesSince('PAYMENT_PAID', boardBefore)).toBe(1);
 
       // A second transfer for the same code (new SePay id) is already settled and changes nothing.
       await sepayWebhook(sepayEvent(payment));
@@ -448,7 +454,7 @@ describe('online payment of orders (ADR-0021)', () => {
         ['AMOUNT_MISMATCH', 3_005_000, 3_000_000, 'OPEN'],
       ]);
       expect(rows[0]?.providerTxnId).toBe(String(short.id));
-      expect((await boardNotices('PAYMENT_UNAPPLIED')) - boardBefore).toBe(2);
+      expect(await boardNoticesSince('PAYMENT_UNAPPLIED', boardBefore)).toBe(2);
       expect((await notices(buyer.auth)).some((n) => n.type === 'PAYMENT_UNAPPLIED')).toBe(false);
 
       // The right amount still settles the payment afterwards.
@@ -834,7 +840,7 @@ describe('online payment of orders (ADR-0021)', () => {
         .fork()
         .findOneOrFail(UnappliedPayment, { referenceCode: payment.referenceCode });
       expect(kept).toMatchObject({ reason: 'PAYMENT_NOT_PENDING', amountVnd: payment.amountVnd });
-      expect((await boardNotices('PAYMENT_UNAPPLIED')) - boardBefore).toBe(1);
+      expect(await boardNoticesSince('PAYMENT_UNAPPLIED', boardBefore)).toBe(1);
     });
 
     it('flags a paid deposit of a cancelled order as owed back and tells the buyer and the board (GH#417)', async () => {
@@ -860,7 +866,7 @@ describe('online payment of orders (ADR-0021)', () => {
           (n) => n.type === 'PAYMENT_REFUND_DUE' && n.target?.id === requestId,
         ),
       ).toBe(true);
-      expect((await boardNotices('PAYMENT_REFUND_DUE')) - boardBefore).toBe(1);
+      expect(await boardNoticesSince('PAYMENT_REFUND_DUE', boardBefore)).toBe(1);
       const due = await t.request({
         method: 'GET',
         url: '/admin/payments?refundDue=true',
