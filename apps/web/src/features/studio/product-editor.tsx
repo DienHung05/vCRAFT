@@ -245,7 +245,9 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
   const t = useTranslations('studio.products');
   const common = useTranslations('studio');
   const [reason, setReason] = useState('');
-  const [failed, setFailed] = useState<'generic' | 'journal-required' | null>(null);
+  const [failed, setFailed] = useState<'generic' | 'journal-required' | 'board-withdrawn' | null>(
+    null,
+  );
   const [confirm, setConfirm] = useState<'publish' | 'withdraw' | 'sold' | 'back' | null>(null);
   // BRAND §6.3 #2: publishing presses the seal once, right after it succeeds.
   const [stamped, setStamped] = useState(false);
@@ -259,15 +261,16 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
       setStamped(stamp);
       notify.success(success);
     } catch (error) {
-      setFailed(
-        error instanceof ApiError && error.code === 'PRODUCT_JOURNAL_REQUIRED'
-          ? 'journal-required'
-          : 'generic',
-      );
+      if (error instanceof ApiError && error.code === 'PRODUCT_JOURNAL_REQUIRED')
+        setFailed('journal-required');
+      else if (error instanceof ApiError && error.code === 'PRODUCT_WITHDRAWN_BY_BOARD')
+        setFailed('board-withdrawn');
+      else setFailed('generic');
     }
   };
   const approved = household.status === 'APPROVED';
   const live = product.status === 'PUBLISHED' || product.status === 'SOLD';
+  const boardWithdrawn = product.status === 'WITHDRAWN' && product.withdrawnBy === 'BOARD';
   return (
     <Card
       className={cn(
@@ -324,6 +327,17 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
             {t('withdraw')}
           </Button>
         </div>
+      ) : boardWithdrawn ? (
+        <div className="flex flex-col gap-1 text-small">
+          <p role="status" className="text-ash">
+            {t('boardWithdrawn')}
+          </p>
+          {product.withdrawnReason ? (
+            <p className="text-ash">
+              {t('boardWithdrawnReason', { reason: product.withdrawnReason })}
+            </p>
+          ) : null}
+        </div>
       ) : (
         <div>
           <Button type="button" disabled={!approved} onClick={() => setConfirm('publish')}>
@@ -334,7 +348,13 @@ function PublishSection({ product, household, client, reload }: SectionProps) {
       )}
       {failed ? (
         <p role="alert" className="text-small text-seal">
-          {t(failed === 'journal-required' ? 'publishJournalRequired' : 'publishFailed')}
+          {t(
+            failed === 'journal-required'
+              ? 'publishJournalRequired'
+              : failed === 'board-withdrawn'
+                ? 'boardWithdrawn'
+                : 'publishFailed',
+          )}
         </p>
       ) : null}
       <ConfirmDialog

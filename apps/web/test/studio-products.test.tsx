@@ -70,6 +70,8 @@ function product(n: number, overrides: Partial<ProductDto> = {}): ProductDto {
     images: [],
     status: 'DRAFT',
     publishedAt: null,
+    withdrawnBy: null,
+    withdrawnReason: null,
     makers: [],
     postedBy: 'HOUSEHOLD_ADMINISTRATION',
     ...overrides,
@@ -222,6 +224,25 @@ describe('ProductEditor', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Xuất bản lại' }));
     confirmDialog('Xuất bản lại');
     await waitFor(() => expect(api.publishProduct).toHaveBeenCalledWith(`${ID}3`, 2, true));
+  });
+
+  it('explains a board withdrawal with its reason and offers no republish button (GH#428)', async () => {
+    const boardWithdrawn = product(4, {
+      status: 'WITHDRAWN',
+      publishedAt: '2026-09-01T00:00:00.000Z',
+      withdrawnBy: 'BOARD',
+      withdrawnReason: 'Counterfeit listing',
+    });
+    const api = client({
+      getHousehold: vi.fn(async () => ({
+        ...HOUSEHOLD,
+        products: [...HOUSEHOLD.products, boardWithdrawn],
+      })),
+    });
+    renderVi(<ProductEditor productId={`${ID}4`} client={api} />);
+    expect(await screen.findByText(/Ban quản lý đã gỡ sản phẩm này/)).toBeTruthy();
+    expect(screen.getByText('Lý do của Ban quản lý: Counterfeit listing')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Xuất bản lại' })).toBeNull();
   });
 
   it('xuất bản bị từ chối vì chưa có mốc nhật ký thì báo rõ cách khắc phục (FR-PRD-03)', async () => {

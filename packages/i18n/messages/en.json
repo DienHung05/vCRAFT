@@ -2496,6 +2496,8 @@
       "withdrawReason": "Reason for archiving",
       "notApproved": "Your household must be approved before publishing.",
       "publishFailed": "We could not change the status. Please try again later.",
+      "boardWithdrawn": "The village board withdrew this product, so it cannot be republished from here. Edit it if needed and contact the board; only the board can put it back on display.",
+      "boardWithdrawnReason": "Reason given by the board: {reason}",
       "publishJournalRequired": "Add at least one production-journal milestone (with a photo) before publishing.",
       "qr": "QR code",
       "qrLead": "Print this on the label under the piece. The code stays the same if the name changes.",

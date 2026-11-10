@@ -719,9 +719,13 @@ export class HouseholdsService {
         householdStatus: household.status,
         reason,
         kind: product.kind,
+        withdrawnBy: product.withdrawnBy,
       });
       if (!next.ok && next.error.code === 'HOUSEHOLD_NOT_APPROVED') {
         throw new AppError('HOUSEHOLD_NOT_APPROVED');
+      }
+      if (!next.ok && next.error.code === 'BOARD_WITHDRAWN') {
+        throw new AppError('PRODUCT_WITHDRAWN_BY_BOARD');
       }
       // FR-PRD-03 / GH#251: a product needs at least one production-log milestone before it goes public.
       if (
@@ -737,8 +741,10 @@ export class HouseholdsService {
       if (product.status === 'PUBLISHED') {
         product.publishedAt ??= new Date();
         product.withdrawnReason = null;
+        product.withdrawnBy = null;
       } else if (product.status === 'WITHDRAWN') {
         product.withdrawnReason = reason ?? null;
+        product.withdrawnBy = actor.role === 'ADMIN' ? 'BOARD' : 'OWNER';
       }
       // A one-of-a-kind piece has one unit: selling it empties the stock, undoing the sale restores it.
       if (event === 'MARK_SOLD') product.stock = 0;
@@ -750,7 +756,11 @@ export class HouseholdsService {
           entity: 'product',
           entityId: product.id,
           before: { status: before },
-          after: { status: product.status, reason: reason ?? null },
+          after: {
+            status: product.status,
+            reason: reason ?? null,
+            ...(product.status === 'WITHDRAWN' ? { withdrawnBy: product.withdrawnBy } : {}),
+          },
         });
       }
       queueKnowledgeChange(em, 'PRODUCT', product.id);

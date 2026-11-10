@@ -530,6 +530,10 @@ export const ProductResponseSchema = z.object({
   ),
   status: ProductStatusSchema,
   publishedAt: IsoDateTimeSchema.nullable(),
+  /** Who withdrew the product; null unless it is withdrawn (legacy rows stay null). */
+  withdrawnBy: z.enum(['OWNER', 'BOARD']).nullable().default(null),
+  /** Reason given at withdrawal; null unless the product is withdrawn. */
+  withdrawnReason: z.string().nullable().default(null),
   makers: z.array(MakerCreditSchema),
   /** Người đăng luôn là ban điều hành hộ, không phải người làm. */
   postedBy: z.literal('HOUSEHOLD_ADMINISTRATION'),

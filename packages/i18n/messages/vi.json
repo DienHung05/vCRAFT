@@ -2501,6 +2501,8 @@
       "withdrawReason": "Lý do lưu trữ",
       "notApproved": "Hộ cần được duyệt trước khi xuất bản.",
       "publishFailed": "Chưa đổi được trạng thái. Bạn thử lại sau.",
+      "boardWithdrawn": "Ban quản lý đã gỡ sản phẩm này nên bạn không thể xuất bản lại tại đây. Bạn có thể chỉnh sửa và liên hệ Ban quản lý; chỉ Ban quản lý mới đưa sản phẩm trở lại trưng bày.",
+      "boardWithdrawnReason": "Lý do của Ban quản lý: {reason}",
       "publishJournalRequired": "Hãy thêm ít nhất một mốc nhật ký sản xuất (kèm ảnh) trước khi xuất bản.",
       "qr": "Mã QR",
       "qrLead": "In mã này lên tem dán đáy sản phẩm. Mã không đổi khi đổi tên.",
