@@ -12,6 +12,8 @@ import {
   purgeAssistantLogs,
   purgeDoneOutboxEvents,
   purgeIdempotencyKeys,
+  purgeLoginEvents,
+  purgeTraceScans,
 } from '@vcraft/database';
 import type { ObjectStorage } from '@vcraft/storage';
 
@@ -27,6 +29,10 @@ export const IDEMPOTENCY_PURGE_JOB = 'idempotency.purge-keys';
 export const OUTBOX_PRUNE_JOB = 'outbox.prune';
 /** Deletes media assets nothing refers to any more, with their stored files (GH#381). */
 export const MEDIA_ORPHAN_SWEEP_JOB = 'media.orphan-sweep';
+/** Deletes sign-in history (`LoginEvent`) older than 12 months (GH#419). */
+export const LOGIN_EVENT_PURGE_JOB = 'privacy.purge-login-events';
+/** Deletes QR scan rows (`TraceScan`) older than 24 months (GH#419). */
+export const TRACE_SCAN_PURGE_JOB = 'privacy.purge-trace-scans';
 /** Imports real village news from the configured feeds and, when news is scarce, adds evergreen articles (GH#314). */
 export const NEWS_IMPORT_JOB = 'news.import';
 /** Expires pending payments past their expiry time and tells the buyers (ADR-0021). */
@@ -39,6 +45,7 @@ export const ASSISTANT_LOG_PURGE_EVERY_MS = 24 * 60 * 60_000;
 export const IDEMPOTENCY_PURGE_EVERY_MS = 60 * 60_000;
 export const OUTBOX_PRUNE_EVERY_MS = 24 * 60 * 60_000;
 export const PAYMENT_EXPIRE_EVERY_MS = 60_000;
+export const DATA_RETENTION_PURGE_EVERY_MS = 24 * 60 * 60_000;
 export const MEDIA_ORPHAN_SWEEP_EVERY_MS = 24 * 60 * 60_000;
 /** Upper bound of batches per run, so one run cannot loop forever. */
 const MEDIA_ORPHAN_MAX_BATCHES = 50;
@@ -138,6 +145,10 @@ export async function runSchedulerJob(
       return purgeIdempotencyKeys(orm, now);
     case OUTBOX_PRUNE_JOB:
       return pruneOutbox(orm, now);
+    case LOGIN_EVENT_PURGE_JOB:
+      return purgeLoginEvents(orm, now);
+    case TRACE_SCAN_PURGE_JOB:
+      return purgeTraceScans(orm, now);
     case PAYMENT_EXPIRE_SWEEP_JOB:
       return expireDuePayments(orm, now);
     case MEDIA_ORPHAN_SWEEP_JOB:

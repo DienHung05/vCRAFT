@@ -12,6 +12,7 @@ import {
   rfqFormPayload,
   rfqFormProblems,
 } from '@/features/rfq/rfq-form-model';
+import { clearSignedInBrowserData } from '@/lib/auth/signed-out-cleanup';
 import { confirmDialog, openDialog } from './confirm';
 import { renderVi } from './render';
 
@@ -145,27 +146,67 @@ describe('RfqForm', () => {
 
   it('keeps an unfinished form in the browser and restores it', async () => {
     const api = client();
-    const { unmount } = renderVi(<RfqForm client={api} />);
+    const { unmount } = renderVi(<RfqForm client={api} ownerId="user-1" />);
     fireEvent.change(await screen.findByLabelText('Tiêu đề'), { target: { value: 'Half done' } });
     expect(
       await screen.findByText('Đã lưu tạm trên trình duyệt này', {}, { timeout: 2000 }),
     ).toBeTruthy();
     expect(api.createRequest).toBeUndefined();
     unmount();
-    renderVi(<RfqForm client={api} />);
+    renderVi(<RfqForm client={api} ownerId="user-1" />);
     await waitFor(() =>
       expect((screen.getByLabelText('Tiêu đề') as HTMLInputElement).value).toBe('Half done'),
     );
   });
 
-  it('seeds a new form from a product prefill and ignores a browser-kept draft', async () => {
+  it("never shows another person's browser-kept draft (GH#420)", async () => {
+    window.localStorage.setItem(
+      'vcraft.rfq-draft:user-1',
+      JSON.stringify({ id: null, values: { ...EMPTY_RFQ_FORM, destination: '12 Hàng Bạc' } }),
+    );
     window.localStorage.setItem(
       'vcraft.rfq-draft',
+      JSON.stringify({ id: null, values: { ...EMPTY_RFQ_FORM, destination: 'Old shared key' } }),
+    );
+    renderVi(<RfqForm client={client()} ownerId="user-2" />);
+    const destination = (await screen.findByLabelText('Nơi giao hàng')) as HTMLInputElement;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(destination.value).toBe('');
+  });
+
+  it('drops a kept draft whose server request cannot be loaded, without showing it (GH#420)', async () => {
+    window.localStorage.setItem(
+      'vcraft.rfq-draft:user-1',
+      JSON.stringify({ id: ID, values: { ...EMPTY_RFQ_FORM, destination: '12 Hàng Bạc' } }),
+    );
+    const getRequest = vi.fn().mockRejectedValue(new Error('forbidden'));
+    renderVi(<RfqForm client={client({ getRequest })} ownerId="user-1" />);
+    await waitFor(() => expect(getRequest).toHaveBeenCalledWith(ID));
+    await waitFor(() => expect(window.localStorage.getItem('vcraft.rfq-draft:user-1')).toBeNull());
+    expect((screen.getByLabelText('Nơi giao hàng') as HTMLInputElement).value).toBe('');
+  });
+
+  it('forgets every kept draft on sign-out (GH#420)', () => {
+    window.localStorage.setItem('vcraft.rfq-draft:user-1', '{}');
+    window.localStorage.setItem('vcraft.rfq-draft:user-2', '{}');
+    window.localStorage.setItem('vcraft.rfq-draft', '{}');
+    window.localStorage.setItem('vcraft.other', 'kept');
+    clearSignedInBrowserData();
+    expect(window.localStorage.getItem('vcraft.rfq-draft:user-1')).toBeNull();
+    expect(window.localStorage.getItem('vcraft.rfq-draft:user-2')).toBeNull();
+    expect(window.localStorage.getItem('vcraft.rfq-draft')).toBeNull();
+    expect(window.localStorage.getItem('vcraft.other')).toBe('kept');
+  });
+
+  it('seeds a new form from a product prefill and ignores a browser-kept draft', async () => {
+    window.localStorage.setItem(
+      'vcraft.rfq-draft:user-1',
       JSON.stringify({ id: null, values: { ...EMPTY_RFQ_FORM, title: 'Old draft' } }),
     );
     renderVi(
       <RfqForm
         client={client()}
+        ownerId="user-1"
         prefill={{
           title: 'Bình hoa men lam',
           category: 'VASE',
@@ -186,7 +227,9 @@ describe('RfqForm', () => {
     const createRequest = vi.fn().mockResolvedValue({ ...REQUEST, status: 'DRAFT', version: 1 });
     const updateRequest = vi.fn().mockResolvedValue({ ...REQUEST, status: 'DRAFT', version: 2 });
     const recordConsent = vi.fn().mockResolvedValue({});
-    renderVi(<RfqForm client={client({ createRequest, updateRequest, recordConsent })} />);
+    renderVi(
+      <RfqForm client={client({ createRequest, updateRequest, recordConsent })} ownerId="user-1" />,
+    );
     await fill();
     await waitFor(() => expect(createRequest).toHaveBeenCalledTimes(1), { timeout: 2000 });
     // Consent is recorded server-side once, before the first save of the address.
@@ -251,7 +294,9 @@ describe('RfqForm', () => {
       .fn<QuotationClient['submitRequest']>()
       .mockRejectedValueOnce(new TypeError('Timeout'))
       .mockResolvedValue({ ...REQUEST, status: 'SENT', version: 8 });
-    renderVi(<RfqForm client={client({ createRequest, updateRequest, submitRequest })} />);
+    renderVi(
+      <RfqForm client={client({ createRequest, updateRequest, submitRequest })} ownerId="user-1" />,
+    );
     await fill();
     fireEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }));
     await screen.findByRole('alert');
@@ -278,7 +323,7 @@ describe('RfqForm', () => {
         params: { code: ID },
       }),
     );
-    expect(window.localStorage.getItem('vcraft.rfq-draft')).toBeNull();
+    expect(window.localStorage.getItem('vcraft.rfq-draft:user-1')).toBeNull();
   });
 });
 

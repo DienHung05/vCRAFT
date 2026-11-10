@@ -7,6 +7,7 @@ import { useId, useState } from 'react';
 import { AmountInWords } from '@/components/amount-in-words';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { notify } from '@/lib/notify';
+import { endOfDay, endOfDayTime } from './rfq-form-model';
 
 export interface ContributionFormValues {
   maxQuantity: number;
@@ -95,7 +96,7 @@ export function ContributionForm({
     const list: string[] = [];
     const max = maxQuantity.trim() === '' ? NaN : Number(maxQuantity);
     const price = unitPrice.trim() === '' ? NaN : Number(unitPrice);
-    const completion = completionDate === '' ? null : isoDate(`${completionDate}T00:00:00Z`);
+    const completion = endOfDayTime(completionDate);
     if (!(Number.isSafeInteger(max) && max >= 1 && max <= 2_147_483_647))
       list.push(t('problem.max'));
     if (!(Number.isSafeInteger(price) && price >= 1)) list.push(t('problem.price'));
@@ -127,7 +128,7 @@ export function ContributionForm({
       await onSubmit({
         maxQuantity: Number(maxQuantity),
         unitPriceVnd: Number(unitPrice),
-        completionDate: `${completionDate}T00:00:00.000Z`,
+        completionDate: endOfDay(completionDate).toISOString(),
       });
       setSubmit({ kind: 'sent' });
       notify.success(t(version === undefined ? 'sentToast' : 'updatedToast'));

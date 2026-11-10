@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { workspacePath } from '@/lib/auth/access';
 import { hasUnfinishedHouseholdRegistration } from '@/lib/auth/household-intent';
-import { clearRememberPreference } from '@/lib/auth/remember';
+import { clearSignedInBrowserData } from '@/lib/auth/signed-out-cleanup';
 import { useAccount } from '@/lib/auth/use-account';
 
 /**
@@ -98,7 +98,7 @@ export function AccountMenu({
       // Loaded on demand: the Supabase SDK is only needed once the visitor is signed in and leaves.
       const { browserSupabase } = await import('@/lib/auth/supabase-browser');
       await browserSupabase()?.auth.signOut();
-      clearRememberPreference();
+      clearSignedInBrowserData();
     } finally {
       // Tải lại toàn trang để Server Component bỏ phiên cũ.
       window.location.assign(`/${locale}`);

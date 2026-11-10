@@ -28,6 +28,14 @@ describe('buildNoticeMail', () => {
     expect(text).toContain(`Xem chi tiết: ${appUrl}/vi/${path}/${requestId}`);
   });
 
+  it('links to the email choices and names them in List-Unsubscribe (GH#420)', () => {
+    for (const kind of NOTIFICATION_TYPES) {
+      const mail = buildNoticeMail({ kind, role: 'BUYER', subjectId: requestId, appUrl });
+      expect(mail.text).toContain(`${appUrl}/vi/tai-khoan#email-preferences`);
+      expect(mail.headers['List-Unsubscribe']).toBe(`<${appUrl}/vi/tai-khoan#email-preferences>`);
+    }
+  });
+
   it('is plain text without HTML', () => {
     for (const kind of NOTIFICATION_TYPES) {
       const { text } = buildNoticeMail({ kind, role: 'ADMIN', subjectId: requestId, appUrl });
