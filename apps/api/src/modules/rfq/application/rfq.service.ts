@@ -1368,7 +1368,12 @@ export class RfqService {
         const allocations = await em.find(OrderAllocationEntity, { quotation: accepted });
         for (const allocation of allocations) {
           householdIds.push(allocation.household.id);
-          if (allocation.status !== 'DECLINED' && allocation.status !== 'CANCELLED') {
+          // DONE has no exit: finished shares stay DONE when the order is cancelled.
+          if (
+            allocation.status !== 'DECLINED' &&
+            allocation.status !== 'CANCELLED' &&
+            allocation.status !== 'DONE'
+          ) {
             allocation.status = unwrap(allocationTransition(allocation.status, 'CANCEL', {}));
           }
         }
@@ -1400,11 +1405,11 @@ export class RfqService {
     return this.orm.em.fork().transactional(async (em) => {
       const request = await this.request(em, requestId, true);
       const owner = this.isOwner(actor, request);
-      const admin = actor.role === 'ADMIN' && request.coordinationOptIn;
+      const admin = actor.role === 'ADMIN';
       if (!owner && !admin) throw notFound();
       if (actor.locked) throw forbidden();
       assertVersion(request, version);
-      if (admin && request.coordinatorId !== actor.id) throw notFound();
+      if (!owner && request.coordinationOptIn) this.coordinator(actor, request);
       const accepted = await em.findOne(
         CooperativeQuotationEntity,
         { request, status: 'ACCEPTED' },
@@ -1417,6 +1422,8 @@ export class RfqService {
         { quotation: accepted },
         { populate: ['household'] },
       );
+      // Nobody coordinates a direct order, so the board only steps in once a reallocation split it.
+      if (!owner && !request.coordinationOptIn && !this.isSplit(allocations)) throw notFound();
       const statusBefore = request.status;
       request.status = unwrap(
         transition(request.status, 'CONFIRM_DELIVERY', {
@@ -1516,7 +1523,7 @@ export class RfqService {
       const request = await this.request(em, requestId, true);
       if (actor.locked) throw forbidden();
       assertVersion(request, version);
-      if (actor.role === 'ADMIN') this.coordinator(actor, request);
+      if (actor.role === 'ADMIN' && request.coordinationOptIn) this.coordinator(actor, request);
       const accepted = await em.findOneOrFail(
         CooperativeQuotationEntity,
         { request, status: 'ACCEPTED' },
@@ -1531,6 +1538,9 @@ export class RfqService {
         liveShares(allocations).map((allocation) => allocation.household.id),
       );
       let householdId: string | undefined;
+      // Nobody coordinates a direct order, so the board only steps in once a reallocation split it.
+      if (actor.role === 'ADMIN' && !request.coordinationOptIn && households.size < 2)
+        throw notFound();
       if (actor.role === 'HOUSEHOLD') {
         householdId = (await this.ownHousehold(em, actor, false)).id;
       } else if (actor.role !== 'ADMIN') throw notFound();
@@ -1697,6 +1707,11 @@ export class RfqService {
   private isOwner(actor: Actor, request: QuotationRequest): boolean {
     if (request.buyer.id !== actor.id) return false;
     return actor.role === 'BUYER' || (actor.role === 'ADMIN' && Boolean(request.onBehalfName));
+  }
+
+  /** More than one household holds a live share, i.e. a reallocation split the order. */
+  private isSplit(allocations: readonly OrderAllocationEntity[]): boolean {
+    return new Set(liveShares(allocations).map((a) => a.household.id)).size > 1;
   }
 
   private coordinator(actor: Actor, request: QuotationRequest) {
