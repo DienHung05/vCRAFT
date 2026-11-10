@@ -925,6 +925,12 @@
       "saved": "Đã lưu quyết định.",
       "stale": "Hồ sơ vừa thay đổi. Đã tải lại bản mới, bạn kiểm tra rồi quyết định lại.",
       "failed_action": "Chưa lưu được quyết định.",
+      "incomplete": "Hồ sơ chưa đầy đủ nên chưa thể duyệt. Còn thiếu: {parts}. Hãy yêu cầu hộ bổ sung rồi gửi lại.",
+      "incompleteParts": {
+        "profile": "Thông tin hộ",
+        "workshops": "Ít nhất một xưởng",
+        "documents": "Ít nhất một giấy tờ"
+      },
       "actions": {
         "approve": "Duyệt",
         "reject": "Từ chối",
@@ -1051,12 +1057,15 @@
           "set_id_number": "Đặt hoặc đổi số CCCD",
           "certification_verify": "Xác minh chứng nhận",
           "certification_unverify": "Bỏ xác minh chứng nhận",
-          "resubmit": "Gửi lại hồ sơ đã bổ sung"
+          "resubmit": "Gửi lại hồ sơ đã bổ sung",
+          "submit": "Gửi hồ sơ"
         },
         "product": {
           "publish": "Xuất bản sản phẩm",
           "withdraw": "Rút sản phẩm",
-          "republish": "Xuất bản lại sản phẩm"
+          "republish": "Xuất bản lại sản phẩm",
+          "mark_sold": "Đánh dấu sản phẩm đã bán",
+          "back_on_sale": "Mở bán lại sản phẩm"
         },
         "rfq": {
           "create": "Tạo yêu cầu thay mặt khách ngoài hệ thống",

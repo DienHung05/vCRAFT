@@ -308,6 +308,24 @@ describe('HouseholdReview', () => {
     );
   });
 
+  it('shows what is missing when approving an incomplete application (GH#459)', async () => {
+    const api = client({
+      decide: vi.fn(async () => {
+        throw new ApiError('APPLICATION_INCOMPLETE', 422, [
+          { path: 'workshops', code: 'required', message: 'add at least one workshop' },
+          { path: 'documents', code: 'required', message: 'upload at least one document' },
+        ]);
+      }),
+    });
+    renderVi(<HouseholdReview householdId={ID} client={api} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Duyệt' }));
+    confirmDialog('Duyệt');
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Hồ sơ chưa đầy đủ');
+    expect(alert.textContent).toContain('Ít nhất một xưởng, Ít nhất một giấy tờ');
+    expect(alert.textContent).not.toContain('Chưa lưu được quyết định');
+  });
+
   it('hộ bị khóa có nút mở khóa; bản cũ (409) tải lại và báo', async () => {
     const api = client({
       getHousehold: vi.fn(async () => ({ ...PENDING, status: 'SUSPENDED' as const })),
