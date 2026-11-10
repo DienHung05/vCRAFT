@@ -13,7 +13,7 @@ import { resolveLocale } from '@/lib/locale';
 import { parsePageParam } from '@/lib/page-param';
 import { pageMetadata } from '@/lib/seo/page-metadata';
 
-/** Households per numbered page: four rows of the three-column grid (GH#202). */
+/** Households per numbered page: three rows of the four-column grid (GH#202). */
 const HOUSEHOLD_PAGE_SIZE = 12;
 
 // Danh sách lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
@@ -55,7 +55,7 @@ export default async function ArtisansIndexPage({
         <p className="text-small text-ash">{t('count', { count: result.data.total })}</p>
       </header>
       {households.length > 0 ? (
-        <ul className="mt-10 grid gap-8 sm:grid-cols-2 md:grid-cols-3">
+        <ul className="mt-10 grid grid-cols-2 gap-x-5 gap-y-8 md:grid-cols-3 md:gap-x-6 lg:grid-cols-4">
           {households.map((h, index) => {
             // What the cover really shows; a household without a photo gets an illustration label.
             const coverAlt = h.coverUrl
@@ -70,13 +70,15 @@ export default async function ArtisansIndexPage({
                   <ImageSlot
                     alt={coverAlt}
                     tint={tintOf(h.slug)}
-                    ratio="3/4"
+                    ratio="4/3"
                     {...slotPhoto(photoFromUrl(h.coverUrl, coverAlt, h.coverVariants))}
-                    sizes="(min-width: 768px) 30vw, (min-width: 640px) 50vw, 100vw"
-                    priority={index < 3}
+                    sizes="(min-width: 1024px) 22vw, (min-width: 768px) 30vw, 45vw"
+                    priority={index < 4}
                     className="motion-safe:transition-transform motion-safe:duration-(--duration-slow) motion-safe:ease-clay motion-safe:group-hover:-translate-y-1"
                   />
-                  <h2 className="mt-4 text-h3 transition-colors group-hover:text-clay">{h.name}</h2>
+                  <h2 className="mt-3 text-[1.25rem] leading-snug transition-colors group-hover:text-clay sm:text-h3">
+                    {h.name}
+                  </h2>
                   <p className="text-small text-ash">
                     {[h.representative, craftLabel(locale, h, (category) => crafts(category))]
                       .filter(Boolean)
