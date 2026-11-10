@@ -1,7 +1,10 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import type { MeDto } from '@vcraft/contracts';
+import { messages } from '@vcraft/i18n';
+import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AccountMenu } from '@/features/auth/account-menu';
+import { formats } from '@/i18n/formats';
 import type { AccountState } from '@/lib/auth/use-account';
 import { renderVi } from './render';
 
@@ -19,6 +22,9 @@ vi.mock('@/i18n/navigation', () => ({
     </a>
   ),
 }));
+
+let pathname = '/vi';
+vi.mock('next/navigation', () => ({ usePathname: () => pathname }));
 
 vi.mock('@/lib/auth/supabase-browser', () => ({ browserSupabase: () => null }));
 
@@ -41,6 +47,7 @@ function me(overrides: Partial<MeDto>): MeDto {
 }
 
 beforeEach(() => {
+  pathname = '/vi';
   account = { status: 'loading' };
 });
 
@@ -81,5 +88,44 @@ describe('account menu and household registration (GH#180)', () => {
     expect(screen.queryByText('Khách')).toBeNull();
     expect(screen.getByText('Hồ sơ hộ đang chờ Ban quản lý duyệt')).toBeTruthy();
     expect(screen.queryByText('Hoàn tất đăng ký hộ làng nghề')).toBeNull();
+  });
+});
+
+describe('account menu closing (GH#432)', () => {
+  const open = (container: HTMLElement) => {
+    const details = container.querySelector('details') as HTMLDetailsElement;
+    details.open = true;
+    return details;
+  };
+
+  it('closes when the workspace link is clicked', () => {
+    account = { status: 'signed-in', email: 'a@b.vn', me: me({}), householdIntent: false };
+    const { container } = renderVi(<AccountMenu />);
+    const details = open(container);
+    fireEvent.click(screen.getByRole('link', { name: 'Yêu cầu báo giá của tôi', hidden: true }));
+    expect(details.open).toBe(false);
+  });
+
+  it('closes when the finish-registration link is clicked', () => {
+    account = { status: 'signed-in', email: 'a@b.vn', me: me({}), householdIntent: true };
+    const { container } = renderVi(<AccountMenu />);
+    const details = open(container);
+    fireEvent.click(
+      screen.getByRole('link', { name: 'Hoàn tất đăng ký hộ làng nghề', hidden: true }),
+    );
+    expect(details.open).toBe(false);
+  });
+
+  it('closes when the pathname changes', () => {
+    account = { status: 'signed-in', email: 'a@b.vn', me: me({}), householdIntent: false };
+    const { container, rerender } = renderVi(<AccountMenu />);
+    const details = open(container);
+    pathname = '/vi/tai-khoan';
+    rerender(
+      <NextIntlClientProvider locale="vi" messages={messages.vi} formats={formats}>
+        <AccountMenu />
+      </NextIntlClientProvider>,
+    );
+    expect(details.open).toBe(false);
   });
 });
