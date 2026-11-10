@@ -1,7 +1,7 @@
 'use client';
 
 import { type AdminClient, ApiError, type HouseholdAction } from '@vcraft/api-client';
-import type { HouseholdDocumentDto, HouseholdDto } from '@vcraft/contracts';
+import type { HouseholdDocumentDto, HouseholdDto, ProductDto } from '@vcraft/contracts';
 import { isInBatTrang } from '@vcraft/domain';
 import { Badge, Button, buttonVariants, Card, cn, SealStamp, stampShakeClass } from '@vcraft/ui';
 import dynamic from 'next/dynamic';
@@ -167,6 +167,155 @@ function DocumentGroups({
         </section>
       ))}
     </div>
+  );
+}
+
+/** The household's products with the board's moderation: withdraw (with a reason) and republish. */
+function ProductsCard({
+  products,
+  client,
+  onChanged,
+  onStale,
+}: {
+  products: readonly ProductDto[];
+  client: AdminClient;
+  onChanged: (product: ProductDto) => void;
+  onStale: () => Promise<void>;
+}) {
+  const t = useTranslations('admin.review');
+  const statuses = useTranslations('studio.products.statuses');
+  const [pending, setPending] = useState<{
+    product: ProductDto;
+    action: 'withdraw' | 'republish';
+  } | null>(null);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<'stale' | 'failed' | null>(null);
+
+  const run = async () => {
+    if (!pending) return;
+    const { product, action } = pending;
+    setPending(null);
+    setBusy(true);
+    setResult(null);
+    try {
+      const next =
+        action === 'withdraw'
+          ? await client.withdrawProduct(product.id, product.version, reason.trim())
+          : await client.republishProduct(product.id, product.version);
+      onChanged(next);
+      setReason('');
+      notify.success(t(action === 'withdraw' ? 'productWithdrawn' : 'productRepublished'));
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        await onStale();
+        setResult('stale');
+      } else {
+        setResult('failed');
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const close = () => {
+    setPending(null);
+    setReason('');
+  };
+
+  return (
+    <Card className="flex min-w-0 flex-col gap-3 p-5" data-testid="review-products">
+      <h2 className="text-h3">{t('products')}</h2>
+      <p className="text-small text-ash">{t('productsHint')}</p>
+      {products.length === 0 ? (
+        <p className="text-small text-ash">{t('noProducts')}</p>
+      ) : (
+        <ul className="flex flex-col">
+          {products.map((product) => {
+            const canWithdraw = product.status === 'PUBLISHED' || product.status === 'SOLD';
+            const canRepublish = product.status === 'WITHDRAWN' && product.withdrawnBy === 'BOARD';
+            return (
+              <li
+                key={product.id}
+                className="flex flex-wrap items-center justify-between gap-3 border-ink/10 border-b py-3 last:border-b-0"
+              >
+                <div className="min-w-0 flex-1 basis-56">
+                  <p className="break-words font-medium">{product.name}</p>
+                  {product.status === 'WITHDRAWN' ? (
+                    <p className="text-small text-ash">
+                      {product.withdrawnBy
+                        ? t(`withdrawnBy.${product.withdrawnBy}`)
+                        : t('withdrawnByUnknown')}
+                      {product.withdrawnReason
+                        ? ` · ${t('withdrawnReason', { reason: product.withdrawnReason })}`
+                        : ''}
+                    </p>
+                  ) : null}
+                </div>
+                <Badge tone={product.status === 'PUBLISHED' ? 'lacquer' : 'outline'}>
+                  {statuses(product.status)}
+                </Badge>
+                {canWithdraw ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={busy}
+                    aria-label={t('withdrawProductNamed', { name: product.name })}
+                    onClick={() => setPending({ product, action: 'withdraw' })}
+                  >
+                    {t('withdrawProduct')}
+                  </Button>
+                ) : null}
+                {canRepublish ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={busy}
+                    aria-label={t('republishProductNamed', { name: product.name })}
+                    onClick={() => setPending({ product, action: 'republish' })}
+                  >
+                    {t('republishProduct')}
+                  </Button>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {result ? (
+        <p role="alert" className="text-small text-seal">
+          {t(result === 'stale' ? 'productStale' : 'productFailed')}
+        </p>
+      ) : null}
+      <ConfirmDialog
+        open={pending !== null}
+        tone={pending?.action === 'withdraw' ? 'seal' : 'primary'}
+        title={pending ? t(`productConfirm.${pending.action}.title`) : ''}
+        confirmLabel={pending ? t(`productConfirm.${pending.action}.confirm`) : ''}
+        cancelLabel={t('back')}
+        confirmDisabled={busy || (pending?.action === 'withdraw' && reason.trim().length < 3)}
+        onClose={close}
+        onConfirm={() => void run()}
+      >
+        {pending ? (
+          <p className="text-ash">
+            {t(`productConfirm.${pending.action}.text`, { name: pending.product.name })}
+          </p>
+        ) : null}
+        {pending?.action === 'withdraw' ? (
+          <label className="flex flex-col gap-1 text-small">
+            {t('reason')}
+            <textarea
+              rows={2}
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              className="rounded-input border border-ink/20 bg-surface px-3 py-2"
+            />
+          </label>
+        ) : null}
+      </ConfirmDialog>
+    </Card>
   );
 }
 
@@ -482,6 +631,18 @@ export function HouseholdReview({
           </p>
         ) : null}
       </Card>
+
+      <ProductsCard
+        products={household.products ?? []}
+        client={client}
+        onChanged={(next) =>
+          setHousehold({
+            ...household,
+            products: (household.products ?? []).map((p) => (p.id === next.id ? next : p)),
+          })
+        }
+        onStale={load}
+      />
 
       {actions.length > 0 ? (
         <Card className="flex flex-col gap-4 p-5">

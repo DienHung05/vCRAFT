@@ -371,7 +371,12 @@
     "counts": "{done}/{total} {unit} · expected {expected} · promised {due}",
     "started": "Started",
     "empty": "No allocations yet.",
-    "lateness": { "DONE": "Done", "ON_TRACK": "On track", "BEHIND": "Behind", "OVERDUE": "Overdue" }
+    "lateness": {
+      "DONE": "Done",
+      "ON_TRACK": "On track",
+      "BEHIND": "Behind",
+      "OVERDUE": "Overdue"
+    }
   },
   "rfq": {
     "duplicate": {
@@ -974,7 +979,36 @@
       "revealIdNumber": "Show full number",
       "hideIdNumber": "Hide",
       "revealAudited": "Every time the full number is shown it is written to the audit log.",
-      "idNumberFailed": "The ID number could not be shown."
+      "idNumberFailed": "The ID number could not be shown.",
+      "products": "Household products",
+      "productsHint": "The board can take a product off the public pages (with a reason, written to the audit log) and bring back a product the board withdrew.",
+      "noProducts": "The household has no products yet.",
+      "withdrawnBy": {
+        "OWNER": "Archived by the household",
+        "BOARD": "Withdrawn by the board"
+      },
+      "withdrawnByUnknown": "Archived",
+      "withdrawnReason": "Reason: {reason}",
+      "withdrawProduct": "Withdraw product",
+      "withdrawProductNamed": "Withdraw product “{name}”",
+      "republishProduct": "Republish",
+      "republishProductNamed": "Republish product “{name}”",
+      "productConfirm": {
+        "withdraw": {
+          "title": "Withdraw this product?",
+          "text": "{name} will stop showing publicly and the household cannot bring it back on its own.",
+          "confirm": "Withdraw product"
+        },
+        "republish": {
+          "title": "Republish this product?",
+          "text": "{name} will show publicly again.",
+          "confirm": "Republish"
+        }
+      },
+      "productWithdrawn": "Product withdrawn.",
+      "productRepublished": "Product republished.",
+      "productFailed": "The product could not be updated. Please try again.",
+      "productStale": "The product just changed. The latest version is loaded; check it and try again."
     },
     "coordinationQueue": {
       "title": "Coordination",
