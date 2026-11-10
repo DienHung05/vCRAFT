@@ -80,7 +80,7 @@ describe('createNoticeClaim', () => {
   });
 
   it('falls through to the notification table and reports a lost claim', async () => {
-    const em = { nativeUpdate: vi.fn(async () => 0) };
+    const em = { nativeUpdate: vi.fn(async (..._args: unknown[]) => 0) };
     expect(await createNoticeClaim(fakeOrm(em), () => NOW).claim('n1')).toBe(false);
     expect(em.nativeUpdate.mock.calls.map((call) => call[0])).toEqual([
       QuotationNotice,
