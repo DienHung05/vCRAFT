@@ -72,6 +72,8 @@ On a request without coordination nobody assembles a quotation, so an invited ho
 
 A household that was not invited gets 404. A coordinated request answers `RFQ_DIRECT_QUOTATION_NOT_ALLOWED`: its households send contributions instead. The completion window is the one of contributions.
 
+A direct quotation read states `unitPriceVnd` and `completionDate` as `null` when its stored part no longer holds them (a legacy row, or one corrected directly in the JSON column). The strict response therefore stays valid, and the household repairs both terms by revising the quotation; a row with no part at all is not shown as the household's offer, because it cannot be attributed to it.
+
 The buyer reads these quotations in `GET /rfqs/:id/quotations` next to any other, with the household name, unit price, total, completion date and note, and accepts one with `POST /rfqs/:id/accept`. The others become REJECTED. Acceptance creates one PROPOSED allocation for the household, which confirms it, starts production by itself (T4, one-household order), reports progress and waits for the buyer's receipt like any one-part order. Because nobody coordinates such a request, a decline of the allocation notifies every active administrator, and any administrator may cancel the accepted order (T7). The buyer is notified of a new, revised or withdrawn quotation with the existing `QUOTATION_RECEIVED` and `QUOTATION_WITHDRAWN` notices.
 
 ## Manual quotation

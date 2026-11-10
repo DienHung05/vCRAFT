@@ -60,12 +60,16 @@ function Invitations({ client }: { client: QuotationClient }) {
   const offerLabel = ({ request, contribution, declined, directQuotation }: MyInvitationDto) => {
     // A request without coordination is quoted by the household itself (FR-RFQ-04).
     if (!request.coordinationOptIn && directQuotation) {
-      if (directQuotation.status === 'SUBMITTED')
+      if (directQuotation.status === 'SUBMITTED') {
+        // GH#445: a legacy row can hold no part, so it states no price or date. Say so rather than 0 ₫.
+        if (directQuotation.unitPriceVnd === null || directQuotation.completionDate === null)
+          return t('directMissingTerms', { total: money(directQuotation.totalVnd) });
         return t('directActive', {
           price: money(directQuotation.unitPriceVnd),
           unit: request.unit,
           total: money(directQuotation.totalVnd),
         });
+      }
       if (directQuotation.status === 'ACCEPTED') return t('directAccepted');
       if (directQuotation.status === 'REJECTED') return t('directRejected');
     }

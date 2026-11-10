@@ -2000,6 +2000,11 @@ function toRatingDto(rating: HouseholdRating): HouseholdRatingDto {
   };
 }
 
+/**
+ * GH#445: a direct quotation whose stored part is missing (legacy row, or one hand-corrected in the JSON
+ * column) has no unit price or completion date. The response states `null` for those two rather than the
+ * invalid `0` / `''` sentinels that the strict contract rejects and that would break the whole list read.
+ */
 function toDirectQuotationDto(quotation: CooperativeQuotationEntity): DirectQuotationDto {
   const part = quotation.parts[0];
   return {
@@ -2007,9 +2012,9 @@ function toDirectQuotationDto(quotation: CooperativeQuotationEntity): DirectQuot
     version: quotation.version,
     status: quotationStatus(quotation),
     quantity: quotation.quantity,
-    unitPriceVnd: part?.unitPriceVnd ?? 0,
+    unitPriceVnd: part?.unitPriceVnd ?? null,
     totalVnd: quotation.totalVnd,
-    completionDate: part?.completionDate ?? '',
+    completionDate: part?.completionDate ?? null,
     note: quotation.note ?? null,
   };
 }

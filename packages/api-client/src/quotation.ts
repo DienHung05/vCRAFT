@@ -18,8 +18,6 @@ import {
   type CreateRfqRequest,
   CreateRfqRequestSchema,
   DirectQuotationResponseSchema,
-  type ErrorCode,
-  formatVersionTag,
   HouseholdListResponseSchema,
   HouseholdRatingSchema,
   IdSchema,
@@ -33,7 +31,6 @@ import {
   MyInvitationListSchema,
   OpenCoordinatedRequestListSchema,
   PriceHintResponseSchema,
-  ProblemDetailsSchema,
   QuotationNoticeResponseSchema,
   type RateHouseholdRequest,
   RateHouseholdRequestSchema,
@@ -42,16 +39,10 @@ import {
   RfqListResponseSchema,
   RfqResponseSchema,
 } from '@vcraft/contracts';
-import { fallbackErrorCode } from './http/fallback-error-code';
+import { ApiError, type AuthedClientOptions, createAuthedRequest } from './http/authed-request';
 
-export class QuotationApiError extends Error {
-  constructor(
-    readonly code: ErrorCode,
-    readonly status: number,
-  ) {
-    super(code);
-    this.name = 'QuotationApiError';
-  }
+export class QuotationApiError extends ApiError {
+  override name = 'QuotationApiError';
 }
 
 /**
@@ -65,14 +56,11 @@ export interface QuotationActionOptions {
 
 const newIdempotencyKey = () => globalThis.crypto.randomUUID();
 
-export interface QuotationClientOptions {
-  getAccessToken: () => Promise<string | null>;
-  fetch?: (url: string, init: RequestInit) => Promise<Response>;
-}
+export type QuotationClientOptions = AuthedClientOptions;
 
 /** Private business data always travels through the API, with the current session token. */
 export function createQuotationClient(options: QuotationClientOptions) {
-  const fetcher = options.fetch ?? globalThis.fetch;
+  const send = createAuthedRequest(options, QuotationApiError);
   async function request<T>(
     path: string,
     schema: { parse: (data: unknown) => T },
@@ -81,33 +69,12 @@ export function createQuotationClient(options: QuotationClientOptions) {
     version?: number,
     idempotencyKey?: string,
   ): Promise<T> {
-    const token = await options.getAccessToken();
-    if (!token) throw new QuotationApiError('AUTH_UNAUTHENTICATED', 401);
-    const response = await fetcher(`/api/v1${path}`, {
+    return send(path, schema, {
       method,
-      cache: 'no-store',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-        ...(version !== undefined ? { 'If-Match': formatVersionTag(version) } : {}),
-        ...(idempotencyKey !== undefined ? { 'Idempotency-Key': idempotencyKey } : {}),
-      },
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      ...(body !== undefined ? { body } : {}),
+      ...(version !== undefined ? { version } : {}),
+      ...(idempotencyKey !== undefined ? { idempotencyKey } : {}),
     });
-    let data: unknown;
-    try {
-      data = await response.json();
-    } catch {
-      throw new QuotationApiError(fallbackErrorCode(response.status), response.status);
-    }
-    if (!response.ok) {
-      const problem = ProblemDetailsSchema.safeParse(data);
-      throw new QuotationApiError(
-        problem.success ? problem.data.code : fallbackErrorCode(response.status),
-        response.status,
-      );
-    }
-    return schema.parse(data);
   }
 
   return {
