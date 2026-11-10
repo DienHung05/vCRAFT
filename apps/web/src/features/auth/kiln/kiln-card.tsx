@@ -101,8 +101,8 @@ export function KilnCard({
       ) : null}
       <KilnSurface className="kiln-card">
         <div className="kiln-card-in p-5 md:p-8">
-          {header ? <header className="flex flex-col gap-2">{header}</header> : null}
-          <div className={cn('kiln-card-body', header ? 'mt-5 md:mt-6' : null)}>{children}</div>
+          {header ? <header className="flex flex-col gap-1.5">{header}</header> : null}
+          <div className={cn('kiln-card-body', header ? 'mt-2 md:mt-3' : null)}>{children}</div>
         </div>
         <div className="kiln-card-layer kiln-crackle-fade" aria-hidden="true">
           <div className="kiln-crackle">

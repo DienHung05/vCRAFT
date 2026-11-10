@@ -97,7 +97,7 @@ export function SetPasswordForm({ mode, tokenHash, hasSession }: SetPasswordForm
   );
 
   return (
-    <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="flex flex-col gap-2.5 md:gap-3">
       {error ? <FormAlert tone="error">{t(`errors.${error}`)}</FormAlert> : null}
       <PasswordField
         label={t('fields.newPassword')}
