@@ -191,7 +191,11 @@ export function HouseholdReview({
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<HouseholdAction | null>(null);
-  const [result, setResult] = useState<'sealed' | 'done' | 'stale' | 'failed' | null>(null);
+  const [result, setResult] = useState<
+    'sealed' | 'done' | 'stale' | 'failed' | 'incomplete' | null
+  >(null);
+  // Parts the API reported missing on a 422 APPLICATION_INCOMPLETE (profile, workshops, documents).
+  const [missingParts, setMissingParts] = useState<string[]>([]);
   // FR-ART-03: the certification being toggled, and how the last toggle ended.
   const [certBusy, setCertBusy] = useState<number | null>(null);
   const [certResult, setCertResult] = useState<'stale' | 'failed' | null>(null);
@@ -239,6 +243,7 @@ export function HouseholdReview({
   const decide = async (action: HouseholdAction) => {
     setBusy(true);
     setResult(null);
+    setMissingParts([]);
     try {
       setHousehold(await client.decide(household.id, action, household.version, reason.trim()));
       setReason('');
@@ -248,6 +253,9 @@ export function HouseholdReview({
       if (error instanceof ApiError && error.status === 409) {
         await load();
         setResult('stale');
+      } else if (error instanceof ApiError && error.code === 'APPLICATION_INCOMPLETE') {
+        setMissingParts(error.fieldErrors.map((e) => e.path));
+        setResult('incomplete');
       } else {
         setResult('failed');
       }
@@ -523,6 +531,19 @@ export function HouseholdReview({
           <p className="text-small">{t('currentReason', { reason: reason.trim() })}</p>
         ) : null}
       </ConfirmDialog>
+      {result === 'incomplete' ? (
+        <p role="alert" className="text-small text-seal">
+          {t('incomplete', {
+            parts: missingParts
+              .map((part) =>
+                part === 'profile' || part === 'workshops' || part === 'documents'
+                  ? t(`incompleteParts.${part}`)
+                  : part,
+              )
+              .join(', '),
+          })}
+        </p>
+      ) : null}
       {result === 'stale' || result === 'failed' ? (
         <p role="alert" className="text-small text-seal">
           {t(result === 'stale' ? 'stale' : 'failed_action')}
