@@ -1511,9 +1511,9 @@
       "BALANCE": "Phần còn lại"
     },
     "method": {
-      "SEPAY_TRANSFER": "Chuyển khoản / VietQR",
-      "VNPAY": "VNPay (sandbox)",
-      "MOMO": "MoMo (sandbox)",
+      "SEPAY_TRANSFER": "Chuyển khoản ngân hàng (VietQR)",
+      "VNPAY": "VNPay",
+      "MOMO": "Ví MoMo",
       "OFFLINE": "Ngoài hệ thống (Ban quản lý ghi nhận)"
     },
     "status": {
@@ -1531,16 +1531,25 @@
       "balance": "Phần còn lại",
       "paidOn": "Đã thanh toán ngày {date}",
       "notPaid": "Chưa thanh toán",
-      "depositRequired": "Đơn hàng bắt đầu sản xuất sau khi đặt cọc.",
-      "sandbox": "Sandbox: VNPay và MoMo không chuyển tiền thật."
+      "depositRequired": "Đơn hàng bắt đầu sản xuất sau khi đặt cọc."
     },
     "pay": {
       "deposit": "Đặt cọc",
       "balance": "Thanh toán phần còn lại",
       "choose": "Chọn cách thanh toán",
-      "start": "Tiếp tục",
       "starting": "Đang chuẩn bị…",
-      "noMethods": "Hiện chưa thanh toán trực tuyến được. Ban quản lý sẽ hướng dẫn bạn cách thanh toán."
+      "noMethods": "Hiện chưa thanh toán trực tuyến được. Ban quản lý sẽ hướng dẫn bạn cách thanh toán.",
+      "startBy": {
+        "SEPAY_TRANSFER": "Hiện thông tin chuyển khoản",
+        "VNPAY": "Thanh toán qua VNPay",
+        "MOMO": "Thanh toán qua MoMo"
+      },
+      "redirecting": "Đang chuyển tới {method}…",
+      "testBadge": "Thử nghiệm",
+      "sandboxNote": "Chế độ thử nghiệm: {methods} không trừ tiền thật.",
+      "overMax": "Số tiền vượt hạn mức {max} của phương thức này",
+      "underMin": "Số tiền dưới mức tối thiểu {min}",
+      "noneFit": "Số tiền này chưa phù hợp với hạn mức của phương thức nào. Ban quản lý sẽ hướng dẫn bạn cách thanh toán."
     },
     "bank": {
       "title": "Thanh toán bằng chuyển khoản",
@@ -1558,19 +1567,20 @@
     "redirect": {
       "title": "Thanh toán bằng {method}",
       "text": "Bạn thanh toán trên trang của nhà cung cấp rồi quay lại đây. Trang này xác nhận khi nhà cung cấp báo về cho hệ thống.",
-      "open": "Mở trang thanh toán",
-      "app": "Mở ứng dụng"
+      "open": "Tiếp tục thanh toán trên {method}",
+      "app": "Mở ứng dụng {method}"
     },
     "live": {
       "waiting": "Đang chờ tiền về. Trang này tự cập nhật.",
       "expiresAt": "Vui lòng thanh toán trước {time}.",
       "paid": "Đã nhận được tiền. Cảm ơn bạn.",
       "paidAt": "Nhận lúc {time}.",
-      "failed": "Thanh toán không thành công. Bạn có thể tạo khoản thanh toán mới.",
-      "expired": "Khoản thanh toán đã hết hạn trước khi tiền về. Hãy tạo khoản mới. Nếu bạn đã chuyển khoản, hãy báo Ban quản lý.",
+      "failed": "Nhà cung cấp báo thanh toán chưa thành công.",
+      "expired": "Khoản thanh toán đã hết hạn trước khi tiền về.",
       "cancelled": "Khoản thanh toán này đã bị hủy.",
       "refunded": "Ban quản lý đã đánh dấu khoản thanh toán này là đã hoàn lại.",
-      "refundReason": "Lý do: {reason}"
+      "refundReason": "Lý do: {reason}",
+      "waitingWallet": "Đang chờ {method} xác nhận. Trang này tự cập nhật."
     },
     "cancel": "Hủy khoản thanh toán này",
     "cancelling": "Đang hủy…",
@@ -1587,7 +1597,38 @@
     "result": {
       "title": "Kết quả thanh toán",
       "back": "Về đơn hàng",
-      "allOrders": "Tất cả yêu cầu"
+      "allOrders": "Tất cả yêu cầu",
+      "heading": {
+        "PENDING": "Đang xác nhận thanh toán",
+        "PAID": "Thanh toán thành công",
+        "FAILED": "Thanh toán chưa thành công",
+        "EXPIRED": "Khoản thanh toán đã hết hạn",
+        "CANCELLED": "Đã hủy khoản thanh toán",
+        "REFUNDED": "Đã hoàn tiền"
+      },
+      "code": "Mã thanh toán",
+      "copyCode": "Sao chép mã thanh toán",
+      "amount": "Số tiền",
+      "method": "Phương thức",
+      "kind": "Loại",
+      "paidAt": "Thời điểm thanh toán",
+      "another": "Chọn cách thanh toán khác",
+      "noMoney": "Hệ thống chưa ghi nhận khoản tiền nào cho khoản thanh toán này.",
+      "contactWallet": "Nếu tiền đã rời khỏi tài khoản của bạn, hãy liên hệ Ban quản lý làng nghề và gửi kèm mã thanh toán.",
+      "contactBank": "Nếu bạn đã chuyển khoản, hãy báo Ban quản lý làng nghề và gửi kèm mã thanh toán.",
+      "pendingNote": "Nếu bạn đã thanh toán, kết quả thường có trong vài giây.",
+      "slowHint": "Vẫn chưa có kết quả? Bạn có thể đóng trang này — hệ thống tiếp tục đối chiếu và báo cho bạn khi tiền về."
+    },
+    "methodShort": {
+      "SEPAY_TRANSFER": "ngân hàng",
+      "VNPAY": "VNPay",
+      "MOMO": "MoMo",
+      "OFFLINE": "Ban quản lý"
+    },
+    "methodHint": {
+      "SEPAY_TRANSFER": "Quét mã VietQR bằng ứng dụng ngân hàng hoặc chuyển khoản thủ công. Hệ thống tự xác nhận khi tiền về.",
+      "VNPAY": "Thẻ ATM nội địa, Internet Banking, thẻ quốc tế hoặc VNPAY-QR.",
+      "MOMO": "Thanh toán bằng ví MoMo trên điện thoại."
     },
     "refundDue": "Cần hoàn lại"
   },

@@ -8,7 +8,7 @@ import { DEMO, demoSkipReason, loginContext } from '../demo/support/demo-session
  * the real `/orders/:id/payments` answer offers no method and the buyer panel stays hidden. Our own UI does not
  * need a provider, so the first spec opens the real order page as the demo buyer and stubs only the payment API
  * calls in the browser (`page.route`): the panel then shows the deposit and balance amounts, the method choice,
- * the bank-transfer instructions after "Tiếp tục" and the cancelling of the pending payment. No request leaves
+ * the bank-transfer instructions after "Hiện thông tin chuyển khoản" and the cancelling of the pending payment. No request leaves
  * for SePay, VNPay or MoMo, and nothing is written to the database. The second spec opens the admin payments
  * board against the real API.
  *
@@ -104,9 +104,9 @@ test('buyer sees the balance due, starts a bank transfer and can cancel it (paym
   await expect(panel.getByText(/Đã thanh toán ngày/)).toBeVisible();
   await expect(panel.getByText('Chưa thanh toán')).toBeVisible();
   await expect(panel.getByText(/Thanh toán phần còn lại/)).toBeVisible();
-  await expect(panel.getByRole('radio', { name: 'Chuyển khoản / VietQR' })).toBeChecked();
+  await expect(panel.getByRole('radio', { name: 'Chuyển khoản ngân hàng (VietQR)' })).toBeChecked();
 
-  await panel.getByRole('button', { name: 'Tiếp tục', exact: true }).click();
+  await panel.getByRole('button', { name: 'Hiện thông tin chuyển khoản', exact: true }).click();
   const bank = panel.getByTestId('bank-details');
   await expect(bank).toBeVisible();
   await expect(panel.getByTestId('transfer-content')).toHaveText(REFERENCE);
@@ -116,6 +116,31 @@ test('buyer sees the balance due, starts a bank transfer and can cancel it (paym
   await panel.getByRole('button', { name: 'Hủy khoản thanh toán này', exact: true }).click();
   await expect(panel.getByTestId('bank-details')).toHaveCount(0);
   await expect(panel.getByTestId('payment-status')).toHaveText('Đã hủy');
+});
+
+test('buyer lands on a failed wallet payment and is offered another way to pay (payment API stubbed)', async ({
+  page,
+  context,
+}) => {
+  const baseUrl = (process.env.E2E_BASE_URL ?? '').replace(/\/$/, '');
+  await loginContext(context, 'buyer', baseUrl);
+  const failed = {
+    ...pendingPayment(),
+    method: 'MOMO',
+    provider: 'MOMO',
+    status: 'FAILED',
+    checkout: null,
+  };
+  await page.route(`**/api/v1/payments/${REFERENCE}`, (route) => json(route, failed));
+
+  await page.goto(`/vi/thanh-toan/${REFERENCE}`);
+  await expect(page.getByRole('heading', { level: 1, name: 'Kết quả thanh toán' })).toBeVisible();
+  const result = page.getByTestId('payment-result');
+  await expect(
+    result.getByRole('heading', { level: 2, name: 'Thanh toán chưa thành công' }),
+  ).toBeVisible();
+  await expect(result.getByTestId('payment-code')).toHaveText(REFERENCE);
+  await expect(result.getByRole('link', { name: 'Chọn cách thanh toán khác' })).toBeVisible();
 });
 
 test('admin opens the payments board without any provider configured', async ({
