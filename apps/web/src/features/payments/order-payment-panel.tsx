@@ -2,15 +2,16 @@
 
 import { ApiError, type PaymentClient } from '@vcraft/api-client';
 import type { OrderPaymentsDto, PaymentDto } from '@vcraft/contracts';
-import { Button, Card } from '@vcraft/ui';
+import { Badge, Button, Card, cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { usePaymentClient } from '@/lib/api/use-payment-client';
 import { notify } from '@/lib/notify';
 import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { useMoney } from '@/lib/use-money';
 import {
+  isDemo,
   PaymentCheckout,
   PaymentLiveLine,
   PaymentStatusBadge,
@@ -19,6 +20,7 @@ import {
 } from './payment-parts';
 
 type Method = OrderPaymentsDto['methods'][number];
+type MethodOption = OrderPaymentsDto['methodOptions'][number];
 
 /**
  * The buyer's payment panel on an accepted order (ADR-0021): what is owed, the way to pay a deposit or the
@@ -53,10 +55,9 @@ function Panel({
   const format = useFormatter();
   const [summary, setSummary] = useState<OrderPaymentsDto | null>(null);
   const [failed, setFailed] = useState(false);
-  const [method, setMethod] = useState<Method | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const submitStart = useIdempotentAction();
+  /** Said once through the live region (and as a toast) when a demo payment the panel was polling turns paid. */
+  const [announcement, setAnnouncement] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -74,7 +75,14 @@ function Panel({
   }, [load]);
 
   const pending = summary?.payments.find((payment) => payment.status === 'PENDING') ?? null;
-  usePaymentPoll(client, pending, () => void load());
+  usePaymentPoll(client, pending, (fresh) => {
+    if (fresh.status === 'PAID' && isDemo(fresh)) {
+      const message = t('demo.paidToast');
+      notify.success(message);
+      setAnnouncement(message);
+    }
+    void load();
+  });
 
   if (failed) return <p className="text-small text-ash">{t('loadFailed')}</p>;
   if (!summary) return null;
@@ -90,33 +98,7 @@ function Panel({
       ? 'DEPOSIT'
       : null;
   const amount = kind === 'DEPOSIT' ? summary.depositAmountVnd : summary.balanceAmountVnd;
-  const chosen = method ?? summary.methods[0] ?? null;
   const day = (iso: string) => format.dateTime(new Date(iso), 'short');
-
-  const start = async () => {
-    if (!kind || !chosen) return;
-    setBusy(true);
-    setError(null);
-    const body = { kind, method: chosen };
-    try {
-      await submitStart({ orderId, body }, (options) =>
-        client.createPayment(orderId, body, options),
-      );
-      await load();
-    } catch (cause) {
-      const code = cause instanceof ApiError ? cause.code : 'default';
-      const known = [
-        'PAYMENT_METHOD_UNAVAILABLE',
-        'PAYMENT_ORDER_NOT_PAYABLE',
-        'PAYMENT_ALREADY_PAID',
-        'PAYMENT_DEPOSIT_REQUIRED',
-        'SERVICE_UNAVAILABLE',
-      ].includes(code);
-      setError(t(`errors.${known ? code : 'default'}` as 'errors.default'));
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const cancel = async (payment: PaymentDto) => {
     setBusy(true);
@@ -137,23 +119,26 @@ function Panel({
       data-testid="payment-panel"
     >
       <h2 id="payment-title">{t('summary.title')}</h2>
+      <p role="status" className="sr-only" data-testid="payment-announcement">
+        {announcement}
+      </p>
       <Card className="flex flex-col gap-5 p-5 md:p-6">
         <dl className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-2">
           <dt>{t('summary.total')}</dt>
           <dd>{money(summary.totalVnd)}</dd>
           <dt>{t('summary.deposit', { percent: summary.depositPercent })}</dt>
-          <dd>
+          <dd className="text-right sm:text-left">
             {money(summary.depositAmountVnd)}{' '}
-            <span className="text-small text-ash">
+            <span className="block text-small text-ash sm:inline">
               {summary.depositPaidAt
                 ? t('summary.paidOn', { date: day(summary.depositPaidAt) })
                 : t('summary.notPaid')}
             </span>
           </dd>
           <dt>{t('summary.balance')}</dt>
-          <dd>
+          <dd className="text-right sm:text-left">
             {money(summary.balanceAmountVnd)}{' '}
-            <span className="text-small text-ash">
+            <span className="block text-small text-ash sm:inline">
               {summary.balancePaidAt
                 ? t('summary.paidOn', { date: day(summary.balancePaidAt) })
                 : t('summary.notPaid')}
@@ -190,40 +175,17 @@ function Panel({
             {summary.methods.length === 0 ? (
               <p className="text-ash">{t('pay.noMethods')}</p>
             ) : (
-              <fieldset className="flex flex-col gap-3">
-                <legend className="font-medium">
-                  {t(kind === 'DEPOSIT' ? 'pay.deposit' : 'pay.balance')} · {money(amount)}
-                </legend>
-                <p className="text-small text-ash">{t('pay.choose')}</p>
-                {summary.methods.map((option) => (
-                  <label key={option} className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="payment-method"
-                      checked={chosen === option}
-                      onChange={() => setMethod(option)}
-                    />
-                    {t(`method.${option}`)}
-                  </label>
-                ))}
-                {summary.methods.some((option) => option !== 'SEPAY_TRANSFER') ? (
-                  <p className="text-small text-ash">{t('summary.sandbox')}</p>
-                ) : null}
-                <Button
-                  type="button"
-                  className="self-start"
-                  disabled={busy || !chosen}
-                  onClick={() => void start()}
-                >
-                  {busy ? t('pay.starting') : t('pay.start')}
-                </Button>
-              </fieldset>
+              <MethodPicker
+                key={kind}
+                orderId={orderId}
+                kind={kind}
+                amount={amount}
+                options={optionsOf(summary)}
+                demo={summary.demo}
+                client={client}
+                onStarted={load}
+              />
             )}
-            {error ? (
-              <p role="alert" className="text-seal">
-                {error}
-              </p>
-            ) : null}
           </div>
         ) : null}
       </Card>
@@ -254,5 +216,225 @@ function Panel({
         </div>
       ) : null}
     </section>
+  );
+}
+
+/** The server's per-method options; an older answer without them still lists the methods, with no limits. */
+function optionsOf(summary: OrderPaymentsDto): MethodOption[] {
+  const detailed = summary.methodOptions as MethodOption[] | undefined;
+  if (detailed && detailed.length > 0) return detailed;
+  return summary.methods.map((method) => ({
+    method,
+    sandbox: summary.demo === true,
+    minAmountVnd: 0,
+    maxAmountVnd: null,
+  }));
+}
+
+/** Why a method cannot take this amount, or `null` when it can. */
+function limitOf(option: MethodOption, amount: number): 'underMin' | 'overMax' | null {
+  if (amount < option.minAmountVnd) return 'underMin';
+  if (option.maxAmountVnd !== null && amount > option.maxAmountVnd) return 'overMax';
+  return null;
+}
+
+const KNOWN_ERRORS = [
+  'PAYMENT_METHOD_UNAVAILABLE',
+  'PAYMENT_AMOUNT_OUT_OF_RANGE',
+  'PAYMENT_ORDER_NOT_PAYABLE',
+  'PAYMENT_ALREADY_PAID',
+  'PAYMENT_DEPOSIT_REQUIRED',
+  'SERVICE_UNAVAILABLE',
+];
+
+/**
+ * Choice of the payment method as option cards (a radio group), then the button that starts the payment. A wallet
+ * payment goes straight to the provider's page; a bank transfer shows its details in the panel.
+ */
+function MethodPicker({
+  orderId,
+  kind,
+  amount,
+  options,
+  demo,
+  client,
+  onStarted,
+}: {
+  orderId: string;
+  kind: PaymentDto['kind'];
+  amount: number;
+  options: MethodOption[];
+  /** Demo payment mode: every method is a rehearsal confirmed on a phone (ADR-0025). */
+  demo: boolean;
+  client: PaymentClient;
+  onStarted: () => Promise<void>;
+}) {
+  const t = useTranslations('payments');
+  const money = useMoney();
+  const format = useFormatter();
+  const uid = useId();
+  const [picked, setPicked] = useState<Method | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [leaving, setLeaving] = useState<Method | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const submitStart = useIdempotentAction();
+
+  // Coming back with the browser's back button can restore this page frozen mid-redirect.
+  useEffect(() => {
+    const restore = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      setBusy(false);
+      setLeaving(null);
+      void onStarted();
+    };
+    window.addEventListener('pageshow', restore);
+    return () => window.removeEventListener('pageshow', restore);
+  }, [onStarted]);
+
+  const enabled = options.filter((option) => limitOf(option, amount) === null);
+  const chosen = enabled.find((option) => option.method === picked) ?? enabled[0] ?? null;
+  const sandboxNames = options
+    .filter((option) => option.sandbox)
+    .map((option) => t(`methodShort.${option.method}` as 'methodShort.VNPAY'));
+
+  const start = async () => {
+    if (!chosen) return;
+    setBusy(true);
+    setError(null);
+    let navigating = false;
+    const body = { kind, method: chosen.method };
+    try {
+      const payment = await submitStart({ orderId, body }, (options) =>
+        client.createPayment(orderId, body, options),
+      );
+      if (payment.checkout?.type === 'REDIRECT') {
+        navigating = true;
+        setLeaving(chosen.method);
+        window.location.assign(payment.checkout.url);
+        return;
+      }
+      await onStarted();
+    } catch (cause) {
+      const code = cause instanceof ApiError ? cause.code : 'default';
+      setError(t(`errors.${KNOWN_ERRORS.includes(code) ? code : 'default'}` as 'errors.default'));
+    } finally {
+      if (!navigating) setBusy(false);
+    }
+  };
+
+  return (
+    <fieldset className="flex min-w-0 flex-col gap-3">
+      <legend className="font-medium">
+        {t(kind === 'DEPOSIT' ? 'pay.deposit' : 'pay.balance')} · {money(amount)}
+      </legend>
+      <p className="text-small text-ash">{t('pay.choose')}</p>
+      <div className="flex flex-col gap-3">
+        {options.map((option) => {
+          const limit = limitOf(option, amount);
+          const id = `${uid}-${option.method}`;
+          const describedBy = [
+            `${id}-hint`,
+            option.sandbox ? `${id}-badge` : null,
+            limit ? `${id}-reason` : null,
+          ]
+            .filter(Boolean)
+            .join(' ');
+          return (
+            <label
+              key={option.method}
+              data-testid={`payment-method-${option.method}`}
+              className={cn(
+                'group flex min-h-11 w-full items-start gap-3 rounded-card border border-ink/15 bg-surface p-4',
+                'has-checked:border-clay has-checked:bg-clay/8 has-checked:ring-1 has-checked:ring-clay',
+                'has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-glaze',
+                'motion-safe:transition-colors motion-safe:duration-(--duration-quick)',
+                limit ? 'cursor-not-allowed bg-ink/4' : 'cursor-pointer',
+              )}
+            >
+              <input
+                type="radio"
+                name={`${uid}-method`}
+                className="sr-only"
+                checked={chosen?.method === option.method}
+                disabled={limit !== null}
+                aria-disabled={limit !== null}
+                aria-labelledby={`${id}-title`}
+                aria-describedby={describedBy}
+                onChange={() => setPicked(option.method)}
+              />
+              <span
+                aria-hidden="true"
+                className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-ink/30 text-paper group-has-checked:border-clay group-has-checked:bg-clay"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 12 12"
+                  className="size-3 opacity-0 group-has-checked:opacity-100"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M2.5 6.5l2.2 2.2 4.8-5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-1">
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span id={`${id}-title`} className={cn('font-medium', limit && 'text-ash')}>
+                    {t(`method.${option.method}`)}
+                  </span>
+                  {option.sandbox ? (
+                    <Badge tone="outline" id={`${id}-badge`}>
+                      {t('pay.testBadge')}
+                    </Badge>
+                  ) : null}
+                </span>
+                <span id={`${id}-hint`} className="text-small text-ash">
+                  {demo ? t('pay.demoHint') : t(`methodHint.${option.method}`)}
+                </span>
+                {limit ? (
+                  <span id={`${id}-reason`} className="text-small font-medium text-ink">
+                    {limit === 'overMax'
+                      ? t('pay.overMax', { max: money(option.maxAmountVnd ?? 0) })
+                      : t('pay.underMin', { min: money(option.minAmountVnd) })}
+                  </span>
+                ) : null}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+      {demo ? (
+        <p className="text-small text-ash">{t('pay.demoNote')}</p>
+      ) : sandboxNames.length > 0 ? (
+        <p className="text-small text-ash">
+          {t('pay.sandboxNote', { methods: format.list(sandboxNames, { type: 'conjunction' }) })}
+        </p>
+      ) : null}
+      {chosen ? (
+        <Button type="button" className="self-start" disabled={busy} onClick={() => void start()}>
+          {busy && !leaving
+            ? t('pay.starting')
+            : demo
+              ? t('pay.startDemo')
+              : t(`pay.startBy.${chosen.method}`)}
+        </Button>
+      ) : (
+        <p className="text-ash">{t('pay.noneFit')}</p>
+      )}
+      {leaving ? (
+        <p role="status" className="flex items-start gap-2.5 text-ash">
+          <span
+            aria-hidden="true"
+            className="mt-[9px] size-2 shrink-0 rounded-full bg-clay motion-safe:animate-pulse"
+          />
+          {t('pay.redirecting', { method: t(`methodShort.${leaving}`) })}
+        </p>
+      ) : null}
+      {error ? (
+        <p role="alert" className="text-seal">
+          {error}
+        </p>
+      ) : null}
+    </fieldset>
   );
 }

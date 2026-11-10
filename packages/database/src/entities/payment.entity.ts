@@ -15,7 +15,9 @@ export type PaymentCheckoutData =
       qrImageUrl: string | null;
       qrPayload: string | null;
     }
-  | { type: 'REDIRECT'; url: string; deeplink: string | null; qrImageUrl: string | null };
+  | { type: 'REDIRECT'; url: string; deeplink: string | null; qrImageUrl: string | null }
+  /** Demo payment mode (ADR-0025): a link to our own confirm page, with a per-payment secret in `?k=`. */
+  | { type: 'DEMO'; confirmUrl: string };
 
 /**
  * One payment of an order (ADR-0021, GH#205): the deposit or the balance of an accepted quotation, in whole

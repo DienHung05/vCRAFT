@@ -5,7 +5,8 @@ import { renderToString } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { afterFirstFrame } from '@/experience/hero-vase/first-frame';
 import { HERO_PROFILE, silhouette } from '@/experience/hero-vase/silhouette';
-import { TurningVase } from '@/experience/hero-vase/turning-vase';
+import { FORM_SECONDS, TurningVase } from '@/experience/hero-vase/turning-vase';
+import { PROFILES } from '@/experience/hero-vase/vase-profiles';
 
 const scene = vi.hoisted(() => ({ onReady: undefined as (() => void) | undefined }));
 const facts = vi.hoisted(() => ({ capable: true }));
@@ -32,6 +33,41 @@ describe('turning vase (GH#316)', () => {
     expect(html).toContain('turning-vase-spin');
     expect(html).toContain('turning-vase-glint');
     expect(html).toContain('clip-path="url(#turning-vase-clip)"');
+  });
+
+  it('forms from clay into the money jar before it turns, on every device', () => {
+    const html = renderToString(<TurningVase />);
+    // One SMIL morph through the four shapes of the 3D story, frozen on the money jar.
+    const morph = html.match(/<animate attributeName="d" values="([^"]+)"/);
+    expect(morph).not.toBeNull();
+    const stages = (morph?.[1] ?? '').split(';');
+    expect(stages).toHaveLength(PROFILES.length);
+    expect(stages.at(-1)).toBe(silhouette().path);
+    // Same commands in every stage, or the browser cannot interpolate them.
+    const shape = (d: string) => d.replace(/-?[\d.]+/g, '#');
+    expect(new Set(stages.map(shape)).size).toBe(1);
+    expect(html).toContain('fill="freeze"');
+  });
+
+  it('shows the finished vase at once under reduced motion', () => {
+    facts.capable = false;
+    const setCurrentTime = vi.fn();
+    const pauseAnimations = vi.fn();
+    // jsdom has neither matchMedia nor the SMIL clock methods.
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    Object.assign(SVGElement.prototype, { setCurrentTime, pauseAnimations });
+    render(
+      <section id="hero-rm">
+        <TurningVase />
+        <HeroVase sectionId="hero-rm" />
+      </section>,
+    );
+    expect(setCurrentTime).toHaveBeenCalledWith(FORM_SECONDS.glaze + FORM_SECONDS.glazeFor);
+    expect(pauseAnimations).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+    Reflect.deleteProperty(SVGElement.prototype, 'setCurrentTime');
+    Reflect.deleteProperty(SVGElement.prototype, 'pauseAnimations');
+    facts.capable = true;
   });
 
   it('draws the silhouette from the 3D scene profile', () => {

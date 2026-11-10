@@ -494,6 +494,28 @@ describe('Personal data: consent, export and deletion', () => {
       expect((await db.orm.em.fork().findOneOrFail(AppUser, user.id)).status).toBe('ACTIVE');
     });
 
+    it('keeps a never-submitted household a draft, out of the review queue (GH#459)', async () => {
+      const rep = await t.createUser('BUYER');
+      const applied = await t.request({
+        method: 'POST',
+        url: '/me/household',
+        auth: rep.auth,
+        body: { name: 'Draft only', slug: 'draft-only-459', history: '' },
+      });
+      expect(applied.status).toBe(201);
+      expect(applied.body.status).toBe('DRAFT');
+      expect((await remove(rep.auth, rep.email)).status).toBe(204);
+      const household = await db.orm.em.fork().findOneOrFail(Household, applied.body.id);
+      expect(household).toMatchObject({ status: 'DRAFT', name: 'Removed household' });
+      const admin = await t.createUser('ADMIN');
+      const queue = await t.request({
+        method: 'GET',
+        url: '/admin/households?status=SUSPENDED',
+        auth: admin.auth,
+      });
+      expect(queue.body.data.some((h: { id: string }) => h.id === applied.body.id)).toBe(false);
+    });
+
     it('refuses administrator accounts', async () => {
       const other = await t.createUser('ADMIN');
       const res = await remove(other.auth, other.email);
@@ -741,6 +763,46 @@ describe('Personal data: consent, export and deletion', () => {
       expect(
         (await t.request({ method: 'GET', url: `/households/${bystander.slug}` })).status,
       ).toBe(200);
+    });
+
+    it('keeps a never-submitted DRAFT household out of the admin queue (GH#459)', async () => {
+      const rep = await t.createUser('BUYER');
+      const applied = await t.request({
+        method: 'POST',
+        url: '/me/household',
+        auth: rep.auth,
+        body: { name: 'Household draft', slug: 'household-draft', history: 'History draft' },
+      });
+      expect(applied.status).toBe(201);
+      expect(applied.body.status).toBe('DRAFT');
+      const workshop = await t.request({
+        method: 'POST',
+        url: '/me/household/workshops',
+        auth: rep.auth,
+        body: { name: 'Workshop draft', address: 'Draft Workshop Lane' },
+      });
+      expect(workshop.status).toBe(201);
+
+      expect((await remove(rep.auth, rep.email)).status).toBe(204);
+
+      const after = db.orm.em.fork();
+      const household = await after.findOneOrFail(Household, applied.body.id);
+      expect(household).toMatchObject({
+        name: 'Removed household',
+        slug: `removed-${household.id}`,
+        history: '',
+        status: 'DRAFT',
+      });
+      expect(await after.count(Workshop, { household: household.id })).toBe(0);
+      for (const status of [undefined, 'SUSPENDED']) {
+        const queue = await t.request({
+          method: 'GET',
+          url: status ? `/admin/households?status=${status}` : '/admin/households',
+          auth: admin.auth,
+        });
+        expect(queue.status).toBe(200);
+        expect(queue.body.data.map((h: { id: string }) => h.id)).not.toContain(household.id);
+      }
     });
   });
 });

@@ -1,7 +1,13 @@
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { MikroORM } from '@mikro-orm/core';
-import { Inject, Injectable, Logger, type OnApplicationBootstrap } from '@nestjs/common';
+import {
+  type BeforeApplicationShutdown,
+  Inject,
+  Injectable,
+  Logger,
+  type OnApplicationBootstrap,
+} from '@nestjs/common';
 import { Household, News, Product, publicDocuments } from '@vcraft/database';
 import type { Embedder, VectorStore } from '@vcraft/knowledge';
 import { InMemoryVectorStore, indexDocument, ingestKnowledgeBase } from '@vcraft/knowledge';
@@ -24,10 +30,15 @@ function findKbDir(): string | null {
  * the worker owns the index and this does nothing.
  */
 @Injectable()
-export class KnowledgeBootstrapService implements OnApplicationBootstrap {
+export class KnowledgeBootstrapService
+  implements OnApplicationBootstrap, BeforeApplicationShutdown
+{
   private readonly logger = new Logger(KnowledgeBootstrapService.name);
   /** Resolves when loading ends (for tests); never rejects. */
   ready: Promise<void> = Promise.resolve();
+
+  /** Set on shutdown: the loader stops at its next checkpoint so it never queries a closing database. */
+  private stopped = false;
 
   constructor(
     @Inject(VECTOR_STORE) private readonly store: VectorStore,
@@ -42,6 +53,17 @@ export class KnowledgeBootstrapService implements OnApplicationBootstrap {
     );
   }
 
+  /** Runs before any `onApplicationShutdown` hook (the ORM closes there): stop loading and wait for the loader to settle. */
+  async beforeApplicationShutdown(): Promise<void> {
+    this.stopped = true;
+    let timer: NodeJS.Timeout | undefined;
+    const patience = new Promise<void>((done) => {
+      timer = setTimeout(done, 5_000);
+    });
+    await Promise.race([this.ready, patience]);
+    clearTimeout(timer);
+  }
+
   private async load(): Promise<void> {
     const kbDir = findKbDir();
     let guides = 0;
@@ -49,6 +71,7 @@ export class KnowledgeBootstrapService implements OnApplicationBootstrap {
     else this.logger.warn('docs/assistant-kb not found: guides not loaded');
     let sources = 0;
     let chunks = 0;
+    if (this.stopped) return;
     const em = this.orm.em.fork();
     const households = await em.find(Household, { status: 'APPROVED' }, { fields: ['id'] });
     const news = await em.find(
@@ -61,13 +84,16 @@ export class KnowledgeBootstrapService implements OnApplicationBootstrap {
       ...news.map(({ id }) => ['NEWS', id] as const),
     ];
     for (const [sourceType, sourceId] of jobs) {
+      if (this.stopped) return;
       for (const doc of await publicDocuments(em, sourceType, sourceId)) {
         chunks += await indexDocument(this.store, this.embedder, doc);
         sources++;
       }
     }
+    if (this.stopped) return;
     // Products of approved households.
     for (const { id } of await em.find(Product, { status: 'PUBLISHED' }, { fields: ['id'] })) {
+      if (this.stopped) return;
       for (const doc of await publicDocuments(em, 'PRODUCT', id)) {
         chunks += await indexDocument(this.store, this.embedder, doc);
         sources++;

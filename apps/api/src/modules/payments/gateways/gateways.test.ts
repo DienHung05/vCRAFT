@@ -2,14 +2,21 @@ import { createHmac } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   availableMethods,
+  describePaymentsConfig,
   methodLimits,
   paymentsConfig,
   paymentsConfigIssues,
 } from '../payments.config';
-import { MomoGateway } from './momo.gateway';
+import { DEMO_CONFIRM_PATH, DemoGateway } from './demo.gateway';
+import { MomoGateway, momoQuerySigningData } from './momo.gateway';
 import type { PaymentHttp, PaymentSnapshot } from './payment-gateway';
 import { SepayGateway } from './sepay.gateway';
-import { VnpayGateway, vnpayDate } from './vnpay.gateway';
+import {
+  VNPAY_QUERY_REQUEST_FIELDS,
+  VNPAY_QUERY_RESPONSE_FIELDS,
+  VnpayGateway,
+  vnpayDate,
+} from './vnpay.gateway';
 
 const SEPAY_ENV = {
   SEPAY_WEBHOOK_API_KEY: 'sepay-test-key',
@@ -66,6 +73,7 @@ beforeEach(() => {
     'MOMO_MAX_AMOUNT_VND',
     'PAYMENT_WALLET_EXPIRES_IN_MINUTES',
     'PAYMENTS_DEPOSIT_REQUIRED',
+    'PAYMENTS_DEMO_MODE',
     'PAYMENT_DEPOSIT_PERCENT',
     'PAYMENT_EXPIRES_IN_HOURS',
     'APP_URL',
@@ -121,6 +129,77 @@ describe('payments config', () => {
     expect(paymentsConfig().sandbox).toBe(true);
     vi.stubEnv('APP_ENV', 'production');
     expect(paymentsConfig().sandbox).toBe(false);
+  });
+});
+
+describe('payments config: demo mode (ADR-0025)', () => {
+  it('is off unless PAYMENTS_DEMO_MODE is true', () => {
+    expect(paymentsConfig().demo).toBe(false);
+    vi.stubEnv('PAYMENTS_DEMO_MODE', 'yes');
+    expect(paymentsConfig().demo).toBe(false);
+    vi.stubEnv('PAYMENTS_DEMO_MODE', ' TRUE ');
+    expect(paymentsConfig().demo).toBe(true);
+  });
+
+  it('offers all three methods with no credentials, also under APP_ENV=production', () => {
+    setEnv({ APP_ENV: 'production', PAYMENTS_DEMO_MODE: 'true' });
+    const config = paymentsConfig();
+    expect(config.sepay).toBeNull();
+    expect(config.vnpay).toBeNull();
+    expect(config.momo).toBeNull();
+    expect(availableMethods(config)).toEqual(['SEPAY_TRANSFER', 'VNPAY', 'MOMO']);
+    expect(config.sandbox).toBe(false);
+  });
+
+  it('keeps the amount limits of each method', () => {
+    setEnv({ PAYMENTS_DEMO_MODE: 'true', MOMO_MAX_AMOUNT_VND: '2000000' });
+    const limits = methodLimits(paymentsConfig());
+    expect(limits.MOMO).toEqual({ minVnd: 1_000, maxVnd: 2_000_000 });
+    expect(limits.VNPAY.minVnd).toBe(5_000);
+    expect(limits.SEPAY_TRANSFER.maxVnd).toBeNull();
+  });
+
+  it('does not require a deposit by default, even with SePay configured; an explicit flag wins', () => {
+    setEnv({ ...SEPAY_ENV, PAYMENTS_DEMO_MODE: 'true' });
+    expect(paymentsConfig().depositRequired).toBe(false);
+    vi.stubEnv('PAYMENTS_DEPOSIT_REQUIRED', 'true');
+    expect(paymentsConfig().depositRequired).toBe(true);
+  });
+
+  it('warns that no real money moves and says demo in the boot line', () => {
+    expect(paymentsConfigIssues({})).toEqual([]);
+    const env = { PAYMENTS_DEMO_MODE: 'true' };
+    expect(paymentsConfigIssues(env).join('\n')).toMatch(/demo payment mode is on/);
+    expect(describePaymentsConfig(paymentsConfig(env))).toMatch(/DEMO/);
+  });
+
+  it('still refuses a sandbox gateway under APP_ENV=production', () => {
+    const env = {
+      APP_ENV: 'production',
+      PAYMENTS_DEMO_MODE: 'true',
+      VNPAY_MODE: 'sandbox',
+      ...VNPAY_ENV,
+    };
+    expect(paymentsConfig(env).vnpay).toBeNull();
+    expect(paymentsConfigIssues(env).join('\n')).toMatch(/sandbox mode/);
+  });
+});
+
+describe('Demo gateway', () => {
+  it('builds a link to our own confirm page with a fresh secret, never a bank code', async () => {
+    vi.stubEnv('APP_URL', 'https://vcraft.example/');
+    const gateway = new DemoGateway();
+    const first = await gateway.createCheckout(snapshot);
+    const second = await gateway.createCheckout(snapshot);
+    expect(first.type).toBe('DEMO');
+    if (first.type !== 'DEMO' || second.type !== 'DEMO') throw new Error('expected DEMO');
+    const url = new URL(first.confirmUrl);
+    expect(url.origin).toBe('https://vcraft.example');
+    expect(url.pathname).toBe(`${DEMO_CONFIRM_PATH}/${snapshot.referenceCode}`);
+    const token = url.searchParams.get('k');
+    expect(token).toMatch(/^[A-Za-z0-9_-]{32}$/);
+    expect(new URL(second.confirmUrl).searchParams.get('k')).not.toBe(token);
+    expect(first.confirmUrl).not.toMatch(/vietqr|napas|qr\.sepay/i);
   });
 });
 
@@ -304,6 +383,15 @@ describe('payments config: gateway modes', () => {
     expect(methodLimits(custom).MOMO.maxVnd).toBe(10_000_000);
   });
 
+  it('reports a half-filled SePay account without naming a value', () => {
+    const env = { SEPAY_WEBHOOK_API_KEY: 'super-secret-key', SEPAY_BANK_NAME: 'MB Bank' };
+    expect(paymentsConfig(env).sepay).toBeNull();
+    const [issue] = paymentsConfigIssues(env);
+    expect(issue).toMatch(/SEPAY_BANK_ACCOUNT_NUMBER/);
+    expect(issue).toMatch(/SEPAY_BANK_ACCOUNT_NAME/);
+    expect(paymentsConfigIssues({ ...SEPAY_ENV })).toEqual([]);
+  });
+
   it('never puts a secret value in an issue', () => {
     const env = {
       APP_ENV: 'production',
@@ -435,10 +523,19 @@ describe('SePay gateway', () => {
   });
 });
 
+function fakeJsonHttp(reply: unknown, ok = true) {
+  const calls: Array<{ url: string; body: Record<string, string> }> = [];
+  const http: PaymentHttp = async (url, init) => {
+    calls.push({ url, body: JSON.parse(init.body) });
+    return { ok, status: ok ? 200 : 500, json: async () => reply };
+  };
+  return { http, calls };
+}
+
 describe('VNPay gateway', () => {
   // The legacy flag switches the sandbox mode on for credentials that come without an explicit mode.
   beforeEach(() => vi.stubEnv('PAYMENTS_SANDBOX_GATEWAYS', 'true'));
-  const gateway = new VnpayGateway();
+  const gateway = new VnpayGateway(fakeJsonHttp({}).http);
   const signedQuery = (fields: Record<string, string>) => {
     // Independent of the adapter: the documented scheme, sorted `key=value` joined by `&`, HMAC-SHA512.
     const data = Object.keys(fields)
@@ -528,6 +625,166 @@ describe('VNPay gateway', () => {
     expect(gateway.verifyCallback(bare)).toEqual({
       signatureValid: false,
       reason: 'MALFORMED_QUERY',
+    });
+  });
+
+  it('rejects a correctly signed call that names another merchant', () => {
+    setEnv(VNPAY_ENV);
+    expect(gateway.verifyCallback(ipn({ vnp_TmnCode: 'OTHERTMN' }))).toEqual({
+      signatureValid: false,
+      reason: 'WRONG_MERCHANT',
+    });
+  });
+
+  describe('queryStatus (querydr)', () => {
+    const sentUrl =
+      'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_Amount=300000000&vnp_CreateDate=20261108205500&vnp_TxnRef=VCPAB3DEF7K9M';
+    const query = {
+      referenceCode: snapshot.referenceCode,
+      amountVnd: 3_000_000,
+      createdAt: new Date('2026-11-08T13:55:01Z'),
+      checkout: { type: 'REDIRECT', url: sentUrl, deeplink: null, qrImageUrl: null },
+    } as const;
+    const answer = (overrides: Record<string, string> = {}) => {
+      const fields: Record<string, string> = {
+        vnp_ResponseId: 'resp-1',
+        vnp_Command: 'querydr',
+        vnp_ResponseCode: '00',
+        vnp_Message: 'QueryDR Success',
+        vnp_TmnCode: VNPAY_ENV.VNPAY_TMN_CODE,
+        vnp_TxnRef: snapshot.referenceCode,
+        vnp_Amount: '300000000',
+        vnp_BankCode: 'NCB',
+        vnp_PayDate: '20261108210000',
+        vnp_TransactionNo: '14123456',
+        vnp_TransactionType: '01',
+        vnp_TransactionStatus: '00',
+        vnp_OrderInfo: 'vCraft VCPAB3DEF7K9M',
+        vnp_PromotionCode: '',
+        vnp_PromotionAmount: '',
+        ...overrides,
+      };
+      // The documented response checksum: these fields joined by `|`, missing ones empty.
+      const raw = [
+        'vnp_ResponseId',
+        'vnp_Command',
+        'vnp_ResponseCode',
+        'vnp_Message',
+        'vnp_TmnCode',
+        'vnp_TxnRef',
+        'vnp_Amount',
+        'vnp_BankCode',
+        'vnp_PayDate',
+        'vnp_TransactionNo',
+        'vnp_TransactionType',
+        'vnp_TransactionStatus',
+        'vnp_OrderInfo',
+        'vnp_PromotionCode',
+        'vnp_PromotionAmount',
+      ]
+        .map((name) => fields[name] ?? '')
+        .join('|');
+      return {
+        ...fields,
+        vnp_SecureHash: createHmac('sha512', VNPAY_ENV.VNPAY_HASH_SECRET)
+          .update(raw, 'utf8')
+          .digest('hex'),
+      };
+    };
+
+    it('sends the documented request with a checksum over the fields in order', async () => {
+      setEnv({ ...VNPAY_ENV, VNPAY_MODE: 'sandbox', VNPAY_SERVER_IP: '198.51.100.9' });
+      const { http, calls } = fakeJsonHttp(answer());
+      await new VnpayGateway(http).queryStatus(query);
+      const [call] = calls;
+      expect(call?.url).toBe('https://sandbox.vnpayment.vn/merchant_webapi/api/transaction');
+      const body = call?.body as Record<string, string>;
+      expect(body).toMatchObject({
+        vnp_Version: '2.1.0',
+        vnp_Command: 'querydr',
+        vnp_TmnCode: 'TESTTMN1',
+        vnp_TxnRef: 'VCPAB3DEF7K9M',
+        // The create date that was sent with the pay request, read back from the stored URL.
+        vnp_TransactionDate: '20261108205500',
+        vnp_IpAddr: '198.51.100.9',
+        vnp_OrderInfo: 'Query VCPAB3DEF7K9M',
+      });
+      expect(body.vnp_RequestId).toMatch(/^[A-Za-z0-9]{1,32}$/);
+      expect(body.vnp_CreateDate).toMatch(/^\d{14}$/);
+      expect(VNPAY_QUERY_REQUEST_FIELDS.join('|')).toBe(
+        'vnp_RequestId|vnp_Version|vnp_Command|vnp_TmnCode|vnp_TxnRef|vnp_TransactionDate|vnp_CreateDate|vnp_IpAddr|vnp_OrderInfo',
+      );
+      const raw = [
+        body.vnp_RequestId,
+        '2.1.0',
+        'querydr',
+        'TESTTMN1',
+        'VCPAB3DEF7K9M',
+        '20261108205500',
+        body.vnp_CreateDate,
+        '198.51.100.9',
+        'Query VCPAB3DEF7K9M',
+      ].join('|');
+      expect(body.vnp_SecureHash).toBe(
+        createHmac('sha512', VNPAY_ENV.VNPAY_HASH_SECRET).update(raw, 'utf8').digest('hex'),
+      );
+      expect(VNPAY_QUERY_RESPONSE_FIELDS).toHaveLength(15);
+    });
+
+    it('falls back on the payment creation time and 127.0.0.1', async () => {
+      setEnv({ ...VNPAY_ENV, VNPAY_MODE: 'sandbox' });
+      const { http, calls } = fakeJsonHttp(answer());
+      await new VnpayGateway(http).queryStatus({ ...query, checkout: null });
+      expect(calls[0]?.body).toMatchObject({
+        vnp_TransactionDate: vnpayDate(query.createdAt),
+        vnp_IpAddr: '127.0.0.1',
+      });
+    });
+
+    it('reads a paid answer: transaction number and the x100 amount', async () => {
+      setEnv({ ...VNPAY_ENV, VNPAY_MODE: 'sandbox' });
+      const status = await new VnpayGateway(fakeJsonHttp(answer()).http).queryStatus(query);
+      expect(status).toMatchObject({
+        state: 'PAID',
+        event: {
+          provider: 'VNPAY',
+          referenceCode: 'VCPAB3DEF7K9M',
+          providerTxnId: '14123456',
+          amountVnd: 3_000_000,
+          outcome: 'PAID',
+          raw: { source: 'query' },
+        },
+      });
+    });
+
+    it.each([
+      ['a bad checksum', { vnp_SecureHash: 'abc' }, 'UNKNOWN'],
+      ['transaction not found (91)', { vnp_ResponseCode: '91' }, 'PENDING'],
+      ['not complete (01)', { vnp_TransactionStatus: '01' }, 'PENDING'],
+      ['an error status (02)', { vnp_TransactionStatus: '02' }, 'FAILED'],
+      ['a refunded status (04)', { vnp_TransactionStatus: '04' }, 'UNKNOWN'],
+      ['bad request checksum (97)', { vnp_ResponseCode: '97' }, 'UNKNOWN'],
+      ['another order', { vnp_TxnRef: 'VCPOTHER' }, 'UNKNOWN'],
+    ] as const)('maps %s to %s', async (_name, overrides, state) => {
+      setEnv({ ...VNPAY_ENV, VNPAY_MODE: 'sandbox' });
+      const signed = answer(overrides);
+      // Overrides other than the hash are re-signed by `answer`; the hash override is applied afterwards.
+      const reply = 'vnp_SecureHash' in overrides ? { ...signed, ...overrides } : signed;
+      const status = await new VnpayGateway(fakeJsonHttp(reply).http).queryStatus(query);
+      expect(status.state).toBe(state);
+    });
+
+    it('answers UNKNOWN when VNPay is down or not configured', async () => {
+      setEnv({ ...VNPAY_ENV, VNPAY_MODE: 'sandbox' });
+      expect((await new VnpayGateway(fakeJsonHttp({}, false).http).queryStatus(query)).state).toBe(
+        'UNKNOWN',
+      );
+      const broken: PaymentHttp = async () => {
+        throw new Error('timeout');
+      };
+      expect((await new VnpayGateway(broken).queryStatus(query)).state).toBe('UNKNOWN');
+      vi.stubEnv('VNPAY_MODE', '');
+      expect((await new VnpayGateway(broken).queryStatus(query)).state).toBe('UNKNOWN');
     });
   });
 
@@ -632,6 +889,106 @@ describe('MoMo gateway', () => {
     });
     expect(gateway.verifyCallback(ipn({ resultCode: 1006, message: 'Declined' }))).toMatchObject({
       event: { outcome: 'FAILED' },
+    });
+  });
+
+  it('leaves a payment pending while MoMo is still processing, and fails only on a final code', () => {
+    setEnv(MOMO_ENV);
+    const gateway = new MomoGateway(fakeHttp({}).http);
+    for (const resultCode of [1000, 7000, 7002, 9000, 42]) {
+      expect(gateway.verifyCallback(ipn({ resultCode }))).toEqual({
+        signatureValid: true,
+        event: null,
+        ignored: 'STILL_PROCESSING',
+        referenceCode: 'VCPAB3DEF7K9M',
+      });
+    }
+    for (const resultCode of [1001, 1002, 1003, 1004, 1005, 1006, 1007, 1017, 1026]) {
+      expect(gateway.verifyCallback(ipn({ resultCode }))).toMatchObject({
+        event: { outcome: 'FAILED' },
+      });
+    }
+  });
+
+  describe('queryStatus', () => {
+    const query = {
+      referenceCode: snapshot.referenceCode,
+      amountVnd: 3_000_000,
+      createdAt: new Date('2026-11-08T13:55:01Z'),
+      checkout: null,
+    };
+    const answer = (overrides: Record<string, unknown> = {}) => ({
+      partnerCode: 'MOMOTEST',
+      orderId: snapshot.referenceCode,
+      requestId: 'req-1',
+      extraData: '',
+      amount: 3_000_000,
+      transId: 4_100_000_001,
+      payType: 'qr',
+      resultCode: 0,
+      message: 'Successful.',
+      responseTime: 1_762_600_000_000,
+      lastUpdated: 1_762_600_000_000,
+      ...overrides,
+    });
+
+    it('signs the documented query string and posts to the query endpoint', async () => {
+      setEnv({ ...MOMO_ENV, MOMO_MODE: 'sandbox' });
+      const { http, calls } = fakeHttp(answer());
+      await new MomoGateway(http).queryStatus(query);
+      const [call] = calls;
+      expect(call?.url).toBe('https://test-payment.momo.vn/v2/gateway/api/query');
+      const body = call?.body as Record<string, string>;
+      expect(body).toMatchObject({ partnerCode: 'MOMOTEST', orderId: 'VCPAB3DEF7K9M', lang: 'vi' });
+      const raw = `accessKey=access-key&orderId=VCPAB3DEF7K9M&partnerCode=MOMOTEST&requestId=${body.requestId}`;
+      expect(momoQuerySigningData('access-key', body as never)).toBe(raw);
+      expect(body.signature).toBe(sign(raw));
+    });
+
+    it('reads a paid answer with the same transaction id the IPN carries', async () => {
+      setEnv({ ...MOMO_ENV, MOMO_MODE: 'sandbox' });
+      const status = await new MomoGateway(fakeHttp(answer()).http).queryStatus(query);
+      expect(status).toMatchObject({
+        state: 'PAID',
+        event: {
+          provider: 'MOMO',
+          referenceCode: 'VCPAB3DEF7K9M',
+          providerTxnId: '4100000001',
+          amountVnd: 3_000_000,
+          outcome: 'PAID',
+          raw: { source: 'query' },
+        },
+      });
+    });
+
+    it.each([
+      [1000, 'PENDING'],
+      [7000, 'PENDING'],
+      [7002, 'PENDING'],
+      [9000, 'PENDING'],
+      [1006, 'FAILED'],
+      [1005, 'FAILED'],
+      [42, 'UNKNOWN'],
+      [99, 'UNKNOWN'],
+    ] as const)('maps resultCode %s to %s', async (resultCode, state) => {
+      setEnv({ ...MOMO_ENV, MOMO_MODE: 'sandbox' });
+      const status = await new MomoGateway(fakeHttp(answer({ resultCode })).http).queryStatus(
+        query,
+      );
+      expect(status.state).toBe(state);
+    });
+
+    it('does not trust an answer for another order or partner, or an HTTP failure', async () => {
+      setEnv({ ...MOMO_ENV, MOMO_MODE: 'sandbox' });
+      const ask = (reply: Record<string, unknown>, ok = true) =>
+        new MomoGateway(fakeHttp(reply, ok).http).queryStatus(query);
+      expect((await ask(answer({ orderId: 'VCPOTHER' }))).state).toBe('UNKNOWN');
+      expect((await ask(answer({ partnerCode: 'OTHER' }))).state).toBe('UNKNOWN');
+      expect((await ask(answer(), false)).state).toBe('UNKNOWN');
+      const broken: PaymentHttp = async () => {
+        throw new Error('timeout');
+      };
+      expect((await new MomoGateway(broken).queryStatus(query)).state).toBe('UNKNOWN');
     });
   });
 

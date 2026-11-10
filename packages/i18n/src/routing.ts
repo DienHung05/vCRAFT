@@ -24,6 +24,8 @@ export const pathnames = {
   '/yeu-cau-bao-gia/moi': { vi: '/yeu-cau-bao-gia/moi', en: '/quotes/new' },
   '/yeu-cau-bao-gia/[code]': { vi: '/yeu-cau-bao-gia/[code]', en: '/quotes/[code]' },
   '/thanh-toan/[ref]': { vi: '/thanh-toan/[ref]', en: '/payment/[ref]' },
+  // Demo payment mode (ADR-0025): the public page a QR code opens; the API builds its vi link.
+  '/thanh-toan/thu/[ref]': { vi: '/thanh-toan/thu/[ref]', en: '/payment/demo/[ref]' },
   // Tài khoản và phiên (FR-AUTH, SRS §5.1)
   '/dang-nhap': { vi: '/dang-nhap', en: '/login' },
   '/dang-ky': { vi: '/dang-ky', en: '/register' },

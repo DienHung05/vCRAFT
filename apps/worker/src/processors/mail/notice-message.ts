@@ -153,6 +153,7 @@ const PAGE_PATH: Record<NotificationTargetPage, string> = {
   BUYER_RFQ: 'yeu-cau-bao-gia/{id}',
   STUDIO_CONTRIBUTION: 'studio/de-xuat-tham-gia/{id}',
   ADMIN_COORDINATION: 'admin/dieu-phoi/{id}',
+  ADMIN_PAYMENTS: 'admin/thanh-toan',
   ADMIN_HOUSEHOLD_REVIEW: 'admin/duyet-ho/{id}',
   STUDIO_APPLICATION: 'studio/ho-so',
   NEWS_ARTICLE: 'tin-tuc/{id}',

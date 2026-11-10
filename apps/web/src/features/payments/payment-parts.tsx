@@ -2,13 +2,21 @@
 
 import type { PaymentClient } from '@vcraft/api-client';
 import type { PaymentDto } from '@vcraft/contracts';
-import { Badge, Button, buttonVariants } from '@vcraft/ui';
+import { Badge, Button, buttonVariants, cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { useMoney } from '@/lib/use-money';
+import { DemoQr } from './demo-qr';
 
 /** How often a pending payment is read again (ADR-0021: every 3 s, stop on a final state). */
 export const PAYMENT_POLL_MS = 3_000;
+
+/** VNPay and MoMo: the buyer pays on the provider's page and the server asks the provider for the result. */
+export const isWallet = (payment: Pick<PaymentDto, 'method'>) =>
+  payment.method === 'VNPAY' || payment.method === 'MOMO';
+
+/** A rehearsal payment of demo payment mode (ADR-0025): confirmed on a phone, never by a provider. */
+export const isDemo = (payment: Pick<PaymentDto, 'checkout'>) => payment.checkout?.type === 'DEMO';
 
 export const isFinalPayment = (status: PaymentDto['status']) => status !== 'PENDING';
 
@@ -79,7 +87,7 @@ export function usePaymentPoll(
   }, [client, reference]);
 }
 
-function CopyButton({ value }: { value: string }) {
+export function CopyButton({ value, label }: { value: string; label?: string }) {
   const t = useTranslations('payments.bank');
   const [copied, setCopied] = useState(false);
   return (
@@ -87,6 +95,7 @@ function CopyButton({ value }: { value: string }) {
       type="button"
       variant="secondary"
       size="sm"
+      aria-label={label}
       onClick={() => {
         void navigator.clipboard
           ?.writeText(value)
@@ -99,6 +108,16 @@ function CopyButton({ value }: { value: string }) {
   );
 }
 
+/** True on touch-first devices (phones, tablets), where a wallet's app deeplink can actually open the app. */
+function useCoarsePointer() {
+  const [coarse, setCoarse] = useState(false);
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    setCoarse(window.matchMedia('(pointer: coarse)').matches);
+  }, []);
+  return coarse;
+}
+
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -108,11 +127,39 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
+/** The compact facts of a payment: its code (to quote to the board), amount, method, kind and when it was paid. */
+export function PaymentSummary({ payment }: { payment: PaymentDto }) {
+  const t = useTranslations('payments');
+  const format = useFormatter();
+  const money = useMoney();
+  return (
+    <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-[auto_1fr]">
+      <dt className="text-small text-ash">{t('result.code')}</dt>
+      <dd className="flex min-w-0 flex-wrap items-center gap-2">
+        <span className="break-all font-medium font-mono" data-testid="payment-code">
+          {payment.referenceCode}
+        </span>
+        <CopyButton value={payment.referenceCode} label={t('result.copyCode')} />
+      </dd>
+      <dt className="text-small text-ash">{t('result.amount')}</dt>
+      <dd className="font-medium">{money(payment.amountVnd)}</dd>
+      <dt className="text-small text-ash">{t('result.method')}</dt>
+      <dd>{t(`method.${payment.method}`)}</dd>
+      <dt className="text-small text-ash">{t('result.kind')}</dt>
+      <dd>{t(`kind.${payment.kind}`)}</dd>
+      {payment.paidAt ? (
+        <>
+          <dt className="text-small text-ash">{t('result.paidAt')}</dt>
+          <dd>{format.dateTime(new Date(payment.paidAt), 'stamp')}</dd>
+        </>
+      ) : null}
+    </dl>
+  );
+}
+
 /** How to pay a pending payment: the bank panel with its QR, or the link to the wallet's page. */
 export function PaymentCheckout({ payment }: { payment: PaymentDto }) {
   const bank = useTranslations('payments.bank');
-  const redirect = useTranslations('payments.redirect');
-  const method = useTranslations('payments.method');
   const money = useMoney();
   const checkout = payment.checkout;
   if (!checkout) return null;
@@ -157,19 +204,95 @@ export function PaymentCheckout({ payment }: { payment: PaymentDto }) {
     );
   }
 
+  if (checkout.type === 'DEMO') {
+    return <DemoCheckout payment={payment} confirmUrl={checkout.confirmUrl} />;
+  }
+
+  return <RedirectCheckout payment={payment} url={checkout.url} deeplink={checkout.deeplink} />;
+}
+
+/**
+ * Demo payment mode (ADR-0025): a QR of the link to our own confirm page, to scan with a phone. Labelled as a
+ * rehearsal everywhere; no provider logo or look-alike branding.
+ */
+function DemoCheckout({ payment, confirmUrl }: { payment: PaymentDto; confirmUrl: string }) {
+  const t = useTranslations('payments.demo');
+  const method = useTranslations('payments.method');
+  const short = useTranslations('payments.methodShort');
+  const money = useMoney();
+  const wallet = payment.method === 'VNPAY' || payment.method === 'MOMO';
+  return (
+    <section aria-labelledby={`demo-${payment.id}`} className="flex flex-col gap-4">
+      <h3 id={`demo-${payment.id}`} className="text-h4">
+        {wallet ? t('titleWallet', { method: short(payment.method) }) : t('title')}
+      </h3>
+      <p>
+        <Badge tone="outline" data-testid="demo-notice">
+          {t('notice')}
+        </Badge>
+      </p>
+      <div className="flex flex-col gap-6 md:flex-row md:items-start">
+        <DemoQr url={confirmUrl} label={t('qrLabel')} />
+        <div className="flex min-w-0 flex-col gap-4">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
+            <dt className="text-small text-ash">{t('amount')}</dt>
+            <dd className="font-medium">{money(payment.amountVnd)}</dd>
+            <dt className="text-small text-ash">{t('method')}</dt>
+            <dd className="font-medium">{method(payment.method)}</dd>
+            <dt className="text-small text-ash">{t('reference')}</dt>
+            <dd className="break-all font-medium font-mono" data-testid="demo-reference">
+              {payment.referenceCode}
+            </dd>
+          </dl>
+          <ol
+            aria-label={t('stepsLabel')}
+            className="flex list-decimal flex-col gap-1 pl-5 text-ash"
+          >
+            <li>{t('step1')}</li>
+            <li>{t('step2')}</li>
+            <li>{t('step3')}</li>
+          </ol>
+          <a
+            href={confirmUrl}
+            target="_blank"
+            rel="noopener"
+            data-testid="demo-open-here"
+            className={cn(buttonVariants({ variant: 'secondary' }), 'self-start')}
+          >
+            {t('openHere')}
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function RedirectCheckout({
+  payment,
+  url,
+  deeplink,
+}: {
+  payment: PaymentDto;
+  url: string;
+  deeplink: string | null;
+}) {
+  const redirect = useTranslations('payments.redirect');
+  const short = useTranslations('payments.methodShort');
+  const coarse = useCoarsePointer();
+  const method = short(payment.method);
   return (
     <section aria-labelledby={`redirect-${payment.id}`} className="flex flex-col gap-3">
       <h3 id={`redirect-${payment.id}`} className="text-h4">
-        {redirect('title', { method: method(payment.method) })}
+        {redirect('title', { method })}
       </h3>
       <p className="text-ash">{redirect('text')}</p>
       <div className="flex flex-wrap gap-3">
-        <a href={checkout.url} className={buttonVariants({ variant: 'primary' })}>
-          {redirect('open')}
+        <a href={url} className={buttonVariants({ variant: 'primary' })}>
+          {redirect('open', { method })}
         </a>
-        {checkout.deeplink ? (
-          <a href={checkout.deeplink} className={buttonVariants({ variant: 'secondary' })}>
-            {redirect('app')}
+        {deeplink && coarse ? (
+          <a href={deeplink} className={buttonVariants({ variant: 'secondary' })}>
+            {redirect('app', { method })}
           </a>
         ) : null}
       </div>
@@ -180,14 +303,25 @@ export function PaymentCheckout({ payment }: { payment: PaymentDto }) {
 /** The one-line state of a payment: waiting, paid, failed, expired, cancelled, refunded. */
 export function PaymentLiveLine({ payment }: { payment: PaymentDto }) {
   const t = useTranslations('payments.live');
+  const short = useTranslations('payments.methodShort');
   const format = useFormatter();
   const stamp = (iso: string) => format.dateTime(new Date(iso), 'stamp');
   switch (payment.status) {
     case 'PENDING':
       return (
-        <p role="status" className="text-ash">
-          {t('waiting')}{' '}
-          {payment.expiresAt ? t('expiresAt', { time: stamp(payment.expiresAt) }) : ''}
+        <p role="status" className="flex items-start gap-2.5 text-ash">
+          <span
+            aria-hidden="true"
+            className="mt-[9px] size-2 shrink-0 rounded-full bg-clay motion-safe:animate-pulse"
+          />
+          <span>
+            {isDemo(payment)
+              ? t('waitingDemo')
+              : isWallet(payment)
+                ? t('waitingWallet', { method: short(payment.method) })
+                : t('waiting')}{' '}
+            {payment.expiresAt ? t('expiresAt', { time: stamp(payment.expiresAt) }) : ''}
+          </span>
         </p>
       );
     case 'PAID':

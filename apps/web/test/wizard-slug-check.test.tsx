@@ -29,6 +29,12 @@ beforeEach(() => {
     currentPolicyVersion: '2026-11-01',
     data: [
       { id: 'x', purpose: 'SIGN_UP', policyVersion: '2026-11-01', givenAt: '2026-11-01T00:00:00Z' },
+      {
+        id: 'y',
+        purpose: 'ID_DOCUMENT',
+        policyVersion: '2026-11-01',
+        givenAt: '2026-11-01T00:00:00Z',
+      },
     ],
   });
 });

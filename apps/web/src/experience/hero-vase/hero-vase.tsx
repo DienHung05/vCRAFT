@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { canRun3d, readDeviceFacts } from './capability';
+import { FORM_SECONDS } from './turning-vase';
 import { scrollProgress } from './vase-profiles';
 
 // three.js and R3F load only here, after the decision below, never in the route's first-load JS.
@@ -24,6 +25,19 @@ export function HeroVase({ sectionId }: { sectionId: string }) {
   const [ready, setReady] = useState(false);
   const progress = useRef(0);
   const onReady = useCallback(() => setReady(true), []);
+
+  useEffect(() => {
+    // SMIL ignores prefers-reduced-motion: show the finished vase at once instead of the forming story.
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      const svg = document
+        .getElementById(sectionId)
+        ?.querySelector<SVGSVGElement>('[data-testid="turning-vase"]');
+      if (svg && typeof svg.pauseAnimations === 'function') {
+        svg.setCurrentTime(FORM_SECONDS.glaze + FORM_SECONDS.glazeFor);
+        svg.pauseAnimations();
+      }
+    }
+  }, [sectionId]);
 
   useEffect(() => {
     if (!canRun3d(readDeviceFacts())) return;

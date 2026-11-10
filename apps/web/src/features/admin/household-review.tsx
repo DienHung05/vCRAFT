@@ -1,7 +1,7 @@
 'use client';
 
 import { type AdminClient, ApiError, type HouseholdAction } from '@vcraft/api-client';
-import type { HouseholdDocumentDto, HouseholdDto } from '@vcraft/contracts';
+import type { HouseholdDocumentDto, HouseholdDto, ProductDto } from '@vcraft/contracts';
 import { isInBatTrang } from '@vcraft/domain';
 import { Badge, Button, buttonVariants, Card, cn, SealStamp, stampShakeClass } from '@vcraft/ui';
 import dynamic from 'next/dynamic';
@@ -166,6 +166,155 @@ function DocumentGroups({
   );
 }
 
+/** The household's products with the board's moderation: withdraw (with a reason) and republish. */
+function ProductsCard({
+  products,
+  client,
+  onChanged,
+  onStale,
+}: {
+  products: readonly ProductDto[];
+  client: AdminClient;
+  onChanged: (product: ProductDto) => void;
+  onStale: () => Promise<void>;
+}) {
+  const t = useTranslations('admin.review');
+  const statuses = useTranslations('studio.products.statuses');
+  const [pending, setPending] = useState<{
+    product: ProductDto;
+    action: 'withdraw' | 'republish';
+  } | null>(null);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<'stale' | 'failed' | null>(null);
+
+  const run = async () => {
+    if (!pending) return;
+    const { product, action } = pending;
+    setPending(null);
+    setBusy(true);
+    setResult(null);
+    try {
+      const next =
+        action === 'withdraw'
+          ? await client.withdrawProduct(product.id, product.version, reason.trim())
+          : await client.republishProduct(product.id, product.version);
+      onChanged(next);
+      setReason('');
+      notify.success(t(action === 'withdraw' ? 'productWithdrawn' : 'productRepublished'));
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        await onStale();
+        setResult('stale');
+      } else {
+        setResult('failed');
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const close = () => {
+    setPending(null);
+    setReason('');
+  };
+
+  return (
+    <Card className="flex min-w-0 flex-col gap-3 p-5" data-testid="review-products">
+      <h2 className="text-h3">{t('products')}</h2>
+      <p className="text-small text-ash">{t('productsHint')}</p>
+      {products.length === 0 ? (
+        <p className="text-small text-ash">{t('noProducts')}</p>
+      ) : (
+        <ul className="flex flex-col">
+          {products.map((product) => {
+            const canWithdraw = product.status === 'PUBLISHED' || product.status === 'SOLD';
+            const canRepublish = product.status === 'WITHDRAWN' && product.withdrawnBy === 'BOARD';
+            return (
+              <li
+                key={product.id}
+                className="flex flex-wrap items-center justify-between gap-3 border-ink/10 border-b py-3 last:border-b-0"
+              >
+                <div className="min-w-0 flex-1 basis-56">
+                  <p className="break-words font-medium">{product.name}</p>
+                  {product.status === 'WITHDRAWN' ? (
+                    <p className="text-small text-ash">
+                      {product.withdrawnBy
+                        ? t(`withdrawnBy.${product.withdrawnBy}`)
+                        : t('withdrawnByUnknown')}
+                      {product.withdrawnReason
+                        ? ` · ${t('withdrawnReason', { reason: product.withdrawnReason })}`
+                        : ''}
+                    </p>
+                  ) : null}
+                </div>
+                <Badge tone={product.status === 'PUBLISHED' ? 'lacquer' : 'outline'}>
+                  {statuses(product.status)}
+                </Badge>
+                {canWithdraw ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={busy}
+                    aria-label={t('withdrawProductNamed', { name: product.name })}
+                    onClick={() => setPending({ product, action: 'withdraw' })}
+                  >
+                    {t('withdrawProduct')}
+                  </Button>
+                ) : null}
+                {canRepublish ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={busy}
+                    aria-label={t('republishProductNamed', { name: product.name })}
+                    onClick={() => setPending({ product, action: 'republish' })}
+                  >
+                    {t('republishProduct')}
+                  </Button>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {result ? (
+        <p role="alert" className="text-small text-seal">
+          {t(result === 'stale' ? 'productStale' : 'productFailed')}
+        </p>
+      ) : null}
+      <ConfirmDialog
+        open={pending !== null}
+        tone={pending?.action === 'withdraw' ? 'seal' : 'primary'}
+        title={pending ? t(`productConfirm.${pending.action}.title`) : ''}
+        confirmLabel={pending ? t(`productConfirm.${pending.action}.confirm`) : ''}
+        cancelLabel={t('back')}
+        confirmDisabled={busy || (pending?.action === 'withdraw' && reason.trim().length < 3)}
+        onClose={close}
+        onConfirm={() => void run()}
+      >
+        {pending ? (
+          <p className="text-ash">
+            {t(`productConfirm.${pending.action}.text`, { name: pending.product.name })}
+          </p>
+        ) : null}
+        {pending?.action === 'withdraw' ? (
+          <label className="flex flex-col gap-1 text-small">
+            {t('reason')}
+            <textarea
+              rows={2}
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              className="rounded-input border border-ink/20 bg-surface px-3 py-2"
+            />
+          </label>
+        ) : null}
+      </ConfirmDialog>
+    </Card>
+  );
+}
+
 /**
  * Duyệt một hộ (FR-ADM-02 … 04): thông tin khai ↔ giấy tờ (URL ký 5 phút, chỉ Admin) ↔ xưởng trên
  * bản đồ, cùng các quyết định: duyệt có hiệu ứng đóng ấn, từ chối và yêu cầu bổ sung phải có lý do,
@@ -191,7 +340,11 @@ export function HouseholdReview({
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<HouseholdAction | null>(null);
-  const [result, setResult] = useState<'sealed' | 'done' | 'stale' | 'failed' | null>(null);
+  const [result, setResult] = useState<
+    'sealed' | 'done' | 'stale' | 'failed' | 'incomplete' | null
+  >(null);
+  // Parts the API reported missing on a 422 APPLICATION_INCOMPLETE (profile, workshops, documents).
+  const [missingParts, setMissingParts] = useState<string[]>([]);
   // FR-ART-03: the certification being toggled, and how the last toggle ended.
   const [certBusy, setCertBusy] = useState<number | null>(null);
   const [certResult, setCertResult] = useState<'stale' | 'failed' | null>(null);
@@ -239,6 +392,7 @@ export function HouseholdReview({
   const decide = async (action: HouseholdAction) => {
     setBusy(true);
     setResult(null);
+    setMissingParts([]);
     try {
       setHousehold(await client.decide(household.id, action, household.version, reason.trim()));
       setReason('');
@@ -248,6 +402,9 @@ export function HouseholdReview({
       if (error instanceof ApiError && error.status === 409) {
         await load();
         setResult('stale');
+      } else if (error instanceof ApiError && error.code === 'APPLICATION_INCOMPLETE') {
+        setMissingParts(error.fieldErrors.map((e) => e.path));
+        setResult('incomplete');
       } else {
         setResult('failed');
       }
@@ -473,6 +630,18 @@ export function HouseholdReview({
         ) : null}
       </Card>
 
+      <ProductsCard
+        products={household.products ?? []}
+        client={client}
+        onChanged={(next) =>
+          setHousehold({
+            ...household,
+            products: (household.products ?? []).map((p) => (p.id === next.id ? next : p)),
+          })
+        }
+        onStale={load}
+      />
+
       {actions.length > 0 ? (
         <Card className="flex flex-col gap-4 p-5">
           <h2 className="text-h3">{t('decision')}</h2>
@@ -523,6 +692,19 @@ export function HouseholdReview({
           <p className="text-small">{t('currentReason', { reason: reason.trim() })}</p>
         ) : null}
       </ConfirmDialog>
+      {result === 'incomplete' ? (
+        <p role="alert" className="text-small text-seal">
+          {t('incomplete', {
+            parts: missingParts
+              .map((part) =>
+                part === 'profile' || part === 'workshops' || part === 'documents'
+                  ? t(`incompleteParts.${part}`)
+                  : part,
+              )
+              .join(', '),
+          })}
+        </p>
+      ) : null}
       {result === 'stale' || result === 'failed' ? (
         <p role="alert" className="text-small text-seal">
           {t(result === 'stale' ? 'stale' : 'failed_action')}

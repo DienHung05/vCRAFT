@@ -27,7 +27,10 @@ beforeEach(() => {
   for (const fn of Object.values(account)) fn.mockReset();
   account.listConsents.mockResolvedValue({
     currentPolicyVersion: POLICY,
-    data: [{ id: 'x', purpose: 'SIGN_UP', policyVersion: POLICY, givenAt: '2026-11-01T00:00:00Z' }],
+    data: [
+      { id: 'x', purpose: 'SIGN_UP', policyVersion: POLICY, givenAt: '2026-11-01T00:00:00Z' },
+      { id: 'y', purpose: 'ID_DOCUMENT', policyVersion: POLICY, givenAt: '2026-11-01T00:00:00Z' },
+    ],
   });
   account.applyHousehold.mockResolvedValue({});
 });

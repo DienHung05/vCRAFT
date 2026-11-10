@@ -54,6 +54,14 @@ export const PaymentCheckoutSchema = z.discriminatedUnion('type', [
     deeplink: z.string().nullable(),
     qrImageUrl: z.string().nullable(),
   }),
+  /**
+   * Demo payment mode (ADR-0025): no provider is called. The QR encodes this link to our own confirm page, which
+   * carries a per-payment secret; it is never a bank (VietQR) code.
+   */
+  z.strictObject({
+    type: z.literal('DEMO'),
+    confirmUrl: z.string(),
+  }),
 ]);
 export type PaymentCheckoutDto = z.infer<typeof PaymentCheckoutSchema>;
 
@@ -109,9 +117,32 @@ export const OrderPaymentsResponseSchema = z.strictObject({
   ),
   /** The sandbox "simulate transfer" button is available (`APP_ENV` is not production). */
   simulateAvailable: z.boolean(),
+  /** Demo payment mode is on (ADR-0025): every method is a rehearsal, no real money moves. */
+  demo: z.boolean(),
   payments: z.array(PaymentResponseSchema),
 });
 export type OrderPaymentsDto = z.infer<typeof OrderPaymentsResponseSchema>;
+
+/**
+ * Demo payment mode (ADR-0025). `GET /payments/demo/{ref}?k=` shows a payment to the person who scanned its QR;
+ * only what the confirm page needs, no buyer or order details.
+ */
+export const DemoPaymentViewSchema = z.strictObject({
+  referenceCode: z.string(),
+  amountVnd: VndSchema,
+  method: OnlinePaymentMethodSchema,
+  kind: PaymentKindSchema,
+  status: PaymentStatusSchema,
+  expiresAt: IsoDateTimeSchema.nullable(),
+});
+export type DemoPaymentViewDto = z.infer<typeof DemoPaymentViewSchema>;
+
+/** `POST /payments/demo/{ref}/confirm`: the person holding the QR confirms or declines the rehearsal payment. */
+export const DemoConfirmRequestSchema = z.strictObject({
+  token: z.string().min(1).max(200),
+  outcome: z.enum(['PAID', 'FAILED']),
+});
+export type DemoConfirmRequest = z.infer<typeof DemoConfirmRequestSchema>;
 
 /** `POST /admin/orders/{id}/payments/offline`: an administrator records a balance paid outside the site. */
 export const RecordOfflinePaymentRequestSchema = z.strictObject({

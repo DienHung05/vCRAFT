@@ -309,6 +309,13 @@
   "trace": {
     "home": "Back to the vCraft home page",
     "book": "Craft book",
+    "navigation": "Explore beyond this craft book",
+    "backToProduct": "Back to the product",
+    "browseProducts": "Browse products",
+    "viewHousehold": "Meet the household",
+    "contents": "Inside this craft book",
+    "checkJournal": "Journal integrity",
+    "readJournal": "Production journal",
     "notFoundTitle": "This code isn't in vCraft",
     "notFoundText": "We couldn't find code {code}. This piece may not come from a craft village on vCraft, or the label may be counterfeit. Please check the code under the product again.",
     "scanned": "You just scanned the seal of",
@@ -371,7 +378,12 @@
     "counts": "{done}/{total} {unit} · expected {expected} · promised {due}",
     "started": "Started",
     "empty": "No allocations yet.",
-    "lateness": { "DONE": "Done", "ON_TRACK": "On track", "BEHIND": "Behind", "OVERDUE": "Overdue" }
+    "lateness": {
+      "DONE": "Done",
+      "ON_TRACK": "On track",
+      "BEHIND": "Behind",
+      "OVERDUE": "Overdue"
+    }
   },
   "rfq": {
     "duplicate": {
@@ -920,6 +932,12 @@
       "saved": "Decision saved.",
       "stale": "This application just changed. We loaded the latest version; check it and decide again.",
       "failed_action": "We could not save the decision.",
+      "incomplete": "The application is incomplete, so it cannot be approved. Still missing: {parts}. Ask the household to complete it and submit again.",
+      "incompleteParts": {
+        "profile": "Household profile",
+        "workshops": "At least one workshop",
+        "documents": "At least one document"
+      },
       "actions": {
         "approve": "Approve",
         "reject": "Reject",
@@ -968,7 +986,36 @@
       "revealIdNumber": "Show full number",
       "hideIdNumber": "Hide",
       "revealAudited": "Every time the full number is shown it is written to the audit log.",
-      "idNumberFailed": "The ID number could not be shown."
+      "idNumberFailed": "The ID number could not be shown.",
+      "products": "Household products",
+      "productsHint": "The board can take a product off the public pages (with a reason, written to the audit log) and bring back a product the board withdrew.",
+      "noProducts": "The household has no products yet.",
+      "withdrawnBy": {
+        "OWNER": "Archived by the household",
+        "BOARD": "Withdrawn by the board"
+      },
+      "withdrawnByUnknown": "Archived",
+      "withdrawnReason": "Reason: {reason}",
+      "withdrawProduct": "Withdraw product",
+      "withdrawProductNamed": "Withdraw product “{name}”",
+      "republishProduct": "Republish",
+      "republishProductNamed": "Republish product “{name}”",
+      "productConfirm": {
+        "withdraw": {
+          "title": "Withdraw this product?",
+          "text": "{name} will stop showing publicly and the household cannot bring it back on its own.",
+          "confirm": "Withdraw product"
+        },
+        "republish": {
+          "title": "Republish this product?",
+          "text": "{name} will show publicly again.",
+          "confirm": "Republish"
+        }
+      },
+      "productWithdrawn": "Product withdrawn.",
+      "productRepublished": "Product republished.",
+      "productFailed": "The product could not be updated. Please try again.",
+      "productStale": "The product just changed. The latest version is loaded; check it and try again."
     },
     "coordinationQueue": {
       "title": "Coordination",
@@ -1046,12 +1093,15 @@
           "set_id_number": "Set or changed citizen ID number",
           "certification_verify": "Verified a certification",
           "certification_unverify": "Removed a certification's verification",
-          "resubmit": "Resubmit application"
+          "resubmit": "Resubmit application",
+          "submit": "Submitted application"
         },
         "product": {
           "publish": "Published product",
           "withdraw": "Withdrew product",
-          "republish": "Republished product"
+          "republish": "Republished product",
+          "mark_sold": "Marked product as sold",
+          "back_on_sale": "Put product back on sale"
         },
         "rfq": {
           "create": "Created request for an off-platform customer",
@@ -1461,9 +1511,9 @@
       "BALANCE": "Balance"
     },
     "method": {
-      "SEPAY_TRANSFER": "Bank transfer / VietQR",
-      "VNPAY": "VNPay (sandbox)",
-      "MOMO": "MoMo (sandbox)",
+      "SEPAY_TRANSFER": "Bank transfer (VietQR)",
+      "VNPAY": "VNPay",
+      "MOMO": "MoMo wallet",
       "OFFLINE": "Offline (recorded by the board)"
     },
     "status": {
@@ -1481,16 +1531,28 @@
       "balance": "Balance",
       "paidOn": "Paid on {date}",
       "notPaid": "Not paid yet",
-      "depositRequired": "Production starts after the deposit is paid.",
-      "sandbox": "Sandbox: no real money moves through VNPay and MoMo."
+      "depositRequired": "Production starts after the deposit is paid."
     },
     "pay": {
       "deposit": "Pay the deposit",
       "balance": "Pay the balance",
       "choose": "Choose how to pay",
-      "start": "Continue",
       "starting": "Preparing…",
-      "noMethods": "Online payment is not available right now. The management board will tell you how to pay."
+      "noMethods": "Online payment is not available right now. The management board will tell you how to pay.",
+      "startBy": {
+        "SEPAY_TRANSFER": "Show transfer details",
+        "VNPAY": "Pay with VNPay",
+        "MOMO": "Pay with MoMo"
+      },
+      "redirecting": "Taking you to {method}…",
+      "testBadge": "Test mode",
+      "sandboxNote": "Test mode: {methods} do not take real money.",
+      "startDemo": "Create a payment QR code",
+      "demoNote": "Demo mode: no real transactions take place.",
+      "demoHint": "Create a QR code, then scan it with your phone to confirm the demo payment.",
+      "overMax": "The amount is over the {max} limit of this method",
+      "underMin": "The amount is under the {min} minimum of this method",
+      "noneFit": "This amount does not fit the limits of any method. The management board will tell you how to pay."
     },
     "bank": {
       "title": "Pay by bank transfer",
@@ -1508,19 +1570,21 @@
     "redirect": {
       "title": "Pay with {method}",
       "text": "You will pay on the provider page and come back here. This page confirms the payment once the provider tells us.",
-      "open": "Open the payment page",
-      "app": "Open the app"
+      "open": "Continue paying on {method}",
+      "app": "Open the {method} app"
     },
     "live": {
       "waiting": "Waiting for the money. This page updates by itself.",
       "expiresAt": "Pay before {time}.",
       "paid": "Payment received. Thank you.",
       "paidAt": "Received on {time}.",
-      "failed": "The payment did not go through. You can start a new one.",
-      "expired": "This payment expired before the money arrived. Start a new one. If you did transfer, tell the management board.",
+      "failed": "The provider reported that the payment did not go through.",
+      "expired": "This payment expired before the money arrived.",
       "cancelled": "This payment was cancelled.",
       "refunded": "The management board marked this payment as refunded.",
-      "refundReason": "Reason: {reason}"
+      "refundReason": "Reason: {reason}",
+      "waitingWallet": "Waiting for {method} to confirm. This page updates by itself.",
+      "waitingDemo": "Waiting for you to confirm on your phone. This page updates by itself."
     },
     "cancel": "Cancel this payment",
     "cancelling": "Cancelling…",
@@ -1537,9 +1601,74 @@
     "result": {
       "title": "Payment result",
       "back": "Back to the order",
-      "allOrders": "All requests"
+      "allOrders": "All requests",
+      "heading": {
+        "PENDING": "Confirming your payment",
+        "PAID": "Payment successful",
+        "FAILED": "Payment did not go through",
+        "EXPIRED": "This payment has expired",
+        "CANCELLED": "Payment cancelled",
+        "REFUNDED": "Refunded"
+      },
+      "code": "Payment code",
+      "copyCode": "Copy payment code",
+      "amount": "Amount",
+      "method": "Method",
+      "kind": "Type",
+      "paidAt": "Paid at",
+      "another": "Choose another way to pay",
+      "noMoney": "The system has not recorded any money for this payment.",
+      "contactWallet": "If money left your account, contact the village management board and send the payment code.",
+      "contactBank": "If you did transfer, tell the village management board and send the payment code.",
+      "pendingNote": "If you have already paid, the result usually shows up within a few seconds.",
+      "slowHint": "Still no result? You can close this page — the system keeps checking and will let you know when the money arrives."
     },
-    "refundDue": "Refund due"
+    "methodShort": {
+      "SEPAY_TRANSFER": "your bank",
+      "VNPAY": "VNPay",
+      "MOMO": "MoMo",
+      "OFFLINE": "the board"
+    },
+    "methodHint": {
+      "SEPAY_TRANSFER": "Scan the VietQR code with your banking app, or transfer by hand. The system confirms automatically when the money arrives.",
+      "VNPAY": "Domestic ATM cards, Internet Banking, international cards or VNPAY-QR.",
+      "MOMO": "Pay with the MoMo wallet on your phone."
+    },
+    "refundDue": "Refund due",
+    "demo": {
+      "title": "Scan the code to pay (demo)",
+      "titleWallet": "Demo payment with {method}",
+      "notice": "Demo payment — no real money is taken",
+      "qrLabel": "QR code that opens the demo payment confirmation page",
+      "amount": "Amount",
+      "method": "Method",
+      "reference": "Payment code",
+      "stepsLabel": "Steps of the demo payment",
+      "step1": "Open the camera or a QR scanner app on your phone.",
+      "step2": "Tap “Confirm payment” on the page that opens.",
+      "step3": "This page updates by itself once you have confirmed.",
+      "openHere": "Open the confirmation page on this device",
+      "paidToast": "Payment received"
+    },
+    "demoConfirm": {
+      "title": "Confirm the demo payment",
+      "loading": "Loading the demo payment…",
+      "amount": "Amount",
+      "method": "Method",
+      "kind": "Type",
+      "reference": "Payment code",
+      "confirm": "Confirm payment",
+      "decline": "Cancel the demo payment",
+      "sending": "Sending…",
+      "invalid": "This link is not valid or has expired. Create the QR code again on the payment page.",
+      "alreadyPaid": "This payment has already been paid",
+      "ended": "This demo payment has ended ({status}). Create a new QR code on the payment page.",
+      "confirmed": "Confirmed. Go back to your computer or the order page to see the result.",
+      "declined": "The demo payment was cancelled.",
+      "viewResult": "View the payment result",
+      "error": "The confirmation could not be sent. Please try again.",
+      "retry": "Try again"
+    }
   },
   "rating": {
     "title": "Rate the households",

@@ -1,4 +1,4 @@
-import { buttonVariants, cn } from '@vcraft/ui';
+import { buttonVariants } from '@vcraft/ui';
 import { getTranslations } from 'next-intl/server';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
@@ -18,7 +18,8 @@ export async function FeaturedArtisans({ locale }: { locale: string }) {
     fetchHouseholds(),
   ]);
   const households = householdsResult.status === 'ok' ? householdsResult.data.data : [];
-  const featured = households.filter((h) => h.coverUrl).slice(0, 3);
+  // Four households read as one row of the village (Hộ is the producing unit), not a lone hero card.
+  const featured = households.filter((h) => h.coverUrl).slice(0, 4);
 
   if (householdsResult.status !== 'ok') {
     return <DataUnavailable className="mt-10 flex flex-col items-start gap-3" />;
@@ -39,11 +40,11 @@ export async function FeaturedArtisans({ locale }: { locale: string }) {
     );
   }
   return (
-    <ul className="mt-10 grid gap-8 md:grid-cols-3">
-      {featured.map((h, i) => {
+    <ul className="mt-10 grid grid-cols-2 gap-x-5 gap-y-8 md:grid-cols-3 md:gap-x-6 lg:grid-cols-4">
+      {featured.map((h) => {
         const coverAlt = altFor(locale, h.coverAlt ?? '', h.coverAltEn) || preset('household');
         return (
-          <li key={h.slug} className={cn(i === 1 && 'md:mt-16')}>
+          <li key={h.slug}>
             <Link
               href={{ pathname: '/nghe-nhan/[slug]', params: { slug: h.slug } }}
               className="group block"
@@ -52,13 +53,15 @@ export async function FeaturedArtisans({ locale }: { locale: string }) {
                 <ImageSlot
                   alt={coverAlt}
                   tint={tintOf(h.slug)}
-                  ratio="3/4"
+                  ratio="4/3"
                   {...slotPhoto(photoFromUrl(h.coverUrl, coverAlt, h.coverVariants))}
-                  sizes="(min-width: 768px) 30vw, 100vw"
+                  sizes="(min-width: 1024px) 22vw, (min-width: 768px) 30vw, 45vw"
                   className="motion-safe:transition-transform motion-safe:duration-(--duration-slow) motion-safe:ease-clay motion-safe:group-hover:-translate-y-1"
                 />
               </InkReveal>
-              <h3 className="mt-4 transition-colors group-hover:text-clay">{h.name}</h3>
+              <h3 className="mt-3 text-[1.25rem] leading-snug transition-colors group-hover:text-clay sm:text-h3">
+                {h.name}
+              </h3>
               <p className="text-small text-ash">
                 {[h.representative, craftLabel(locale, h, (category) => crafts(category))]
                   .filter(Boolean)

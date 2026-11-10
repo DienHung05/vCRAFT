@@ -309,6 +309,13 @@
   "trace": {
     "home": "Về trang chủ vCraft",
     "book": "Sổ nghề",
+    "navigation": "Khám phá ngoài sổ nghề",
+    "backToProduct": "Về trang sản phẩm",
+    "browseProducts": "Khám phá sản phẩm",
+    "viewHousehold": "Gặp hộ làm nghề",
+    "contents": "Mục lục sổ nghề",
+    "checkJournal": "Toàn vẹn nhật ký",
+    "readJournal": "Nhật ký sản xuất",
     "notFoundTitle": "Mã này không có trong vCraft",
     "notFoundText": "Không tìm thấy mã {code}. Món đồ này có thể không do làng nghề trên vCraft làm ra, hoặc tem đã bị làm giả. Hãy kiểm lại mã dưới đáy sản phẩm.",
     "scanned": "Bạn vừa quét ấn của",
@@ -925,6 +932,12 @@
       "saved": "Đã lưu quyết định.",
       "stale": "Hồ sơ vừa thay đổi. Đã tải lại bản mới, bạn kiểm tra rồi quyết định lại.",
       "failed_action": "Chưa lưu được quyết định.",
+      "incomplete": "Hồ sơ chưa đầy đủ nên chưa thể duyệt. Còn thiếu: {parts}. Hãy yêu cầu hộ bổ sung rồi gửi lại.",
+      "incompleteParts": {
+        "profile": "Thông tin hộ",
+        "workshops": "Ít nhất một xưởng",
+        "documents": "Ít nhất một giấy tờ"
+      },
       "actions": {
         "approve": "Duyệt",
         "reject": "Từ chối",
@@ -973,7 +986,36 @@
       "revealIdNumber": "Xem số đầy đủ",
       "hideIdNumber": "Ẩn",
       "revealAudited": "Mỗi lần xem số đầy đủ đều được ghi vào nhật ký kiểm toán.",
-      "idNumberFailed": "Chưa xem được số CCCD."
+      "idNumberFailed": "Chưa xem được số CCCD.",
+      "products": "Sản phẩm của hộ",
+      "productsHint": "Ban quản lý có thể gỡ sản phẩm khỏi trang công khai (kèm lý do, được ghi vào nhật ký kiểm toán) và đưa lại sản phẩm do chính Ban gỡ.",
+      "noProducts": "Hộ chưa có sản phẩm.",
+      "withdrawnBy": {
+        "OWNER": "Hộ tự lưu trữ",
+        "BOARD": "Ban quản lý đã gỡ"
+      },
+      "withdrawnByUnknown": "Đã lưu trữ",
+      "withdrawnReason": "Lý do: {reason}",
+      "withdrawProduct": "Gỡ sản phẩm",
+      "withdrawProductNamed": "Gỡ sản phẩm “{name}”",
+      "republishProduct": "Đưa lại",
+      "republishProductNamed": "Đưa lại sản phẩm “{name}”",
+      "productConfirm": {
+        "withdraw": {
+          "title": "Gỡ sản phẩm này?",
+          "text": "Sản phẩm {name} sẽ ngừng hiện công khai và hộ không tự đưa lại được.",
+          "confirm": "Gỡ sản phẩm"
+        },
+        "republish": {
+          "title": "Đưa sản phẩm trở lại?",
+          "text": "Sản phẩm {name} sẽ hiện công khai trở lại.",
+          "confirm": "Đưa lại"
+        }
+      },
+      "productWithdrawn": "Đã gỡ sản phẩm.",
+      "productRepublished": "Đã đưa sản phẩm trở lại.",
+      "productFailed": "Chưa cập nhật được sản phẩm. Bạn thử lại.",
+      "productStale": "Sản phẩm vừa thay đổi. Đã tải lại bản mới, bạn kiểm tra rồi thử lại."
     },
     "coordinationQueue": {
       "title": "Điều phối",
@@ -1051,12 +1093,15 @@
           "set_id_number": "Đặt hoặc đổi số CCCD",
           "certification_verify": "Xác minh chứng nhận",
           "certification_unverify": "Bỏ xác minh chứng nhận",
-          "resubmit": "Gửi lại hồ sơ đã bổ sung"
+          "resubmit": "Gửi lại hồ sơ đã bổ sung",
+          "submit": "Gửi hồ sơ"
         },
         "product": {
           "publish": "Xuất bản sản phẩm",
           "withdraw": "Rút sản phẩm",
-          "republish": "Xuất bản lại sản phẩm"
+          "republish": "Xuất bản lại sản phẩm",
+          "mark_sold": "Đánh dấu sản phẩm đã bán",
+          "back_on_sale": "Mở bán lại sản phẩm"
         },
         "rfq": {
           "create": "Tạo yêu cầu thay mặt khách ngoài hệ thống",
@@ -1466,9 +1511,9 @@
       "BALANCE": "Phần còn lại"
     },
     "method": {
-      "SEPAY_TRANSFER": "Chuyển khoản / VietQR",
-      "VNPAY": "VNPay (sandbox)",
-      "MOMO": "MoMo (sandbox)",
+      "SEPAY_TRANSFER": "Chuyển khoản ngân hàng (VietQR)",
+      "VNPAY": "VNPay",
+      "MOMO": "Ví MoMo",
       "OFFLINE": "Ngoài hệ thống (Ban quản lý ghi nhận)"
     },
     "status": {
@@ -1486,16 +1531,28 @@
       "balance": "Phần còn lại",
       "paidOn": "Đã thanh toán ngày {date}",
       "notPaid": "Chưa thanh toán",
-      "depositRequired": "Đơn hàng bắt đầu sản xuất sau khi đặt cọc.",
-      "sandbox": "Sandbox: VNPay và MoMo không chuyển tiền thật."
+      "depositRequired": "Đơn hàng bắt đầu sản xuất sau khi đặt cọc."
     },
     "pay": {
       "deposit": "Đặt cọc",
       "balance": "Thanh toán phần còn lại",
       "choose": "Chọn cách thanh toán",
-      "start": "Tiếp tục",
       "starting": "Đang chuẩn bị…",
-      "noMethods": "Hiện chưa thanh toán trực tuyến được. Ban quản lý sẽ hướng dẫn bạn cách thanh toán."
+      "noMethods": "Hiện chưa thanh toán trực tuyến được. Ban quản lý sẽ hướng dẫn bạn cách thanh toán.",
+      "startBy": {
+        "SEPAY_TRANSFER": "Hiện thông tin chuyển khoản",
+        "VNPAY": "Thanh toán qua VNPay",
+        "MOMO": "Thanh toán qua MoMo"
+      },
+      "redirecting": "Đang chuyển tới {method}…",
+      "testBadge": "Thử nghiệm",
+      "sandboxNote": "Chế độ thử nghiệm: {methods} không trừ tiền thật.",
+      "startDemo": "Tạo mã QR thanh toán",
+      "demoNote": "Chế độ demo: không có giao dịch tiền thật.",
+      "demoHint": "Tạo mã QR rồi quét bằng điện thoại để xác nhận thanh toán thử.",
+      "overMax": "Số tiền vượt hạn mức {max} của phương thức này",
+      "underMin": "Số tiền dưới mức tối thiểu {min}",
+      "noneFit": "Số tiền này chưa phù hợp với hạn mức của phương thức nào. Ban quản lý sẽ hướng dẫn bạn cách thanh toán."
     },
     "bank": {
       "title": "Thanh toán bằng chuyển khoản",
@@ -1513,19 +1570,21 @@
     "redirect": {
       "title": "Thanh toán bằng {method}",
       "text": "Bạn thanh toán trên trang của nhà cung cấp rồi quay lại đây. Trang này xác nhận khi nhà cung cấp báo về cho hệ thống.",
-      "open": "Mở trang thanh toán",
-      "app": "Mở ứng dụng"
+      "open": "Tiếp tục thanh toán trên {method}",
+      "app": "Mở ứng dụng {method}"
     },
     "live": {
       "waiting": "Đang chờ tiền về. Trang này tự cập nhật.",
       "expiresAt": "Vui lòng thanh toán trước {time}.",
       "paid": "Đã nhận được tiền. Cảm ơn bạn.",
       "paidAt": "Nhận lúc {time}.",
-      "failed": "Thanh toán không thành công. Bạn có thể tạo khoản thanh toán mới.",
-      "expired": "Khoản thanh toán đã hết hạn trước khi tiền về. Hãy tạo khoản mới. Nếu bạn đã chuyển khoản, hãy báo Ban quản lý.",
+      "failed": "Nhà cung cấp báo thanh toán chưa thành công.",
+      "expired": "Khoản thanh toán đã hết hạn trước khi tiền về.",
       "cancelled": "Khoản thanh toán này đã bị hủy.",
       "refunded": "Ban quản lý đã đánh dấu khoản thanh toán này là đã hoàn lại.",
-      "refundReason": "Lý do: {reason}"
+      "refundReason": "Lý do: {reason}",
+      "waitingWallet": "Đang chờ {method} xác nhận. Trang này tự cập nhật.",
+      "waitingDemo": "Đang chờ bạn xác nhận trên điện thoại. Trang này tự cập nhật."
     },
     "cancel": "Hủy khoản thanh toán này",
     "cancelling": "Đang hủy…",
@@ -1542,9 +1601,74 @@
     "result": {
       "title": "Kết quả thanh toán",
       "back": "Về đơn hàng",
-      "allOrders": "Tất cả yêu cầu"
+      "allOrders": "Tất cả yêu cầu",
+      "heading": {
+        "PENDING": "Đang xác nhận thanh toán",
+        "PAID": "Thanh toán thành công",
+        "FAILED": "Thanh toán chưa thành công",
+        "EXPIRED": "Khoản thanh toán đã hết hạn",
+        "CANCELLED": "Đã hủy khoản thanh toán",
+        "REFUNDED": "Đã hoàn tiền"
+      },
+      "code": "Mã thanh toán",
+      "copyCode": "Sao chép mã thanh toán",
+      "amount": "Số tiền",
+      "method": "Phương thức",
+      "kind": "Loại",
+      "paidAt": "Thời điểm thanh toán",
+      "another": "Chọn cách thanh toán khác",
+      "noMoney": "Hệ thống chưa ghi nhận khoản tiền nào cho khoản thanh toán này.",
+      "contactWallet": "Nếu tiền đã rời khỏi tài khoản của bạn, hãy liên hệ Ban quản lý làng nghề và gửi kèm mã thanh toán.",
+      "contactBank": "Nếu bạn đã chuyển khoản, hãy báo Ban quản lý làng nghề và gửi kèm mã thanh toán.",
+      "pendingNote": "Nếu bạn đã thanh toán, kết quả thường có trong vài giây.",
+      "slowHint": "Vẫn chưa có kết quả? Bạn có thể đóng trang này — hệ thống tiếp tục đối chiếu và báo cho bạn khi tiền về."
     },
-    "refundDue": "Cần hoàn lại"
+    "methodShort": {
+      "SEPAY_TRANSFER": "ngân hàng",
+      "VNPAY": "VNPay",
+      "MOMO": "MoMo",
+      "OFFLINE": "Ban quản lý"
+    },
+    "methodHint": {
+      "SEPAY_TRANSFER": "Quét mã VietQR bằng ứng dụng ngân hàng hoặc chuyển khoản thủ công. Hệ thống tự xác nhận khi tiền về.",
+      "VNPAY": "Thẻ ATM nội địa, Internet Banking, thẻ quốc tế hoặc VNPAY-QR.",
+      "MOMO": "Thanh toán bằng ví MoMo trên điện thoại."
+    },
+    "refundDue": "Cần hoàn lại",
+    "demo": {
+      "title": "Quét mã để thanh toán thử",
+      "titleWallet": "Thanh toán thử qua {method}",
+      "notice": "Thanh toán thử — không trừ tiền thật",
+      "qrLabel": "Mã QR mở trang xác nhận thanh toán thử",
+      "amount": "Số tiền",
+      "method": "Phương thức",
+      "reference": "Mã thanh toán",
+      "stepsLabel": "Các bước thanh toán thử",
+      "step1": "Mở camera hoặc ứng dụng quét QR trên điện thoại.",
+      "step2": "Bấm “Xác nhận thanh toán” trên trang vừa mở.",
+      "step3": "Trang này tự cập nhật khi xác nhận xong.",
+      "openHere": "Mở trang xác nhận trên máy này",
+      "paidToast": "Đã nhận thanh toán"
+    },
+    "demoConfirm": {
+      "title": "Xác nhận thanh toán thử",
+      "loading": "Đang tải giao dịch thử…",
+      "amount": "Số tiền",
+      "method": "Phương thức",
+      "kind": "Loại",
+      "reference": "Mã thanh toán",
+      "confirm": "Xác nhận thanh toán",
+      "decline": "Hủy giao dịch thử",
+      "sending": "Đang gửi…",
+      "invalid": "Liên kết không hợp lệ hoặc đã hết hạn. Hãy tạo lại mã QR trên trang thanh toán.",
+      "alreadyPaid": "Khoản này đã được thanh toán",
+      "ended": "Giao dịch thử này đã kết thúc ({status}). Hãy tạo mã QR mới trên trang thanh toán.",
+      "confirmed": "Đã xác nhận. Quay lại máy tính hoặc trang đơn hàng để xem kết quả.",
+      "declined": "Đã hủy giao dịch thử.",
+      "viewResult": "Xem kết quả thanh toán",
+      "error": "Chưa gửi được xác nhận. Hãy thử lại.",
+      "retry": "Thử lại"
+    }
   },
   "rating": {
     "title": "Đánh giá các hộ",

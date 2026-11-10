@@ -8,8 +8,22 @@ import {
   type PaymentGateway,
   type PaymentHttp,
   type PaymentSnapshot,
+  type PaymentStatusQuery,
+  type ProviderStatus,
   type WebhookVerdict,
 } from './payment-gateway';
+
+/** MoMo `resultCode` for a successful payment. */
+export const MOMO_RESULT_SUCCESS = 0;
+/**
+ * `resultCode`s that mean "not finished yet", not "failed": the buyer is still paying or MoMo is still
+ * processing (1000 initiated, 7000 processing, 7002 processing at the provider, 9000 authorized).
+ */
+export const MOMO_IN_PROGRESS_CODES: readonly number[] = [1000, 7000, 7002, 9000];
+/** `resultCode`s that end the attempt without money (declined, cancelled, expired, insufficient funds...). */
+export const MOMO_FAILURE_CODES: readonly number[] = [
+  1001, 1002, 1003, 1004, 1005, 1006, 1007, 1017, 1026,
+];
 
 const hmacSha256 = (secret: string, data: string) =>
   createHmac('sha256', secret).update(data, 'utf8').digest('hex');
@@ -78,8 +92,16 @@ const safeEqualHex = (a: string, b: string) => {
   return left.length === right.length && timingSafeEqual(left, right);
 };
 
+/** The string MoMo signs on a transaction status query (`/v2/gateway/api/query`). */
+export function momoQuerySigningData(
+  accessKey: string,
+  fields: Readonly<Record<'orderId' | 'partnerCode' | 'requestId', string>>,
+): string {
+  return `accessKey=${accessKey}&orderId=${fields.orderId}&partnerCode=${fields.partnerCode}&requestId=${fields.requestId}`;
+}
+
 /**
- * MoMo test environment (ADR-0021): `captureWallet` create returns a `payUrl`, an app deeplink and a QR; the
+ * MoMo (ADR-0021, ADR-0024), test or production endpoints by mode: `captureWallet` create returns a `payUrl`, an app deeplink and a QR; the
  * money is confirmed by the IPN (HMAC-SHA256), never by the redirect back.
  */
 @Injectable()
@@ -154,6 +176,15 @@ export class MomoGateway implements PaymentGateway<Record<string, unknown>> {
     if (!safeEqualHex(data.signature, expected)) {
       return { signatureValid: false, reason: 'BAD_SIGNATURE' };
     }
+    if (data.resultCode !== MOMO_RESULT_SUCCESS && !MOMO_FAILURE_CODES.includes(data.resultCode)) {
+      // Still in progress, or a code that says nothing final: leave the payment pending.
+      return {
+        signatureValid: true,
+        event: null,
+        ignored: 'STILL_PROCESSING',
+        referenceCode: data.orderId,
+      };
+    }
     return {
       signatureValid: true,
       event: {
@@ -161,9 +192,78 @@ export class MomoGateway implements PaymentGateway<Record<string, unknown>> {
         referenceCode: data.orderId,
         providerTxnId: data.transId,
         amountVnd: data.amount,
-        outcome: data.resultCode === 0 ? 'PAID' : 'FAILED',
+        outcome: data.resultCode === MOMO_RESULT_SUCCESS ? 'PAID' : 'FAILED',
         raw: { ...input },
       },
     };
+  }
+
+  /**
+   * Asks MoMo (`/v2/gateway/api/query`) what became of the order, for an IPN that never arrived. The answer is
+   * trusted because it comes over TLS from the configured endpoint; it must name our order and partner.
+   */
+  async queryStatus(payment: PaymentStatusQuery): Promise<ProviderStatus> {
+    const config = paymentsConfig().momo;
+    if (!config) return { state: 'UNKNOWN', detail: 'MoMo is not configured' };
+    const fields = {
+      orderId: payment.referenceCode,
+      partnerCode: config.partnerCode,
+      requestId: randomUUID(),
+    };
+    const signature = momoSign(config.secretKey, momoQuerySigningData(config.accessKey, fields));
+    let answer: Record<string, unknown>;
+    try {
+      const response = await this.http(config.queryEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+        body: JSON.stringify({ ...fields, lang: 'vi', signature }),
+      });
+      if (!response.ok)
+        return { state: 'UNKNOWN', detail: `MoMo answered HTTP ${response.status}` };
+      answer = (await response.json()) as Record<string, unknown>;
+    } catch (error) {
+      return {
+        state: 'UNKNOWN',
+        detail: `MoMo could not be reached: ${error instanceof Error ? error.message : error}`,
+      };
+    }
+    if (answer?.orderId !== payment.referenceCode || answer.partnerCode !== config.partnerCode) {
+      return { state: 'UNKNOWN', detail: 'MoMo answer is for another order' };
+    }
+    const code = Number(answer.resultCode);
+    if (code === MOMO_RESULT_SUCCESS) {
+      const amount = Number(answer.amount);
+      const transId =
+        answer.transId === undefined || answer.transId === null ? '' : String(answer.transId);
+      if (!transId) return { state: 'UNKNOWN', detail: 'MoMo paid answer has no transaction id' };
+      return {
+        state: 'PAID',
+        event: {
+          provider: 'MOMO',
+          referenceCode: payment.referenceCode,
+          providerTxnId: transId,
+          amountVnd: amount,
+          outcome: 'PAID',
+          raw: { source: 'query', ...answer },
+        },
+      };
+    }
+    if (MOMO_IN_PROGRESS_CODES.includes(code)) {
+      return { state: 'PENDING', detail: `MoMo resultCode ${code}` };
+    }
+    if (MOMO_FAILURE_CODES.includes(code)) {
+      return {
+        state: 'FAILED',
+        event: {
+          provider: 'MOMO',
+          referenceCode: payment.referenceCode,
+          providerTxnId: String(answer.transId ?? `${payment.referenceCode}-${code}`),
+          amountVnd: Number(answer.amount),
+          outcome: 'FAILED',
+          raw: { source: 'query', ...answer },
+        },
+      };
+    }
+    return { state: 'UNKNOWN', detail: `MoMo resultCode ${answer.resultCode}` };
   }
 }

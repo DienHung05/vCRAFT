@@ -33,6 +33,13 @@ describe('notificationHref', () => {
     expect(localized(href as NotificationHref, 'en')).toBe('/en/studio/profile');
   });
 
+  it('ADMIN_PAYMENTS opens the localized payments page without an id', () => {
+    const href = notificationHref({ page: 'ADMIN_PAYMENTS', id: null });
+    expect(href).not.toBeNull();
+    expect(localized(href as NotificationHref, 'vi')).toBe('/vi/admin/thanh-toan');
+    expect(localized(href as NotificationHref, 'en')).toBe('/en/admin/payments');
+  });
+
   it('has no destination without a target, or when a request page lacks its id', () => {
     expect(notificationHref(null)).toBeNull();
     expect(notificationHref({ page: 'BUYER_RFQ', id: null })).toBeNull();

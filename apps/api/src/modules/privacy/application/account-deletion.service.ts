@@ -349,8 +349,12 @@ export class AccountDeletionService {
     household.certifications = null;
     household.gallery = null;
     household.capacityByCategory = null;
-    household.status = 'SUSPENDED';
-    household.statusReason = 'The representative deleted their account';
+    // A never-submitted application stays a DRAFT (scrubbed): the admin queue and public pages already
+    // skip drafts, so it must not show up as a SUSPENDED household.
+    if (household.status !== 'DRAFT') {
+      household.status = 'SUSPENDED';
+      household.statusReason = 'The representative deleted their account';
+    }
     // A household change also covers its products, so the assistant index drops them all.
     queueKnowledgeChange(em, 'HOUSEHOLD', household.id);
 

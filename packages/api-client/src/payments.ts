@@ -3,9 +3,13 @@ import {
   AdminPaymentPageSchema,
   type CreatePaymentRequest,
   CreatePaymentRequestSchema,
+  type DemoConfirmRequest,
+  DemoConfirmRequestSchema,
+  DemoPaymentViewSchema,
   IdSchema,
   OrderPaymentsResponseSchema,
   PaymentResponseSchema,
+  ProblemDetailsSchema,
   type RecordOfflinePaymentRequest,
   RecordOfflinePaymentRequestSchema,
   type RefundPaymentRequest,
@@ -18,10 +22,12 @@ import {
 } from '@vcraft/contracts';
 import {
   type ActionOptions,
+  ApiError,
   type AuthedClientOptions,
   createAuthedRequest,
   newIdempotencyKey,
 } from './http/authed-request';
+import { fallbackErrorCode } from './http/fallback-error-code';
 
 /**
  * Online payment of orders (ADR-0021): the buyer's panel and status page, and the village administration's
@@ -97,3 +103,69 @@ export function createPaymentClient(options: AuthedClientOptions) {
 }
 
 export type PaymentClient = ReturnType<typeof createPaymentClient>;
+
+export interface DemoPaymentClientOptions {
+  fetch?: (url: string, init: RequestInit) => Promise<Response>;
+  signal?: AbortSignal;
+}
+
+/**
+ * The confirm page of demo payment mode (ADR-0025), reached by scanning a QR with a phone. Public and anonymous:
+ * no session, no `Authorization` header; the per-payment secret from the link is the credential. Errors are
+ * {@link ApiError}s like every other client; an unknown link, a wrong secret and demo mode being off are all 404.
+ */
+export function createDemoPaymentClient(options: DemoPaymentClientOptions = {}) {
+  const fetcher = options.fetch ?? globalThis.fetch;
+  async function request<T>(
+    path: string,
+    schema: { parse: (data: unknown) => T },
+    init: { method?: string; body?: unknown } = {},
+  ): Promise<T> {
+    const response = await fetcher(`/api/v1${path}`, {
+      method: init.method ?? 'GET',
+      cache: 'no-store',
+      ...(options.signal ? { signal: options.signal } : {}),
+      headers: init.body !== undefined ? { 'Content-Type': 'application/json' } : {},
+      ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
+    });
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      throw new ApiError(fallbackErrorCode(response.status), response.status);
+    }
+    if (!response.ok) {
+      const problem = ProblemDetailsSchema.safeParse(data);
+      throw new ApiError(
+        problem.success ? problem.data.code : fallbackErrorCode(response.status),
+        response.status,
+        problem.success ? problem.data.errors : [],
+      );
+    }
+    try {
+      return schema.parse(data);
+    } catch {
+      throw new ApiError('INTERNAL_ERROR', response.status);
+    }
+  }
+  return {
+    /** The payment behind a QR: only what the confirm page shows, no buyer or order details. */
+    view: (referenceCode: string, token: string) =>
+      request(
+        `/payments/demo/${encodeURIComponent(referenceCode)}?k=${encodeURIComponent(token)}`,
+        DemoPaymentViewSchema,
+      ),
+    /** Confirms (`PAID`) or declines (`FAILED`) the rehearsal payment; repeating it answers the current state. */
+    confirm: (referenceCode: string, body: DemoConfirmRequest) =>
+      request(
+        `/payments/demo/${encodeURIComponent(referenceCode)}/confirm`,
+        DemoPaymentViewSchema,
+        {
+          method: 'POST',
+          body: DemoConfirmRequestSchema.parse(body),
+        },
+      ),
+  };
+}
+
+export type DemoPaymentClient = ReturnType<typeof createDemoPaymentClient>;
