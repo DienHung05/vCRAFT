@@ -35,7 +35,7 @@ describe('ContributionForm (đề xuất tham gia, GH#10)', () => {
     expect(onSubmit).toHaveBeenCalledWith({
       maxQuantity: 1200,
       unitPriceVnd: 58000,
-      completionDate: '2026-12-20T00:00:00.000Z',
+      completionDate: '2026-12-20T16:59:59.000Z',
     });
     expect(screen.getByText(/Đã gửi/)).toBeTruthy();
   });

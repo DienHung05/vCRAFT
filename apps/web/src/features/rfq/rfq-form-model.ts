@@ -1,5 +1,5 @@
 import { type CreateRfqRequest, OnBehalfOfSchema, type RfqResponse } from '@vcraft/contracts';
-import { PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
+import { endOfVietnamDay, PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
 
 /** A file the buyer attached: the uploaded media id and what the form needs to list it. */
 export interface RfqAttachmentValue {
@@ -76,8 +76,8 @@ export interface RfqFormMode {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** A calendar day in Vietnam ends at 23:59:59 local time, which is what a deadline means here. */
-export const endOfDay = (date: string) => new Date(`${date}T23:59:59.000+07:00`);
+/** A date-only deadline means the end of that Vietnam calendar day (shared with the household forms). */
+export const endOfDay = endOfVietnamDay;
 
 const dateInput = (iso: string) =>
   new Date(new Date(iso).getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);

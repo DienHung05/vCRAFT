@@ -1,6 +1,7 @@
 'use client';
 
 import type { CreateDirectQuotationRequest, DirectQuotationDto } from '@vcraft/contracts';
+import { endOfVietnamDay } from '@vcraft/domain';
 import { Button, Card, cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
@@ -96,7 +97,7 @@ export function DirectQuotationForm({
       () =>
         onSubmit({
           unitPriceVnd: price,
-          completionDate: `${completionDate}T00:00:00.000Z`,
+          completionDate: endOfVietnamDay(completionDate).toISOString(),
           ...(note.trim() ? { note: note.trim() } : {}),
         }),
       t(editing ? 'updatedToast' : 'sentToast'),

@@ -1,6 +1,7 @@
 'use client';
 
 import type { PriceHintDto } from '@vcraft/contracts';
+import { endOfVietnamDay } from '@vcraft/domain';
 import { Button, Card, cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
@@ -127,7 +128,7 @@ export function ContributionForm({
       await onSubmit({
         maxQuantity: Number(maxQuantity),
         unitPriceVnd: Number(unitPrice),
-        completionDate: `${completionDate}T00:00:00.000Z`,
+        completionDate: endOfVietnamDay(completionDate).toISOString(),
       });
       setSubmit({ kind: 'sent' });
       notify.success(t(version === undefined ? 'sentToast' : 'updatedToast'));
