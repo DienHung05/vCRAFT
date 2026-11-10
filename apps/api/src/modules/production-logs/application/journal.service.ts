@@ -100,8 +100,9 @@ export class JournalService {
     expectedVersion: number,
     input: UpdateJournalEntryRequest,
   ): Promise<JournalDto> {
+    const productId = await this.entryProductId(entryId);
     return this.orm.em.fork().transactional(async (em) => {
-      const { product, entries, entry } = await this.ownEntry(em, actor, entryId);
+      const { product, entries, entry } = await this.ownEntry(em, actor, entryId, productId);
       unwrap(checkDraftEdit(this.state(actor, product, entries)));
       assertVersion(entry, expectedVersion);
       await this.assertOwnImages(actor, input.images);
@@ -127,8 +128,9 @@ export class JournalService {
 
   /** Xóa một mốc nháp; các mốc sau lùi `seq` và được niêm phong lại. */
   async deleteDraft(actor: Actor, entryId: string, expectedVersion: number): Promise<JournalDto> {
+    const productId = await this.entryProductId(entryId);
     return this.orm.em.fork().transactional(async (em) => {
-      const { product, entries, entry } = await this.ownEntry(em, actor, entryId);
+      const { product, entries, entry } = await this.ownEntry(em, actor, entryId, productId);
       unwrap(checkDraftEdit(this.state(actor, product, entries)));
       assertVersion(entry, expectedVersion);
       em.remove(entry);
@@ -194,11 +196,24 @@ export class JournalService {
       throw forbidden('journal photos must be your own uploads that have not failed processing');
   }
 
-  private async ownEntry(em: EntityManager, actor: Actor, entryId: string) {
-    const found = await em.findOne(JournalEntry, entryId);
+  /**
+   * Reads the entry's product id before BEGIN. Under MySQL REPEATABLE READ a plain read of the entry
+   * inside the transaction, before the product lock, would fix the snapshot and hide a concurrent append.
+   */
+  private async entryProductId(entryId: string): Promise<string> {
+    const found = await this.orm.em.fork().findOne(JournalEntry, entryId);
     if (!found) throw notFound();
-    const product = await this.ownProduct(em, actor, found.product.id, true);
-    const entries = await loadEntries(em, product);
+    return found.product.id;
+  }
+
+  /** Locks the product first, then loads the chain so it reflects every append committed before the lock. */
+  private async ownEntry(em: EntityManager, actor: Actor, entryId: string, productId: string) {
+    const product = await this.ownProduct(em, actor, productId, true);
+    const entries = await em.find(
+      JournalEntry,
+      { product },
+      { orderBy: { seq: 'asc' }, populate: ['supersedes'], refresh: true },
+    );
     const entry = entries.find((e) => e.id === entryId);
     if (!entry) throw notFound();
     return { product, entries, entry };
