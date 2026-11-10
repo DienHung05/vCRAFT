@@ -28,6 +28,14 @@ describe('buildNoticeMail', () => {
     expect(text).toContain(`Xem chi tiết: ${appUrl}/vi/${path}/${requestId}`);
   });
 
+  it('links an admin payment notice to the payments page', () => {
+    for (const kind of ['PAYMENT_PAID', 'PAYMENT_UNAPPLIED', 'PAYMENT_REFUND_DUE'] as const) {
+      const { text } = buildNoticeMail({ kind, role: 'ADMIN', subjectId: requestId, appUrl });
+      expect(text).toContain(`Xem chi tiết: ${appUrl}/vi/admin/thanh-toan`);
+      expect(text).not.toContain('dieu-phoi');
+    }
+  });
+
   it('links to the email choices and names them in List-Unsubscribe (GH#420)', () => {
     for (const kind of NOTIFICATION_TYPES) {
       const mail = buildNoticeMail({ kind, role: 'BUYER', subjectId: requestId, appUrl });
