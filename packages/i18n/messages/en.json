@@ -309,6 +309,13 @@
   "trace": {
     "home": "Back to the vCraft home page",
     "book": "Craft book",
+    "navigation": "Explore beyond this craft book",
+    "backToProduct": "Back to the product",
+    "browseProducts": "Browse products",
+    "viewHousehold": "Meet the household",
+    "contents": "Inside this craft book",
+    "checkJournal": "Check journal integrity",
+    "readJournal": "Read the production journal",
     "notFoundTitle": "This code isn't in vCraft",
     "notFoundText": "We couldn't find code {code}. This piece may not come from a craft village on vCraft, or the label may be counterfeit. Please check the code under the product again.",
     "scanned": "You just scanned the seal of",
