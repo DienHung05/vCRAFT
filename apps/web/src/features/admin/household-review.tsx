@@ -22,10 +22,6 @@ const WorkshopReviewMap = dynamic(() => import('./workshop-review-map'), {
   loading: () => <div className="size-full animate-pulse bg-paper" />,
 });
 
-/** Parts the API names in an `APPLICATION_INCOMPLETE` refusal (households.service `assertComplete`). */
-const MISSING_PARTS = ['profile', 'workshops', 'documents'] as const;
-type MissingPart = (typeof MISSING_PARTS)[number];
-
 /** Hành động theo trạng thái; `needsReason` khớp luật bắt buộc lý do của domain. */
 const ACTIONS: Record<
   HouseholdDto['status'],
@@ -344,9 +340,11 @@ export function HouseholdReview({
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<HouseholdAction | null>(null);
-  const [result, setResult] = useState<'sealed' | 'done' | 'stale' | 'failed' | null>(null);
-  // GH#459: what an application still lacks when approving it was refused with APPLICATION_INCOMPLETE.
-  const [missing, setMissing] = useState<string[] | null>(null);
+  const [result, setResult] = useState<
+    'sealed' | 'done' | 'stale' | 'failed' | 'incomplete' | null
+  >(null);
+  // Parts the API reported missing on a 422 APPLICATION_INCOMPLETE (profile, workshops, documents).
+  const [missingParts, setMissingParts] = useState<string[]>([]);
   // FR-ART-03: the certification being toggled, and how the last toggle ended.
   const [certBusy, setCertBusy] = useState<number | null>(null);
   const [certResult, setCertResult] = useState<'stale' | 'failed' | null>(null);
@@ -394,7 +392,7 @@ export function HouseholdReview({
   const decide = async (action: HouseholdAction) => {
     setBusy(true);
     setResult(null);
-    setMissing(null);
+    setMissingParts([]);
     try {
       setHousehold(await client.decide(household.id, action, household.version, reason.trim()));
       setReason('');
@@ -405,8 +403,8 @@ export function HouseholdReview({
         await load();
         setResult('stale');
       } else if (error instanceof ApiError && error.code === 'APPLICATION_INCOMPLETE') {
-        setMissing(error.fieldErrors.map((field) => field.path));
-        setResult('failed');
+        setMissingParts(error.fieldErrors.map((e) => e.path));
+        setResult('incomplete');
       } else {
         setResult('failed');
       }
@@ -694,21 +692,22 @@ export function HouseholdReview({
           <p className="text-small">{t('currentReason', { reason: reason.trim() })}</p>
         ) : null}
       </ConfirmDialog>
+      {result === 'incomplete' ? (
+        <p role="alert" className="text-small text-seal">
+          {t('incomplete', {
+            parts: missingParts
+              .map((part) =>
+                part === 'profile' || part === 'workshops' || part === 'documents'
+                  ? t(`incompleteParts.${part}`)
+                  : part,
+              )
+              .join(', '),
+          })}
+        </p>
+      ) : null}
       {result === 'stale' || result === 'failed' ? (
         <p role="alert" className="text-small text-seal">
-          {result === 'stale'
-            ? t('stale')
-            : missing && missing.length > 0
-              ? t('incomplete', {
-                  missing: missing
-                    .map((part) =>
-                      MISSING_PARTS.includes(part as MissingPart)
-                        ? t(`missingPart.${part as MissingPart}`)
-                        : part,
-                    )
-                    .join(', '),
-                })
-              : t('failed_action')}
+          {t(result === 'stale' ? 'stale' : 'failed_action')}
         </p>
       ) : null}
     </div>
