@@ -979,7 +979,36 @@
       "revealIdNumber": "Xem số đầy đủ",
       "hideIdNumber": "Ẩn",
       "revealAudited": "Mỗi lần xem số đầy đủ đều được ghi vào nhật ký kiểm toán.",
-      "idNumberFailed": "Chưa xem được số CCCD."
+      "idNumberFailed": "Chưa xem được số CCCD.",
+      "products": "Sản phẩm của hộ",
+      "productsHint": "Ban quản lý có thể gỡ sản phẩm khỏi trang công khai (kèm lý do, được ghi vào nhật ký kiểm toán) và đưa lại sản phẩm do chính Ban gỡ.",
+      "noProducts": "Hộ chưa có sản phẩm.",
+      "withdrawnBy": {
+        "OWNER": "Hộ tự lưu trữ",
+        "BOARD": "Ban quản lý đã gỡ"
+      },
+      "withdrawnByUnknown": "Đã lưu trữ",
+      "withdrawnReason": "Lý do: {reason}",
+      "withdrawProduct": "Gỡ sản phẩm",
+      "withdrawProductNamed": "Gỡ sản phẩm “{name}”",
+      "republishProduct": "Đưa lại",
+      "republishProductNamed": "Đưa lại sản phẩm “{name}”",
+      "productConfirm": {
+        "withdraw": {
+          "title": "Gỡ sản phẩm này?",
+          "text": "Sản phẩm {name} sẽ ngừng hiện công khai và hộ không tự đưa lại được.",
+          "confirm": "Gỡ sản phẩm"
+        },
+        "republish": {
+          "title": "Đưa sản phẩm trở lại?",
+          "text": "Sản phẩm {name} sẽ hiện công khai trở lại.",
+          "confirm": "Đưa lại"
+        }
+      },
+      "productWithdrawn": "Đã gỡ sản phẩm.",
+      "productRepublished": "Đã đưa sản phẩm trở lại.",
+      "productFailed": "Chưa cập nhật được sản phẩm. Bạn thử lại.",
+      "productStale": "Sản phẩm vừa thay đổi. Đã tải lại bản mới, bạn kiểm tra rồi thử lại."
     },
     "coordinationQueue": {
       "title": "Điều phối",
