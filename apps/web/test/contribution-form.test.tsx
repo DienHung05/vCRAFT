@@ -35,9 +35,28 @@ describe('ContributionForm (đề xuất tham gia, GH#10)', () => {
     expect(onSubmit).toHaveBeenCalledWith({
       maxQuantity: 1200,
       unitPriceVnd: 58000,
-      completionDate: '2026-12-20T00:00:00.000Z',
+      completionDate: '2026-12-20T16:59:59.000Z',
     });
     expect(screen.getByText(/Đã gửi/)).toBeTruthy();
+  });
+
+  it('the promised day is due at its end in Vietnam, so the delivery day itself is allowed (GH#443)', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    // The buyer's delivery date, as the buyer form sends it: end of 15 Jan in Vietnam.
+    renderVi(
+      <ContributionForm
+        {...props({ requiredBy: '2027-01-15T16:59:59.000Z' })}
+        onSubmit={onSubmit}
+      />,
+    );
+    fill('1200', '58000', '2027-01-15');
+    expect(sendButton().disabled).toBe(false);
+    fireEvent.click(sendButton());
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ completionDate: '2027-01-15T16:59:59.000Z' }),
+      ),
+    );
   });
 
   it('không đủ số, âm hoặc lẻ thì khóa gửi và báo lỗi cụ thể', () => {
@@ -86,7 +105,7 @@ describe('ContributionForm (đề xuất tham gia, GH#10)', () => {
         initial={{
           maxQuantity: 1200,
           unitPriceVnd: 58000,
-          completionDate: '2026-12-20T00:00:00.000Z',
+          completionDate: '2026-12-20T16:59:59.000Z',
         }}
         version={2}
         onWithdraw={onWithdraw}

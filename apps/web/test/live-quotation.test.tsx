@@ -136,7 +136,7 @@ describe('live quotation workspaces', () => {
       expect(client.updateContribution).toHaveBeenCalledWith(id, 7, {
         maxQuantity: 5,
         unitPriceVnd: 30_000,
-        completionDate: '2100-01-01T00:00:00.000Z',
+        completionDate: '2100-01-01T16:59:59.000Z',
       }),
     );
     expect(client.createContribution).not.toHaveBeenCalled();

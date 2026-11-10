@@ -23,6 +23,20 @@ describe('expectedShare', () => {
 describe('allocationLateness', () => {
   const base = { quantity: 1000, startedAt: start, dueAt: due };
 
+  it('a promised day stored as its end in Vietnam is not overdue during that day (GH#443)', () => {
+    // "20 Nov" from a household: due 23:59:59 on 20 Nov in Vietnam, not 07:00.
+    const promised = { ...base, completedQty: 999, dueAt: new Date('2026-11-20T16:59:59.000Z') };
+    expect(allocationLateness(promised, new Date('2026-11-20T00:30:00.000Z')).status).not.toBe(
+      'OVERDUE',
+    );
+    expect(allocationLateness(promised, new Date('2026-11-20T16:00:00.000Z')).status).not.toBe(
+      'OVERDUE',
+    );
+    expect(allocationLateness(promised, new Date('2026-11-20T17:00:00.000Z')).status).toBe(
+      'OVERDUE',
+    );
+  });
+
   it('is on track within 10% of the curve', () => {
     expect(allocationLateness({ ...base, completedQty: 450 }, at(5))).toEqual({
       status: 'ON_TRACK',

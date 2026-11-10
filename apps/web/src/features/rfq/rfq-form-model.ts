@@ -79,6 +79,16 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** A calendar day in Vietnam ends at 23:59:59 local time, which is what a deadline means here. */
 export const endOfDay = (date: string) => new Date(`${date}T23:59:59.000+07:00`);
 
+/**
+ * {@link endOfDay} in epoch ms, or null for an empty or invalid date. Households' completion dates use it
+ * too, so a promised day is due at its end in Vietnam, like the buyer's dates (GH#443).
+ */
+export const endOfDayTime = (date: string): number | null => {
+  if (date === '') return null;
+  const time = endOfDay(date).getTime();
+  return Number.isNaN(time) ? null : time;
+};
+
 const dateInput = (iso: string) =>
   new Date(new Date(iso).getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
