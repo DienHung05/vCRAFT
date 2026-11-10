@@ -507,7 +507,7 @@ export class PaymentsService {
     try {
       const payment = await this.orm.em.fork().findOne(Payment, { referenceCode });
       if (!payment) return null;
-      const gateway: Pick<PaymentGateway<unknown>, 'isConfigured' | 'queryStatus'> | null =
+      const gateway =
         payment.provider === 'VNPAY' ? this.vnpay : payment.provider === 'MOMO' ? this.momo : null;
       if (!gateway?.queryStatus || !gateway.isConfigured()) return null;
       const pending = payment.status === 'PENDING';

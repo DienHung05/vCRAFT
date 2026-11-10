@@ -6,7 +6,7 @@ import {
   paymentsConfig,
   paymentsConfigIssues,
 } from '../payments.config';
-import { MomoGateway } from './momo.gateway';
+import { MomoGateway, momoQuerySigningData } from './momo.gateway';
 import type { PaymentHttp, PaymentSnapshot } from './payment-gateway';
 import { SepayGateway } from './sepay.gateway';
 import {
@@ -815,6 +815,106 @@ describe('MoMo gateway', () => {
     });
     expect(gateway.verifyCallback(ipn({ resultCode: 1006, message: 'Declined' }))).toMatchObject({
       event: { outcome: 'FAILED' },
+    });
+  });
+
+  it('leaves a payment pending while MoMo is still processing, and fails only on a final code', () => {
+    setEnv(MOMO_ENV);
+    const gateway = new MomoGateway(fakeHttp({}).http);
+    for (const resultCode of [1000, 7000, 7002, 9000, 42]) {
+      expect(gateway.verifyCallback(ipn({ resultCode }))).toEqual({
+        signatureValid: true,
+        event: null,
+        ignored: 'STILL_PROCESSING',
+        referenceCode: 'VCPAB3DEF7K9M',
+      });
+    }
+    for (const resultCode of [1001, 1002, 1003, 1004, 1005, 1006, 1007, 1017, 1026]) {
+      expect(gateway.verifyCallback(ipn({ resultCode }))).toMatchObject({
+        event: { outcome: 'FAILED' },
+      });
+    }
+  });
+
+  describe('queryStatus', () => {
+    const query = {
+      referenceCode: snapshot.referenceCode,
+      amountVnd: 3_000_000,
+      createdAt: new Date('2026-11-08T13:55:01Z'),
+      checkout: null,
+    };
+    const answer = (overrides: Record<string, unknown> = {}) => ({
+      partnerCode: 'MOMOTEST',
+      orderId: snapshot.referenceCode,
+      requestId: 'req-1',
+      extraData: '',
+      amount: 3_000_000,
+      transId: 4_100_000_001,
+      payType: 'qr',
+      resultCode: 0,
+      message: 'Successful.',
+      responseTime: 1_762_600_000_000,
+      lastUpdated: 1_762_600_000_000,
+      ...overrides,
+    });
+
+    it('signs the documented query string and posts to the query endpoint', async () => {
+      setEnv({ ...MOMO_ENV, MOMO_MODE: 'sandbox' });
+      const { http, calls } = fakeHttp(answer());
+      await new MomoGateway(http).queryStatus(query);
+      const [call] = calls;
+      expect(call?.url).toBe('https://test-payment.momo.vn/v2/gateway/api/query');
+      const body = call?.body as Record<string, string>;
+      expect(body).toMatchObject({ partnerCode: 'MOMOTEST', orderId: 'VCPAB3DEF7K9M', lang: 'vi' });
+      const raw = `accessKey=access-key&orderId=VCPAB3DEF7K9M&partnerCode=MOMOTEST&requestId=${body.requestId}`;
+      expect(momoQuerySigningData('access-key', body as never)).toBe(raw);
+      expect(body.signature).toBe(sign(raw));
+    });
+
+    it('reads a paid answer with the same transaction id the IPN carries', async () => {
+      setEnv({ ...MOMO_ENV, MOMO_MODE: 'sandbox' });
+      const status = await new MomoGateway(fakeHttp(answer()).http).queryStatus(query);
+      expect(status).toMatchObject({
+        state: 'PAID',
+        event: {
+          provider: 'MOMO',
+          referenceCode: 'VCPAB3DEF7K9M',
+          providerTxnId: '4100000001',
+          amountVnd: 3_000_000,
+          outcome: 'PAID',
+          raw: { source: 'query' },
+        },
+      });
+    });
+
+    it.each([
+      [1000, 'PENDING'],
+      [7000, 'PENDING'],
+      [7002, 'PENDING'],
+      [9000, 'PENDING'],
+      [1006, 'FAILED'],
+      [1005, 'FAILED'],
+      [42, 'UNKNOWN'],
+      [99, 'UNKNOWN'],
+    ] as const)('maps resultCode %s to %s', async (resultCode, state) => {
+      setEnv({ ...MOMO_ENV, MOMO_MODE: 'sandbox' });
+      const status = await new MomoGateway(fakeHttp(answer({ resultCode })).http).queryStatus(
+        query,
+      );
+      expect(status.state).toBe(state);
+    });
+
+    it('does not trust an answer for another order or partner, or an HTTP failure', async () => {
+      setEnv({ ...MOMO_ENV, MOMO_MODE: 'sandbox' });
+      const ask = (reply: Record<string, unknown>, ok = true) =>
+        new MomoGateway(fakeHttp(reply, ok).http).queryStatus(query);
+      expect((await ask(answer({ orderId: 'VCPOTHER' }))).state).toBe('UNKNOWN');
+      expect((await ask(answer({ partnerCode: 'OTHER' }))).state).toBe('UNKNOWN');
+      expect((await ask(answer(), false)).state).toBe('UNKNOWN');
+      const broken: PaymentHttp = async () => {
+        throw new Error('timeout');
+      };
+      expect((await new MomoGateway(broken).queryStatus(query)).state).toBe('UNKNOWN');
     });
   });
 
