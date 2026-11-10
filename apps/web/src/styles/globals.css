@@ -498,14 +498,6 @@ button.fire-chip {
   background: var(--color-clay);
   color: var(--color-paper);
 }
-.fire-chip[data-missing="true"] {
-  border: 1px dashed color-mix(in oklch, var(--color-ash) 60%, transparent);
-  background: none;
-  color: var(--color-ash);
-}
-.fire-chip small {
-  font-size: 0.6875rem;
-}
 
 /*
  * Product page journey card (GH#300): `journey-reveal.tsx` arms the card (`data-journey="armed"`: dots and

@@ -18,7 +18,7 @@ import './trace-story.css';
  * illustration sits above the readable list of steps. `children` is that list, an `<ol>` of `data-fire-step`
  * items with a `data-fire-steps` mark and a `data-fire-heat` line; it stays in the DOM in both modes. The step
  * in focus carries `aria-current="step"`, and the stage chips beside the illustration jump to a step with the
- * keyboard; a stage the journal has no entry for shows as "not recorded".
+ * keyboard; a stage the journal has no entry for is left out of the track.
  */
 export function FireStory({
   figure,
@@ -113,23 +113,16 @@ export function FireStory({
         {motion ? (
           <nav aria-label={t('storyTrack')}>
             <ol className="fire-track">
-              {JOURNAL_STAGES.map((s) => (
+              {JOURNAL_STAGES.filter((s) => at[s] >= 0).map((s) => (
                 <li key={s}>
-                  {at[s] >= 0 ? (
-                    <button
-                      type="button"
-                      className="fire-chip"
-                      data-current={s === stage ? 'true' : undefined}
-                      onClick={() => goTo(at[s])}
-                    >
-                      {names(`${s}.name`)}
-                    </button>
-                  ) : (
-                    <span className="fire-chip" data-missing="true">
-                      {names(`${s}.name`)}
-                      <small>{t('notRecorded')}</small>
-                    </span>
-                  )}
+                  <button
+                    type="button"
+                    className="fire-chip"
+                    data-current={s === stage ? 'true' : undefined}
+                    onClick={() => goTo(at[s])}
+                  >
+                    {names(`${s}.name`)}
+                  </button>
                 </li>
               ))}
             </ol>

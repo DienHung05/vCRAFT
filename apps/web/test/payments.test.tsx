@@ -133,6 +133,54 @@ describe('buyer payment panel', () => {
     expect(screen.getByText(/Đang chờ tiền về/)).toBeTruthy();
   });
 
+  it('offers a late deposit on an order in production when no deposit is required, with the real balance', async () => {
+    // The server prices a balance at the whole total once production started without a deposit (#426).
+    const orderPayments = vi.fn().mockResolvedValue({
+      ...SUMMARY,
+      depositRequired: false,
+      balanceAmountVnd: 10_000_000,
+    });
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="IN_PRODUCTION"
+        client={asClient({ orderPayments })}
+      />,
+    );
+    expect(await screen.findByText('Chuyển khoản ngân hàng (VietQR)')).toBeTruthy();
+    const legend = screen.getByRole('group').querySelector('legend');
+    expect(legend?.textContent).toMatch(/3\.000\.000/);
+    const balance = screen.getByText('Phần còn lại').nextElementSibling;
+    expect(balance?.textContent).toMatch(/7\.000\.000/);
+    expect(balance?.textContent).not.toMatch(/10\.000\.000/);
+  });
+
+  it('shows the balance after the expected deposit before the deposit is paid', async () => {
+    const orderPayments = vi.fn().mockResolvedValue({ ...SUMMARY, depositRequired: false });
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="ACCEPTED"
+        client={asClient({ orderPayments })}
+      />,
+    );
+    await screen.findByText('Chuyển khoản ngân hàng (VietQR)');
+    expect(screen.getByText('Phần còn lại').nextElementSibling?.textContent).toMatch(/7\.000\.000/);
+  });
+
+  it('offers no payment on an order in production when the deposit is required and unpaid', async () => {
+    const orderPayments = vi.fn().mockResolvedValue(SUMMARY);
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="IN_PRODUCTION"
+        client={asClient({ orderPayments })}
+      />,
+    );
+    await screen.findByTestId('payment-panel');
+    expect(screen.queryByText('Chuyển khoản ngân hàng (VietQR)')).toBeNull();
+  });
+
   it('marks only the sandbox options as test mode and names them in one line', async () => {
     const orderPayments = vi.fn().mockResolvedValue(walletSummary());
     renderVi(

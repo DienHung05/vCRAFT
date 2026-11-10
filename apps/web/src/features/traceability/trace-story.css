@@ -11,6 +11,17 @@
   margin-inline: auto;
 }
 
+/*
+ * The Fox launcher sits in the bottom-right corner on this page like everywhere else (GH#485). It is 4rem wide
+ * at 1rem from the right edge, so the sticky call-to-action bar keeps its buttons 5.5rem from that edge, but
+ * only where the bar actually reaches it: in a centred column (wider than 90rem) the side gutter, half of
+ * `100vw - 100%`, already provides the room. The launcher's height (1rem to 5rem from the bottom) stays inside
+ * the bar, so the clearance is horizontal only.
+ */
+.trace-actions {
+  padding-right: max(1.25rem, calc(5.5rem - (100vw - 100%) / 2));
+}
+
 @media (max-width: 39.999rem) {
   .trace-navigation {
     display: grid;

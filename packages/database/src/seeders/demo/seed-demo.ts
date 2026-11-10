@@ -12,7 +12,6 @@ import {
   type ProductCategory,
   type RfqStatus,
   sealChain,
-  skippedStagesFor,
   villageToday,
 } from '@vcraft/domain';
 import { slugify } from '@vcraft/utils';
@@ -54,7 +53,6 @@ import {
   NEWS,
   PENDING_HOUSEHOLD,
   PRODUCT_TEMPLATES,
-  SKIP_REASONS,
   STAGE_NOTES,
   TEMPLATE_CATEGORY,
   VILLAGE_PARTS,
@@ -217,20 +215,20 @@ function rng(seed: number) {
 
 const isoDate = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
+/**
+ * The stages a journal records: all seven for a finished journal, a gap-free prefix (no `finish`) for one still in
+ * progress. The shuffle below no longer decides anything, but its draws stay: every frozen trace code depends on the
+ * exact number of `random` calls made here (GH#486).
+ */
 function chooseStages(random: ReturnType<typeof rng>, count: number, inProgress: boolean) {
-  let removals = JOURNAL_STAGES.length - count;
-  const removed = new Set<number>();
-  if (inProgress) {
-    removed.add(JOURNAL_STAGES.length - 1); // chưa có mốc "finish"
-    removals -= 1;
-  }
-  const removable = [0, 2, 3, 4]; // clay, dry, paint, glaze có thể bỏ; throw, fire, finish luôn có
+  const removable = [0, 2, 3, 4];
   for (let i = removable.length - 1; i > 0; i--) {
     const j = random.int(0, i);
     [removable[i], removable[j]] = [removable[j] as number, removable[i] as number];
   }
-  for (const index of removable.slice(0, Math.max(0, removals))) removed.add(index);
-  return JOURNAL_STAGES.filter((_, index) => !removed.has(index));
+  if (!inProgress) return [...JOURNAL_STAGES];
+  // `count` is 4 to 6 here, so the prefix always stops before `finish`.
+  return JOURNAL_STAGES.slice(0, Math.min(count, JOURNAL_STAGES.length - 1));
 }
 
 interface QuotationSpec {
@@ -841,7 +839,8 @@ export async function seedDemoData(
       const draft = pending || (row.index === DEMO_H && j >= PRODUCTS_PER_HOUSEHOLD - 2);
       const batch = fixed?.batch ?? (random.next() < 0.25 ? random.int(2, 12) * 20 : undefined);
 
-      // Nhật ký 4–7 mốc; hàng cố định luôn đủ 7 mốc, nháp của hộ household cũng đủ để xuất bản ngay
+      // Nhật ký đủ 7 mốc, trừ vài món đang làm dở (4–6 mốc liền nhau, chưa có `finish`). Số lần gọi `random` ở đây
+      // (roll, lượt rút inProgress, các lượt xáo trong chooseStages) không được đổi: nó làm đổi mọi mã truy xuất đã đóng băng.
       const complete = fixed !== undefined || (draft && !pending);
       const roll = random.next();
       const count = complete ? 7 : roll < 0.35 ? 7 : roll < 0.6 ? 6 : roll < 0.8 ? 5 : 4;
@@ -853,21 +852,12 @@ export async function seedDemoData(
         at: string;
         note: string;
         mediaChecksums: string[];
-        skipReason?: string;
       }> = [];
       for (const stage of stages) {
         const facts = contents.map((c, seq) => ({ seq, stage: c.stage }));
-        const skipped = skippedStagesFor(facts, stage);
-        const skipReason =
-          skipped.length > 0
-            ? skipped
-                .map((s) => SKIP_REASONS[s])
-                .join(' ')
-                .slice(0, 300)
-            : undefined;
         const checked = checkNewEntry(
           { entries: facts, published: false, frozen: false },
-          { stage, skipReason },
+          { stage },
         );
         if (!checked.ok) throw new Error(`Nhật ký mẫu vi phạm luật: ${checked.error.code}`);
         const notes = STAGE_NOTES[stage];
@@ -876,7 +866,6 @@ export async function seedDemoData(
           at: isoDate(startMs + (STAGE_OFFSET_DAYS[JOURNAL_STAGES.indexOf(stage)] ?? 0) * DAY),
           note: notes[(row.index + j + contents.length) % notes.length] as string,
           mediaChecksums: [],
-          ...(skipReason !== undefined && { skipReason }),
         });
       }
       const lastMs = Date.parse(`${contents.at(-1)?.at}T00:00:00.000Z`);

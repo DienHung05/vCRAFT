@@ -1938,5 +1938,77 @@ describe('online payment of orders (ADR-0021)', () => {
         vi.stubEnv('SEPAY_WEBHOOK_API_KEY', SEPAY_KEY);
       }
     });
+
+    const summaryOf = async (requestId: string) =>
+      (await t.request({ method: 'GET', url: `/orders/${requestId}/payments`, auth: buyer.auth }))
+        .body;
+
+    it('shows the balance after the expected deposit before the deposit is paid, and after it (#205)', async () => {
+      vi.stubEnv('PAYMENTS_DEPOSIT_REQUIRED', 'false');
+      try {
+        const requestId = await acceptedOrder();
+        expect(await summaryOf(requestId)).toMatchObject({
+          depositRequired: false,
+          depositAmountVnd: 3_000_000,
+          balanceAmountVnd: 7_000_000,
+          depositPaidAt: null,
+        });
+        const deposit = (await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER')).body;
+        expect((await sepayWebhook(sepayEvent(deposit))).status).toBe(200);
+        expect(await summaryOf(requestId)).toMatchObject({
+          depositAmountVnd: 3_000_000,
+          balanceAmountVnd: 7_000_000,
+        });
+        expect((await summaryOf(requestId)).depositPaidAt).not.toBeNull();
+      } finally {
+        vi.stubEnv('PAYMENTS_DEPOSIT_REQUIRED', '');
+      }
+    });
+
+    it('takes a late deposit on an order in production when no deposit is required (#205)', async () => {
+      vi.stubEnv('PAYMENTS_DEPOSIT_REQUIRED', 'false');
+      try {
+        const requestId = await acceptedOrder();
+        await confirmAllocations(requestId);
+        expect((await startProduction(requestId)).status).toBe(200);
+        // Production started without a deposit: the balance is still the whole total (#426).
+        expect(await summaryOf(requestId)).toMatchObject({
+          depositAmountVnd: 3_000_000,
+          balanceAmountVnd: 10_000_000,
+          depositPaidAt: null,
+        });
+        const created = await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER');
+        expect(created.status).toBe(201);
+        expect(created.body).toMatchObject({ kind: 'DEPOSIT', amountVnd: 3_000_000 });
+        expect((await sepayWebhook(sepayEvent(created.body))).status).toBe(200);
+        const after = await summaryOf(requestId);
+        expect(after.depositPaidAt).not.toBeNull();
+        expect(after).toMatchObject({ depositAmountVnd: 3_000_000, balanceAmountVnd: 7_000_000 });
+        // The deposit is paid now: a second one is refused, the balance is open.
+        const again = await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER');
+        expect(again.status).toBe(409);
+        expect(again.body.code).toBe('PAYMENT_ALREADY_PAID');
+        const balance = await startPayment(requestId, 'BALANCE', 'SEPAY_TRANSFER');
+        expect(balance.status).toBe(201);
+        expect(balance.body).toMatchObject({ kind: 'BALANCE', amountVnd: 7_000_000 });
+      } finally {
+        vi.stubEnv('PAYMENTS_DEPOSIT_REQUIRED', '');
+      }
+    });
+
+    it('refuses a late deposit on an order in production when the deposit is required (#205)', async () => {
+      vi.stubEnv('PAYMENTS_DEPOSIT_REQUIRED', 'false');
+      const requestId = await acceptedOrder();
+      await confirmAllocations(requestId);
+      expect((await startProduction(requestId)).status).toBe(200);
+      vi.stubEnv('PAYMENTS_DEPOSIT_REQUIRED', 'true');
+      try {
+        const refused = await startPayment(requestId, 'DEPOSIT', 'SEPAY_TRANSFER');
+        expect(refused.status).toBe(409);
+        expect(refused.body.code).toBe('PAYMENT_ORDER_NOT_PAYABLE');
+      } finally {
+        vi.stubEnv('PAYMENTS_DEPOSIT_REQUIRED', '');
+      }
+    });
   });
 });

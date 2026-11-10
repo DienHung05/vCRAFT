@@ -144,8 +144,9 @@ describe('FireTimeline under reduced motion or on a narrow screen (GH#300)', () 
     reduced = true;
     const { container } = await renderTimeline(1440);
     await expectStaticFallback(container);
-    // The stages without a record are still named.
-    expect(screen.getByText(/chưa ghi: Tráng men, Ra lò/)).toBeTruthy();
+    // The journal has no `finish` entry, so it reads as still being made; no stage is flagged as missing.
+    expect(screen.getByText(/Đang làm · chưa ghi: Tráng men, Ra lò/)).toBeTruthy();
+    expect(screen.queryByText(/Chưa ghi nhận/)).toBeNull();
   });
 
   it('shows the same under 1024 px even when motion is allowed', async () => {
@@ -187,7 +188,7 @@ describe('FireTimeline as a story on a wide screen with motion (GH#300)', () => 
     expect(container.querySelector('.fire-figure')?.getAttribute('data-piece-stage')).toBe('fire');
   });
 
-  it('reaches every recorded stage by keyboard and shows the others as not recorded', async () => {
+  it('reaches every recorded stage by keyboard and leaves the others out of the track', async () => {
     const { container } = await renderTimeline(1440);
     await act(async () => {});
     const track = screen.getByRole('navigation', { name: 'Các công đoạn của món gốm' });
@@ -199,12 +200,46 @@ describe('FireTimeline as a story on a wide screen with motion (GH#300)', () => 
       'Vẽ lam',
       'Nung lò',
     ]);
-    expect(within(track).getAllByText('Chưa ghi')).toHaveLength(2);
+    expect(within(track).queryByText(/Chưa ghi/)).toBeNull();
+    expect(within(track).getAllByRole('listitem')).toHaveLength(5);
     expect(within(track).queryByRole('button', { name: /Tráng men|Ra lò/ })).toBeNull();
     fireEvent.click(buttons[2] as HTMLElement);
     const steps = stepsOf(container);
     expect(steps[2]?.getAttribute('aria-current')).toBe('step');
     expect(document.activeElement).toBe(steps[2]);
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+  });
+});
+
+describe('FireTimeline of a finished journal that has no entry for some stages (GH#486)', () => {
+  const finished = (['throw', 'dry', 'paint', 'fire', 'finish'] as const).map((stage, seq) =>
+    entry(seq, stage),
+  );
+
+  it('says nothing about the stages without an entry and shows no unfinished badge', async () => {
+    Object.defineProperty(window, 'innerWidth', {
+      value: 1440,
+      configurable: true,
+      writable: true,
+    });
+    const ui = await FireTimeline({
+      entries: finished,
+      household: 'Gốm Minh Hải',
+      pieceKind: 'vase',
+    });
+    const { container } = renderVi(ui);
+    await act(async () => {});
+    expect(stepsOf(container)).toHaveLength(5);
+    expect(container.textContent).not.toMatch(/Chưa ghi/i);
+    expect(container.textContent).not.toMatch(/Đang làm/);
+    const track = screen.getByRole('navigation', { name: 'Các công đoạn của món gốm' });
+    expect(
+      within(track)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Vuốt dáng', 'Phơi mộc', 'Vẽ lam', 'Nung lò', 'Ra lò']);
+    // The chip of a later stage still points at the right step now that the track skips Nhào đất.
+    fireEvent.click(within(track).getByRole('button', { name: 'Nung lò' }));
+    expect(stepsOf(container)[3]?.getAttribute('aria-current')).toBe('step');
   });
 });
