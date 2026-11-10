@@ -296,6 +296,23 @@ describe('AssistantWidget position', () => {
     expect(launcher().className).not.toContain('7rem');
   });
 
+  it('keeps the launcher in the normal corner on QR trace pages (GH#485)', () => {
+    stubViewport(true);
+    nav.pathname = '/vi/truy-xuat/DNENZF4C';
+    renderVi(<AssistantWidget />);
+    expect(launcher().className).toContain(CORNER);
+    expect(launcher().className).not.toContain('6.5rem');
+    expect(launcher().className).not.toContain('4.5rem');
+  });
+
+  it('lifts the launcher above the phone tab bar on the Studio only (GH#257)', () => {
+    stubViewport(true);
+    nav.pathname = '/vi/studio';
+    renderVi(<AssistantWidget />);
+    expect(launcher().className).toContain('bottom-[calc(env(safe-area-inset-bottom)+4.5rem)]');
+    expect(launcher().className).toContain('md:bottom-[calc(env(safe-area-inset-bottom)+1rem)]');
+  });
+
   it('hides the launcher while the map bottom sheet is open, through the root flag', () => {
     stubViewport(true);
     nav.pathname = '/vi/ban-do';

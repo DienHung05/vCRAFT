@@ -314,16 +314,6 @@ export const STAGE_NOTES: Record<JournalStage, readonly string[]> = {
   ],
 };
 
-export const SKIP_REASONS: Record<JournalStage, string> = {
-  clay: 'Mua phôi mộc từ lò trong làng nên hộ không tự xử lý đất.',
-  throw: 'Món đúc khuôn, không vuốt tay.',
-  dry: 'Phơi cùng mẻ trước, không ghi riêng.',
-  paint: 'Món men trơn, không có công đoạn vẽ.',
-  glaze: 'Món để mộc một phần, không tráng men toàn thân.',
-  fire: 'Nung chung mẻ, không ghi riêng.',
-  finish: 'Chưa hoàn thiện.',
-};
-
 export const VILLAGE_PARTS = [
   'Xóm 1',
   'Xóm 2',

@@ -13,7 +13,7 @@ import type { PieceKind } from './piece-shapes';
  * phép chuyển động cuộn từng mốc (GH#300): đường nối "nóng" dần và hình món gốm thành hình theo từng công đoạn.
  *
  * Mốc đính chính và mốc gốc cùng hiện, nối với nhau bằng liên kết (vCRAFT-9hg.4); nhật ký chưa có
- * công đoạn `finish` được ghi nhãn "đang làm" kèm tên các công đoạn chưa ghi.
+ * công đoạn `finish` được ghi nhãn "đang làm" kèm tên các công đoạn chưa ghi; công đoạn không có mốc thì không nhắc tới.
  */
 export async function FireTimeline({
   entries,
@@ -42,7 +42,6 @@ export async function FireTimeline({
     if (e.supersedesSeq !== undefined) correctedBy.set(e.supersedesSeq, e.seq);
   }
   const inProgress = entries.length > 0 && isJournalInProgress(entries);
-  const unrecorded = missingStages(entries);
   // The story reads oldest first; the newest-first order of the QR variant stays a plain list.
   const storyKind = newestFirst || entries.length === 0 ? undefined : pieceKind;
   const list = (
@@ -148,13 +147,6 @@ export async function FireTimeline({
                 .join(', '),
             })}
           </Badge>
-        </p>
-      ) : null}
-      {!inProgress && unrecorded.length > 0 ? (
-        <p className="mb-6 text-small text-ash">
-          {t('notRecordedStages', {
-            stages: unrecorded.map((stage) => stages(`${stage}.name`)).join(', '),
-          })}
         </p>
       ) : null}
       {entries.length === 0 ? <p className="text-ash">{t('emptyJournal')}</p> : null}
