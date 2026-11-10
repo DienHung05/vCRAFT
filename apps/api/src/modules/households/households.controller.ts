@@ -197,9 +197,10 @@ export class MyHouseholdController {
   setMakers(
     @CurrentActor() actor: Actor,
     @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
     @Body(new ZodValidationPipe(SetProductMakersRequestSchema)) body: SetProductMakersRequest,
   ) {
-    return this.households.setMakers(actor, id, body);
+    return this.households.setMakers(actor, id, version, body);
   }
 
   /** FR-TRC-06: scan statistics of one of the household's own products. */

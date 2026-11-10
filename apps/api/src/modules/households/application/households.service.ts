@@ -769,15 +769,23 @@ export class HouseholdsService {
     });
   }
 
-  /** Ghi công người làm (thay cả danh sách). Người đăng không bao giờ được ghi là người làm. */
+  /**
+   * Ghi công người làm (thay cả danh sách). Người đăng không bao giờ được ghi là người làm. Like every other
+   * product change it checks `If-Match` and bumps the product version (GH#420), so two editors cannot
+   * silently overwrite each other's credits.
+   */
   async setMakers(
     actor: Actor,
     productId: string,
+    expectedVersion: number,
     input: SetProductMakersRequest,
   ): Promise<ProductDto> {
     return this.orm.em.fork().transactional(async (em) => {
       const household = await this.ownWritableHousehold(em, actor);
       const product = await this.ownProduct(em, actor, household, productId);
+      assertVersion(product, expectedVersion);
+      // The credits live in their own rows: touching the product makes the flush bump its version.
+      product.updatedAt = new Date();
       const artisans = await em.find(Artisan, { household });
       unwrap(checkMakerCredits(input.makers, new Set(artisans.map((a) => a.id))));
       for (const maker of await em.find(ProductMaker, { product })) em.remove(maker);

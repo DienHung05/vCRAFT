@@ -1,4 +1,5 @@
 export * from './assistant-logs.js';
+export * from './data-retention.js';
 export * from './idempotency-keys.js';
 export * from './knowledge-documents.js';
 export * from './knowledge-events.js';

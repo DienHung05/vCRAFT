@@ -77,10 +77,11 @@ export function createStudioClient(options: AuthedClientOptions) {
         body,
         version,
       }),
-    setMakers: (id: string, body: SetProductMakersRequest) =>
+    setMakers: (id: string, version: number, body: SetProductMakersRequest) =>
       request(`/me/household/products/${id}/makers`, ProductResponseSchema, {
         method: 'PUT',
         body,
+        version,
       }),
     publishProduct: (id: string, version: number, republish: boolean) =>
       request(`/products/${id}/${republish ? 'republish' : 'publish'}`, ProductResponseSchema, {

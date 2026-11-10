@@ -6,7 +6,7 @@ import { Button, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
-import { PaymentStatusBadge } from '@/features/payments/payment-parts';
+import { PaymentStatusBadge, RefundDueBadge } from '@/features/payments/payment-parts';
 import { usePaymentClient } from '@/lib/api/use-payment-client';
 import { notify } from '@/lib/notify';
 import { useIdempotentAction } from '@/lib/use-idempotent-action';
@@ -183,6 +183,7 @@ function Panel({ orderId, client }: { orderId: string; client: PaymentClient }) 
                 data-testid="admin-payment-row"
               >
                 <PaymentStatusBadge status={payment.status} />
+                <RefundDueBadge payment={payment} />
                 <span className="font-medium">
                   {kinds(payment.kind)} · {money(payment.amountVnd)}
                 </span>

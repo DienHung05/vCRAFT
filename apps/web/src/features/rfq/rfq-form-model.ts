@@ -1,5 +1,6 @@
 import { type CreateRfqRequest, OnBehalfOfSchema, type RfqResponse } from '@vcraft/contracts';
 import { PRODUCT_CATEGORIES, type ProductCategory } from '@vcraft/domain';
+import { rfqDraftKey } from '@/lib/auth/signed-out-cleanup';
 
 /** A file the buyer attached: the uploaded media id and what the form needs to list it. */
 export interface RfqAttachmentValue {
@@ -78,6 +79,16 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** A calendar day in Vietnam ends at 23:59:59 local time, which is what a deadline means here. */
 export const endOfDay = (date: string) => new Date(`${date}T23:59:59.000+07:00`);
+
+/**
+ * {@link endOfDay} in epoch ms, or null for an empty or invalid date. Households' completion dates use it
+ * too, so a promised day is due at its end in Vietnam, like the buyer's dates (GH#443).
+ */
+export const endOfDayTime = (date: string): number | null => {
+  if (date === '') return null;
+  const time = endOfDay(date).getTime();
+  return Number.isNaN(time) ? null : time;
+};
 
 const dateInput = (iso: string) =>
   new Date(new Date(iso).getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -185,17 +196,18 @@ export function rfqFormValues(request: RfqResponse): RfqFormValues {
   };
 }
 
-const STORAGE_KEY = 'vcraft.rfq-draft';
-
 export interface StoredRfqDraft {
   id: string | null;
   values: RfqFormValues;
 }
 
-/** Keeps an unfinished form in this browser, because the server only stores complete drafts. */
-export function readStoredDraft(): StoredRfqDraft | null {
+/**
+ * Keeps an unfinished form in this browser, because the server only stores complete drafts. The key holds
+ * the signed-in person's id, so someone else using the same browser never sees it (GH#420).
+ */
+export function readStoredDraft(userId: string): StoredRfqDraft | null {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(rfqDraftKey(userId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredRfqDraft;
     return { id: parsed.id ?? null, values: { ...EMPTY_RFQ_FORM, ...parsed.values } };
@@ -204,17 +216,17 @@ export function readStoredDraft(): StoredRfqDraft | null {
   }
 }
 
-export function writeStoredDraft(draft: StoredRfqDraft) {
+export function writeStoredDraft(userId: string, draft: StoredRfqDraft) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+    window.localStorage.setItem(rfqDraftKey(userId), JSON.stringify(draft));
   } catch {
     // Storage can be unavailable. The server draft still applies.
   }
 }
 
-export function clearStoredDraft() {
+export function clearStoredDraft(userId: string) {
   try {
-    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(rfqDraftKey(userId));
   } catch {
     // Nothing to clear.
   }

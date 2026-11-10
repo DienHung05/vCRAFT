@@ -325,6 +325,7 @@ describe('Product tags, sold state, duplication and price suggestion', () => {
             method: 'PUT',
             url: `/me/household/products/${source.id}/makers`,
             auth: rep.auth,
+            headers: { 'if-match': String(source.version) },
             body: { makers: [{ artisanId, contribution: 'Vuốt dáng' }] },
           })
         ).status,

@@ -10,6 +10,10 @@ import type {
   PaymentDto,
   RecordOfflinePaymentRequest,
   RefundPaymentRequest,
+  ResolveUnappliedPaymentRequest,
+  UnappliedPaymentDto,
+  UnappliedPaymentListQuery,
+  UnappliedPaymentPageDto,
 } from '@vcraft/contracts';
 import {
   AppUser,
@@ -18,6 +22,7 @@ import {
   Payment,
   type PaymentCheckoutData,
   QuotationRequest,
+  UnappliedPayment,
 } from '@vcraft/database';
 import {
   newReferenceCode,
@@ -26,6 +31,7 @@ import {
   paymentEligibility,
   paymentTransition,
   providerOf,
+  type UnappliedPaymentReason,
 } from '@vcraft/domain';
 import type { Actor } from '../../../common/auth/auth.guard';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
@@ -195,6 +201,7 @@ export class PaymentsService {
     if (query.status) where.push({ status: query.status });
     if (query.method) where.push({ method: query.method });
     if (query.kind) where.push({ kind: query.kind });
+    if (query.refundDue) where.push({ status: 'PAID', refundDueAt: { $ne: null } });
     if (query.cursor) {
       const cursor = decodeCursor(query.cursor);
       const at = new Date(cursor.t);
@@ -418,6 +425,15 @@ export class PaymentsService {
             })
           : null;
       if (seen) return { outcome: 'DUPLICATE', paymentId: payment.id };
+      // Money already kept as unapplied for this transaction is not recorded (or announced) twice.
+      if (
+        event.outcome === 'PAID' &&
+        (await em.count(UnappliedPayment, {
+          provider: event.provider,
+          providerTxnId: event.providerTxnId,
+        })) > 0
+      )
+        return { outcome: 'DUPLICATE', paymentId: payment.id };
 
       const record = (extra: Record<string, unknown> = {}) => {
         payment.rawLastEvent = { ...event.raw, receivedAt: now.toISOString(), ...extra };
@@ -431,6 +447,8 @@ export class PaymentsService {
       }
 
       if (payment.status === 'PAID' || payment.status === 'REFUNDED') {
+        // A second transfer for a payment that is already settled is money to give back.
+        await this.keepUnapplied(em, payment, event, 'ALREADY_PAID', now);
         return { outcome: 'ALREADY_SETTLED', paymentId: payment.id };
       }
       if (payment.status !== 'PENDING' && payment.status !== 'EXPIRED') {
@@ -438,6 +456,7 @@ export class PaymentsService {
         this.logger.warn(
           `transfer ${event.providerTxnId} hit ${payment.status} payment ${payment.referenceCode}`,
         );
+        await this.keepUnapplied(em, payment, event, 'PAYMENT_NOT_PENDING', now);
         return { outcome: 'NOT_APPLIED', paymentId: payment.id };
       }
       const confirmed = paymentTransition(payment.status, 'CONFIRM', {
@@ -452,6 +471,7 @@ export class PaymentsService {
         this.logger.warn(
           `payment ${payment.referenceCode}: received ${event.amountVnd}, expected ${payment.amountVnd}`,
         );
+        await this.keepUnapplied(em, payment, event, 'AMOUNT_MISMATCH', now);
         return { outcome: 'AMOUNT_MISMATCH', paymentId: payment.id };
       }
       const twin = await em.count(Payment, {
@@ -465,6 +485,7 @@ export class PaymentsService {
         this.logger.warn(
           `payment ${payment.referenceCode}: order already paid, needs a manual refund`,
         );
+        await this.keepUnapplied(em, payment, event, 'ALREADY_PAID', now);
         return { outcome: 'NOT_APPLIED', paymentId: payment.id };
       }
       payment.status = confirmed.value;
@@ -624,6 +645,7 @@ export class PaymentsService {
       payment.refundedAt = new Date();
       payment.refundedBy = actor.id;
       payment.refundReason = input.reason;
+      payment.refundDueAt = null;
       em.create(AuditLog, {
         actorId: actor.id,
         action: 'payment.refund',
@@ -684,7 +706,117 @@ export class PaymentsService {
     return this.getById(paymentId);
   }
 
+  /** Money that could not be applied (GH#417), newest first; open records unless asked otherwise. */
+  async listUnapplied(query: UnappliedPaymentListQuery): Promise<UnappliedPaymentPageDto> {
+    const em = this.orm.em.fork();
+    const where: Record<string, unknown>[] = [{ status: query.status }];
+    if (query.cursor) {
+      const cursor = decodeCursor(query.cursor);
+      const at = new Date(cursor.t);
+      where.push({ $or: [{ createdAt: { $lt: at } }, { createdAt: at, id: { $lt: cursor.id } }] });
+    }
+    const rows = await em.find(
+      UnappliedPayment,
+      { $and: where },
+      {
+        populate: ['payment', 'payment.order'],
+        orderBy: { createdAt: 'desc', id: 'desc' },
+        limit: query.limit + 1,
+      },
+    );
+    const page = rows.slice(0, query.limit);
+    const last = page.at(-1);
+    return {
+      data: page.map(toUnappliedDto),
+      nextCursor:
+        rows.length > query.limit && last
+          ? Buffer.from(
+              JSON.stringify({
+                t: last.createdAt.toISOString(),
+                id: last.id,
+              } satisfies CursorValue),
+            ).toString('base64url')
+          : null,
+    };
+  }
+
+  /** An administrator records how unapplied money was handled (given back, applied by hand). Audit-logged. */
+  async resolveUnapplied(
+    actor: Actor,
+    id: string,
+    version: number,
+    input: ResolveUnappliedPaymentRequest,
+  ): Promise<UnappliedPaymentDto> {
+    return this.orm.em.fork().transactional(async (em) => {
+      const row = await em.findOne(UnappliedPayment, id, {
+        lockMode: LockMode.PESSIMISTIC_WRITE,
+      });
+      if (!row) throw notFound();
+      if (actor.locked) throw forbidden();
+      assertVersion(row, version);
+      if (row.status !== 'OPEN') throw new AppError('INVALID_TRANSITION');
+      row.status = 'RESOLVED';
+      row.resolvedAt = new Date();
+      row.resolvedBy = actor.id;
+      row.resolution = input.resolution;
+      em.create(AuditLog, {
+        actorId: actor.id,
+        action: 'payment.unapplied_resolve',
+        entity: 'unapplied_payment',
+        entityId: row.id,
+        before: { status: 'OPEN' },
+        after: {
+          status: row.status,
+          resolution: input.resolution,
+          amountVnd: row.amountVnd,
+          reason: row.reason,
+        },
+      });
+      await em.flush();
+      await em.populate(row, ['payment', 'payment.order']);
+      return toUnappliedDto(row);
+    });
+  }
+
   // --- helpers ---
+
+  /**
+   * Keeps money that could not be applied as its own record and tells the board (GH#417). Runs in the
+   * reconciliation transaction, under the payment's row lock, so a retried event finds the record.
+   */
+  private async keepUnapplied(
+    em: EntityManager,
+    payment: Payment,
+    event: VerifiedPaymentEvent,
+    reason: UnappliedPaymentReason,
+    now: Date,
+  ): Promise<void> {
+    em.create(UnappliedPayment, {
+      payment,
+      provider: event.provider,
+      providerTxnId: event.providerTxnId,
+      referenceCode: event.referenceCode,
+      amountVnd: event.amountVnd,
+      expectedAmountVnd: reason === 'AMOUNT_MISMATCH' ? payment.amountVnd : null,
+      reason,
+      raw: { ...event.raw, receivedAt: now.toISOString() },
+    });
+    this.publisher.publish(em, {
+      type: 'PAYMENT_UNAPPLIED',
+      subjectId: payment.order.id,
+      actorId: SYSTEM_ACTOR,
+      recipientIds: await this.boardOf(em, payment.order),
+    });
+  }
+
+  /** The coordinator of the order, or every active administrator when nobody coordinates it. */
+  private async boardOf(em: EntityManager, request: QuotationRequest): Promise<string[]> {
+    return request.coordinatorId
+      ? [request.coordinatorId]
+      : (await em.find(AppUser, { role: 'ADMIN', status: 'ACTIVE' }, { fields: ['id'] })).map(
+          (admin) => admin.id,
+        );
+  }
 
   private methodOptions(config: PaymentsConfig): OrderPaymentsDto['methodOptions'] {
     const limits = methodLimits(config);
@@ -757,11 +889,7 @@ export class PaymentsService {
   /** Tells the buyer, and the village board of the order, that money arrived. */
   private async notifyPaid(em: EntityManager, payment: Payment, actorId: string) {
     const request = payment.order;
-    const board = request.coordinatorId
-      ? [request.coordinatorId]
-      : (await em.find(AppUser, { role: 'ADMIN', status: 'ACTIVE' }, { fields: ['id'] })).map(
-          (admin) => admin.id,
-        );
+    const board = await this.boardOf(em, request);
     this.publisher.publish(em, {
       type: 'PAYMENT_PAID',
       subjectId: request.id,
@@ -769,4 +897,24 @@ export class PaymentsService {
       recipientIds: [request.buyer.id, ...board],
     });
   }
+}
+
+function toUnappliedDto(row: UnappliedPayment): UnappliedPaymentDto {
+  return {
+    id: row.id,
+    version: row.version,
+    paymentId: row.payment?.id ?? null,
+    orderId: row.payment?.order.id ?? null,
+    orderTitle: row.payment?.order.title ?? null,
+    provider: row.provider,
+    providerTxnId: row.providerTxnId,
+    referenceCode: row.referenceCode,
+    amountVnd: row.amountVnd,
+    expectedAmountVnd: row.expectedAmountVnd ?? null,
+    reason: row.reason,
+    status: row.status,
+    receivedAt: row.createdAt.toISOString(),
+    resolvedAt: row.resolvedAt?.toISOString() ?? null,
+    resolution: row.resolution ?? null,
+  };
 }

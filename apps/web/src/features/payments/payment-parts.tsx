@@ -30,6 +30,21 @@ export function PaymentStatusBadge({ status }: { status: PaymentDto['status'] })
   );
 }
 
+/** A paid payment of a cancelled order: the money is owed back until it is marked refunded (GH#417). */
+export function RefundDueBadge({
+  payment,
+}: {
+  payment: Pick<PaymentDto, 'status' | 'refundDueAt'>;
+}) {
+  const t = useTranslations('payments');
+  if (payment.status !== 'PAID' || !payment.refundDueAt) return null;
+  return (
+    <Badge tone="seal" data-testid="payment-refund-due">
+      {t('refundDue')}
+    </Badge>
+  );
+}
+
 /**
  * Reads a pending payment every few seconds and reports each fresh copy, until it leaves `PENDING`.
  * The poll is the live status: the server changes the payment only from a verified provider event.

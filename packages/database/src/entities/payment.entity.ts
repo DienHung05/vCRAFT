@@ -82,4 +82,11 @@ export class Payment extends BaseEntity {
 
   @Property({ type: 'string', length: 500, nullable: true })
   refundReason?: string | null;
+
+  /**
+   * Set when the order was cancelled while this payment was paid: the money is owed back until an administrator
+   * marks it refunded (GH#417).
+   */
+  @Property({ type: 'datetime', length: 3, nullable: true })
+  refundDueAt?: Date | null;
 }

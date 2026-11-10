@@ -7,6 +7,7 @@ import { useId, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { FormAlert } from '@/features/auth/fields';
 import { getPathname } from '@/i18n/navigation';
+import { clearSignedInBrowserData } from '@/lib/auth/signed-out-cleanup';
 import { browserAccountClient, browserSupabase } from '@/lib/auth/supabase-browser';
 import { notify } from '@/lib/notify';
 
@@ -103,6 +104,8 @@ export function PersonalDataCard({
       return;
     }
     notify.success(t('delete.done'));
+    // The deleted person's drafts (address, customer contact) must not outlive the account in this browser.
+    clearSignedInBrowserData();
     if (provideOnDeleted) {
       await provideOnDeleted();
       return;

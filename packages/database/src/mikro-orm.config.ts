@@ -43,6 +43,7 @@ import {
   QuotationRequest,
   SlugRedirect,
   TraceScan,
+  UnappliedPayment,
   Workshop,
 } from './entities/index.js';
 
@@ -160,6 +161,7 @@ export function createMikroOrmOptions(
       CooperativeQuotation,
       OrderAllocation,
       Payment,
+      UnappliedPayment,
       MediaAsset,
       MediaLink,
       News,

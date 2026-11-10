@@ -8,6 +8,10 @@ import {
   RecordOfflinePaymentRequestSchema,
   type RefundPaymentRequest,
   RefundPaymentRequestSchema,
+  type ResolveUnappliedPaymentRequest,
+  ResolveUnappliedPaymentRequestSchema,
+  type UnappliedPaymentListQuery,
+  UnappliedPaymentListQuerySchema,
 } from '@vcraft/contracts';
 import { type Actor, CurrentActor, Roles } from '../../common/auth/auth.guard';
 import { notFound } from '../../common/errors/app-error';
@@ -76,6 +80,28 @@ export class AdminPaymentsController {
   @Header('Cache-Control', 'private, no-store')
   list(@Query(new ZodValidationPipe(AdminPaymentListQuerySchema)) query: AdminPaymentListQuery) {
     return this.payments.adminList(query);
+  }
+
+  /** Money that came in but could not be applied (GH#417); declared before `payments/:id` routes. */
+  @Get('payments/unapplied')
+  @Header('Cache-Control', 'private, no-store')
+  listUnapplied(
+    @Query(new ZodValidationPipe(UnappliedPaymentListQuerySchema)) query: UnappliedPaymentListQuery,
+  ) {
+    return this.payments.listUnapplied(query);
+  }
+
+  /** Records how unapplied money was handled. Audit-logged. */
+  @Post('payments/unapplied/:id/resolve')
+  @HttpCode(200)
+  resolveUnapplied(
+    @CurrentActor() actor: Actor,
+    @Param('id', new UuidPipe()) id: string,
+    @IfMatchVersion() version: number,
+    @Body(new ZodValidationPipe(ResolveUnappliedPaymentRequestSchema))
+    body: ResolveUnappliedPaymentRequest,
+  ) {
+    return this.payments.resolveUnapplied(actor, id, version, body);
   }
 
   /** Records the balance of an order paid outside the site (cash, another account). Audit-logged. */

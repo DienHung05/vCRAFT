@@ -14,6 +14,7 @@ import {
   PaymentCheckout,
   PaymentLiveLine,
   PaymentStatusBadge,
+  RefundDueBadge,
   usePaymentPoll,
 } from './payment-parts';
 
@@ -236,6 +237,7 @@ function Panel({
               .map((payment) => (
                 <li key={payment.id} className="flex flex-wrap items-center gap-3">
                   <PaymentStatusBadge status={payment.status} />
+                  <RefundDueBadge payment={payment} />
                   <span>
                     {t(`kind.${payment.kind}`)} · {money(payment.amountVnd)} ·{' '}
                     {t(`method.${payment.method}`)}

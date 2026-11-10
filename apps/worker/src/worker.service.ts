@@ -32,8 +32,10 @@ import {
   ASSISTANT_LOG_PURGE_EVERY_MS,
   ASSISTANT_LOG_PURGE_JOB,
   COORDINATION_CHECK_EVERY_MS,
+  DATA_RETENTION_PURGE_EVERY_MS,
   IDEMPOTENCY_PURGE_EVERY_MS,
   IDEMPOTENCY_PURGE_JOB,
+  LOGIN_EVENT_PURGE_JOB,
   MEDIA_ORPHAN_SWEEP_EVERY_MS,
   MEDIA_ORPHAN_SWEEP_JOB,
   NEWS_IMPORT_JOB,
@@ -45,6 +47,7 @@ import {
   RFQ_EXPIRE_SWEEP_JOB,
   RFQ_SWEEP_EVERY_MS,
   runSchedulerJob,
+  TRACE_SCAN_PURGE_JOB,
 } from './processors/scheduler/rfq-jobs';
 import { DEFAULT_JOB_OPTIONS, OUTBOX_JOB_OPTIONS, trimFinishedJobs } from './queue-retention';
 import {
@@ -244,6 +247,9 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       { every: OUTBOX_PRUNE_EVERY_MS },
       { name: OUTBOX_PRUNE_JOB },
     );
+    for (const name of [LOGIN_EVENT_PURGE_JOB, TRACE_SCAN_PURGE_JOB]) {
+      await scheduler.upsertJobScheduler(name, { every: DATA_RETENTION_PURGE_EVERY_MS }, { name });
+    }
     await scheduler.upsertJobScheduler(
       MEDIA_ORPHAN_SWEEP_JOB,
       { every: MEDIA_ORPHAN_SWEEP_EVERY_MS },
