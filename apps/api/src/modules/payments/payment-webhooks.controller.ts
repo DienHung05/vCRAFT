@@ -80,6 +80,7 @@ export class PaymentWebhooksController {
         return { RspCode: '04', Message: 'Invalid amount' };
       case 'DUPLICATE':
       case 'ALREADY_SETTLED':
+      case 'NOT_APPLIED':
         return { RspCode: '02', Message: 'Order already confirmed' };
       default:
         return { RspCode: '00', Message: 'Confirm Success' };

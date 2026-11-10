@@ -13,10 +13,12 @@ import {
   UnappliedPayment,
 } from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { PaymentsService } from '../../src/modules/payments/application/payments.service.js';
 import {
   PAYMENT_HTTP,
   type PaymentHttp,
 } from '../../src/modules/payments/gateways/payment-gateway.js';
+import { VNPAY_QUERY_RESPONSE_FIELDS } from '../../src/modules/payments/gateways/vnpay.gateway.js';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
 
@@ -25,12 +27,58 @@ const ACCOUNT = '0123456789';
 const VNPAY_SECRET = 'vnpay-integration-secret';
 const MOMO = { partner: 'MOMOTEST', access: 'access-key', secret: 'secret-key' };
 
-/** Stands in for MoMo's create endpoint: no request ever leaves the process. */
+/** What a provider status query was asked, and how a test makes the fake provider answer it. */
+const queryRequests: Array<{ provider: 'VNPAY'; body: Record<string, unknown> }> = [];
+const queryControl: {
+  vnpay?: (body: Record<string, string>) => Record<string, string>;
+} = {};
+
+/** A VNPay `querydr` answer signed the documented way: the response fields joined by `|`, HMAC-SHA512. */
+const vnpayAnswer = (body: Record<string, string>, overrides: Record<string, string> = {}) => {
+  const fields: Record<string, string> = {
+    vnp_ResponseId: 'resp-1',
+    vnp_Command: 'querydr',
+    vnp_ResponseCode: '91',
+    vnp_Message: 'Not found',
+    vnp_TmnCode: body.vnp_TmnCode as string,
+    vnp_TxnRef: body.vnp_TxnRef as string,
+    vnp_Amount: '300000000',
+    vnp_BankCode: 'NCB',
+    vnp_PayDate: '20261108210000',
+    vnp_TransactionNo: '',
+    vnp_TransactionType: '01',
+    vnp_TransactionStatus: '01',
+    vnp_OrderInfo: body.vnp_OrderInfo as string,
+    vnp_PromotionCode: '',
+    vnp_PromotionAmount: '',
+    ...overrides,
+  };
+  const raw = VNPAY_QUERY_RESPONSE_FIELDS.map((name) => fields[name] ?? '').join('|');
+  return {
+    ...fields,
+    vnp_SecureHash: createHmac('sha512', VNPAY_SECRET).update(raw, 'utf8').digest('hex'),
+  };
+};
+const vnpayPaid = (body: Record<string, string>, transactionNo: string, amountVnd = 3_000_000) =>
+  vnpayAnswer(body, {
+    vnp_ResponseCode: '00',
+    vnp_Message: 'QueryDR Success',
+    vnp_Amount: String(amountVnd * 100),
+    vnp_TransactionNo: transactionNo,
+    vnp_TransactionStatus: '00',
+  });
+/** Stands in for the VNPay and MoMo endpoints: no request ever leaves the process. */
 const momoRequests: Array<Record<string, unknown>> = [];
 /** Lets a test hold the MoMo call open (`gate`), see it start (`entered`) or make it fail (`fail`). */
 const momoControl: { gate?: Promise<void>; entered?: () => void; fail?: boolean } = {};
-const fakeMomoHttp: PaymentHttp = async (_url, init) => {
+const fakeMomoHttp: PaymentHttp = async (url, init) => {
   const body = JSON.parse(init.body) as Record<string, unknown>;
+  if (url.includes('merchant_webapi')) {
+    queryRequests.push({ provider: 'VNPAY', body });
+    const input = body as Record<string, string>;
+    const reply = queryControl.vnpay?.(input) ?? vnpayAnswer(input);
+    return { ok: true, status: 200, json: async () => reply };
+  }
   momoRequests.push(body);
   momoControl.entered?.();
   await momoControl.gate;
@@ -1017,6 +1065,141 @@ describe('online payment of orders (ADR-0021)', () => {
         ipn({ ...created.body, referenceCode: 'VCPNOSUCHCODE' }),
       );
       expect(unknown.body.RspCode).toBe('01');
+    });
+
+    it('answers 02 to a failure notice for a payment that is already paid', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'VNPAY')).body;
+      expect((await call('/payments/webhooks/vnpay', ipn(created))).body.RspCode).toBe('00');
+      const late = await call(
+        '/payments/webhooks/vnpay',
+        ipn(created, { vnp_ResponseCode: '24', vnp_TransactionStatus: '02' }),
+      );
+      expect(late.body.RspCode).toBe('02');
+      expect((await status(created)).status).toBe('PAID');
+    });
+
+    it('refuses an IPN signed for another merchant', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'VNPAY')).body;
+      const res = await call('/payments/webhooks/vnpay', ipn(created, { vnp_TmnCode: 'OTHERTMN' }));
+      expect(res.body.RspCode).toBe('97');
+      expect((await status(created)).status).toBe('PENDING');
+    });
+
+    it('settles a pending payment from the provider status query, and a later IPN is a duplicate', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'VNPAY')).body;
+      const payments = t.app.get(PaymentsService);
+      queryRequests.length = 0;
+
+      // VNPay has not seen the transaction yet: nothing changes. A second ask within 20 s is not sent at all.
+      const start = new Date();
+      expect(await payments.syncWithProvider(created.referenceCode, start)).toBeNull();
+      expect(await payments.syncWithProvider(created.referenceCode, start)).toBeNull();
+      expect(queryRequests).toHaveLength(1);
+      expect(queryRequests[0]?.body).toMatchObject({
+        vnp_Command: 'querydr',
+        vnp_TxnRef: created.referenceCode,
+        vnp_TmnCode: 'TESTTMN1',
+      });
+      // The date sent with the pay request, read back from the stored URL.
+      expect(queryRequests[0]?.body.vnp_TransactionDate).toBe(
+        new URL(created.checkout.url).searchParams.get('vnp_CreateDate'),
+      );
+      expect((await status(created)).status).toBe('PENDING');
+
+      // A tampered answer is no information.
+      queryControl.vnpay = (body) => ({ ...vnpayPaid(body, '77001'), vnp_Amount: '100' });
+      const later = new Date(start.getTime() + 25_000);
+      expect(await payments.syncWithProvider(created.referenceCode, later)).toBeNull();
+      expect((await status(created)).status).toBe('PENDING');
+
+      // The money is there: the query settles the payment.
+      queryControl.vnpay = (body) => vnpayPaid(body, '77002');
+      try {
+        const result = await payments.syncWithProvider(
+          created.referenceCode,
+          new Date(start.getTime() + 50_000),
+        );
+        expect(result).toMatchObject({ outcome: 'PAID' });
+      } finally {
+        queryControl.vnpay = undefined;
+      }
+      expect((await status(created)).status).toBe('PAID');
+      // Nothing is asked about a payment that is settled.
+      const before = queryRequests.length;
+      expect(
+        await payments.syncWithProvider(created.referenceCode, new Date(start.getTime() + 90_000)),
+      ).toBeNull();
+      expect(queryRequests).toHaveLength(before);
+
+      // The IPN of the same transaction arrives afterwards: idempotent, answered as already confirmed.
+      const replay = await call(
+        '/payments/webhooks/vnpay',
+        ipn(created, { vnp_TransactionNo: '77002' }),
+      );
+      expect(replay.body.RspCode).toBe('02');
+      expect(
+        (await notices(buyer.auth)).filter(
+          (n) => n.type === 'PAYMENT_PAID' && n.target?.id === requestId,
+        ),
+      ).toHaveLength(1);
+    });
+
+    it('asks the provider when the buyer returns with a valid signature, before redirecting', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'VNPAY')).body;
+      queryControl.vnpay = (body) => vnpayPaid(body, '77003');
+      try {
+        const back = await t.request({
+          method: 'GET',
+          url: `/payments/return/vnpay?${new URLSearchParams(ipn(created))}`,
+        });
+        expect(back.status).toBe(302);
+        expect(back.headers.location).toBe(
+          `https://vcraft.test/vi/thanh-toan/${created.referenceCode}`,
+        );
+        // The status page opens already paid: the IPN has not been sent at all.
+        expect((await status(created)).status).toBe('PAID');
+      } finally {
+        queryControl.vnpay = undefined;
+      }
+    });
+
+    it('does not ask the provider for a return that is not signed', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'VNPAY')).body;
+      queryRequests.length = 0;
+      queryControl.vnpay = (body) => vnpayPaid(body, '77004');
+      try {
+        const back = await call('/payments/return/vnpay', { ...ipn(created), vnp_Amount: '1' });
+        expect(back.status).toBe(302);
+        expect(queryRequests).toHaveLength(0);
+        expect((await status(created)).status).toBe('PENDING');
+      } finally {
+        queryControl.vnpay = undefined;
+      }
+    });
+
+    it('asks the provider when the buyer polls an older pending payment, without waiting for it', async () => {
+      const requestId = await acceptedOrder();
+      const created = (await startPayment(requestId, 'DEPOSIT', 'VNPAY')).body;
+      const em = db.orm.em.fork();
+      const row = await em.findOneOrFail(Payment, { referenceCode: created.referenceCode });
+      row.createdAt = new Date(Date.now() - 60_000);
+      await em.flush();
+      queryControl.vnpay = (body) => vnpayPaid(body, '77005');
+      try {
+        // The poll answers with the state it has now; the query runs behind it.
+        expect((await status(created)).status).toBe('PENDING');
+        for (let i = 0; i < 40 && (await status(created)).status !== 'PAID'; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        expect((await status(created)).status).toBe('PAID');
+      } finally {
+        queryControl.vnpay = undefined;
+      }
     });
 
     it('marks a declined payment failed', async () => {
