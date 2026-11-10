@@ -74,10 +74,8 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
     getTranslations('common'),
   ]);
   const result = await fetchTrace(code);
-  if (result.status === 'unavailable') {
-    const errors = await getTranslations('errors.generic');
-    return <DataUnavailable heading={errors('title')} />;
-  }
+  const unavailableHeading =
+    result.status === 'unavailable' ? (await getTranslations('errors.generic'))('title') : null;
   const trace = result.status === 'ok' ? result.data : null;
   // Mã không có, hoặc hộ làm ra nó đã bị khóa, là cảnh báo hàng không xác thực; sản phẩm tự rút thì chỉ là thông báo.
   const withdrawn = trace?.availability === 'UNAVAILABLE' && trace.reason === 'PRODUCT_WITHDRAWN';
@@ -103,18 +101,68 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
     <div
       className={`mx-auto min-h-svh bg-paper ${visible ? 'trace-notebook max-w-6xl' : 'max-w-xl'}`}
     >
-      <header className="flex items-center justify-between gap-3 px-5 py-4">
-        <Link href="/" aria-label={t('home')} className="shrink-0">
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-ink/10 px-5 py-3">
+        <Link
+          href="/"
+          className="flex min-h-11 items-center gap-2 text-small text-ink hover:text-clay"
+        >
           <Logo size={26} />
+          <span>{t('home')}</span>
         </Link>
-        <span className="min-w-0 truncate font-mono text-[0.7rem] tracking-[0.25em] text-ash uppercase">
-          {t('book')}
-        </span>
+        <span className="text-small text-ash">{t('book')}</span>
         <LocaleSwitcher />
       </header>
+      <nav aria-label={t('navigation')} className="flex flex-wrap items-center gap-2 px-5 py-3">
+        {visible ? (
+          <Link
+            href={{ pathname: '/san-pham/[slug]', params: { slug: visible.product.slug } }}
+            className={buttonVariants({ variant: 'secondary' })}
+          >
+            {t('backToProduct')}
+          </Link>
+        ) : null}
+        <Link href="/san-pham" className={buttonVariants({ variant: 'ghost' })}>
+          {t('browseProducts')}
+        </Link>
+        {visible ? (
+          <Link
+            href={{ pathname: '/nghe-nhan/[slug]', params: { slug: visible.household.slug } }}
+            className={buttonVariants({ variant: 'ghost' })}
+          >
+            {t('viewHousehold')}
+          </Link>
+        ) : null}
+      </nav>
+      {visible ? (
+        <nav
+          aria-label={t('contents')}
+          className="flex flex-wrap gap-x-5 gap-y-1 border-y border-ink/10 px-5 py-1 text-small text-clay"
+        >
+          <a
+            href="#verify-title"
+            className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
+          >
+            {t('checkJournal')}
+          </a>
+          <a
+            href="#journey-title"
+            className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
+          >
+            {t('readJournal')}
+          </a>
+          <a
+            href="#workshop"
+            className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
+          >
+            {t('ctaVisit')}
+          </a>
+        </nav>
+      ) : null}
 
       <main id="main">
-        {withdrawn ? (
+        {unavailableHeading ? (
+          <DataUnavailable heading={unavailableHeading} />
+        ) : withdrawn ? (
           <section className="mx-5 mt-6 rounded-card border border-ink/15 p-8 text-center">
             <VaseFigure className="mx-auto h-20 opacity-60" body="var(--color-ash)" />
             <h1 className="mt-6 text-h2">{t('withdrawnTitle')}</h1>
