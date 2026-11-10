@@ -6,17 +6,17 @@ import { renderVi } from './render';
 const REQUEST = '00000000-0000-4000-8000-0000000000ab';
 
 describe('QrLabelsButton', () => {
-  const assign = vi.fn();
+  const open = vi.fn();
 
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.stubGlobal('location', { ...window.location, assign });
+    vi.stubGlobal('open', open);
   });
 
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
-    assign.mockReset();
+    open.mockReset();
   });
 
   it('requests the sheet, polls until it is ready, then opens the PDF', async () => {
@@ -45,7 +45,7 @@ describe('QrLabelsButton', () => {
       await vi.advanceTimersByTimeAsync(3_100);
     });
     expect(client.qrLabelsStatus).toHaveBeenCalledTimes(2);
-    expect(assign).toHaveBeenCalledWith('https://s/labels.pdf');
+    expect(open).toHaveBeenCalledWith('https://s/labels.pdf', '_blank', 'noopener');
   });
 
   it('says so when the request fails', async () => {

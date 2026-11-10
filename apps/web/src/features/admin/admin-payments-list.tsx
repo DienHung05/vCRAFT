@@ -11,6 +11,7 @@ import { ListSkeleton } from '@/components/states/skeletons';
 import { PaymentStatusBadge } from '@/features/payments/payment-parts';
 import { Link } from '@/i18n/navigation';
 import { usePaymentClient } from '@/lib/api/use-payment-client';
+import { useLatestRequest } from '@/lib/use-latest-request';
 import { useMoney } from '@/lib/use-money';
 
 const STATUSES = ['PENDING', 'PAID', 'FAILED', 'EXPIRED', 'CANCELLED', 'REFUNDED'] as const;
@@ -33,19 +34,25 @@ export function AdminPaymentsList({ client: provided }: { client?: PaymentClient
   const [next, setNext] = useState<string | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error' | 'signed-out'>('loading');
 
+  const latest = useLatestRequest();
+
   const load = useCallback(
     async (cursor?: string) => {
       if (!client) return;
+      // A fresh load supersedes everything earlier; "load more" belongs to the list it extends.
+      const id = cursor ? latest.peek() : latest.begin();
       try {
         const page = await client.adminPayments({ ...filters, ...(cursor && { cursor }) });
+        if (!latest.isCurrent(id)) return;
         setRows((current) => (cursor ? [...current, ...page.data] : page.data));
         setNext(page.nextCursor);
         setState('ready');
       } catch (error) {
+        if (!latest.isCurrent(id)) return;
         setState(error instanceof ApiError && error.status === 401 ? 'signed-out' : 'error');
       }
     },
-    [client, filters],
+    [client, filters, latest],
   );
 
   useEffect(() => {

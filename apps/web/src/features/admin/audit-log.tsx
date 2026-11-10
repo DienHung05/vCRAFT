@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
 import { TableSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
+import { useLatestRequest } from '@/lib/use-latest-request';
 import { useAdminClient } from './admin-dashboard';
 
 // `max-w-full`: a select is as wide as its longest option, which overflowed 360 px screens in English (GH#393).
@@ -80,18 +81,22 @@ export function AuditLogView({ client: provided }: { client?: AdminClient }) {
   const [cursor, setCursor] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const latest = useLatestRequest();
 
   const load = useCallback(async () => {
     if (!client) return;
+    const id = latest.begin();
     setFailed(false);
+    setLoadingMore(false);
     try {
       const page = await client.auditLog(filters);
+      if (!latest.isCurrent(id)) return;
       setRows(page.data);
       setCursor(page.nextCursor);
     } catch {
-      setFailed(true);
+      if (latest.isCurrent(id)) setFailed(true);
     }
-  }, [client, filters]);
+  }, [client, filters, latest]);
 
   useEffect(() => {
     void load();
@@ -113,15 +118,18 @@ export function AuditLogView({ client: provided }: { client?: AdminClient }) {
 
   const more = async () => {
     if (!client || !cursor || loadingMore) return;
+    // Does not begin a new request: a filter change must still supersede this page.
+    const id = latest.peek();
     setLoadingMore(true);
     try {
       const page = await client.auditLog({ ...filters, cursor });
+      if (!latest.isCurrent(id)) return;
       setRows((current) => [...(current ?? []), ...page.data]);
       setCursor(page.nextCursor);
     } catch {
-      setFailed(true);
+      if (latest.isCurrent(id)) setFailed(true);
     } finally {
-      setLoadingMore(false);
+      if (latest.isCurrent(id)) setLoadingMore(false);
     }
   };
 

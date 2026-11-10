@@ -14,6 +14,7 @@ import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
+import { useLatestRequest } from '@/lib/use-latest-request';
 import { useAdminClient } from './admin-dashboard';
 
 const inputClass = 'rounded-input border border-ink/20 bg-surface px-3 py-2';
@@ -176,14 +177,18 @@ function UsersPanel({ client }: { client: AdminClient }) {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const latest = useLatestRequest();
+
   const load = useCallback(async () => {
+    const id = latest.begin();
     setFailed(false);
     try {
-      setUsers((await client.listUsers(filters)).items);
+      const page = await client.listUsers(filters);
+      if (latest.isCurrent(id)) setUsers(page.items);
     } catch {
-      setFailed(true);
+      if (latest.isCurrent(id)) setFailed(true);
     }
-  }, [client, filters]);
+  }, [client, filters, latest]);
 
   useEffect(() => {
     void load();
