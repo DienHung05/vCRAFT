@@ -27,6 +27,7 @@ import {
 } from '@/features/catalog/view-models';
 import { FavouriteButton } from '@/features/favourites/favourite-button';
 import { Link, permanentRedirect } from '@/i18n/navigation';
+import { formatDeclaredDate } from '@/lib/declared-date';
 import { frameRatioOf } from '@/lib/images';
 import { resolveLocale } from '@/lib/locale';
 import { optionalTextFor, textFor } from '@/lib/localized-text';
@@ -320,8 +321,8 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
                 <p className="text-small text-ash">
                   {t('journeySummary', {
                     count: log.length,
-                    from: format.dateTime(new Date(first.at), 'short'),
-                    to: format.dateTime(new Date(last.at), 'short'),
+                    from: formatDeclaredDate(format, first.at, 'short'),
+                    to: formatDeclaredDate(format, last.at, 'short'),
                   })}
                 </p>
                 <Link
