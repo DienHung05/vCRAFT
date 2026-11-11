@@ -10,8 +10,9 @@ import {
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useTranslations } from 'next-intl';
 import { Protocol } from 'pmtiles';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import MapGL, {
+  AttributionControl,
   Layer,
   type MapLayerMouseEvent,
   type MapRef,
@@ -31,6 +32,14 @@ import { PMTILES_URL } from './offline-style';
 import { loadPinImage, PIN_COLORS, PIN_HEIGHT, PIN_WIDTH, pinSvg } from './pin-icons';
 import { PinPopup } from './pin-popup';
 import { pulseDue, pulsePaint, shouldPulse } from './pin-pulse';
+import {
+  CARD_ESTIMATE,
+  type PopupAnchor,
+  panToFit,
+  popupAnchorFor,
+  popupOffsetFor,
+  unionBox,
+} from './popup-fit';
 import { useMapStyle } from './use-map-style';
 import { routeLine } from './walking-route';
 
@@ -46,6 +55,12 @@ const ROUTE_SOURCE = 'walking-route';
 const GLAZE = '#2f6f6a';
 const PAPER = '#fbf7ef';
 const PHONE = '(max-width: 639px)';
+/** The selected pin is drawn 1.3 times its size (see the `icon-size` of the pins layer). */
+const SELECTED_PIN_HEIGHT = Math.round(PIN_HEIGHT * 1.3);
+const SELECTED_PIN_WIDTH = Math.round(PIN_WIDTH * 1.3);
+const POPUP_GAP = 4;
+/** Room kept between the info card and the map's edges when the map is panned to show it (GH#475). */
+const POPUP_PADDING = 12;
 
 /** Marker bitmaps by image id, shared by every map on the page and kept across style switches. */
 const pinImages = new Map<string, HTMLImageElement>();
@@ -157,6 +172,78 @@ export default function MapCanvas({
   }, [selected, onSelect]);
   const [inView, setInView] = useState(true);
 
+  // MapLibre opens the compact attribution until the first move; on a phone that wide strip would cover
+  // the legend and the pins, so it starts as the small "i" button (GH#475). Tapping it still opens it.
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !container || !phone) return;
+    // `idle`: the style's attributions are in and the control has turned compact by then.
+    const collapse = () => {
+      const attribution = container.querySelector('.maplibregl-ctrl-attrib');
+      attribution?.removeAttribute('open');
+      attribution?.classList.remove('maplibregl-compact-show');
+    };
+    map.once('idle', collapse);
+    return () => {
+      map.off('idle', collapse);
+    };
+  }, [container, phone]);
+
+  // Which side of the pin the info card opens on (GH#475): decided once per selection, from where the pin
+  // is on screen, so the card opens below a pin near the top edge and inwards near the sides. The card is
+  // only mounted once this is known, so it never flips after it appears.
+  const selectedLng = selected?.lng;
+  const selectedLat = selected?.lat;
+  const [placement, setPlacement] = useState<{ id: string; anchor: PopupAnchor } | null>(null);
+  useLayoutEffect(() => {
+    if (!selectedId || selectedLng === undefined || selectedLat === undefined || phone) return;
+    const map = mapRef.current?.getMap();
+    let anchor: PopupAnchor = 'bottom';
+    if (map) {
+      // The map is not drawn yet: wait for `container`, set when it loads.
+      if (!container) return;
+      anchor = popupAnchorFor(
+        map.project([selectedLng, selectedLat]),
+        { width: container.clientWidth, height: container.clientHeight },
+        CARD_ESTIMATE,
+        SELECTED_PIN_HEIGHT,
+      );
+    }
+    setPlacement({ id: selectedId, anchor });
+  }, [selectedId, selectedLng, selectedLat, phone, container]);
+  const popupAnchor = placement?.id === selectedId ? placement.anchor : null;
+
+  // Once the card is laid out, pan the map when part of it (or of its pin) is still outside the map, for
+  // a card taller than the map (a short phone in landscape) or a pin that was off screen when picked from
+  // the list. A jump, not a glide, for people who asked for reduced motion.
+  const popupReady = popupAnchor !== null;
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || !container || !popupReady || selectedLng === undefined || selectedLat === undefined)
+      return;
+    const frame = requestAnimationFrame(() => {
+      const card = container.querySelector('.maplibregl-popup')?.getBoundingClientRect();
+      if (!card) return;
+      const mapBox = container.getBoundingClientRect();
+      const point = map.project([selectedLng, selectedLat]);
+      const x = mapBox.left + point.x;
+      const y = mapBox.top + point.y;
+      const withPin = unionBox(card, {
+        left: x - SELECTED_PIN_WIDTH / 2,
+        right: x + SELECTED_PIN_WIDTH / 2,
+        top: y - SELECTED_PIN_HEIGHT,
+        bottom: y,
+      });
+      // When card and pin together do not fit the map, the card (photo and name first) wins.
+      const fits = withPin.bottom - withPin.top <= mapBox.height - 2 * POPUP_PADDING;
+      const offset = panToFit(fits ? withPin : card, mapBox, POPUP_PADDING);
+      if (offset.x === 0 && offset.y === 0) return;
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      map.panBy([offset.x, offset.y], { animate: !reducedMotion, duration: 250 });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [container, popupReady, selectedLng, selectedLat]);
+
   useEffect(() => {
     if (!container || typeof IntersectionObserver === 'undefined') return;
     const observer = new IntersectionObserver(([entry]) =>
@@ -258,7 +345,10 @@ export default function MapCanvas({
         );
       }}
       onMoveEnd={handleMoveEnd}
+      // Compact, in the bottom-left corner: the Fox launcher sits over the bottom-right one (GH#475).
+      attributionControl={false}
     >
+      <AttributionControl position="bottom-left" compact />
       <Source id={SOURCE} type="geojson" data={data} cluster clusterRadius={44} clusterMaxZoom={16}>
         <Layer
           id={CLUSTERS}
@@ -345,12 +435,12 @@ export default function MapCanvas({
           <span className="block size-4 rounded-full border-2 border-paper bg-seal shadow-warm" />
         </Marker>
       ) : null}
-      {selected && !phone ? (
+      {selected && !phone && popupAnchor ? (
         <Popup
           longitude={selected.lng}
           latitude={selected.lat}
-          anchor="bottom"
-          offset={Math.round(PIN_HEIGHT * 1.3) + 4}
+          anchor={popupAnchor}
+          offset={popupOffsetFor(popupAnchor, SELECTED_PIN_HEIGHT, POPUP_GAP)}
           maxWidth="18rem"
           closeOnClick={false}
           onClose={() => onSelect(null)}
@@ -360,7 +450,10 @@ export default function MapCanvas({
       ) : null}
       {selected && phone ? (
         // Phones: a bottom sheet over the map instead of a popup that would cover the pin.
-        <div className="absolute inset-x-0 bottom-0 z-10 max-h-[70%] overflow-y-auto rounded-t-card bg-surface p-4 shadow-warm">
+        <div
+          data-testid="pin-sheet"
+          className="absolute inset-x-0 bottom-0 z-10 max-h-[90%] overflow-y-auto rounded-t-card bg-surface p-4 shadow-warm"
+        >
           <PinPopup pin={selected} now={now} onClose={() => onSelect(null)} />
         </div>
       ) : (
@@ -384,11 +477,14 @@ const LEGEND: readonly {
   { status: 'production', key: 'legendProduction' },
 ];
 
-/** What the pin colours mean (GH#216), in the map's bottom-left corner. */
+/** What the pin colours mean (GH#216), in the map's bottom-left corner, just above the attribution (GH#475). */
 function MapLegend() {
   const t = useTranslations('villageMap');
   return (
-    <div className="absolute bottom-2 left-2 rounded-input bg-surface/95 px-3 py-2 text-small shadow-warm">
+    <div
+      data-testid="map-legend"
+      className="absolute bottom-12 left-2.5 rounded-input bg-surface/95 px-3 py-2 text-small shadow-warm"
+    >
       <p className="sr-only">{t('legendTitle')}</p>
       <ul className="flex flex-col gap-1">
         {LEGEND.map(({ status, key }) => (

@@ -73,11 +73,11 @@ export function PinPopup({
         <img
           src={pin.household.coverUrl}
           alt=""
-          className="aspect-[3/2] w-full rounded-input object-cover max-sm:aspect-[5/2]"
+          className="aspect-[3/2] w-full rounded-input object-cover max-sm:aspect-[3/1]"
           loading="lazy"
         />
       ) : (
-        <div className="grid aspect-[3/2] place-items-center rounded-input bg-paper max-sm:aspect-[5/2]">
+        <div className="grid aspect-[3/2] place-items-center rounded-input bg-paper max-sm:aspect-[3/1]">
           <ProductFigure
             kind="generic"
             className="h-3/4 opacity-80"
