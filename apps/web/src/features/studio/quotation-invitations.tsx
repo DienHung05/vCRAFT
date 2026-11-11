@@ -14,7 +14,6 @@ import { Link } from '@/i18n/navigation';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { useMoney } from '@/lib/use-money';
 import { isOpenInvitation } from './invitation-summary';
-import { OpenCoordinatedRequests } from './open-coordinated-requests';
 
 const isOpen = (row: MyInvitationDto) => isOpenInvitation(row);
 
@@ -88,6 +87,15 @@ function Invitations({ client }: { client: QuotationClient }) {
       <header className="flex flex-col gap-2">
         <h1 className="text-h2">{t('title')}</h1>
         <p className="text-ash">{t('lead')}</p>
+        {state === 'signed-out' || state === 'failed' ? null : (
+          // GH#490: the open coordinated requests (BR-05a) have their own page; this one answers invitations.
+          <Link
+            href="/studio/yeu-cau-mo"
+            className="min-h-11 self-start py-2 text-small text-clay underline underline-offset-4"
+          >
+            {t('openLink')}
+          </Link>
+        )}
       </header>
       {state === 'signed-out' ? (
         <p>{t('signIn')}</p>
@@ -163,9 +171,6 @@ function Invitations({ client }: { client: QuotationClient }) {
             </li>
           ))}
         </ul>
-      )}
-      {state === 'signed-out' || state === 'failed' ? null : (
-        <OpenCoordinatedRequests client={client} onOffered={() => void load()} />
       )}
     </div>
   );

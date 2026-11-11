@@ -55,7 +55,7 @@
     "quotes": "Quote requests",
     "invitations": "Quote invitations",
     "coordination": "Coordination",
-    "openInvitations": "{count, plural, one {# open invitation} other {# open invitations}}",
+    "openRequests": "Open requests",
     "theme": "Switch light/dark theme",
     "themeToDark": "Switch to dark theme",
     "themeToLight": "Switch to light theme",
@@ -2818,10 +2818,13 @@
       "openLoading": "Loading open requests…",
       "openFailed": "The open requests could not be loaded.",
       "openEmpty": "No open requests match your household right now.",
-      "openEmptyHint": "A coordinated request is open to your household when the Management Board has claimed it, its bidding deadline has not passed, and your household is approved and has declared capacity or a published product in its category. Requests you are already invited to are listed above.",
+      "openEmptyHint": "A coordinated request is open to your household when the Management Board has claimed it, its bidding deadline has not passed, and your household is approved and has declared capacity or a published product in its category. Requests you are already invited to are under Quote invitations.",
       "openRequest": "{category}: needs {quantity} {unit}",
       "openOffer": "Send an offer",
-      "openHide": "Hide the form"
+      "openHide": "Hide the form",
+      "openLink": "Browse open requests, no invitation needed",
+      "openOffered": "Offer sent. This request is now under your household's Quote invitations.",
+      "openToInvitations": "View quote invitations"
     },
     "allocations": {
       "title": "Orders",
