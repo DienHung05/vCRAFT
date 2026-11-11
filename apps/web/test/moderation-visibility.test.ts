@@ -13,23 +13,27 @@ import {
 } from '@/features/catalog/exhibition-api';
 
 /**
- * vCRAFT-8my.1: a suspension must be visible on the public household, product, catalog and trace
- * views on the very next server request, and a reinstatement must clear the stale warning. These
- * tests simulate the Next data cache by *honoring the RequestInit options* the helpers send:
- * `cache: 'no-store'` bypasses the cache, `next: { revalidate }` serves the stored copy until the
- * TTL passes. The production root cause of the reported 100 s staleness is not confirmed; what is
- * pinned here is the contract that the moderation-sensitive helpers must not opt into that cache.
+ * vCRAFT-8my.1 / ADR-0027: a suspension must be visible on the public household, product, catalog and
+ * trace views right after the API commits it, and a reinstatement must clear the stale warning. The
+ * exhibition reads are cached (60 s TTL, tagged); the visibility comes from the on-demand
+ * `revalidateTag` the API's worker triggers. These tests simulate the Next Data Cache by *honoring the
+ * RequestInit options* the helpers send: `cache: 'no-store'` bypasses it, `next: { revalidate, tags }`
+ * serves the stored copy until the TTL passes or one of its tags is revalidated.
  */
 
-type FetchInit = RequestInit & { next?: { revalidate?: number }; cache?: RequestCache };
+type FetchInit = RequestInit & {
+  next?: { revalidate?: number; tags?: string[] };
+  cache?: RequestCache;
+};
 
 /** The part of the API the test plays: the current answer per route (404 included). */
 type Origin = (path: string) => { status: number; body: unknown };
 
 /** A fake Next data cache in front of the origin: honors `cache`/`next` like the framework does. */
 function harness(origin: Origin) {
-  const cache = new Map<string, { body: unknown; expiresAt: number }>();
+  const cache = new Map<string, { body: unknown; expiresAt: number; tags: string[] }>();
   let nowMs = 0;
+  let originHits = 0;
   const fetchMock = vi.fn(async (input: unknown, init?: FetchInit) => {
     const path = String(input).replace(/^https?:\/\/[^/]+\/api\/v1/, '');
     const revalidate = init?.next?.revalidate;
@@ -42,10 +46,11 @@ function harness(origin: Origin) {
         });
       }
     }
+    originHits += 1;
     const { status, body } = origin(path);
-    if (typeof revalidate === 'number') {
-      if (status === 200) cache.set(path, { body, expiresAt: nowMs + revalidate * 1000 });
-      else cache.delete(path);
+    // Next stores 200 answers only.
+    if (typeof revalidate === 'number' && status === 200) {
+      cache.set(path, { body, expiresAt: nowMs + revalidate * 1000, tags: init?.next?.tags ?? [] });
     }
     return new Response(JSON.stringify(body), {
       status,
@@ -54,10 +59,16 @@ function harness(origin: Origin) {
   });
   vi.stubGlobal('fetch', fetchMock);
   return {
-    /** Advance the fake cache clock, e.g. past a 30 s revalidate window. */
+    /** Advance the fake cache clock, e.g. past a 60 s revalidate window. */
     tick: (seconds: number) => {
       nowMs += seconds * 1000;
     },
+    /** `revalidateTag(tag, { expire: 0 })`: every stored copy carrying the tag is gone. */
+    revalidateTag: (tag: string) => {
+      for (const [path, entry] of cache) if (entry.tags.includes(tag)) cache.delete(path);
+    },
+    /** How many reads got past the cache to the API. */
+    originHits: () => originHits,
     calls: () => fetchMock.mock.calls as ReadonlyArray<[unknown, FetchInit?]>,
   };
 }
@@ -273,8 +284,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('moderation-sensitive public fetches bypass the data cache (vCRAFT-8my.1)', () => {
-  it('sends cache: no-store for detail, list, page and trace helpers', async () => {
+describe('exhibition reads are cached, tagged and dropped on demand (ADR-0027)', () => {
+  it('sends revalidate 60 and tags for detail, list, page and trace helpers', async () => {
     const api = fixture('vi');
     const h = harness(api.origin);
     await Promise.all([
@@ -286,24 +297,48 @@ describe('moderation-sensitive public fetches bypass the data cache (vCRAFT-8my.
       fetchHousehold(SLUG),
       fetchTrace(TRACE_CODE),
     ]);
-    for (const [path, init] of callsOf(h)) {
-      expect(init.cache, path).toBe('no-store');
-      expect(init.next, path).toBeUndefined();
+    const calls = callsOf(h);
+    for (const [path, init] of calls) {
+      expect(init.cache, path).toBeUndefined();
+      expect(init.next?.revalidate, path).toBe(60);
+      expect(init.next?.tags, path).toContain('exhibition');
     }
+    expect(calls.get(`/products/${PRODUCT_SLUG}`)?.next?.tags).toEqual([
+      'exhibition',
+      `product:${PRODUCT_SLUG}`,
+    ]);
+    expect(calls.get(`/households/${SLUG}`)?.next?.tags).toEqual([
+      'exhibition',
+      `household:${SLUG}`,
+    ]);
+    expect(calls.get(`/trace/${TRACE_CODE}`)?.next?.tags).toEqual([
+      'exhibition',
+      `trace:${TRACE_CODE}`,
+    ]);
+    expect(calls.get('/households')?.next?.tags).toEqual(['exhibition']);
   });
 
-  it('keeps revalidate only for the slow-changing redirect and village stats helpers', async () => {
+  it('leaves out an entity tag the revalidate route would refuse', async () => {
+    const h = harness(() => ({ status: 404, body: {} }));
+    await fetchProduct('Not A Slug');
+    await fetchTrace('abc-1');
+    expect(h.calls()).toHaveLength(2);
+    for (const [, init] of h.calls()) expect(init?.next?.tags).toEqual(['exhibition']);
+  });
+
+  it('keeps the shorter TTL for the redirect and village stats helpers, now tagged', async () => {
     const api = fixture('vi');
     const h = harness(api.origin);
     await Promise.all([fetchSlugRedirect('households', SLUG), fetchVillageStats()]);
     for (const [, init] of h.calls()) {
       expect(init?.next?.revalidate).toBe(30);
+      expect(init?.next?.tags).toEqual(['exhibition']);
       expect(init?.cache).toBeUndefined();
     }
   });
 
   for (const locale of ['vi', 'en'] as const) {
-    it(`serves fresh answers across suspend and reinstate after a warm ${locale} cache`, async () => {
+    it(`shows a suspension and a reinstatement at once after revalidateTag, ${locale}`, async () => {
       const api = fixture(locale);
       const h = harness(api.origin);
 
@@ -320,20 +355,23 @@ describe('moderation-sensitive public fetches bypass the data cache (vCRAFT-8my.
       await expect(fetchProductPage({ page: 1, limit: 12 })).resolves.toMatchObject({
         status: 'ok',
       });
-      await expect(fetchVillageStats()).resolves.toMatchObject({ status: 'ok' });
 
-      // The admin suspends the household; the API reflects it at once.
+      // The admin suspends the household; until the tag is revalidated the warmed copies are served.
       api.suspend();
-      h.tick(5); // well inside a 30 s revalidate window
+      h.tick(5);
+      await expect(fetchHousehold(SLUG)).resolves.toMatchObject({ status: 'ok' });
+      await expect(fetchTrace(TRACE_CODE)).resolves.toMatchObject({
+        data: { availability: 'VISIBLE' },
+      });
 
-      // Detail and trace views recheck the API every request: suspended, not the warmed copy.
+      // The worker's POST /api/revalidate drops the broad tag: every view is fresh on the next request.
+      h.revalidateTag('exhibition');
       await expect(fetchHousehold(SLUG)).resolves.toEqual({ status: 'not-found' });
       await expect(fetchProduct(PRODUCT_SLUG)).resolves.toEqual({ status: 'not-found' });
       await expect(fetchTrace(TRACE_CODE)).resolves.toMatchObject({
         status: 'ok',
         data: { availability: 'UNAVAILABLE', reason: 'HOUSEHOLD_SUSPENDED' },
       });
-      // Catalog listings hide the suspended household and its products too.
       await expect(fetchProducts()).resolves.toMatchObject({ status: 'ok', data: { data: [] } });
       await expect(fetchHouseholds()).resolves.toMatchObject({ status: 'ok', data: { data: [] } });
       await expect(fetchHouseholdPage(1, 12)).resolves.toMatchObject({
@@ -345,19 +383,9 @@ describe('moderation-sensitive public fetches bypass the data cache (vCRAFT-8my.
         data: { total: 0 },
       });
 
-      // Control: the harness itself honors revalidate, so the stats helper still serves its warmed copy.
-      await expect(fetchVillageStats()).resolves.toMatchObject({
-        status: 'ok',
-        data: { households: 1 },
-      });
-      h.tick(31); // past the 30 s TTL
-      await expect(fetchVillageStats()).resolves.toMatchObject({
-        status: 'ok',
-        data: { households: 0 },
-      });
-
-      // Reinstate: the stale suspension warning disappears on the next request.
+      // Reinstate, and the worker revalidates again: the suspension warning is gone at once.
       api.reinstate();
+      h.revalidateTag('exhibition');
       await expect(fetchTrace(TRACE_CODE)).resolves.toMatchObject({
         status: 'ok',
         data: { availability: 'VISIBLE', household: { slug: SLUG } },
@@ -367,14 +395,30 @@ describe('moderation-sensitive public fetches bypass the data cache (vCRAFT-8my.
         status: 'ok',
         data: { data: [expect.objectContaining({ slug: PRODUCT_SLUG })] },
       });
+    });
 
-      // Every moderation-sensitive recheck actually reached the origin (no cache hit served it).
-      const calls = callsOf(h);
-      expect(calls.get(`/households/${SLUG}`)?.cache).toBe('no-store');
-      expect(calls.get(`/products/${PRODUCT_SLUG}`)?.cache).toBe('no-store');
-      expect(calls.get(`/trace/${TRACE_CODE}`)?.cache).toBe('no-store');
-      expect(calls.get('/products?')?.cache).toBe('no-store');
-      expect(calls.get('/households')?.cache).toBe('no-store');
+    it(`drops one detail by its own tag and leaves the lists cached, ${locale}`, async () => {
+      const api = fixture(locale);
+      const h = harness(api.origin);
+      await fetchHousehold(SLUG);
+      await fetchProducts();
+      const before = h.originHits();
+      h.revalidateTag(`household:${SLUG}`);
+      await fetchHousehold(SLUG);
+      await fetchProducts();
+      // Only the household read went back to the origin.
+      expect(h.originHits()).toBe(before + 1);
     });
   }
+
+  it('bounds a revalidation that never arrives by the 60 s TTL', async () => {
+    const api = fixture('vi');
+    const h = harness(api.origin);
+    await fetchProducts();
+    api.suspend();
+    h.tick(59);
+    await expect(fetchProducts()).resolves.toMatchObject({ data: { data: [expect.anything()] } });
+    h.tick(2);
+    await expect(fetchProducts()).resolves.toMatchObject({ data: { data: [] } });
+  });
 });

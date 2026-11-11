@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   apiRewrites,
+  isContentHashedVariant,
   sameOriginMediaUrl,
   securityHeaders,
   storageUrlFor,
@@ -63,5 +64,20 @@ describe('securityHeaders', () => {
       'Permissions-Policy',
       'Content-Security-Policy',
     ]);
+  });
+});
+
+describe('isContentHashedVariant', () => {
+  it('accepts <bucket>/v/<asset>/<width>-<16 hex>.<avif|webp>', () => {
+    expect(isContentHashedVariant(['b', 'v', 'id', '320-d52f53442820f8d7.avif'])).toBe(true);
+    expect(isContentHashedVariant(['b', 'v', 'id', '1280-36d01a376eb51670.webp'])).toBe(true);
+  });
+
+  it('rejects anything else, including a replaceable file and a wrong hash length', () => {
+    expect(isContentHashedVariant(['b', 'v', 'id', '320.avif'])).toBe(false);
+    expect(isContentHashedVariant(['b', 'v', 'id', '320-d52f.avif'])).toBe(false);
+    expect(isContentHashedVariant(['b', 'logo', 'id', '320-d52f53442820f8d7.avif'])).toBe(false);
+    expect(isContentHashedVariant(['b', 'v', 'id', '320-d52f53442820f8d7.png'])).toBe(false);
+    expect(isContentHashedVariant([])).toBe(false);
   });
 });

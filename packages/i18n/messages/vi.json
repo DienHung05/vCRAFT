@@ -1905,6 +1905,8 @@
     "showOnMapNamed": "Xem {name} trên bản đồ",
     "mapLabel": "Bản đồ làng",
     "mapKeyboardHint": "Dùng phím mũi tên để di chuyển bản đồ, phím + và - để thu phóng. Để chọn một xưởng, hãy dùng danh sách xưởng.",
+    "mapPlaceholder": "Bản đồ sẽ tự mở sau giây lát. Danh sách xưởng bên cạnh đã dùng được.",
+    "loadMap": "Mở bản đồ",
     "empty": "Không có xưởng nào khớp bộ lọc.",
     "openNow": "Đang mở cửa",
     "closedReopens": "Đóng cửa – mở lại lúc {time}, {day}",
