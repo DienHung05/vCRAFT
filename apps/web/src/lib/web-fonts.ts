@@ -33,3 +33,32 @@ export function webFontVars(families: Record<string, string>): CSSProperties {
   }
   return vars as CSSProperties;
 }
+
+/**
+ * Resolves true once the display web font has the glyphs `text` needs, false if it did not arrive within
+ * `timeoutMs` or cannot be loaded. The `--font-fraunces-web` list is read from `<html style>` rather than
+ * from the element, so it does not matter whether `data-fonts="ready"` has been applied yet.
+ *
+ * Motion that splits text into per-character boxes (GSAP SplitText) must wait for this: the metric-matched
+ * fallback is only close on average (per word it is off by up to ~10%), so a swap while the boxes exist
+ * moves every word and Chrome counts each box as a layout shift (vCRAFT-22s).
+ */
+export async function displayFontReady(text: string, timeoutMs: number): Promise<boolean> {
+  const fonts = typeof document === 'undefined' ? undefined : document.fonts;
+  if (!fonts?.load) return false;
+  const family = document.documentElement.style.getPropertyValue('--font-fraunces-web').trim();
+  if (!family) return false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      fonts.load(`400 1em ${family}`, text).then((faces) => faces.length > 0),
+      new Promise<false>((resolve) => {
+        timer = setTimeout(() => resolve(false), timeoutMs);
+      }),
+    ]);
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
