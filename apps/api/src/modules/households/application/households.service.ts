@@ -57,6 +57,7 @@ import {
   householdTransition,
   isHouseholdPublic,
   maskIdNumber,
+  missingApplicationParts,
   normalizeTags,
   type ProductCategory,
   type ProductEvent,
@@ -1046,7 +1047,7 @@ export class HouseholdsService {
       const next = unwrap(householdTransition(before, event, { actorRole: actor.role, reason }));
       // Approval needs the required parts; reinstating an already approved household does not.
       if (event === 'APPROVE' && before === 'PENDING_REVIEW') {
-        await this.assertComplete(em, household);
+        await this.assertComplete(em, household, true);
       }
       household.status = next;
       household.statusReason = household.status === 'APPROVED' ? null : (reason ?? null);
@@ -1156,8 +1157,16 @@ export class HouseholdsService {
 
   // --- Nội bộ ---
 
-  /** Required parts of an application: profile (name, page address), a workshop and a document. */
-  private async assertComplete(em: EntityManager, household: Household): Promise<void> {
+  /**
+   * Required parts of an application: profile (name, page address), a workshop and a document. Approval
+   * (`forApproval`) also needs a story, a craft and at least one artisan (GH#474), so an empty household
+   * never goes public; submitting the wizard does not, since those are filled in while under review.
+   */
+  private async assertComplete(
+    em: EntityManager,
+    household: Household,
+    forApproval = false,
+  ): Promise<void> {
     const missing: FieldError[] = [];
     if (household.name.trim().length === 0 || household.slug.trim().length === 0) {
       missing.push({
@@ -1180,6 +1189,22 @@ export class HouseholdsService {
         code: 'required',
         message: 'upload at least one document',
       });
+    }
+    if (forApproval) {
+      const parts = missingApplicationParts({
+        history: household.history,
+        craftCategory: household.craftCategory ?? null,
+        craft: household.craft ?? null,
+        artisanCount: await em.count(Artisan, { household }),
+      });
+      const messages = {
+        story: 'write the household story',
+        craft: 'choose the household craft',
+        artisans: 'add at least one artisan',
+      } as const;
+      for (const part of parts) {
+        missing.push({ path: part, code: 'required', message: messages[part] });
+      }
     }
     if (missing.length > 0) {
       throw new AppError(

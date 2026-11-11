@@ -931,8 +931,12 @@
       "stale": "Hồ sơ vừa thay đổi. Đã tải lại bản mới, bạn kiểm tra rồi quyết định lại.",
       "failed_action": "Chưa lưu được quyết định.",
       "incomplete": "Hồ sơ chưa đầy đủ nên chưa thể duyệt. Còn thiếu: {parts}. Hãy yêu cầu hộ bổ sung rồi gửi lại.",
+      "incompleteWarning": "Hồ sơ chưa đủ để duyệt nên nút Duyệt đang tắt. Còn thiếu: {parts}. Bạn vẫn có thể yêu cầu bổ sung hoặc từ chối.",
       "incompleteParts": {
         "profile": "Thông tin hộ",
+        "story": "Câu chuyện của hộ",
+        "craft": "Nghề của hộ",
+        "artisans": "Ít nhất một nghệ nhân",
         "workshops": "Ít nhất một xưởng",
         "documents": "Ít nhất một giấy tờ"
       },
@@ -2320,6 +2324,13 @@
         "title": "Chỉnh sửa hồ sơ đăng ký",
         "saved": "Đã lưu thay đổi hồ sơ.",
         "village": "Làng",
+        "artisans": "Nghệ nhân",
+        "artisansHint": "Ban quản lý cần ít nhất một nghệ nhân (người làm ra sản phẩm) trước khi duyệt hồ sơ. Tên và vai trò sẽ hiện trên trang hộ.",
+        "artisanName": "Tên nghệ nhân",
+        "artisanRole": "Vai trò",
+        "addArtisan": "Thêm nghệ nhân",
+        "artisanAdded": "Đã thêm nghệ nhân.",
+        "artisanFailed": "Chưa thêm được nghệ nhân. Bạn thử lại nhé.",
         "moreDocuments": "Giấy tờ bổ sung",
         "moreDocumentsHint": "Chọn loại giấy tờ trước khi tải lên. Lưu các thay đổi trước khi gửi lại hồ sơ."
       },
