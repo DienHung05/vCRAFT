@@ -11,7 +11,7 @@ import { DeadlineCountdown } from '@/features/rfq/deadline-countdown';
 import { useIdempotentAction } from '@/lib/use-idempotent-action';
 
 /**
- * BR-05a (ADR-0024): coordinated requests an administrator claimed, open to the household without an
+ * BR-05a (ADR-0026): coordinated requests an administrator claimed, open to the household without an
  * invitation. Only a redacted summary is shown; sending an offer makes the household invited.
  */
 export function OpenCoordinatedRequests({

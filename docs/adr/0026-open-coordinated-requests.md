@@ -1,4 +1,4 @@
-# ADR-0024: Coordinated quotation requests are open to qualifying households
+# ADR-0026: Coordinated quotation requests are open to qualifying households
 
 **Status:** Accepted, decided on the maintainer's standing instruction on 2026-11-10
 **Date:** 2026-11-10
