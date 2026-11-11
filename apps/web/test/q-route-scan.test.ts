@@ -9,8 +9,9 @@ vi.mock('next/server', () => ({
 
 import { GET } from '@/app/q/[code]/route';
 
-function call(headers: Record<string, string>) {
+function call(headers: Record<string, string>, method = 'GET') {
   const request = {
+    method,
     headers: new Headers(headers),
     cookies: { get: () => undefined },
   };
@@ -66,5 +67,51 @@ describe('/q/[code] redirect caching (GH#432)', () => {
     expect(response.status).toBe(308);
     expect(response.headers.get('Cache-Control')).toBe('private, no-store');
     expect(response.headers.get('Vary')).toBe('Accept-Language, Cookie');
+  });
+});
+
+describe('/q/[code] automated and prefetch requests (GH#483)', () => {
+  const run = async (headers: Record<string, string>, method = 'GET') => {
+    const fetchSpy = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })));
+    vi.stubGlobal('fetch', fetchSpy);
+    const response = await call(headers, method);
+    for (const task of afterTasks.splice(0)) await task();
+    return { response, fetchSpy };
+  };
+
+  it.each([
+    ['Googlebot', 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'],
+    [
+      'facebookexternalhit',
+      'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+    ],
+    ['Slackbot', 'Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)'],
+    ['WhatsApp', 'WhatsApp/2.23.20.0 A'],
+  ])('redirects %s but reports no scan', async (_name, userAgent) => {
+    const { response, fetchSpy } = await run({ 'user-agent': userAgent });
+    expect(response.status).toBe(308);
+    expect(response.headers.get('Location')).toBe('/vi/truy-xuat/ABC12345');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['Purpose', { purpose: 'prefetch' }, 'GET'],
+    ['Sec-Purpose prefetch', { 'sec-purpose': 'prefetch' }, 'GET'],
+    ['Sec-Purpose prerender', { 'sec-purpose': 'prerender' }, 'GET'],
+    ['Next-Router-Prefetch', { 'next-router-prefetch': '1' }, 'GET'],
+    ['X-Moz', { 'x-moz': 'prefetch' }, 'GET'],
+    ['HEAD', {}, 'HEAD'],
+  ])('redirects a %s request but reports no scan', async (_name, extra, method) => {
+    const { response, fetchSpy } = await run({ 'user-agent': 'Visitor/1', ...extra }, method);
+    expect(response.status).toBe(308);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('still reports a phone scan', async () => {
+    const { response, fetchSpy } = await run({
+      'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) Mobile/15E148',
+    });
+    expect(response.status).toBe(308);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });
