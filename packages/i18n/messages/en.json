@@ -373,7 +373,8 @@
     "label": "Allocation progress",
     "percent": "{percent}% complete",
     "completed": "{done}/{total} {unit}",
-    "counts": "{done}/{total} {unit} · expected {expected} · promised {due}",
+    "counts": "{done}/{total} {unit} · promised {due}",
+    "expected": "Expected by today: {expected} {unit}",
     "started": "Started",
     "empty": "No allocations yet.",
     "lateness": {
@@ -392,6 +393,7 @@
     "breadcrumb": "Breadcrumb",
     "allRequests": "Quote requests",
     "stepperLabel": "Progress of the quote request",
+    "stepperCompact": "Step {current} of {total} · {label}",
     "status": {
       "DRAFT": "Draft",
       "SENT": "Sent",
@@ -588,6 +590,8 @@
       "retry": "Retry",
       "more": "Load more",
       "quotations": "{count, plural, =0 {No quotations yet} one {# quotation waiting} other {# quotations waiting}}",
+      "accepted": "Accepted · {total}",
+      "acceptedNoTotal": "Accepted",
       "continueDraft": "Continue",
       "emptyTitle": "You have no quotation requests yet",
       "emptyFiltered": "No requests have this status.",
@@ -1357,7 +1361,8 @@
       "loadFailed": "Order progress could not be loaded.",
       "empty": "No order is in production.",
       "requiredBy": "Due {date}",
-      "counts": "{done}/{total} {unit} · expected {expected} · promised {due}",
+      "counts": "{done}/{total} {unit} · promised {due}",
+      "expected": "Expected by today: {expected} {unit}",
       "lateness": {
         "DONE": "Done",
         "ON_TRACK": "On track",

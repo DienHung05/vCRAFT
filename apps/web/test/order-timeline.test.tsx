@@ -57,6 +57,37 @@ describe('Authorized allocation timeline', () => {
     expect(screen.queryByText('Overdue')).toBeNull();
   });
 
+  it('labels the expected figure with a noun and the unit, and hides it once the share is done (GH#478)', () => {
+    const { unmount } = renderVi(
+      <AllocationTimeline unit="cái" shares={[share({ quantity: 600, completedQty: 300 })]} />,
+    );
+    expect(screen.getByText(/dự kiến đến hôm nay: 50 cái/i)).toBeTruthy();
+    unmount();
+    renderEn(
+      <AllocationTimeline unit="pcs" shares={[share({ quantity: 600, completedQty: 300 })]} />,
+    );
+    expect(screen.getByText(/expected by today: 50 pcs/i)).toBeTruthy();
+  });
+
+  it('does not show the expected figure on a share that is fully done', () => {
+    renderVi(
+      <AllocationTimeline
+        unit="cái"
+        shares={[
+          share({
+            quantity: 600,
+            completedQty: 600,
+            expectedQty: 95,
+            lateness: 'DONE',
+            status: 'DONE',
+          }),
+        ]}
+      />,
+    );
+    expect(screen.getAllByText(/600\/600 cái/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/dự kiến/i)).toBeNull();
+  });
+
   it('keeps cancelled history out of the order total and does not warn about unstarted work', () => {
     renderEn(
       <AllocationTimeline
