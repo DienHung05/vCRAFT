@@ -358,7 +358,7 @@
     "proofAlt": "Ảnh minh chứng công đoạn {stage}",
     "corrects": "Đính chính mốc {n}",
     "correctedBy": "Đã được đính chính ở mốc {n}",
-    "skipped": "Bỏ qua công đoạn trước: {reason}",
+    "skipped": "Bỏ qua công đoạn trước: <note>{reason}</note>",
     "inProgress": "Đang làm · chưa ghi: {stages}",
     "hashHint": "Dấu băm SHA-256 của mốc này, nối với mốc trước đó.",
     "recordedBy": "Do {household} ghi lại",

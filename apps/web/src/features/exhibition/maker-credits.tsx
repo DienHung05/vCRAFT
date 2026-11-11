@@ -1,5 +1,6 @@
 import { cn } from '@vcraft/ui';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { vietnameseOnlyLang } from '@/lib/vietnamese-text';
 
 export interface MakerCreditItem {
   name: string;
@@ -21,6 +22,8 @@ export interface MakerCreditsProps {
  */
 export function MakerCredits({ makers, household, compact, className }: MakerCreditsProps) {
   const t = useTranslations('exhibition');
+  // Contributions are written by the household in Vietnamese only (GH#482).
+  const detailLang = vietnameseOnlyLang(useLocale());
   return (
     <section aria-labelledby="makers-title" className={className}>
       <h2 id="makers-title" className={cn(compact && 'text-h3')}>
@@ -31,7 +34,9 @@ export function MakerCredits({ makers, household, compact, className }: MakerCre
         {makers.map((m) => (
           <li key={m.name} className="rounded-card border border-ink/10 bg-surface p-5">
             <p className="font-display text-h3 text-ink">{m.name}</p>
-            <p className="mt-1 text-small text-ash">{m.detail}</p>
+            <p className="mt-1 text-small text-ash" lang={detailLang}>
+              {m.detail}
+            </p>
           </li>
         ))}
       </ul>

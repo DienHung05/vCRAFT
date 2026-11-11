@@ -41,6 +41,7 @@ import {
 } from './accounts.js';
 import { fitCoordinateStrings } from './boundary-fit.js';
 import { artisanBio, householdStory } from './demo-text.js';
+import { fixedProductEnglish, generatedProductEnglish } from './english.js';
 import { newsSeedFields } from './news-seed.js';
 import {
   ARTISAN_FIRST,
@@ -882,6 +883,14 @@ export async function seedDemoData(
       const templateName = PRODUCT_TEMPLATES[(row.index * 7 + j * 3) % PRODUCT_TEMPLATES.length];
       const glaze = GLAZES[(row.index + j * 5) % GLAZES.length];
       const name = fixed?.name ?? `${templateName} ${glaze}`;
+      // GH#482: English name, description and material beside the Vietnamese ones (no `random` call).
+      const english =
+        fixedProductEnglish(name, row.seed.name) ??
+        generatedProductEnglish(
+          templateName as (typeof PRODUCT_TEMPLATES)[number],
+          glaze as (typeof GLAZES)[number],
+          row.seed.name,
+        );
       // Giá và tồn kho tính từ chỉ số, không gọi `random`: thêm lượt gọi sẽ làm đổi mọi mã truy xuất đã đóng băng.
       const variant = (row.index * 13 + j * 29) % 24;
       const code = fixed?.code ?? newTraceCode();
@@ -926,7 +935,9 @@ export async function seedDemoData(
         name,
         slug: `${slugify(name) || 'san-pham'}-${code.toLowerCase()}`,
         traceCode: code,
+        nameEn: english.nameEn,
         description: `${name} do hộ ${row.seed.name} làm thủ công tại Bát Tràng.`,
+        descriptionEn: english.descriptionEn,
         kind: batch === undefined ? 'OBJECT' : 'BATCH',
         batchSize: batch ?? null,
         category:
@@ -934,7 +945,9 @@ export async function seedDemoData(
         priceVnd: fixed?.priceVnd ?? (variant + 2) * 50_000,
         stock: fixed?.stock ?? batch ?? (variant % 5 === 0 ? 0 : 1),
         material: fixed?.material ?? `Đất sét Bát Tràng, ${glaze}`,
+        materialEn: english.materialEn,
         dimensions: fixed?.dimensions ?? null,
+        dimensionsEn: english.dimensionsEn,
         weightGrams: fixed?.weightGrams ?? 300 + variant * 40,
         coverUrl: fixed?.coverUrl ?? null,
         coverAlt: fixed?.coverAlt ?? null,

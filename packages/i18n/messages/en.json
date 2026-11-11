@@ -358,7 +358,7 @@
     "proofAlt": "Photo of the {stage} step",
     "corrects": "Corrects entry {n}",
     "correctedBy": "Corrected by entry {n}",
-    "skipped": "Skipped earlier stages: {reason}",
+    "skipped": "Skipped earlier stages: <note>{reason}</note>",
     "inProgress": "In progress · not yet recorded: {stages}",
     "hashHint": "SHA-256 hash of this entry, chained to the one before it.",
     "recordedBy": "Recorded by {household}",

@@ -1,7 +1,8 @@
 import { splitWorkshops } from '@vcraft/domain';
 import { Card, cn } from '@vcraft/ui';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import type { VisitWorkshopView } from '@/features/catalog/view-models';
+import { vietnameseOnlyLang } from '@/lib/vietnamese-text';
 import { MapWithList } from './map-with-list';
 import { WeeklyHours, WorkshopOpenStatus } from './workshop-hours';
 
@@ -18,6 +19,8 @@ export interface VisitSectionProps {
 export function VisitSection({ household, workshops, className }: VisitSectionProps) {
   const t = useTranslations('exhibition');
   const format = useFormatter();
+  // Visiting info and the experience offer are written by the household in Vietnamese only (GH#482).
+  const proseLang = vietnameseOnlyLang(useLocale());
   const { showrooms, production } = splitWorkshops(workshops);
   return (
     <section id="workshop" aria-labelledby="visit-title" className={cn('scroll-mt-24', className)}>
@@ -37,12 +40,18 @@ export function VisitSection({ household, workshops, className }: VisitSectionPr
                     <p className="font-display text-h3">{w.name}</p>
                     <p className="mt-1 text-small text-ash">{w.address}</p>
                     <WorkshopOpenStatus workshop={w} />
-                    {w.visitingInfo ? <p className="mt-3 text-small">{w.visitingInfo}</p> : null}
+                    {w.visitingInfo ? (
+                      <p className="mt-3 text-small" lang={proseLang}>
+                        {w.visitingInfo}
+                      </p>
+                    ) : null}
                     {w.openingHours?.length ? <WeeklyHours hours={w.openingHours} /> : null}
                     {w.experience ? (
                       <div className="mt-3" data-testid="workshop-experience">
                         <p className="text-small font-medium">{t('experienceTitle')}</p>
-                        <p className="mt-1 text-small">{w.experience.description}</p>
+                        <p className="mt-1 text-small" lang={proseLang}>
+                          {w.experience.description}
+                        </p>
                         <p className="mt-1 text-small text-ash">
                           {t('experienceDuration', { minutes: w.experience.durationMinutes })} ·{' '}
                           {format.number(w.experience.priceVnd, 'vnd')}
