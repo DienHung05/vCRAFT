@@ -393,6 +393,19 @@ describe('BuyerRfqList', () => {
     expect(screen.getByText(/· Đã chốt ·/)).toBeTruthy();
   });
 
+  it('copes with an older API that sends no acceptedTotalVnd', async () => {
+    const { acceptedTotalVnd: _omitted, ...oldShape } = ROW;
+    const listRequests = vi.fn().mockResolvedValue({
+      data: [{ ...oldShape, status: 'DELIVERED', openQuotationCount: 0 }],
+      nextCursor: null,
+    });
+    renderVi(<BuyerRfqList client={client({ listRequests })} />);
+    await screen.findByText('Logo cups');
+    expect(screen.getByText(/· Đã chốt ·/)).toBeTruthy();
+    expect(screen.queryByText(/Chưa có chào giá/)).toBeNull();
+    expect(screen.queryByText(/NaN|undefined/)).toBeNull();
+  });
+
   it('still says there are no quotations on a BIDDING request without any', async () => {
     const listRequests = vi.fn().mockResolvedValue({
       data: [{ ...ROW, openQuotationCount: 0 }],

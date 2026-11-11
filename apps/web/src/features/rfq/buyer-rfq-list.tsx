@@ -150,7 +150,7 @@ function List({ client }: { client: QuotationClient }) {
                 <p className="text-small text-ash">
                   {page('quantity', { quantity: format.number(row.quantity), unit: row.unit })} ·{' '}
                   {hasAcceptedQuotation(row.status)
-                    ? row.acceptedTotalVnd === null
+                    ? row.acceptedTotalVnd == null
                       ? t('acceptedNoTotal')
                       : t('accepted', { total: money(row.acceptedTotalVnd) })
                     : t('quotations', { count: row.openQuotationCount })}{' '}
