@@ -31,6 +31,31 @@ describe('fetchPublicJson', () => {
     expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ next: { revalidate: 30 } });
   });
 
+  it('passes tags next to revalidate, and refetches an invalid cached answer untagged with no-store', async () => {
+    fetchMock.mockResolvedValueOnce(json(stale)).mockResolvedValueOnce(json(valid));
+    const result = await fetchPublicJson('/products/a', Schema, {
+      revalidate: 60,
+      tags: ['exhibition', 'product:a'],
+    });
+    expect(result).toEqual({ status: 'ok', data: valid });
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
+      next: { revalidate: 60, tags: ['exhibition', 'product:a'] },
+    });
+    const refetch = fetchMock.mock.calls[1]?.[1] as RequestInit & { next?: unknown };
+    expect(refetch.cache).toBe('no-store');
+    expect(refetch.next).toBeUndefined();
+  });
+
+  it('sends no tags key when none are given, and ignores tags on an uncached read', async () => {
+    fetchMock.mockResolvedValueOnce(json(valid)).mockResolvedValueOnce(json(valid));
+    await fetchPublicJson('/news/a', Schema, { revalidate: 30 });
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ next: { revalidate: 30 } });
+    expect(fetchMock.mock.calls[0]?.[1].next).not.toHaveProperty('tags');
+    await fetchPublicJson('/news/a', Schema, { tags: ['exhibition'] });
+    expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({ cache: 'no-store' });
+    expect(fetchMock.mock.calls[1]?.[1]).not.toHaveProperty('next');
+  });
+
   it('refetches with no-store when the cached answer fails the schema and uses a valid result', async () => {
     fetchMock.mockResolvedValueOnce(json(stale)).mockResolvedValueOnce(json(valid));
     const result = await fetchPublicJson('/news/a', Schema, { revalidate: 30 });

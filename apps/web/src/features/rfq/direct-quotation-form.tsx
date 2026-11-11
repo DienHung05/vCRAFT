@@ -3,7 +3,7 @@
 import type { CreateDirectQuotationRequest, DirectQuotationDto } from '@vcraft/contracts';
 import { Button, Card, cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { AmountInWords } from '@/components/amount-in-words';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { notify } from '@/lib/notify';
@@ -24,6 +24,8 @@ export interface DirectQuotationFormProps {
   onSubmit: (values: CreateDirectQuotationRequest) => Promise<void>;
   onWithdraw: () => Promise<void>;
 }
+
+type Field = 'price' | 'date';
 
 const time = (value: string) => {
   const parsed = new Date(value).getTime();
@@ -60,6 +62,10 @@ export function DirectQuotationForm({
   const [note, setNote] = useState(editing?.note ?? '');
   const [state, setState] = useState<'idle' | 'sending' | 'error'>('idle');
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
+  const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const priceRef = useRef<HTMLInputElement>(null);
+  const dateRef = useRef<HTMLInputElement>(null);
   const decided = quotation?.status === 'ACCEPTED' || quotation?.status === 'REJECTED';
   const locked = disabled || decided || state === 'sending';
 
@@ -67,20 +73,24 @@ export function DirectQuotationForm({
   const required = time(requiredBy);
   const price = unitPrice.trim() === '' ? Number.NaN : Number(unitPrice);
   const priceValid = Number.isSafeInteger(price) && price >= 1;
-  const problems: string[] = [];
-  if (!priceValid) problems.push(t('problem.price'));
+  const errors: Partial<Record<Field, string>> = {};
+  if (!priceValid) errors.price = t('problem.price');
   const completion = endOfDayTime(completionDate);
-  if (completion === null) problems.push(t('problem.dateMissing'));
+  if (completion === null) errors.date = t('problem.dateMissing');
   else if (closing !== null && completion <= closing)
-    problems.push(
-      t('problem.dateBeforeClosing', { date: format.dateTime(new Date(biddingClosesAt), 'short') }),
-    );
+    errors.date = t('problem.dateBeforeClosing', {
+      date: format.dateTime(new Date(biddingClosesAt), 'short'),
+    });
   else if (required !== null && completion > required)
-    problems.push(
-      t('problem.dateAfterRequired', { date: format.dateTime(new Date(requiredBy), 'short') }),
-    );
-  const ready = problems.length === 0;
-  const touched = editing !== null || unitPrice !== '' || completionDate !== '';
+    errors.date = t('problem.dateAfterRequired', {
+      date: format.dateTime(new Date(requiredBy), 'short'),
+    });
+  const ready = Object.keys(errors).length === 0;
+  // An error shows only once its field was left (touched) or a submit was attempted (GH#477).
+  const shown = (field: Field) =>
+    submitAttempted || touched[field] ? (errors[field] ?? null) : null;
+  const touch = (field: Field) => setTouched((prev) => ({ ...prev, [field]: true }));
+  const errorId = (field: Field) => `${formId}-${field}-error`;
 
   const run = async (action: () => Promise<void>, toast: string) => {
     setState('sending');
@@ -94,7 +104,12 @@ export function DirectQuotationForm({
   };
 
   const send = () => {
-    if (!ready || locked) return;
+    if (locked) return;
+    if (!ready) {
+      setSubmitAttempted(true);
+      (errors.price ? priceRef : dateRef).current?.focus();
+      return;
+    }
     void run(
       () =>
         onSubmit({
@@ -149,13 +164,20 @@ export function DirectQuotationForm({
               <label className="flex flex-col gap-1 text-small">
                 <span className="text-ash">{t('unitPrice')}</span>
                 <input
+                  ref={priceRef}
                   type="number"
                   min={1}
                   step={1000}
                   inputMode="numeric"
                   value={unitPrice}
                   disabled={locked}
-                  aria-describedby={`${formId}-price-words`}
+                  aria-invalid={shown('price') ? 'true' : undefined}
+                  aria-describedby={
+                    shown('price')
+                      ? `${errorId('price')} ${formId}-price-words`
+                      : `${formId}-price-words`
+                  }
+                  onBlur={() => touch('price')}
                   onChange={(event) => {
                     setUnitPrice(event.currentTarget.value);
                     setState('idle');
@@ -163,6 +185,7 @@ export function DirectQuotationForm({
                   className={cn(inputClass, 'text-right tabular-nums')}
                 />
               </label>
+              <FieldError id={errorId('price')} message={shown('price')} />
               <AmountInWords id={`${formId}-price-words`} value={unitPrice} />
               {priceValid ? (
                 <p className="text-small text-ink">
@@ -174,19 +197,26 @@ export function DirectQuotationForm({
                 </p>
               ) : null}
             </div>
-            <label className="flex flex-col gap-1 text-small">
-              <span className="text-ash">{t('completionDate')}</span>
-              <input
-                type="date"
-                value={completionDate}
-                disabled={locked}
-                onChange={(event) => {
-                  setCompletionDate(event.currentTarget.value);
-                  setState('idle');
-                }}
-                className={inputClass}
-              />
-            </label>
+            <div className="flex flex-col gap-1">
+              <label className="flex flex-col gap-1 text-small">
+                <span className="text-ash">{t('completionDate')}</span>
+                <input
+                  ref={dateRef}
+                  type="date"
+                  value={completionDate}
+                  disabled={locked}
+                  aria-invalid={shown('date') ? 'true' : undefined}
+                  aria-describedby={shown('date') ? errorId('date') : undefined}
+                  onBlur={() => touch('date')}
+                  onChange={(event) => {
+                    setCompletionDate(event.currentTarget.value);
+                    setState('idle');
+                  }}
+                  className={inputClass}
+                />
+              </label>
+              <FieldError id={errorId('date')} message={shown('date')} />
+            </div>
           </div>
           <label className="flex flex-col gap-1 text-small">
             <span className="text-ash">{t('note')}</span>
@@ -218,7 +248,7 @@ export function DirectQuotationForm({
           ) : null}
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button disabled={!ready || locked} onClick={send}>
+            <Button disabled={locked} onClick={send}>
               {state === 'sending' ? t('sending') : t(editing ? 'update' : 'send')}
             </Button>
             {editing ? (
@@ -232,15 +262,6 @@ export function DirectQuotationForm({
             ) : null}
           </div>
 
-          {ready || !touched ? null : (
-            <ul className="flex flex-col gap-1" aria-live="polite">
-              {problems.map((problem) => (
-                <li key={problem} className="text-small font-medium text-seal">
-                  {problem}
-                </li>
-              ))}
-            </ul>
-          )}
           <p className="text-[0.75rem] text-ash">{t('visibleToBuyer')}</p>
         </>
       )}
@@ -260,5 +281,15 @@ export function DirectQuotationForm({
         <p className="text-ash">{t('withdrawText')}</p>
       </ConfirmDialog>
     </Card>
+  );
+}
+
+/** The message of one invalid field, right under its input; renders nothing while the field is fine. */
+function FieldError({ id, message }: { id: string; message: string | null }) {
+  if (!message) return null;
+  return (
+    <p id={id} className="text-small font-medium text-seal">
+      {message}
+    </p>
   );
 }

@@ -143,6 +143,12 @@ services:
       # Origin công khai của web: dùng để sinh liên kết trong email thông báo
       - key: APP_URL
         sync: false
+      # ADR-0027: the outbox relay tells the web to drop its cached public pages. WEB_REVALIDATE_URL is
+      # https://<web domain>/api/revalidate; REVALIDATE_SECRET is the same value as on Vercel. Unset: nothing is sent.
+      - key: WEB_REVALIDATE_URL
+        sync: false
+      - key: REVALIDATE_SECRET
+        sync: false
       # Up to 4 jobs run at once (media and mail queues, 2 each) but they spend most of their time outside the DB;
       # a small pool leaves room in the shared Supavisor session pool. A job that cannot get a connection in 5 s fails and is retried.
       - key: DB_POOL_MAX

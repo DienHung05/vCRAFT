@@ -21,7 +21,9 @@ import {
   sortByDistance,
   villageCenter,
 } from './map-model';
+import { MapPlaceholder } from './map-placeholder';
 import { ExperienceSummary, OpenStatus } from './pin-popup';
+import { useMapStart } from './use-map-start';
 import { type FetchViewportPins, useViewportPins } from './use-viewport-pins';
 import { nearestNeighbourOrder } from './walking-route';
 import { WalkingRoutePanel } from './walking-route-panel';
@@ -93,6 +95,8 @@ export function VillageMapExplorer({
   const [locationState, setLocationState] = useState<LocationState>('idle');
   const [route, setRoute] = useState<WalkingRoute | null>(null);
   const routeRequest = useRef(0);
+  // MapLibre boots after the list has painted (GH#481); a deep link to one workshop starts it at once.
+  const [mapStarted, startMap] = useMapStart(webgl === true, initialSelectedId !== undefined);
 
   useEffect(() => {
     setWebgl(supportsWebGL());
@@ -267,7 +271,8 @@ export function VillageMapExplorer({
               <p id="map-keyboard-hint" className="sr-only">
                 {t('mapKeyboardHint')}
               </p>
-              {webgl ? (
+              {webgl && !mapStarted ? <MapPlaceholder onStart={startMap} /> : null}
+              {webgl && mapStarted ? (
                 <MapCanvas
                   pins={filtered}
                   highlightId={highlightId}

@@ -6,6 +6,7 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import {
   AppUser,
+  Artisan,
   ConsentRecord,
   FieldCipher,
   Household,
@@ -173,7 +174,22 @@ async function completeApplication(
       originalKey: `originals/${ownerId}/${crypto.randomUUID()}`,
     });
   }
+  // Approval also needs a story, a craft and an artisan (GH#474); tests of that rule send `strict` requests.
+  if ((await em.count(Artisan, { household })) === 0) {
+    em.create(Artisan, { household, name: 'Nghệ nhân thử' });
+  }
   await em.flush();
+  // Raw SQL: an ORM update would bump the optimistic-lock version the tests still hold.
+  if (household.history.trim() === '') {
+    await em
+      .getConnection()
+      .execute("update household set history = 'Câu chuyện của hộ.' where id = ?", [householdId]);
+  }
+  if (!household.craftCategory && !household.craft?.trim()) {
+    await em
+      .getConnection()
+      .execute("update household set craft_category = 'GOM_SU' where id = ?", [householdId]);
+  }
   if (household.status === 'DRAFT') {
     // Raw SQL: an ORM update would bump the optimistic-lock version the tests still hold.
     await em

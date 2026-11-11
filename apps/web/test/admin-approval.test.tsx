@@ -43,7 +43,7 @@ const PENDING = {
     },
   ],
   foundedYear: 1990,
-  artisans: [],
+  artisans: [{ id: `${ID}c`, name: 'Bảo Châu', craftRole: null, bio: null }],
   workshops: [
     {
       id: `${ID}a`,
@@ -324,6 +324,57 @@ describe('HouseholdReview', () => {
     expect(alert.textContent).toContain('Hồ sơ chưa đầy đủ');
     expect(alert.textContent).toContain('Ít nhất một xưởng, Ít nhất một giấy tờ');
     expect(alert.textContent).not.toContain('Chưa lưu được quyết định');
+  });
+
+  it('warns and disables Duyệt when the story, craft and artisans are missing (GH#474)', async () => {
+    const api = client({
+      getHousehold: vi.fn(async () => ({
+        ...PENDING,
+        history: '',
+        craft: null,
+        craftCategory: null,
+        artisans: [],
+      })),
+    });
+    renderVi(<HouseholdReview householdId={ID} client={api} />);
+    const approve = (await screen.findByRole('button', { name: 'Duyệt' })) as HTMLButtonElement;
+    expect(approve.disabled).toBe(true);
+    const warning = screen.getByTestId('approval-warning');
+    expect(warning.textContent).toContain('Câu chuyện của hộ, Nghề của hộ, Ít nhất một nghệ nhân');
+    expect(warning.textContent).not.toContain('xưởng');
+    // The board can still ask for more or reject.
+    fireEvent.change(screen.getByLabelText('Lý do'), { target: { value: 'Thiếu hồ sơ' } });
+    expect((screen.getByRole('button', { name: 'Từ chối' }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+    expect(
+      (screen.getByRole('button', { name: 'Yêu cầu bổ sung' }) as HTMLButtonElement).disabled,
+    ).toBe(false);
+    expect(api.decide).not.toHaveBeenCalled();
+  });
+
+  it('keeps Duyệt enabled with no warning when the application is complete (GH#474)', async () => {
+    renderVi(<HouseholdReview householdId={ID} client={client()} />);
+    const approve = (await screen.findByRole('button', { name: 'Duyệt' })) as HTMLButtonElement;
+    expect(approve.disabled).toBe(false);
+    expect(screen.queryByTestId('approval-warning')).toBeNull();
+  });
+
+  it('names the missing story, craft and artisans when the API refuses (GH#474)', async () => {
+    const api = client({
+      decide: vi.fn(async () => {
+        throw new ApiError('APPLICATION_INCOMPLETE', 422, [
+          { path: 'story', code: 'required', message: 'write the household story' },
+          { path: 'craft', code: 'required', message: 'choose the household craft' },
+          { path: 'artisans', code: 'required', message: 'add at least one artisan' },
+        ]);
+      }),
+    });
+    renderVi(<HouseholdReview householdId={ID} client={api} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Duyệt' }));
+    confirmDialog('Duyệt');
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Câu chuyện của hộ, Nghề của hộ, Ít nhất một nghệ nhân');
   });
 
   it('hộ bị khóa có nút mở khóa; bản cũ (409) tải lại và báo', async () => {

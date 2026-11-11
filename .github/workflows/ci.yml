@@ -147,12 +147,13 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
-      - name: Install Playwright browsers and system dependencies
+      # 99h: no `--with-deps` here, since it runs apt-get and fails whenever the Ubuntu mirrors are unreachable.
+      - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter @vcraft/e2e exec playwright install --with-deps chromium
-      - name: Install Playwright system dependencies (browsers cached)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: pnpm --filter @vcraft/e2e exec playwright install-deps chromium
+        run: pnpm --filter @vcraft/e2e exec playwright install chromium
+      # apt-based install with retries; falls back to the libraries already on the runner when Chromium still launches (scripts/ci/playwright-deps.sh).
+      - name: Install Playwright system dependencies
+        run: scripts/ci/playwright-deps.sh
       - run: pnpm db:migrate
       - name: Nạp dữ liệu mẫu
         run: pnpm demo:reset

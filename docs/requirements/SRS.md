@@ -395,7 +395,7 @@ stateDiagram-v2
 | Tin tức                              | `/vi/tin-tuc`, `/vi/tin-tuc/<slug>`                                                      | `/en/news/…`              | Tất cả       |
 | Đăng nhập / Đăng ký / Đăng ký hộ     | `/vi/dang-nhap`, `/vi/dang-ky`, `/vi/dang-ky-nghe-nhan`                                  | `/en/login`…              | Guest        |
 | Yêu cầu báo giá của tôi              | `/vi/yeu-cau-bao-gia`, `/vi/yeu-cau-bao-gia/RFQ-2026-000123`                             | `/en/quotes/…`            | Buyer        |
-| Studio nghệ nhân                     | `/vi/studio`, `/studio/san-pham`, `/studio/bao-gia`, `/studio/don-hang`, `/studio/ho-so` | `/en/studio/…`            | Artisan      |
+| Studio nghệ nhân                     | `/vi/studio`, `/studio/san-pham`, `/studio/bao-gia`, `/studio/yeu-cau-mo`, `/studio/don-hang`, `/studio/ho-so` | `/en/studio/…`            | Artisan      |
 | Bảng điều khiển BQL                  | `/vi/admin`, `/admin/duyet-ho`, `/admin/dieu-phoi`, `/admin/tin-tuc`, `/admin/nhat-ky`   | `/en/admin/…`             | Admin        |
 | Tài khoản & phiên                    | `/vi/tai-khoan/phien-dang-nhap`                                                          | `/en/account/sessions`    | Đã đăng nhập |
 

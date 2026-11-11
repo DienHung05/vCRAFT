@@ -185,6 +185,23 @@ describe('order confirmation, progress and receipt', () => {
     expect(stale.body.code).toBe('STALE_VERSION');
   });
 
+  it('lists the accepted total on the buyer own request and nowhere else (GH#478)', async () => {
+    const { requestId } = await acceptFlow();
+    const quotations = await t.request({
+      method: 'GET',
+      url: `/rfqs/${requestId}/quotations`,
+      auth: buyer.auth,
+    });
+    const chosen = quotations.body.find((item: { status: string }) => item.status === 'ACCEPTED');
+    expect(chosen.totalVnd).toBeGreaterThan(0);
+    const mine = await t.request({ method: 'GET', url: '/rfqs?limit=100', auth: buyer.auth });
+    const row = mine.body.data.find((item: { id: string }) => item.id === requestId);
+    expect(row.status).toBe('ACCEPTED');
+    expect(row.acceptedTotalVnd).toBe(chosen.totalVnd);
+    const others = await t.request({ method: 'GET', url: '/rfqs?limit=100', auth: stranger.auth });
+    expect(others.body.data.map((item: { id: string }) => item.id)).not.toContain(requestId);
+  });
+
   it('refuses accept from non-owner and hides allocations from strangers', async () => {
     const { requestId } = await freshRequest();
     const quotations = await t.request({
