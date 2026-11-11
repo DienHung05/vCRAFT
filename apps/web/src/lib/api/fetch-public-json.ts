@@ -16,11 +16,16 @@ export type PublicJsonResult<T> =
 
 export interface FetchPublicJsonOptions {
   /**
-   * Data Cache lifetime in seconds. Omit for `cache: 'no-store'`, which is the right choice for a
-   * detail read whose item can be retired: Next keeps a stale 200 when the API later answers 404,
-   * so a cached detail read could show a withdrawn item forever.
+   * Data Cache lifetime in seconds. Omit for `cache: 'no-store'`. Next keeps a stale 200 when the API
+   * later answers 404, so a cached read of an item that can be retired needs `tags` and an on-demand
+   * `revalidateTag` when it is retired (ADR-0027); without that, leave it uncached (news, GH#395).
    */
   revalidate?: number;
+  /**
+   * Data Cache tags of a cached read, so `POST /api/revalidate` can drop it the moment the data
+   * changes (ADR-0027). Only meaningful together with `revalidate`.
+   */
+  tags?: readonly string[];
   /** Path used in log lines; defaults to `path`. Only the first segment is logged. */
   logPath?: string;
   timeoutMs?: number;
@@ -35,7 +40,7 @@ type Attempt<T> =
 async function attempt<T>(
   path: string,
   schema: JsonSchemaLike<T>,
-  cacheInit: RequestInit & { next?: { revalidate: number } },
+  cacheInit: RequestInit & { next?: { revalidate: number; tags?: string[] } },
   logPath: string,
   timeoutMs: number,
 ): Promise<Attempt<T>> {
@@ -74,7 +79,14 @@ export async function fetchPublicJson<T>(
     let result = await attempt(
       path,
       schema,
-      cached ? { next: { revalidate: options.revalidate as number } } : { cache: 'no-store' },
+      cached
+        ? {
+            next: {
+              revalidate: options.revalidate as number,
+              ...(options.tags?.length ? { tags: [...options.tags] } : {}),
+            },
+          }
+        : { cache: 'no-store' },
       logPath,
       timeoutMs,
     );

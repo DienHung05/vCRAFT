@@ -43,6 +43,7 @@ import {
   Product,
   ProductMaker,
   QuotationRequest,
+  queueExhibitionChange,
   queueKnowledgeChange,
   resolveDbDriver,
   TraceScan,
@@ -64,7 +65,7 @@ import {
   publicProductAvailability,
   suggestProductPrice,
 } from '@vcraft/domain';
-import { slugify } from '@vcraft/utils';
+import { EXHIBITION_TAG, householdTag, productTag, slugify, traceTag } from '@vcraft/utils';
 import type { Actor } from '../../../common/auth/auth.guard';
 import { deniedAccess } from '../../../common/auth/denied-access';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
@@ -292,6 +293,7 @@ export class HouseholdsService {
     const updated = await this.orm.em.fork().transactional(async (em) => {
       const household = await this.ownWritableHousehold(em, actor);
       assertVersion(household, expectedVersion);
+      const previousSlug = household.slug;
       if (input.gallery) {
         const ids = input.gallery.flatMap((item) => ('mediaId' in item ? [item.mediaId] : []));
         const owned = await this.media.ownedBy(actor.id, ids);
@@ -354,6 +356,12 @@ export class HouseholdsService {
       if (input.capacityByCategory !== undefined) {
         household.capacityByCategory = input.capacityByCategory;
       }
+      // The web's cached reads drop the old and the new slug (ADR-0027).
+      queueExhibitionChange(em, [
+        EXHIBITION_TAG,
+        householdTag(previousSlug),
+        householdTag(household.slug),
+      ]);
       queueKnowledgeChange(em, 'HOUSEHOLD', household.id);
       await em.flush();
       return household.id;
@@ -414,6 +422,7 @@ export class HouseholdsService {
         before: { certification: target.name, issuer: target.issuer, verified: target.verified },
         after: { certification: target.name, issuer: target.issuer, verified },
       });
+      queueExhibitionChange(em, [EXHIBITION_TAG, householdTag(household.slug)]);
       queueKnowledgeChange(em, 'HOUSEHOLD', household.id);
       await em.flush();
       return toHouseholdDto(household, await this.parts(em, household, false));
@@ -501,6 +510,7 @@ export class HouseholdsService {
       if (input.areaCode !== undefined) workshop.areaCode = input.areaCode;
       workshop.lat = input.lat === undefined ? null : input.lat.toFixed(6);
       workshop.lng = input.lng === undefined ? null : input.lng.toFixed(6);
+      queueExhibitionChange(em, [EXHIBITION_TAG, householdTag(household.slug)]);
       await em.flush();
       return toWorkshopDto(workshop);
     });
@@ -526,6 +536,7 @@ export class HouseholdsService {
         lat: input.lat === undefined ? null : input.lat.toFixed(6),
         lng: input.lng === undefined ? null : input.lng.toFixed(6),
       });
+      queueExhibitionChange(em, [EXHIBITION_TAG, householdTag(household.slug)]);
       await em.flush();
       return toWorkshopDto(workshop);
     });
@@ -542,6 +553,7 @@ export class HouseholdsService {
         craftRole: input.craftRole ?? null,
         bio: input.bio ?? null,
       });
+      queueExhibitionChange(em, [EXHIBITION_TAG, householdTag(household.slug)]);
       await em.flush();
       return toArtisanDto(artisan);
     });
@@ -648,6 +660,7 @@ export class HouseholdsService {
       const household = await this.ownWritableHousehold(em, actor);
       const product = await this.ownProduct(em, actor, household, productId);
       assertVersion(product, expectedVersion);
+      const previousSlug = product.slug;
       if (input.images) {
         const ids = input.images.map((image) => image.mediaId);
         const owned = await this.media.ownedBy(actor.id, ids);
@@ -682,6 +695,13 @@ export class HouseholdsService {
       if (input.weightGrams !== undefined) product.weightGrams = input.weightGrams;
       if (input.artisanNote !== undefined) product.artisanNote = input.artisanNote || null;
       if (input.tags !== undefined) product.tags = normalizeTags(input.tags);
+      // The old product slug may have been retired above; drop the cached reads of both (ADR-0027).
+      queueExhibitionChange(em, [
+        EXHIBITION_TAG,
+        productTag(previousSlug),
+        productTag(product.slug),
+        traceTag(product.traceCode),
+      ]);
       queueKnowledgeChange(em, 'PRODUCT', product.id);
       await em.flush();
       return product.id;
@@ -763,6 +783,13 @@ export class HouseholdsService {
           },
         });
       }
+      // Publish, withdraw and sold change what the lists show; the household page lists its products too.
+      queueExhibitionChange(em, [
+        EXHIBITION_TAG,
+        productTag(product.slug),
+        traceTag(product.traceCode),
+        householdTag(household.slug),
+      ]);
       queueKnowledgeChange(em, 'PRODUCT', product.id);
       await em.flush();
       return toProductDto(product, (await this.makersOf(em, [product])).get(product.id));
@@ -798,6 +825,8 @@ export class HouseholdsService {
           position,
         });
       });
+      // Makers show on the product page and the trace page only, not on list cards.
+      queueExhibitionChange(em, [productTag(product.slug), traceTag(product.traceCode)]);
       await em.flush();
       return toProductDto(product, (await this.makersOf(em, [product])).get(product.id));
     });
@@ -1059,6 +1088,8 @@ export class HouseholdsService {
         before: { status: before },
         after: { status: household.status, reason: reason ?? null },
       });
+      // Approval, rejection, suspension and reinstatement change what is public (ADR-0027).
+      queueExhibitionChange(em, [EXHIBITION_TAG, householdTag(household.slug)]);
       // Thư báo quyết định đi qua outbox cùng giao dịch: quyết định lưu được thì thư mới được gửi.
       em.create(OutboxEvent, {
         type: 'household.decision',
