@@ -208,7 +208,7 @@ export const ContributionHistoryResponseSchema = z.array(
 );
 
 /**
- * `GET /me/open-coordinated-requests` (BR-05a, ADR-0024): a redacted summary of a coordinated request an
+ * `GET /me/open-coordinated-requests` (BR-05a, ADR-0026): a redacted summary of a coordinated request an
  * administrator claimed and that is still open for offers. It carries no title, description, buyer
  * identity, budget, destination or attachments: those stay behind the invitation check.
  */

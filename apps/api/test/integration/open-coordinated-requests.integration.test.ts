@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
 
-/** BR-05a, ADR-0024: coordinated requests an administrator claimed are open to qualifying households. */
+/** BR-05a, ADR-0026: coordinated requests an administrator claimed are open to qualifying households. */
 describe('open coordinated requests', () => {
   let db: TestDatabase;
   let t: TestApp;
