@@ -1,6 +1,12 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { BrowserContext } from '@playwright/test';
+// GH#480: script-only helper (lives under scripts/, never importable from apps/ or packages/).
+import {
+  canMintSession,
+  DemoSessionError,
+  mintDemoSessionFromEnv,
+} from '../../../../../scripts/demo/lib/demo-session.mjs';
 
 /**
  * Hỗ trợ cho kịch bản demo chạy trên bản đã triển khai (`E2E_BASE_URL`) với ba hồ sơ đăng nhập sẵn.
@@ -9,6 +15,11 @@ import type { BrowserContext } from '@playwright/test';
  * (`sb-<project-ref>-auth-token`, giá trị `base64-` + base64url(JSON phiên), cắt từng đoạn 3180 ký tự).
  * Nên ta đăng nhập bằng REST của Supabase Auth rồi chèn đúng định dạng cookie đó vào context. Không thêm dependency.
  * Mật khẩu chỉ đọc từ biến môi trường (`DEMO_*_PASSWORD`), không có trong mã.
+ *
+ * GH#480: bản production bật captcha ở đăng nhập mật khẩu và TOTP cho admin, nên khi máy chạy kịch bản có
+ * `SUPABASE_SECRET_KEY` thì phiên được cấp bởi `scripts/demo/lib/demo-session.mjs` (generate_link + verify,
+ * admin thêm bước TOTP từ `DEMO_ADMIN_TOTP_SECRET`) thay cho mật khẩu. Không có khóa đó, đường mật khẩu cũ
+ * vẫn dùng được cho stack cục bộ không captcha.
  */
 
 // Playwright không tự nạp .env; nạp .env gốc nếu có (không ghi đè biến đã đặt).
@@ -55,6 +66,11 @@ export function demoSkipReason(): string | undefined {
   if (!supabaseUrl() || !publishableKey()) {
     return 'Thiếu SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY để đăng nhập các hồ sơ demo.';
   }
+  if (canMintSession()) {
+    return process.env.DEMO_ADMIN_TOTP_SECRET?.trim()
+      ? undefined
+      : 'Thiếu DEMO_ADMIN_TOTP_SECRET (mã TOTP của admin demo, xem docs/demo/README.md mục 7).';
+  }
   const missing = DEMO_ACCOUNT_KEYS.map((key) => DEMO.accounts[key].passwordEnv).filter(
     (name) => !process.env[name],
   );
@@ -69,6 +85,16 @@ export function demoSkipReason(): string | undefined {
  */
 export async function signIn(key: DemoAccountKey): Promise<SupabaseSession> {
   const account = DEMO.accounts[key];
+  if (canMintSession()) {
+    try {
+      return (await mintDemoSessionFromEnv(account.email)) as SupabaseSession;
+    } catch (error) {
+      if (error instanceof DemoSessionError) {
+        throw new Error(`Đăng nhập ${key} thất bại: ${error.message}`);
+      }
+      throw error;
+    }
+  }
   const response = await fetch(`${supabaseUrl()}/auth/v1/token?grant_type=password`, {
     method: 'POST',
     headers: { apikey: publishableKey() ?? '', 'content-type': 'application/json' },
