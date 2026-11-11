@@ -3610,6 +3610,21 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
     },
     widths: [640, 1280],
   },
+  // The one drawn picture of the set (GH#473): the seal of Lò Đức Phát, made for this repo by
+  // `scripts/demo/photos/make-household-seal.mjs` and used as the household's seal photo (`seal_photo`), not as a link.
+  {
+    id: 'con-dau-duc-phat',
+    alt: 'Con dấu đỏ vuông của Lò Đức Phát, khắc chữ "Đức Phát" và dòng "Lò gốm Bát Tràng"',
+    credit: {
+      title: 'Con dấu minh họa Lò Đức Phát',
+      author: 'vCRAFT (hình vẽ cho bộ dữ liệu mẫu)',
+      license: 'CC0 1.0',
+      licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+      sourceUrl:
+        'https://github.com/DienHung05/vCRAFT/blob/develop/scripts/demo/photos/make-household-seal.mjs',
+    },
+    widths: [1280],
+  },
 ];
 
 export const DEMO_PHOTO_LINKS: readonly DemoPhotoLink[] = [

@@ -31,6 +31,7 @@ import { DEMO_PHOTO_LINKS, DEMO_PHOTOS, RETIRED_DEMO_PHOTO_IDS } from './photo-m
 import { NEWS } from './pools.js';
 import { demoEntityId } from './seed-demo.js';
 import { DEMO_VERIFICATION_DOCS } from './verification-docs.js';
+import { verifyProfileDepth } from './verify-profile-depth.js';
 
 export interface DemoCheck {
   name: string;
@@ -283,6 +284,8 @@ export async function verifyDemoData(
     stale.length === 0,
     stale.length === 0 ? 'còn hạn' : `sắp/đã hết hạn: ${stale.join(', ')}; chạy lại demo:reset`,
   );
+
+  await verifyProfileDepth(em, add, { media: options.media ?? true });
 
   if (options.media ?? true) await verifyMedia(em, add, entries, options.checkPublicUrls ?? false);
 
