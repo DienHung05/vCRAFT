@@ -78,7 +78,7 @@ describe('AllocationGantt', () => {
   it('shows each share with its progress in words and flags the late one', async () => {
     renderVi(<AllocationGantt client={client()} />);
     expect(await screen.findByRole('heading', { name: '5.000 cốc men lam' })).toBeTruthy();
-    expect(screen.getByText(/200\/1\.000 cốc · dự kiến 500/)).toBeTruthy();
+    expect(screen.getByText(/200\/1\.000 cốc · hẹn .*· Dự kiến đến hôm nay: 500 cốc/)).toBeTruthy();
     expect(screen.getByText('Chậm')).toBeTruthy();
     expect(screen.getByText('Đúng tiến độ')).toBeTruthy();
     // Only the late share offers a reallocation.

@@ -2,7 +2,7 @@
 
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
 import type { RfqListItemDto } from '@vcraft/contracts';
-import { RFQ_STATUSES, type RfqStatus } from '@vcraft/domain';
+import { hasAcceptedQuotation, RFQ_STATUSES, type RfqStatus } from '@vcraft/domain';
 import { Badge, Button, buttonVariants, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
@@ -12,6 +12,7 @@ import { ListSkeleton } from '@/components/states/skeletons';
 import { Link } from '@/i18n/navigation';
 import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { useLatestRequest } from '@/lib/use-latest-request';
+import { useMoney } from '@/lib/use-money';
 
 /** The signed-in buyer's requests from `GET /rfqs`, with a status filter and cursor paging. */
 export function BuyerRfqList({ client: provided }: { client?: QuotationClient }) {
@@ -27,6 +28,7 @@ function List({ client }: { client: QuotationClient }) {
   const page = useTranslations('indexPages.rfq');
   const statuses = useTranslations('rfq.status');
   const format = useFormatter();
+  const money = useMoney();
   const [status, setStatus] = useState<RfqStatus | undefined>();
   const [rows, setRows] = useState<readonly RfqListItemDto[] | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -147,7 +149,12 @@ function List({ client }: { client: QuotationClient }) {
                 </h2>
                 <p className="text-small text-ash">
                   {page('quantity', { quantity: format.number(row.quantity), unit: row.unit })} ·{' '}
-                  {t('quotations', { count: row.openQuotationCount })} ·{' '}
+                  {hasAcceptedQuotation(row.status)
+                    ? row.acceptedTotalVnd === null
+                      ? t('acceptedNoTotal')
+                      : t('accepted', { total: money(row.acceptedTotalVnd) })
+                    : t('quotations', { count: row.openQuotationCount })}{' '}
+                  ·{' '}
                   {page('closes', {
                     date: format.dateTime(new Date(row.biddingClosesAt), 'short'),
                   })}

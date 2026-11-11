@@ -132,6 +132,8 @@ export type ListRfqsQuery = z.infer<typeof ListRfqsQuerySchema>;
 export const RfqListItemSchema = RfqResponseSchema.extend({
   /** Quotations the buyer can currently act on. */
   openQuotationCount: z.int().min(0),
+  /** Total of the quotation the buyer accepted; null before ACCEPTED (and when none is on record). */
+  acceptedTotalVnd: VndSchema.nullable(),
 });
 export type RfqListItemDto = z.infer<typeof RfqListItemSchema>;
 export const RfqListResponseSchema = cursorPageSchema(RfqListItemSchema);

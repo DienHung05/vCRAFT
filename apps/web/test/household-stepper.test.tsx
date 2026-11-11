@@ -37,6 +37,6 @@ describe('Household request stages', () => {
     renderVi(<QuotationInvitations client={client} />);
     const nav = await screen.findByRole('navigation', { name: 'Tiến trình của yêu cầu báo giá' });
     expect(within(nav).getByText(label).closest('li')?.getAttribute('aria-current')).toBe('step');
-    expect(nav.getAttribute('tabindex')).toBe('0');
+    expect(nav.querySelector('[tabindex="0"]')).not.toBeNull();
   });
 });

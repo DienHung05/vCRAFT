@@ -373,7 +373,8 @@
     "label": "Tiến độ phần việc",
     "percent": "Hoàn thành {percent}%",
     "completed": "{done}/{total} {unit}",
-    "counts": "{done}/{total} {unit} · dự kiến {expected} · hẹn {due}",
+    "counts": "{done}/{total} {unit} · hẹn {due}",
+    "expected": "Dự kiến đến hôm nay: {expected} {unit}",
     "started": "Bắt đầu",
     "empty": "Chưa có phân bổ.",
     "lateness": {
@@ -392,6 +393,7 @@
     "breadcrumb": "Đường dẫn trang",
     "allRequests": "Yêu cầu báo giá",
     "stepperLabel": "Tiến trình của yêu cầu báo giá",
+    "stepperCompact": "Bước {current}/{total} · {label}",
     "status": {
       "DRAFT": "Bản nháp",
       "SENT": "Đã gửi",
@@ -588,6 +590,8 @@
       "retry": "Thử lại",
       "more": "Xem thêm",
       "quotations": "{count, plural, =0 {Chưa có chào giá} other {# chào giá đang chờ}}",
+      "accepted": "Đã chốt · {total}",
+      "acceptedNoTotal": "Đã chốt",
       "continueDraft": "Viết tiếp",
       "emptyTitle": "Bạn chưa có yêu cầu báo giá nào",
       "emptyFiltered": "Không có yêu cầu nào ở trạng thái này.",
@@ -1357,7 +1361,8 @@
       "loadFailed": "Chưa tải được tiến độ đơn hàng.",
       "empty": "Chưa có đơn nào đang sản xuất.",
       "requiredBy": "Hạn giao {date}",
-      "counts": "{done}/{total} {unit} · dự kiến {expected} · hẹn {due}",
+      "counts": "{done}/{total} {unit} · hẹn {due}",
+      "expected": "Dự kiến đến hôm nay: {expected} {unit}",
       "lateness": {
         "DONE": "Xong",
         "ON_TRACK": "Đúng tiến độ",
