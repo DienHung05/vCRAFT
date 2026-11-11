@@ -117,10 +117,17 @@ export async function FireTimeline({
             {e.images
               .filter((image) => image.url)
               .map((image) => {
-                const alt = t('proofAlt', { stage: stages(`${e.stage}.name`) });
+                // A photo with a credit is someone else's picture of the stage (GH#472), never of this piece: say so
+                // under it and describe what it shows. A household's own upload has no credit and no note.
+                const { credit } = image;
+                const stage = stages(`${e.stage}.name`);
+                const alt =
+                  locale === 'vi' && image.alt
+                    ? image.alt
+                    : t(credit ? 'stagePhotoAlt' : 'proofAlt', { stage });
                 const photo = photoFromUrl(image.url, alt, image.variants);
                 return (
-                  <div key={image.sha256}>
+                  <figure key={image.sha256} className="mt-3 max-w-sm">
                     <ImageSlot
                       alt={alt}
                       tint={e.tint}
@@ -128,9 +135,30 @@ export async function FireTimeline({
                       {...slotPhoto(photo)}
                       thumbhash={image.thumbhash}
                       sizes="(min-width: 640px) 24rem, 100vw"
-                      className="mt-3 max-w-sm"
                     />
-                  </div>
+                    {credit ? (
+                      <figcaption className="mt-1.5 text-small text-ash" data-stage-photo-note="">
+                        {t('stagePhotoNote')} {t('photoBy')}{' '}
+                        <a
+                          href={credit.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline underline-offset-2 hover:text-clay"
+                        >
+                          {credit.author}
+                        </a>{' '}
+                        ·{' '}
+                        <a
+                          href={credit.licenseUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline underline-offset-2 hover:text-clay"
+                        >
+                          {credit.license}
+                        </a>
+                      </figcaption>
+                    ) : null}
+                  </figure>
                 );
               })}
             {/* Hiển thị rút gọn cho gọn mắt; dấu băm đầy đủ 64 hex nằm ở `title`. */}

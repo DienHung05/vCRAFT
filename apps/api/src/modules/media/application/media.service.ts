@@ -66,6 +66,8 @@ export interface EntryImage {
   thumbhash: string | null;
   credit: MediaCredit | null;
   variants: MediaVariantResponse[];
+  /** Vietnamese description of the picture (`media_asset.alt_text`), when it has one. */
+  alt: string | null;
 }
 
 /** The `media.updated` live event (see `LiveEventSchema`). */
@@ -261,6 +263,7 @@ export class MediaService {
         thumbhash: asset.thumbhash ?? null,
         credit: publicCredit(asset.credit),
         variants: ready ? this.publicVariants(asset) : [],
+        alt: asset.altText?.trim() || null,
       });
     }
     return found;

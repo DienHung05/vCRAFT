@@ -5,6 +5,7 @@ export * from './demo/backfill-id-numbers.js';
 export * from './demo/boundary-fit.js';
 export * from './demo/demo-text.js';
 export * from './demo/guard.js';
+export * from './demo/journal-photos.js';
 export * from './demo/link-media.js';
 export * from './demo/news-seed.js';
 export * from './demo/photo-manifest.js';

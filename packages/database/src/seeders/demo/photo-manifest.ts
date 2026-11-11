@@ -3610,6 +3610,135 @@ export const DEMO_PHOTOS: readonly DemoPhoto[] = [
     },
     widths: [640, 1280],
   },
+  // Stage photos of journal entries (GH#472): real Bát Tràng workshop photos that show a production stage in general.
+  // Journal entries of the demo pieces point at them through `journal-photos.ts`; they are never a photo of the piece.
+  {
+    id: 'stage-clay-2',
+    alt: 'Những tảng đất sét vàng nhạt chất thành đống trong nhà kho, một xe đẩy tay đặt giữa lối đi',
+    credit: {
+      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2711.JPG',
+      author: '松岡明芳 (Akiyoshi Matsuoka)',
+      license: 'CC BY-SA 3.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2711.JPG',
+    },
+    widths: [1280],
+  },
+  {
+    id: 'stage-throw-2',
+    alt: 'Cận cảnh hai bàn tay, ngón tay bọc cao su, dùng dao gọt chân một chiếc bát trắng trên bàn xoay',
+    credit: {
+      title: 'File:Bat-Trang-Ceramic-Village11.jpg',
+      author: 'Steven C. Price',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bat-Trang-Ceramic-Village11.jpg',
+    },
+    widths: [1280],
+  },
+  {
+    id: 'stage-dry-2',
+    alt: 'Chậu gốm mộc lồng nhau trong xưởng, phía sau là các chồng gốm mộc khác xếp cao chờ khô',
+    credit: {
+      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2734.JPG',
+      author: '松岡明芳 (Akiyoshi Matsuoka)',
+      license: 'CC BY-SA 3.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2734.JPG',
+    },
+    widths: [1280],
+  },
+  {
+    id: 'stage-paint-1',
+    alt: 'Người thợ ngồi xổm cúi xuống vẽ lên gốm trắng, cạnh là cột ấm mộc xếp cao và xô nước men',
+    credit: {
+      title: 'File:Bat-Trang-Ceramic-Village3.jpg',
+      author: 'Steven C. Price',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bat-Trang-Ceramic-Village3.jpg',
+    },
+    widths: [1280],
+  },
+  {
+    id: 'stage-paint-2',
+    alt: 'Người thợ ngồi giữa rơm, dùng bút vẽ họa tiết lên một chiếc chậu gốm trắng, xung quanh là những chậu đã tráng men đỏ và đen',
+    credit: {
+      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2748.JPG',
+      author: '松岡明芳 (Akiyoshi Matsuoka)',
+      license: 'CC BY-SA 3.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2748.JPG',
+    },
+    widths: [1280],
+  },
+  {
+    id: 'stage-glaze-1',
+    alt: 'Người thợ cúi xuống, cầm một chiếc bát mộc phía trên xô men trắng, xung quanh là những chồng bát mộc',
+    credit: {
+      title: 'File:Bat-Trang-Ceramic-Village10.jpg',
+      author: 'Steven C. Price',
+      license: 'CC BY-SA 4.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bat-Trang-Ceramic-Village10.jpg',
+    },
+    widths: [1280],
+  },
+  {
+    id: 'stage-glaze-2',
+    alt: 'Người thợ ngồi giữa những chiếc bình mộc cổ dài, rót men vào bình, cạnh là xô men màu đỏ',
+    credit: {
+      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2735.JPG',
+      author: '松岡明芳 (Akiyoshi Matsuoka)',
+      license: 'CC BY-SA 3.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2735.JPG',
+    },
+    widths: [1280],
+  },
+  {
+    id: 'stage-glaze-3',
+    alt: 'Người thợ ngồi nhúng chiếc đèn gốm đục lỗ vào xô nước men màu đỏ, xung quanh là chậu và đèn mộc',
+    credit: {
+      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2736A.JPG',
+      author: '松岡明芳 (Akiyoshi Matsuoka)',
+      license: 'CC BY-SA 3.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2736A.JPG',
+    },
+    widths: [1280],
+  },
+  {
+    id: 'stage-fire-1',
+    alt: 'Ô lửa sáng rực trên một cột hộp nung tròn, phía sau là những cột hộp nung khác xếp trong lò',
+    credit: {
+      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2741.JPG',
+      author: '松岡明芳 (Akiyoshi Matsuoka)',
+      license: 'CC BY-SA 3.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2741.JPG',
+    },
+    widths: [1280],
+  },
+  {
+    id: 'stage-finish-1',
+    alt: 'Hai người thợ xếp lựa chậu và bát gốm đã tráng men đỏ, đen, trắng giữa rơm và giấy báo gói sẵn',
+    credit: {
+      title: 'File:Xã Bát Tràng、鉢塲社 バチャン村 DSCF2717.JPG',
+      author: '松岡明芳 (Akiyoshi Matsuoka)',
+      license: 'CC BY-SA 3.0',
+      licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+      sourceUrl:
+        'https://commons.wikimedia.org/wiki/File:X%C3%A3_B%C3%A1t_Tr%C3%A0ng%E3%80%81%E9%89%A2%E5%A1%B2%E7%A4%BE_%E3%83%90%E3%83%81%E3%83%A3%E3%83%B3%E6%9D%91_DSCF2717.JPG',
+    },
+    widths: [1280],
+  },
   // The one drawn picture of the set (GH#473): the seal of Lò Đức Phát, made for this repo by
   // `scripts/demo/photos/make-household-seal.mjs` and used as the household's seal photo (`seal_photo`), not as a link.
   {

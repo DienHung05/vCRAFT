@@ -3,7 +3,7 @@ import type { DemoPhotoRef, LogStage } from './data';
 /**
  * Photos for the "A day in Bát Tràng" strip on the home page: real Commons photos of the village, one per
  * stage of the day. They illustrate a stage of the craft in general and are never attached to a product or
- * to a journal entry (generic stage photos on a specific product were removed, vCRAFT-83g.35).
+ * to a journal entry (generic stage photos on a specific product were removed, vCRAFT-83g.35; the journal of the demo pieces shows labelled stage photos, GH#472).
  */
 
 /** 3:4 photos for the "Một ngày ở Bát Tràng" strip on the home page. */

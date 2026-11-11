@@ -10,6 +10,7 @@ import {
   Product,
 } from '../../entities/index.js';
 import { DEMO_ACCOUNTS, DEMO_HOUSEHOLD_IDS } from './accounts.js';
+import { JOURNAL_PHOTO_EXTRA_TRACE_CODES, journalPhotoIds } from './journal-photos.js';
 import {
   DEMO_PHOTO_LINKS,
   DEMO_PHOTOS,
@@ -38,7 +39,7 @@ export interface LinkDemoMediaSummary {
   linksDeleted: number;
   /** Product/household cover columns rewritten. */
   coversChanged: number;
-  /** Journal entries whose images were cleared and hash re-sealed. */
+  /** Journal entries whose stage photos changed and hash re-sealed. */
   journalEntriesChanged: number;
   /** Everything above that changed a row; 0 means the data already matches the manifest. */
   changes: number;
@@ -136,8 +137,9 @@ class DryRunDone extends Error {
  *   tiếng Việt (`alt_text`) và tiếng Anh (`alt_en`). Liên kết của tệp demo không còn trong bảng ánh xạ bị xóa.
  * - `product.cover_url/cover_alt/cover_alt_en` và `household.cover_url` theo liên kết; sản phẩm demo không còn ảnh bìa
  *   (`NO_COVER_DEMO_PRODUCTS`) được gỡ ảnh bìa để giao diện dùng hình minh hoạ.
- * - `JournalEntry.images`: ảnh minh hoạ công đoạn KHÔNG còn gắn vào nhật ký (một ảnh chung không phải ảnh của món
- *   đồ); mốc nào còn ảnh thì được xóa, chuỗi băm của sản phẩm đó được niêm phong lại (`sealChain`) và vẫn qua `verifyChain`.
+ * - `JournalEntry.images` (GH#472): mọi mốc của các món demo (hộ Lò Đức Phát, `BT7K2QXM`, `HX2M9KQD`) có 1–2 ảnh công
+ *   đoạn thật (`journal-photos.ts`, giấy phép mở, ghi công ở `/ghi-nhan-anh`); mã SHA-256 của ảnh đi vào chuỗi băm
+ *   được niêm phong lại (`sealChain`) và vẫn qua `verifyChain`. Sản phẩm khác không có ảnh ở nhật ký.
  * `publicUrl` đổi key biến thể thành URL công khai (cùng cổng lưu trữ mà API dùng). `dryRun` tính tóm tắt rồi hoàn tác.
  */
 export async function linkDemoMedia(
@@ -298,7 +300,10 @@ export async function linkDemoMedia(
         }
       }
 
-      // --- journal: no generic stage photos on a product's entries; re-seal the chain when any image goes ----
+      // --- journal: stage photos on the entries of the demo pieces (GH#472), re-seal the chain when they change ----
+      // The demo pieces (see `journal-photos.ts`) get the stage photos of their milestones, the checksums go into the
+      // hash chain; every other product keeps no photo. An entry that carries a photo that is not a demo photo (a
+      // household's own upload) is left as it is.
       const entries = runs('journal')
         ? await tx.find(JournalEntry, {}, { populate: ['supersedes'], orderBy: { seq: 'asc' } })
         : [];
@@ -316,33 +321,57 @@ export async function linkDemoMedia(
             ),
           )
         : undefined;
+      const photoCodeOf = new Map<string, string>();
+      if (runs('journal')) {
+        const photoProducts = await tx.find(
+          Product,
+          {
+            $or: [
+              { household: DEMO_HOUSEHOLD_IDS.household },
+              { traceCode: { $in: [...JOURNAL_PHOTO_EXTRA_TRACE_CODES] } },
+            ],
+          },
+          { fields: ['id', 'traceCode'] },
+        );
+        for (const p of photoProducts) photoCodeOf.set(p.id, p.traceCode);
+      }
+      const demoShas = new Set([...photoAssets.values()].map((a) => a.sha256));
+      const stagePhotoShas = (traceCode: string, stage: JournalEntry['stage']): string[] =>
+        journalPhotoIds(traceCode, stage).map((photo) => {
+          const asset = photoAssets.get(photo);
+          if (!asset) throw new Error(`Ảnh công đoạn "${photo}" không có trong bảng ánh xạ ảnh`);
+          return asset.sha256;
+        });
+      const sameShas = (images: readonly { sha256: string }[], shas: readonly string[]) =>
+        images.length === shas.length && images.every((image, i) => image.sha256 === shas[i]);
       for (const [productId, list] of byProduct) {
         if (onlyProducts && !onlyProducts.has(productId)) continue;
-        const contents: Array<ChainContent> = list.map((entry) => ({
+        const traceCode = photoCodeOf.get(productId);
+        const wantedShas = list.map((entry) => {
+          if (entry.images.some((image) => !demoShas.has(image.sha256)))
+            return entry.images.map((image) => image.sha256);
+          return traceCode ? stagePhotoShas(traceCode, entry.stage) : [];
+        });
+        const contents: Array<ChainContent> = list.map((entry, index) => ({
           stage: entry.stage,
           at: entry.declaredDate,
           note: entry.note,
-          mediaChecksums: [],
+          mediaChecksums: wantedShas[index] as string[],
           supersedesSeq: entry.supersedes?.seq,
           skipReason: entry.skipReason ?? undefined,
         }));
         const sealed = await sealChain(productId, contents);
-        const needsWork = list.some((entry, index) => {
-          const next = sealed[index] as { prevHash: string; hash: string };
-          return (
-            entry.images.length > 0 || entry.prevHash !== next.prevHash || entry.hash !== next.hash
-          );
-        });
-        if (!needsWork) continue;
         for (const [index, entry] of list.entries()) {
           const next = sealed[index] as { prevHash: string; hash: string };
+          const shas = wantedShas[index] as string[];
           if (
-            entry.images.length === 0 &&
+            sameShas(entry.images, shas) &&
             entry.prevHash === next.prevHash &&
             entry.hash === next.hash
           )
             continue;
-          entry.images = [];
+          // Keep the stored URL of an entry's own photo; the stage photos resolve theirs from the media store.
+          if (!sameShas(entry.images, shas)) entry.images = shas.map((sha256) => ({ sha256 }));
           entry.prevHash = next.prevHash;
           entry.hash = next.hash;
           journalEntriesChanged++;

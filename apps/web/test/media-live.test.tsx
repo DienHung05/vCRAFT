@@ -251,6 +251,7 @@ describe('journal milestone with a photo that is still processing', () => {
               mediaId: PHOTO_ID,
               status,
               thumbhash: status === 'READY' ? THUMBHASH : null,
+              alt: null,
             },
           ],
           skipReason: null,
