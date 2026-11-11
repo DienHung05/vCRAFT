@@ -16,20 +16,27 @@ things the sandbox build did not have:
   under "Not built": a buyer who paid sees "pending" until the payment expires;
 - limits and timings that match what the providers accept.
 
-Facts, and how far each was verified (2026-11-09):
+Facts, verified on 2026-11-11 against the providers' official documentation and samples:
 
-- **VNPay v2.1.0** (the `querydr` fields, checksums and status codes were checked on the sandbox.vnpayment.vn
-  documentation; the 5,000 VND minimum and 999,999,999 VND maximum were **not** on those pages and are from the
-  team's knowledge of VNPay). The production payment page and merchant API URLs are not public: VNPay hands them over at
-  merchant onboarding. The IPN URL is registered in the VNPay merchant portal, not sent per request. `querydr`
-  (POST JSON to the merchant API) returns the state of a transaction, signed with HMAC-SHA512 over fields
-  joined by `|`. Amounts 5,000 to 999,999,999 VND. `vnp_ExpireDate` is required.
-- **MoMo v2.** The production endpoints come from the merchant contract. `/v2/gateway/api/query` returns the
-  `resultCode` of an order. **Not re-verified:** developers.momo.vn refused automated fetches (403). The create
-  and IPN signatures come from MoMo's official sample code (github.com/momo-wallet/payment) and the existing
-  integration; the query signature, the `resultCode` meanings and the 1,000 to 50,000,000 VND limit below are
-  from the team's knowledge of MoMo's documentation. `0` is success; `1000`, `7000`, `7002` and `9000` mean "still in progress", not
-  failure; `1001`-`1007`, `1017`, `1026` are final failures. `captureWallet` amounts 1,000 to 50,000,000 VND.
+- **VNPay v2.1.0.** The `querydr` fields, checksums and status codes come from the sandbox.vnpayment.vn
+  documentation. The amount range, 5,000 VND up to (not including) 1,000,000,000 VND, comes from VNPay's
+  official error page (`pay.vnpay.vn/Payment/Error.html?code=32`), i.e. 5,000 to 999,999,999 VND. VNPay's
+  production host is `pay.vnpay.vn`, but the exact payment page and merchant API URLs are still handed over at
+  merchant onboarding and are taken from the environment. The IPN URL is registered in the VNPay merchant
+  portal, not sent per request. `querydr` (POST JSON to the merchant API) returns the state of a transaction,
+  signed with HMAC-SHA512 over fields joined by `|`. `vnp_ExpireDate` is required.
+- **MoMo v2.** The production endpoints come from the merchant contract (onboarding mail). Sources:
+  developers.momo.vn (result-code list and one-time payment page) and MoMo's official sample code
+  (github.com/momo-wallet/payment, `php/atm/query_transaction.php`). `/v2/gateway/api/query` returns the
+  `resultCode` of an order; its signature is HMAC-SHA256 over `accessKey=&orderId=&partnerCode=&requestId=`,
+  which matches the official sample. The create and IPN signatures also come from the official sample.
+  `resultCode` `0` is success. `9000` is "transaction is authorized successfully": for a 1-step payment MoMo
+  says to mark it as success (a 2-step payment needs a later capture or cancel); we always create with
+  `autoCapture: true` (1-step), so `9000` is paid. `1000` (initiated, awaiting the buyer), `7000` (being
+  processed) and `7002` (being processed by the payment instrument's provider) are not final. `1001`
+  (insufficient funds), `1004` (exceeds the limit), `1005` (URL or QR expired) and `1006` (buyer denied) are
+  failures, as are the other listed final codes (`1002`, `1003`, `1007`, `1017`, `1026`). `captureWallet`
+  amounts are 1,000 to 50,000,000 VND (one-time payment page).
 
 ## Decision
 
@@ -59,8 +66,9 @@ Facts, and how far each was verified (2026-11-09):
    SePay at least 1 VND; VNPay 5,000 to 999,999,999 (`VNPAY_MAX_AMOUNT_VND`); MoMo 1,000 to 50,000,000
    (`MOMO_MAX_AMOUNT_VND`). The order summary lists each method's limits and whether it is sandbox
    (`methodOptions`), so the web can disable a method and label a test gateway.
-5. **MoMo in-progress codes.** A callback or query with `1000`, `7000`, `7002` or `9000` leaves the payment
-   pending (it used to fail it). Only the listed final codes fail it.
+5. **MoMo result codes.** A callback or query with `1000`, `7000` or `7002` leaves the payment pending (it
+   used to fail it). `9000` (authorized) counts as paid, because our flow is 1-step (`autoCapture: true`); it
+   settles the payment exactly like `0`. Only the listed final codes fail it.
 6. **VNPay IPN replies.** A failure notice for a payment that is already settled answers `02` ("already
    confirmed") instead of `00`. A callback signed for another `vnp_TmnCode` is rejected.
 7. **Refunds stay manual.** No gateway refund call. The administrator refunds from the provider's merchant
@@ -83,7 +91,7 @@ Facts, and how far each was verified (2026-11-09):
   production. `docs/operations/deploy.md` has the go-live checklist per method.
 - A provider that is down only delays the sweep; the buyer's payment is never failed because a query failed.
 - More outbound calls to the providers (bounded by the 20 s throttle and the batch of 25 per sweep).
-- Before switching `MOMO_MODE=production`, confirm the query signature, the `resultCode` list and the amount
-  limits against the MoMo documentation or contract; before `VNPAY_MODE=production`, confirm the amount limits
-  with VNPay. `MOMO_MAX_AMOUNT_VND` and `VNPAY_MAX_AMOUNT_VND` can override the upper limits.
+- The query signature, the `resultCode` list and the amount limits were verified on 2026-11-11 (Context), so
+  they are no longer a go-live check; the production URLs and keys still come from the provider's onboarding.
+  `MOMO_MAX_AMOUNT_VND` and `VNPAY_MAX_AMOUNT_VND` can override the upper limits.
 - Mixing sandbox credentials into a live deployment is caught at boot instead of by a buyer.

@@ -16,10 +16,18 @@ import {
 /** MoMo `resultCode` for a successful payment. */
 export const MOMO_RESULT_SUCCESS = 0;
 /**
- * `resultCode`s that mean "not finished yet", not "failed": the buyer is still paying or MoMo is still
- * processing (1000 initiated, 7000 processing, 7002 processing at the provider, 9000 authorized).
+ * `resultCode` 9000 "transaction is authorized successfully". For a 1-step payment MoMo says to treat it as
+ * success (only a 2-step payment needs a later capture/cancel). We always create with `autoCapture: true`
+ * (1-step), so 9000 counts as paid.
  */
-export const MOMO_IN_PROGRESS_CODES: readonly number[] = [1000, 7000, 7002, 9000];
+export const MOMO_RESULT_AUTHORIZED = 9000;
+/**
+ * `resultCode`s that mean "not finished yet", not "failed": the buyer is still paying or MoMo is still
+ * processing (1000 initiated, 7000 processing, 7002 processing at the payment instrument's provider).
+ */
+export const MOMO_IN_PROGRESS_CODES: readonly number[] = [1000, 7000, 7002];
+const isMomoPaid = (resultCode: number) =>
+  resultCode === MOMO_RESULT_SUCCESS || resultCode === MOMO_RESULT_AUTHORIZED;
 /** `resultCode`s that end the attempt without money (declined, cancelled, expired, insufficient funds...). */
 export const MOMO_FAILURE_CODES: readonly number[] = [
   1001, 1002, 1003, 1004, 1005, 1006, 1007, 1017, 1026,
@@ -176,7 +184,7 @@ export class MomoGateway implements PaymentGateway<Record<string, unknown>> {
     if (!safeEqualHex(data.signature, expected)) {
       return { signatureValid: false, reason: 'BAD_SIGNATURE' };
     }
-    if (data.resultCode !== MOMO_RESULT_SUCCESS && !MOMO_FAILURE_CODES.includes(data.resultCode)) {
+    if (!isMomoPaid(data.resultCode) && !MOMO_FAILURE_CODES.includes(data.resultCode)) {
       // Still in progress, or a code that says nothing final: leave the payment pending.
       return {
         signatureValid: true,
@@ -192,7 +200,7 @@ export class MomoGateway implements PaymentGateway<Record<string, unknown>> {
         referenceCode: data.orderId,
         providerTxnId: data.transId,
         amountVnd: data.amount,
-        outcome: data.resultCode === MOMO_RESULT_SUCCESS ? 'PAID' : 'FAILED',
+        outcome: isMomoPaid(data.resultCode) ? 'PAID' : 'FAILED',
         raw: { ...input },
       },
     };
@@ -231,7 +239,7 @@ export class MomoGateway implements PaymentGateway<Record<string, unknown>> {
       return { state: 'UNKNOWN', detail: 'MoMo answer is for another order' };
     }
     const code = Number(answer.resultCode);
-    if (code === MOMO_RESULT_SUCCESS) {
+    if (isMomoPaid(code)) {
       const amount = Number(answer.amount);
       const transId =
         answer.transId === undefined || answer.transId === null ? '' : String(answer.transId);
