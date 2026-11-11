@@ -28,7 +28,7 @@ import type {
   UpdateHouseholdProfileRequest,
   UpdateProductRequest,
 } from '@vcraft/contracts';
-import { MAP_PINS_BBOX_LIMIT } from '@vcraft/contracts';
+import { isAutomatedScan, MAP_PINS_BBOX_LIMIT } from '@vcraft/contracts';
 import {
   AppUser,
   Artisan,
@@ -36,6 +36,8 @@ import {
   FIELD_CONTEXTS,
   FieldCipher,
   Household,
+  HUMAN_SCAN_WHERE,
+  humanScanSql,
   JournalEntry,
   MediaAsset,
   MediaLink,
@@ -939,7 +941,7 @@ export class HouseholdsService {
         : "to_char(created_at at time zone 'Asia/Ho_Chi_Minh', 'YYYY-MM-DD')";
     const sql =
       `select ${dayExpr} as day, count(*) as count from trace_scan` +
-      ' where created_at >= ? and created_at < ? group by 1';
+      ` where created_at >= ? and created_at < ? and ${humanScanSql()} group by 1`;
     return em
       .getConnection()
       .execute(sql, [since, until])
@@ -959,7 +961,10 @@ export class HouseholdsService {
     traceCode: string,
     input: RecordScanRequest = {},
     visitor?: string,
+    userAgent?: string,
   ): Promise<void> {
+    // GH#483: a crawler or link-preview fetcher is not a customer; its scan is not stored, so no total moves.
+    if (isAutomatedScan(input.deviceType, userAgent)) return;
     await this.orm.em.fork().transactional(async (em) => {
       const product = await em.findOne(
         Product,
@@ -1004,8 +1009,8 @@ export class HouseholdsService {
     );
     const since = new Date(Date.parse(`${days[0]}T00:00:00Z`) - vietnamOffsetMs);
     const [total, recent] = await Promise.all([
-      em.count(TraceScan, { product }),
-      em.find(TraceScan, { product, createdAt: { $gte: since } }),
+      em.count(TraceScan, { product, ...HUMAN_SCAN_WHERE }),
+      em.find(TraceScan, { product, createdAt: { $gte: since }, ...HUMAN_SCAN_WHERE }),
     ]);
     const perDay = new Map<string, number>();
     const perCountry = new Map<string | null, number>();
@@ -1115,7 +1120,7 @@ export class HouseholdsService {
       this.makersOf(em, [product]),
       this.media.publicMedia(productMediaIds([product])),
       loadJournal(em, product, this.media),
-      em.count(TraceScan, { product }),
+      em.count(TraceScan, { product, ...HUMAN_SCAN_WHERE }),
     ]);
     return {
       availability,
