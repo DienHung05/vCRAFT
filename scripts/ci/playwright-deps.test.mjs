@@ -8,10 +8,18 @@ import { fileURLToPath } from 'node:url';
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), 'playwright-deps.sh');
 
-const run = (deps, launch) =>
+const hasTimeout = spawnSync('sh', ['-c', 'command -v timeout']).status === 0;
+
+const run = (deps, launch, extraEnv = {}) =>
   spawnSync('bash', [SCRIPT], {
     encoding: 'utf8',
-    env: { ...process.env, PW_DEPS_DELAY: '0', PW_DEPS_CMD: deps, PW_LAUNCH_CHECK_CMD: launch },
+    env: {
+      ...process.env,
+      PW_DEPS_DELAY: '0',
+      PW_DEPS_CMD: deps,
+      PW_LAUNCH_CHECK_CMD: launch,
+      ...extraEnv,
+    },
   });
 
 describe('playwright-deps.sh', () => {
@@ -32,5 +40,15 @@ describe('playwright-deps.sh', () => {
     const r = run('exit 100', 'exit 1');
     assert.equal(r.status, 1);
     assert.match(r.stdout, /::error::.*cannot launch/);
+  });
+
+  // A hung apt (DNS timeouts) must not eat the whole job: every attempt is time-limited.
+  it('kills a hung install-deps attempt and falls back', {
+    skip: !hasTimeout && 'needs GNU timeout',
+  }, () => {
+    const r = run('sleep 30', 'true', { PW_DEPS_TIMEOUT: '1', PW_DEPS_ATTEMPTS: '2' });
+    assert.equal(r.status, 0);
+    assert.match(r.stdout, /attempt 1\/2/);
+    assert.match(r.stdout, /::warning::.*continuing/);
   });
 });
