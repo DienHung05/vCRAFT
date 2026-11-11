@@ -36,6 +36,12 @@ describe('Citizen ID number encryption', () => {
     return rows[0]?.id_number_enc ?? null;
   };
 
+  /**
+   * The value with its last character changed, so it can never authenticate. Swapping in a fixed suffix is not
+   * enough: the ciphertext is random, and about 1 in 4096 values already ends with it (vCRAFT-8mq).
+   */
+  const tampered = (value: string) => `${value.slice(0, -1)}${value.endsWith('A') ? 'B' : 'A'}`;
+
   /** Everything the process writes to stdout/stderr while `run` executes. */
   async function captureOutput(run: () => Promise<void>): Promise<string> {
     const chunks: string[] = [];
@@ -289,7 +295,7 @@ describe('Citizen ID number encryption', () => {
       const em = db.orm.em.fork();
       const household = await em.findOneOrFail(Household, { slug: 'ho-nhat-ky' });
       const intact = household.idNumberEnc as string;
-      household.idNumberEnc = `${intact.slice(0, -2)}AA`;
+      household.idNumberEnc = tampered(intact);
       await em.flush();
       const broken = await t.request({ method: 'GET', url: '/me/household', auth: user.auth });
       expect(broken.status).toBe(500);
