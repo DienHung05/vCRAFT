@@ -3,6 +3,7 @@ import { Badge } from '@vcraft/ui';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { ImageSlot } from '@/components/image-slot';
 import { type LogEntryView, photoFromUrl, slotPhoto } from '@/features/catalog/view-models';
+import { formatDeclaredDate } from '@/lib/declared-date';
 import { FireStory } from './fire-story';
 import { PieceFigure } from './piece-figure';
 import type { PieceKind } from './piece-shapes';
@@ -66,7 +67,7 @@ export async function FireTimeline({
           <div>
             <p className="font-mono text-[0.75rem] tracking-wider text-ash">
               {String(e.seq + 1).padStart(2, '0')} ·{' '}
-              <time dateTime={e.at}>{format.dateTime(new Date(e.at), 'stamp')}</time>
+              <time dateTime={e.at}>{formatDeclaredDate(format, e.at)}</time>
             </p>
             <h3 className="mt-1 text-h3">
               <a
