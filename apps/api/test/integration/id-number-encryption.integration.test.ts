@@ -37,10 +37,17 @@ describe('Citizen ID number encryption', () => {
   };
 
   /**
-   * The value with its last character changed, so it can never authenticate. Swapping in a fixed suffix is not
-   * enough: the ciphertext is random, and about 1 in 4096 values already ends with it (vCRAFT-8mq).
+   * The stored value with the first byte of its ciphertext segment flipped, so it can never authenticate.
+   * Decoding and re-encoding guarantees different bytes: overwriting characters with a fixed suffix does not
+   * (the ciphertext is random, so about 1 in 4096 values already ends with it; vCRAFT-8mq), and a trailing
+   * base64 character can carry unused bits that a decoder ignores.
    */
-  const tampered = (value: string) => `${value.slice(0, -1)}${value.endsWith('A') ? 'B' : 'A'}`;
+  const tampered = (value: string) => {
+    const cut = value.lastIndexOf(':') + 1;
+    const bytes = Buffer.from(value.slice(cut), 'base64url');
+    bytes[0] = (bytes[0] as number) ^ 0x01;
+    return `${value.slice(0, cut)}${bytes.toString('base64url')}`;
+  };
 
   /** Everything the process writes to stdout/stderr while `run` executes. */
   async function captureOutput(run: () => Promise<void>): Promise<string> {
@@ -296,6 +303,10 @@ describe('Citizen ID number encryption', () => {
       const household = await em.findOneOrFail(Household, { slug: 'ho-nhat-ky' });
       const intact = household.idNumberEnc as string;
       household.idNumberEnc = tampered(intact);
+      // Guard the guard: the corrupted value must decode to different bytes than the intact one.
+      expect(Buffer.from(household.idNumberEnc.split(':')[3] as string, 'base64url')).not.toEqual(
+        Buffer.from(intact.split(':')[3] as string, 'base64url'),
+      );
       await em.flush();
       const broken = await t.request({ method: 'GET', url: '/me/household', auth: user.auth });
       expect(broken.status).toBe(500);
