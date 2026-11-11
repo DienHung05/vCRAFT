@@ -1444,7 +1444,7 @@
     "capacityExceeded": "The quantity is above the capacity you declared for this category. Lower it or update your capacity in the profile, then send again.",
     "sendFailed": "Sending failed. Please try again later.",
     "demoNote": "This only runs in your browser. Nothing is saved or sent to a server.",
-    "liveNote": "The offer will be sent to the server through the API with your signed-in session. This information is private between the household and the management board; the buyer never sees it.",
+    "liveNote": "Only the village management board sees the unit price you offer; the buyer never sees the price of a single household.",
     "privacyNote": "Maximum, unit price and completion date are private between the household and the management board; the buyer only sees the household, its share and the completion date.",
     "loading": "Loading the request…",
     "signIn": "Sign in with a household representative account to submit a contribution offer.",
