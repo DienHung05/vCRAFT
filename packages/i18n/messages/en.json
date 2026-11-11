@@ -935,8 +935,12 @@
       "stale": "This application just changed. We loaded the latest version; check it and decide again.",
       "failed_action": "We could not save the decision.",
       "incomplete": "The application is incomplete, so it cannot be approved. Still missing: {parts}. Ask the household to complete it and submit again.",
+      "incompleteWarning": "The application is not complete enough to approve, so Approve is disabled. Still missing: {parts}. You can still request more information or reject it.",
       "incompleteParts": {
         "profile": "Household profile",
+        "story": "Household story",
+        "craft": "Household craft",
+        "artisans": "At least one artisan",
         "workshops": "At least one workshop",
         "documents": "At least one document"
       },
@@ -2325,6 +2329,13 @@
         "title": "Edit your application",
         "saved": "Application changes saved.",
         "village": "Village",
+        "artisans": "Artisans",
+        "artisansHint": "The village board needs at least one artisan (a person who makes the products) before approving. Their name and role appear on the household page.",
+        "artisanName": "Artisan name",
+        "artisanRole": "Role",
+        "addArtisan": "Add artisan",
+        "artisanAdded": "Artisan added.",
+        "artisanFailed": "We could not add the artisan. Please try again.",
         "moreDocuments": "Additional application evidence",
         "moreDocumentsHint": "Choose what each file shows before uploading. Save your edits before resubmitting."
       },
