@@ -1453,7 +1453,7 @@
     "sendFailed": "Gửi không thành công. Bạn thử lại sau.",
     "capacityExceeded": "Số lượng vượt năng lực bạn đã khai cho nhóm hàng này. Hãy giảm số lượng hoặc cập nhật năng lực trong hồ sơ rồi gửi lại.",
     "demoNote": "Thao tác này chỉ chạy trên trình duyệt của bạn: chưa lưu, chưa gửi lên máy chủ.",
-    "liveNote": "Đề xuất sẽ gửi lên máy chủ qua API, kèm phiên đăng nhập của bạn. Thông tin này riêng giữa hộ và Ban quản lý, bên mua không thấy.",
+    "liveNote": "Chỉ Ban quản lý làng thấy đơn giá bạn đề xuất; bên mua không thấy giá riêng của từng hộ.",
     "privacyNote": "Mức tối đa, đơn giá và ngày hoàn thành là thông tin riêng giữa hộ và Ban quản lý; bên mua chỉ thấy hộ, phần chia và ngày hoàn thành.",
     "loading": "Đang tải yêu cầu…",
     "signIn": "Bạn cần đăng nhập bằng tài khoản đại diện hộ để đề xuất tham gia.",

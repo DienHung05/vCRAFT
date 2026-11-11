@@ -432,6 +432,24 @@ describe('live quotation workspaces', () => {
     expect(screen.queryByText(new RegExp(id))).toBeNull();
   });
 
+  it('does not print the description when it only repeats the title (GH#477)', async () => {
+    const make = (design: string) =>
+      ({
+        getRequest: vi.fn().mockResolvedValue({ ...request, design }),
+        listOwnContributions: vi.fn().mockResolvedValue([]),
+        priceHint: vi.fn().mockResolvedValue({ hint: null }),
+      }) as unknown as QuotationClient;
+    const first = renderVi(<LiveContributionWorkspace rfqId={id} client={make('  logo CUPS ')} />);
+    await screen.findByRole('heading', { level: 1, name: 'Logo cups' });
+    expect(screen.queryByText(/logo cups/i, { selector: 'p' })).toBeNull();
+    first.unmount();
+    renderVi(
+      <LiveContributionWorkspace rfqId={id} client={make('Cốc in logo, đóng hộp 6 chiếc')} />,
+    );
+    await screen.findByRole('heading', { level: 1, name: 'Logo cups' });
+    expect(screen.getByText('Cốc in logo, đóng hộp 6 chiếc')).toBeTruthy();
+  });
+
   it('shows an empty state, not an error, while a request has no allocations yet', async () => {
     const client = { listAllocations: vi.fn().mockResolvedValue([]) } as unknown as QuotationClient;
     renderVi(<LiveAllocationWorkspace rfqId={id} client={client} />);
