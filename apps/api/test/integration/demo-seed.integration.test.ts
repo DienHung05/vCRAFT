@@ -16,6 +16,8 @@ import {
   DEMO_REQUEST_IDS,
   DEMO_VERIFICATION_DOCS,
   demoDocumentAssetId,
+  demoEntityId,
+  demoHouseholdId,
   demoPhotoAssetId,
   FIELD_CONTEXTS,
   FieldCipher,
@@ -102,7 +104,7 @@ describe('Demo seed and guarded reset', () => {
     expect(await em.count(Household, { status: 'PENDING_REVIEW' })).toBe(1);
     expect(await em.count(Household, { status: 'APPROVED' })).toBeGreaterThanOrEqual(20);
     expect(await em.count(Product)).toBeGreaterThanOrEqual(200);
-    expect(await em.count(QuotationRequest)).toBe(12);
+    expect(await em.count(QuotationRequest)).toBe(14);
     expect(await em.count(News, { status: 'PUBLISHED' })).toBeGreaterThanOrEqual(6);
     const statuses = new Set((await em.find(QuotationRequest, {})).map((r) => r.status));
     expect(statuses).toEqual(
@@ -625,7 +627,9 @@ describe('Demo seed and guarded reset', () => {
 
     const em = db.orm.em.fork();
     expect(await em.count(ProductFavourite)).toBe(0);
-    expect(await em.count(HouseholdRating)).toBe(0);
+    // Only the two ratings the seed gives the delivered order remain (GH#479); the one added above is gone.
+    expect(await em.count(HouseholdRating)).toBe(2);
+    expect(await em.count(HouseholdRating, { comment: null })).toBe(0);
     expect(await em.count(TraceScan)).toBe(0);
     expect(await em.count(Notification)).toBe(0);
     expect(await em.count(AccountInvitation)).toBe(0);
@@ -817,5 +821,197 @@ describe('Demo seed and guarded reset', () => {
     });
     expect(received.status).toBe(200);
     expect(received.body.status).toBe('DELIVERED');
+  });
+
+  /**
+   * GH#479: the seed shows direct bidding. A request without coordination carries three competing household
+   * quotations the buyer compares and accepts one of, and a SENT request lets the demo household bid itself.
+   */
+  describe('direct bidding on the seeded data (GH#479)', () => {
+    const DAY = 86_400_000;
+    const BIDDERS = { minhHai: 0, kimLien: 16, ngocDiep: 13 } as const;
+    const repAuth = (index: number) => `Bearer test:${demoEntityId('user', `rep-${index}`)}`;
+    const versionOf = async (id: string, auth: string) =>
+      String((await t.request({ method: 'GET', url: `/rfqs/${id}`, auth })).body.version);
+    const kinds = async (auth: string, requestId: string) =>
+      (
+        (await t.request({ method: 'GET', url: '/me/quotation-notices', auth })).body as Array<{
+          kind: string;
+          requestId: string;
+        }>
+      )
+        .filter((notice) => notice.requestId === requestId)
+        .map((notice) => notice.kind);
+    type Bid = { id: string; status: string; parts: Array<{ householdId: string }> };
+    const bidOf = (bids: Bid[], householdIndex: number) =>
+      bids.find((bid) => bid.parts[0]?.householdId === demoHouseholdId(householdIndex)) as Bid;
+
+    beforeAll(reset);
+
+    it('gives the requests a real description, requirements and title instead of repeating the title', async () => {
+      const em = db.orm.em.fork();
+      const requests = await em.find(QuotationRequest, {});
+      expect(requests).toHaveLength(14);
+      for (const request of requests) {
+        expect(request.title).toBeTruthy();
+        expect(request.design).not.toBe(request.title);
+        expect(request.design.length).toBeGreaterThan(60);
+        expect(request.customRequirements).toBeTruthy();
+      }
+      const invited = await t.request({
+        method: 'GET',
+        url: `/rfqs/${DEMO_REQUEST_IDS.sentCoordinated}`,
+        auth: as('household'),
+      });
+      expect(invited.body.title).toBe('Đĩa trà men rạn cho chuỗi quán trà');
+      expect(invited.body.design).toMatch(/^2\.000 đĩa lót chén trà/);
+    });
+
+    it('shows the buyer three direct bids that differ in household, price, date and rating', async () => {
+      const res = await t.request({
+        method: 'GET',
+        url: `/rfqs/${DEMO_REQUEST_IDS.biddingDirect}/quotations`,
+        auth: as('buyer'),
+      });
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(3);
+      for (const bid of res.body) {
+        expect(bid).toMatchObject({ bidType: 'INDIVIDUAL', status: 'SUBMITTED', quantity: 400 });
+        expect(bid.note).toBeTruthy();
+        expect(bid.parts).toHaveLength(1);
+        expect(bid.parts[0].unitPriceVnd).toBeGreaterThan(0);
+        expect(bid.totalVnd).toBe(400 * bid.parts[0].unitPriceVnd);
+      }
+      const parts = res.body.map((bid: { parts: Array<Record<string, unknown>> }) => bid.parts[0]);
+      for (const key of ['householdId', 'unitPriceVnd', 'completionDate'])
+        expect(new Set(parts.map((part: Record<string, unknown>) => part[key])).size).toBe(3);
+      expect(parts.map((part: { householdId: string }) => part.householdId)).not.toContain(
+        DEMO_HOUSEHOLD_IDS.household,
+      );
+      const partOf = (householdIndex: number) =>
+        parts.find(
+          (part: { householdId: string }) => part.householdId === demoHouseholdId(householdIndex),
+        );
+      expect(partOf(BIDDERS.ngocDiep)).toMatchObject({ ratingAverage: 5, ratingCount: 1 });
+      expect(partOf(BIDDERS.kimLien)).toMatchObject({ ratingAverage: 4, ratingCount: 1 });
+      expect(partOf(BIDDERS.minhHai)).toMatchObject({ ratingAverage: null, ratingCount: 0 });
+    });
+
+    it('lets the demo household submit, revise, withdraw and resubmit a direct bid on the SENT request', async () => {
+      const id = DEMO_REQUEST_IDS.sentDirect;
+      const before = await t.request({ method: 'GET', url: `/rfqs/${id}`, auth: as('household') });
+      expect(before.status).toBe(200);
+      expect(before.body.status).toBe('SENT');
+      const mine = await t.request({
+        method: 'GET',
+        url: `/rfqs/${id}/direct-quotations`,
+        auth: as('household'),
+      });
+      expect(mine.body).toEqual([]);
+      const finish = (days: number) =>
+        new Date(new Date(before.body.requiredBy).getTime() - days * DAY).toISOString();
+
+      const created = await t.request({
+        method: 'POST',
+        url: `/rfqs/${id}/direct-quotations`,
+        auth: as('household'),
+        body: { unitPriceVnd: 185_000, completionDate: finish(20), note: 'Vẽ lam thủ công' },
+      });
+      expect(created.status).toBe(201);
+      expect(created.body).toMatchObject({
+        quantity: 200,
+        totalVnd: 37_000_000,
+        status: 'SUBMITTED',
+      });
+      expect(
+        (await t.request({ method: 'GET', url: `/rfqs/${id}`, auth: as('buyer') })).body.status,
+      ).toBe('BIDDING');
+
+      const revised = await t.request({
+        method: 'PUT',
+        url: `/direct-quotations/${created.body.id}`,
+        auth: as('household'),
+        headers: { 'if-match': String(created.body.version) },
+        body: { unitPriceVnd: 175_000, completionDate: finish(25), note: 'Giảm giá nếu nhận sớm' },
+      });
+      expect(revised.status).toBe(200);
+      expect(revised.body).toMatchObject({ unitPriceVnd: 175_000, totalVnd: 35_000_000 });
+
+      const withdrawn = await t.request({
+        method: 'POST',
+        url: `/direct-quotations/${created.body.id}/withdraw`,
+        auth: as('household'),
+        headers: { 'if-match': String(revised.body.version) },
+      });
+      expect(withdrawn.status).toBe(200);
+      expect(withdrawn.body.status).toBe('WITHDRAWN');
+
+      const again = await t.request({
+        method: 'POST',
+        url: `/rfqs/${id}/direct-quotations`,
+        auth: as('household'),
+        body: { unitPriceVnd: 180_000, completionDate: finish(18) },
+      });
+      expect(again.status).toBe(201);
+    });
+
+    it('accepting one bid rejects the others, moves the request to ACCEPTED and tells the losers', async () => {
+      const id = DEMO_REQUEST_IDS.biddingDirect;
+      const listed = await t.request({
+        method: 'GET',
+        url: `/rfqs/${id}/quotations`,
+        auth: as('buyer'),
+      });
+      const winner = bidOf(listed.body, BIDDERS.ngocDiep);
+      const accepted = await t.request({
+        method: 'POST',
+        url: `/rfqs/${id}/accept`,
+        auth: as('buyer'),
+        headers: { 'if-match': await versionOf(id, as('buyer')) },
+        body: { quotationId: winner.id },
+      });
+      expect(accepted.status).toBe(200);
+      expect(accepted.body.status).toBe('ACCEPTED');
+
+      const after = await t.request({
+        method: 'GET',
+        url: `/rfqs/${id}/quotations`,
+        auth: as('buyer'),
+      });
+      expect(bidOf(after.body, BIDDERS.ngocDiep).status).toBe('ACCEPTED');
+      expect(bidOf(after.body, BIDDERS.minhHai).status).toBe('REJECTED');
+      expect(bidOf(after.body, BIDDERS.kimLien).status).toBe('REJECTED');
+
+      const allocations = await t.request({
+        method: 'GET',
+        url: `/rfqs/${id}/allocations`,
+        auth: as('buyer'),
+      });
+      expect(allocations.body).toHaveLength(1);
+      expect(allocations.body[0]).toMatchObject({
+        householdId: demoHouseholdId(BIDDERS.ngocDiep),
+        quantity: 400,
+        status: 'PROPOSED',
+      });
+
+      // The winner is asked to confirm; every other invited household (two bidders and one silent) learns it was not selected.
+      const winnerKinds = await kinds(repAuth(BIDDERS.ngocDiep), id);
+      expect(winnerKinds).toContain('ALLOCATION_PROPOSED');
+      expect(winnerKinds).not.toContain('RFQ_NOT_SELECTED');
+      for (const loser of [BIDDERS.minhHai, BIDDERS.kimLien, 3])
+        expect(await kinds(repAuth(loser), id)).toContain('RFQ_NOT_SELECTED');
+    });
+
+    it('demo:verify checks both requests: red once the buyer accepted a bid, green on a fresh seed', async () => {
+      const after = await verifyDemoData(db.orm.em.fork(), now, { media: false });
+      const direct = (report: typeof after) =>
+        report.checks.filter((check) => check.name.startsWith('Báo giá trực tiếp'));
+      expect(direct(after)).toHaveLength(2);
+      expect(direct(after).some((check) => !check.ok)).toBe(true);
+      await reset();
+      const fresh = await verifyDemoData(db.orm.em.fork(), now, { media: false });
+      expect(direct(fresh)).toHaveLength(2);
+      expect(direct(fresh).every((check) => check.ok)).toBe(true);
+    });
   });
 });

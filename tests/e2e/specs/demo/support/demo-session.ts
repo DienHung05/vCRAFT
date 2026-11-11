@@ -33,6 +33,8 @@ export const DEMO = {
     biddingToAccept: 'd3a10000-0000-4000-8000-000000000106',
     acceptedConfirm: 'd3a10000-0000-4000-8000-000000000108',
     inProduction: 'd3a10000-0000-4000-8000-000000000110',
+    biddingDirect: 'd3a10000-0000-4000-8000-000000000113',
+    sentDirect: 'd3a10000-0000-4000-8000-000000000114',
   },
 } as const;
 

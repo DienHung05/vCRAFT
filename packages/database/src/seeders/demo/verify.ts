@@ -31,6 +31,7 @@ import { DEMO_PHOTO_LINKS, DEMO_PHOTOS, RETIRED_DEMO_PHOTO_IDS } from './photo-m
 import { NEWS } from './pools.js';
 import { demoEntityId } from './seed-demo.js';
 import { DEMO_VERIFICATION_DOCS } from './verification-docs.js';
+import { verifyDirectBids } from './verify-direct-bids.js';
 import { verifyEnglishProducts } from './verify-english.js';
 import { verifyProfileDepth } from './verify-profile-depth.js';
 
@@ -167,8 +168,8 @@ export async function verifyDemoData(
   const requests = await em.find(QuotationRequest, {});
   const statuses = new Set(requests.map((r) => r.status));
   add(
-    'Yêu cầu báo giá: 12, đủ 8 trạng thái',
-    requests.length === 12 && statuses.size === 8,
+    'Yêu cầu báo giá: 14, đủ 8 trạng thái',
+    requests.length === 14 && statuses.size === 8,
     `${requests.length} yêu cầu, ${statuses.size} trạng thái`,
   );
 
@@ -288,6 +289,7 @@ export async function verifyDemoData(
 
   await verifyProfileDepth(em, add, { media: options.media ?? true });
   await verifyEnglishProducts(em, add);
+  await verifyDirectBids(em, add, now);
 
   if (options.media ?? true) await verifyMedia(em, add, entries, options.checkPublicUrls ?? false);
 

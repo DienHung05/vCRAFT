@@ -366,7 +366,15 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
                 }
               />
             ) : null}
-            <ul className="flex flex-col gap-4" data-testid="quotation-comparison">
+            {/* Competing bids sit side by side from tablet width, so household, price, date and rating compare at a glance. */}
+            <ul
+              className={cn(
+                'grid gap-4',
+                quotations.length > 1 && 'md:grid-cols-2',
+                quotations.length > 2 && 'xl:grid-cols-3',
+              )}
+              data-testid="quotation-comparison"
+            >
               {/* BRAND §6.3 #8: a new offer slides onto the table; offers there on first load stay put. */}
               <AnimatePresence initial={false}>
                 {quotations.map((quotation) => {
@@ -376,7 +384,7 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
                     <BidRow key={quotation.id}>
                       <Card
                         className={cn(
-                          'flex flex-col gap-4 p-5 md:p-6',
+                          'flex h-full flex-col gap-4 p-5 md:p-6',
                           stamped && stampShakeClass(),
                         )}
                       >
@@ -391,9 +399,27 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
                           ) : null}
                         </div>
                         <ul className="flex flex-col gap-2">
-                          {quotation.parts.map((part) => (
+                          {quotation.parts.map((part, index) => (
                             <li key={part.householdId} className="flex flex-wrap gap-x-4">
-                              <span className="font-medium">{part.householdName}</span>
+                              <span
+                                id={index === 0 ? `bid-${quotation.id}-household` : undefined}
+                                className="font-medium"
+                              >
+                                {part.householdName}
+                              </span>
+                              {quotation.bidType === 'INDIVIDUAL' ? (
+                                <span className="basis-full text-small text-ash">
+                                  {part.ratingCount
+                                    ? bids('rating', {
+                                        average: format.number(part.ratingAverage ?? 0, {
+                                          minimumFractionDigits: 1,
+                                          maximumFractionDigits: 1,
+                                        }),
+                                        count: part.ratingCount,
+                                      })
+                                    : bids('ratingNone')}
+                                </span>
+                              ) : null}
                               <span>
                                 {format.number(part.quantity)} {request.unit}
                               </span>
@@ -406,7 +432,11 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
                                 </span>
                               ) : null}
                               <time dateTime={part.completionDate} className="text-ash">
-                                {format.dateTime(new Date(part.completionDate), 'short')}
+                                {quotation.bidType === 'INDIVIDUAL'
+                                  ? bids('finishBy', {
+                                      date: format.dateTime(new Date(part.completionDate), 'short'),
+                                    })
+                                  : format.dateTime(new Date(part.completionDate), 'short')}
                               </time>
                             </li>
                           ))}
@@ -443,7 +473,8 @@ function Detail({ rfqId, client }: { rfqId: string; client: QuotationClient }) {
                         </p>
                         {canAccept && quotation.status === 'SUBMITTED' ? (
                           <Button
-                            className="self-start"
+                            className="mt-auto self-start"
+                            aria-describedby={`bid-${quotation.id}-household`}
                             onClick={() => setDialog({ kind: 'accept', quotation })}
                           >
                             {t('accept')}

@@ -503,6 +503,9 @@
       "acceptBlocked": "Chỉ chốt được chào giá đủ {quantity} {unit}.",
       "emptyTitle": "Chưa có chào giá nào",
       "direct": "Hộ báo giá riêng",
+      "rating": "{average}/5 sao · {count, plural, other {# đánh giá}}",
+      "ratingNone": "Chưa có đánh giá",
+      "finishBy": "Hoàn thành {date}",
       "perUnit": "{price} một {unit}",
       "note": "Ghi chú của hộ: {note}"
     },

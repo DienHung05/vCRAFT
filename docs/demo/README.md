@@ -24,8 +24,8 @@ Nạp bằng entity MikroORM, chạy giống hệt trên PostgreSQL và MySQL (`
 | Nghệ nhân / xưởng | 53 / 35 | Xưởng có tọa độ quanh Bát Tràng (20.9758, 105.9139) |
 | Sản phẩm | 222 | 218 `PUBLISHED`; 4 `DRAFT` (2 của hộ household để xuất bản trực tiếp, 2 của hộ chờ duyệt) |
 | Mốc nhật ký | 1.295 | Mỗi sản phẩm 4–7 mốc, chuỗi băm SHA-256 sinh bằng `sealChain` của `@vcraft/domain`, kiểm lại bằng `verifyChain`; công đoạn bị nhảy đều có lý do bỏ qua |
-| Yêu cầu báo giá | 12 | Đủ 8 trạng thái RFQ (bảng bên dưới) |
-| Đề xuất tham gia / chào giá / phân bổ | 24 / 7 / 12 | Chào giá dựng bằng `assembleCooperativeQuotation` nên đúng luật tổng và năng lực |
+| Yêu cầu báo giá | 14 | Đủ 8 trạng thái RFQ (bảng bên dưới); mỗi yêu cầu có tiêu đề, mô tả (số lượng, men, đóng gói) và yêu cầu riêng như in logo (GH#477) |
+| Đề xuất tham gia / chào giá / phân bổ | 24 / 10 / 12 | Chào giá hợp tác dựng bằng `assembleCooperativeQuotation`, 3 báo giá trực tiếp bằng `assembleDirectQuotation` (GH#479), nên đúng luật tổng và năng lực. Thêm 2 đánh giá của Buyer cho hai hộ ở đơn `delivered` |
 | Tin tức | 28 | Đều `PUBLISHED`: 21 tin thật của làng (không có tin của hộ) + 6 bảng giá nguyên liệu + 1 lịch cắt điện; nội dung không còn nhãn mẫu (GH#204); ngày đăng tính từ mốc đóng băng |
 
 Ảnh: seed (`demo:reset`) để trống `images: []` ở nhật ký và không có ảnh bìa; ảnh có giấy phép được nối vào bằng `pnpm demo:media` (§1B). Chạy `demo:reset` mà không chạy `demo:media` thì `demo:verify` báo đỏ ở nhóm kiểm ảnh.
@@ -51,6 +51,8 @@ Nạp bằng entity MikroORM, chạy giống hệt trên PostgreSQL và MySQL (`
 | `inProduction` | IN_PRODUCTION, **đơn chia đúng 4 hộ** | Hộ báo tiến độ 350 → 500/500, Buyer **nhận hàng** | `d3a10000-0000-4000-8000-000000000110` |
 | `delivered` | DELIVERED | (nền) | `d3a10000-0000-4000-8000-000000000111` |
 | `cancelled` | CANCELLED | (nền) | `d3a10000-0000-4000-8000-000000000112` |
+| `biddingDirect` | BIDDING, không điều phối, 3 báo giá trực tiếp của Gốm Minh Hải, Gốm Kim Liên, Gốm Ngọc Diệp (khác giá, ngày giao, đánh giá) | Buyer so sánh và **chốt** một báo giá; hai hộ còn lại "Không được chọn" | `d3a10000-0000-4000-8000-000000000113` |
+| `sentDirect` | SENT, không điều phối, hộ household được mời, chưa báo giá | Hộ **Gửi báo giá**, sửa và rút | `d3a10000-0000-4000-8000-000000000114` |
 
 Vì sao hai đơn riêng cho "xác nhận" và "tiến độ → nhận hàng": nhận hàng cần **mọi** hộ `DONE`, mà chỉ có một tài khoản hộ đăng nhập được. Đơn `inProduction` có sẵn 3 hộ `DONE` (Minh Hải 600, Lam Ngọc 500, Hạnh Thủy 400) và hộ household (Lò Đức Phát) đang 350/500; báo đủ 500 là Buyer nhận hàng được. Đơn `acceptedConfirm` chỉ đi tới "Đang sản xuất" vì ba hộ còn lại không có người thao tác.
 
@@ -248,8 +250,9 @@ Một dòng một bước. Cột "Giám khảo thấy gì" là điều để ki�
 | 8 | Hộ xác nhận phân bổ | `/vi/studio/de-xuat-tham-gia/<acceptedConfirm>`: "Chờ xác nhận" → bấm "Xác nhận" → "Đã xác nhận"; Admin bấm "Bắt đầu sản xuất", đơn thành "Đang sản xuất" | Hộ (điện thoại), rồi Admin | Có màn |
 | 9 | Tiến độ | `/vi/studio/de-xuat-tham-gia/<inProduction>`: 350 / 500 → nhập 500 → "Báo cáo" → 500 / 500, "Đã xong" | Hộ (điện thoại) | Có màn |
 | 10 | Biên nhận | `/vi/yeu-cau-bao-gia/<inProduction>`: bấm "Xác nhận đã nhận hàng" → trạng thái "Đã giao" | Buyer | Có màn |
+| 11 | Nhiều hộ chào giá trực tiếp (GH#479) | Buyer mở `/vi/yeu-cau-bao-gia/<biddingDirect>`: ba thẻ "Hộ báo giá riêng" cạnh nhau (tên hộ, đánh giá, đơn giá, thành tiền, ngày hoàn thành, ghi chú), nhãn "Tổng thấp nhất" trên giá rẻ nhất, mỗi thẻ có nút "Chốt chào giá này"; chốt một thẻ thì hai thẻ kia thành "Không được chọn", yêu cầu "Đã chốt". Rồi hộ household mở `/vi/studio/de-xuat-tham-gia/<sentDirect>`: nhập đơn giá, ngày hoàn thành, ghi chú → "Gửi báo giá"; thử "Cập nhật báo giá" và "Rút báo giá" | Buyer, rồi Hộ (điện thoại) | Có màn; test tích hợp `demo-seed` chạy cả luồng chốt trên dữ liệu seed (hộ thua nhận thông báo "không được chọn") |
 
-Kịch bản tự động bao trùm bước 1–10: `tests/e2e/specs/demo/qr-to-receipt.spec.ts`.
+Kịch bản tự động bao trùm bước 1–11 (bước 11 là hai test 12 và 13): `tests/e2e/specs/demo/qr-to-receipt.spec.ts`.
 
 ```bash
 pnpm demo:reset                                   # bắt buộc trước mỗi lần chạy (kịch bản làm bẩn dữ liệu)
@@ -300,7 +303,7 @@ Làm theo thứ tự, trên bản đã triển khai, **sau** `pnpm demo:reset`. 
 
 | # | Kiểm tra | Lệnh / cách làm | Kết quả đạt | Thời gian ~ |
 | --- | --- | --- | --- | --- |
-| 1 | Dữ liệu còn nguyên | `pnpm demo:verify` | Mọi dòng `PASS` (hộ, sản phẩm, chuỗi băm, 12 yêu cầu, đơn 4 hộ, ≥ 15 tin tức, 4 tài khoản, hạn còn ≥ 3 ngày, ảnh gắn đủ và có ghi công, 3 giấy tờ mẫu ở bucket riêng tư, URL ảnh mở được) | 1 phút |
+| 1 | Dữ liệu còn nguyên | `pnpm demo:verify` | Mọi dòng `PASS` (hộ, sản phẩm, chuỗi băm, 14 yêu cầu, đơn 4 hộ, ≥ 15 tin tức, 4 tài khoản, hạn còn ≥ 3 ngày, 2 yêu cầu báo giá trực tiếp, ảnh gắn đủ và có ghi công, 3 giấy tờ mẫu ở bucket riêng tư, URL ảnh mở được) | 1 phút |
 | 2 | Tài khoản Auth | `pnpm demo:auth -- --check` | 4 dòng `PASS` | 1 phút |
 | 3 | Kịch bản QR → biên nhận | §4: `pnpm demo:reset && E2E_BASE_URL=... pnpm demo:e2e && pnpm demo:reset` | Các bước chạy được xanh (kể cả bước tin tức) | 5 phút |
 | 4 | Lighthouse ≥ 90 | Xem lệnh bên dưới, 5 trang × (mobile, desktop) | Performance, Accessibility, Best Practices, SEO đều ≥ 90 ở mỗi trang; ghi điểm | 15 phút |
