@@ -12,6 +12,7 @@ import {
   RETIRED_DEMO_PHOTO_IDS,
 } from '../src/seeders/demo/photo-manifest.js';
 import { HOUSEHOLDS, NEWS } from '../src/seeders/demo/pools.js';
+import { PROFILE_PHOTO_IDS } from '../src/seeders/demo/profile-depth.js';
 import { DEMO_VERIFICATION_DOCS } from '../src/seeders/demo/verification-docs.js';
 
 const repoPath = (relative: string) =>
@@ -50,7 +51,7 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
       expect(photo.credit.sourceUrl, photo.id).toMatch(/^https?:\/\//);
       if (photo.credit.license !== 'unknown') {
         expect(photo.credit.sourceUrl, photo.id).toMatch(
-          /^https:\/\/(commons\.wikimedia\.org|clevelandart.org|www.metmuseum.org|pixabay\.com)\//,
+          /^https:\/\/(commons\.wikimedia\.org|clevelandart.org|www.metmuseum.org|pixabay\.com|github\.com\/DienHung05\/vCRAFT)\//,
         );
       }
       const widest = Math.max(...photo.widths);
@@ -159,7 +160,8 @@ describe('bảng ánh xạ ảnh của dữ liệu mẫu', () => {
       expect(link.altEn, link.photo).not.toBe(link.alt);
       expect(link.altEn, link.photo).toMatch(/^[\x20-\x7e]+$/);
     }
-    const linked = new Set(DEMO_PHOTO_LINKS.map((l) => l.photo));
+    // Photos a household or product profile points at (seal, Studio gallery, product gallery) need no link.
+    const linked = new Set([...DEMO_PHOTO_LINKS.map((l) => l.photo), ...PROFILE_PHOTO_IDS]);
     for (const photo of DEMO_PHOTOS) expect(linked.has(photo.id), photo.id).toBe(true);
   });
 

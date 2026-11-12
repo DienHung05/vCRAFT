@@ -103,16 +103,29 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
     product.coverVariants,
   );
   const presetKind = presetKindOf(product.category, product.name);
-  // Only photos the household really attached to a journal entry are shown; there is no stand-in picture.
-  const entryPhotos = log
-    .slice(1, 5)
-    .flatMap((e) => e.images.slice(0, 1).map((image) => ({ e, image })));
-  // Slides of the lightbox: the cover when it is a real photo, then the journal photos, in page order.
+  // Thumbnails under the cover: the photos the household added to the product (other than the cover itself, and only
+  // once processed), then those it attached to a journal entry. There is no stand-in picture.
+  const extraPhotos = [
+    ...product.images
+      .filter((own) => own.url && own.url !== product.coverUrl)
+      .slice(0, 4)
+      .map((own) => ({
+        key: own.mediaId,
+        alt: own.alt,
+        tint,
+        view: photoFromUrl(own.url, own.alt, own.variants),
+      })),
+    ...log.slice(1, 5).flatMap((e) =>
+      e.images.slice(0, 1).map((own) => {
+        const alt = stages(`${e.stage}.name`);
+        return { key: e.hash, alt, tint: e.tint, view: photoFromUrl(own.url, alt, own.variants) };
+      }),
+    ),
+  ];
+  // Slides of the lightbox: the cover when it is a real photo, then the extra photos, in page order.
   const coverSlide = gallerySlide(image);
-  const entrySlides = entryPhotos.map(({ e, image: own }) =>
-    gallerySlide(photoFromUrl(own.url, stages(`${e.stage}.name`), own.variants)),
-  );
-  const slides: GallerySlide[] = [coverSlide, ...entrySlides].filter(
+  const extraSlides = extraPhotos.map((photo) => gallerySlide(photo.view));
+  const slides: GallerySlide[] = [coverSlide, ...extraSlides].filter(
     (slide): slide is GallerySlide => slide !== undefined,
   );
   const thumbOffset = coverSlide ? 1 : 0;
@@ -190,23 +203,22 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
                   cover
                 )}
               </ViewTransition>
-              {entryPhotos.length > 0 ? (
+              {extraPhotos.length > 0 ? (
                 <ul className="mt-4 grid grid-cols-4 gap-3" aria-label={t('gallery')}>
-                  {entryPhotos.map(({ e, image: own }, i) => {
-                    const alt = stages(`${e.stage}.name`);
+                  {extraPhotos.map((photo, i) => {
                     const thumb = (
                       <ImageSlot
-                        alt={alt}
-                        tint={e.tint}
+                        alt={photo.alt}
+                        tint={photo.tint}
                         ratio="1/1"
-                        {...slotPhoto(photoFromUrl(own.url, alt, own.variants))}
+                        {...slotPhoto(photo.view)}
                         sizes="(min-width: 768px) 14vw, 22vw"
                       />
                     );
                     return (
-                      <li key={e.hash}>
-                        {entrySlides[i] ? (
-                          <GalleryTrigger index={thumbOffset + i} alt={alt}>
+                      <li key={photo.key}>
+                        {extraSlides[i] ? (
+                          <GalleryTrigger index={thumbOffset + i} alt={photo.alt}>
                             {thumb}
                           </GalleryTrigger>
                         ) : (

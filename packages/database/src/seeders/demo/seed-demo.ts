@@ -57,6 +57,16 @@ import {
   TEMPLATE_CATEGORY,
   VILLAGE_PARTS,
 } from './pools.js';
+import {
+  EXPERIENCE_OFFERS,
+  experienceFields,
+  familyTimeline,
+  householdCertifications,
+  LO_DUC_PHAT_INDEX,
+  loDucPhatPhotos,
+  loDucPhatProfile,
+  productGalleryImages,
+} from './profile-depth.js';
 
 /**
  * Dữ liệu mẫu cho buổi bảo vệ (GH#14, vCRAFT-83g mục demo). Viết bằng entity (không SQL tay) nên chạy y hệt
@@ -96,6 +106,11 @@ const HOUSEHOLD_SHOWCASE: Record<string, Partial<Household>> = {
         text: 'Cụ Nguyễn Văn Sinh dựng lò bầu đầu tiên bên bến sông.',
       },
       {
+        year: 1985,
+        title: 'Con trai nối nghề',
+        text: 'Anh Minh Hải bắt đầu học vẽ lam và đứng lò cùng cha.',
+      },
+      {
         year: 2019,
         title: 'Nghệ nhân ưu tú',
         text: 'Anh Minh Hải được phong tặng danh hiệu Nghệ nhân ưu tú.',
@@ -112,6 +127,16 @@ const HOUSEHOLD_SHOWCASE: Record<string, Partial<Household>> = {
     generations: 3,
     timeline: [
       { year: 1978, title: 'Mở xưởng', text: 'Hộ bắt đầu thử nghiệm men ngọc và men rạn.' },
+      {
+        year: 1995,
+        title: 'Chuyển sang lò gas',
+        text: 'Xưởng thay lò củi bằng lò gas để giữ nhiệt đều cho men ngọc.',
+      },
+      {
+        year: 2022,
+        title: 'Mở phòng trưng bày',
+        text: 'Hai mẹ con mở phòng trưng bày nhỏ, đón khách xem và thử pha men ngọc.',
+      },
     ],
     certifications: [{ name: 'OCOP 3 sao', issuer: 'UBND TP. Hà Nội', year: 2022, verified: true }],
   },
@@ -725,6 +750,20 @@ export async function seedDemoData(
       });
       summary.users++;
     }
+    const foundedYear = 1940 + ((row.index * 7) % 60);
+    const isDucPhat = row.index === LO_DUC_PHAT_INDEX && !pending;
+    // Profile depth (GH#473): derived from the index, never from `random`, so frozen ids stay put.
+    const depth = pending
+      ? {}
+      : {
+          timeline: familyTimeline({
+            owner: row.seed.owner,
+            craft: row.seed.craft,
+            foundedYear,
+            index: row.index,
+          }),
+          certifications: householdCertifications(row.index, foundedYear),
+        };
     const household = em.create(Household, {
       id: demoHouseholdId(row.index),
       name: row.seed.name,
@@ -734,10 +773,17 @@ export async function seedDemoData(
       village: 'Bát Tràng',
       craft: row.seed.craft,
       coverUrl: HOUSEHOLD_COVERS[row.seed.name] ?? null,
-      foundedYear: 1940 + ((row.index * 7) % 60),
+      foundedYear,
       generations: 2 + (row.index % 4),
       capacityByCategory: { VASE: 200 + row.index * 10, TABLEWARE: 500 + row.index * 20 },
+      ...depth,
       ...HOUSEHOLD_SHOWCASE[row.seed.name],
+      // Lò Đức Phát signs in: a full profile, so its Studio completeness is 100%.
+      ...(isDucPhat && {
+        timeline: loDucPhatProfile.timeline,
+        certifications: loDucPhatProfile.certifications,
+        ...loDucPhatPhotos((photo) => idOf('media-photo', photo)),
+      }),
       status: row.status,
       statusReason: null,
       approvedAt: pending ? null : new Date(createdMs + 2 * DAY),
@@ -814,6 +860,10 @@ export async function seedDemoData(
           purpose === 'PRODUCTION'
             ? null
             : 'Mở cửa 8:00 – 17:00 hằng ngày, nên báo trước qua điện thoại.',
+        // GH#473: seven showrooms offer an experience (the first workshop of a household always takes visitors).
+        ...(w === 0 && !pending && EXPERIENCE_OFFERS[row.index]
+          ? experienceFields(EXPERIENCE_OFFERS[row.index] as (typeof EXPERIENCE_OFFERS)[number])
+          : {}),
         // Drawn in a box around the village core (east-leaning: the Red River is to the west), then pulled inside the commune polygon (GH#396).
         ...pin,
         createdAt: new Date(createdMs + w * HOUR),
@@ -889,6 +939,10 @@ export async function seedDemoData(
         coverUrl: fixed?.coverUrl ?? null,
         coverAlt: fixed?.coverAlt ?? null,
         coverAltEn: fixed?.coverAltEn ?? null,
+        // GH#473: gallery photos of the demo products (media assets are made by `pnpm demo:media`).
+        ...(isDucPhat && {
+          images: productGalleryImages(code, (photo) => idOf('media-photo', photo)),
+        }),
         status: draft ? 'DRAFT' : 'PUBLISHED',
         publishedAt: draft ? null : new Date(lastMs + DAY + 8 * HOUR),
         withdrawnReason: null,
