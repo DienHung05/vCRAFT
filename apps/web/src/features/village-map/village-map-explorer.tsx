@@ -262,11 +262,12 @@ export function VillageMapExplorer({
           ) : (
             // GH#364: a labelled region, not aria-hidden, so MapLibre's own keyboard handling (focusable
             // canvas, arrow keys pan, +/- zoom) stays usable. Choosing a workshop is done from the list.
+            // GH#475: lg:top-24 keeps the sticky frame below the sticky site header (65 px tall).
             <section
               aria-label={t('mapLabel')}
               aria-describedby="map-keyboard-hint"
               data-testid="map-frame"
-              className="h-[65svh] min-h-80 overflow-hidden rounded-card shadow-warm lg:sticky lg:top-6 lg:h-[75svh]"
+              className="h-[65svh] min-h-80 overflow-hidden rounded-card shadow-warm lg:sticky lg:top-24 lg:h-[75svh]"
             >
               <p id="map-keyboard-hint" className="sr-only">
                 {t('mapKeyboardHint')}
