@@ -321,6 +321,7 @@ describe('Public images from media_link', () => {
         mediaId: expect.any(String),
         status: 'READY',
         thumbhash: null,
+        alt: 'Mô tả mặc định cong-doan',
       },
       {
         url: 'https://cdn.test/tu-chup.webp',
@@ -330,6 +331,7 @@ describe('Public images from media_link', () => {
         mediaId: expect.any(String),
         status: 'READY',
         thumbhash: null,
+        alt: 'Mô tả mặc định tu-chup',
       },
     ]);
 
