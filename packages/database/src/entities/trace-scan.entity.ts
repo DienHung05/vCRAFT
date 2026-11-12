@@ -1,3 +1,4 @@
+import type { FilterQuery } from '@mikro-orm/core';
 import { Entity, Index, ManyToOne, Property } from '@mikro-orm/decorators/legacy';
 import { BaseEntity } from './base.entity.js';
 import { Product } from './product.entity.js';
@@ -26,3 +27,16 @@ export class TraceScan extends BaseEntity {
   @Property({ type: 'string', length: 64, nullable: true })
   visitorHash?: string | null;
 }
+
+/**
+ * GH#483: crawlers and link-preview bots are not customers. New automated scans are never stored; rows
+ * written before that carry `deviceType = 'bot'`. Every scan total and the public figure count only the
+ * rows matching this filter (a missing class is a person: old clients sent none).
+ */
+export const HUMAN_SCAN_WHERE = {
+  $or: [{ deviceType: null }, { deviceType: { $ne: 'bot' } }],
+} satisfies FilterQuery<TraceScan>;
+
+/** SQL twin of {@link HUMAN_SCAN_WHERE} for raw queries; `column` is the (aliased) `device_type` column. */
+export const humanScanSql = (column = 'device_type'): string =>
+  `(${column} is null or ${column} <> 'bot')`;

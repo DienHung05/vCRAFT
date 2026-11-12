@@ -1,7 +1,7 @@
 import { defaultLocale, type Locale, locales, pathnames } from '@vcraft/i18n';
 import { after, type NextRequest } from 'next/server';
 import { apiBaseUrl } from '@/lib/api/internal-url';
-import { scanCountry, scanDeviceType } from '@/lib/scan-context';
+import { isPrefetchRequest, scanCountry, scanDeviceType } from '@/lib/scan-context';
 
 /** Tên cookie ngôn ngữ mà next-intl ghi khi người dùng đã chọn ngôn ngữ. */
 const LOCALE_COOKIE = 'NEXT_LOCALE';
@@ -53,18 +53,23 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/q/[code]'>):
   headers['x-visitor-ua'] = request.headers.get('user-agent') ?? '';
   const internalKey = process.env.INTERNAL_API_KEY?.trim();
   if (internalKey) headers['x-internal-key'] = internalKey;
-  after(async () => {
-    try {
-      await fetch(`${apiBaseUrl()}/trace/${encodeURIComponent(code)}/scan`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(scan),
-        signal: AbortSignal.timeout(1500),
-      });
-    } catch {
-      // A lost scan is better than a broken redirect.
-    }
-  });
+  // GH#483: a crawler, a link-preview fetcher or a prefetch is not a customer scanning the code. It gets the
+  // same redirect (link previews need the trace page) but no scan is reported, so no count moves.
+  const counts = scan.deviceType !== 'bot' && !isPrefetchRequest(request.method, request.headers);
+  if (counts) {
+    after(async () => {
+      try {
+        await fetch(`${apiBaseUrl()}/trace/${encodeURIComponent(code)}/scan`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(scan),
+          signal: AbortSignal.timeout(1500),
+        });
+      } catch {
+        // A lost scan is better than a broken redirect.
+      }
+    });
+  }
   const cookie = request.cookies.get(LOCALE_COOKIE)?.value;
   const locale = isLocale(cookie) ? cookie : negotiate(request.headers.get('accept-language'));
   // `routing` dùng localePrefix mặc định ('always'): đích là `/<locale><pathname bản địa hóa>`.

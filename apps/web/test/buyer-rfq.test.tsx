@@ -346,7 +346,7 @@ describe('DuplicateRequestButton', () => {
 });
 
 describe('BuyerRfqList', () => {
-  const ROW: RfqListItemDto = { ...REQUEST, openQuotationCount: 2 };
+  const ROW: RfqListItemDto = { ...REQUEST, openQuotationCount: 2, acceptedTotalVnd: null };
 
   it('reads the API, passes the status filter and pages with the cursor', async () => {
     const listRequests = vi
@@ -366,6 +366,54 @@ describe('BuyerRfqList', () => {
 
     fireEvent.change(screen.getByLabelText('Trạng thái'), { target: { value: 'ACCEPTED' } });
     await waitFor(() => expect(listRequests).toHaveBeenLastCalledWith({ status: 'ACCEPTED' }));
+  });
+
+  it.each(['ACCEPTED', 'IN_PRODUCTION', 'DELIVERED'] as const)(
+    'shows the accepted quotation instead of the open count on a %s request (GH#478)',
+    async (status) => {
+      const listRequests = vi.fn().mockResolvedValue({
+        data: [{ ...ROW, status, openQuotationCount: 0, acceptedTotalVnd: 96_600_000 }],
+        nextCursor: null,
+      });
+      renderVi(<BuyerRfqList client={client({ listRequests })} />);
+      await screen.findByText('Logo cups');
+      expect(screen.getByText(/Đã chốt · 96\.600\.000/)).toBeTruthy();
+      expect(screen.queryByText(/Chưa có chào giá/)).toBeNull();
+    },
+  );
+
+  it('never says there are no quotations after BIDDING, even without a recorded total', async () => {
+    const listRequests = vi.fn().mockResolvedValue({
+      data: [{ ...ROW, status: 'IN_PRODUCTION', openQuotationCount: 0, acceptedTotalVnd: null }],
+      nextCursor: null,
+    });
+    renderVi(<BuyerRfqList client={client({ listRequests })} />);
+    await screen.findByText('Logo cups');
+    expect(screen.queryByText(/Chưa có chào giá/)).toBeNull();
+    expect(screen.getByText(/· Đã chốt ·/)).toBeTruthy();
+  });
+
+  it('copes with an older API that sends no acceptedTotalVnd', async () => {
+    const { acceptedTotalVnd: _omitted, ...oldShape } = ROW;
+    const listRequests = vi.fn().mockResolvedValue({
+      data: [{ ...oldShape, status: 'DELIVERED', openQuotationCount: 0 }],
+      nextCursor: null,
+    });
+    renderVi(<BuyerRfqList client={client({ listRequests })} />);
+    await screen.findByText('Logo cups');
+    expect(screen.getByText(/· Đã chốt ·/)).toBeTruthy();
+    expect(screen.queryByText(/Chưa có chào giá/)).toBeNull();
+    expect(screen.queryByText(/NaN|undefined/)).toBeNull();
+  });
+
+  it('still says there are no quotations on a BIDDING request without any', async () => {
+    const listRequests = vi.fn().mockResolvedValue({
+      data: [{ ...ROW, openQuotationCount: 0 }],
+      nextCursor: null,
+    });
+    renderVi(<BuyerRfqList client={client({ listRequests })} />);
+    await screen.findByText('Logo cups');
+    expect(screen.getByText(/Chưa có chào giá/)).toBeTruthy();
   });
 
   it('asks a signed-out buyer to sign in', async () => {

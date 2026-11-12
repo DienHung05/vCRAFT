@@ -26,10 +26,12 @@ import {
   ProductMaker,
   QuotationNotice,
   QuotationRequest,
+  queueExhibitionChange,
   queueKnowledgeChange,
   UnappliedPayment,
   Workshop,
 } from '@vcraft/database';
+import { EXHIBITION_TAG, householdTag } from '@vcraft/utils';
 import type { Actor } from '../../../common/auth/auth.guard';
 import { AuthAdmin } from '../../../common/auth/auth-admin';
 import { AppError, notFound } from '../../../common/errors/app-error';
@@ -331,6 +333,10 @@ export class AccountDeletionService {
       product.coverAltEn = null;
       product.images = null;
     }
+
+    // The web's cached pages of this household and its products go with the account (ADR-0027). The
+    // broad tag covers the products' pages and traces; the old slug is named for the record.
+    queueExhibitionChange(em, [EXHIBITION_TAG, householdTag(household.slug)]);
 
     household.name = REMOVED_HOUSEHOLD_NAME;
     household.slug = `removed-${household.id}`;

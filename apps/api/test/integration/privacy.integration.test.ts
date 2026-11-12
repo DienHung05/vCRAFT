@@ -400,7 +400,8 @@ describe('Personal data: consent, export and deletion', () => {
         history: 'History exp-a',
       });
       expect(doc.household?.workshops).toHaveLength(1);
-      expect(doc.household?.artisans).toHaveLength(1);
+      // The artisan added here plus the one the approval fixture shortcut adds (GH#474).
+      expect(doc.household?.artisans).toHaveLength(2);
       const products = doc.household?.products as { name: string; journal: { note: string }[] }[];
       expect(products).toHaveLength(1);
       expect(products[0]?.journal[0]?.note).toBe('Clay notes exp-a');

@@ -26,6 +26,7 @@ import { prepareImage, sendMedia } from '@/features/media/prepare-image';
 import { useMediaWatch } from '@/features/media/use-media-watch';
 import { Link } from '@/i18n/navigation';
 import { browserAccessToken } from '@/lib/api/live-session';
+import { formatDeclaredDate } from '@/lib/declared-date';
 import { notify } from '@/lib/notify';
 import { useIdempotentAction } from '@/lib/use-idempotent-action';
 import { HouseholdGate } from './household-gate';
@@ -452,7 +453,7 @@ function JournalBody({ product, client }: { product: ProductDto; client: StudioC
                     {String(entry.seq + 1).padStart(2, '0')} · {stages(`${entry.stage}.name`)}
                   </h3>
                   <time dateTime={entry.declaredDate} className="text-small text-ash">
-                    {format.dateTime(new Date(entry.declaredDate), 'long')}
+                    {formatDeclaredDate(format, entry.declaredDate)}
                   </time>
                 </div>
                 <p className="text-small">{entry.note}</p>

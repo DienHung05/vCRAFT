@@ -14,6 +14,20 @@ export const RFQ_STATUSES = [
 ] as const;
 export type RfqStatus = (typeof RFQ_STATUSES)[number];
 
+/**
+ * Trạng thái mà Buyer đã chốt một chào giá và đơn đi tiếp theo đường chính (ACCEPTED trở đi, trừ nhánh dừng
+ * CANCELLED/EXPIRED). Lấy theo thứ tự của `RFQ_STATUSES` để không phải chép tay danh sách.
+ */
+export const RFQ_ACCEPTED_ONWARD_STATUSES: readonly RfqStatus[] = RFQ_STATUSES.slice(
+  RFQ_STATUSES.indexOf('ACCEPTED'),
+  RFQ_STATUSES.indexOf('DELIVERED') + 1,
+);
+
+/** Whether the request is past BIDDING on the main path, so it has an accepted quotation to show. */
+export function hasAcceptedQuotation(status: RfqStatus): boolean {
+  return RFQ_ACCEPTED_ONWARD_STATUSES.includes(status);
+}
+
 /** Sự kiện RFQ (SRS §4.1). */
 export const RFQ_EVENTS = [
   'SUBMIT',
