@@ -18,6 +18,7 @@ vi.mock('@/features/village-map/use-map-style', () => ({
 }));
 vi.mock('react-map-gl/maplibre', () => ({
   default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  AttributionControl: () => null,
   Layer: () => null,
   Source: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   Marker: () => null,

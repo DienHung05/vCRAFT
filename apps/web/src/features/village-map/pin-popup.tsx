@@ -73,14 +73,14 @@ export function PinPopup({
         <img
           src={pin.household.coverUrl}
           alt=""
-          className="aspect-[3/2] w-full rounded-input object-cover max-sm:aspect-[5/2]"
+          className="aspect-[3/2] w-full rounded-input object-cover max-sm:aspect-[3/1]"
           loading="lazy"
         />
       ) : (
-        <div className="grid aspect-[3/2] place-items-center rounded-input bg-paper max-sm:aspect-[5/2]">
+        <div className="grid aspect-[3/2] place-items-center overflow-hidden rounded-input bg-paper max-sm:aspect-[3/1]">
           <ProductFigure
             kind="generic"
-            className="h-3/4 opacity-80"
+            className="h-3/4 w-auto max-w-full opacity-80"
             body="var(--color-glaze)"
             band="var(--color-paper)"
           />
@@ -110,7 +110,9 @@ export function PinPopup({
         <OpenStatus pin={pin} now={now} />
       </p>
       <p className="text-small text-ash">{pin.address}</p>
-      {pin.visitingInfo ? <p className="text-small">{pin.visitingInfo}</p> : null}
+      {pin.visitingInfo ? (
+        <p className="text-small max-sm:line-clamp-3">{pin.visitingInfo}</p>
+      ) : null}
       <ExperienceSummary pin={pin} />
       <div className="mt-1 flex flex-wrap gap-2">
         <Link
