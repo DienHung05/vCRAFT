@@ -74,7 +74,7 @@ A household that was not invited gets 404. A coordinated request answers `RFQ_DI
 
 A direct quotation read states `unitPriceVnd` and `completionDate` as `null` when its stored part no longer holds them (a legacy row, or one corrected directly in the JSON column). The strict response therefore stays valid, and the household repairs both terms by revising the quotation; a row with no part at all is not shown as the household's offer, because it cannot be attributed to it.
 
-The buyer reads these quotations in `GET /rfqs/:id/quotations` next to any other, with the household name, unit price, total, completion date and note, and accepts one with `POST /rfqs/:id/accept`. The others become REJECTED. Acceptance creates one PROPOSED allocation for the household, which confirms it, starts production by itself (T4, one-household order), reports progress and waits for the buyer's receipt like any one-part order. Because nobody coordinates such a request, a decline of the allocation notifies every active administrator, and any administrator may cancel the accepted order (T7). The buyer is notified of a new, revised or withdrawn quotation with the existing `QUOTATION_RECEIVED` and `QUOTATION_WITHDRAWN` notices.
+The buyer reads these quotations in `GET /rfqs/:id/quotations` next to any other, with the household name, its rating (`ratingAverage` and `ratingCount` on the part, `null` and `0` when it has none), unit price, total, completion date and note, and accepts one with `POST /rfqs/:id/accept`. The others become REJECTED. Acceptance creates one PROPOSED allocation for the household, which confirms it, starts production by itself (T4, one-household order), reports progress and waits for the buyer's receipt like any one-part order. Because nobody coordinates such a request, a decline of the allocation notifies every active administrator, and any administrator may cancel the accepted order (T7). The buyer is notified of a new, revised or withdrawn quotation with the existing `QUOTATION_RECEIVED` and `QUOTATION_WITHDRAWN` notices.
 
 ## Manual quotation
 
@@ -94,7 +94,7 @@ With an existing authenticated Supabase browser session, the UUID request ID sel
 
 - `/vi/admin/dieu-phoi` lists requests that opted into coordination, with one claim per request.
 - `/vi/admin/dieu-phoi/:requestId` lets the assigned coordinator compose the manual quotation, or claim an unassigned request that opted into coordination.
-- `/vi/studio/bao-gia` lists a household's invitations, and `/vi/studio/don-hang` its shares of accepted orders, with confirm, decline and progress reports.
+- `/vi/studio/bao-gia` lists a household's invitations, `/vi/studio/yeu-cau-mo` lists the open coordinated requests it can offer on without an invitation (BR-05a), and `/vi/studio/don-hang` its shares of accepted orders, with confirm, decline and progress reports.
 - `/vi/studio/de-xuat-tham-gia/:requestId` lets an invited representative create, revise, withdraw or reactivate their contribution, or, on a request without coordination, send, revise or withdraw a quotation ("Gửi báo giá").
 - `/vi/yeu-cau-bao-gia` lists the buyer's requests, and `/vi/yeu-cau-bao-gia/moi` creates one. Drafts save automatically through `PUT /rfqs/:id`.
 - `/vi/yeu-cau-bao-gia/:requestId` shows the owning buyer the complete quotations without internal household rates, with accept, cancel and confirm receipt.

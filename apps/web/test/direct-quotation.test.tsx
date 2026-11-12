@@ -6,6 +6,7 @@ import type {
   MyInvitationDto,
   RfqResponse,
 } from '@vcraft/contracts';
+import { messages } from '@vcraft/i18n';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BuyerRfqDetail } from '@/features/rfq/buyer-rfq-detail';
 import { LiveContributionWorkspace } from '@/features/rfq/live-contribution-workspace';
@@ -316,6 +317,48 @@ describe('BuyerRfqDetail with household quotations', () => {
     expect(screen.getAllByText('Tổng thấp nhất')).toHaveLength(1);
   });
 
+  it('compares three competing bids side by side with rating, note and one accept action each (GH#479)', async () => {
+    const rated = (
+      id: string,
+      name: string,
+      price: number,
+      rating: { ratingAverage: number | null; ratingCount: number },
+    ) => {
+      const bid = direct(id, name, price, `Note of ${name}`);
+      return { ...bid, parts: [{ ...(bid.parts[0] as object), ...rating }] } as BuyerQuotationDto;
+    };
+    renderVi(
+      <BuyerRfqDetail
+        rfqId={ID}
+        client={detail({
+          listBuyerQuotations: vi
+            .fn()
+            .mockResolvedValue([
+              rated('a', 'Gốm Minh Hải', 24_500, { ratingAverage: null, ratingCount: 0 }),
+              rated('b', 'Gốm Kim Liên', 26_200, { ratingAverage: 4, ratingCount: 1 }),
+              rated('c', 'Gốm Ngọc Diệp', 22_800, { ratingAverage: 4.7, ratingCount: 3 }),
+            ]),
+        })}
+      />,
+    );
+    await screen.findByText('Gốm Ngọc Diệp');
+    const comparison = screen.getByTestId('quotation-comparison');
+    expect(comparison.className).toContain('md:grid-cols-2');
+    expect(comparison.className).toContain('xl:grid-cols-3');
+    expect(within(comparison).getAllByRole('listitem').length).toBeGreaterThanOrEqual(3);
+    expect(screen.getByText('Chưa có đánh giá')).toBeTruthy();
+    expect(screen.getByText('4,0/5 sao · 1 đánh giá')).toBeTruthy();
+    expect(screen.getByText('4,7/5 sao · 3 đánh giá')).toBeTruthy();
+    for (const name of ['Gốm Minh Hải', 'Gốm Kim Liên', 'Gốm Ngọc Diệp'])
+      expect(screen.getByText(`Ghi chú của hộ: Note of ${name}`)).toBeTruthy();
+    expect(screen.getAllByText(/Hoàn thành/)).toHaveLength(3);
+    const accepts = screen.getAllByRole('button', { name: 'Chốt chào giá này' });
+    expect(accepts).toHaveLength(3);
+    // Each accept button is described by the household it chooses.
+    expect(accepts[2]?.getAttribute('aria-describedby')).toBe('bid-c-household');
+    expect(document.getElementById('bid-c-household')?.textContent).toBe('Gốm Ngọc Diệp');
+  });
+
   it('shows the requirements, the attachments and how many households were invited', async () => {
     const getMediaReadUrl = vi
       .fn()
@@ -391,7 +434,7 @@ describe('household quotation form (studio)', () => {
     const client = workspace();
     renderVi(<LiveContributionWorkspace rfqId={ID} client={client} />);
     const send = await screen.findByRole('button', { name: 'Gửi báo giá' });
-    expect((send as HTMLButtonElement).disabled).toBe(true);
+    expect((send as HTMLButtonElement).disabled).toBe(false);
     fireEvent.change(screen.getByLabelText('Đơn giá (VND)'), { target: { value: '30000' } });
     expect(screen.getByText(/Tổng cho 100 cup: 3\.000\.000/)).toBeTruthy();
     fireEvent.change(screen.getByLabelText('Ngày hoàn thành'), { target: { value: '2100-01-01' } });
@@ -452,16 +495,63 @@ describe('household quotation form (studio)', () => {
   });
 
   it('refuses a completion date outside the window', async () => {
-    renderVi(<LiveContributionWorkspace rfqId={ID} client={workspace()} />);
+    const client = workspace();
+    renderVi(<LiveContributionWorkspace rfqId={ID} client={client} />);
     await screen.findByRole('button', { name: 'Gửi báo giá' });
     fireEvent.change(screen.getByLabelText('Đơn giá (VND)'), { target: { value: '30000' } });
     fireEvent.change(screen.getByLabelText('Ngày hoàn thành'), { target: { value: '2099-11-01' } });
+    fireEvent.blur(screen.getByLabelText('Ngày hoàn thành'));
     expect(screen.getByText('Ngày hoàn thành phải sau hạn chào giá 01/12/2099.')).toBeTruthy();
-    expect(
-      (screen.getByRole('button', { name: 'Gửi báo giá' }) as HTMLButtonElement).disabled,
-    ).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi báo giá' }));
+    expect((client.createDirectQuotation as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
     fireEvent.change(screen.getByLabelText('Ngày hoàn thành'), { target: { value: '2100-03-01' } });
     expect(screen.getByText(/Ngày hoàn thành không được muộn hơn hạn giao/)).toBeTruthy();
+  });
+
+  it('has no developer wording in the direct quotation messages and says the buyer sees the price (GH#477)', () => {
+    for (const locale of ['vi', 'en'] as const) {
+      const text = Object.values(messages[locale].directQuotation).flatMap((v) =>
+        typeof v === 'string' ? [v] : Object.values(v),
+      );
+      expect(text.join('\n')).not.toMatch(/\bAPI\b|phiên đăng nhập|signed-in session/i);
+    }
+    expect(messages.vi.directQuotation.visibleToBuyer).toMatch(
+      /Bên mua thấy.*Các hộ khác không thấy/,
+    );
+  });
+
+  // GH#477
+  it('shows no error on a fresh quotation form; blur shows the field error linked by aria-describedby', async () => {
+    renderVi(<LiveContributionWorkspace rfqId={ID} client={workspace()} />);
+    await screen.findByRole('button', { name: 'Gửi báo giá' });
+    expect(screen.queryByText(/Đơn giá phải là số nguyên/)).toBeNull();
+    expect(screen.queryByText('Chọn ngày hoàn thành.')).toBeNull();
+    const price = screen.getByLabelText('Đơn giá (VND)');
+    expect(price.getAttribute('aria-invalid')).toBeNull();
+    fireEvent.blur(price);
+    const error = screen.getByText(/Đơn giá phải là số nguyên từ 1/);
+    expect(price.getAttribute('aria-invalid')).toBe('true');
+    expect(price.getAttribute('aria-describedby')).toContain(error.id);
+    expect(screen.queryByText('Chọn ngày hoàn thành.')).toBeNull();
+  });
+
+  it('submitting an empty quotation form shows every error next to its field and sends nothing (GH#477)', async () => {
+    const client = workspace();
+    renderVi(<LiveContributionWorkspace rfqId={ID} client={client} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Gửi báo giá' }));
+    for (const [label, message] of [
+      ['Đơn giá (VND)', /Đơn giá phải là số nguyên từ 1/],
+      ['Ngày hoàn thành', /^Chọn ngày hoàn thành\.$/],
+    ] as const) {
+      const input = screen.getByLabelText(label);
+      const error = screen.getByText(message);
+      expect(input.getAttribute('aria-invalid')).toBe('true');
+      expect(input.getAttribute('aria-describedby')).toContain(error.id);
+      expect(error.parentElement?.contains(input)).toBe(true);
+      expect(error.closest('li')).toBeNull();
+    }
+    expect(document.activeElement).toBe(screen.getByLabelText('Đơn giá (VND)'));
+    expect(client.createDirectQuotation).not.toHaveBeenCalled();
   });
 
   it('revises an active quotation with its version and withdraws it after confirming', async () => {

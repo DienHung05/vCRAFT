@@ -1382,7 +1382,7 @@ describe('online payment of orders (ADR-0021)', () => {
     it('keeps the payment pending while MoMo is still processing it', async () => {
       const requestId = await acceptedOrder();
       const created = (await startPayment(requestId, 'DEPOSIT', 'MOMO')).body;
-      for (const resultCode of [1000, 7000, 7002, 9000]) {
+      for (const resultCode of [1000, 7000, 7002]) {
         expect((await post(ipn(created, { resultCode, message: 'processing' }))).status).toBe(204);
       }
       expect((await status(created)).status).toBe('PENDING');

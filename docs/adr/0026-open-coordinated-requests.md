@@ -1,4 +1,4 @@
-# ADR-0024: Coordinated quotation requests are open to qualifying households
+# ADR-0026: Coordinated quotation requests are open to qualifying households
 
 **Status:** Accepted, decided on the maintainer's standing instruction on 2026-11-10
 **Date:** 2026-11-10
@@ -53,5 +53,10 @@ public tender), and FR-RFQ-06 keeps offers sealed. Any change has to keep both.
   contributions view.
 - Households with a locked representative, pending, rejected or suspended status, or no capacity or published
   product in the category, get neither the list entry nor the right to offer.
+- GH#490 asked again for option B (a board where households ask to join and an administrator approves). The
+  owner considered it and kept option C on 2026-11-11: no join requests and no approval queue. What changed is
+  navigation only. The household header tab now opens the open-requests list at `/studio/yeu-cau-mo` ("Yêu cầu
+  đang mở" / "Open requests"), and the Studio tab "Lời mời báo giá" at `/studio/bao-gia` keeps answering
+  invitations, so the two no longer share a label and a destination.
 - SRS FR-RFQ-03, FR-RFQ-04, FR-RFQ-06, new BR-05a and the glossary entry for the quotation request are
   updated. A follow-up implementation issue covers the API, the Studio list and the tests.

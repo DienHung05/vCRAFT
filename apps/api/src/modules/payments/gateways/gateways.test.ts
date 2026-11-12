@@ -892,10 +892,25 @@ describe('MoMo gateway', () => {
     });
   });
 
+  it('counts resultCode 9000 (authorized, 1-step capture) as paid in an IPN', () => {
+    setEnv(MOMO_ENV);
+    const gateway = new MomoGateway(fakeHttp({}).http);
+    expect(gateway.verifyCallback(ipn({ resultCode: 9000, message: 'Authorized' }))).toMatchObject({
+      signatureValid: true,
+      event: {
+        provider: 'MOMO',
+        referenceCode: 'VCPAB3DEF7K9M',
+        providerTxnId: '4100000001',
+        amountVnd: 3_000_000,
+        outcome: 'PAID',
+      },
+    });
+  });
+
   it('leaves a payment pending while MoMo is still processing, and fails only on a final code', () => {
     setEnv(MOMO_ENV);
     const gateway = new MomoGateway(fakeHttp({}).http);
-    for (const resultCode of [1000, 7000, 7002, 9000, 42]) {
+    for (const resultCode of [1000, 7000, 7002, 42]) {
       expect(gateway.verifyCallback(ipn({ resultCode }))).toEqual({
         signatureValid: true,
         event: null,
@@ -965,7 +980,7 @@ describe('MoMo gateway', () => {
       [1000, 'PENDING'],
       [7000, 'PENDING'],
       [7002, 'PENDING'],
-      [9000, 'PENDING'],
+      [9000, 'PAID'],
       [1006, 'FAILED'],
       [1005, 'FAILED'],
       [42, 'UNKNOWN'],

@@ -3,6 +3,8 @@ import { Badge } from '@vcraft/ui';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { ImageSlot } from '@/components/image-slot';
 import { type LogEntryView, photoFromUrl, slotPhoto } from '@/features/catalog/view-models';
+import { formatDeclaredDate } from '@/lib/declared-date';
+import { vietnameseOnlyLang } from '@/lib/vietnamese-text';
 import { FireStory } from './fire-story';
 import { PieceFigure } from './piece-figure';
 import type { PieceKind } from './piece-shapes';
@@ -21,6 +23,7 @@ export async function FireTimeline({
   household,
   pieceKind,
   glaze = 'var(--color-glaze)',
+  locale = 'vi',
 }: {
   entries: readonly LogEntryView[];
   /** The household that kept the journal, shown on each step as who recorded it. */
@@ -31,6 +34,8 @@ export async function FireTimeline({
   glaze?: string;
   /** Trang QR (biến thể C) đọc từ mốc mới nhất ngược về; số thứ tự và neo `#log-N` vẫn theo `seq`. */
   newestFirst?: boolean;
+  /** Page locale: households write notes in Vietnamese only, so on `/en` they carry `lang="vi"` (GH#482). */
+  locale?: string;
 }) {
   const [stages, t, format] = await Promise.all([
     getTranslations('stages'),
@@ -66,7 +71,7 @@ export async function FireTimeline({
           <div>
             <p className="font-mono text-[0.75rem] tracking-wider text-ash">
               {String(e.seq + 1).padStart(2, '0')} ·{' '}
-              <time dateTime={e.at}>{format.dateTime(new Date(e.at), 'stamp')}</time>
+              <time dateTime={e.at}>{formatDeclaredDate(format, e.at)}</time>
             </p>
             <h3 className="mt-1 text-h3">
               <a
@@ -98,20 +103,32 @@ export async function FireTimeline({
                 </a>
               </p>
             ) : null}
-            <p className="mt-1 break-words text-ink/85">{e.note}</p>
+            <p className="mt-1 break-words text-ink/85" lang={vietnameseOnlyLang(locale)}>
+              {e.note}
+            </p>
             {e.skipReason ? (
               <p className="mt-1 break-words text-small text-ash">
-                {t('skipped', { reason: e.skipReason })}
+                {t.rich('skipped', {
+                  reason: e.skipReason ?? '',
+                  note: (chunks) => <span lang={vietnameseOnlyLang(locale)}>{chunks}</span>,
+                })}
               </p>
             ) : null}
             {/* A photo still processing has no URL yet: nothing is shown until it is ready. */}
             {e.images
               .filter((image) => image.url)
               .map((image) => {
-                const alt = t('proofAlt', { stage: stages(`${e.stage}.name`) });
+                // A photo with a credit is someone else's picture of the stage (GH#472), never of this piece: say so
+                // under it and describe what it shows. A household's own upload has no credit and no note.
+                const { credit } = image;
+                const stage = stages(`${e.stage}.name`);
+                const alt =
+                  locale === 'vi' && image.alt
+                    ? image.alt
+                    : t(credit ? 'stagePhotoAlt' : 'proofAlt', { stage });
                 const photo = photoFromUrl(image.url, alt, image.variants);
                 return (
-                  <div key={image.sha256}>
+                  <figure key={image.sha256} className="mt-3 max-w-sm">
                     <ImageSlot
                       alt={alt}
                       tint={e.tint}
@@ -119,9 +136,30 @@ export async function FireTimeline({
                       {...slotPhoto(photo)}
                       thumbhash={image.thumbhash}
                       sizes="(min-width: 640px) 24rem, 100vw"
-                      className="mt-3 max-w-sm"
                     />
-                  </div>
+                    {credit ? (
+                      <figcaption className="mt-1.5 text-small text-ash" data-stage-photo-note="">
+                        {t('stagePhotoNote')} {t('photoBy')}{' '}
+                        <a
+                          href={credit.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline underline-offset-2 hover:text-clay"
+                        >
+                          {credit.author}
+                        </a>{' '}
+                        ·{' '}
+                        <a
+                          href={credit.licenseUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline underline-offset-2 hover:text-clay"
+                        >
+                          {credit.license}
+                        </a>
+                      </figcaption>
+                    ) : null}
+                  </figure>
                 );
               })}
             {/* Hiển thị rút gọn cho gọn mắt; dấu băm đầy đủ 64 hex nằm ở `title`. */}

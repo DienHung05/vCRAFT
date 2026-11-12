@@ -47,16 +47,46 @@ Luật phụ thuộc giữa các gói được kiểm tự động (`pnpm deps:c
 
 ## Trạng thái hiện tại
 
-Repo đang ở giai đoạn đầu. Bảng dưới tách **những gì đã chạy được** khỏi **kiến trúc dự định** trong [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); các mục chưa tick trong [docs/PLAN.md §5](docs/PLAN.md#5-backlog-chi-tiết-theo-epic) là chưa có.
+Hệ thống chạy đầy đủ từ đầu đến cuối: web trên Vercel, API và worker trên Render, CSDL/Auth/Storage ở Supabase ([ADR-16](docs/adr/0016-deploy-vercel-render.md), [docs/operations/deploy.md](docs/operations/deploy.md)). Mọi màn hình dưới đây đọc và ghi qua API thật; dữ liệu mẫu (làng gốm Bát Tràng, hộ và người hư cấu) nạp bằng seeder, xem [docs/demo/README.md](docs/demo/README.md). Chi tiết yêu cầu nằm ở [SRS](docs/requirements/SRS.md), quyết định kiến trúc ở [docs/adr](docs/adr/README.md).
 
-| Phần                                        | Đã có                                                                                       | Chưa có (mới chỉ là thiết kế)                                                       |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `packages/domain`                           | Máy trạng thái RFQ/Bid/Allocation, kiểm tra chia đơn, ghép hộ, chuỗi băm; có unit test      | Chưa backend nào gọi, nên chưa có gì ép buộc các quy tắc này trên dữ liệu thật      |
-| `apps/web`                                  | Giao diện demo dùng **dữ liệu giả** trong `src/lib/demo`; thao tác trên màn hình chỉ là mô phỏng cục bộ | Gọi API thật, đăng nhập, lưu dữ liệu; một số route điều hướng và `/q/<mã>` chưa có |
-| `apps/api`                                  | Chỉ có `GET /health` (chưa kiểm tra DB/Redis/storage)                                       | Xác thực, phân quyền, module RFQ/sản phẩm, SSE, idempotency, khóa giao dịch         |
-| `apps/worker`                               | Khung tiến trình                                                                            | Mọi job (outbox, ảnh, QR/PDF, mail, hẹn giờ)                                        |
-| `packages/database`                         | Entity `OutboxEvent`, migration cho PostgreSQL và MySQL, integration test trên cả hai CSDL  | Các entity nghiệp vụ (RFQ, bid, sản phẩm…), repository, seeder dữ liệu mẫu          |
-| `packages/contracts`, `packages/api-client` | Schema dùng chung ở mức khung (lỗi, phân trang, kiểu cơ bản)                                | Schema và hook cho từng nghiệp vụ                                                   |
+### Đã chạy được
+
+| Mảng                      | Nội dung                                                                                                                                                                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Triển lãm số              | Trang chủ, danh mục sản phẩm có lọc và tìm kiếm, trang sản phẩm, nghệ nhân, hộ sản xuất; yêu thích sản phẩm; tiếng Việt và tiếng Anh. Ảnh có ghi công ở `/ghi-nhan-anh`                                                                                          |
+| Hồ sơ hộ và Studio        | Đăng ký hộ nhiều bước (wizard), Ban quản lý duyệt, từ chối hoặc yêu cầu bổ sung; trong Studio hộ sửa hồ sơ, xưởng (giờ mở cửa, đón khách), nghệ nhân, sản phẩm và xuất bản                                                                                      |
+| Bản đồ làng nghề          | Bản đồ xưởng trong ranh giới xã Bát Tràng, trạng thái mở cửa, phương án ngoại tuyến khi tải bản đồ lỗi                                                                                                                                                        |
+| Truy xuất nguồn gốc       | Mã QR ổn định `/q/<mã>` → trang truy xuất; nhật ký sản xuất là chuỗi mốc có ảnh, niêm phong bằng chuỗi băm SHA-256 và kiểm lại được trên trang ("Nhật ký toàn vẹn"); in tem QR (PDF) qua worker                                                                |
+| Yêu cầu báo giá           | Khách sỉ tạo yêu cầu; hộ được mời (Khách chọn, hệ thống ghép hoặc Ban quản lý mời) **chào giá trực tiếp**, hoặc gửi đề xuất để Ban quản lý lập **chào giá liên kết** chia nhiều hộ; yêu cầu điều phối mở cho hộ đủ điều kiện ([ADR-0026](docs/adr/0026-open-coordinated-requests.md)); Khách so sánh và chốt, hộ thua nhận thông báo |
+| Đơn hàng và phân bổ       | Chốt chào giá thành đơn, chia phân bổ cho từng hộ, hộ xác nhận, Ban quản lý bắt đầu sản xuất, hộ báo tiến độ, Khách xác nhận nhận hàng và đánh giá hộ; các job hẹn giờ xử lý hết hạn chào giá và kiểm tra điều phối                                                           |
+| Thanh toán trực tuyến     | Đặt cọc và thanh toán đơn bằng chuyển khoản/VietQR (SePay), VNPay, MoMo; trên site đang chạy là **chế độ demo** ("Thanh toán thử — không trừ tiền thật", QR dẫn về trang xác nhận của chính vCraft) ([ADR-0021](docs/adr/0021-online-payment-for-orders.md), [ADR-0024](docs/adr/0024-payment-gateways-in-production.md), [ADR-0025](docs/adr/0025-demo-payment-mode.md)) |
+| Tin tức                   | Ban quản lý viết tin làng và tin theo hộ; thông báo cắt điện theo khu vực, hiện cảnh báo trong Studio cho hộ thuộc khu vực đó ([ADR-0023](docs/adr/0023-outage-notice-areas-and-timing.md)); nhập tin từ RSS bằng worker khi được cấu hình                      |
+| Quản trị                  | Duyệt hộ, điều phối yêu cầu, quản lý người dùng (khóa/mở), theo dõi tiến độ, thanh toán, nhật ký thao tác; Admin bắt buộc MFA TOTP (`aal2`)                                                                                                                       |
+| Trợ lý Cáo                | Chatbot tra cứu tri thức (RAG) với trích dẫn và rào chắn chống injection, chạy trên OpenAI, chỉ mục vector trong Supabase ([ADR-0019](docs/adr/0019-assistant-on-openai.md))                                                                                     |
+| Xử lý ảnh                 | Tải ảnh lên bucket riêng, worker xóa metadata và sinh biến thể AVIF/WebP 320/640/1280 sang bucket công khai                                                                                                                                                     |
+| Thông báo                 | Thông báo trong ứng dụng (cập nhật trực tiếp qua SSE), thư điện tử qua hàng đợi, tùy chọn nhận thư theo người dùng                                                                                                                                              |
+| Tài khoản và riêng tư     | Đăng ký/đăng nhập bằng email hoặc tên đăng nhập (và Google), Cloudflare Turnstile, quên mật khẩu, mời hộ qua email, đồng ý xử lý dữ liệu, xuất và xóa dữ liệu cá nhân ([ADR-0017](docs/adr/0017-personal-data-export-and-deletion.md)), mã hóa trường nhạy cảm ([ADR-0018](docs/adr/0018-field-level-encryption.md)) |
+
+Theo từng gói:
+
+| Phần                                        | Hiện có                                                                                                                                                                   |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/domain`                           | Máy trạng thái RFQ/Bid/Allocation, chia đơn và ghép hộ, chuỗi băm nhật ký, ranh giới làng, khu vực; có unit test, được API và worker gọi thật                              |
+| `apps/web`                                  | Trang công khai, Studio hộ, Buyer, Admin, thanh toán; gọi API thật qua `@vcraft/api-client`, đăng nhập Supabase Auth                                                      |
+| `apps/api`                                  | REST `/api/v1` theo module (catalog, hộ, sản phẩm, nhật ký, truy xuất, RFQ, đơn, thanh toán, tin, media, thông báo, trợ lý, quyền riêng tư, admin), SSE, idempotency, khóa lạc quan `If-Match` |
+| `apps/worker`                               | Hàng đợi BullMQ: outbox, ảnh, QR/PDF, thư, thông báo, job hẹn giờ RFQ, nhập tin, lập chỉ mục trợ lý                                                                       |
+| `packages/database`                         | Entity và migration cho PostgreSQL và MySQL, RLS bật mặc định cho Supabase, seeder dữ liệu mẫu và công cụ `demo:*`, integration test trên cả hai CSDL |
+| `packages/contracts`, `packages/api-client` | Schema Zod dùng chung và hook TanStack Query cho từng nghiệp vụ                                                                                                           |
+
+### Cố ý ngoài phạm vi
+
+- Thanh toán tiền thật: cần hợp đồng merchant của làng nghề; site đang chạy ở chế độ demo, VNPay/MoMo/SePay chỉ bật khi có tài khoản tương ứng ([SRS §1.2](docs/requirements/SRS.md), ADR-0021, ADR-0024).
+- Tích hợp vận chuyển, ứng dụng di động native, hóa đơn điện tử.
+- Đấu thầu công khai: yêu cầu báo giá là **riêng tư**, chào giá được niêm phong giữa các hộ (FR-RFQ-06); hộ ngoài danh sách mời chỉ thấy bản tóm tắt đã che của yêu cầu điều phối mở (ADR-0026).
+
+Chưa kiểm chứng trên hạ tầng thật (checklist ở [docs/demo/README.md §7](docs/demo/README.md#7-kiểm-tra-trước-giờ-thi-trên-dữ-liệu-đóng-băng)): Lighthouse, tunnel dự phòng, khôi phục sao lưu.
+
+Các mục chưa tick trong [docs/PLAN.md §5](docs/PLAN.md#5-backlog-chi-tiết-theo-epic) là việc còn lại.
 
 ## Bắt đầu
 
@@ -78,7 +108,7 @@ CSDL nghiệp vụ là Postgres của Supabase (ADR-15). Có **hai** hệ migrat
 | Thứ tự | Hệ migration                       | Nội dung                                                                                                                                                                                                    | Cách chạy                                                         |
 | ------ | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | 1      | `supabase/migrations/*.sql`        | `business_db_guard`: thu quyền mặc định của `anon`/`authenticated`, tạo event trigger `ensure_rls` tự bật RLS cho **bảng tạo sau đó** trong `public`. `storage_buckets`: hai bucket `vcraft-media`, `vcraft-private` | Supabase CLI (`supabase db push`, hoặc `supabase db reset` cục bộ) |
-| 2      | `packages/database/src/migrations` | Bảng nghiệp vụ do MikroORM quản lý (hiện có `outbox_event`)                                                                                                                                                 | `pnpm db:migrate`                                                 |
+| 2      | `packages/database/src/migrations` | Bảng nghiệp vụ do MikroORM quản lý (RFQ, đơn, sản phẩm, hộ, nhật ký, thanh toán, tin tức…)                                                                                                                                                 | `pnpm db:migrate`                                                 |
 
 Event trigger và quyền mặc định chỉ tác động lên đối tượng tạo **sau** khi chúng tồn tại, nên phải chạy hệ 1 **trước** hệ 2. Chạy ngược thứ tự thì bảng đã tạo giữ nguyên quyền mặc định của Supabase cho `anon`/`authenticated` (migration RLS của MikroORM chỉ bật RLS, không thu quyền) và phải sửa tay.
 
@@ -127,4 +157,4 @@ MySQL chỉ có hệ migration của MikroORM (không có `supabase/migrations`)
 
 - `main` chỉ để deploy; `develop` là nhánh tích hợp.
 - Feature: nhánh `feat/<epic>-<mô-tả>` tách từ `develop` → PR vào `develop` (1 review + CI xanh) → merge xong xóa nhánh.
-- Conventional Commits · Definition of Done ở [PLAN §8](docs/PLAN.md#8-definition-of-done--quy-trình-làm-việc) · quy tắc cho AI agent ở [AGENTS.md](AGENTS.md).
+- Conventional Commits · Definition of Done ở [PLAN §8](docs/PLAN.md#8-definition-of-done--quy-trình-làm-việc) · quy tắc cho AI agent ở [CLAUDE.md](CLAUDE.md).

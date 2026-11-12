@@ -31,6 +31,11 @@ import { DEMO_PHOTO_LINKS, DEMO_PHOTOS, RETIRED_DEMO_PHOTO_IDS } from './photo-m
 import { NEWS } from './pools.js';
 import { demoEntityId } from './seed-demo.js';
 import { DEMO_VERIFICATION_DOCS } from './verification-docs.js';
+import { verifyDirectBids } from './verify-direct-bids.js';
+import { verifyEnglishProducts } from './verify-english.js';
+import { verifyJournalPhotos } from './verify-journal-photos.js';
+import { verifyProfileDepth } from './verify-profile-depth.js';
+import { checkNoStrayApprovedHouseholds } from './verify-stray-households.js';
 
 export interface DemoCheck {
   name: string;
@@ -165,8 +170,8 @@ export async function verifyDemoData(
   const requests = await em.find(QuotationRequest, {});
   const statuses = new Set(requests.map((r) => r.status));
   add(
-    'Yêu cầu báo giá: 12, đủ 8 trạng thái',
-    requests.length === 12 && statuses.size === 8,
+    'Yêu cầu báo giá: 14, đủ 8 trạng thái',
+    requests.length === 14 && statuses.size === 8,
     `${requests.length} yêu cầu, ${statuses.size} trạng thái`,
   );
 
@@ -284,7 +289,13 @@ export async function verifyDemoData(
     stale.length === 0 ? 'còn hạn' : `sắp/đã hết hạn: ${stale.join(', ')}; chạy lại demo:reset`,
   );
 
-  if (options.media ?? true) await verifyMedia(em, add, entries, options.checkPublicUrls ?? false);
+  await verifyProfileDepth(em, add, { media: options.media ?? true });
+  await verifyEnglishProducts(em, add);
+  await verifyDirectBids(em, add, now);
+  if (options.media ?? true) await verifyJournalPhotos(em, add);
+  checks.push(await checkNoStrayApprovedHouseholds(em));
+
+  if (options.media ?? true) await verifyMedia(em, add, options.checkPublicUrls ?? false);
 
   return { ok: checks.every((c) => c.ok), checks };
 }
@@ -293,7 +304,6 @@ export async function verifyDemoData(
 async function verifyMedia(
   em: EntityManager,
   add: (name: string, ok: boolean, detail: string) => void,
-  entries: readonly JournalEntry[],
   checkPublicUrls: boolean,
 ): Promise<void> {
   const photoIds = new Map(DEMO_PHOTOS.map((p) => [demoPhotoAssetId(p.id), p]));
@@ -375,15 +385,6 @@ async function verifyMedia(
       : `chưa trỏ về bucket: ${badCovers.join(', ')}`,
   );
 
-  const withImage = entries.filter((e) => e.images.length > 0);
-  add(
-    'Mốc nhật ký: không gắn ảnh chung của công đoạn vào món đồ (chuỗi băm không có ảnh)',
-    entries.length > 0 && withImage.length === 0,
-    withImage.length === 0
-      ? `${entries.length} mốc không có ảnh`
-      : `${withImage.length} mốc còn ảnh; chạy pnpm demo:media`,
-  );
-
   const retiredIds = RETIRED_DEMO_PHOTO_IDS.map(demoPhotoAssetId);
   const retiredAssets = await em.count(MediaAsset, { id: { $in: retiredIds } });
   const retiredLinks = await em.count(MediaLink, { media: { $in: retiredIds } });
@@ -428,7 +429,7 @@ async function verifyMedia(
 
   if (checkPublicUrls) {
     // Display variants of every photo (keys) plus the covers the public API returns (full URLs). The bucket's base URL
-    // is taken from a cover, since journal entries no longer carry a photo to read it from.
+    // is taken from a cover.
     const keys = new Set<string>();
     for (const asset of readyPhotos) {
       const variant = pickDisplayVariant(asset.variants);

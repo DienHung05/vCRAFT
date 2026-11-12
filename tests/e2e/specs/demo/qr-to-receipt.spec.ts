@@ -197,4 +197,53 @@ test.describe('Demo: QR → biên nhận', () => {
     // The stepper lists "Đã giao" at all times, so check the current step, not the text.
     await expect(currentJourneyStep(buyerPage)).toContainText('Đã giao');
   });
+
+  test('12. Buyer so sánh ba báo giá trực tiếp của ba hộ rồi chốt một (UI, GH#479)', async () => {
+    await buyerPage.goto(`/vi/yeu-cau-bao-gia/${DEMO.requests.biddingDirect}`);
+    await expect(buyerPage.getByRole('heading', { name: 'Chào giá nhận được' })).toBeVisible();
+    const comparison = buyerPage.getByTestId('quotation-comparison');
+    // Three households quote the whole quantity themselves: name, rating, unit price, completion date, note, one accept each.
+    for (const household of ['Gốm Minh Hải', 'Gốm Kim Liên', 'Gốm Ngọc Diệp'])
+      await expect(comparison.getByText(household, { exact: true })).toBeVisible();
+    await expect(comparison.getByText('Hộ báo giá riêng')).toHaveCount(3);
+    await expect(comparison.getByText(/Hoàn thành/)).toHaveCount(3);
+    await expect(comparison.getByText(/Ghi chú của hộ/)).toHaveCount(3);
+    await expect(comparison.getByText('5,0/5 sao · 1 đánh giá')).toBeVisible();
+    const accepts = comparison.getByRole('button', { name: 'Chốt chào giá này', exact: true });
+    await expect(accepts).toHaveCount(3);
+
+    // Accept the cheapest (Gốm Ngọc Diệp): the others become "Không được chọn" and the request "Đã chốt".
+    await comparison
+      .getByRole('listitem')
+      .filter({ hasText: 'Gốm Ngọc Diệp' })
+      .first()
+      .getByRole('button', { name: 'Chốt chào giá này', exact: true })
+      .click();
+    const dialog = buyerPage.getByRole('dialog', { name: 'Chốt chào giá này?' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Chốt chào giá này', exact: true }).click();
+    await expect(dialog).toBeHidden();
+    await expect(currentJourneyStep(buyerPage)).toContainText('Đã chốt');
+    await expect(comparison.getByText('Không được chọn')).toHaveCount(2);
+    await expect(comparison.getByText('Đã chốt', { exact: true })).toHaveCount(1);
+  });
+
+  test('13. Hộ (điện thoại) gửi báo giá trực tiếp cho yêu cầu không qua điều phối (UI, GH#479)', async () => {
+    await phonePage.goto(`/vi/studio/de-xuat-tham-gia/${DEMO.requests.sentDirect}`);
+    await expect(
+      phonePage.getByRole('heading', { level: 1, name: 'Bộ ấm chén men lam cho homestay' }),
+    ).toBeVisible();
+    // direct-quotation-form.tsx: the deadline is 30 days out and delivery 75, so a date 50 days out is inside the window.
+    const finish = new Date(Date.now() + 50 * 86_400_000).toISOString().slice(0, 10);
+    await phonePage.getByLabel('Đơn giá (VND)').fill('185000');
+    await phonePage.getByLabel('Ngày hoàn thành').fill(finish);
+    await phonePage.getByLabel('Ghi chú cho bên mua (không bắt buộc)').fill('Vẽ lam thủ công');
+    await phonePage.getByRole('button', { name: 'Gửi báo giá', exact: true }).click();
+    await expect(phonePage.getByText(/Báo giá đang chờ bên mua/)).toBeVisible();
+    // The same form now revises or withdraws the quotation.
+    await expect(
+      phonePage.getByRole('button', { name: 'Cập nhật báo giá', exact: true }),
+    ).toBeVisible();
+    await expect(phonePage.getByRole('button', { name: 'Rút báo giá', exact: true })).toBeVisible();
+  });
 });

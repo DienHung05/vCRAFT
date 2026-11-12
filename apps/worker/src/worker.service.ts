@@ -27,6 +27,7 @@ import { runNewsImport } from './processors/news-import/import-news';
 import { llmFromEnv } from './processors/news-import/llm';
 import { createOutboxDispatcher } from './processors/outbox/dispatch';
 import { relayOutbox } from './processors/outbox/relay-outbox';
+import { createWebRevalidator, webRevalidateFromEnv } from './processors/outbox/revalidate-web';
 import { generateQrLabels, type QrLabelsJob } from './processors/qr-labels/generate-qr-labels';
 import {
   ASSISTANT_LOG_PURGE_EVERY_MS,
@@ -125,7 +126,17 @@ export class WorkerService implements OnApplicationBootstrap, OnApplicationShutd
       [media, mail, qrLabels, scheduler, assistant, newsImport, outbox],
       this.logger,
     );
-    const dispatch = createOutboxDispatcher({ media, mail, qrLabels, scheduler, assistant });
+    const webRevalidate = webRevalidateFromEnv();
+    if (!webRevalidate) {
+      this.logger.log(
+        'web revalidation off: WEB_REVALIDATE_URL or REVALIDATE_SECRET is unset (cached pages expire after 60 s)',
+      );
+    }
+    const dispatch = createOutboxDispatcher(
+      { media, mail, qrLabels, scheduler, assistant },
+      Date.now,
+      createWebRevalidator(webRevalidate),
+    );
     const mailDeps = {
       loadNotice: createNoticeLoader(this.orm),
       ...createNoticeClaim(this.orm),

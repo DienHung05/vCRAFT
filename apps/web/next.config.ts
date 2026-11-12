@@ -19,7 +19,9 @@ const nextConfig: NextConfig = {
   // No `X-Powered-By: Next.js`: it only tells an attacker which framework to probe (OWASP A05).
   poweredByHeader: false,
   // `forbidden()` + `forbidden.tsx` cho trang 403 của khu vực theo vai trò (lib/auth/guard.ts)
-  experimental: { authInterrupts: true },
+  // `inlineCss`: the ~25 KB of CSS ships inside the HTML instead of three render-blocking stylesheet
+  // requests that delay the first paint on a slow link (GH#481). The CSP already allows inline styles.
+  experimental: { authInterrupts: true, inlineCss: true },
   // Dùng một AGENTS.md duy nhất ở gốc repo, không để `next dev` sinh thêm bản riêng
   agentRules: false,
   // Vercel không có Caddy: Next chuyển tiếp /api/* sang API (Render) và đặt header bảo mật (ADR-16).

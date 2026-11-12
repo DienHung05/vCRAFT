@@ -237,6 +237,7 @@ describe('Journal authoring and integrity', () => {
       mediaId: slow.id,
       status: 'PROCESSING',
       thumbhash: null,
+      alt: null,
     });
 
     // A failed photo, or a URL that does not exist yet, is still refused.

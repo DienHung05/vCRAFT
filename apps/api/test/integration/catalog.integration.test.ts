@@ -202,7 +202,8 @@ describe('Public catalog', () => {
     expect(page.body).toMatchObject({ page: 1, pageSize: 12, total: 1, totalPages: 1 });
     expect(page.body.data).toEqual([expect.objectContaining({ slug: 'gom-bat-trang-xua' })]);
     const stats = await t.request({ method: 'GET', url: '/village/stats' });
-    expect(stats.body).toEqual({ households: 1, products: 3, artisans: 0 });
+    // The approval fixture shortcut gives the household one artisan (approval needs one, GH#474).
+    expect(stats.body).toEqual({ households: 1, products: 3, artisans: 1 });
   });
 
   it('chi tiết sản phẩm theo slug; nháp là 404; hộ bị khóa thì biến khỏi danh mục', async () => {

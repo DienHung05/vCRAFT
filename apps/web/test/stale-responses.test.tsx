@@ -35,6 +35,7 @@ const rfqRow = (title: string) => ({
   unit: 'cup',
   biddingClosesAt: '2099-12-01T00:00:00.000Z',
   openQuotationCount: 0,
+  acceptedTotalVnd: null,
 });
 
 describe('BuyerRfqList: stale responses (GH#431)', () => {

@@ -21,7 +21,9 @@ import {
   sortByDistance,
   villageCenter,
 } from './map-model';
+import { MapPlaceholder } from './map-placeholder';
 import { ExperienceSummary, OpenStatus } from './pin-popup';
+import { useMapStart } from './use-map-start';
 import { type FetchViewportPins, useViewportPins } from './use-viewport-pins';
 import { nearestNeighbourOrder } from './walking-route';
 import { WalkingRoutePanel } from './walking-route-panel';
@@ -93,6 +95,8 @@ export function VillageMapExplorer({
   const [locationState, setLocationState] = useState<LocationState>('idle');
   const [route, setRoute] = useState<WalkingRoute | null>(null);
   const routeRequest = useRef(0);
+  // MapLibre boots after the list has painted (GH#481); a deep link to one workshop starts it at once.
+  const [mapStarted, startMap] = useMapStart(webgl === true, initialSelectedId !== undefined);
 
   useEffect(() => {
     setWebgl(supportsWebGL());
@@ -258,16 +262,18 @@ export function VillageMapExplorer({
           ) : (
             // GH#364: a labelled region, not aria-hidden, so MapLibre's own keyboard handling (focusable
             // canvas, arrow keys pan, +/- zoom) stays usable. Choosing a workshop is done from the list.
+            // GH#475: lg:top-24 keeps the sticky frame below the sticky site header (65 px tall).
             <section
               aria-label={t('mapLabel')}
               aria-describedby="map-keyboard-hint"
               data-testid="map-frame"
-              className="h-[55svh] min-h-80 overflow-hidden rounded-card shadow-warm lg:sticky lg:top-6 lg:h-[75svh]"
+              className="h-[65svh] min-h-80 overflow-hidden rounded-card shadow-warm lg:sticky lg:top-24 lg:h-[75svh]"
             >
               <p id="map-keyboard-hint" className="sr-only">
                 {t('mapKeyboardHint')}
               </p>
-              {webgl ? (
+              {webgl && !mapStarted ? <MapPlaceholder onStart={startMap} /> : null}
+              {webgl && mapStarted ? (
                 <MapCanvas
                   pins={filtered}
                   highlightId={highlightId}

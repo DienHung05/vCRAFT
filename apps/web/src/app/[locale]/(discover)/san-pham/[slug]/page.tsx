@@ -27,12 +27,14 @@ import {
 } from '@/features/catalog/view-models';
 import { FavouriteButton } from '@/features/favourites/favourite-button';
 import { Link, permanentRedirect } from '@/i18n/navigation';
+import { formatDeclaredDate } from '@/lib/declared-date';
 import { frameRatioOf } from '@/lib/images';
 import { resolveLocale } from '@/lib/locale';
 import { optionalTextFor, textFor } from '@/lib/localized-text';
 import { jsonLd, metaDescription, pageMetadata } from '@/lib/seo/page-metadata';
 import { localizedPath } from '@/lib/seo/sitemap-entries';
 import { siteOrigin, traceShortUrl } from '@/lib/site';
+import { fallbackLang, vietnameseOnlyLang } from '@/lib/vietnamese-text';
 
 // Dữ liệu lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
 export const dynamic = 'force-dynamic';
@@ -102,16 +104,29 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
     product.coverVariants,
   );
   const presetKind = presetKindOf(product.category, product.name);
-  // Only photos the household really attached to a journal entry are shown; there is no stand-in picture.
-  const entryPhotos = log
-    .slice(1, 5)
-    .flatMap((e) => e.images.slice(0, 1).map((image) => ({ e, image })));
-  // Slides of the lightbox: the cover when it is a real photo, then the journal photos, in page order.
+  // Thumbnails under the cover: the photos the household added to the product (other than the cover itself, and only
+  // once processed), then those it attached to a journal entry. There is no stand-in picture.
+  const extraPhotos = [
+    ...product.images
+      .filter((own) => own.url && own.url !== product.coverUrl)
+      .slice(0, 4)
+      .map((own) => ({
+        key: own.mediaId,
+        alt: own.alt,
+        tint,
+        view: photoFromUrl(own.url, own.alt, own.variants),
+      })),
+    ...log.slice(1, 5).flatMap((e) =>
+      e.images.slice(0, 1).map((own) => {
+        const alt = stages(`${e.stage}.name`);
+        return { key: e.hash, alt, tint: e.tint, view: photoFromUrl(own.url, alt, own.variants) };
+      }),
+    ),
+  ];
+  // Slides of the lightbox: the cover when it is a real photo, then the extra photos, in page order.
   const coverSlide = gallerySlide(image);
-  const entrySlides = entryPhotos.map(({ e, image: own }) =>
-    gallerySlide(photoFromUrl(own.url, stages(`${e.stage}.name`), own.variants)),
-  );
-  const slides: GallerySlide[] = [coverSlide, ...entrySlides].filter(
+  const extraSlides = extraPhotos.map((photo) => gallerySlide(photo.view));
+  const slides: GallerySlide[] = [coverSlide, ...extraSlides].filter(
     (slide): slide is GallerySlide => slide !== undefined,
   );
   const thumbOffset = coverSlide ? 1 : 0;
@@ -189,23 +204,22 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
                   cover
                 )}
               </ViewTransition>
-              {entryPhotos.length > 0 ? (
+              {extraPhotos.length > 0 ? (
                 <ul className="mt-4 grid grid-cols-4 gap-3" aria-label={t('gallery')}>
-                  {entryPhotos.map(({ e, image: own }, i) => {
-                    const alt = stages(`${e.stage}.name`);
+                  {extraPhotos.map((photo, i) => {
                     const thumb = (
                       <ImageSlot
-                        alt={alt}
-                        tint={e.tint}
+                        alt={photo.alt}
+                        tint={photo.tint}
                         ratio="1/1"
-                        {...slotPhoto(photoFromUrl(own.url, alt, own.variants))}
+                        {...slotPhoto(photo.view)}
                         sizes="(min-width: 768px) 14vw, 22vw"
                       />
                     );
                     return (
-                      <li key={e.hash}>
-                        {entrySlides[i] ? (
-                          <GalleryTrigger index={thumbOffset + i} alt={alt}>
+                      <li key={photo.key}>
+                        {extraSlides[i] ? (
+                          <GalleryTrigger index={thumbOffset + i} alt={photo.alt}>
                             {thumb}
                           </GalleryTrigger>
                         ) : (
@@ -232,7 +246,9 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
               ) : null}
               {sold ? <Badge tone="outline">{common('sold')}</Badge> : null}
             </div>
-            <h1 className="text-h1">{name}</h1>
+            <h1 className="text-h1" lang={fallbackLang(locale, product.nameEn)}>
+              {name}
+            </h1>
             <p className="text-ash">
               {t.rich('by', {
                 household: household.name,
@@ -262,7 +278,9 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
             </p>
           </header>
 
-          <p className="max-w-prose-vn">{description}</p>
+          <p className="max-w-prose-vn" lang={fallbackLang(locale, product.descriptionEn)}>
+            {description}
+          </p>
 
           {product.tags.length > 0 ? (
             <ul className="flex flex-wrap gap-2" aria-label={t('tags')}>
@@ -320,8 +338,8 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
                 <p className="text-small text-ash">
                   {t('journeySummary', {
                     count: log.length,
-                    from: format.dateTime(new Date(first.at), 'short'),
-                    to: format.dateTime(new Date(last.at), 'short'),
+                    from: formatDeclaredDate(format, first.at, 'short'),
+                    to: formatDeclaredDate(format, last.at, 'short'),
                   })}
                 </p>
                 <Link
@@ -342,13 +360,13 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
             {material ? (
               <>
                 <dt className="text-ash">{t('material')}</dt>
-                <dd>{material}</dd>
+                <dd lang={fallbackLang(locale, product.materialEn)}>{material}</dd>
               </>
             ) : null}
             {dimensions ? (
               <>
                 <dt className="text-ash">{t('dimensions')}</dt>
-                <dd>{dimensions}</dd>
+                <dd lang={fallbackLang(locale, product.dimensionsEn)}>{dimensions}</dd>
               </>
             ) : null}
             {product.weightGrams ? (
@@ -365,7 +383,10 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
 
           {product.artisanNote ? (
             <figure className="rounded-card bg-clay/8 p-6">
-              <blockquote className="font-display text-h3 text-ink/90 italic">
+              <blockquote
+                lang={vietnameseOnlyLang(locale)}
+                className="font-display text-h3 text-ink/90 italic"
+              >
                 “{product.artisanNote}”
               </blockquote>
             </figure>

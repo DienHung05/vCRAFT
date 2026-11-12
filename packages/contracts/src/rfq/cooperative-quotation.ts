@@ -168,6 +168,12 @@ export const BuyerQuotationResponseSchema = z.strictObject({
       quantity: PositiveQuantitySchema,
       completionDate: IsoDateTimeSchema,
       unitPriceVnd: PositiveVndSchema.optional(),
+      /**
+       * The buyers' rating of the household (mean with one decimal, FR-ORD-11), sent on a direct bid so the buyer can
+       * compare households. `null` when it has no rating yet. Comments stay private.
+       */
+      ratingAverage: z.number().min(1).max(5).nullable().optional(),
+      ratingCount: z.number().int().min(0).optional(),
     }),
   ),
   productionTotalVnd: VndSchema,
@@ -208,7 +214,7 @@ export const ContributionHistoryResponseSchema = z.array(
 );
 
 /**
- * `GET /me/open-coordinated-requests` (BR-05a, ADR-0024): a redacted summary of a coordinated request an
+ * `GET /me/open-coordinated-requests` (BR-05a, ADR-0026): a redacted summary of a coordinated request an
  * administrator claimed and that is still open for offers. It carries no title, description, buyer
  * identity, budget, destination or attachments: those stay behind the invitation check.
  */

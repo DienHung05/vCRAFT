@@ -67,6 +67,11 @@ export const JournalEntryResponseSchema = z.object({
       status: MediaStatusSchema.default('READY'),
       /** ThumbHash (base64) for a blurred placeholder; known once the photo is `READY`. */
       thumbhash: z.string().nullable().default(null),
+      /**
+       * What the photo shows, in Vietnamese (the media asset's description). Set for the demo's stage photos, null
+       * for a household's own upload; clients fall back to a text built from the stage.
+       */
+      alt: z.string().nullable().default(null),
     }),
   ),
   skipReason: z.string().nullable(),

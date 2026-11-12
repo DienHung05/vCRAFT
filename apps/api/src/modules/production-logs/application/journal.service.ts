@@ -5,7 +5,7 @@ import type {
   JournalDto,
   UpdateJournalEntryRequest,
 } from '@vcraft/contracts';
-import { JournalEntry, Product } from '@vcraft/database';
+import { JournalEntry, Product, queueExhibitionChange } from '@vcraft/database';
 import {
   checkDraftEdit,
   checkNewEntry,
@@ -14,6 +14,7 @@ import {
   type JournalState,
   verifyChain,
 } from '@vcraft/domain';
+import { productTag, traceTag } from '@vcraft/utils';
 import type { Actor } from '../../../common/auth/auth.guard';
 import { deniedAccess } from '../../../common/auth/denied-access';
 import { assertVersion, unwrap } from '../../../common/domain/unwrap';
@@ -88,6 +89,8 @@ export class JournalService {
         hash: '',
       });
       entry.hash = await computeEntryHash(product.id, toChainEntry(entry));
+      // A new or correcting entry shows on the trace page and the product page (ADR-0027).
+      queueExhibitionChange(em, [productTag(product.slug), traceTag(product.traceCode)]);
       await em.flush();
       return toJournalDto(product, [...entries, entry], this.media);
     });

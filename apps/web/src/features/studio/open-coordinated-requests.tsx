@@ -11,17 +11,21 @@ import { DeadlineCountdown } from '@/features/rfq/deadline-countdown';
 import { useIdempotentAction } from '@/lib/use-idempotent-action';
 
 /**
- * BR-05a (ADR-0024): coordinated requests an administrator claimed, open to the household without an
+ * BR-05a (ADR-0026): coordinated requests an administrator claimed, open to the household without an
  * invitation. Only a redacted summary is shown; sending an offer makes the household invited.
  */
 export function OpenCoordinatedRequests({
   client,
   onOffered,
+  headingLevel = 2,
 }: {
   client: QuotationClient;
-  /** Called after an offer was sent, so the invitations list can show the new invitation. */
+  /** Called after an offer was sent, so the page can point the household at the new invitation. */
   onOffered?: () => void;
+  /** The list is the whole page at `/studio/yeu-cau-mo` (h1); the request cards below are one level deeper. */
+  headingLevel?: 1 | 2;
 }) {
+  const Heading = headingLevel === 1 ? 'h1' : 'h2';
   const t = useTranslations('studio.invitations');
   const [rows, setRows] = useState<readonly OpenCoordinatedRequestDto[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -43,7 +47,7 @@ export function OpenCoordinatedRequests({
   return (
     <section className="flex flex-col gap-4" data-testid="open-requests">
       <header className="flex flex-col gap-2">
-        <h2 className="text-h3">{t('openTitle')}</h2>
+        <Heading className={headingLevel === 1 ? 'text-h2' : 'text-h3'}>{t('openTitle')}</Heading>
         <p className="text-small text-ash">{t('openLead')}</p>
       </header>
       {failed ? (

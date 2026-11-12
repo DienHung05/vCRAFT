@@ -72,7 +72,7 @@ export const DEMO_HOUSEHOLD_IDS = {
 } as const;
 
 /**
- * 12 yêu cầu báo giá mẫu, id cố định để kịch bản demo và e2e trỏ thẳng vào đúng yêu cầu.
+ * 14 yêu cầu báo giá mẫu, id cố định để kịch bản demo và e2e trỏ thẳng vào đúng yêu cầu.
  * Chú thích: bước demo dùng yêu cầu đó (docs/demo/README.md, ma trận nghiệm thu).
  */
 export const DEMO_REQUEST_IDS = {
@@ -100,4 +100,8 @@ export const DEMO_REQUEST_IDS = {
   delivered: 'd3a10000-0000-4000-8000-000000000111',
   /** CANCELLED. */
   cancelled: 'd3a10000-0000-4000-8000-000000000112',
+  /** BIDDING, không điều phối, 3 hộ báo giá trực tiếp (INDIVIDUAL) khác giá và ngày: bước "buyer so sánh và chốt" (GH#479). */
+  biddingDirect: 'd3a10000-0000-4000-8000-000000000113',
+  /** SENT, không điều phối, hộ household được mời và chưa báo giá: bước "hộ gửi, sửa, rút báo giá trực tiếp" (GH#479). */
+  sentDirect: 'd3a10000-0000-4000-8000-000000000114',
 } as const;
