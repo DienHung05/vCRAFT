@@ -197,7 +197,9 @@ function ContributionWorkspace({ rfqId, client }: { rfqId: string; client: Quota
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-h2">{request.title}</h1>
-      <p className="break-words whitespace-pre-wrap text-ash">{request.design}</p>
+      {request.design.trim().toLowerCase() !== request.title.trim().toLowerCase() ? (
+        <p className="break-words whitespace-pre-wrap text-ash">{request.design}</p>
+      ) : null}
       <RfqStepper status={request.status} hasBids={request.hasBids ?? Boolean(quotation)} />
       {request.customRequirements ? (
         <div>

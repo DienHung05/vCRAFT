@@ -2,6 +2,7 @@ import { buttonVariants, Card, cn } from '@vcraft/ui';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { StageIcon } from '@/features/traceability/stage-icon';
 import { Link } from '@/i18n/navigation';
+import { formatDeclaredDate } from '@/lib/declared-date';
 import { JourneyReveal } from './journey-reveal';
 import type { LogEntryView } from './view-models';
 
@@ -66,8 +67,8 @@ export async function JourneyCard({
       <p className="text-small text-ash">
         {t('journeySummary', {
           count: entries.length,
-          from: format.dateTime(new Date(first.at), 'short'),
-          to: format.dateTime(new Date(last.at), 'short'),
+          from: formatDeclaredDate(format, first.at, 'short'),
+          to: formatDeclaredDate(format, last.at, 'short'),
         })}
       </p>
       <Link

@@ -1,7 +1,8 @@
 import type { MikroORM } from '@mikro-orm/core';
-import { MediaAsset, type MediaVariant } from '@vcraft/database';
+import { MediaAsset, type MediaVariant, queueExhibitionChange } from '@vcraft/database';
 import { isHeicMime } from '@vcraft/domain';
 import { IMMUTABLE_CACHE_CONTROL, type ObjectStorage } from '@vcraft/storage';
+import { EXHIBITION_TAG } from '@vcraft/utils';
 import { type ConvertedVariant, convertImageInPhases } from './convert-image';
 
 export interface MediaDeps {
@@ -77,6 +78,9 @@ export async function processMediaAsset(deps: MediaDeps, assetId: string): Promi
     asset.dominantColor = converted.dominantColor;
     asset.variants = webp;
     asset.status = 'READY';
+    // A public photo that just became READY may now show on an exhibition page that linked it while it
+    // was processing; the same flush records the event, so the web drops its cached pages (ADR-0027).
+    queueExhibitionChange(em, [EXHIBITION_TAG]);
     await em.flush();
   }
 

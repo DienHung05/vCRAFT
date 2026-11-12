@@ -9,6 +9,13 @@ export const formats = {
   dateTime: {
     short: { day: '2-digit', month: '2-digit', year: 'numeric' },
     long: { day: 'numeric', month: 'long', year: 'numeric' },
+    longStamp: {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    },
     stamp: { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' },
   },
 } satisfies Formats;

@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
 import type { OpenCoordinatedRequestDto } from '@vcraft/contracts';
 import { describe, expect, it, vi } from 'vitest';
-import { QuotationInvitations } from '@/features/studio/quotation-invitations';
+import { StudioOpenRequests } from '@/features/studio/studio-open-requests';
 import { renderVi } from './render';
 
 vi.mock('@/i18n/navigation', () => ({
@@ -20,18 +20,19 @@ const OPEN: OpenCoordinatedRequestDto = {
 };
 const asClient = (methods: object) => methods as unknown as QuotationClient;
 
-describe('Open coordinated requests in Studio (BR-05a)', () => {
-  it('lists the redacted open requests below the invitations', async () => {
+describe('Open coordinated requests page in Studio (BR-05a, GH#490)', () => {
+  it('lists the redacted open requests as the page heading and cards', async () => {
     renderVi(
-      <QuotationInvitations
+      <StudioOpenRequests
         client={asClient({
-          listInvitations: vi.fn().mockResolvedValue([]),
           listOpenCoordinatedRequests: vi.fn().mockResolvedValue([OPEN]),
         })}
       />,
     );
     const section = await screen.findByTestId('open-requests');
-    expect(within(section).getByText('Yêu cầu mở')).toBeTruthy();
+    expect(
+      within(section).getByRole('heading', { level: 1, name: 'Yêu cầu đang mở' }),
+    ).toBeTruthy();
     expect(await within(section).findByText(/Bát đĩa: cần 500 cup/)).toBeTruthy();
     expect(within(section).getByText(/Hạn chào giá/)).toBeTruthy();
     expect(within(section).getByRole('button', { name: 'Gửi đề xuất' })).toBeTruthy();
@@ -39,9 +40,8 @@ describe('Open coordinated requests in Studio (BR-05a)', () => {
 
   it('explains BR-05a when no request is open', async () => {
     renderVi(
-      <QuotationInvitations
+      <StudioOpenRequests
         client={asClient({
-          listInvitations: vi.fn().mockResolvedValue([]),
           listOpenCoordinatedRequests: vi.fn().mockResolvedValue([]),
         })}
       />,
@@ -51,14 +51,12 @@ describe('Open coordinated requests in Studio (BR-05a)', () => {
     expect(within(empty).getByText(/Ban quản lý đã nhận điều phối/)).toBeTruthy();
   });
 
-  it('opens the offer form, sends the offer and reloads both lists', async () => {
+  it('opens the offer form, sends the offer, reloads the list and points to the invitations', async () => {
     const listOpen = vi.fn().mockResolvedValueOnce([OPEN]).mockResolvedValue([]);
-    const listInvitations = vi.fn().mockResolvedValue([]);
     const createContribution = vi.fn().mockResolvedValue({});
     renderVi(
-      <QuotationInvitations
+      <StudioOpenRequests
         client={asClient({
-          listInvitations,
           listOpenCoordinatedRequests: listOpen,
           createContribution,
         })}
@@ -82,25 +80,25 @@ describe('Open coordinated requests in Studio (BR-05a)', () => {
         { idempotencyKey: expect.any(String) },
       ),
     );
-    await waitFor(() => expect(listInvitations).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(listOpen).toHaveBeenCalledTimes(2));
+    const notice = await screen.findByTestId('open-requests-offered');
+    expect(within(notice).getByText(/Đã gửi đề xuất/)).toBeTruthy();
+    expect(within(notice).getByRole('link', { name: 'Xem lời mời báo giá' })).toBeTruthy();
   });
 
-  it('keeps the invitations usable when the open list fails, with its own retry', async () => {
+  it('shows an error with a retry when the open list fails', async () => {
     const listOpen = vi
       .fn()
       .mockRejectedValueOnce(new QuotationApiError('INTERNAL_ERROR', 500))
       .mockResolvedValue([OPEN]);
     renderVi(
-      <QuotationInvitations
+      <StudioOpenRequests
         client={asClient({
-          listInvitations: vi.fn().mockResolvedValue([]),
           listOpenCoordinatedRequests: listOpen,
         })}
       />,
     );
     expect(await screen.findByText('Không tải được các yêu cầu mở.')).toBeTruthy();
-    expect(screen.getByText('Hộ chưa có lời mời nào.')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Thử lại' }));
     expect(await screen.findByText(/Bát đĩa: cần 500 cup/)).toBeTruthy();
   });
@@ -112,9 +110,8 @@ describe('Open coordinated requests in Studio (BR-05a)', () => {
       .mockRejectedValueOnce(new TypeError('Request timed out'))
       .mockResolvedValue({});
     renderVi(
-      <QuotationInvitations
+      <StudioOpenRequests
         client={asClient({
-          listInvitations: vi.fn().mockResolvedValue([]),
           listOpenCoordinatedRequests: vi.fn().mockResolvedValue([OPEN]),
           createContribution,
         })}
@@ -162,9 +159,8 @@ describe('Open coordinated requests in Studio (BR-05a)', () => {
       .mockRejectedValueOnce(new TypeError('Request timed out'))
       .mockResolvedValue({});
     renderVi(
-      <QuotationInvitations
+      <StudioOpenRequests
         client={asClient({
-          listInvitations: vi.fn().mockResolvedValue([]),
           listOpenCoordinatedRequests: vi.fn().mockResolvedValue([OPEN, other]),
           createContribution,
         })}

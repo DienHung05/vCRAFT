@@ -6,8 +6,9 @@
  * Thao tác thật: admin nhận điều phối yêu cầu `sentOptIn`. Lệnh GHI vào dữ liệu ⇒ chạy xong phải
  * `pnpm demo:reset` để trả dữ liệu về trạng thái đóng băng. Chạy lại khi chưa reset sẽ báo "đã nhận điều phối".
  *
- * Cần: DEMO_API_URL (hoặc E2E_BASE_URL), DEMO_ADMIN_USERNAME, DEMO_ADMIN_PASSWORD.
- * `SUPABASE_*` is no longer needed by this script: it signs in through the API with a username (GH#212).
+ * Cần: DEMO_API_URL (hoặc E2E_BASE_URL), DEMO_ADMIN_USERNAME, DEMO_ADMIN_PASSWORD (đăng nhập cục bộ, không captcha).
+ * GH#480: trên bản triển khai (captcha + TOTP cho admin) đặt SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY,
+ * SUPABASE_SECRET_KEY và DEMO_ADMIN_TOTP_SECRET; script dùng `lib/demo-session.mjs` thay cho mật khẩu.
  */
 import { apiBase, loadDemoAccounts, printResult, signIn } from './lib/common.mjs';
 

@@ -35,6 +35,7 @@ import { verifyDirectBids } from './verify-direct-bids.js';
 import { verifyEnglishProducts } from './verify-english.js';
 import { verifyJournalPhotos } from './verify-journal-photos.js';
 import { verifyProfileDepth } from './verify-profile-depth.js';
+import { checkNoStrayApprovedHouseholds } from './verify-stray-households.js';
 
 export interface DemoCheck {
   name: string;
@@ -292,6 +293,7 @@ export async function verifyDemoData(
   await verifyEnglishProducts(em, add);
   await verifyDirectBids(em, add, now);
   if (options.media ?? true) await verifyJournalPhotos(em, add);
+  checks.push(await checkNoStrayApprovedHouseholds(em));
 
   if (options.media ?? true) await verifyMedia(em, add, options.checkPublicUrls ?? false);
 

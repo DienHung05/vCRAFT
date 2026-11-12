@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AcceptBidRequestSchema,
   CreateRfqRequestSchema,
+  RfqListResponseSchema,
   RfqResponseSchema,
   UpdateRfqRequestSchema,
 } from '../src';
@@ -166,5 +167,41 @@ describe('request requirements and attachments (FR-RFQ-01)', () => {
     expect(CreateRfqRequestSchema.safeParse({ ...base, attachments: [id(1), id(1)] }).success).toBe(
       false,
     );
+  });
+});
+
+describe('GH#478 contracts: request list item', () => {
+  const item = {
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    version: 1,
+    revision: 0,
+    status: 'IN_PRODUCTION',
+    title: 'Logo cups',
+    category: null,
+    budgetMinVnd: null,
+    budgetMaxVnd: null,
+    cancelReason: null,
+    createdAt: '2027-01-01T00:00:00.000Z',
+    ...valid,
+    openQuotationCount: 0,
+  };
+
+  it('parses a response from an API that predates acceptedTotalVnd (deploy order)', () => {
+    const parsed = RfqListResponseSchema.safeParse({ data: [item], nextCursor: null });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('accepts a total or null, and refuses a negative total', () => {
+    for (const acceptedTotalVnd of [96_600_000, null])
+      expect(
+        RfqListResponseSchema.safeParse({ data: [{ ...item, acceptedTotalVnd }], nextCursor: null })
+          .success,
+      ).toBe(true);
+    expect(
+      RfqListResponseSchema.safeParse({
+        data: [{ ...item, acceptedTotalVnd: -1 }],
+        nextCursor: null,
+      }).success,
+    ).toBe(false);
   });
 });

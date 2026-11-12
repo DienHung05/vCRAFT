@@ -328,6 +328,30 @@ Làm theo thứ tự, trên bản đã triển khai, **sau** `pnpm demo:reset`. 
 | 14 | Dự phòng | Diễn tập §8 một lần trọn vẹn (chuyển DNS sang tunnel, giả lập Vercel/Render mất) | Dựng được bản local + tunnel trong ≤ 10 phút | 30 phút |
 | 15 | Đóng gói | Sáng thi: `pnpm demo:reset`, `pnpm demo:media`, `pnpm demo:verify`, đăng nhập ba thiết bị, kiểm project Supabase Free chưa bị tạm dừng (trang Usage), sạc đầy pin | Mọi thứ sẵn sàng | 10 phút |
 
+### Chạy kịch bản và kiểm tra trên bản production có captcha và TOTP (GH#480)
+
+Bản production bật captcha (Turnstile) ở đăng nhập mật khẩu và bắt TOTP (aal2) với Admin, nên đăng nhập bằng mật khẩu từ script không còn qua được. Các lệnh `demo:e2e`, `demo:e2e:preexam` và `demo:check:concurrency` vì vậy cấp phiên bằng `scripts/demo/lib/demo-session.mjs` khi máy chạy có `SUPABASE_SECRET_KEY`. Captcha và TOTP vẫn bắt buộc với người dùng thật; production không đổi cấu hình nào.
+
+Cách hoạt động: với đúng bốn email demo cố định (email khác bị từ chối trước khi gọi mạng), helper gọi `admin/generate_link` (magic link) bằng khóa bí mật, đổi `hashed_token` lấy phiên qua `/auth/v1/verify`; với Admin, nó tính mã TOTP từ `DEMO_ADMIN_TOTP_SECRET` rồi chạy challenge/verify của Supabase để nâng phiên lên aal2. Helper chỉ nằm trong `scripts/`; `.dependency-cruiser.cjs` (luật `apps-packages-no-scripts`) và `scripts/demo/lib/demo-session.test.mjs` bảo đảm `apps/` và `packages/` không import nó, nên không thể tới được từ API hay web đã triển khai. Token không bao giờ được in ra.
+
+**Chuẩn bị một lần** (trên máy chạy kịch bản; các biến này không đặt ở Vercel hay Render):
+
+1. Đặt trong `.env` của máy đó: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (**chỉ máy chạy script demo cần khóa này**, đừng commit), `E2E_BASE_URL` (và `DEMO_API_URL` nếu API không ở `<E2E_BASE_URL>/api/v1`).
+2. Đăng ký TOTP cho Admin demo: đăng nhập `admin` ở `/vi/dang-nhap`; màn hình bắt TOTP hiện mã QR và **dòng "khóa bí mật"** (base32). Chép khóa đó vào `DEMO_ADMIN_TOTP_SECRET` trong `.env` (hoặc kho bí mật của nhóm), quét QR bằng ứng dụng xác thực rồi nhập mã 6 số để xác nhận. Chỉ làm một lần; sau đó mỗi lần chạy script tự tính mã.
+3. Nếu mất khóa: xóa yếu tố TOTP của `demo.admin@example.com` ở Dashboard → Authentication → Users, rồi lặp lại bước 2.
+
+```bash
+# Phiên cấp bằng khóa bí mật + TOTP (captcha và TOTP vẫn bật với người dùng thật)
+pnpm demo:reset
+E2E_BASE_URL=https://<DOMAIN> pnpm demo:e2e                       # mục 3
+E2E_BASE_URL=https://<DOMAIN> pnpm demo:e2e:preexam               # mục 5-8
+pnpm demo:reset
+E2E_BASE_URL=https://<DOMAIN> pnpm demo:check:concurrency         # mục 10: một 200 + một 409 STALE_VERSION
+pnpm demo:reset
+```
+
+Không có `SUPABASE_SECRET_KEY` thì script quay về đăng nhập mật khẩu (`DEMO_*_PASSWORD`), chỉ dùng được với stack cục bộ không bật captcha. Hai phiên Admin liên tiếp dùng chung một bước 30 giây của TOTP sẽ khiến helper chờ sang bước kế tiếp (tối đa ~30 giây) thay vì dùng lại mã cũ.
+
 Lệnh Lighthouse (cần Chrome; không thêm dependency, dùng `npx`):
 
 ```bash
