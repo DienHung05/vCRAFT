@@ -397,11 +397,29 @@ describe('Demo seed and guarded reset', () => {
 
     const first = await publish();
     expect(first.uploaded.documentsUploaded).toBe(DEMO_VERIFICATION_DOCS.length);
-    // A fresh seed never carried stage photos on journal entries, so nothing needs re-sealing.
-    expect(first.linked.journalEntriesChanged).toBe(0);
+    // A fresh seed has no photo on journal entries: linking adds the stage photos of the demo pieces and re-seals them (GH#472).
+    expect(first.linked.journalEntriesChanged).toBeGreaterThan(0);
     expect(first.linked.linksCreated).toBe(first.linked.links);
     const report = await verifyDemoData(db.orm.em.fork(), now);
     expect(report.checks.filter((c) => !c.ok)).toEqual([]);
+
+    // `demo:verify` goes red when a milestone of a demo piece loses its photo (GH#472), and green again once it is back.
+    const breakEm = db.orm.em.fork();
+    const cupEntry = await breakEm.findOneOrFail(JournalEntry, {
+      product: { traceCode: DEMO_QR_TRACE_CODE },
+      seq: 3,
+    });
+    const keptImages = cupEntry.images;
+    cupEntry.images = [];
+    await breakEm.flush();
+    const bare = await verifyDemoData(db.orm.em.fork(), now);
+    expect(
+      bare.checks.find((c) => c.name.startsWith('Nhật ký của các món demo'))?.ok,
+      'a bare milestone fails the photo check',
+    ).toBe(false);
+    cupEntry.images = keptImages;
+    await breakEm.flush();
+    expect((await verifyDemoData(db.orm.em.fork(), now)).ok).toBe(true);
 
     // Chạy lại không đổi gì (cùng id, cùng liên kết, cùng dấu băm).
     const hashesBefore = (await db.orm.em.fork().find(JournalEntry, {})).map((e) => e.hash).sort();
@@ -471,14 +489,73 @@ describe('Demo seed and guarded reset', () => {
     const minhHai = await db.orm.em.fork().findOneOrFail(Household, { slug: 'gom-minh-hai' });
     expect(minhHai.coverUrl).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
 
-    // The public trace page of the cup carries the credit of its own photo and no stage photo on any entry: a generic
-    // stage photo is not this cup. The chain still verifies (checked below for every product).
+    // The public trace page of the cup carries the credit of its own cover photo and, on every milestone, stage photos
+    // (GH#472): real credited photos of the stage (not of this cup), served from the media store with a description.
+    // The hash chain computed from the checksums the API returns still verifies.
     const trace = await t.request({ method: 'GET', url: `/trace/${DEMO_QR_TRACE_CODE}` });
     expect(trace.status).toBe(200);
     expect(trace.body.coverCredit.author).toBe('Nenad Stojković (Shixart1985)');
     expect(trace.body.coverCredit.license).toBe('CC BY 2.0');
-    expect(trace.body.journal.entries.length).toBeGreaterThan(0);
-    for (const entry of trace.body.journal.entries) expect(entry.images).toEqual([]);
+    expect(trace.body.journal.entries).toHaveLength(7);
+    for (const entry of trace.body.journal.entries) {
+      expect(entry.images.length, `milestone ${entry.seq}`).toBeGreaterThanOrEqual(1);
+      expect(entry.images.length, `milestone ${entry.seq}`).toBeLessThanOrEqual(3);
+      for (const image of entry.images) {
+        expect(image.url, `milestone ${entry.seq}`).toMatch(/^http:\/\/localhost:8080\/media\/v\//);
+        expect(image.status).toBe('READY');
+        expect(image.variants.length).toBeGreaterThan(0);
+        expect(image.alt?.length).toBeGreaterThan(10);
+        expect(image.credit.author).toBeTruthy();
+        expect(image.credit.license).toMatch(/^CC BY(-SA)? /);
+        expect(image.credit.sourceUrl).toMatch(/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
+      }
+    }
+    type TraceEntry = {
+      seq: number;
+      stage: ChainEntry['stage'];
+      declaredDate: string;
+      note: string;
+      images: Array<{ sha256: string }>;
+      supersedesSeq: number | null;
+      skipReason: string | null;
+      prevHash: string;
+      hash: string;
+    };
+    const traceChain: ChainEntry[] = trace.body.journal.entries.map((e: TraceEntry) => ({
+      seq: e.seq,
+      stage: e.stage,
+      at: e.declaredDate,
+      note: e.note,
+      mediaChecksums: e.images.map((image) => image.sha256),
+      supersedesSeq: e.supersedesSeq ?? undefined,
+      skipReason: e.skipReason ?? undefined,
+      prevHash: e.prevHash,
+      hash: e.hash,
+    }));
+    expect(await verifyChain(trace.body.journal.productId, traceChain)).toEqual({
+      ok: true,
+      count: 7,
+    });
+    // The other demo pieces and every product of the demo household (drafts too) have a photo on every milestone.
+    const demoProducts = await db.orm.em.fork().find(Product, {
+      $or: [
+        { household: DEMO_HOUSEHOLD_IDS.household },
+        { traceCode: { $in: ['BT7K2QXM', 'HX2M9KQD'] } },
+      ],
+    });
+    expect(demoProducts.length).toBeGreaterThanOrEqual(11);
+    for (const product of demoProducts) {
+      const entries = await db.orm.em.fork().find(JournalEntry, { product });
+      expect(entries.length, product.traceCode).toBeGreaterThanOrEqual(4);
+      for (const entry of entries) {
+        expect(entry.images.length, `${product.traceCode} #${entry.seq}`).toBeGreaterThanOrEqual(1);
+      }
+    }
+    // A product outside the demo set keeps a bare journal: a stage photo is not its piece.
+    const outside = await db.orm.em.fork().findOneOrFail(Product, { traceCode: '84PZKVJU' });
+    for (const entry of await db.orm.em.fork().find(JournalEntry, { product: outside })) {
+      expect(entry.images).toEqual([]);
+    }
     const vaseTrace = await t.request({ method: 'GET', url: '/trace/BT7K2QXM' });
     expect(vaseTrace.body.coverCredit.author).toBeTruthy();
 

@@ -148,6 +148,7 @@ describe('view models', () => {
       mediaId: null,
       status: 'READY' as const,
       thumbhash: null,
+      alt: null,
       credit: {
         title: 'File:Nung.jpg',
         author: 'Tác giả ảnh',

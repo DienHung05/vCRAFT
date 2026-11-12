@@ -58,6 +58,7 @@ export async function toJournalDto(
             mediaId: media?.mediaId ?? null,
             status: media?.status ?? 'READY',
             thumbhash: media?.thumbhash ?? null,
+            alt: media?.alt ?? null,
           };
         }),
         skipReason: e.skipReason ?? null,
