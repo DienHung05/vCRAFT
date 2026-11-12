@@ -137,6 +137,7 @@ describe('Buyer quotation requests', () => {
     expect(titles).toContain('Listed sent');
     expect(titles).not.toContain('Someone else');
     expect(all.body.data[0].openQuotationCount).toBe(0);
+    expect(all.body.data[0].acceptedTotalVnd).toBeNull();
 
     const drafts = await t.request({ method: 'GET', url: '/rfqs?status=DRAFT', auth: buyer.auth });
     expect(drafts.body.data.map((row: { id: string }) => row.id)).toContain(mine.id);

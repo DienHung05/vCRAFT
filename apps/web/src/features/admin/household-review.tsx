@@ -2,7 +2,7 @@
 
 import { type AdminClient, ApiError, type HouseholdAction } from '@vcraft/api-client';
 import type { HouseholdDocumentDto, HouseholdDto, ProductDto } from '@vcraft/contracts';
-import { isInBatTrang } from '@vcraft/domain';
+import { isInBatTrang, missingApplicationParts } from '@vcraft/domain';
 import { Badge, Button, buttonVariants, Card, cn, SealStamp, stampShakeClass } from '@vcraft/ui';
 import dynamic from 'next/dynamic';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -23,6 +23,19 @@ const WorkshopReviewMap = dynamic(() => import('./workshop-review-map'), {
 });
 
 /** Hành động theo trạng thái; `needsReason` khớp luật bắt buộc lý do của domain. */
+/** Parts of an application the board needs before it can approve (API: `APPLICATION_INCOMPLETE`, GH#474). */
+const INCOMPLETE_PARTS = [
+  'profile',
+  'story',
+  'craft',
+  'artisans',
+  'workshops',
+  'documents',
+] as const;
+type IncompletePart = (typeof INCOMPLETE_PARTS)[number];
+const isIncompletePart = (part: string): part is IncompletePart =>
+  (INCOMPLETE_PARTS as readonly string[]).includes(part);
+
 const ACTIONS: Record<
   HouseholdDto['status'],
   readonly { action: HouseholdAction; needsReason: boolean }[]
@@ -343,7 +356,7 @@ export function HouseholdReview({
   const [result, setResult] = useState<
     'sealed' | 'done' | 'stale' | 'failed' | 'incomplete' | null
   >(null);
-  // Parts the API reported missing on a 422 APPLICATION_INCOMPLETE (profile, workshops, documents).
+  // Parts the API reported missing on a 422 APPLICATION_INCOMPLETE (profile, story, craft, artisans, workshops, documents).
   const [missingParts, setMissingParts] = useState<string[]>([]);
   // FR-ART-03: the certification being toggled, and how the last toggle ended.
   const [certBusy, setCertBusy] = useState<number | null>(null);
@@ -435,6 +448,20 @@ export function HouseholdReview({
 
   const actions = ACTIONS[household.status];
   const reasonOk = reason.trim().length >= 3;
+  // Same rule as the API's approval check: warn and hold "Duyệt" back before the click (GH#474).
+  const missingForApproval: IncompletePart[] =
+    household.status === 'PENDING_REVIEW'
+      ? [
+          ...missingApplicationParts({
+            history: household.history,
+            craftCategory: household.craftCategory ?? null,
+            craft: household.craft ?? null,
+            artisanCount: household.artisans.length,
+          }),
+          ...(household.workshops.length === 0 ? (['workshops'] as const) : []),
+          ...(documents.length === 0 ? (['documents'] as const) : []),
+        ]
+      : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -656,13 +683,24 @@ export function HouseholdReview({
               />
             </label>
           ) : null}
+          {missingForApproval.length > 0 ? (
+            <p role="status" className="text-small text-seal" data-testid="approval-warning">
+              {t('incompleteWarning', {
+                parts: missingForApproval.map((part) => t(`incompleteParts.${part}`)).join(', '),
+              })}
+            </p>
+          ) : null}
           <div className="flex flex-wrap gap-3">
             {actions.map(({ action, needsReason }) => (
               <Button
                 key={action}
                 type="button"
                 variant={needsReason ? 'secondary' : 'primary'}
-                disabled={busy || (needsReason && !reasonOk)}
+                disabled={
+                  busy ||
+                  (needsReason && !reasonOk) ||
+                  (action === 'approve' && missingForApproval.length > 0)
+                }
                 onClick={() => setPending(action)}
               >
                 {t(`actions.${action}`)}
@@ -696,11 +734,7 @@ export function HouseholdReview({
         <p role="alert" className="text-small text-seal">
           {t('incomplete', {
             parts: missingParts
-              .map((part) =>
-                part === 'profile' || part === 'workshops' || part === 'documents'
-                  ? t(`incompleteParts.${part}`)
-                  : part,
-              )
+              .map((part) => (isIncompletePart(part) ? t(`incompleteParts.${part}`) : part))
               .join(', '),
           })}
         </p>

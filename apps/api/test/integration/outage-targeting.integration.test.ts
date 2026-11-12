@@ -1,10 +1,10 @@
 import { News } from '@vcraft/database';
-import { villageToday } from '@vcraft/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Actor } from '../../src/common/auth/auth.guard.js';
 import { NewsService } from '../../src/modules/news/application/news.service.js';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
+import { pinVillageClock, releaseVillageClock } from './support/village-clock.js';
 
 type Area = 'BAT_TRANG' | 'GIANG_CAO' | undefined;
 
@@ -22,7 +22,8 @@ describe('Outage targeting by area', () => {
   /** Approved households by what their workshops say. */
   const households: Record<string, { id: string; auth: string; email: string }> = {};
   let applicant: { auth: string };
-  const today = villageToday();
+  // Set in beforeAll from the pinned clock (10:00 village time), so the all-day cuts are always active.
+  let today: string;
 
   const publish = async (
     outage: { areaCode?: string; area: string; date?: string; from?: string; to?: string },
@@ -93,6 +94,7 @@ describe('Outage targeting by area', () => {
     db = await startTestDatabase();
     await db.migrate();
     t = await startTestApp(db);
+    today = pinVillageClock();
     news = t.app.get(NewsService);
     admin = await t.createUser('ADMIN');
     buyer = await t.createUser('BUYER');
@@ -114,6 +116,7 @@ describe('Outage targeting by area', () => {
   }, 240_000);
 
   afterAll(async () => {
+    releaseVillageClock();
     await t?.close();
     await db?.stop();
   });

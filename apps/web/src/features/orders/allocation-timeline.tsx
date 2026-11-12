@@ -64,10 +64,12 @@ export function AllocationTimeline({
               {t('counts', {
                 done: format.number(share.completedQty),
                 total: format.number(share.quantity),
-                expected: format.number(share.expectedQty),
                 unit,
                 due: day(share.dueAt),
               })}
+              {share.completedQty < share.quantity
+                ? ` · ${t('expected', { expected: format.number(share.expectedQty), unit })}`
+                : null}
             </p>
             <p className="text-small text-ash">
               {t('started')} <time dateTime={share.startedAt}>{day(share.startedAt)}</time>

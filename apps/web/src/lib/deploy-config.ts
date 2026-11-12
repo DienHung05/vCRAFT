@@ -52,6 +52,16 @@ export function storageUrlFor(
 }
 
 /**
+ * Whether a `/media-cache/<path>` names a media variant: `<bucket>/v/<asset id>/<width>-<hash>.<avif|webp>`, where
+ * `<hash>` is the first 16 hex digits of the file's SHA-256 (the worker writes the key, see `storeVariants` in
+ * `apps/worker/.../process-media.ts`). The bytes behind such a name never change, so the response can be cached forever.
+ */
+export function isContentHashedVariant(path: readonly string[]): boolean {
+  const file = path.at(-1) ?? '';
+  return path.at(-3) === 'v' && /^\d+-[0-9a-f]{16}\.(?:avif|webp)$/.test(file);
+}
+
+/**
  * Same-origin form of a public Storage URL (`https://<ref>.supabase.co/storage/v1/object/public/<path>`
  * becomes `/media-cache/<path>`); any other URL, or an unset `supabaseUrl`, comes back unchanged.
  * Lighthouse (simulated throttling) charges a cross-origin LCP image a full DNS + TCP + TLS handshake and

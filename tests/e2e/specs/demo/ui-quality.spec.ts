@@ -39,6 +39,7 @@ const AREAS: Record<string, Area> = {
       '/vi/studio/san-pham',
       '/vi/studio/san-pham/moi',
       '/vi/studio/bao-gia',
+      '/vi/studio/yeu-cau-mo',
       `/vi/studio/de-xuat-tham-gia/${DEMO.requests.biddingToAccept}`,
       '/vi/studio/don-hang',
       '/vi/studio/ho-so',

@@ -37,6 +37,7 @@ export const pathnames = {
   '/tai-khoan': { vi: '/tai-khoan', en: '/account' },
   '/tai-khoan/phien-dang-nhap': { vi: '/tai-khoan/phien-dang-nhap', en: '/account/sessions' },
   '/studio/bao-gia': { vi: '/studio/bao-gia', en: '/studio/quotes' },
+  '/studio/yeu-cau-mo': { vi: '/studio/yeu-cau-mo', en: '/studio/open-requests' },
   '/studio/don-hang': { vi: '/studio/don-hang', en: '/studio/orders' },
   '/studio/ho-so': { vi: '/studio/ho-so', en: '/studio/profile' },
   '/studio/de-xuat-tham-gia/[id]': {

@@ -44,6 +44,19 @@ export function visitorIdentity(
   return `${ip ?? ''}|${ua}`;
 }
 
+/**
+ * The visitor's User-Agent under the same trust rule as `visitorIdentity`; `undefined` when it cannot be
+ * told (forwarded visitor without a valid key). Only used to recognise crawlers (GH#483), never stored.
+ */
+export function visitorUserAgent(
+  request: ScanRequestLike,
+  internalKey: string | undefined = process.env.INTERNAL_API_KEY,
+): string | undefined {
+  const trusted = internalKeyMatches(internalKey, first(request.headers['x-internal-key']));
+  if (!trusted && first(request.headers['x-visitor-ip'])) return undefined;
+  return trusted ? first(request.headers['x-visitor-ua']) : first(request.headers['user-agent']);
+}
+
 /** sha256(code + visitor + Vietnam day): the raw address and User-Agent are never stored (FR-TRC-06). */
 export function visitorHash(traceCode: string, identity: string, now = new Date()): string {
   const day = new Date(now.getTime() + VIETNAM_OFFSET_MS).toISOString().slice(0, 10);

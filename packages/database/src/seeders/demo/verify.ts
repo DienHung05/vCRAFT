@@ -33,6 +33,7 @@ import { demoEntityId } from './seed-demo.js';
 import { DEMO_VERIFICATION_DOCS } from './verification-docs.js';
 import { verifyEnglishProducts } from './verify-english.js';
 import { verifyProfileDepth } from './verify-profile-depth.js';
+import { checkNoStrayApprovedHouseholds } from './verify-stray-households.js';
 
 export interface DemoCheck {
   name: string;
@@ -288,6 +289,7 @@ export async function verifyDemoData(
 
   await verifyProfileDepth(em, add, { media: options.media ?? true });
   await verifyEnglishProducts(em, add);
+  checks.push(await checkNoStrayApprovedHouseholds(em));
 
   if (options.media ?? true) await verifyMedia(em, add, entries, options.checkPublicUrls ?? false);
 

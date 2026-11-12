@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { canMintSession, DemoSessionError, mintDemoSessionFromEnv } from './demo-session.mjs';
 
 /** Thư mục gốc monorepo. */
 export const ROOT = join(dirname(new URL(import.meta.url).pathname), '..', '..', '..');
@@ -48,12 +49,27 @@ export function apiBase() {
   return `${base.replace(/\/$/, '')}/api/v1`;
 }
 
-/** Signs a demo account in with its username, returning the API token pair (a fresh session per call).
+/** Signs a demo account in, returning the API token pair (a fresh session per call).
+ *
+ * GH#480: when `SUPABASE_SECRET_KEY` is set (the machine running the demo scripts against the deployed
+ * stack), the session is minted by `lib/demo-session.mjs` (admin generate_link + verify, plus the TOTP
+ * upgrade for the admin), because production enforces the captcha on password sign-in and TOTP on admins.
+ * Without the key, the password path below is kept for local stacks that have no captcha.
  *
  * GH#212: the identifier sent to `POST /auth/sign-in` is the USERNAME, no longer the email.
  */
 export async function signIn(accounts, key) {
   const account = accounts.DEMO_ACCOUNTS[key];
+  if (canMintSession()) {
+    try {
+      const session = await mintDemoSessionFromEnv(account.email);
+      return { access_token: session.access_token, refresh_token: session.refresh_token };
+    } catch (error) {
+      if (error instanceof DemoSessionError)
+        throw new Error(`Sign-in failed for ${key}: ${error.message}`);
+      throw error;
+    }
+  }
   const [api, password] = [apiBase(), requireEnv([account.passwordEnv])[account.passwordEnv]];
   const username = envOf(`DEMO_${key.toUpperCase()}_USERNAME`)?.trim() || account.username;
   const response = await fetch(`${api}/auth/sign-in`, {

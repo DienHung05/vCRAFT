@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { messages } from '@vcraft/i18n';
 import { describe, expect, it, vi } from 'vitest';
 import { ContributionForm, type ContributionFormProps } from '@/features/rfq/contribution-form';
 import { confirmDialog } from './confirm';
@@ -50,7 +51,6 @@ describe('ContributionForm (đề xuất tham gia, GH#10)', () => {
       />,
     );
     fill('1200', '58000', '2027-01-15');
-    expect(sendButton().disabled).toBe(false);
     fireEvent.click(sendButton());
     await waitFor(() =>
       expect(onSubmit).toHaveBeenCalledWith(
@@ -59,11 +59,12 @@ describe('ContributionForm (đề xuất tham gia, GH#10)', () => {
     );
   });
 
-  it('không đủ số, âm hoặc lẻ thì khóa gửi và báo lỗi cụ thể', () => {
-    renderVi(<ContributionForm {...props()} />);
-    expect(sendButton().disabled).toBe(true);
+  it('không đủ số, âm hoặc lẻ thì không gửi và báo lỗi cụ thể cạnh ô', () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    renderVi(<ContributionForm {...props()} onSubmit={onSubmit} />);
     fill('0', '58000', '2026-12-20');
-    expect(sendButton().disabled).toBe(true);
+    fireEvent.click(sendButton());
+    expect(onSubmit).not.toHaveBeenCalled();
     expect(screen.getByText(/Mức tối đa phải là số nguyên từ 1/)).toBeTruthy();
     fill('1200', '-1', '2026-12-20');
     expect(screen.getByText(/Đơn giá phải là số nguyên từ 1/)).toBeTruthy();
@@ -74,14 +75,102 @@ describe('ContributionForm (đề xuất tham gia, GH#10)', () => {
   it('ngày hoàn thành phải sau hạn chào giá và không muộn hơn hạn giao', () => {
     renderVi(<ContributionForm {...props()} />);
     fill('1200', '58000', '2026-11-01');
+    fireEvent.blur(screen.getByLabelText('Ngày hoàn thành'));
     expect(
       screen.getByText(/^Ngày hoàn thành phải sau hạn chào giá \d{2}\/\d{2}\/\d{4}\.$/),
     ).toBeTruthy();
-    expect(sendButton().disabled).toBe(true);
     fill('1200', '58000', '2027-02-01');
     expect(screen.getByText(/không được muộn hơn hạn giao/)).toBeTruthy();
     fill('1200', '58000', '2026-12-20');
+    expect(screen.queryByText(/không được muộn hơn hạn giao/)).toBeNull();
+    expect(
+      screen.queryByText(/^Ngày hoàn thành phải sau hạn chào giá \d{2}\/\d{2}\/\d{4}\.$/),
+    ).toBeNull();
+  });
+
+  it('a fresh form shows no error text and keeps the send button enabled (GH#477)', () => {
+    renderVi(<ContributionForm {...props()} />);
+    expect(screen.queryByText(/Mức tối đa phải là số nguyên/)).toBeNull();
+    expect(screen.queryByText(/Đơn giá phải là số nguyên/)).toBeNull();
+    expect(screen.queryByText('Chọn ngày hoàn thành.')).toBeNull();
+    for (const label of ['Mức tối đa (bát)', 'Đơn giá (VND)', 'Ngày hoàn thành'])
+      expect(screen.getByLabelText(label).getAttribute('aria-invalid')).toBeNull();
     expect(sendButton().disabled).toBe(false);
+  });
+
+  it('blurring an empty required field shows its error, linked by aria-describedby (GH#477)', () => {
+    renderVi(<ContributionForm {...props()} />);
+    const max = screen.getByLabelText('Mức tối đa (bát)');
+    fireEvent.blur(max);
+    const error = screen.getByText(/Mức tối đa phải là số nguyên từ 1/);
+    expect(max.getAttribute('aria-invalid')).toBe('true');
+    expect(max.getAttribute('aria-describedby')).toContain(error.id);
+    expect(error.id).not.toBe('');
+    // The other fields were not touched, so they stay quiet.
+    expect(screen.queryByText(/Đơn giá phải là số nguyên/)).toBeNull();
+    expect(screen.queryByText('Chọn ngày hoàn thành.')).toBeNull();
+    // The price keeps its words description next to the error.
+    const price = screen.getByLabelText('Đơn giá (VND)');
+    fireEvent.blur(price);
+    const priceError = screen.getByText(/Đơn giá phải là số nguyên từ 1/);
+    expect(price.getAttribute('aria-describedby')).toContain(priceError.id);
+    expect(price.getAttribute('aria-describedby')?.split(' ').length).toBe(2);
+  });
+
+  it('submitting an empty form shows every error next to its field and focuses the first (GH#477)', () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    renderVi(<ContributionForm {...props()} onSubmit={onSubmit} />);
+    fireEvent.click(sendButton());
+    expect(onSubmit).not.toHaveBeenCalled();
+    const cases: [string, RegExp][] = [
+      ['Mức tối đa (bát)', /Mức tối đa phải là số nguyên từ 1/],
+      ['Đơn giá (VND)', /Đơn giá phải là số nguyên từ 1/],
+      ['Ngày hoàn thành', /^Chọn ngày hoàn thành\.$/],
+    ];
+    for (const [label, message] of cases) {
+      const input = screen.getByLabelText(label);
+      const error = screen.getByText(message);
+      expect(input.getAttribute('aria-invalid')).toBe('true');
+      expect(input.getAttribute('aria-describedby')).toContain(error.id);
+      expect(error.parentElement?.contains(input)).toBe(true);
+    }
+    expect(document.activeElement).toBe(screen.getByLabelText('Mức tối đa (bát)'));
+    // No list of errors is left under the button.
+    expect(screen.queryByRole('list')).toBeNull();
+  });
+
+  it('the edit variant shows no error until a field is cleared and blurred (GH#477)', () => {
+    renderVi(
+      <ContributionForm
+        {...props()}
+        initial={{
+          maxQuantity: 1200,
+          unitPriceVnd: 58000,
+          completionDate: '2026-12-20T16:59:59.000Z',
+        }}
+        version={2}
+        onSubmit={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+    expect(screen.queryByText(/phải là số nguyên/)).toBeNull();
+    const price = screen.getByLabelText('Đơn giá (VND)');
+    fireEvent.change(price, { target: { value: '' } });
+    fireEvent.blur(price);
+    expect(screen.getByText(/Đơn giá phải là số nguyên từ 1/)).toBeTruthy();
+  });
+
+  it('has no developer wording (API, session) in the contribution messages (GH#477)', () => {
+    for (const locale of ['vi', 'en'] as const) {
+      const values: string[] = [];
+      const walk = (node: unknown) => {
+        if (typeof node === 'string') values.push(node);
+        else if (node && typeof node === 'object') Object.values(node).forEach(walk);
+      };
+      walk(messages[locale].contribution);
+      const text = values.join('\n');
+      expect(text).not.toMatch(/\bAPI\b/);
+      expect(text).not.toMatch(/phiên đăng nhập|signed-in session/i);
+    }
   });
 
   it('callback từ chối thì hiện lỗi và sửa gửi lại được', async () => {
