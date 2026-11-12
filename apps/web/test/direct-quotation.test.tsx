@@ -317,6 +317,48 @@ describe('BuyerRfqDetail with household quotations', () => {
     expect(screen.getAllByText('Tổng thấp nhất')).toHaveLength(1);
   });
 
+  it('compares three competing bids side by side with rating, note and one accept action each (GH#479)', async () => {
+    const rated = (
+      id: string,
+      name: string,
+      price: number,
+      rating: { ratingAverage: number | null; ratingCount: number },
+    ) => {
+      const bid = direct(id, name, price, `Note of ${name}`);
+      return { ...bid, parts: [{ ...(bid.parts[0] as object), ...rating }] } as BuyerQuotationDto;
+    };
+    renderVi(
+      <BuyerRfqDetail
+        rfqId={ID}
+        client={detail({
+          listBuyerQuotations: vi
+            .fn()
+            .mockResolvedValue([
+              rated('a', 'Gốm Minh Hải', 24_500, { ratingAverage: null, ratingCount: 0 }),
+              rated('b', 'Gốm Kim Liên', 26_200, { ratingAverage: 4, ratingCount: 1 }),
+              rated('c', 'Gốm Ngọc Diệp', 22_800, { ratingAverage: 4.7, ratingCount: 3 }),
+            ]),
+        })}
+      />,
+    );
+    await screen.findByText('Gốm Ngọc Diệp');
+    const comparison = screen.getByTestId('quotation-comparison');
+    expect(comparison.className).toContain('md:grid-cols-2');
+    expect(comparison.className).toContain('xl:grid-cols-3');
+    expect(within(comparison).getAllByRole('listitem').length).toBeGreaterThanOrEqual(3);
+    expect(screen.getByText('Chưa có đánh giá')).toBeTruthy();
+    expect(screen.getByText('4,0/5 sao · 1 đánh giá')).toBeTruthy();
+    expect(screen.getByText('4,7/5 sao · 3 đánh giá')).toBeTruthy();
+    for (const name of ['Gốm Minh Hải', 'Gốm Kim Liên', 'Gốm Ngọc Diệp'])
+      expect(screen.getByText(`Ghi chú của hộ: Note of ${name}`)).toBeTruthy();
+    expect(screen.getAllByText(/Hoàn thành/)).toHaveLength(3);
+    const accepts = screen.getAllByRole('button', { name: 'Chốt chào giá này' });
+    expect(accepts).toHaveLength(3);
+    // Each accept button is described by the household it chooses.
+    expect(accepts[2]?.getAttribute('aria-describedby')).toBe('bid-c-household');
+    expect(document.getElementById('bid-c-household')?.textContent).toBe('Gốm Ngọc Diệp');
+  });
+
   it('shows the requirements, the attachments and how many households were invited', async () => {
     const getMediaReadUrl = vi
       .fn()

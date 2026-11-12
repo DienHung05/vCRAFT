@@ -58,6 +58,7 @@ import {
   paymentTransition,
   projectBuyerQuotation,
   RATING_EDIT_WINDOW_DAYS,
+  type RatingSummary,
   RFQ_ACCEPT_GRACE_MS,
   ratingEditableUntil,
   remainingCapacity,
@@ -1074,7 +1075,14 @@ export class RfqService {
     );
     if (actor.role === 'ADMIN')
       return quotations.map((quotation) => toInternalQuotationDto(quotation, names));
-    return quotations.map((quotation) => toBuyerQuotationDto(quotation, names));
+    // A direct bid is the household's own offer, so the buyer sees its rating beside the price (GH#479).
+    const ratings = await ratingSummaries(
+      em,
+      quotations
+        .filter((quotation) => quotation.bidType === 'INDIVIDUAL')
+        .flatMap((quotation) => quotation.parts.map((part) => part.householdId)),
+    );
+    return quotations.map((quotation) => toBuyerQuotationDto(quotation, names, ratings));
   }
 
   /**
@@ -2092,6 +2100,7 @@ function toInternalQuotationDto(
 function toBuyerQuotationDto(
   quotation: CooperativeQuotationEntity,
   names: ReadonlyMap<string, string>,
+  ratings: ReadonlyMap<string, RatingSummary> = new Map(),
 ): BuyerQuotationDto {
   const projected = projectBuyerQuotation({
     quantity: quotation.quantity,
@@ -2117,7 +2126,11 @@ function toBuyerQuotationDto(
       completionDate: part.completionDate.toISOString(),
       // The household bid to the buyer itself, so the buyer compares its price; cooperative rates stay private.
       ...(quotation.bidType === 'INDIVIDUAL' && quotation.parts[index]
-        ? { unitPriceVnd: quotation.parts[index].unitPriceVnd }
+        ? {
+            unitPriceVnd: quotation.parts[index].unitPriceVnd,
+            ratingAverage: ratings.get(part.householdId)?.average ?? null,
+            ratingCount: ratings.get(part.householdId)?.count ?? 0,
+          }
         : {}),
     })),
   };

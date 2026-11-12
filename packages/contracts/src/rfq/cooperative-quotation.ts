@@ -168,6 +168,12 @@ export const BuyerQuotationResponseSchema = z.strictObject({
       quantity: PositiveQuantitySchema,
       completionDate: IsoDateTimeSchema,
       unitPriceVnd: PositiveVndSchema.optional(),
+      /**
+       * The buyers' rating of the household (mean with one decimal, FR-ORD-11), sent on a direct bid so the buyer can
+       * compare households. `null` when it has no rating yet. Comments stay private.
+       */
+      ratingAverage: z.number().min(1).max(5).nullable().optional(),
+      ratingCount: z.number().int().min(0).optional(),
     }),
   ),
   productionTotalVnd: VndSchema,

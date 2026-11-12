@@ -2,6 +2,7 @@ import type { EntityManager } from '@mikro-orm/core';
 import {
   type AllocationStatus,
   assembleCooperativeQuotation,
+  assembleDirectQuotation,
   type BidStatus,
   CONSENT_PURPOSES,
   checkNewEntry,
@@ -25,6 +26,7 @@ import {
   ContributionOffer,
   CooperativeQuotation,
   Household,
+  HouseholdRating,
   JournalEntry,
   News,
   OrderAllocation,
@@ -271,9 +273,24 @@ interface AllocationSpec {
   completed: number;
 }
 
+/** A household's own quote on a request nobody coordinates (`INDIVIDUAL`, GH#479): the whole quantity at its price. */
+interface DirectBidSpec {
+  h: number;
+  unitPriceVnd: number;
+  /** Days before `requiredBy` the household finishes. */
+  finishDaysBeforeRequired: number;
+  note: string;
+}
+
 interface RequestSpec {
   key: keyof typeof DEMO_REQUEST_IDS;
-  design: string;
+  /** The short title of the request (`quotation_request.title`). */
+  title: string;
+  /** What the buyer asks for: quantity, finish, packaging (`quotation_request.design`, the "description"). */
+  description: string;
+  /** Special requests such as logo printing (`custom_requirements`). */
+  requirements?: string;
+  category?: ProductCategory;
   quantity: number;
   unit: string;
   destination: string;
@@ -285,6 +302,8 @@ interface RequestSpec {
   coordinated: boolean;
   offers: Array<{ h: number; max: number; price: number }>;
   quotations?: QuotationSpec[];
+  /** Direct (`INDIVIDUAL`) quotations from invited households; the request must not be coordinated. */
+  directBids?: DirectBidSpec[];
   allocations?: AllocationSpec[];
 }
 
@@ -292,7 +311,11 @@ interface RequestSpec {
 const REQUESTS: readonly RequestSpec[] = [
   {
     key: 'draft',
-    design: 'Cốc men trắng quai tròn in logo, quà tặng hội nghị',
+    title: 'Cốc men trắng quai tròn in logo, quà tặng hội nghị',
+    description:
+      '800 cốc men trắng quai tròn, dung tích khoảng 300 ml, làm quà tặng cho đại biểu hội nghị. Men trắng ngà, nung lò gas, mỗi cốc đóng riêng một hộp giấy.',
+    requirements:
+      'In logo một màu ở thân cốc (tệp logo gửi kèm). Hộp giấy kraft, có tấm chèn chống vỡ.',
     quantity: 800,
     unit: 'cái',
     destination: 'Trung tâm hội nghị, Hà Nội',
@@ -306,7 +329,10 @@ const REQUESTS: readonly RequestSpec[] = [
   },
   {
     key: 'expired',
-    design: 'Bát vẽ sen men trong cho nhà hàng',
+    title: 'Bát vẽ sen men trong cho nhà hàng',
+    description:
+      '400 bát ăn cơm vẽ sen dưới men trong cho nhà hàng, đường kính 12 cm. Hoa văn vẽ tay, các bát phải đồng đều về màu lam.',
+    requirements: 'Đóng thùng 20 bát, lót giấy từng lớp.',
     quantity: 400,
     unit: 'cái',
     destination: 'Nhà hàng Sen Việt, Hà Nội',
@@ -320,7 +346,10 @@ const REQUESTS: readonly RequestSpec[] = [
   },
   {
     key: 'sentPlain',
-    design: 'Ấm trà men ngọc, quà tặng đối tác',
+    title: 'Ấm trà men ngọc, quà tặng đối tác',
+    description:
+      '300 bộ ấm trà men ngọc, mỗi bộ gồm một ấm 350 ml và sáu chén. Dùng làm quà tặng đối tác cuối năm, cần màu men đồng nhất giữa các bộ.',
+    requirements: 'Mỗi bộ đựng trong hộp gỗ thông, in tên công ty ở nắp hộp.',
     quantity: 300,
     unit: 'bộ',
     destination: 'Công ty Thảo Nguyên, Hải Phòng',
@@ -334,7 +363,10 @@ const REQUESTS: readonly RequestSpec[] = [
   },
   {
     key: 'sentOptIn',
-    design: 'Lọ hoa miệng loe trang trí sảnh khách sạn',
+    title: 'Lọ hoa miệng loe trang trí sảnh khách sạn',
+    description:
+      '1.000 lọ hoa miệng loe cao khoảng 30 cm để đặt ở sảnh và hành lang khách sạn. Men nâu mờ, đáy phẳng, lòng lọ có tráng men để giữ nước.',
+    requirements: 'Dán nhãn xuất xứ nhỏ ở đáy lọ; đóng thùng giấy, mỗi thùng 6 lọ.',
     quantity: 1000,
     unit: 'cái',
     destination: 'Khách sạn Hồ Tây, Hà Nội',
@@ -348,7 +380,10 @@ const REQUESTS: readonly RequestSpec[] = [
   },
   {
     key: 'sentCoordinated',
-    design: 'Đĩa trà men rạn cho chuỗi quán trà',
+    title: 'Đĩa trà men rạn cho chuỗi quán trà',
+    description:
+      '2.000 đĩa lót chén trà men rạn, đường kính 11 cm, cho các quán trong chuỗi. Vân rạn tự nhiên, nhưng độ rạn phải giống nhau giữa các đĩa.',
+    requirements: 'Không in logo. Đóng thùng xốp, 50 đĩa một thùng, giao về kho ở Bắc Ninh.',
     quantity: 2000,
     unit: 'cái',
     destination: 'Kho chuỗi Trà Sen, Bắc Ninh',
@@ -368,7 +403,11 @@ const REQUESTS: readonly RequestSpec[] = [
   },
   {
     key: 'biddingToAccept',
-    design: 'Cốc men trắng quai tròn in logo, đợt 1 Công ty Thảo Nguyên',
+    title: 'Cốc men trắng quai tròn in logo, đợt 1 Công ty Thảo Nguyên',
+    description:
+      '2.400 cốc men trắng quai tròn, đợt đầu cho Công ty Thảo Nguyên, dung tích khoảng 300 ml. Men trắng ngà, miệng cốc tròn mịn, quai chắc tay.',
+    requirements:
+      'In logo một màu ở thân cốc (tệp logo gửi kèm). Mỗi cốc một hộp giấy riêng, xếp 24 hộp một thùng.',
     quantity: 2400,
     unit: 'cái',
     destination: 'Kho Công ty Thảo Nguyên, Hải Phòng',
@@ -401,7 +440,10 @@ const REQUESTS: readonly RequestSpec[] = [
   },
   {
     key: 'biddingReplaced',
-    design: 'Tô sứ men trắng cho quán phở',
+    title: 'Tô sứ men trắng cho quán phở',
+    description:
+      '600 tô men trắng dùng cho quán phở, đường kính 18 cm, thành dày giữ nhiệt tốt. Chịu được máy rửa chén công nghiệp.',
+    requirements: 'Không in logo. Đóng thùng 12 tô, lót xốp từng lớp.',
     quantity: 600,
     unit: 'cái',
     destination: 'Phở Gia Truyền, Hà Nội',
@@ -439,7 +481,10 @@ const REQUESTS: readonly RequestSpec[] = [
   },
   {
     key: 'acceptedConfirm',
-    design: 'Bình ngâm rượu men nâu, quà Tết',
+    title: 'Bình ngâm rượu men nâu, quà Tết',
+    description:
+      '500 bình ngâm rượu men nâu, dung tích 2 lít, nắp đậy kín bằng gốm. Làm quà Tết cho khách hàng thân thiết, cần xong trước Tết.',
+    requirements: 'Dán nhãn “Quà Tết” ở thân bình; bọc xốp và đóng hộp carton riêng từng bình.',
     quantity: 500,
     unit: 'cái',
     destination: 'Công ty Thảo Nguyên, Hải Phòng',
@@ -477,7 +522,10 @@ const REQUESTS: readonly RequestSpec[] = [
   },
   {
     key: 'acceptedFresh',
-    design: 'Khay trà gốm, quà tặng khách VIP',
+    title: 'Khay trà gốm, quà tặng khách VIP',
+    description:
+      '240 khay trà gốm hình chữ nhật 30 x 20 cm cho khách VIP của showroom. Men xanh ngọc, viền khay bo tròn.',
+    requirements: 'Khắc tên showroom ở đáy khay; đóng hộp giấy cứng có quai xách.',
     quantity: 240,
     unit: 'cái',
     destination: 'Showroom Hà Nội',
@@ -509,7 +557,10 @@ const REQUESTS: readonly RequestSpec[] = [
   },
   {
     key: 'inProduction',
-    design: 'Cốc men trắng quai tròn in logo, đơn chia 4 hộ đang sản xuất',
+    title: 'Cốc men trắng quai tròn in logo, đơn chia 4 hộ đang sản xuất',
+    description:
+      '2.000 cốc men trắng quai tròn, đơn chia cho bốn hộ cùng làm để kịp hạn giao. Men trắng ngà, dung tích khoảng 300 ml.',
+    requirements: 'In logo một màu ở thân cốc. Đóng hộp giấy riêng từng cốc, 24 hộp một thùng.',
     quantity: 2000,
     unit: 'cái',
     destination: 'Kho Công ty Thảo Nguyên, Hải Phòng',
@@ -548,7 +599,10 @@ const REQUESTS: readonly RequestSpec[] = [
   },
   {
     key: 'delivered',
-    design: 'Chén tống men lam, quà tặng khách mời',
+    title: 'Chén tống men lam, quà tặng khách mời',
+    description:
+      '360 chén tống men lam, cao 5 cm, dùng làm quà tặng khách mời tại buổi giao lưu ở hội quán. Vẽ lam thủ công, hoa văn đơn giản.',
+    requirements: 'Đóng hộp giấy 6 chén, kèm thiệp cảm ơn do bên đặt in.',
     quantity: 360,
     unit: 'cái',
     destination: 'Hội quán Bát Tràng, Hà Nội',
@@ -580,7 +634,10 @@ const REQUESTS: readonly RequestSpec[] = [
   },
   {
     key: 'cancelled',
-    design: 'Lục bình men hoa nâu',
+    title: 'Lục bình men hoa nâu',
+    description:
+      '150 lục bình men hoa nâu cao 40 cm để bày trong sảnh khách sạn. Thân bình có hoa văn nổi, miệng bình rộng.',
+    requirements: 'Đóng thùng gỗ ván ép cho từng lọ, dán nhãn dễ vỡ.',
     quantity: 150,
     unit: 'cái',
     destination: 'Khách sạn Hồ Tây, Hà Nội',
@@ -592,7 +649,73 @@ const REQUESTS: readonly RequestSpec[] = [
     coordinated: false,
     offers: [],
   },
+  // GH#479: direct bidding. Appended so the frozen ids and trace codes above stay put.
+  {
+    key: 'biddingDirect',
+    title: 'Bát cơm men trắng cho bếp ăn công ty',
+    description:
+      '400 bát cơm men trắng, đường kính 12 cm, cho bếp ăn tập thể của công ty. Men trắng ngà bóng, đáy có chân để dễ cầm, chịu được máy rửa chén công nghiệp.',
+    requirements:
+      'In logo một màu ở thành ngoài bát (tệp logo gửi kèm). Đóng thùng 20 bát, lót giấy từng lớp.',
+    category: 'TABLEWARE',
+    quantity: 400,
+    unit: 'cái',
+    destination: 'Bếp ăn Công ty Thảo Nguyên, Hải Phòng',
+    status: 'BIDDING',
+    closesInDays: 30,
+    requiredInDays: 75,
+    invited: [0, 16, 13, 3],
+    optIn: false,
+    coordinated: false,
+    offers: [],
+    // Three households quote the whole quantity themselves: the cheapest is the slowest, the fastest the dearest.
+    directBids: [
+      {
+        h: 0,
+        unitPriceVnd: 24_500,
+        finishDaysBeforeRequired: 20,
+        note: 'Men trắng ngà, nung lò gas. In logo một màu miễn phí; đóng thùng 20 bát, lót giấy từng lớp.',
+      },
+      {
+        h: 16,
+        unitPriceVnd: 26_200,
+        finishDaysBeforeRequired: 30,
+        note: 'Nhận làm gấp, xong sớm nhất. Có thể giao từng đợt 200 bát nếu bên đặt cần.',
+      },
+      {
+        h: 13,
+        unitPriceVnd: 22_800,
+        finishDaysBeforeRequired: 12,
+        note: 'Giá tốt nhất nhờ nung chung mẻ với đơn khác nên hẹn giao muộn hơn. Có thể gửi bát mẫu để xem trước.',
+      },
+    ],
+  },
+  {
+    key: 'sentDirect',
+    title: 'Bộ ấm chén men lam cho homestay',
+    description:
+      '200 bộ ấm chén men lam cho các phòng homestay, mỗi bộ một ấm 300 ml và bốn chén. Vẽ lam thủ công, họa tiết hoa dây đơn giản, men bóng.',
+    requirements: 'Không in logo. Mỗi bộ đóng một hộp giấy cứng có lót mút.',
+    category: 'TABLEWARE',
+    quantity: 200,
+    unit: 'bộ',
+    destination: 'Khu homestay ven sông, Gia Lâm, Hà Nội',
+    status: 'SENT',
+    closesInDays: 30,
+    requiredInDays: 75,
+    // Hộ DEMO_H được mời và chưa báo giá: để hộ gửi, sửa và rút báo giá trực tiếp khi demo.
+    invited: [DEMO_H, 1, 4, 6],
+    optIn: false,
+    coordinated: false,
+    offers: [],
+  },
 ];
+
+/** Buyer ratings of the households that finished the delivered order (GH#479): the buyer sees them next to a bid. */
+const DELIVERED_RATINGS = [
+  { h: 13, stars: 5, comment: 'Chén đều tay, giao đúng hẹn, đóng gói cẩn thận.' },
+  { h: 16, stars: 4, comment: 'Men đẹp, giao hơi sát ngày nhưng đủ số lượng.' },
+] as const;
 
 function fullName(random: ReturnType<typeof rng>): string {
   return `${random.pick(ARTISAN_LAST)} ${random.pick(['Văn', 'Thị', 'Minh', 'Quốc', 'Ngọc'])} ${random.pick(ARTISAN_FIRST)}`;
@@ -1090,8 +1213,12 @@ export async function seedDemoData(
       id: requestId,
       buyer,
       coordinatorId: spec.coordinated ? DEMO_ACCOUNTS.admin.id : null,
-      revision: spec.offers.length + (spec.quotations?.length ?? 0),
-      design: spec.design,
+      revision:
+        spec.offers.length + (spec.quotations?.length ?? 0) + (spec.directBids?.length ?? 0),
+      title: spec.title,
+      design: spec.description,
+      customRequirements: spec.requirements ?? null,
+      category: spec.category ?? null,
       quantity: spec.quantity,
       unit: spec.unit,
       destination: spec.destination,
@@ -1177,6 +1304,46 @@ export async function seedDemoData(
       summary.quotations++;
     }
 
+    for (const [bidIndex, bid] of (spec.directBids ?? []).entries()) {
+      const bidder = households[bid.h] as Household;
+      const assembled = assembleDirectQuotation({
+        requiredQuantity: spec.quantity,
+        biddingClosesAt,
+        requiredBy,
+        householdId: bidder.id,
+        unitPriceVnd: bid.unitPriceVnd,
+        completionDate: new Date(requiredBy.getTime() - bid.finishDaysBeforeRequired * DAY),
+      });
+      if (!assembled.ok) {
+        throw new Error(
+          `Báo giá trực tiếp mẫu "${spec.key}" không hợp lệ: ${assembled.error.code}`,
+        );
+      }
+      const direct = assembled.value;
+      const at = new Date(createdAt.getTime() + (10 + bidIndex) * HOUR);
+      quotationEntities.push(
+        em.create(CooperativeQuotation, {
+          id: idOf('quotation', `${requestId}-${bidIndex}`),
+          request,
+          status: 'SUBMITTED',
+          quantity: direct.quantity,
+          parts: direct.parts.map((part) => ({
+            ...part,
+            completionDate: part.completionDate.toISOString(),
+          })),
+          productionTotalVnd: direct.productionTotalVnd,
+          additionalChargeVnd: direct.additionalChargeVnd,
+          totalVnd: direct.totalVnd,
+          deliveryTerms: direct.deliveryTerms,
+          bidType: 'INDIVIDUAL',
+          note: bid.note,
+          createdAt: at,
+          updatedAt: at,
+        }),
+      );
+      summary.quotations++;
+    }
+
     if (spec.allocations) {
       const accepted = quotationEntities.find((q) => q.status === 'ACCEPTED');
       if (!accepted)
@@ -1193,6 +1360,21 @@ export async function seedDemoData(
           updatedAt: new Date(createdAt.getTime() + (20 + rank) * HOUR),
         });
         summary.allocations++;
+      }
+    }
+
+    if (spec.key === 'delivered') {
+      for (const rating of DELIVERED_RATINGS) {
+        em.create(HouseholdRating, {
+          id: idOf('rating', `${requestId}-${rating.h}`),
+          request,
+          household: households[rating.h] as Household,
+          raterId: DEMO_ACCOUNTS.buyer.id,
+          stars: rating.stars,
+          comment: rating.comment,
+          createdAt: new Date(createdAt.getTime() + 30 * HOUR),
+          updatedAt: new Date(createdAt.getTime() + 30 * HOUR),
+        });
       }
     }
   }

@@ -505,6 +505,9 @@
       "acceptBlocked": "Only a bid for the full {quantity} {unit} can be accepted.",
       "emptyTitle": "No quotations yet",
       "direct": "Household quote",
+      "rating": "{average} out of 5 · {count, plural, one {# rating} other {# ratings}}",
+      "ratingNone": "No ratings yet",
+      "finishBy": "Done by {date}",
       "perUnit": "{price} per {unit}",
       "note": "Household note: {note}"
     },
