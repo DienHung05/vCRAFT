@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WebFonts } from '@/components/web-fonts';
-import { FONTS_FLAG, FONTS_FLAG_SCRIPT, webFontVars } from '@/lib/web-fonts';
+import { displayFontReady, FONTS_FLAG, FONTS_FLAG_SCRIPT, webFontVars } from '@/lib/web-fonts';
 
 describe('webFontVars', () => {
   it('splits next/font family lists into a full and a fallback-only custom property', () => {
@@ -16,6 +16,46 @@ describe('webFontVars', () => {
       '--font-x-web': 'serif',
       '--font-x-fallback': 'serif',
     });
+  });
+});
+
+describe('displayFontReady', () => {
+  const stubFonts = (load: (font: string, text?: string) => Promise<unknown[]>) =>
+    Object.defineProperty(document, 'fonts', { value: { load }, configurable: true });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    document.documentElement.style.removeProperty('--font-fraunces-web');
+    Reflect.deleteProperty(document, 'fonts');
+  });
+
+  it('loads the web font list from <html style> for the given text', async () => {
+    document.documentElement.style.setProperty('--font-fraunces-web', 'Fraunces, serif');
+    const load = vi.fn(async () => [{}]);
+    stubFonts(load);
+    await expect(displayFontReady('Mỗi món', 1000)).resolves.toBe(true);
+    expect(load).toHaveBeenCalledWith('400 1em Fraunces, serif', 'Mỗi món');
+  });
+
+  it('gives up when the font does not arrive in time', async () => {
+    vi.useFakeTimers();
+    document.documentElement.style.setProperty('--font-fraunces-web', 'Fraunces, serif');
+    stubFonts(() => new Promise(() => {}));
+    const result = displayFontReady('x', 500);
+    await vi.advanceTimersByTimeAsync(500);
+    await expect(result).resolves.toBe(false);
+  });
+
+  it('is false when loading fails, nothing matched, or the font is not configured', async () => {
+    stubFonts(async () => [{}]);
+    await expect(displayFontReady('x', 100)).resolves.toBe(false);
+    document.documentElement.style.setProperty('--font-fraunces-web', 'Fraunces, serif');
+    stubFonts(async () => {
+      throw new Error('network');
+    });
+    await expect(displayFontReady('x', 100)).resolves.toBe(false);
+    stubFonts(async () => []);
+    await expect(displayFontReady('x', 100)).resolves.toBe(false);
   });
 });
 

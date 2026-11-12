@@ -162,4 +162,54 @@ describe('QR scan statistics', () => {
     expect((await stats(undefined)).status).toBe(401);
     expect((await stats(owner.auth, '00000000-0000-4000-8000-000000000000')).status).toBe(404);
   });
+
+  it('does not store or count crawler scans (GH#483)', async () => {
+    const publicCount = async () =>
+      (await t.request({ method: 'GET', url: `/trace/${product.traceCode}` })).body
+        .scanCount as number;
+    const stored = () => db.orm.em.fork().count(TraceScan, { product: product.id });
+    const beforePublic = await publicCount();
+    const beforeStored = await stored();
+    const beforeOwner = (await stats(owner.auth)).body;
+
+    // The web reports a bot class; a client that sends a crawler User-Agent without it is caught too.
+    expect((await scan({ country: 'US', deviceType: 'bot' })).status).toBe(204);
+    expect(
+      (
+        await t.request({
+          method: 'POST',
+          url: `/trace/${product.traceCode}/scan`,
+          headers: {
+            'x-internal-key': KEY,
+            'x-visitor-ip': '203.0.113.77',
+            'x-visitor-ua':
+              'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+          },
+          body: { country: 'US', deviceType: 'desktop' },
+        })
+      ).status,
+    ).toBe(204);
+    expect(await stored()).toBe(beforeStored);
+    expect(await publicCount()).toBe(beforePublic);
+
+    // A rows written before this fix carry the bot class; they are excluded from every figure.
+    const em = db.orm.em.fork();
+    em.create(TraceScan, {
+      product: em.getReference(Product, product.id),
+      country: 'US',
+      deviceType: 'bot',
+    });
+    await em.flush();
+    expect(await publicCount()).toBe(beforePublic);
+    const afterOwner = (await stats(owner.auth)).body;
+    expect(afterOwner.total).toBe(beforeOwner.total);
+    expect(afterOwner.last30Days).toBe(beforeOwner.last30Days);
+    expect(afterOwner.byDeviceType).toEqual(beforeOwner.byDeviceType);
+    await em.nativeDelete(TraceScan, { product: product.id, deviceType: 'bot' });
+
+    // A phone scan counts by one, in the public figure and in the owner's total.
+    expect((await scan({ country: 'VN', deviceType: 'mobile' })).status).toBe(204);
+    expect(await publicCount()).toBe(beforePublic + 1);
+    expect((await stats(owner.auth)).body.total).toBe(beforeOwner.total + 1);
+  });
 });

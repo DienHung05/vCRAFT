@@ -5,7 +5,7 @@ describe('quotationTab', () => {
   it.each([
     [null, '/yeu-cau-bao-gia', 'quotes'],
     ['BUYER', '/yeu-cau-bao-gia', 'quotes'],
-    ['HOUSEHOLD', '/studio/bao-gia', 'invitations'],
+    ['HOUSEHOLD', '/studio/yeu-cau-mo', 'openRequests'],
     ['ADMIN', '/admin/dieu-phoi', 'coordination'],
   ] as const)('maps %s to %s', (role, href, labelKey) => {
     expect(quotationTab(role)).toEqual({ href, labelKey });

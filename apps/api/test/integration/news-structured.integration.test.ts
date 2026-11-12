@@ -1,7 +1,7 @@
-import { villageToday } from '@vcraft/domain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
+import { pinVillageClock, releaseVillageClock } from './support/village-clock.js';
 
 /**
  * Issue #92 (PLAN E11): structured material price and power outage news. Prices feed the public
@@ -13,8 +13,9 @@ describe('Material prices and power outage news', () => {
   let admin: { auth: string };
   let household: { auth: string };
   let buyer: { auth: string };
-  const today = villageToday();
-  const thisMonth = today.slice(0, 7);
+  // Set in beforeAll from the pinned clock (10:00 village time), so no test depends on the time of day.
+  let today: string;
+  let thisMonth: string;
 
   const base = (category: string) => ({
     title: `Tin ${category} ${Math.random()}`,
@@ -34,6 +35,8 @@ describe('Material prices and power outage news', () => {
     db = await startTestDatabase();
     await db.migrate();
     t = await startTestApp(db);
+    today = pinVillageClock();
+    thisMonth = today.slice(0, 7);
     admin = await t.createUser('ADMIN');
     buyer = await t.createUser('BUYER');
     const rep = await t.createUser('BUYER');
@@ -53,6 +56,7 @@ describe('Material prices and power outage news', () => {
   }, 240_000);
 
   afterAll(async () => {
+    releaseVillageClock();
     await t?.close();
     await db?.stop();
   });
@@ -102,9 +106,10 @@ describe('Material prices and power outage news', () => {
       visibility: 'VILLAGE',
       powerSchedule: {
         outages: [
-          // The cuts run to the end of the village day, so the test does not depend on the time it runs.
-          { date: today, from: '13:30', to: '23:59', area: 'Giang Cao' },
-          { date: today, from: '08:00', to: '23:58', area: 'Xóm 2' },
+          // The clock is pinned at 10:00: a cut ending later is still to come, one that ended is hidden.
+          { date: today, from: '13:30', to: '17:00', area: 'Giang Cao' },
+          { date: today, from: '08:00', to: '12:00', area: 'Xóm 2' },
+          { date: today, from: '06:00', to: '09:30', area: 'Đã xong' },
           { date: '2000-01-01', from: '08:00', to: '09:00', area: 'Quá khứ' },
         ],
       },

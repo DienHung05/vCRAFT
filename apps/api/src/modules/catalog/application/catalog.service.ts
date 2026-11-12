@@ -24,6 +24,8 @@ import {
 import {
   Artisan,
   Household,
+  HUMAN_SCAN_WHERE,
+  humanScanSql,
   News,
   Product,
   ProductMaker,
@@ -75,7 +77,7 @@ const isDate = (value: unknown): value is string =>
 const scanCount = (since: Date) =>
   raw(
     (alias) =>
-      `(select count(*) from trace_scan ts where ts.product_id = ${alias}.id and ts.created_at >= ?)`,
+      `(select count(*) from trace_scan ts where ts.product_id = ${alias}.id and ts.created_at >= ? and ${humanScanSql('ts.device_type')})`,
     [since],
   );
 
@@ -339,7 +341,11 @@ export class CatalogService {
               query.sort,
               query.sort === 'popular'
                 ? {
-                    count: await em.count(TraceScan, { product: last, createdAt: { $gte: since } }),
+                    count: await em.count(TraceScan, {
+                      product: last,
+                      createdAt: { $gte: since },
+                      ...HUMAN_SCAN_WHERE,
+                    }),
                     since,
                   }
                 : undefined,

@@ -71,6 +71,9 @@ const FAR = pin('3', 20.99, 105.914);
 const CLOSED = pin('4', 20.9761, 105.9141, { openingHours: null });
 const PINS = [FAR, CLOSED, NEAR, MID];
 
+/** The visitor's first touch of the page starts the map (GH#481); the explorer waits for it before booting MapLibre. */
+const startMap = () => fireEvent.pointerDown(document.body);
+
 const stopNames = () =>
   within(screen.getByTestId('route-stops'))
     .getAllByRole('listitem')
@@ -105,7 +108,9 @@ describe('VillageMapExplorer walking route (FR-MAP-08)', () => {
   it('starts from the village centre when location is denied and orders open stops by proximity', async () => {
     stubGeolocation((_ok, fail) => fail({ code: 1 } as GeolocationPositionError));
     renderVi(<VillageMapExplorer pins={PINS} fetchPinsInViewport={vi.fn()} />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Gợi ý tuyến đi bộ' }));
+    const suggest = await screen.findByRole('button', { name: 'Gợi ý tuyến đi bộ' });
+    startMap();
+    fireEvent.click(suggest);
 
     const panel = await screen.findByTestId('walking-route');
     expect(within(panel).getByText(/trung tâm làng/)).toBeTruthy();
@@ -121,7 +126,9 @@ describe('VillageMapExplorer walking route (FR-MAP-08)', () => {
       ok({ coords: { latitude: 20.9899, longitude: 105.914 } } as GeolocationPosition),
     );
     renderVi(<VillageMapExplorer pins={PINS} fetchPinsInViewport={vi.fn()} />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Gợi ý tuyến đi bộ' }));
+    const suggest = await screen.findByRole('button', { name: 'Gợi ý tuyến đi bộ' });
+    startMap();
+    fireEvent.click(suggest);
 
     const panel = await screen.findByTestId('walking-route');
     expect(within(panel).getByText(/từ vị trí của bạn/)).toBeTruthy();
@@ -131,7 +138,9 @@ describe('VillageMapExplorer walking route (FR-MAP-08)', () => {
   it('falls back to the village centre without a geolocation API, and clears on request', async () => {
     stubGeolocation(null);
     renderVi(<VillageMapExplorer pins={PINS} fetchPinsInViewport={vi.fn()} />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Gợi ý tuyến đi bộ' }));
+    const suggest = await screen.findByRole('button', { name: 'Gợi ý tuyến đi bộ' });
+    startMap();
+    fireEvent.click(suggest);
     const panel = await screen.findByTestId('walking-route');
     expect(within(panel).getByText(/trung tâm làng/)).toBeTruthy();
 
@@ -143,7 +152,9 @@ describe('VillageMapExplorer walking route (FR-MAP-08)', () => {
   it('says so when no workshop is open', async () => {
     stubGeolocation(null);
     renderVi(<VillageMapExplorer pins={[CLOSED]} fetchPinsInViewport={vi.fn()} />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Gợi ý tuyến đi bộ' }));
+    const suggest = await screen.findByRole('button', { name: 'Gợi ý tuyến đi bộ' });
+    startMap();
+    fireEvent.click(suggest);
     expect(await screen.findByText(/chưa có xưởng nào đang mở cửa/)).toBeTruthy();
   });
 });
@@ -157,6 +168,8 @@ describe('VillageMapExplorer viewport loading (FR-MAP-04)', () => {
   it('does not fetch on the first render, fetches once after a move, and the list follows', async () => {
     const fetchPins = vi.fn().mockResolvedValue([NEAR]);
     renderVi(<VillageMapExplorer pins={PINS} fetchPinsInViewport={fetchPins} />);
+    await screen.findByTestId('map-placeholder');
+    startMap();
     await screen.findByTestId('map-stub');
     expect(fetchPins).not.toHaveBeenCalled();
     expect(within(screen.getByTestId('workshop-list')).getAllByRole('listitem')).toHaveLength(4);
