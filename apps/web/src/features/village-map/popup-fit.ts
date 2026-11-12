@@ -108,3 +108,66 @@ export function panToFit(box: Box, container: Box, padding: number): ScreenPoint
   // `+ 0` turns -0 into 0.
   return { x: -dx + 0, y: -dy + 0 };
 }
+
+function intersectsBox(a: Box, b: Box): boolean {
+  return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+}
+
+function insideBox(box: Box, container: Box, padding: number): boolean {
+  return (
+    box.left >= container.left + padding &&
+    box.top >= container.top + padding &&
+    box.right <= container.right - padding &&
+    box.bottom <= container.bottom - padding
+  );
+}
+
+/**
+ * Adjusts a `panToFit` offset so the pin does not end up under a fixed overlay such as the map legend
+ * (a pin under it cannot be grabbed or tapped). All boxes are in viewport pixels as they are BEFORE the
+ * pan; `offset` is the `panToFit` result, so the content moves by the opposite of it. When the pin would
+ * land on `obstacle`, the smallest extra pan that clears it by `gap` is used, first moving the content up,
+ * then to the right, provided the card and the pin both stay inside `container` minus `padding`. When
+ * neither fits the offset is returned unchanged (the card wins, as before).
+ */
+export function avoidObstacle(
+  offset: ScreenPoint,
+  pin: Box,
+  card: Box,
+  obstacle: Box | null,
+  container: Box,
+  padding: number,
+  gap = 8,
+): ScreenPoint {
+  if (!obstacle) return offset;
+  const move = (box: Box, dx: number, dy: number): Box => ({
+    left: box.left - dx,
+    top: box.top - dy,
+    right: box.right - dx,
+    bottom: box.bottom - dy,
+  });
+  const shiftedPin = move(pin, offset.x, offset.y);
+  if (!intersectsBox(shiftedPin, obstacle)) return offset;
+  const shiftedCard = move(card, offset.x, offset.y);
+
+  // Content up: the pin's bottom edge ends above the obstacle.
+  const up = shiftedPin.bottom - (obstacle.top - gap);
+  if (
+    up > 0 &&
+    insideBox(move(shiftedPin, 0, up), container, padding) &&
+    insideBox(move(shiftedCard, 0, up), container, padding)
+  ) {
+    return { x: offset.x, y: offset.y + up + 0 };
+  }
+
+  // Content right: the pin's left edge ends to the right of the obstacle.
+  const right = obstacle.right + gap - shiftedPin.left;
+  if (
+    right > 0 &&
+    insideBox(move(shiftedPin, -right, 0), container, padding) &&
+    insideBox(move(shiftedCard, -right, 0), container, padding)
+  ) {
+    return { x: offset.x - right + 0, y: offset.y };
+  }
+  return offset;
+}

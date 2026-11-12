@@ -33,6 +33,7 @@ import { loadPinImage, PIN_COLORS, PIN_HEIGHT, PIN_WIDTH, pinSvg } from './pin-i
 import { PinPopup } from './pin-popup';
 import { pulseDue, pulsePaint, shouldPulse } from './pin-pulse';
 import {
+  avoidObstacle,
   CARD_ESTIMATE,
   type PopupAnchor,
   panToFit,
@@ -198,17 +199,15 @@ export default function MapCanvas({
   useLayoutEffect(() => {
     if (!selectedId || selectedLng === undefined || selectedLat === undefined || phone) return;
     const map = mapRef.current?.getMap();
-    let anchor: PopupAnchor = 'bottom';
-    if (map) {
-      // The map is not drawn yet: wait for `container`, set when it loads.
-      if (!container) return;
-      anchor = popupAnchorFor(
-        map.project([selectedLng, selectedLat]),
-        { width: container.clientWidth, height: container.clientHeight },
-        CARD_ESTIMATE,
-        SELECTED_PIN_HEIGHT,
-      );
-    }
+    // Wait for the map to load (`container` is set then): before that the pin has no screen position,
+    // and a card opened on a guessed side hung cut off by the frame until the load (GH#475).
+    if (!map || !container) return;
+    const anchor = popupAnchorFor(
+      map.project([selectedLng, selectedLat]),
+      { width: container.clientWidth, height: container.clientHeight },
+      CARD_ESTIMATE,
+      SELECTED_PIN_HEIGHT,
+    );
     setPlacement({ id: selectedId, anchor });
   }, [selectedId, selectedLng, selectedLat, phone, container]);
   const popupAnchor = placement?.id === selectedId ? placement.anchor : null;
@@ -228,15 +227,28 @@ export default function MapCanvas({
       const point = map.project([selectedLng, selectedLat]);
       const x = mapBox.left + point.x;
       const y = mapBox.top + point.y;
-      const withPin = unionBox(card, {
+      const pinBox = {
         left: x - SELECTED_PIN_WIDTH / 2,
         right: x + SELECTED_PIN_WIDTH / 2,
         top: y - SELECTED_PIN_HEIGHT,
         bottom: y,
-      });
+      };
+      const withPin = unionBox(card, pinBox);
       // When card and pin together do not fit the map, the card (photo and name first) wins.
       const fits = withPin.bottom - withPin.top <= mapBox.height - 2 * POPUP_PADDING;
-      const offset = panToFit(fits ? withPin : card, mapBox, POPUP_PADDING);
+      const fitOffset = panToFit(fits ? withPin : card, mapBox, POPUP_PADDING);
+      // Keep the pin out from under the legend: a pin under it cannot be grabbed or tapped.
+      const legend = container.querySelector('[data-testid="map-legend"]')?.getBoundingClientRect();
+      const offset = avoidObstacle(
+        fitOffset,
+        pinBox,
+        card,
+        legend
+          ? { left: legend.left, top: legend.top, right: legend.right, bottom: legend.bottom }
+          : null,
+        mapBox,
+        POPUP_PADDING,
+      );
       if (offset.x === 0 && offset.y === 0) return;
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       map.panBy([offset.x, offset.y], { animate: !reducedMotion, duration: 250 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  avoidObstacle,
   type Box,
   CARD_ESTIMATE,
   panToFit,
@@ -99,5 +100,59 @@ describe('panToFit', () => {
     expect(panToFit(tall, container, 12)).toEqual({ x: 0, y: -(62 + 200) });
     const wide: Box = { left: 0, top: 200, right: 1200, bottom: 300 };
     expect(panToFit(wide, container, 12)).toEqual({ x: -112, y: 0 });
+  });
+});
+
+describe('avoidObstacle', () => {
+  const container: Box = { left: 0, top: 0, right: 1000, bottom: 800 };
+  const legend: Box = { left: 20, top: 720, right: 200, bottom: 790 };
+  const pin: Box = { left: 40, top: 700, right: 78, bottom: 757 };
+  const card: Box = { left: 40, top: 240, right: 328, bottom: 696 };
+  const none = { x: 0, y: 0 };
+
+  it('leaves the offset alone without an obstacle', () => {
+    expect(avoidObstacle(none, pin, card, null, container, 12)).toEqual(none);
+  });
+
+  it('leaves the offset alone when the pin does not touch the obstacle', () => {
+    const away: Box = { ...pin, left: 500, right: 538 };
+    expect(avoidObstacle(none, away, card, legend, container, 12)).toEqual(none);
+  });
+
+  it('judges the pin where the pan puts it, not where it is now', () => {
+    // The pan moves the content up 100 px, which already clears the legend.
+    expect(avoidObstacle({ x: 0, y: 100 }, pin, card, legend, container, 12)).toEqual({
+      x: 0,
+      y: 100,
+    });
+  });
+
+  it('pans the content up just enough to clear the obstacle when there is room above', () => {
+    // Pin bottom 757 must reach 720 - 8: 45 px more.
+    const result = avoidObstacle(none, pin, card, legend, container, 12);
+    expect(result).toEqual({ x: 0, y: 45 });
+    expect(Object.is(result.x, 0)).toBe(true);
+  });
+
+  it('pans the content to the right when there is no room above', () => {
+    const high: Box = { ...card, top: 20, bottom: 476 };
+    // Pin left 40 must reach 200 + 8: 168 px to the right, i.e. the map centre moves left.
+    expect(avoidObstacle(none, pin, high, legend, container, 12)).toEqual({ x: -168, y: 0 });
+  });
+
+  it('keeps the offset when neither direction fits (the card wins)', () => {
+    const high: Box = { ...card, top: 20, bottom: 476 };
+    const narrow: Box = { ...container, right: 400 };
+    expect(avoidObstacle(none, pin, high, legend, narrow, 12)).toEqual(none);
+  });
+
+  it('moves a pin that sat bottom-left under the legend out to its right (GH#475, 768 px)', () => {
+    const frame: Box = { left: 29, top: 352, right: 739, bottom: 1017 };
+    const realLegend: Box = { left: 40, top: 880, right: 185, bottom: 970 };
+    const realPin: Box = { left: 62 - 19, top: 929 - 57, right: 62 + 19, bottom: 929 };
+    const realCard: Box = { left: 62, top: 373, right: 62 + 288, bottom: 373 + 495 };
+    const result = avoidObstacle(none, realPin, realCard, realLegend, frame, 12);
+    // Up would push the card out of the top (373 - 57 < 364), so the content moves right: 185 + 8 - 43.
+    expect(result).toEqual({ x: -150, y: 0 });
   });
 });
