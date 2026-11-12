@@ -34,6 +34,7 @@ import { optionalTextFor, textFor } from '@/lib/localized-text';
 import { jsonLd, metaDescription, pageMetadata } from '@/lib/seo/page-metadata';
 import { localizedPath } from '@/lib/seo/sitemap-entries';
 import { siteOrigin, traceShortUrl } from '@/lib/site';
+import { fallbackLang, vietnameseOnlyLang } from '@/lib/vietnamese-text';
 
 // Dữ liệu lấy từ API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
 export const dynamic = 'force-dynamic';
@@ -245,7 +246,9 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
               ) : null}
               {sold ? <Badge tone="outline">{common('sold')}</Badge> : null}
             </div>
-            <h1 className="text-h1">{name}</h1>
+            <h1 className="text-h1" lang={fallbackLang(locale, product.nameEn)}>
+              {name}
+            </h1>
             <p className="text-ash">
               {t.rich('by', {
                 household: household.name,
@@ -275,7 +278,9 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
             </p>
           </header>
 
-          <p className="max-w-prose-vn">{description}</p>
+          <p className="max-w-prose-vn" lang={fallbackLang(locale, product.descriptionEn)}>
+            {description}
+          </p>
 
           {product.tags.length > 0 ? (
             <ul className="flex flex-wrap gap-2" aria-label={t('tags')}>
@@ -355,13 +360,13 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
             {material ? (
               <>
                 <dt className="text-ash">{t('material')}</dt>
-                <dd>{material}</dd>
+                <dd lang={fallbackLang(locale, product.materialEn)}>{material}</dd>
               </>
             ) : null}
             {dimensions ? (
               <>
                 <dt className="text-ash">{t('dimensions')}</dt>
-                <dd>{dimensions}</dd>
+                <dd lang={fallbackLang(locale, product.dimensionsEn)}>{dimensions}</dd>
               </>
             ) : null}
             {product.weightGrams ? (
@@ -378,7 +383,10 @@ export default async function ProductPage({ params }: PageProps<'/[locale]/san-p
 
           {product.artisanNote ? (
             <figure className="rounded-card bg-clay/8 p-6">
-              <blockquote className="font-display text-h3 text-ink/90 italic">
+              <blockquote
+                lang={vietnameseOnlyLang(locale)}
+                className="font-display text-h3 text-ink/90 italic"
+              >
                 “{product.artisanNote}”
               </blockquote>
             </figure>

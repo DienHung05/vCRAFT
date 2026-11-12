@@ -170,6 +170,33 @@ describe('Demo seed and guarded reset', () => {
     expect(report.ok).toBe(true);
   });
 
+  it('GH#482: every product has an English name, description and material, and demo:verify notices a missing one', async () => {
+    const em = db.orm.em.fork();
+    const cup = await em.findOneOrFail(Product, { traceCode: DEMO_QR_TRACE_CODE });
+    expect(cup).toMatchObject({
+      nameEn: 'White-Glazed Cup with Round Handle',
+      materialEn: 'Clay, white glaze',
+      dimensionsEn: '330 ml',
+    });
+    expect(cup.descriptionEn).toContain('Lò Đức Phát');
+    const products = await em.find(Product, {});
+    expect(products.filter((p) => !p.nameEn || !p.descriptionEn || !p.materialEn)).toEqual([]);
+
+    // A product without nameEn turns the check red (rolled back, so the other tests keep their data).
+    const rollback = new Error('rollback');
+    await expect(
+      em.transactional(async (tx) => {
+        const target = await tx.findOneOrFail(Product, { traceCode: DEMO_QR_TRACE_CODE });
+        target.nameEn = null;
+        await tx.flush();
+        const report = await verifyDemoData(tx, now, { media: false });
+        const failed = report.checks.filter((c) => !c.ok).map((c) => c.name);
+        expect(failed.some((name) => name.includes('nameEn'))).toBe(true);
+        throw rollback;
+      }),
+    ).rejects.toBe(rollback);
+  });
+
   it('GH#474: demo:verify fails while an approved household outside the seed exists', async () => {
     const stray = 'Không có hộ APPROVED ngoài dữ liệu seed';
     const check = async () =>

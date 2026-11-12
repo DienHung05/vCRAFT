@@ -4,6 +4,7 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 import { ImageSlot } from '@/components/image-slot';
 import { type LogEntryView, photoFromUrl, slotPhoto } from '@/features/catalog/view-models';
 import { formatDeclaredDate } from '@/lib/declared-date';
+import { vietnameseOnlyLang } from '@/lib/vietnamese-text';
 import { FireStory } from './fire-story';
 import { PieceFigure } from './piece-figure';
 import type { PieceKind } from './piece-shapes';
@@ -22,6 +23,7 @@ export async function FireTimeline({
   household,
   pieceKind,
   glaze = 'var(--color-glaze)',
+  locale = 'vi',
 }: {
   entries: readonly LogEntryView[];
   /** The household that kept the journal, shown on each step as who recorded it. */
@@ -32,6 +34,8 @@ export async function FireTimeline({
   glaze?: string;
   /** Trang QR (biến thể C) đọc từ mốc mới nhất ngược về; số thứ tự và neo `#log-N` vẫn theo `seq`. */
   newestFirst?: boolean;
+  /** Page locale: households write notes in Vietnamese only, so on `/en` they carry `lang="vi"` (GH#482). */
+  locale?: string;
 }) {
   const [stages, t, format] = await Promise.all([
     getTranslations('stages'),
@@ -99,10 +103,15 @@ export async function FireTimeline({
                 </a>
               </p>
             ) : null}
-            <p className="mt-1 break-words text-ink/85">{e.note}</p>
+            <p className="mt-1 break-words text-ink/85" lang={vietnameseOnlyLang(locale)}>
+              {e.note}
+            </p>
             {e.skipReason ? (
               <p className="mt-1 break-words text-small text-ash">
-                {t('skipped', { reason: e.skipReason })}
+                {t.rich('skipped', {
+                  reason: e.skipReason ?? '',
+                  note: (chunks) => <span lang={vietnameseOnlyLang(locale)}>{chunks}</span>,
+                })}
               </p>
             ) : null}
             {/* A photo still processing has no URL yet: nothing is shown until it is ready. */}

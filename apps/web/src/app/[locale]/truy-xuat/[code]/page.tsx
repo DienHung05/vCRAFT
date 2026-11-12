@@ -34,6 +34,7 @@ import { frameRatioOf } from '@/lib/images';
 import { resolveLocale } from '@/lib/locale';
 import { textFor } from '@/lib/localized-text';
 import { isTraceCode, traceShortUrl } from '@/lib/site';
+import { fallbackLang, vietnameseOnlyLang } from '@/lib/vietnamese-text';
 
 // Tra mã qua API lúc có yêu cầu (không dựng tĩnh lúc build, khi API có thể chưa chạy).
 export const dynamic = 'force-dynamic';
@@ -197,7 +198,12 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                 <section className="trace-intro px-5 pt-6">
                   <div>
                     <p className="text-small text-ash">{t('scanned')}</p>
-                    <h1 className="mt-1 break-words text-h2">{productName}</h1>
+                    <h1
+                      className="mt-1 break-words text-h2"
+                      lang={fallbackLang(locale, visible.product.nameEn)}
+                    >
+                      {productName}
+                    </h1>
                     <p className="mt-2 text-ash">{visible.household.name}</p>
                     {visible.product.status === 'SOLD' ? (
                       <Badge tone="outline" className="mt-3">
@@ -235,6 +241,7 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                 <h2 id="journey-title">{t('timelineTitle')}</h2>
                 <p className="mt-2 mb-8 text-small text-ash">{t('timelineLead')}</p>
                 <FireTimeline
+                  locale={locale}
                   entries={toLogEntries(visible.journal)}
                   household={visible.household.name}
                 />
@@ -273,7 +280,10 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                     )}
                   </ImageSlot>
                   {visible.product.artisanNote ? (
-                    <blockquote className="mt-6 font-display text-h3 leading-snug text-ink type-soft">
+                    <blockquote
+                      lang={vietnameseOnlyLang(locale)}
+                      className="mt-6 font-display text-h3 leading-snug text-ink type-soft"
+                    >
                       “{visible.product.artisanNote}”
                     </blockquote>
                   ) : null}
