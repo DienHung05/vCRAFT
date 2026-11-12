@@ -69,11 +69,30 @@ async function box(locator: Locator): Promise<Box> {
   return found;
 }
 
-async function openMap(page: Page, pin: Pin) {
+async function openMap(page: Page, pin: Pin, phone: boolean) {
   await page.goto(`/vi/ban-do?xuong=${pin.workshopId}`);
   const frame = page.getByTestId('map-frame');
   await expect(frame.locator('canvas.maplibregl-canvas')).toBeVisible({ timeout: 30_000 });
   await frame.scrollIntoViewIfNeeded();
+  // The phone sheet is plain DOM and shows before the map has drawn its pins. The map collapses its
+  // attribution on its first `idle` (map-canvas.tsx), so wait for that before dragging or tapping a pin.
+  // `maplibregl-compact` must be there too: before the control turns compact it has neither class.
+  if (phone) {
+    const attribution = frame.locator('.maplibregl-ctrl-attrib');
+    await expect
+      .poll(
+        async () => {
+          const classes = (await attribution.getAttribute('class')) ?? '';
+          return /\bmaplibregl-compact\b/.test(classes) && !classes.includes('compact-show');
+        },
+        { message: 'map drawn (attribution collapsed on first idle)', timeout: 30_000 },
+      )
+      .toBe(true);
+  } else {
+    // The desktop card only opens once the map has loaded (it needs the pin's screen position): give
+    // it the same time as the canvas above.
+    await expect(frame.locator('.maplibregl-popup')).toBeVisible({ timeout: 30_000 });
+  }
   return frame;
 }
 
@@ -86,6 +105,8 @@ for (const viewport of VIEWPORTS) {
     test('thẻ thông tin của ghim nằm trọn trong khung bản đồ, kể cả ghim sát mép', async ({
       page,
     }) => {
+      // Six drag-and-click rounds on a software-rendered WebGL canvas can pass the 30 s default.
+      test.slow();
       const response = await page.request.get('/api/v1/map/workshops');
       expect(response.ok()).toBe(true);
       const pins = ((await response.json()) as { data: Pin[] }).data;
@@ -93,7 +114,7 @@ for (const viewport of VIEWPORTS) {
       test.skip(!pin, 'no workshop pins to open');
       if (!pin) return;
 
-      const frame = await openMap(page, pin);
+      const frame = await openMap(page, pin, phone);
       const card = phone
         ? frame.getByTestId('pin-sheet')
         : frame.locator('.maplibregl-popup').first();
@@ -188,6 +209,13 @@ for (const viewport of VIEWPORTS) {
         // Drag the map so that the pin stands at the chosen edge, then tap the pin itself.
         const to = place(await box(frame));
         await page.mouse.move(from.x, from.y - PIN_HEIGHT / 2);
+        // The press must land on the map itself: an overlay (the legend) over the pin would swallow the drag.
+        const onCanvas = await page.evaluate(
+          ([x, y]) =>
+            document.elementFromPoint(x, y)?.classList.contains('maplibregl-canvas') ?? false,
+          [from.x, from.y - PIN_HEIGHT / 2] as [number, number],
+        );
+        expect(onCanvas, `${name}: selected pin is covered`).toBe(true);
         await page.mouse.down();
         await page.mouse.move(to.x, to.y - PIN_HEIGHT / 2, { steps: 15 });
         await page.waitForTimeout(250); // a still pointer on release leaves no inertia
@@ -227,6 +255,8 @@ test.describe('chú giải bản đồ trên điện thoại', () => {
     await expect
       .poll(async () => intersects(await box(legend), await box(attribution)), {
         message: 'legend vs attribution',
+        // It collapses on the map's first `idle`, which a software-rendered canvas can take a while to reach.
+        timeout: 30_000,
       })
       .toBe(false);
     const [l, a, f, fox] = [
