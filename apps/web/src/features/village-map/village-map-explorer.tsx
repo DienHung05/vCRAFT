@@ -266,7 +266,7 @@ export function VillageMapExplorer({
               aria-label={t('mapLabel')}
               aria-describedby="map-keyboard-hint"
               data-testid="map-frame"
-              className="h-[55svh] min-h-80 overflow-hidden rounded-card shadow-warm lg:sticky lg:top-6 lg:h-[75svh]"
+              className="h-[65svh] min-h-80 overflow-hidden rounded-card shadow-warm lg:sticky lg:top-6 lg:h-[75svh]"
             >
               <p id="map-keyboard-hint" className="sr-only">
                 {t('mapKeyboardHint')}
