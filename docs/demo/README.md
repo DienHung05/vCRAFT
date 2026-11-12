@@ -8,10 +8,12 @@
 - **Đã có và đã chạy thử:** seeder dữ liệu mẫu, `pnpm demo:reset` có cổng chặn, `pnpm demo:verify`, bộ kiểm tra `demo-seed.integration.test.ts` (chạy qua API thật trên cả PostgreSQL và MySQL), script tạo tài khoản Supabase Auth, script đo ảnh 12 MB, script đua hai tab.
 - **Tin tức đã có:** entity `News`, API công khai `GET /api/v1/news` (+ `/news/:slug`) và trang `/vi/tin-tuc` (EN: `/en/news`). Trang này đọc API thật phía server qua `API_INTERNAL_URL` (xem `.env.example`; API không gọi được thì trang hiện thông báo, không lỗi). Seed loads 21 real village stories with their sources (GH#314, GH#333).
 - **Ảnh có giấy phép đã nằm trong CSDL và Supabase Storage** (GH#26, §1B): `pnpm demo:media` tải ảnh minh hoạ lên `vcraft-media`, giấy tờ mẫu lên `vcraft-private` và nối vào seed kèm ghi công (`media_link`, mô tả vi/en). `demo:media` cũng đặt `coverUrl`/`coverAlt`/`coverAltEn` của 210 sản phẩm (`BT7K2QXM`, `84PZKVJU` và 208 sản phẩm có ảnh riêng `pp-<mã>` hoặc `pp2-<mã>`) và `coverUrl` của 4 hộ về URL trong bucket nên API công khai (GH#47) trả ảnh Supabase. Mọi mốc nhật ký của các món demo (hộ Lò Đức Phát, `BT7K2QXM`, `HX2M9KQD`) có ảnh công đoạn thật, ghi rõ là ảnh minh họa (GH#472, xem quy tắc bên dưới).
-- **Trang công khai của `apps/web` đọc API thật** (trang chủ, sản phẩm, nghệ nhân, truy xuất, bản đồ, tin tức). Màn yêu cầu báo giá và điều phối cũng đọc API thật; `apps/web/src/lib/demo/data.ts` chỉ còn được import cho kiểu dữ liệu (`LogStage`, `DemoPhotoRef`) ở trang chủ, trình kiểm chuỗi nhật ký, `ImageSlot` và `lib/demo/stage-photos.ts` (ảnh và ghi công nằm riêng ở `photo-credits.ts`), không còn là nguồn dữ liệu của màn nào.
+- **Trang công khai của `apps/web` đọc API thật** (trang chủ, sản phẩm, nghệ nhân, truy xuất, bản đồ, tin tức). Màn yêu cầu báo giá, điều phối và Studio của hộ cũng đọc và ghi qua API thật, gồm cả **chào giá trực tiếp của nhiều hộ** (GH#479: Buyer so sánh các báo giá và chốt một, hộ gửi/sửa/rút báo giá; bước 11 ở §4); `apps/web/src/lib/demo/data.ts` chỉ còn được import cho kiểu dữ liệu (`LogStage`, `DemoPhotoRef`) ở trang chủ, trình kiểm chuỗi nhật ký, `ImageSlot` và `lib/demo/stage-photos.ts` (ảnh và ghi công nằm riêng ở `photo-credits.ts`), không còn là nguồn dữ liệu của màn nào.
 - Mọi bước của kịch bản e2e đều thao tác qua màn hình: Admin duyệt hộ ở `/admin/duyet-ho` (`household-review.tsx`: Duyệt, Từ chối, Yêu cầu bổ sung) và hộ xuất bản sản phẩm trong Studio (`product-list.tsx`, `product-editor.tsx`).
-- **Triển khai production (GH#39):** web trên Vercel, API + worker + Redis trên Render, CSDL/Auth/Storage ở Supabase ([ADR-16](../adr/0016-deploy-vercel-render.md)); cấu hình nằm trong repo (`render.yaml`, `apps/web/vercel.json`, `next.config.ts`), các bước tạo project và dán biến môi trường ở [docs/operations/deploy.md](../operations/deploy.md). Đã chạy thử local: build production và khởi động API/worker bằng đúng lệnh start, rewrite `/api/*`. **Chưa** chạy trên Vercel/Render thật vì cần tài khoản của nhóm.
-- **Chưa kiểm chứng được ở máy phát triển:** chạy trên URL đã triển khai, Lighthouse, tạo người dùng trên Supabase Auth thật, dựng Supabase cục bộ. Các mục này nằm trong checklist §7 để làm một lần trước ngày thi.
+- **Thanh toán trực tuyến ở chế độ demo** (ADR-0025): trên site đang chạy, Buyer chọn chuyển khoản, VNPay hoặc MoMo cho đơn, thấy mã QR dẫn tới trang xác nhận của chính vCraft, quét bằng điện thoại để xác nhận và trang trên máy tính chuyển sang "đã thanh toán"; mọi màn ghi "Thanh toán thử — không trừ tiền thật" và không có giao dịch thật ([ADR-0021](../adr/0021-online-payment-for-orders.md), [ADR-0024](../adr/0024-payment-gateways-in-production.md), [ADR-0025](../adr/0025-demo-payment-mode.md)). Bước này chưa nằm trong kịch bản e2e nên tập tay.
+- **Triển khai production (GH#39):** web trên Vercel, API + worker + Redis trên Render, CSDL/Auth/Storage ở Supabase ([ADR-16](../adr/0016-deploy-vercel-render.md)); cấu hình nằm trong repo (`render.yaml`, `apps/web/vercel.json`, `next.config.ts`), các bước tạo project và dán biến môi trường ở [docs/operations/deploy.md](../operations/deploy.md). Site đã chạy trên hạ tầng thật tại `https://vcraft-vn.vercel.app`, nên các bước dưới đây tập được trên bản triển khai chứ không chỉ ở máy phát triển.
+- **Đăng nhập khi chạy script:** production bật captcha (Turnstile) và bắt Admin dùng TOTP, nên script `demo:*` không đăng nhập bằng mật khẩu qua REST được; chúng cấp phiên bằng helper chỉ nằm trong `scripts/` (cách làm và việc chuẩn bị một lần: §7, phần "GH#480"). Người dùng thật vẫn phải qua captcha và TOTP.
+- **Chưa có kết quả ghi lại:** các lệnh và kiểm tra trong §7 chưa có lần chạy nào được ghi nhận trên bản triển khai (Lighthouse, tạo người dùng Auth thật, dựng Supabase cục bộ, tunnel dự phòng). Điền bảng "Kết quả chạy gần nhất" ở cuối §7 sau mỗi lần chạy, một lần trước ngày thi.
 
 ## 1. Dữ liệu mẫu
 
@@ -150,9 +152,13 @@ pnpm demo:auth -- --check      # chỉ kiểm tra, không ghi
 
 `auth.admin.createUser` nhận thuộc tính `id` (đã xác nhận trong kiểu `AdminUserAttributes` của `@supabase/auth-js`), nên không cần cách vòng. Nếu một email demo đã gắn với người dùng id khác (vd. đã đăng ký tay), script dừng và hướng dẫn xóa người dùng đó ở Dashboard → Authentication rồi chạy lại. Nếu tài khoản bị khóa hay đổi vai trò khi tập dượt thì `demo:reset` đưa `app_user` về đúng vai trò.
 
+Mỗi tài khoản làm gì trong kịch bản: `buyer` xem, so sánh và chốt chào giá (cả chào giá liên kết lẫn báo giá trực tiếp của nhiều hộ, GH#479) và xác nhận nhận hàng; `household` (Lò Đức Phát) gửi đề xuất tham gia hoặc báo giá trực tiếp, xác nhận phân bổ, báo tiến độ và xuất bản sản phẩm; `admin` duyệt hộ, nhận điều phối và bắt đầu sản xuất (bắt buộc TOTP); `pending` chỉ xem trạng thái hồ sơ chờ duyệt.
+
 Sau khi tạo: đăng nhập từng tài khoản **một lần** trên đúng thiết bị thi (Buyer: Chrome, Hộ: điện thoại, Admin: Edge) và giữ phiên. Hạn token của Supabase là 15 phút nhưng trình duyệt tự làm mới bằng refresh token; kiểm tra phiên còn sống sáng hôm thi. 
 
 GH#212: sign in again at `/vi/dang-nhap` using the account's username. Admin MFA still applies.
+
+Đây là cách đăng nhập **bằng tay** (form web, có captcha trên production). Script `demo:e2e`, `demo:e2e:preexam` và `demo:check:concurrency` không đi qua form mà cấp phiên riêng; xem §7, phần "GH#480".
 
 ### Đăng nhập trên web và email xác thực tiếng Việt (GH#27)
 
@@ -243,10 +249,10 @@ Một dòng một bước. Cột "Giám khảo thấy gì" là điều để ki�
 
 | # | Bước | Giám khảo thấy gì trên màn hình | Vai trò thao tác | Dữ liệu / trạng thái hiện tại |
 | --- | --- | --- | --- | --- |
-| 1 | Quét QR trên cốc | Điện thoại mở `/q/DF6P3WZE` → trang truy xuất: dòng thời gian 7 mốc lửa, "Nhật ký toàn vẹn" xanh | Giám khảo (khách vãng lai) | API `/trace/DF6P3WZE` chạy trên dữ liệu seed (test tích hợp). Trang web đọc API thật |
+| 1 | Quét QR trên cốc | Điện thoại mở `/q/DF6P3WZE` → trang truy xuất: dòng thời gian 7 mốc lửa, "Nhật ký toàn vẹn" xanh | Giám khảo (khách vãng lai) | Có màn `/q/DF6P3WZE` → trang truy xuất, đọc API thật `/trace/DF6P3WZE` trên dữ liệu seed (test tích hợp); mốc nhật ký có ảnh công đoạn ghi công (GH#472) |
 | 2 | Duyệt hộ | Hàng đợi có "Gốm Bảo Châu"; sau duyệt hộ thành `APPROVED`, ghi nhật ký thao tác | Admin | Có màn `/vi/admin/duyet-ho` (hàng đợi và trang duyệt từng hộ); E2E thao tác qua UI |
 | 3 | Hộ xuất bản sản phẩm | Điện thoại hộ: sản phẩm nháp chuyển `PUBLISHED`, trang QR của nó mở được thay vì "không tìm thấy" | Hộ (điện thoại) | Có màn xuất bản trong Studio (`/vi/studio/san-pham`) và 2 bản nháp 7 mốc sẵn sàng; E2E thao tác qua UI |
-| 4 | Khám phá xưởng | Trang hộ Lò Đức Phát, bản đồ làng có ghim xưởng, giờ mở cửa | Giám khảo / Buyer | Trang web đọc API thật (`/households/lo-duc-phat`, `/map/workshops`) trên dữ liệu seed |
+| 4 | Khám phá xưởng | Trang hộ Lò Đức Phát, bản đồ làng có ghim xưởng, giờ mở cửa | Giám khảo / Buyer | Có màn, đọc API thật (`/households/lo-duc-phat`, `/map/workshops`) trên dữ liệu seed |
 | 5 | Tin tức | Trang tin có 15+ bài, gồm tin chung của làng và tin theo từng hộ | Buyer | Có màn `/vi/tin-tuc` đọc API thật, 21 real village stories with sources (GH#314, GH#333; no household stories, no price table); lọc theo hộ qua `?household=<slug>` |
 | 6 | Buyer báo giá | `/vi/yeu-cau-bao-gia/<biddingToAccept>`: chào giá chia 4 hộ, tổng tiền, phụ phí, điều khoản vận chuyển; sau khi chốt, đơn "Đã chốt" và 4 phân bổ chờ xác nhận | Buyer (Chrome) | Có màn xem và nút "Chốt chào giá này" (mở hộp thoại xác nhận); E2E thao tác qua UI |
 | 7 | Admin điều phối | `/vi/admin/dieu-phoi/<sentOptIn>`: nút "Nhận điều phối" biến mất sau khi nhận; yêu cầu `sentCoordinated` hiện các đề xuất hộ | Admin (Edge) | Có màn (`LiveCoordination`) |
@@ -263,7 +269,7 @@ E2E_BASE_URL=https://<DOMAIN> pnpm demo:e2e       # đọc DEMO_*_PASSWORD, SUPA
 pnpm demo:reset                                   # trả dữ liệu về nguyên trạng sau khi chạy
 ```
 
-Thiếu `E2E_BASE_URL` hoặc thông tin đăng nhập thì cả kịch bản tự bỏ qua kèm lý do (CI không bị đỏ). Ba hồ sơ đăng nhập được dựng bằng đăng nhập REST của Supabase rồi chèn cookie `sb-<ref>-auth-token` đúng định dạng `@supabase/ssr` (web chưa có trang đăng nhập). Bước 5 mở `/vi/tin-tuc` và đếm ≥ 15 bài, nên cần web trỏ đúng `API_INTERNAL_URL` tới API đã nạp seed.
+Thiếu `E2E_BASE_URL` hoặc thông tin đăng nhập thì cả kịch bản tự bỏ qua kèm lý do (CI không bị đỏ). Ba hồ sơ đăng nhập được dựng từ một phiên Supabase rồi chèn cookie `sb-<ref>-auth-token` đúng định dạng `@supabase/ssr` cho nhanh; web đã có trang đăng nhập thật (§2, kiểm bằng `specs/buyer/sign-in.spec.ts`). Trên production, phiên được cấp qua helper dùng `SUPABASE_SECRET_KEY` và `DEMO_ADMIN_TOTP_SECRET` vì captcha và TOTP chặn đăng nhập mật khẩu của script (xem §7, phần "GH#480"); với stack cục bộ không captcha, đăng nhập mật khẩu `DEMO_*_PASSWORD` vẫn dùng được. Bước 5 mở `/vi/tin-tuc` và đếm ≥ 15 bài, nên cần web trỏ đúng `API_INTERNAL_URL` tới API đã nạp seed.
 
 ## 5. Chiếc cốc và URL ổn định
 
@@ -364,6 +370,28 @@ done
 Hoặc Chrome DevTools → Lighthouse (chế độ Navigation, tắt extension, cửa sổ ẩn danh). Chạy trên bản **build production** (domain Vercel, hoặc `next start` sau Caddy ở local), không dùng `next dev`. Lighthouse dao động vài điểm giữa các lần; chạy 3 lần lấy trung vị cho trang sát ngưỡng.
 
 Kiểm tra máy không làm thay được, cần người: đọc thử mô tả ảnh bằng trình đọc màn hình (NVDA/VoiceOver) ở trang truy xuất; kiểm reduced-motion; xác nhận nội dung tiếng Việt/Anh không lẫn.
+
+### Kết quả chạy gần nhất
+
+Điền sau mỗi lần chạy trên bản triển khai (`https://vcraft-vn.vercel.app`), **sau** `pnpm demo:reset`. Ghi cả lần đỏ cùng nguyên nhân. Chưa có dòng nào được điền: các lệnh dưới đây chưa được chạy và ghi lại trên production.
+
+| # §7 | Lệnh | Kết quả (PASS / FAIL, con số đo) | Ngày chạy | Người chạy |
+| --- | --- | --- | --- | --- |
+| 1 | `pnpm demo:verify` | | | |
+| 2 | `pnpm demo:auth -- --check` | | | |
+| 3 | `E2E_BASE_URL=... pnpm demo:e2e` | | | |
+| 4 | Lighthouse (5 trang × mobile, desktop) | | | |
+| 5 | `E2E_BASE_URL=... pnpm demo:e2e:preexam -g "không nạp lại"` | | | |
+| 6 | `E2E_BASE_URL=... pnpm demo:e2e:preexam -g "WCAG"` | | | |
+| 7 | `E2E_BASE_URL=... pnpm demo:e2e:preexam -g "đáp ứng"` | | | |
+| 8 | `E2E_BASE_URL=... pnpm demo:e2e:preexam -g "bàn phím"` | | | |
+| 9 | `pnpm demo:check:media` | | | |
+| 10 | `E2E_BASE_URL=... pnpm demo:check:concurrency` | | | |
+| 11 | Integration test Postgres + MySQL (`vitest.integration.config.mts`) | | | |
+| 12 | Sao lưu và khôi phục (§6), kèm thời gian khôi phục | | | |
+| 13 | QR vật lý, iPhone + Android, 4G | | | |
+| 14 | Dự phòng tunnel (§8) | | | |
+| 15 | Đóng gói buổi sáng thi: `demo:reset`, `demo:media`, `demo:verify` | | | |
 
 ## 8. Phương án dự phòng khi mất dịch vụ tại địa điểm thi
 
