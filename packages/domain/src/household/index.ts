@@ -1,3 +1,4 @@
+export * from './application-completeness';
 export * from './household-rating';
 export * from './household-state-machine';
 export * from './product-category';

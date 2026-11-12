@@ -1,10 +1,13 @@
-import { storageUrlFor } from '@/lib/deploy-config';
+import { isContentHashedVariant, storageUrlFor } from '@/lib/deploy-config';
 
 /**
- * Variant files are named by content hash, but any public Storage path can be asked for here, so keep
- * a day rather than "forever": a replaced file shows up within 24 hours.
+ * Any public Storage path can be asked for here, so by default keep a day rather than "forever": a replaced
+ * file shows up within 24 hours.
  */
 const ONE_DAY = 60 * 60 * 24;
+
+/** Media variants (`v/<asset>/<width>-<sha256 prefix>.<ext>`) are named by content hash: they never change (GH#481). */
+const IMMUTABLE = 'public, max-age=31536000, immutable';
 
 /** Raster formats only: SVG can carry script, so it is never served from this origin. */
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
@@ -30,7 +33,9 @@ export async function GET(
     headers: {
       'Content-Type': type,
       'X-Content-Type-Options': 'nosniff',
-      'Cache-Control': `public, max-age=${ONE_DAY}, stale-while-revalidate=${ONE_DAY * 7}`,
+      'Cache-Control': isContentHashedVariant(path)
+        ? IMMUTABLE
+        : `public, max-age=${ONE_DAY}, stale-while-revalidate=${ONE_DAY * 7}`,
     },
   });
 }

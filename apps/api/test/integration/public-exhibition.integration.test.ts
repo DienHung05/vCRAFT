@@ -237,7 +237,7 @@ describe('Public exhibition and QR trace', () => {
           name: 'Gốm Minh Hải',
           slug: 'gom-minh-hai',
           craft: null,
-          craftCategory: null,
+          craftCategory: 'GOM_SU', // set by the approval fixture shortcut (GH#474)
           coverUrl: null,
         },
       }),

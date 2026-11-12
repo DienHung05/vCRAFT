@@ -124,12 +124,29 @@ describe('QuotationInvitations', () => {
       <QuotationInvitations
         client={asClient({
           listInvitations,
-          listOpenCoordinatedRequests: vi.fn().mockResolvedValue([]),
         })}
       />,
     );
     fireEvent.click(await screen.findByRole('button', { name: 'Thử lại' }));
     expect(await screen.findByText('Hộ chưa có lời mời nào.')).toBeTruthy();
+  });
+
+  // GH#490: the open requests live on their own page; this one only answers invitations.
+  it('links to the open requests page instead of listing them', async () => {
+    const listOpen = vi.fn().mockResolvedValue([]);
+    renderVi(
+      <QuotationInvitations
+        client={asClient({
+          listInvitations: vi.fn().mockResolvedValue([]),
+          listOpenCoordinatedRequests: listOpen,
+        })}
+      />,
+    );
+    expect(
+      await screen.findByRole('link', { name: 'Xem yêu cầu đang mở, không cần lời mời' }),
+    ).toBeTruthy();
+    expect(screen.queryByTestId('open-requests')).toBeNull();
+    expect(listOpen).not.toHaveBeenCalled();
   });
 
   it('explains the BR-05 invitation rule in the empty state, with links to act on it', async () => {

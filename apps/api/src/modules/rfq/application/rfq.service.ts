@@ -47,6 +47,7 @@ import {
   assembleDirectQuotation,
   bidTransition,
   checkProgressReport,
+  hasAcceptedQuotation,
   hasAcceptWindowElapsed,
   isCompletionDateValid,
   isEligibleForOpenRequest,
@@ -241,11 +242,24 @@ export class RfqService {
     const counts = new Map<string, number>();
     for (const quotation of quotations)
       counts.set(quotation.request.id, (counts.get(quotation.request.id) ?? 0) + 1);
+    // Rows are already limited to the signed-in buyer's own requests, so this only reads their accepted totals.
+    const accepted = await em.find(CooperativeQuotationEntity, {
+      request: {
+        $in: page
+          .filter((request) => hasAcceptedQuotation(request.status))
+          .map((request) => request.id),
+      },
+      status: 'ACCEPTED',
+    });
+    const acceptedTotals = new Map(
+      accepted.map((quotation) => [quotation.request.id, quotation.totalVnd]),
+    );
     const last = page.at(-1);
     return {
       data: page.map((request) => ({
         ...toRfqResponse(request),
         openQuotationCount: requestExpired(request) ? 0 : (counts.get(request.id) ?? 0),
+        acceptedTotalVnd: acceptedTotals.get(request.id) ?? null,
       })),
       nextCursor:
         rows.length > query.limit && last

@@ -199,6 +199,43 @@ describe('Demo seed and guarded reset', () => {
     ).rejects.toBe(rollback);
   });
 
+  it('GH#474: demo:verify fails while an approved household outside the seed exists', async () => {
+    const stray = 'Không có hộ APPROVED ngoài dữ liệu seed';
+    const check = async () =>
+      (await verifyDemoData(db.orm.em.fork(), now, { media: false })).checks.find(
+        (c) => c.name === stray,
+      );
+    expect(await check()).toMatchObject({ ok: true });
+
+    const em = db.orm.em.fork();
+    const user = em.create(AppUser, {
+      id: '01a1bb58-882c-74df-9d12-ff5b3b1641b4',
+      email: 'hu-tieu@example.com',
+      username: 'hu-tieu-a-tam',
+      fullName: 'Hủ Tiếu A Tâm',
+      role: 'HOUSEHOLD',
+      status: 'ACTIVE',
+    });
+    const leftover = em.create(Household, {
+      id: '01a1bb58-882c-74df-9d12-ff5b3b1641b3',
+      name: 'Hủ Tiếu A Tâm',
+      slug: 'hu-tieu-a-tam',
+      history: '',
+      status: 'APPROVED',
+      representative: user,
+    });
+    await em.flush();
+    expect(await check()).toMatchObject({
+      ok: false,
+      detail: expect.stringContaining('hu-tieu-a-tam'),
+    });
+
+    em.remove(leftover);
+    em.remove(user);
+    await em.flush();
+    expect(await check()).toMatchObject({ ok: true });
+  });
+
   it('GH#298: demo:refresh-text restores the seed text over the old disclaimers and is idempotent', async () => {
     const check = async () =>
       (await verifyDemoData(db.orm.em.fork(), now, { media: false })).checks.find(
