@@ -63,6 +63,16 @@ interface Box {
 const intersects = (a: Box, b: Box) =>
   a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
+/** The topmost element at the point is the map canvas, i.e. nothing (legend, header) covers it. */
+async function expectOnCanvas(page: Page, x: number, y: number, message: string) {
+  const onCanvas = await page.evaluate(
+    ([px, py]) =>
+      document.elementFromPoint(px, py)?.classList.contains('maplibregl-canvas') ?? false,
+    [x, y] as [number, number],
+  );
+  expect(onCanvas, message).toBe(true);
+}
+
 async function box(locator: Locator): Promise<Box> {
   const found = await locator.boundingBox();
   if (!found) throw new Error('element has no box');
@@ -210,12 +220,12 @@ for (const viewport of VIEWPORTS) {
         const to = place(await box(frame));
         await page.mouse.move(from.x, from.y - PIN_HEIGHT / 2);
         // The press must land on the map itself: an overlay (the legend) over the pin would swallow the drag.
-        const onCanvas = await page.evaluate(
-          ([x, y]) =>
-            document.elementFromPoint(x, y)?.classList.contains('maplibregl-canvas') ?? false,
-          [from.x, from.y - PIN_HEIGHT / 2] as [number, number],
+        await expectOnCanvas(
+          page,
+          from.x,
+          from.y - PIN_HEIGHT / 2,
+          `${name}: selected pin is covered`,
         );
-        expect(onCanvas, `${name}: selected pin is covered`).toBe(true);
         await page.mouse.down();
         await page.mouse.move(to.x, to.y - PIN_HEIGHT / 2, { steps: 15 });
         await page.waitForTimeout(250); // a still pointer on release leaves no inertia
@@ -223,6 +233,13 @@ for (const viewport of VIEWPORTS) {
         phonePin = to;
         await page.waitForTimeout(400);
 
+        // The site header must not cover the pin either, or the tap would land on the header.
+        await expectOnCanvas(
+          page,
+          to.x,
+          to.y - PIN_HEIGHT / 2,
+          `${name}: pin hidden under an overlay before the tap`,
+        );
         await page.mouse.click(to.x, to.y - PIN_HEIGHT / 2);
         await expect(card, `${name}: card opens`).toBeVisible();
         await expect(card).toContainText(pin.household.name);
@@ -233,6 +250,29 @@ for (const viewport of VIEWPORTS) {
     });
   });
 }
+
+test.describe('khung bản đồ trên máy tính', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('khung bản đồ không nằm dưới thanh đầu trang khi cuộn', async ({ page }) => {
+    await page.goto('/vi/ban-do');
+    const frame = page.getByTestId('map-frame');
+    await expect(frame.locator('canvas.maplibregl-canvas')).toBeVisible({ timeout: 30_000 });
+    await page.mouse.wheel(0, 1200);
+    // Wait until the frame has stopped moving (scroll finished), then compare with the sticky header.
+    let last = -1;
+    await expect
+      .poll(async () => {
+        const y = (await box(frame)).y;
+        const settled = y === last;
+        last = y;
+        return settled;
+      })
+      .toBe(true);
+    const header = await box(page.locator('header').first());
+    expect((await box(frame)).y).toBeGreaterThanOrEqual(header.y + header.height);
+  });
+});
 
 test.describe('chú giải bản đồ trên điện thoại', () => {
   test.use({ viewport: { width: 390, height: 844 } });
