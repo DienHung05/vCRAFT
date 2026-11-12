@@ -1,4 +1,5 @@
 import type { OutboxDispatcher } from './relay-outbox';
+import { revalidateTagsOf, type WebRevalidator } from './revalidate-web';
 
 /** Phần của `Queue` (BullMQ) mà bộ chuyển tiếp dùng. */
 export interface JobSink {
@@ -18,9 +19,16 @@ export function createOutboxDispatcher(
     assistant: JobSink;
   },
   now: () => number = Date.now,
+  revalidateWeb: WebRevalidator = async () => {},
 ): OutboxDispatcher {
   return async (event) => {
     switch (event.type) {
+      case 'exhibition.changed': {
+        // Tells the web to drop its cached public pages (ADR-0027). A failure throws, so the outbox
+        // retries with back-off; after the last attempt the web's 60 s fallback TTL takes over.
+        await revalidateWeb(revalidateTagsOf(event.payload));
+        return;
+      }
       case 'media.uploaded': {
         const assetId = String(event.payload.assetId);
         await queues.media.add('process', { assetId }, { jobId: `media-${assetId}` });

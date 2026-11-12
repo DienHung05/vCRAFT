@@ -4,6 +4,7 @@ import {
   type AllocationStatus,
   availableEvents,
   DomainError,
+  hasAcceptedQuotation,
   isRfqTerminal,
   RFQ_ACCEPT_GRACE_MS,
   RFQ_ACTOR_ROLES,
@@ -568,5 +569,14 @@ describe('RFQ state machine: property tests', () => {
         expect(isRfqTerminal(state)).toBe(true);
       }),
     );
+  });
+});
+
+describe('hasAcceptedQuotation (GH#478)', () => {
+  it('is true from ACCEPTED on along the main path, false before it and on the stopped branches', () => {
+    const ordered = RFQ_STATUSES.filter((status) => hasAcceptedQuotation(status));
+    expect(ordered).toEqual(['ACCEPTED', 'IN_PRODUCTION', 'DELIVERED']);
+    for (const status of ['DRAFT', 'SENT', 'BIDDING', 'CANCELLED', 'EXPIRED'] as const)
+      expect(hasAcceptedQuotation(status), status).toBe(false);
   });
 });

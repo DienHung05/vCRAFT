@@ -47,6 +47,8 @@ describe('VillageMapExplorer keyboard access (GH#364)', () => {
 
   it('the show-on-map control is a named, tabbable button that selects the workshop', async () => {
     renderVi(<VillageMapExplorer pins={[pin('1'), pin('3')]} />);
+    await screen.findByTestId('map-placeholder');
+    fireEvent.pointerDown(document.body);
     await screen.findByTestId('canvas-selected');
     const list = screen.getByTestId('workshop-list');
     const button = within(list).getByRole('button', { name: 'Xem Ho 3 trên bản đồ' });

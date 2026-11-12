@@ -39,6 +39,14 @@ module.exports = {
       from: { path: '^packages' },
       to: { path: '^apps' },
     },
+    {
+      name: 'apps-packages-no-scripts',
+      comment:
+        'GH#480: scripts/ (demo session helper with the Supabase secret key) must never be reachable from a deployed app or package',
+      severity: 'error',
+      from: { path: '^(apps|packages)/' },
+      to: { path: '^(scripts|tests)/' },
+    },
   ],
   options: {
     doNotFollow: { path: 'node_modules' },

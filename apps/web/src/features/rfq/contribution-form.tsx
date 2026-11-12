@@ -3,7 +3,7 @@
 import type { PriceHintDto } from '@vcraft/contracts';
 import { Button, Card, cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { AmountInWords } from '@/components/amount-in-words';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { notify } from '@/lib/notify';
@@ -41,6 +41,10 @@ export interface ContributionFormProps {
   /** Rút đề xuất (chỉ khi có `version` và API caller). */
   onWithdraw?: () => Promise<void>;
 }
+
+type Field = 'max' | 'price' | 'date';
+
+const FIELD_ORDER: readonly Field[] = ['max', 'price', 'date'];
 
 type SubmitState =
   | { kind: 'idle' }
@@ -86,41 +90,58 @@ export function ContributionForm({
   );
   const [submit, setSubmit] = useState<SubmitState>({ kind: 'idle' });
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
+  const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const maxRef = useRef<HTMLInputElement>(null);
+  const priceRef = useRef<HTMLInputElement>(null);
+  const dateRef = useRef<HTMLInputElement>(null);
   const locked = disabled || submit.kind === 'sending' || submit.kind === 'sent';
   const demo = onSubmit === undefined;
 
   const closingTime = isoDate(biddingClosesAt);
   const requiredTime = isoDate(requiredBy);
 
-  const problems = (() => {
-    const list: string[] = [];
+  /** One message per invalid field; an absent key means the field is fine. */
+  const errors = (() => {
+    const list: Partial<Record<Field, string>> = {};
     const max = maxQuantity.trim() === '' ? NaN : Number(maxQuantity);
     const price = unitPrice.trim() === '' ? NaN : Number(unitPrice);
     const completion = endOfDayTime(completionDate);
     if (!(Number.isSafeInteger(max) && max >= 1 && max <= 2_147_483_647))
-      list.push(t('problem.max'));
-    if (!(Number.isSafeInteger(price) && price >= 1)) list.push(t('problem.price'));
+      list.max = t('problem.max');
+    if (!(Number.isSafeInteger(price) && price >= 1)) list.price = t('problem.price');
     if (completion === null) {
-      list.push(t('problem.dateMissing'));
+      list.date = t('problem.dateMissing');
     } else if (closingTime !== null && completion <= closingTime) {
-      list.push(
-        t('problem.dateBeforeClosing', {
-          date: format.dateTime(new Date(biddingClosesAt), 'short'),
-        }),
-      );
+      list.date = t('problem.dateBeforeClosing', {
+        date: format.dateTime(new Date(biddingClosesAt), 'short'),
+      });
     } else if (requiredTime !== null && completion > requiredTime) {
-      list.push(
-        t('problem.dateAfterRequired', { date: format.dateTime(new Date(requiredBy), 'short') }),
-      );
+      list.date = t('problem.dateAfterRequired', {
+        date: format.dateTime(new Date(requiredBy), 'short'),
+      });
     }
     return list;
   })();
 
-  const ready = problems.length === 0;
+  const ready = Object.keys(errors).length === 0;
+  // An error shows only once its field was left (touched) or a submit was attempted (GH#477).
+  const shown = (field: Field) =>
+    submitAttempted || touched[field] ? (errors[field] ?? null) : null;
+  const touch = (field: Field) => setTouched((prev) => ({ ...prev, [field]: true }));
+  const errorId = (field: Field) => `${formId}-${field}-error`;
 
   const send = async () => {
-    if (!ready || locked || !onSubmit) {
-      if (ready && onSubmit === undefined) setSubmit({ kind: 'sent' });
+    if (locked) return;
+    if (!ready) {
+      setSubmitAttempted(true);
+      const refs = { max: maxRef, price: priceRef, date: dateRef };
+      const first = FIELD_ORDER.find((field) => errors[field] !== undefined);
+      if (first) refs[first].current?.focus();
+      return;
+    }
+    if (!onSubmit) {
+      setSubmit({ kind: 'sent' });
       return;
     }
     setSubmit({ kind: 'sending' });
@@ -175,39 +196,51 @@ export function ContributionForm({
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <label className="flex flex-col gap-1 text-small">
-          <span className="text-ash">{t('maxQuantity', { unit })}</span>
-          <input
-            type="number"
-            min={1}
-            step={1}
-            inputMode="numeric"
-            value={maxQuantity}
-            disabled={locked}
-            aria-invalid={!ready && problems.some((p) => p === t('problem.max'))}
-            onChange={(e) => {
-              setMaxQuantity(e.currentTarget.value);
-              setSubmit({ kind: 'idle' });
-            }}
-            className={cn(
-              'h-10 rounded-input border bg-paper px-2 text-right tabular-nums',
-              'border-ink/20',
-            )}
-          />
-        </label>
-        {/* The words sit outside the label so they do not join the input's accessible name. */}
+        {/* Errors sit outside the labels so they do not join the inputs' accessible names. */}
+        <div className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1 text-small">
+            <span className="text-ash">{t('maxQuantity', { unit })}</span>
+            <input
+              ref={maxRef}
+              type="number"
+              min={1}
+              step={1}
+              inputMode="numeric"
+              value={maxQuantity}
+              disabled={locked}
+              aria-invalid={shown('max') ? 'true' : undefined}
+              aria-describedby={shown('max') ? errorId('max') : undefined}
+              onBlur={() => touch('max')}
+              onChange={(e) => {
+                setMaxQuantity(e.currentTarget.value);
+                setSubmit({ kind: 'idle' });
+              }}
+              className={cn(
+                'h-10 rounded-input border bg-paper px-2 text-right tabular-nums',
+                'border-ink/20',
+              )}
+            />
+          </label>
+          <FieldError id={errorId('max')} message={shown('max')} />
+        </div>
         <div className="flex flex-col gap-1">
           <label className="flex flex-col gap-1 text-small">
             <span className="text-ash">{t('unitPrice')}</span>
             <input
+              ref={priceRef}
               type="number"
               min={1}
               step={1000}
               inputMode="numeric"
               value={unitPrice}
               disabled={locked}
-              aria-invalid={!ready && problems.some((p) => p === t('problem.price'))}
-              aria-describedby={`${formId}-price-words`}
+              aria-invalid={shown('price') ? 'true' : undefined}
+              aria-describedby={
+                shown('price')
+                  ? `${errorId('price')} ${formId}-price-words`
+                  : `${formId}-price-words`
+              }
+              onBlur={() => touch('price')}
               onChange={(e) => {
                 setUnitPrice(e.currentTarget.value);
                 setSubmit({ kind: 'idle' });
@@ -218,25 +251,30 @@ export function ContributionForm({
               )}
             />
           </label>
+          <FieldError id={errorId('price')} message={shown('price')} />
           <AmountInWords id={`${formId}-price-words`} value={unitPrice} />
           {priceHint ? <PriceHintNote hint={priceHint} /> : null}
         </div>
-        <label className="flex flex-col gap-1 text-small">
-          <span className="text-ash">{t('completionDate')}</span>
-          <input
-            type="date"
-            value={completionDate}
-            disabled={locked}
-            aria-invalid={
-              !ready && problems.some((p) => p.startsWith(t('problem.dateMissing').slice(0, 8)))
-            }
-            onChange={(e) => {
-              setCompletionDate(e.currentTarget.value);
-              setSubmit({ kind: 'idle' });
-            }}
-            className={cn('h-10 rounded-input border bg-paper px-2', 'border-ink/20')}
-          />
-        </label>
+        <div className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1 text-small">
+            <span className="text-ash">{t('completionDate')}</span>
+            <input
+              ref={dateRef}
+              type="date"
+              value={completionDate}
+              disabled={locked}
+              aria-invalid={shown('date') ? 'true' : undefined}
+              aria-describedby={shown('date') ? errorId('date') : undefined}
+              onBlur={() => touch('date')}
+              onChange={(e) => {
+                setCompletionDate(e.currentTarget.value);
+                setSubmit({ kind: 'idle' });
+              }}
+              className={cn('h-10 rounded-input border bg-paper px-2', 'border-ink/20')}
+            />
+          </label>
+          <FieldError id={errorId('date')} message={shown('date')} />
+        </div>
       </div>
 
       <p className="text-small text-ash">
@@ -255,7 +293,7 @@ export function ContributionForm({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button disabled={!ready || locked} onClick={() => void send()}>
+        <Button disabled={locked} onClick={() => void send()}>
           {submit.kind === 'sending'
             ? t('sending')
             : submit.kind === 'sent'
@@ -281,16 +319,6 @@ export function ContributionForm({
         </p>
       ) : null}
 
-      {!ready && !withdrawn ? (
-        <ul className="flex flex-col gap-1" aria-live="polite">
-          {problems.map((p) => (
-            <li key={p} className="text-small font-medium text-seal">
-              {p}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
       <p className="text-[0.75rem] text-ash">{demo ? t('demoNote') : t('liveNote')}</p>
       <span id={`${formId}-hint`} className="sr-only">
         {t('privacyNote')}
@@ -310,6 +338,16 @@ export function ContributionForm({
         <p className="text-ash">{t('withdrawText')}</p>
       </ConfirmDialog>
     </Card>
+  );
+}
+
+/** The message of one invalid field, right under its input; renders nothing while the field is fine. */
+function FieldError({ id, message }: { id: string; message: string | null }) {
+  if (!message) return null;
+  return (
+    <p id={id} className="text-small font-medium text-seal">
+      {message}
+    </p>
   );
 }
 

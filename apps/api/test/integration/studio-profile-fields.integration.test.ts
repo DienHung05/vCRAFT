@@ -131,6 +131,11 @@ describe('Studio profile fields (GH#253)', () => {
   });
 
   it('craft category: legacy free text is mapped, a stored category wins, the detail stays', async () => {
+    // The approval fixture shortcut stored a category (GH#474); this case starts from legacy text only.
+    await db.orm.em
+      .fork()
+      .getConnection()
+      .execute('update household set craft_category = null where id = ?', [householdId]);
     const legacy = await patch({ craft: 'men lam' });
     version = legacy.body.version;
     expect(legacy.body).toMatchObject({ craft: 'men lam', craftCategory: 'MEN' });

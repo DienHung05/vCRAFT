@@ -22,15 +22,16 @@ interface FakeAsset {
 
 function setup(asset: FakeAsset | null) {
   const flush = vi.fn().mockResolvedValue(undefined);
+  const create = vi.fn();
   const orm = {
-    em: { fork: () => ({ findOne: async () => asset, flush }) },
+    em: { fork: () => ({ findOne: async () => asset, flush, create }) },
   } as unknown as MikroORM;
   const put = vi.fn().mockResolvedValue(undefined);
   const storage = {
     get: vi.fn().mockResolvedValue(new Uint8Array([1])),
     put,
   } as unknown as ObjectStorage;
-  return { orm, storage, put, flush };
+  return { orm, storage, put, flush, create };
 }
 
 const asset = (over: Partial<FakeAsset> = {}): FakeAsset => ({
@@ -88,6 +89,21 @@ describe('processMediaAsset resumability (GH#345)', () => {
     await processMediaAsset({ orm, storage }, 'a1');
     expect(a.status).toBe('READY');
     expect(a.variants.map((v) => v.format)).toEqual(['avif', 'webp']);
+  });
+
+  it('queues one exhibition.changed event when the asset turns READY, not on the AVIF-only retry (ADR-0027)', async () => {
+    const first = setup(asset());
+    await processMediaAsset({ orm: first.orm, storage: first.storage }, 'a1');
+    expect(first.create).toHaveBeenCalledTimes(1);
+    expect(first.create.mock.calls[0]?.[1]).toEqual({
+      type: 'exhibition.changed',
+      payload: { tags: ['exhibition'] },
+    });
+
+    const webp = { format: 'webp', width: 640, height: 640, key: 'v/a1/640-h.webp', bytes: 3 };
+    const retry = setup(asset({ status: 'READY', variants: [webp] }));
+    await processMediaAsset({ orm: retry.orm, storage: retry.storage }, 'a1');
+    expect(retry.create).not.toHaveBeenCalled();
   });
 
   it('on retry after an AVIF failure, a READY asset gets its AVIF variants without rewriting WebP', async () => {

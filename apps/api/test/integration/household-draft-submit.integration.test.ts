@@ -1,4 +1,4 @@
-import { Household, MediaAsset, Workshop } from '@vcraft/database';
+import { Artisan, AuditLog, Household, MediaAsset, OutboxEvent, Workshop } from '@vcraft/database';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startTestApp, type TestApp } from './support/test-app.js';
 import { startTestDatabase, type TestDatabase } from './support/test-database.js';
@@ -111,7 +111,49 @@ describe('Household draft until submit', () => {
     household = res.body;
   });
 
+  it('refuses to approve a submitted application with no craft and no artisan (GH#474)', async () => {
+    const res = await approve(household.version);
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe('APPLICATION_INCOMPLETE');
+    expect(res.body.errors.map((e: { path: string }) => e.path)).toEqual(['craft', 'artisans']);
+    // Nothing changed: still pending, not public, no decision audited or mailed.
+    const em = db.orm.em.fork();
+    const row = await em.findOneOrFail(Household, household.id);
+    expect(row.status).toBe('PENDING_REVIEW');
+    expect(row.approvedAt ?? null).toBeNull();
+    expect(row.version).toBe(household.version);
+    expect(await em.count(AuditLog, { action: 'household.approve', entityId: household.id })).toBe(
+      0,
+    );
+    expect(await em.count(OutboxEvent, { type: 'household.decision' })).toBe(0);
+    expect((await t.request({ method: 'GET', url: '/households/gom-nhap' })).status).toBe(404);
+  });
+
+  it('refuses to approve an application with an empty story as well (GH#474)', async () => {
+    const em = db.orm.em.fork();
+    await em
+      .getConnection()
+      .execute(`update household set history = '  ' where id = '${household.id}'`);
+    const res = await approve(household.version);
+    expect(res.status).toBe(422);
+    expect(res.body.errors.map((e: { path: string }) => e.path)).toEqual([
+      'story',
+      'craft',
+      'artisans',
+    ]);
+    await em
+      .getConnection()
+      .execute(`update household set history = 'Khai báo.' where id = '${household.id}'`);
+  });
+
   it('approves a complete submitted application', async () => {
+    const em = db.orm.em.fork();
+    const row = await em.findOneOrFail(Household, household.id);
+    em.create(Artisan, { household: row, name: 'Nghệ nhân' });
+    await em.flush();
+    await em
+      .getConnection()
+      .execute(`update household set craft_category = 'GOM_SU' where id = '${household.id}'`);
     const res = await approve(household.version);
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('APPROVED');

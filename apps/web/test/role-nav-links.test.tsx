@@ -1,8 +1,9 @@
-import { act, screen, waitFor } from '@testing-library/react';
-import type { MyInvitationDto } from '@vcraft/contracts';
+import { screen } from '@testing-library/react';
+import { messages } from '@vcraft/i18n';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HeaderRoleProvider } from '@/components/shell/header-role';
 import { RoleNavLinks } from '@/components/shell/role-nav-links';
+import { quotationTab } from '@/lib/auth/quotation-tab';
 import type { AccountState } from '@/lib/auth/use-account';
 import { renderEn, renderVi } from './render';
 
@@ -27,6 +28,8 @@ vi.mock('@/lib/api/use-quotation-client', () => ({
   useQuotationClient: () => ({ client: { listInvitations }, loading: false }),
 }));
 
+const STUDIO_QUOTATIONS_HREF = '/studio/bao-gia';
+
 const ITEMS = [
   { href: '/san-pham' as const, label: 'Sản phẩm' },
   { href: '/yeu-cau-bao-gia' as const, label: 'Yêu cầu báo giá' },
@@ -39,14 +42,6 @@ const signedIn = (role: 'BUYER' | 'HOUSEHOLD' | 'ADMIN'): AccountState => ({
   householdIntent: false,
   me: { role } as never,
 });
-
-function open(requestId: string, closes: string, declined = false): MyInvitationDto {
-  return {
-    request: { id: requestId, status: 'SENT', biddingClosesAt: closes },
-    contribution: null,
-    declined,
-  } as unknown as MyInvitationDto;
-}
 
 const quotationLink = (name: string) => screen.getByRole('link', { name: new RegExp(name) });
 
@@ -70,38 +65,43 @@ describe('RoleNavLinks', () => {
     expect(listInvitations).not.toHaveBeenCalled();
   });
 
-  it('sends a household to Studio with a badge of its open invitations', async () => {
+  // GH#490: the Studio tab already answers invitations at /studio/bao-gia, so the header must not repeat it.
+  it('sends a household to the open requests, a different destination from the Studio tab', async () => {
     account = signedIn('HOUSEHOLD');
-    listInvitations.mockResolvedValue([
-      open('1', '2099-01-01T00:00:00.000Z'),
-      open('2', '2099-02-01T00:00:00.000Z'),
-      open('3', '2099-03-01T00:00:00.000Z', true),
-      open('4', '2000-01-01T00:00:00.000Z'),
-    ]);
     renderVi(
       <HeaderRoleProvider>
         <RoleNavLinks items={ITEMS} />
       </HeaderRoleProvider>,
     );
-    await waitFor(() => expect(screen.getByText('2 lời mời đang mở')).toBeTruthy());
-    const link = quotationLink('Lời mời báo giá');
-    expect(link.getAttribute('href')).toBe('/studio/bao-gia');
-    expect(link.textContent).toContain('2');
+    const link = quotationLink('Yêu cầu đang mở');
+    expect(link.getAttribute('href')).toBe('/studio/yeu-cau-mo');
+    // No second "Lời mời báo giá" and no old buyer link in the header.
+    expect(screen.queryByText('Lời mời báo giá')).toBeNull();
     expect(screen.queryByText('Yêu cầu báo giá')).toBeNull();
+    expect(link.textContent).toBe('Yêu cầu đang mở');
+    // The header no longer counts invitations, so it does not call the invitations API.
+    expect(listInvitations).not.toHaveBeenCalled();
   });
 
-  it('shows no badge for a household without open invitations, or when loading fails', async () => {
+  it('differs from the Studio nav item in both label and href, in vi and en', () => {
+    const studio = { vi: messages.vi.studio.nav.quotations, en: messages.en.studio.nav.quotations };
+    const header = quotationTab('HOUSEHOLD');
+    expect(header.href).not.toBe(STUDIO_QUOTATIONS_HREF);
+    expect(messages.vi.nav[header.labelKey]).not.toBe(studio.vi);
+    expect(messages.en.nav[header.labelKey]).not.toBe(studio.en);
+    expect(messages.vi.nav[header.labelKey]).toBe('Yêu cầu đang mở');
+    expect(messages.en.nav[header.labelKey]).toBe('Open requests');
+  });
+
+  it('labels the household item in English', () => {
     account = signedIn('HOUSEHOLD');
-    listInvitations.mockRejectedValue(new Error('down'));
     renderEn(
       <HeaderRoleProvider>
         <RoleNavLinks items={ITEMS} />
       </HeaderRoleProvider>,
     );
-    await act(async () => {});
-    const link = quotationLink('Quote invitations');
-    expect(link.getAttribute('href')).toBe('/studio/bao-gia');
-    expect(link.textContent).toBe('Quote invitations');
+    expect(quotationLink('Open requests').getAttribute('href')).toBe('/studio/yeu-cau-mo');
+    expect(screen.queryByText('Quote invitations')).toBeNull();
   });
 
   it('sends an administrator to the coordination board', () => {

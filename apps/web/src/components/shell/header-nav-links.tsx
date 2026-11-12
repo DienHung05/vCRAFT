@@ -11,11 +11,11 @@ export interface HeaderNavItem {
     | '/ban-do'
     | '/tin-tuc'
     | '/yeu-cau-bao-gia'
-    | '/studio/bao-gia'
+    | '/studio/yeu-cau-mo'
     | '/admin/dieu-phoi'
     | '/yeu-thich';
   label: string;
-  /** A count next to the label (open invitations); `label` is the screen-reader text for it. */
+  /** A count next to the label; `label` is the screen-reader text for it. */
   badge?: { count: number; label: string } | undefined;
 }
 
