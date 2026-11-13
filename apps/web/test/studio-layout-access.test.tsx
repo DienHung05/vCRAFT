@@ -1,7 +1,7 @@
 import { act, screen } from '@testing-library/react';
 import type { MeDto } from '@vcraft/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import StudioLayout from '@/app/[locale]/studio/layout';
+import { StudioFrame as StudioLayout } from '@/app/[locale]/studio/layout';
 import { renderVi } from './render';
 
 vi.mock('@/lib/locale', () => ({ resolveLocale: vi.fn(async () => 'vi') }));

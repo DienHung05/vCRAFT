@@ -107,6 +107,91 @@
   }
 }
 
+/*
+ * The journey story inside the spread (vCRAFT-42g, GH#300). Its base layout (globals.css) breaks out of a
+ * narrow centred column to 64rem; in the book it lives in the right-hand page, so it keeps to that page
+ * instead. The figure stays sticky at the top of the page: beside the steps when the page is wide enough
+ * (container query), else compact above them, on the paper so the steps slide under it. Phones and reduced
+ * motion never turn the story on, so they keep the stacked static layout.
+ */
+@media (min-width: 64rem) {
+  .trace-journey {
+    container: trace-journey / inline-size;
+  }
+
+  .trace-journey [data-fire-story="on"] {
+    display: block;
+    width: auto;
+    margin-inline: 0;
+  }
+
+  .trace-journey [data-fire-story="on"] .fire-figure {
+    top: 0;
+    /* Above the diamond marks of the steps sliding under it, below the sticky call-to-action bar. */
+    z-index: 20;
+    padding-block: 0.75rem 0.5rem;
+    background: var(--color-paper);
+    border-bottom: 1px solid color-mix(in oklch, var(--color-ink) 10%, transparent);
+  }
+
+  .trace-journey [data-fire-story="on"] .fire-figure .piece {
+    width: min(100%, calc(min(18svh, 8.5rem) * 200 / 240));
+  }
+
+  .trace-journey [data-fire-story="on"] .fire-note {
+    display: none;
+  }
+
+  .trace-journey [data-fire-story="on"] .fire-track {
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+
+  .trace-journey [data-fire-story="on"] .fire-steps {
+    padding-top: 1.5rem;
+  }
+
+  /* A step reached from a `#log-N` link or a chip lands below the sticky figure. */
+  .trace-journey [data-fire-story="on"] .fire-step {
+    scroll-margin-top: 15rem;
+  }
+}
+
+@container trace-journey (min-width: 36rem) {
+  .trace-journey [data-fire-story="on"] {
+    display: grid;
+    grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+    column-gap: 1.5rem;
+  }
+
+  .trace-journey [data-fire-story="on"] .fire-figure {
+    top: 1.5rem;
+    padding-block: 0;
+    background: none;
+    border-bottom: 0;
+  }
+
+  .trace-journey [data-fire-story="on"] .fire-figure .piece {
+    width: 100%;
+  }
+
+  .trace-journey [data-fire-story="on"] .fire-note {
+    display: block;
+  }
+
+  .trace-journey [data-fire-story="on"] .fire-track {
+    justify-content: flex-start;
+  }
+
+  .trace-journey [data-fire-story="on"] .fire-steps {
+    padding-top: 0;
+  }
+
+  .trace-journey [data-fire-story="on"] .fire-step {
+    scroll-margin-top: 1.5rem;
+  }
+}
+
 /* On shorter screens the summary scrolls normally, keeping every integrity detail reachable. */
 @media (min-width: 64rem) and (min-height: 56rem) {
   .trace-summary {

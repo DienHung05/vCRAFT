@@ -1,6 +1,6 @@
 'use client';
 
-import type { HouseholdSummaryDto, ProductCardDto } from '@vcraft/contracts';
+import type { HouseholdSummaryDto } from '@vcraft/contracts';
 import {
   PRODUCT_CATEGORIES,
   PRODUCT_SORTS,
@@ -24,7 +24,7 @@ import { CATALOG_PAGE_SIZE } from './catalog-page-size';
 import { CatalogPagination } from './catalog-pagination';
 import { productsQueryString } from './exhibition-query';
 import { ProductCard, ProductGridSkeleton } from './product-card';
-import { toProductCardView } from './view-models';
+import { type ProductCardInput, toProductCardView } from './view-models';
 
 const PAGE_SIZE = CATALOG_PAGE_SIZE;
 const TYPING_DEBOUNCE_MS = 250;
@@ -37,12 +37,12 @@ const browserFetch: FetchProducts = (query, signal) =>
 
 export interface CatalogExplorerProps {
   initialFilters: CatalogFilters;
-  initialItems: readonly ProductCardDto[];
+  initialItems: readonly ProductCardInput[];
   initialTotal: number;
   initialTotalPages: number;
   /** Lần tải phía server có lỗi: bắt đầu bằng trạng thái lỗi kèm thử lại. */
   initialError?: boolean;
-  households: readonly HouseholdSummaryDto[];
+  households: readonly Pick<HouseholdSummaryDto, 'slug' | 'name'>[];
   /** Chỉ để kiểm thử. */
   fetchProducts?: FetchProducts;
 }

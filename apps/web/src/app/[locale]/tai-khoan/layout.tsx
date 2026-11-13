@@ -1,3 +1,4 @@
+import { FullMessagesProvider } from '@/components/full-messages-provider';
 import { PublicShell } from '@/components/shell/public-shell';
 import { resolveLocale } from '@/lib/locale';
 
@@ -7,5 +8,9 @@ export default async function AccountLayout({
   params,
 }: LayoutProps<'/[locale]/tai-khoan'>) {
   await resolveLocale(params);
-  return <PublicShell>{children}</PublicShell>;
+  return (
+    <FullMessagesProvider>
+      <PublicShell>{children}</PublicShell>
+    </FullMessagesProvider>
+  );
 }

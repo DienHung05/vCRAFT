@@ -27,6 +27,11 @@ export interface ImageSlotProps {
   sizes?: string;
   /** Ảnh trên màn đầu (LCP): nạp ngay thay vì lười. */
   priority?: boolean;
+  /**
+   * In the first viewport but not the LCP: load eagerly from the page's own origin (`/media-cache`, no
+   * extra handshake) without `fetchpriority=high`, which stays with the one LCP image.
+   */
+  inViewport?: boolean;
   /** `contain` shows the whole photo inside the frame (letterboxed on the tint); `cover` (default) fills and may crop. */
   fit?: 'cover' | 'contain';
   className?: string;
@@ -51,6 +56,7 @@ export function ImageSlot({
   thumbhash,
   sizes = DEFAULT_SIZES,
   priority = false,
+  inViewport = false,
   fit = 'cover',
   className,
   children,
@@ -65,7 +71,11 @@ export function ImageSlot({
     credit?.widths.map((w) => `${base}-${w}.${ext} ${w}w`).join(', ');
   const smallest = credit ? Math.min(...credit.widths) : 0;
   const [rw = 1, rh = 1] = (ratio ?? credit?.ratio ?? '1/1').split('/').map(Number);
-  const responsive = buildResponsiveImage(variants, priority ? aboveTheFoldUrl : undefined);
+  const responsive = buildResponsiveImage(
+    variants,
+    priority || inViewport ? aboveTheFoldUrl : undefined,
+  );
+  const eager = priority || inViewport;
   const fitClass = fit === 'contain' ? 'object-contain' : 'object-cover';
   const blurred = src && !credit ? thumbhashDataUrl(thumbhash) : undefined;
 
@@ -111,10 +121,10 @@ export function ImageSlot({
             <source type="image/webp" srcSet={responsive.webp} sizes={sizes} />
           ) : null}
           <img
-            src={priority ? aboveTheFoldUrl(src) : src}
+            src={eager ? aboveTheFoldUrl(src) : src}
             alt={alt}
             {...(responsive.width && { width: responsive.width, height: responsive.height })}
-            loading={priority ? 'eager' : 'lazy'}
+            loading={eager ? 'eager' : 'lazy'}
             fetchPriority={priority ? 'high' : undefined}
             decoding="async"
             className={cn('absolute inset-0 size-full', fitClass)}

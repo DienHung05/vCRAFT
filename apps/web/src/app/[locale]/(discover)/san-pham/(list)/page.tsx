@@ -5,6 +5,7 @@ import { parseCatalogParams, toProductFilters } from '@/features/catalog/catalog
 import { CatalogHeader } from '@/features/catalog/catalog-header';
 import { CATALOG_PAGE_SIZE } from '@/features/catalog/catalog-page-size';
 import { fetchHouseholds, fetchProductPage } from '@/features/catalog/exhibition-api';
+import { slimProductCard } from '@/features/catalog/view-models';
 import { resolveLocale } from '@/lib/locale';
 import { pageMetadata } from '@/lib/seo/page-metadata';
 
@@ -44,11 +45,15 @@ export default async function ProductsIndexPage({
         initialFilters={
           products.status === 'ok' ? { ...filters, page: products.data.page } : filters
         }
-        initialItems={products.status === 'ok' ? products.data.data : []}
+        initialItems={products.status === 'ok' ? products.data.data.map(slimProductCard) : []}
         initialTotal={products.status === 'ok' ? products.data.total : 0}
         initialTotalPages={products.status === 'ok' ? products.data.totalPages : 0}
         initialError={products.status !== 'ok'}
-        households={households.status === 'ok' ? households.data.data : []}
+        households={
+          households.status === 'ok'
+            ? households.data.data.map(({ slug, name }) => ({ slug, name }))
+            : []
+        }
       />
     </div>
   );

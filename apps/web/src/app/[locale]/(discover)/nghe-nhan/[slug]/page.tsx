@@ -208,6 +208,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
                   {...slotPhoto(portraitPhoto)}
                   // Below 640px the card is the page width minus gutters and padding; 80vw keeps 1.75x phones on the 640w file.
                   sizes="(min-width: 640px) 11rem, 80vw"
+                  inViewport
                 />
               </figure>
             ) : null}
@@ -381,7 +382,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
           <ul className="mt-8 grid grid-cols-2 gap-6 md:grid-cols-4">
             {household.products.map((p) => (
               <li key={p.slug}>
-                <ProductCard product={toProductCardView({ ...p, household }, locale)} />
+                <ProductCard product={toProductCardView(p, locale)} />
               </li>
             ))}
           </ul>
