@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { DataUnavailable } from '@/components/data-unavailable';
+import { MapHeader } from '@/features/village-map/map-header';
 import { fetchMapPins } from '@/features/village-map/map-pins';
 import { VillageMapExplorer } from '@/features/village-map/village-map-explorer';
 import { resolveLocale } from '@/lib/locale';
@@ -30,10 +31,7 @@ export default async function VillageMapPage({
 
   return (
     <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section-tail">
-      <header className="flex max-w-prose-vn flex-col gap-3">
-        <h1 className="text-h1">{t('title')}</h1>
-        <p className="text-ash">{t('lead')}</p>
-      </header>
+      <MapHeader />
       {result.status === 'ok' ? (
         <VillageMapExplorer pins={result.pins} {...(initialSelectedId && { initialSelectedId })} />
       ) : (

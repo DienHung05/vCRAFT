@@ -139,7 +139,9 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
           tint={tintOf(household.slug)}
           {...slotPhoto(cover)}
           priority
-          sizes="100vw"
+          // The phone hero is 412x642 CSS px and cropped to cover, so a full-width 1280w file is wasted bytes on
+          // the LCP path: below 768px ask for the 640w variant (the srcset picks by sizes x DPR). GH#481.
+          sizes="(min-width: 768px) 100vw, 50vw"
           className="h-[78svh] min-h-[28rem] rounded-none"
         />
         <div className="absolute inset-0 bg-linear-to-t from-ink/85 via-ink/40 to-ink/10" />

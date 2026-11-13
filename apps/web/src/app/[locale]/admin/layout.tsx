@@ -1,5 +1,6 @@
 import { Logo } from '@vcraft/ui';
 import { getTranslations } from 'next-intl/server';
+import { FullMessagesProvider } from '@/components/full-messages-provider';
 import { SessionUnavailable } from '@/components/session-unavailable';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
 import { AdminNav } from '@/features/admin/admin-nav';
@@ -11,7 +12,7 @@ import { requireArea } from '@/lib/auth/guard';
 import { resolveLocale } from '@/lib/locale';
 
 /** Khung Admin (BRAND §9): sạch, mật độ cao, nền giấy; sidebar bên trái, thu thành hàng ngang trên màn hẹp. */
-export default async function AdminLayout({ children, params }: LayoutProps<'/[locale]/admin'>) {
+export async function AdminFrame({ children, params }: LayoutProps<'/[locale]/admin'>) {
   const locale = await resolveLocale(params);
   const viewer = await requireArea('admin', locale);
   const t = await getTranslations('admin');
@@ -84,5 +85,13 @@ export default async function AdminLayout({ children, params }: LayoutProps<'/[l
         {children}
       </main>
     </div>
+  );
+}
+
+export default function AdminLayout(props: LayoutProps<'/[locale]/admin'>) {
+  return (
+    <FullMessagesProvider>
+      <AdminFrame {...props} />
+    </FullMessagesProvider>
   );
 }
