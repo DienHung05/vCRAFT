@@ -136,7 +136,44 @@ export interface ProductCardView {
 /** A card DTO, or a product of a household page (whose status is the full lifecycle). */
 type ProductCardSource = Omit<ProductCardDto, 'status'> & { status: ProductStatus };
 
-export function toProductCardView(dto: ProductCardSource, locale = 'vi'): ProductCardView {
+/** The card DTO fields a product card reads; the rest (stock, tags, household...) never leave the server. */
+export type ProductCardInput = Pick<
+  ProductCardSource,
+  | 'id'
+  | 'slug'
+  | 'name'
+  | 'nameEn'
+  | 'category'
+  | 'traceCode'
+  | 'priceVnd'
+  | 'kind'
+  | 'status'
+  | 'coverUrl'
+  | 'coverAlt'
+  | 'coverAltEn'
+  | 'coverVariants'
+>;
+
+/** Keeps only what `toProductCardView` reads, for props that are serialised into the page (GH#481). */
+export function slimProductCard(dto: ProductCardSource): ProductCardInput {
+  return {
+    id: dto.id,
+    slug: dto.slug,
+    name: dto.name,
+    nameEn: dto.nameEn,
+    category: dto.category,
+    traceCode: dto.traceCode,
+    priceVnd: dto.priceVnd,
+    kind: dto.kind,
+    status: dto.status,
+    coverUrl: dto.coverUrl,
+    coverAlt: dto.coverAlt,
+    coverAltEn: dto.coverAltEn,
+    coverVariants: dto.coverVariants,
+  };
+}
+
+export function toProductCardView(dto: ProductCardInput, locale = 'vi'): ProductCardView {
   const name = textFor(locale, dto.name, dto.nameEn);
   return {
     id: dto.id,
