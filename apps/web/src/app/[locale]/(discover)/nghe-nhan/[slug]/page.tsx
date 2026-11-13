@@ -139,9 +139,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
           tint={tintOf(household.slug)}
           {...slotPhoto(cover)}
           priority
-          // The phone hero is 412x642 CSS px and cropped to cover, so a full-width 1280w file is wasted bytes on
-          // the LCP path: below 768px ask for the 640w variant (the srcset picks by sizes x DPR). GH#481.
-          sizes="(min-width: 768px) 100vw, 50vw"
+          sizes="100vw"
           className="h-[78svh] min-h-[28rem] rounded-none"
         />
         <div className="absolute inset-0 bg-linear-to-t from-ink/85 via-ink/40 to-ink/10" />
@@ -210,6 +208,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
                   {...slotPhoto(portraitPhoto)}
                   // Below 640px the card is the page width minus gutters and padding; 80vw keeps 1.75x phones on the 640w file.
                   sizes="(min-width: 640px) 11rem, 80vw"
+                  inViewport
                 />
               </figure>
             ) : null}
@@ -383,7 +382,7 @@ export default async function ArtisanPage({ params }: PageProps<'/[locale]/nghe-
           <ul className="mt-8 grid grid-cols-2 gap-6 md:grid-cols-4">
             {household.products.map((p) => (
               <li key={p.slug}>
-                <ProductCard product={toProductCardView({ ...p, household }, locale)} />
+                <ProductCard product={toProductCardView(p, locale)} />
               </li>
             ))}
           </ul>
