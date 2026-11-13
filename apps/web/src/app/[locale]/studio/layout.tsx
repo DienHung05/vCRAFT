@@ -1,3 +1,4 @@
+import { FullMessagesProvider } from '@/components/full-messages-provider';
 import { SessionUnavailable } from '@/components/session-unavailable';
 import { PublicShell } from '@/components/shell/public-shell';
 import { OutageBanner } from '@/features/studio/outage-banner';
@@ -7,7 +8,7 @@ import { resolveLocale } from '@/lib/locale';
 
 // Studio của hộ: chỉ người đại diện hộ. Hộ chưa được chấp nhận (chờ duyệt, bị từ chối, bị tạm ngừng) chỉ vào được
 // trang trạng thái hồ sơ `/studio/ho-so`; mọi trang Studio khác chuyển về đó.
-export default async function StudioLayout({ children, params }: LayoutProps<'/[locale]/studio'>) {
+export async function StudioFrame({ children, params }: LayoutProps<'/[locale]/studio'>) {
   const locale = await resolveLocale(params);
   const viewer = await requireArea('studio', locale);
   // The API could not confirm the session: stay inside the shell with a retry instead of a 500 page.
@@ -27,5 +28,13 @@ export default async function StudioLayout({ children, params }: LayoutProps<'/[
         {children}
       </PublicShell>
     </div>
+  );
+}
+
+export default function StudioLayout(props: LayoutProps<'/[locale]/studio'>) {
+  return (
+    <FullMessagesProvider>
+      <StudioFrame {...props} />
+    </FullMessagesProvider>
   );
 }

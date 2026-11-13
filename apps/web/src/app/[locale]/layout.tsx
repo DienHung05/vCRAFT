@@ -3,7 +3,7 @@ import { Be_Vietnam_Pro, Fraunces, JetBrains_Mono } from 'next/font/google';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
-import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { InlineScript } from '@/components/inline-script';
 import { Toaster } from '@/components/toaster';
 import { UsdRateProvider } from '@/components/usd-rate-provider';
@@ -11,6 +11,7 @@ import { WebFonts } from '@/components/web-fonts';
 import { routing } from '@/i18n/routing';
 import { NONCE_HEADER } from '@/lib/csp';
 import { FALLBACK_USD_RATE, showsUsdReference } from '@/lib/currency';
+import { PUBLIC_MESSAGE_PATHS, pickMessages } from '@/lib/public-messages';
 import { siteOrigin } from '@/lib/site';
 import { THEME_SCRIPT } from '@/lib/theme';
 import { getUsdRate } from '@/lib/usd-rate';
@@ -79,6 +80,8 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
   // Only the English site shows USD (FR-CAT-08). The rate comes from Next's data cache (24h), so
   // this adds no request for visitors and the pages stay statically cacheable.
   const usdRate = showsUsdReference(locale) ? await getUsdRate() : FALLBACK_USD_RATE;
+  // Only the public subset goes to the browser; signed-in areas re-provide the full dictionary (GH#481).
+  const messages = pickMessages(await getMessages(), PUBLIC_MESSAGE_PATHS);
 
   return (
     <html
@@ -106,7 +109,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
       </head>
       <body className="grain-fixed">
         <WebFonts />
-        <NextIntlClientProvider>
+        <NextIntlClientProvider messages={messages}>
           <UsdRateProvider value={usdRate}>{children}</UsdRateProvider>
           <Toaster />
         </NextIntlClientProvider>

@@ -1,3 +1,4 @@
+import { FullMessagesProvider } from '@/components/full-messages-provider';
 import { PublicShell } from '@/components/shell/public-shell';
 import { KilnStage } from '@/features/auth/kiln/kiln-stage';
 import { resolveLocale } from '@/lib/locale';
@@ -8,8 +9,10 @@ import { resolveLocale } from '@/lib/locale';
 export default async function Layout({ children, params }: LayoutProps<'/[locale]'>) {
   await resolveLocale(params);
   return (
-    <PublicShell>
-      <KilnStage>{children}</KilnStage>
-    </PublicShell>
+    <FullMessagesProvider>
+      <PublicShell>
+        <KilnStage>{children}</KilnStage>
+      </PublicShell>
+    </FullMessagesProvider>
   );
 }

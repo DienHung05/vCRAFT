@@ -1,8 +1,8 @@
 import { act, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import BuyerLayout from '@/app/[locale]/(buyer)/layout';
-import AdminLayout from '@/app/[locale]/admin/layout';
-import StudioLayout from '@/app/[locale]/studio/layout';
+import { BuyerFrame as BuyerLayout } from '@/app/[locale]/(buyer)/layout';
+import { AdminFrame as AdminLayout } from '@/app/[locale]/admin/layout';
+import { StudioFrame as StudioLayout } from '@/app/[locale]/studio/layout';
 import { renderVi } from './render';
 
 const refresh = vi.hoisted(() => vi.fn());
