@@ -27,6 +27,7 @@ import { MakerCredits } from '@/features/exhibition/maker-credits';
 import { VisitSection } from '@/features/exhibition/visit-section';
 import { ChainVerifier } from '@/features/traceability/chain-verifier';
 import { FireTimeline } from '@/features/traceability/fire-timeline';
+import { pieceKindOf } from '@/features/traceability/piece-shapes';
 import '@/features/traceability/trace-story.css';
 import { TraceQr } from '@/features/traceability/trace-qr';
 import { Link } from '@/i18n/navigation';
@@ -244,6 +245,8 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                   locale={locale}
                   entries={toLogEntries(visible.journal)}
                   household={visible.household.name}
+                  pieceKind={pieceKindOf(visible.product.category, visible.product.name)}
+                  glaze={tintOf(visible.product.traceCode)}
                 />
               </section>
             </div>
