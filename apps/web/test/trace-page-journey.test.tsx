@@ -28,7 +28,7 @@ vi.mock('@/components/shell/locale-switcher', () => ({ LocaleSwitcher: () => nul
 vi.mock('@/i18n/navigation', () => ({
   Link: ({ children }: { children: React.ReactNode }) => <a href="/x">{children}</a>,
 }));
-vi.mock('@/features/traceability/chain-verifier', () => ({ ChainVerifier: () => null }));
+vi.mock('@/features/traceability/journey-story-card', () => ({ JourneyStoryCard: () => null }));
 vi.mock('@/features/traceability/trace-qr', () => ({ TraceQr: () => null }));
 vi.mock('@/features/exhibition/visit-section', () => ({ VisitSection: () => null }));
 vi.mock('@/features/exhibition/maker-credits', () => ({ MakerCredits: () => null }));

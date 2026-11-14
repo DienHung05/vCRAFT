@@ -314,7 +314,7 @@
     "browseProducts": "Khám phá sản phẩm",
     "viewHousehold": "Gặp hộ làm nghề",
     "contents": "Mục lục sổ nghề",
-    "checkJournal": "Toàn vẹn nhật ký",
+    "checkJournal": "Câu chuyện",
     "readJournal": "Nhật ký sản xuất",
     "notFoundTitle": "Mã này không có trong vCraft",
     "notFoundText": "Không tìm thấy mã {code}. Món đồ này có thể không do làng nghề trên vCraft làm ra, hoặc tem đã bị làm giả. Hãy kiểm lại mã dưới đáy sản phẩm.",
@@ -324,27 +324,27 @@
       "householdVerified": "Hộ đã được BQL xác minh",
       "match": "Mã này khớp với một sản phẩm của {household}.",
       "checkingTitle": "Đang kiểm tra nhật ký…",
-      "checkingText": "Trình duyệt của bạn đang tự tính lại dấu băm SHA-256 của từng mốc.",
-      "okTitle": "Nhật ký toàn vẹn",
-      "okText": "Trình duyệt đã tính lại {count, plural, other {# dấu băm}} SHA-256 và tất cả đều khớp, nối liền từ mốc đầu tới mốc cuối.",
-      "okBadge": "Chuỗi nhật ký toàn vẹn · {count, plural, other {# mốc}}",
+      "checkingText": "Trình duyệt của bạn đang tự đối chiếu từng mốc.",
+      "okTitle": "Nhật ký được giữ nguyên từ ngày ghi",
+      "okText": "Trình duyệt của bạn đã tự đối chiếu {count, plural, other {# mốc}} và tất cả đều khớp với lúc được ghi.",
       "brokenTitle": "Có dấu hiệu chỉnh sửa nhật ký",
       "brokenAt": "Mốc {n} ({stage}) không đạt kiểm tra.",
       "brokenLink": "Xem mốc {n}",
       "reason": {
-        "hash": "Nội dung mốc này không khớp dấu băm đã ghi, tức là đã bị sửa sau khi ghi.",
-        "prev": "Mốc này không nối đúng với dấu băm của mốc ngay trước nó.",
+        "hash": "Nội dung mốc này khác với lúc được ghi, tức là đã bị sửa sau đó.",
+        "prev": "Mốc này không nối đúng với mốc ngay trước nó.",
         "seq": "Số thứ tự các mốc bị đứt hoặc đảo chỗ."
       },
       "unavailableTitle": "Chưa kiểm được trên trình duyệt này",
-      "unavailableText": "Việc kiểm chứng cần Web Crypto, chỉ có khi mở trang qua HTTPS. Nhật ký bên dưới chưa được xác nhận là toàn vẹn.",
+      "unavailableText": "Việc kiểm chứng cần mở trang qua HTTPS. Nhật ký bên dưới chưa được xác nhận là còn nguyên.",
       "emptyTitle": "Chưa có nhật ký để kiểm",
       "emptyText": "Sản phẩm này chưa có mốc sản xuất nào.",
-      "sentence": "Toàn vẹn nhật ký: nhật ký này không bị âm thầm thay đổi, xóa hay đảo thứ tự kể từ khi được ghi. Điều đó không chứng minh các công đoạn đã diễn ra đúng như ghi, cũng không chứng minh ai đã tự tay làm ra món đồ."
+      "howTitle": "Kiểm chứng thế nào?",
+      "sentence": "Mỗi mốc được niêm phong ngay khi ghi và gắn với mốc liền trước. Trình duyệt của bạn tự tính lại các niêm phong này, nên chỗ nào bị sửa, xóa hay đảo thứ tự đều lộ ra. Điều đó không chứng minh các công đoạn đã diễn ra đúng như ghi, cũng không chứng minh ai đã tự tay làm ra món đồ."
     },
     "scans": "{count, plural, other {# lượt quét}}",
     "timelineTitle": "Hành trình qua lửa",
-    "timelineLead": "Từng công đoạn do chính người thợ ghi lại, kèm dấu băm và ảnh. Ảnh có ghi nguồn chụp công đoạn đó tại làng nghề, không phải ảnh của món đồ này.",
+    "timelineLead": "Từng công đoạn do chính người thợ ghi lại, kèm ảnh. Ảnh có ghi nguồn chụp công đoạn đó tại làng nghề, không phải ảnh của món đồ này.",
     "journeyIllustration": "Hình vẽ loại gốm, không phải ảnh chụp món đồ.",
     "journalBy": "Nhật ký do {household} công bố",
     "stageNotRecorded": "{stage}, chưa ghi nhận",
@@ -363,14 +363,93 @@
     "correctedBy": "Đã được đính chính ở mốc {n}",
     "skipped": "Bỏ qua công đoạn trước: <note>{reason}</note>",
     "inProgress": "Đang làm · chưa ghi: {stages}",
-    "hashHint": "Dấu băm SHA-256 của mốc này, nối với mốc trước đó.",
     "recordedBy": "Do {household} ghi lại",
     "storyTrack": "Các công đoạn của món gốm",
     "pieceNote": "Hình vẽ các công đoạn, không phải ảnh của món đồ này.",
     "withdrawnTitle": "Món đồ này không còn được trưng bày",
     "withdrawnText": "Hộ làm ra món đồ đã rút nó khỏi triển lãm, nên nhật ký không còn hiện công khai.",
     "lockedTitle": "Chưa xác thực được món đồ này",
-    "lockedText": "Hộ làm ra mã {code} đang bị Ban quản lý làng tạm khóa. Hãy thận trọng: món đồ này hiện không được vCraft xác nhận."
+    "lockedText": "Hộ làm ra mã {code} đang bị Ban quản lý làng tạm khóa. Hãy thận trọng: món đồ này hiện không được vCraft xác nhận.",
+    "story": {
+      "kicker": "Câu chuyện của món đồ",
+      "chapterOf": "Chương {n}/{total} · {stage}",
+      "chapterDots": "Các chương của câu chuyện",
+      "goToChapter": "Đến chương {n}: {stage}",
+      "quoteBy": "nhật ký của {household}",
+      "gap": {
+        "same": "Cùng ngày",
+        "next": "Hôm sau",
+        "days": "{n} ngày sau",
+        "weeksExact": "{n} tuần sau",
+        "weeksNear": "Gần {n} tuần sau",
+        "months": "Khoảng {n} tháng sau"
+      },
+      "title": {
+        "clay": "Khối đất đầu tiên",
+        "throw": "Dáng hình hiện ra",
+        "dry": "Chờ trong bóng râm",
+        "paint": "Những nét bút",
+        "glaze": "Áo men",
+        "fire": "Giữa lửa",
+        "finish": "Ra lò"
+      },
+      "clay": {
+        "0": "Mọi món gốm đều bắt đầu từ một khối đất còn ướt và nặng tay. Người thợ của {household} nhào đi nhào lại cho tới khi đất mịn và dẻo, không còn một bọt khí.",
+        "1": "Lúc này đất chưa có hình hài gì, chỉ có mùi ngai ngái và sức nặng ấm trong lòng bàn tay. Ở xưởng {household}, đất được nhào cho thuần lại, sẵn sàng lên bàn xoay.",
+        "2": "Mọi thứ khởi đầu thật lặng lẽ: một nắm đất sét, đôi bàn tay và sự kiên nhẫn. Đất được nhào kỹ để về sau không nứt, không phồng trong lửa."
+      },
+      "throw": {
+        "0": "Khối đất đặt lên bàn xoay, và người thợ bắt đầu kéo. Thành đất mỏng dần, cao dần, dáng của món gốm hiện lên từng chút một.",
+        "1": "Bàn xoay quay đều, đất ướt trơn dưới ngón tay. Chỉ cần lệch một nhịp là dáng đổ, nên người thợ giữ tay thật vững và thở thật chậm.",
+        "2": "Từ khối đất tròn trịa, một khoảng rỗng dần mở ra. Đây là lúc món đồ có hình hài đầu tiên, còn mềm, còn ướt, nhưng đã mang dáng của chính nó."
+      },
+      "dry": {
+        "0": "Vuốt dáng xong, đất cần được nghỉ. Món gốm đặt nơi bóng râm, để hơi nước thoát ra từ từ và đều từ trong ra ngoài.",
+        "1": "Không có gì để làm ngoài chờ. Gốm mộc khô dần trong bóng mát, nhẹ dần, đổi từ màu đất ướt sang màu nhạt mịn như phấn.",
+        "2": "Nóng vội là điều tối kỵ ở bước này. Món đồ nằm yên trong bóng râm, để khô đều mà không nứt, trước khi chạm tới lửa."
+      },
+      "paint": {
+        "0": "Khi đất đã khô, cây bút lông bắt đầu làm việc. Từng nét men vẽ được đưa lên bề mặt gốm mộc, chậm rãi và chắc tay.",
+        "1": "Men vẽ lúc này còn xỉn, chẳng giống màu nó sẽ có sau này. Người thợ vẽ bằng niềm tin vào lửa, vì nét nào đã xuống thì không xóa được.",
+        "2": "Một cây bút, một chén men và rất nhiều sự tập trung. Mỗi nét trên món đồ được đưa lên bằng tay, từng nét một."
+      },
+      "glaze": {
+        "0": "Lớp men phủ lên thân gốm mỏng như một làn sương. Mỏng quá thì xỉn, dày quá thì chảy; người thợ phải biết dừng đúng lúc.",
+        "1": "Món gốm được nhúng qua men rồi nhấc lên, bề mặt phủ đều một lớp men còn nhợt nhạt. Màu men thật chỉ hiện ra sau lửa.",
+        "2": "Men là lớp áo cuối cùng trước khi vào lò. Người thợ của {household} tráng thật cẩn thận, vì chính lớp áo này quyết định vẻ ngoài của món đồ sau lửa."
+      },
+      "fire": {
+        "0": "Cửa lò khép lại. Trong bóng tối nóng rực, đất hóa thành gốm và men chảy ra thành một lớp mỏng như thủy tinh. Việc còn lại là chờ.",
+        "1": "Lửa là công đoạn không ai điều khiển hoàn toàn được. Người thợ canh lò, còn phần sau phó mặc cho nhiệt, cho men và một chút may mắn.",
+        "2": "Món đồ vào lò còn mộc mạc, chưa ra màu. Lửa sẽ quyết định nó ra đời với dáng vẻ nào; không ai biết trước cho đến khi cửa lò mở."
+      },
+      "finish": {
+        "0": "Cửa lò mở, hơi nóng còn phả vào mặt. Màu men hiện ra, thứ mà suốt hành trình chỉ có thể hình dung. {product} đã hoàn thành.",
+        "1": "Ra lò là phút hồi hộp nhất. Gõ nhẹ lên thành gốm, nghe tiếng ngân trong trẻo, người thợ biết {product} đã thành.",
+        "2": "Sau bao công đoạn, {product} cuối cùng cũng nằm gọn trong tay người thợ. Mọi nét vẽ, mọi lớp men đều đã được lửa chốt lại."
+      },
+      "skip": {
+        "0": "Mốc này đi tiếp mà bỏ qua công đoạn trước đó; lý do được ghi ngay trong nhật ký.",
+        "1": "Có một công đoạn không được thực hiện, và xưởng {household} ghi lại điều đó thay vì lờ đi."
+      },
+      "correction": {
+        "0": "Mốc này sửa lại điều đã ghi ở mốc {n}.",
+        "1": "Xưởng {household} quay lại đính chính điều đã ghi ở mốc {n}."
+      },
+      "prologue": {
+        "0": "{product} không tự nhiên mà có. Nó đi qua đất, nước, lửa và đôi tay người thợ của {household}, mỗi bước đều được ghi lại. Đây là câu chuyện ấy.",
+        "1": "Trước khi nằm trong tay bạn, {product} từng chỉ là một khối đất ướt. Hãy đi lại hành trình mà {household} đã ghi trong nhật ký.",
+        "2": "Mỗi món gốm có một câu chuyện, chỉ là hiếm khi ai kể. Với {product}, câu chuyện nằm trong những dòng nhật ký mà {household} ghi sau mỗi công đoạn."
+      },
+      "epilogue": {
+        "0": "Hết {count, plural, other {# chương}}. {product} đã ra lò, sẵn sàng tìm chỗ của mình trong một ngôi nhà. Phần còn lại là của bạn.",
+        "1": "Vậy là {product} đã đi trọn hành trình, từ khối đất ướt đến món đồ bạn đang xem. Mỗi dòng trích ở trên là lời của chính người thợ."
+      },
+      "epilogueOpen": {
+        "0": "Câu chuyện của {product} vẫn đang được viết. Người thợ của {household} sẽ ghi tiếp những công đoạn còn lại khi chúng diễn ra.",
+        "1": "{product} chưa ra lò, nên câu chuyện còn dang dở. Hãy quay lại sau để đọc chương tiếp theo."
+      }
+    }
   },
   "orderProgress": {
     "label": "Tiến độ phần việc",
