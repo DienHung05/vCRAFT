@@ -111,6 +111,8 @@ describe('media pipeline: kiểm tra ở biên và tệp riêng tư', () => {
       '320.webp',
       '640.avif',
       '640.webp',
+      '960.avif',
+      '960.webp',
       '1280.avif',
       '1280.webp',
     ]);
