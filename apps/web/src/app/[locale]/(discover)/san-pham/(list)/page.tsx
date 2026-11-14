@@ -9,8 +9,8 @@ import { slimProductCard } from '@/features/catalog/view-models';
 import { resolveLocale } from '@/lib/locale';
 import { pageMetadata } from '@/lib/seo/page-metadata';
 
-// Danh mục lấy từ API theo bộ lọc trên URL, không dựng tĩnh lúc build.
-export const dynamic = 'force-dynamic';
+// The root layout already renders per request for the CSP nonce. Do not force-dynamic here:
+// that also disables the tagged Data Cache reads below (ADR-0027, ADR-0028).
 
 export async function generateMetadata({
   params,
@@ -36,6 +36,8 @@ export default async function ProductsIndexPage({
     fetchHouseholds(),
   ]);
 
+  // No loading.tsx boundary on this route: first-row pictures belong in the initial document,
+  // rather than a hidden streamed replacement that delays image discovery (GH#529).
   return (
     <div className="mx-auto max-w-editorial px-gutter pt-12 pb-section-tail">
       <CatalogHeader />

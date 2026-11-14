@@ -1,9 +1,6 @@
 import { useTranslations } from 'next-intl';
 
-/**
- * Catalog title and lead. Shared by the page and its loading skeleton so the text paints in the first
- * streamed chunk and stays put when the data arrives (the lead paragraph is the page's LCP).
- */
+/** Catalog title and lead, sent with the product grid in the initial document (GH#529). */
 export function CatalogHeader() {
   const t = useTranslations('indexPages.products');
   return (
