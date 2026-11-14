@@ -265,7 +265,7 @@ describe('guard: the helper is script-only', () => {
   });
 
   it('is forbidden by a dependency-cruiser rule', () => {
-    const config = readFileSync(join(ROOT, '.dependency-cruiser.cjs'), 'utf8');
+    const config = readFileSync(join(ROOT, '.config/dependency-cruiser.cjs'), 'utf8');
     assert.match(config, /apps-packages-no-scripts/);
   });
 });

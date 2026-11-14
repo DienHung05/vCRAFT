@@ -208,7 +208,8 @@ vCRAFT/
 ├── scripts/           # script tiện ích phát triển (ci/, demo/, map/, brand/, mascot/)
 ├── .github/           # workflows/ci.yml, pull_request_template.md
 ├── package.json · pnpm-workspace.yaml · turbo.json · biome.json
-├── .dependency-cruiser.cjs · lefthook.yml · .editorconfig · .nvmrc · .env.example
+├── .config/           # dependency-cruiser.cjs (luật ranh giới), lefthook.yml (git hook)
+├── .editorconfig · .nvmrc · .env.example
 └── README.md
 ```
 
@@ -227,7 +228,7 @@ flowchart TD
     classDef pure fill:#F4EDE1,stroke:#B5532E,stroke-width:2px
 ```
 
-Luật (cưỡng chế bằng `.dependency-cruiser.cjs`, chạy trong CI):
+Luật (cưỡng chế bằng `.config/dependency-cruiser.cjs`, chạy trong CI):
 1. `domain` không import framework, ORM hay workspace nào khác ⇒ test được 100% bằng unit test nhanh.
 2. `web` **không** import `database` hay `apps/api` ⇒ frontend chỉ giao tiếp qua REST JSON.
 3. `ui` không biết nghiệp vụ (không import `domain`, `contracts`, `api-client`).
