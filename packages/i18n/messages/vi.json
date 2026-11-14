@@ -1769,6 +1769,7 @@
       "loading": "Đang tải thông báo…",
       "unreadMark": "Chưa đọc",
       "markReadFor": "Đánh dấu đã đọc: {title}",
+      "newArrived": "Có thông báo mới. {count, plural, other {# chưa đọc}}",
       "settings": "Cài đặt thông báo"
     },
     "kind": {

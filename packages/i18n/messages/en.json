@@ -1769,6 +1769,7 @@
       "loading": "Loading notifications…",
       "unreadMark": "Unread",
       "markReadFor": "Mark as read: {title}",
+      "newArrived": "New notification. {count, plural, one {# unread} other {# unread}}",
       "settings": "Notification settings"
     },
     "kind": {
