@@ -175,8 +175,11 @@ describe('online payment of orders (ADR-0021)', () => {
     await db?.stop();
   });
 
-  /** An accepted order of 100 units at 100 000 VND: total 10 000 000, deposit 3 000 000, balance 7 000 000. */
-  async function acceptedOrder() {
+  /**
+   * An accepted order of 100 units at 100 000 VND (or the given unit price): total 10 000 000, deposit 3 000 000,
+   * balance 7 000 000.
+   */
+  async function acceptedOrder(unitPriceVnd = 100_000) {
     const created = await t.request({
       method: 'POST',
       url: '/rfqs',
@@ -210,7 +213,7 @@ describe('online payment of orders (ADR-0021)', () => {
       method: 'POST',
       url: `/rfqs/${sent.body.id}/contributions`,
       auth: rep.auth,
-      body: { maxQuantity: 100, unitPriceVnd: 100_000, completionDate },
+      body: { maxQuantity: 100, unitPriceVnd, completionDate },
     });
     expect(offer.status).toBe(201);
     const current = await t.request({
@@ -228,7 +231,7 @@ describe('online payment of orders (ADR-0021)', () => {
           {
             householdId: rep.householdId,
             quantity: 100,
-            unitPriceVnd: 100_000,
+            unitPriceVnd,
             completionDate,
             contributionVersion: offer.body.version,
           },
@@ -1658,11 +1661,32 @@ describe('online payment of orders (ADR-0021)', () => {
         methods: ['SEPAY_TRANSFER', 'VNPAY', 'MOMO'],
         methodOptions: [
           { method: 'SEPAY_TRANSFER', sandbox: true, minAmountVnd: 1, maxAmountVnd: null },
-          { method: 'VNPAY', sandbox: true, minAmountVnd: 5_000, maxAmountVnd: 999_999_999 },
-          { method: 'MOMO', sandbox: true, minAmountVnd: 1_000, maxAmountVnd: 50_000_000 },
+          { method: 'VNPAY', sandbox: true, minAmountVnd: 5_000, maxAmountVnd: null },
+          { method: 'MOMO', sandbox: true, minAmountVnd: 1_000, maxAmountVnd: null },
         ],
         simulateAvailable: false,
       });
+    });
+
+    it('lifts the VNPay and MoMo upper limits: a MOMO deposit over 50 million is created and confirmed', async () => {
+      // 100 units at 2 000 000 VND: total 200 000 000, deposit 60 000 000.
+      const requestId = await acceptedOrder(2_000_000);
+      const created = await startPayment(requestId, 'DEPOSIT', 'MOMO');
+      expect(created.status).toBe(201);
+      expect(created.body).toMatchObject({
+        method: 'MOMO',
+        status: 'PENDING',
+        amountVnd: 60_000_000,
+      });
+      const paid = await confirm(created.body, 'PAID');
+      expect(paid.status).toBe(200);
+      expect(paid.body.status).toBe('PAID');
+      const summary = await t.request({
+        method: 'GET',
+        url: `/orders/${requestId}/payments`,
+        auth: buyer.auth,
+      });
+      expect(summary.body.depositPaidAt).not.toBeNull();
     });
 
     it('starts every method as a DEMO checkout: our own confirm link, no provider called', async () => {

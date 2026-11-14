@@ -56,3 +56,14 @@ offered at all, so the journey cannot be shown today.
   rows, marked as demo payments on `raw_last_event`.
 - Payments created in demo mode are not real revenue. After the defense, switch the flag off and refund nothing.
 - A leaked confirm link settles one rehearsal payment and nothing else.
+
+## Amendment 2026-11-14 (GH#528)
+
+- **The buyer-facing screens no longer label demo mode.** The order payment panel, the QR screen and the phone
+  confirm page read as an ordinary payment (no "test", "demo" or "rehearsal" badge, note or wording): the defense
+  demo must look like the real flow. The operator signal is the boot log (`online payment is in DEMO mode` and its
+  warning) and `PAYMENTS_DEMO_MODE` itself. The `sandbox` field stays in the API payload but is not rendered.
+- **Demo mode lifts the VNPay and MoMo upper limits.** No provider is called, so MoMo's 50,000,000 VND and VNPay's
+  999,999,999 VND maximums (ADR-0024) do not apply; `methodLimits` returns no maximum for them and the minimums
+  stay. `MOMO_MAX_AMOUNT_VND` and `VNPAY_MAX_AMOUNT_VND` are ignored while demo mode is on. With a real gateway
+  (sandbox or production mode) the limits are unchanged.

@@ -73,21 +73,12 @@ describe('từ điển vi/en', () => {
 const BANNED_VISITOR_WORDS =
   /dữ liệu mẫu|tin mẫu|bản trình diễn|minh h[oọ]a|minh hoạ|mô phỏng|sample data|demo|illustrative/i;
 
-/**
- * Demo payment mode (ADR-0025) is the one place that must say "demo": the live site rehearses payments and tells
- * the buyer so, on every screen of it. These keys are allowed to; nothing else is.
- */
-const DEMO_PAYMENT_KEYS =
-  /^payments\.(demo\.|demoConfirm\.|pay\.demoNote$|pay\.demoHint$|pay\.startDemo$|live\.waitingDemo$)/;
-
 describe('visitor-facing wording', () => {
   it.each([
     ['vi', vi],
     ['en', en],
   ] as const)('%s strings never say sample, demo or illustrative data', (_locale, strings) => {
-    const offenders = [...strings].filter(
-      ([key, text]) => BANNED_VISITOR_WORDS.test(text) && !DEMO_PAYMENT_KEYS.test(key),
-    );
+    const offenders = [...strings].filter(([, text]) => BANNED_VISITOR_WORDS.test(text));
     expect(offenders.map(([key]) => key)).toEqual([]);
   });
 });

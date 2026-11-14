@@ -2,7 +2,7 @@
 
 import { ApiError, type PaymentClient } from '@vcraft/api-client';
 import type { OrderPaymentsDto, PaymentDto } from '@vcraft/contracts';
-import { Badge, Button, Card, cn } from '@vcraft/ui';
+import { Button, Card, cn } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { Link } from '@/i18n/navigation';
@@ -24,7 +24,7 @@ type MethodOption = OrderPaymentsDto['methodOptions'][number];
 
 /**
  * The buyer's payment panel on an accepted order (ADR-0021): what is owed, the way to pay a deposit or the
- * balance (bank transfer with a QR, or a wallet when the sandbox flag is on), and the live status of the
+ * balance (bank transfer with a QR, or a wallet), and the live status of the
  * payment in progress. It shows nothing when this deployment has online payment switched off.
  */
 export function OrderPaymentPanel({
@@ -273,14 +273,13 @@ function MethodPicker({
   kind: PaymentDto['kind'];
   amount: number;
   options: MethodOption[];
-  /** Demo payment mode: every method is a rehearsal confirmed on a phone (ADR-0025). */
+  /** Demo payment mode: every method starts with a QR confirmed on a phone (ADR-0025). Not shown to the buyer. */
   demo: boolean;
   client: PaymentClient;
   onStarted: () => Promise<void>;
 }) {
   const t = useTranslations('payments');
   const money = useMoney();
-  const format = useFormatter();
   const uid = useId();
   const [picked, setPicked] = useState<Method | null>(null);
   const [busy, setBusy] = useState(false);
@@ -302,9 +301,6 @@ function MethodPicker({
 
   const enabled = options.filter((option) => limitOf(option, amount) === null);
   const chosen = enabled.find((option) => option.method === picked) ?? enabled[0] ?? null;
-  const sandboxNames = options
-    .filter((option) => option.sandbox)
-    .map((option) => t(`methodShort.${option.method}` as 'methodShort.VNPAY'));
 
   const start = async () => {
     if (!chosen) return;
@@ -341,11 +337,7 @@ function MethodPicker({
         {options.map((option) => {
           const limit = limitOf(option, amount);
           const id = `${uid}-${option.method}`;
-          const describedBy = [
-            `${id}-hint`,
-            option.sandbox ? `${id}-badge` : null,
-            limit ? `${id}-reason` : null,
-          ]
+          const describedBy = [`${id}-hint`, limit ? `${id}-reason` : null]
             .filter(Boolean)
             .join(' ');
           return (
@@ -391,14 +383,9 @@ function MethodPicker({
                   <span id={`${id}-title`} className={cn('font-medium', limit && 'text-ash')}>
                     {t(`method.${option.method}`)}
                   </span>
-                  {option.sandbox ? (
-                    <Badge tone="outline" id={`${id}-badge`}>
-                      {t('pay.testBadge')}
-                    </Badge>
-                  ) : null}
                 </span>
                 <span id={`${id}-hint`} className="text-small text-ash">
-                  {demo ? t('pay.demoHint') : t(`methodHint.${option.method}`)}
+                  {t(`methodHint.${option.method}`)}
                 </span>
                 {limit ? (
                   <span id={`${id}-reason`} className="text-small font-medium text-ink">
@@ -412,13 +399,6 @@ function MethodPicker({
           );
         })}
       </div>
-      {demo ? (
-        <p className="text-small text-ash">{t('pay.demoNote')}</p>
-      ) : sandboxNames.length > 0 ? (
-        <p className="text-small text-ash">
-          {t('pay.sandboxNote', { methods: format.list(sandboxNames, { type: 'conjunction' }) })}
-        </p>
-      ) : null}
       {chosen ? (
         <Button type="button" className="self-start" disabled={busy} onClick={() => void start()}>
           {busy && !leaving

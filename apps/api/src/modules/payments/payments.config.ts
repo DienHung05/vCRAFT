@@ -311,12 +311,16 @@ export interface MethodLimit {
   maxVnd: number | null;
 }
 
-/** The amount a single payment of each method may have, in whole VND. */
+/**
+ * The amount a single payment of each method may have, in whole VND. Demo payment mode (ADR-0025) never calls
+ * VNPay or MoMo, so their upper limits do not apply there (the minimums stay); with a real gateway the
+ * configured limits hold.
+ */
 export function methodLimits(config: PaymentsConfig): Record<OnlinePaymentMethod, MethodLimit> {
   return {
     SEPAY_TRANSFER: { minVnd: SEPAY_MIN_VND, maxVnd: null },
-    VNPAY: { minVnd: VNPAY_MIN_VND, maxVnd: config.vnpayMaxVnd },
-    MOMO: { minVnd: MOMO_MIN_VND, maxVnd: config.momoMaxVnd },
+    VNPAY: { minVnd: VNPAY_MIN_VND, maxVnd: config.demo ? null : config.vnpayMaxVnd },
+    MOMO: { minVnd: MOMO_MIN_VND, maxVnd: config.demo ? null : config.momoMaxVnd },
   };
 }
 

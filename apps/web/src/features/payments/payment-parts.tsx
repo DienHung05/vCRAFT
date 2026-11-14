@@ -15,7 +15,7 @@ export const PAYMENT_POLL_MS = 3_000;
 export const isWallet = (payment: Pick<PaymentDto, 'method'>) =>
   payment.method === 'VNPAY' || payment.method === 'MOMO';
 
-/** A rehearsal payment of demo payment mode (ADR-0025): confirmed on a phone, never by a provider. */
+/** A payment of demo payment mode (ADR-0025): confirmed on a phone, never by a provider. */
 export const isDemo = (payment: Pick<PaymentDto, 'checkout'>) => payment.checkout?.type === 'DEMO';
 
 export const isFinalPayment = (status: PaymentDto['status']) => status !== 'PENDING';
@@ -212,8 +212,8 @@ export function PaymentCheckout({ payment }: { payment: PaymentDto }) {
 }
 
 /**
- * Demo payment mode (ADR-0025): a QR of the link to our own confirm page, to scan with a phone. Labelled as a
- * rehearsal everywhere; no provider logo or look-alike branding.
+ * Demo payment mode (ADR-0025): a QR of the link to our own confirm page, to scan with a phone. It reads as an
+ * ordinary payment (GH#528); no provider logo or look-alike branding.
  */
 function DemoCheckout({ payment, confirmUrl }: { payment: PaymentDto; confirmUrl: string }) {
   const t = useTranslations('payments.demo');
@@ -226,11 +226,6 @@ function DemoCheckout({ payment, confirmUrl }: { payment: PaymentDto; confirmUrl
       <h3 id={`demo-${payment.id}`} className="text-h4">
         {wallet ? t('titleWallet', { method: short(payment.method) }) : t('title')}
       </h3>
-      <p>
-        <Badge tone="outline" data-testid="demo-notice">
-          {t('notice')}
-        </Badge>
-      </p>
       <div className="flex flex-col gap-6 md:flex-row md:items-start">
         <DemoQr url={confirmUrl} label={t('qrLabel')} />
         <div className="flex min-w-0 flex-col gap-4">

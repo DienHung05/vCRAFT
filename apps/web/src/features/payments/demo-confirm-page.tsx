@@ -2,7 +2,7 @@
 
 import { ApiError, createDemoPaymentClient, type DemoPaymentClient } from '@vcraft/api-client';
 import type { DemoPaymentViewDto } from '@vcraft/contracts';
-import { Badge, Button, buttonVariants, Card, cn } from '@vcraft/ui';
+import { Button, buttonVariants, Card, cn } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from '@/i18n/navigation';
@@ -17,7 +17,7 @@ type Phase =
 
 /**
  * The page a demo payment's QR opens on the buyer's phone (ADR-0025): public, one card, one decision. Whoever holds
- * the link (it carries the per-payment secret) can confirm or cancel the rehearsal; no money moves.
+ * the link (it carries the per-payment secret) can confirm or cancel the payment; no money moves.
  */
 export function DemoConfirmPage({
   reference,
@@ -29,7 +29,6 @@ export function DemoConfirmPage({
   client?: DemoPaymentClient;
 }) {
   const t = useTranslations('payments.demoConfirm');
-  const demo = useTranslations('payments.demo');
   const method = useTranslations('payments.method');
   const kind = useTranslations('payments.kind');
   const status = useTranslations('payments.status');
@@ -87,12 +86,6 @@ export function DemoConfirmPage({
     <article className="mx-auto flex w-full max-w-md flex-col gap-5 px-gutter pt-8 pb-section">
       <h1 className="text-h2 text-glaze">{t('title')}</h1>
       <Card className="flex flex-col gap-5 p-5" data-testid="demo-confirm-card">
-        <p>
-          <Badge tone="outline" data-testid="demo-notice">
-            {demo('notice')}
-          </Badge>
-        </p>
-
         {phase.name === 'loading' ? (
           <div role="status" aria-label={t('loading')} className="flex flex-col gap-3">
             <div className="h-9 w-2/3 rounded-input bg-ink/10 motion-safe:animate-pulse" />

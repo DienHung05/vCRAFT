@@ -59,13 +59,16 @@ const DEMO_SUMMARY: OrderPaymentsDto = {
   methods: ['SEPAY_TRANSFER', 'VNPAY', 'MOMO'],
   methodOptions: [
     { method: 'SEPAY_TRANSFER', sandbox: true, minAmountVnd: 1, maxAmountVnd: null },
-    { method: 'VNPAY', sandbox: true, minAmountVnd: 5_000, maxAmountVnd: 999_999_999 },
-    { method: 'MOMO', sandbox: true, minAmountVnd: 1_000, maxAmountVnd: 50_000_000 },
+    { method: 'VNPAY', sandbox: true, minAmountVnd: 5_000, maxAmountVnd: null },
+    { method: 'MOMO', sandbox: true, minAmountVnd: 1_000, maxAmountVnd: null },
   ],
   simulateAvailable: false,
   demo: true,
   payments: [],
 };
+
+/** What a buyer must never read while the live site runs payments in demo mode (GH#528). */
+const DEMO_WORDS = /Thử nghiệm|thanh toán thử|giao dịch thử|\bdemo\b|mẫu/i;
 
 const asPayments = (methods: Partial<PaymentClient>) => methods as unknown as PaymentClient;
 const asDemo = (methods: Partial<DemoPaymentClient>) => methods as unknown as DemoPaymentClient;
@@ -75,19 +78,18 @@ describe('DEMO checkout', () => {
     qrData.urls.length = 0;
   });
 
-  it('shows a QR of the confirm link, the facts, the steps, the open-here link and the notice', async () => {
+  it('shows a QR of the confirm link, the facts, the steps, the open-here link and no demo label', async () => {
     renderVi(<PaymentCheckout payment={DEMO_PAYMENT} />);
-    expect(screen.getByRole('heading', { name: 'Thanh toán thử qua VNPay' })).toBeTruthy();
-    expect(screen.getByTestId('demo-notice').textContent).toBe(
-      'Thanh toán thử — không trừ tiền thật',
-    );
-    const qr = screen.getByRole('img', { name: 'Mã QR mở trang xác nhận thanh toán thử' });
+    expect(screen.getByRole('heading', { name: 'Thanh toán qua VNPay' })).toBeTruthy();
+    expect(screen.queryByTestId('demo-notice')).toBeNull();
+    expect(document.body.textContent).not.toMatch(DEMO_WORDS);
+    const qr = screen.getByRole('img', { name: 'Mã QR mở trang xác nhận thanh toán' });
     await waitFor(() => expect(qr.querySelector('svg')).not.toBeNull());
     // The QR is our own link, never a bank or wallet payload.
     expect(qrData.urls).toEqual([CONFIRM_URL]);
     expect(screen.getByTestId('demo-reference').textContent).toBe('VCPDEMO00001');
     expect(screen.getByText(/3\.000\.000/)).toBeTruthy();
-    const steps = screen.getByRole('list', { name: 'Các bước thanh toán thử' });
+    const steps = screen.getByRole('list', { name: 'Các bước thanh toán' });
     expect(within(steps).getAllByRole('listitem')).toHaveLength(3);
     expect(within(steps).getByText(/Bấm “Xác nhận thanh toán”/)).toBeTruthy();
     const link = screen.getByRole('link', { name: 'Mở trang xác nhận trên máy này' });
@@ -96,9 +98,9 @@ describe('DEMO checkout', () => {
     expect(link.getAttribute('rel')).toBe('noopener');
   });
 
-  it('titles a bank-transfer rehearsal "Quét mã để thanh toán thử"', () => {
+  it('titles a bank-transfer payment "Quét mã để thanh toán"', () => {
     renderVi(<PaymentCheckout payment={{ ...DEMO_PAYMENT, method: 'SEPAY_TRANSFER' }} />);
-    expect(screen.getByRole('heading', { name: 'Quét mã để thanh toán thử' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Quét mã để thanh toán' })).toBeTruthy();
   });
 });
 
@@ -108,7 +110,7 @@ describe('order panel in demo mode', () => {
     vi.mocked(notify.success).mockClear();
   });
 
-  it('labels the start button, the hint and the note for demo, and never redirects', async () => {
+  it('shows no demo wording on the method list, labels the start button, and never redirects', async () => {
     const assign = vi.fn();
     vi.stubGlobal('location', { ...window.location, assign });
     const orderPayments = vi
@@ -123,8 +125,10 @@ describe('order panel in demo mode', () => {
         client={asPayments({ orderPayments, createPayment })}
       />,
     );
-    expect(await screen.findByText('Chế độ demo: không có giao dịch tiền thật.')).toBeTruthy();
-    expect(screen.queryByText(/Chế độ thử nghiệm/)).toBeNull();
+    await screen.findByTestId('payment-method-MOMO');
+    const methods = screen.getByRole('group');
+    expect(methods.textContent).not.toMatch(/Thử nghiệm|thử|\bdemo\b|mẫu/i);
+    expect(screen.queryByText(/Chế độ/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Tạo mã QR thanh toán' })).toBeTruthy();
     fireEvent.click(screen.getByRole('radio', { name: 'VNPay' }));
     expect(screen.getByRole('button', { name: 'Tạo mã QR thanh toán' })).toBeTruthy();
@@ -132,6 +136,27 @@ describe('order panel in demo mode', () => {
     expect(await screen.findByTestId('demo-open-here')).toBeTruthy();
     expect(assign).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
+  });
+
+  it('lets MoMo take an amount over 50 million when the server sends no upper limit', async () => {
+    const orderPayments = vi.fn().mockResolvedValue({
+      ...DEMO_SUMMARY,
+      depositAmountVnd: 60_000_000,
+      balanceAmountVnd: 140_000_000,
+    });
+    renderVi(
+      <OrderPaymentPanel
+        orderId={ORDER}
+        orderStatus="ACCEPTED"
+        client={asPayments({ orderPayments })}
+      />,
+    );
+    const momo = await screen.findByTestId('payment-method-MOMO');
+    expect(screen.queryByText(/vượt hạn mức/)).toBeNull();
+    const radio = within(momo).getByRole('radio') as HTMLInputElement;
+    expect(radio.disabled).toBe(false);
+    fireEvent.click(radio);
+    expect(radio.checked).toBe(true);
   });
 
   it('announces and toasts once when the polled demo payment turns paid', async () => {
@@ -176,10 +201,11 @@ describe('demo confirm page', () => {
       confirm: vi.fn().mockResolvedValue(view({ status: 'PAID' })),
     });
     renderVi(<DemoConfirmPage reference="VCPDEMO00001" token="secret-token" client={client} />);
-    expect(screen.getByRole('status', { name: 'Đang tải giao dịch thử…' })).toBeTruthy();
+    expect(screen.getByRole('status', { name: 'Đang tải giao dịch…' })).toBeTruthy();
     expect(await screen.findByTestId('demo-amount')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Xác nhận thanh toán thử' })).toBeTruthy();
-    expect(screen.getByText('Thanh toán thử — không trừ tiền thật')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Xác nhận thanh toán' })).toBeTruthy();
+    expect(screen.queryByTestId('demo-notice')).toBeNull();
+    expect(document.body.textContent).not.toMatch(DEMO_WORDS);
     expect(screen.getByText('VCPDEMO00001')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Xác nhận thanh toán' }));
     expect(
@@ -204,21 +230,21 @@ describe('demo confirm page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Xác nhận thanh toán' }));
     await waitFor(() =>
       expect(
-        (screen.getByRole('button', { name: 'Hủy giao dịch thử' }) as HTMLButtonElement).disabled,
+        (screen.getByRole('button', { name: 'Hủy giao dịch' }) as HTMLButtonElement).disabled,
       ).toBe(true),
     );
     await act(async () => finish(view({ status: 'PAID' })));
   });
 
-  it('declines: says the demo payment was cancelled', async () => {
+  it('declines: says the payment was cancelled', async () => {
     const client = asDemo({
       view: vi.fn().mockResolvedValue(view()),
       confirm: vi.fn().mockResolvedValue(view({ status: 'FAILED' })),
     });
     renderVi(<DemoConfirmPage reference="VCPDEMO00001" token="secret-token" client={client} />);
     await screen.findByTestId('demo-amount');
-    fireEvent.click(screen.getByRole('button', { name: 'Hủy giao dịch thử' }));
-    expect(await screen.findByText('Đã hủy giao dịch thử.')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Hủy giao dịch' }));
+    expect(await screen.findByText('Đã hủy giao dịch.')).toBeTruthy();
     expect(client.confirm).toHaveBeenCalledWith('VCPDEMO00001', {
       token: 'secret-token',
       outcome: 'FAILED',

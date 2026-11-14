@@ -151,12 +151,20 @@ describe('payments config: demo mode (ADR-0025)', () => {
     expect(config.sandbox).toBe(false);
   });
 
-  it('keeps the amount limits of each method', () => {
+  it('lifts the upper limits of VNPay and MoMo, keeping the minimums', () => {
     setEnv({ PAYMENTS_DEMO_MODE: 'true', MOMO_MAX_AMOUNT_VND: '2000000' });
+    expect(methodLimits(paymentsConfig())).toEqual({
+      SEPAY_TRANSFER: { minVnd: 1, maxVnd: null },
+      VNPAY: { minVnd: 5_000, maxVnd: null },
+      MOMO: { minVnd: 1_000, maxVnd: null },
+    });
+  });
+
+  it('keeps the configured limits when demo mode is off', () => {
+    setEnv({ MOMO_MAX_AMOUNT_VND: '2000000' });
     const limits = methodLimits(paymentsConfig());
     expect(limits.MOMO).toEqual({ minVnd: 1_000, maxVnd: 2_000_000 });
-    expect(limits.VNPAY.minVnd).toBe(5_000);
-    expect(limits.SEPAY_TRANSFER.maxVnd).toBeNull();
+    expect(limits.VNPAY.maxVnd).toBe(999_999_999);
   });
 
   it('does not require a deposit by default, even with SePay configured; an explicit flag wins', () => {

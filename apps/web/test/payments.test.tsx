@@ -181,7 +181,7 @@ describe('buyer payment panel', () => {
     expect(screen.queryByText('Chuyển khoản ngân hàng (VietQR)')).toBeNull();
   });
 
-  it('marks only the sandbox options as test mode and names them in one line', async () => {
+  it('never labels a sandbox option as test mode', async () => {
     const orderPayments = vi.fn().mockResolvedValue(walletSummary());
     renderVi(
       <OrderPaymentPanel
@@ -191,30 +191,13 @@ describe('buyer payment panel', () => {
       />,
     );
     const vnpay = await screen.findByTestId('payment-method-VNPAY');
-    expect(within(vnpay).getByText('Thử nghiệm')).toBeTruthy();
-    expect(within(screen.getByTestId('payment-method-MOMO')).getByText('Thử nghiệm')).toBeTruthy();
-    expect(
-      within(screen.getByTestId('payment-method-SEPAY_TRANSFER')).queryByText('Thử nghiệm'),
-    ).toBeNull();
-    expect(screen.getByText('Chế độ thử nghiệm: VNPay và MoMo không trừ tiền thật.')).toBeTruthy();
+    expect(within(vnpay).getByText(/Thẻ ATM nội địa/)).toBeTruthy();
+    expect(screen.queryByText(/Thử nghiệm|thử nghiệm|Chế độ/)).toBeNull();
     // The first enabled option is the default.
     expect(screen.getByRole('radio', { name: 'Chuyển khoản ngân hàng (VietQR)' })).toHaveProperty(
       'checked',
       true,
     );
-  });
-
-  it('shows no test-mode line when no option is sandbox', async () => {
-    const orderPayments = vi.fn().mockResolvedValue(SUMMARY);
-    renderVi(
-      <OrderPaymentPanel
-        orderId={ORDER}
-        orderStatus="ACCEPTED"
-        client={asClient({ orderPayments })}
-      />,
-    );
-    await screen.findByTestId('payment-method-SEPAY_TRANSFER');
-    expect(screen.queryByText(/Chế độ thử nghiệm/)).toBeNull();
   });
 
   it('disables an option whose limit excludes the amount, with the reason, and skips it as default', async () => {
@@ -272,7 +255,7 @@ describe('buyer payment panel', () => {
       />,
     );
     expect(await screen.findByTestId('payment-method-MOMO')).toBeTruthy();
-    expect(screen.queryByText('Thử nghiệm')).toBeNull();
+    expect(screen.queryByText(/Thử nghiệm/)).toBeNull();
   });
 
   it('goes straight to the provider after starting a wallet payment', async () => {
