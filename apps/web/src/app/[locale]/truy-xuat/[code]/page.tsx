@@ -9,7 +9,7 @@ import {
 } from '@vcraft/ui';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getTranslations } from 'next-intl/server';
+import { getFormatter, getTranslations } from 'next-intl/server';
 import { DataUnavailable } from '@/components/data-unavailable';
 import { ImageSlot } from '@/components/image-slot';
 import { LocaleSwitcher } from '@/components/shell/locale-switcher';
@@ -25,12 +25,15 @@ import {
 } from '@/features/catalog/view-models';
 import { MakerCredits } from '@/features/exhibition/maker-credits';
 import { VisitSection } from '@/features/exhibition/visit-section';
-import { ChainVerifier } from '@/features/traceability/chain-verifier';
 import { FireTimeline } from '@/features/traceability/fire-timeline';
+import { composeJourneyStory } from '@/features/traceability/journey-story';
+import { JourneyStoryCard } from '@/features/traceability/journey-story-card';
+import { JourneyStoryProvider } from '@/features/traceability/journey-story-context';
 import { pieceKindOf } from '@/features/traceability/piece-shapes';
 import '@/features/traceability/trace-story.css';
 import { TraceQr } from '@/features/traceability/trace-qr';
 import { Link } from '@/i18n/navigation';
+import { formatDeclaredDate } from '@/lib/declared-date';
 import { frameRatioOf } from '@/lib/images';
 import { resolveLocale } from '@/lib/locale';
 import { textFor } from '@/lib/localized-text';
@@ -68,11 +71,12 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
   // Mã sai định dạng (BR-04) là đường dẫn sai ⇒ 404; mã đúng định dạng mà không có trong hệ thống
   // thì hiện cảnh báo hàng không xác thực bên dưới (FR-TRC-08).
   if (!isTraceCode(code)) notFound();
-  const [t, ex, preset, common] = await Promise.all([
+  const [t, ex, preset, common, storyMessages] = await Promise.all([
     getTranslations('trace'),
     getTranslations('exhibition'),
     getTranslations('presetFigure'),
     getTranslations('common'),
+    getTranslations('trace.story'),
   ]);
   const result = await fetchTrace(code);
   const unavailableHeading =
@@ -97,6 +101,37 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
   const householdPhoto = household ? householdCover(locale, household) : undefined;
   const householdAlt = householdPhoto?.alt || preset('household');
   const householdImage = householdPhoto?.view && { ...householdPhoto.view, alt: householdAlt };
+
+  // The story of the piece, written from its journal on the server and handed down as plain strings.
+  const format = visible ? await getFormatter() : null;
+  const logEntries = visible ? toLogEntries(visible.journal) : [];
+  // The browser re-checks the chain from these fields alone; photos and tints stay on the server.
+  const chainEntries = logEntries.map(
+    ({ seq, stage, at, note, mediaChecksums, supersedesSeq, skipReason, prevHash, hash }) => ({
+      seq,
+      stage,
+      at,
+      note,
+      mediaChecksums,
+      supersedesSeq,
+      skipReason,
+      prevHash,
+      hash,
+    }),
+  );
+  const story =
+    visible && format
+      ? composeJourneyStory(
+          {
+            entries: logEntries,
+            productName,
+            household: visible.household.name,
+            seed: visible.product.traceCode,
+            formatDate: (at) => formatDeclaredDate(format, at),
+          },
+          (key, values) => storyMessages(key as never, values as never),
+        )
+      : null;
 
   return (
     <div
@@ -143,7 +178,7 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
           className="flex flex-wrap gap-x-5 gap-y-1 border-y border-ink/10 px-5 py-1 text-small text-clay"
         >
           <a
-            href="#verify-title"
+            href="#story-title"
             className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
           >
             {t('checkJournal')}
@@ -194,62 +229,79 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
           </section>
         ) : (
           <>
-            <div className="trace-spread">
-              <div className="trace-summary">
-                <section className="trace-intro px-5 pt-6">
-                  <div>
-                    <p className="text-small text-ash">{t('scanned')}</p>
-                    <h1
-                      className="mt-1 break-words text-h2"
-                      lang={fallbackLang(locale, visible.product.nameEn)}
-                    >
-                      {productName}
-                    </h1>
-                    <p className="mt-2 text-ash">{visible.household.name}</p>
-                    {visible.product.status === 'SOLD' ? (
-                      <Badge tone="outline" className="mt-3">
-                        {common('sold')}
-                      </Badge>
+            <JourneyStoryProvider>
+              <div className="trace-spread">
+                <div className="trace-summary">
+                  <section className="trace-intro px-5 pt-6">
+                    <div>
+                      <p className="text-small text-ash">{t('scanned')}</p>
+                      <h1
+                        className="mt-1 break-words text-h2"
+                        lang={fallbackLang(locale, visible.product.nameEn)}
+                      >
+                        {productName}
+                      </h1>
+                      <p className="mt-2 text-ash">{visible.household.name}</p>
+                      {visible.product.status === 'SOLD' ? (
+                        <Badge tone="outline" className="mt-3">
+                          {common('sold')}
+                        </Badge>
+                      ) : null}
+                    </div>
+                    {image ? (
+                      <figure className="trace-product-photo">
+                        <ImageSlot
+                          alt={image.alt}
+                          tint={tintOf(visible.product.traceCode)}
+                          ratio={image.variants ? frameRatioOf(image.variants) : '4/5'}
+                          fit="contain"
+                          {...slotPhoto(image)}
+                          priority
+                          sizes="(min-width: 1024px) 16rem, (min-width: 640px) 12rem, 40vw"
+                        />
+                      </figure>
                     ) : null}
-                  </div>
-                  {image ? (
-                    <figure className="trace-product-photo">
-                      <ImageSlot
-                        alt={image.alt}
-                        tint={tintOf(visible.product.traceCode)}
-                        ratio={image.variants ? frameRatioOf(image.variants) : '4/5'}
-                        fit="contain"
-                        {...slotPhoto(image)}
-                        priority
-                        sizes="(min-width: 1024px) 16rem, (min-width: 640px) 12rem, 40vw"
-                      />
-                    </figure>
-                  ) : null}
-                </section>
+                  </section>
 
-                {/* Biến thể C: mở ngay bằng ấn và nhật ký. Ấn chỉ đóng khi trình duyệt tự kiểm chuỗi băm khớp. */}
-                <ChainVerifier
-                  productId={visible.journal.productId}
-                  entries={toLogEntries(visible.journal)}
-                  household={visible.household.name}
-                  householdVerified={visible.household.status === 'APPROVED'}
-                />
-                <p className="mt-3 px-5 text-small text-ash">
-                  {t('scans', { count: visible.scanCount })}
-                </p>
+                  <p className="mt-3 px-5 text-small text-ash">
+                    {t('scans', { count: visible.scanCount })}
+                  </p>
+                  {story ? (
+                    <JourneyStoryCard
+                      productId={visible.journal.productId}
+                      entries={chainEntries}
+                      household={visible.household.name}
+                      householdVerified={visible.household.status === 'APPROVED'}
+                      locale={locale}
+                      prologue={story.prologue}
+                      epilogue={story.epilogue}
+                      chapters={story.chapters}
+                    />
+                  ) : null}
+                </div>
+                <section aria-labelledby="journey-title" className="trace-journey px-5 pt-10">
+                  <h2 id="journey-title">{t('timelineTitle')}</h2>
+                  <p className="mt-2 mb-8 text-small text-ash">{t('timelineLead')}</p>
+                  <FireTimeline
+                    locale={locale}
+                    entries={logEntries}
+                    household={visible.household.name}
+                    story={
+                      story
+                        ? {
+                            epilogue: story.epilogue,
+                            chapters: Object.fromEntries(
+                              story.chapters.map((c) => [c.seq, { body: c.body, gap: c.gap }]),
+                            ),
+                          }
+                        : undefined
+                    }
+                    pieceKind={pieceKindOf(visible.product.category, visible.product.name)}
+                    glaze={tintOf(visible.product.traceCode)}
+                  />
+                </section>
               </div>
-              <section aria-labelledby="journey-title" className="trace-journey px-5 pt-10">
-                <h2 id="journey-title">{t('timelineTitle')}</h2>
-                <p className="mt-2 mb-8 text-small text-ash">{t('timelineLead')}</p>
-                <FireTimeline
-                  locale={locale}
-                  entries={toLogEntries(visible.journal)}
-                  household={visible.household.name}
-                  pieceKind={pieceKindOf(visible.product.category, visible.product.name)}
-                  glaze={tintOf(visible.product.traceCode)}
-                />
-              </section>
-            </div>
+            </JourneyStoryProvider>
             <div className="trace-context">
               <div>
                 <MakerCredits

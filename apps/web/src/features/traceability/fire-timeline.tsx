@@ -24,6 +24,7 @@ export async function FireTimeline({
   pieceKind,
   glaze = 'var(--color-glaze)',
   locale = 'vi',
+  story,
 }: {
   entries: readonly LogEntryView[];
   /** The household that kept the journal, shown on each step as who recorded it. */
@@ -36,6 +37,17 @@ export async function FireTimeline({
   newestFirst?: boolean;
   /** Page locale: households write notes in Vietnamese only, so on `/en` they carry `lang="vi"` (GH#482). */
   locale?: string;
+  /**
+   * The story of the piece told from the journal, composed on the server. Each step then carries its chapter
+   * inline (hidden where the story card beside the steps tells it) and the maker's note becomes a quotation.
+   */
+  story?:
+    | {
+        epilogue: string;
+        /** The chapter of each step, by `seq`. */
+        chapters: Readonly<Record<number, { body: string; gap?: string | undefined }>>;
+      }
+    | undefined;
 }) {
   const [stages, t, format] = await Promise.all([
     getTranslations('stages'),
@@ -49,6 +61,7 @@ export async function FireTimeline({
   const inProgress = entries.length > 0 && isJournalInProgress(entries);
   // The story reads oldest first; the newest-first order of the QR variant stays a plain list.
   const storyKind = newestFirst || entries.length === 0 ? undefined : pieceKind;
+  const chapterOf = (seq: number) => story?.chapters[seq];
   const list = (
     <ol className="relative" data-fire-steps="">
       <span
@@ -56,122 +69,143 @@ export async function FireTimeline({
         className="fire-line absolute top-2 bottom-2 left-[0.9rem] w-0.5 rounded-full bg-linear-to-b from-ash/60 via-clay to-seal"
       />
       <span aria-hidden="true" data-fire-heat="" className="fire-heat" />
-      {(newestFirst ? [...entries].reverse() : entries).map((e) => (
-        <li
-          key={e.hash}
-          id={`log-${e.seq + 1}`}
-          data-fire-step=""
-          className="fire-step relative grid scroll-mt-6 grid-cols-[2rem_minmax(0,1fr)] gap-4 rounded-card pb-10 last:pb-0 target:bg-seal/8 target:ring-2 target:ring-seal/50"
-        >
-          <span
-            aria-hidden="true"
-            className="fire-mark relative z-10 mt-1 size-[1.85rem] rotate-45 rounded-[4px] border-2 border-paper shadow-warm"
-            style={{ background: e.tint }}
-          />
-          <div>
-            <p className="font-mono text-[0.75rem] tracking-wider text-ash">
-              {String(e.seq + 1).padStart(2, '0')} ·{' '}
-              <time dateTime={e.at}>{formatDeclaredDate(format, e.at)}</time>
-            </p>
-            <h3 className="mt-1 text-h3">
-              <a
-                href={`#log-${e.seq + 1}`}
-                className="underline-offset-4 hover:underline focus-visible:underline"
-              >
-                {stages(`${e.stage}.name`)}
-              </a>
-            </h3>
-            {household ? (
-              <p className="mt-1 break-words text-small text-ash">
-                {t('recordedBy', { household })}
+      {(newestFirst ? [...entries].reverse() : entries).map((e) => {
+        const chapter = chapterOf(e.seq);
+        return (
+          <li
+            key={e.hash}
+            id={`log-${e.seq + 1}`}
+            data-hash={e.hash}
+            data-fire-step=""
+            className="fire-step relative grid scroll-mt-6 grid-cols-[2rem_minmax(0,1fr)] gap-4 rounded-card pb-10 last:pb-0 target:bg-seal/8 target:ring-2 target:ring-seal/50"
+          >
+            <span
+              aria-hidden="true"
+              className="fire-mark relative z-10 mt-1 size-[1.85rem] rotate-45 rounded-[4px] border-2 border-paper shadow-warm"
+              style={{ background: e.tint }}
+            />
+            <div>
+              <p className="font-mono text-[0.75rem] tracking-wider text-ash">
+                {String(e.seq + 1).padStart(2, '0')} ·{' '}
+                <time dateTime={e.at}>{formatDeclaredDate(format, e.at)}</time>
+                {chapter?.gap ? <span data-step-story=""> · {chapter.gap}</span> : null}
               </p>
-            ) : null}
-            {e.supersedesSeq !== undefined ? (
-              <p className="mt-1 text-small font-medium text-seal">
-                <a href={`#log-${e.supersedesSeq + 1}`} className="underline underline-offset-2">
-                  {t('corrects', { n: e.supersedesSeq + 1 })}
-                </a>
-              </p>
-            ) : null}
-            {correctedBy.has(e.seq) ? (
-              <p className="mt-1 text-small text-ash">
+              <h3 className="mt-1 text-h3">
                 <a
-                  href={`#log-${(correctedBy.get(e.seq) ?? 0) + 1}`}
-                  className="underline underline-offset-2"
+                  href={`#log-${e.seq + 1}`}
+                  className="underline-offset-4 hover:underline focus-visible:underline"
                 >
-                  {t('correctedBy', { n: (correctedBy.get(e.seq) ?? 0) + 1 })}
+                  {stages(`${e.stage}.name`)}
                 </a>
-              </p>
-            ) : null}
-            <p className="mt-1 break-words text-ink/85" lang={vietnameseOnlyLang(locale)}>
-              {e.note}
-            </p>
-            {e.skipReason ? (
-              <p className="mt-1 break-words text-small text-ash">
-                {t.rich('skipped', {
-                  reason: e.skipReason ?? '',
-                  note: (chunks) => <span lang={vietnameseOnlyLang(locale)}>{chunks}</span>,
+              </h3>
+              {household ? (
+                <p className="mt-1 break-words text-small text-ash">
+                  {t('recordedBy', { household })}
+                </p>
+              ) : null}
+              {e.supersedesSeq !== undefined ? (
+                <p className="mt-1 text-small font-medium text-seal">
+                  <a href={`#log-${e.supersedesSeq + 1}`} className="underline underline-offset-2">
+                    {t('corrects', { n: e.supersedesSeq + 1 })}
+                  </a>
+                </p>
+              ) : null}
+              {correctedBy.has(e.seq) ? (
+                <p className="mt-1 text-small text-ash">
+                  <a
+                    href={`#log-${(correctedBy.get(e.seq) ?? 0) + 1}`}
+                    className="underline underline-offset-2"
+                  >
+                    {t('correctedBy', { n: (correctedBy.get(e.seq) ?? 0) + 1 })}
+                  </a>
+                </p>
+              ) : null}
+              {chapter ? (
+                <>
+                  <p className="mt-2 break-words text-ink/90" data-step-story="">
+                    {chapter.body}
+                  </p>
+                  {e.note ? (
+                    <figure className="mt-2 border-clay/40 border-l-2 pl-3" data-step-quote="">
+                      <blockquote
+                        className="break-words text-ink/85"
+                        lang={vietnameseOnlyLang(locale)}
+                      >
+                        “{e.note}”
+                      </blockquote>
+                      {household ? (
+                        <figcaption className="mt-1 text-small text-ash">
+                          — {t('story.quoteBy', { household })}
+                        </figcaption>
+                      ) : null}
+                    </figure>
+                  ) : null}
+                </>
+              ) : (
+                <p className="mt-1 break-words text-ink/85" lang={vietnameseOnlyLang(locale)}>
+                  {e.note}
+                </p>
+              )}
+              {e.skipReason ? (
+                <p className="mt-1 break-words text-small text-ash">
+                  {t.rich('skipped', {
+                    reason: e.skipReason ?? '',
+                    note: (chunks) => <span lang={vietnameseOnlyLang(locale)}>{chunks}</span>,
+                  })}
+                </p>
+              ) : null}
+              {/* A photo still processing has no URL yet: nothing is shown until it is ready. */}
+              {e.images
+                .filter((image) => image.url)
+                .map((image) => {
+                  // A photo with a credit is someone else's picture of the stage (GH#472), never of this piece: say so
+                  // under it and describe what it shows. A household's own upload has no credit and no note.
+                  const { credit } = image;
+                  const stage = stages(`${e.stage}.name`);
+                  const alt =
+                    locale === 'vi' && image.alt
+                      ? image.alt
+                      : t(credit ? 'stagePhotoAlt' : 'proofAlt', { stage });
+                  const photo = photoFromUrl(image.url, alt, image.variants);
+                  return (
+                    <figure key={image.sha256} className="mt-3 max-w-sm">
+                      <ImageSlot
+                        alt={alt}
+                        tint={e.tint}
+                        ratio="3/2"
+                        {...slotPhoto(photo)}
+                        thumbhash={image.thumbhash}
+                        sizes="(min-width: 640px) 24rem, 100vw"
+                      />
+                      {credit ? (
+                        <figcaption className="mt-1.5 text-small text-ash" data-stage-photo-note="">
+                          {t('stagePhotoNote')} {t('photoBy')}{' '}
+                          <a
+                            href={credit.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="underline underline-offset-2 hover:text-clay"
+                          >
+                            {credit.author}
+                          </a>{' '}
+                          ·{' '}
+                          <a
+                            href={credit.licenseUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="underline underline-offset-2 hover:text-clay"
+                          >
+                            {credit.license}
+                          </a>
+                        </figcaption>
+                      ) : null}
+                    </figure>
+                  );
                 })}
-              </p>
-            ) : null}
-            {/* A photo still processing has no URL yet: nothing is shown until it is ready. */}
-            {e.images
-              .filter((image) => image.url)
-              .map((image) => {
-                // A photo with a credit is someone else's picture of the stage (GH#472), never of this piece: say so
-                // under it and describe what it shows. A household's own upload has no credit and no note.
-                const { credit } = image;
-                const stage = stages(`${e.stage}.name`);
-                const alt =
-                  locale === 'vi' && image.alt
-                    ? image.alt
-                    : t(credit ? 'stagePhotoAlt' : 'proofAlt', { stage });
-                const photo = photoFromUrl(image.url, alt, image.variants);
-                return (
-                  <figure key={image.sha256} className="mt-3 max-w-sm">
-                    <ImageSlot
-                      alt={alt}
-                      tint={e.tint}
-                      ratio="3/2"
-                      {...slotPhoto(photo)}
-                      thumbhash={image.thumbhash}
-                      sizes="(min-width: 640px) 24rem, 100vw"
-                    />
-                    {credit ? (
-                      <figcaption className="mt-1.5 text-small text-ash" data-stage-photo-note="">
-                        {t('stagePhotoNote')} {t('photoBy')}{' '}
-                        <a
-                          href={credit.sourceUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="underline underline-offset-2 hover:text-clay"
-                        >
-                          {credit.author}
-                        </a>{' '}
-                        ·{' '}
-                        <a
-                          href={credit.licenseUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="underline underline-offset-2 hover:text-clay"
-                        >
-                          {credit.license}
-                        </a>
-                      </figcaption>
-                    ) : null}
-                  </figure>
-                );
-              })}
-            {/* Hiển thị rút gọn cho gọn mắt; dấu băm đầy đủ 64 hex nằm ở `title`. */}
-            <p
-              className="mt-2 font-mono text-[0.7rem] text-ash"
-              title={`${t('hashHint')} ${e.hash}`}
-            >
-              # {e.hash.slice(0, 10)}…{e.hash.slice(-6)}
-            </p>
-          </div>
-        </li>
-      ))}
+            </div>
+          </li>
+        );
+      })}
     </ol>
   );
   return (
@@ -198,6 +232,11 @@ export async function FireTimeline({
       ) : (
         list
       )}
+      {story && entries.length > 0 ? (
+        <p className="mt-8 text-ink/85" data-story-epilogue="">
+          {story.epilogue}
+        </p>
+      ) : null}
     </>
   );
 }

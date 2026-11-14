@@ -6,6 +6,7 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { stageState } from '@/experience/motion/motion-math';
 import { useRichMotion } from '@/experience/motion/use-motion';
 import { recordedAt } from './fire-story-math';
+import { useJourneyStory } from './journey-story-context';
 import './trace-story.css';
 
 /**
@@ -35,7 +36,10 @@ export function FireStory({
   const names = useTranslations('stages');
   const root = useRef<HTMLDivElement>(null);
   const motion = useRichMotion({ minWidth: 1024 });
-  const [active, setActive] = useState(0);
+  const shared = useJourneyStory();
+  const [localActive, setLocalActive] = useState(0);
+  const active = shared?.active ?? localActive;
+  const setActive = shared?.setActive ?? setLocalActive;
   const stepsOf = useCallback(
     () => Array.from(root.current?.querySelectorAll<HTMLElement>('[data-fire-step]') ?? []),
     [],
@@ -61,7 +65,7 @@ export function FireStory({
       cancelled = true;
       stop?.();
     };
-  }, [motion, stepsOf]);
+  }, [motion, stepsOf, setActive]);
 
   // Focusing anything inside a step (a link, or the step itself) brings that step into focus.
   useEffect(() => {
@@ -74,7 +78,7 @@ export function FireStory({
     };
     el.addEventListener('focusin', onFocusIn);
     return () => el.removeEventListener('focusin', onFocusIn);
-  }, [motion, stepsOf]);
+  }, [motion, stepsOf, setActive]);
 
   // Mark the steps on the list itself: state for the styles, `aria-current` for assistive tech.
   useEffect(() => {
@@ -100,8 +104,16 @@ export function FireStory({
       step.focus({ preventScroll: true });
       step.scrollIntoView({ behavior: 'smooth', block: 'center' });
     },
-    [stepsOf],
+    [stepsOf, setActive],
   );
+
+  // The story card beside the steps jumps to a step through the same function as the chips.
+  const register = shared?.registerGoTo;
+  useEffect(() => {
+    if (!motion || !register) return;
+    register(goTo);
+    return () => register(null);
+  }, [motion, register, goTo]);
 
   const stage = motion ? (stages[active] ?? 'finish') : 'finish';
   const at = recordedAt(stages);

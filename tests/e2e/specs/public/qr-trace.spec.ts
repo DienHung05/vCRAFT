@@ -9,7 +9,7 @@ const LOCALES = [
     locale: 'vi-VN',
     product: '/vi/san-pham/binh-hut-loc-men-lam-bt7k2qxm',
     trace: `/vi/truy-xuat/${CODE}`,
-    integrity: 'Nhật ký toàn vẹn',
+    integrity: 'Nhật ký được giữ nguyên từ ngày ghi',
     notFound: 'Trang này chưa ra lò',
     unknownCode: 'Mã này không có trong vCraft',
   },
@@ -18,7 +18,7 @@ const LOCALES = [
     locale: 'en-US',
     product: '/en/products/binh-hut-loc-men-lam-bt7k2qxm',
     trace: `/en/trace/${CODE}`,
-    integrity: 'Log intact',
+    integrity: "This journal hasn't been changed since it was written",
     notFound: "This page hasn't come out of the kiln",
     unknownCode: "This code isn't in vCraft",
   },
@@ -48,7 +48,7 @@ for (const L of LOCALES) {
       // Trạng thái toàn vẹn do trình duyệt tự tính bằng Web Crypto (FR-TRC-05).
       const panel = page.locator('[data-state]').filter({ hasText: L.integrity }).first();
       await expect(panel).toHaveAttribute('data-state', 'ok');
-      await expect(panel.getByRole('heading', { name: L.integrity })).toBeVisible();
+      await expect(panel.getByText(L.integrity).first()).toBeVisible();
       await expect(page.locator('[data-state="broken"]')).toHaveCount(0);
     });
 

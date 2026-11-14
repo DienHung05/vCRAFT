@@ -59,7 +59,7 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
 }
 
-.trace-notebook :where(#verify-title, #journey-title, #household-title) {
+.trace-notebook :where(#story-title, #journey-title, #household-title) {
   scroll-margin-top: 1.5rem;
 }
 
@@ -192,12 +192,48 @@
   }
 }
 
-/* On shorter screens the summary scrolls normally, keeping every integrity detail reachable. */
-@media (min-width: 64rem) and (min-height: 56rem) {
-  .trace-summary {
-    position: sticky;
-    top: 1.5rem;
+/*
+ * The story card follows the stages (vCRAFT journey story). Where the timeline is scroll-synced the left page
+ * stretches over the whole spread and the card inside it is sticky, so it slides along with the steps and
+ * stops where the spread ends. It is capped to the viewport (minus the sticky call-to-action bar below) and
+ * scrolls inside itself on very short screens.
+ */
+@media (min-width: 64rem) {
+  .trace-spread .trace-summary {
+    align-self: stretch;
   }
+
+  .journey-story[data-story="on"] {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100svh - 7.5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+.journey-chapter {
+  animation: journey-chapter-in 220ms ease-out;
+}
+
+@keyframes journey-chapter-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journey-chapter {
+    animation: none;
+  }
+}
+
+/* In story mode the card tells the chapters, so the inline copies in the steps and after the list are hidden. */
+[data-fire-story="on"] [data-step-story],
+[data-fire-story="on"] [data-step-quote],
+[data-fire-story="on"] + [data-story-epilogue] {
+  display: none;
 }
 
 .fire-story .fire-steps {
