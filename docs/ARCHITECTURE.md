@@ -198,10 +198,9 @@ vCRAFT/
 │   └── typescript/    # tsconfig dùng chung: base, library, nextjs, nestjs
 ├── tests/
 │   ├── e2e/           # Playwright: specs/{public,buyer,artisan,admin}, fixtures/
-│   └── load/          # k6: tranh chấp chốt giá, tải danh mục
+│   └── assistant-redteam/ # bộ tấn công prompt injection cho trợ lý
 ├── infra/
 │   ├── compose/       # compose.dev.yml (mysql*, redis, mailpit, caddy); CSDL + file trên Supabase
-│   ├── docker/        # Dockerfile đa tầng cho web, api, worker
 │   └── caddy/         # Caddyfile.dev (HTTP :8080), Caddyfile.prod (HTTPS tự động + HSTS), routes.caddy dùng chung; production chính là Vercel + Render (ADR-16), Caddy còn dùng cho dev và dự phòng
 ├── render.yaml        # Render Blueprint: api, worker, Key Value (ADR-16); web: apps/web/vercel.json; runbook: docs/operations/deploy.md
 ├── supabase/          # migrations/: vector store (ADR-13), bucket Storage (ADR-14), chặn Data API cho bảng nghiệp vụ (ADR-15)
