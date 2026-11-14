@@ -46,6 +46,8 @@ describe('convertImage', () => {
       '320.webp',
       '640.avif',
       '640.webp',
+      '960.avif',
+      '960.webp',
       '1280.avif',
       '1280.webp',
     ]);
@@ -79,6 +81,7 @@ describe('convertImage', () => {
     expect(phased.webp.map((v) => `${v.width}.${v.format}`)).toEqual([
       '320.webp',
       '640.webp',
+      '960.webp',
       '1280.webp',
     ]);
     expect(phased.thumbhash.length).toBeGreaterThan(10);
@@ -86,6 +89,7 @@ describe('convertImage', () => {
     expect(avif.map((v) => `${v.width}.${v.format}`)).toEqual([
       '320.avif',
       '640.avif',
+      '960.avif',
       '1280.avif',
     ]);
   });
