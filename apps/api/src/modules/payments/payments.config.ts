@@ -70,7 +70,9 @@ export interface PaymentsConfig {
   appUrl: string;
   /** Upper amount limit of VNPay (`VNPAY_MAX_AMOUNT_VND`). */
   vnpayMaxVnd: number;
-  /** Upper amount limit of MoMo (`MOMO_MAX_AMOUNT_VND`). */
+  /**
+   * Upper amount limit of MoMo (`MOMO_MAX_AMOUNT_VND`). Ignored in demo mode, where the provider is never called.
+   */
   momoMaxVnd: number;
   sepay: SepayConfig | null;
   /** `null`: not offered (mode off, credentials or URLs missing, or sandbox refused in production). */
@@ -311,12 +313,16 @@ export interface MethodLimit {
   maxVnd: number | null;
 }
 
-/** The amount a single payment of each method may have, in whole VND. */
+/**
+ * The amount a single payment of each method may have, in whole VND. Demo mode (ADR-0025) never calls the
+ * provider, so the MoMo provider ceiling (`MOMO_MAX_AMOUNT_VND`, 50 million VND by default) does not apply
+ * there: only the minimum stays. Every other limit is unchanged.
+ */
 export function methodLimits(config: PaymentsConfig): Record<OnlinePaymentMethod, MethodLimit> {
   return {
     SEPAY_TRANSFER: { minVnd: SEPAY_MIN_VND, maxVnd: null },
     VNPAY: { minVnd: VNPAY_MIN_VND, maxVnd: config.vnpayMaxVnd },
-    MOMO: { minVnd: MOMO_MIN_VND, maxVnd: config.momoMaxVnd },
+    MOMO: { minVnd: MOMO_MIN_VND, maxVnd: config.demo ? null : config.momoMaxVnd },
   };
 }
 

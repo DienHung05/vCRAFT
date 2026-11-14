@@ -151,12 +151,28 @@ describe('payments config: demo mode (ADR-0025)', () => {
     expect(config.sandbox).toBe(false);
   });
 
-  it('keeps the amount limits of each method', () => {
-    setEnv({ PAYMENTS_DEMO_MODE: 'true', MOMO_MAX_AMOUNT_VND: '2000000' });
+  it('keeps every minimum and lifts only the MoMo ceiling, also under APP_ENV=production (#528)', () => {
+    setEnv({
+      APP_ENV: 'production',
+      PAYMENTS_DEMO_MODE: 'true',
+      MOMO_MAX_AMOUNT_VND: '2000000',
+    });
     const limits = methodLimits(paymentsConfig());
-    expect(limits.MOMO).toEqual({ minVnd: 1_000, maxVnd: 2_000_000 });
-    expect(limits.VNPAY.minVnd).toBe(5_000);
-    expect(limits.SEPAY_TRANSFER.maxVnd).toBeNull();
+    // The demo gateway never calls MoMo, so the provider's 50 million VND ceiling does not apply.
+    expect(limits.MOMO).toEqual({ minVnd: 1_000, maxVnd: null });
+    expect(limits.VNPAY).toEqual({ minVnd: 5_000, maxVnd: 999_999_999 });
+    expect(limits.SEPAY_TRANSFER).toEqual({ minVnd: 1, maxVnd: null });
+  });
+
+  it('keeps the MoMo ceiling outside demo mode, including an environment override (#528)', () => {
+    expect(methodLimits(paymentsConfig()).MOMO).toEqual({ minVnd: 1_000, maxVnd: 50_000_000 });
+    vi.stubEnv('APP_ENV', 'production');
+    expect(methodLimits(paymentsConfig()).MOMO).toEqual({ minVnd: 1_000, maxVnd: 50_000_000 });
+    vi.stubEnv('MOMO_MAX_AMOUNT_VND', '2000000');
+    expect(methodLimits(paymentsConfig()).MOMO).toEqual({ minVnd: 1_000, maxVnd: 2_000_000 });
+    // Demo mode lifts the ceiling even when the production variable is set.
+    vi.stubEnv('PAYMENTS_DEMO_MODE', 'true');
+    expect(methodLimits(paymentsConfig()).MOMO).toEqual({ minVnd: 1_000, maxVnd: null });
   });
 
   it('does not require a deposit by default, even with SePay configured; an explicit flag wins', () => {
