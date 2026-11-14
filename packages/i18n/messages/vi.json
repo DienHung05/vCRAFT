@@ -2887,6 +2887,11 @@
     "generic": "Hình vẽ đồ gốm, sản phẩm này chưa có ảnh thật",
     "household": "Hình vẽ đồ gốm, hộ này chưa có ảnh xưởng"
   },
+  "photoPicker": {
+    "upload": "Tải ảnh",
+    "remove": "Bỏ chọn",
+    "none": "Chưa chọn ảnh"
+  },
   "privacy": {
     "title": "Chính sách quyền riêng tư",
     "lead": "Bạn giao cho vCraft những thông tin cá nhân nào, để làm gì, ai nhìn thấy chúng và bạn làm chủ chúng ra sao. Trang này viết ngắn gọn để đọc được trên điện thoại.",

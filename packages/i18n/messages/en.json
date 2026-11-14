@@ -2887,6 +2887,11 @@
     "generic": "Drawing of a piece of pottery; this product has no photo yet",
     "household": "Drawing of a piece of pottery; this household has no workshop photo yet"
   },
+  "photoPicker": {
+    "upload": "Upload photo",
+    "remove": "Remove",
+    "none": "No photo chosen"
+  },
   "privacy": {
     "title": "Privacy policy",
     "lead": "What personal information you give vCraft, what it is used for, who can see it and how you stay in control of it. This page is kept short so it reads well on a phone.",
