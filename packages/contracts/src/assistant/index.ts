@@ -99,12 +99,8 @@ export const AssistantStatsSchema = z.object({
   disabled: z.int().nonnegative(),
   /** Turns that ended in an upstream or timeout error. */
   failures: z.int().nonnegative(),
-  /** Turns answered without any source (not blocked, not failures). */
-  unansweredCount: z.int().nonnegative(),
   feedback: z.object({ up: z.int().nonnegative(), down: z.int().nonnegative() }),
   /** Milliseconds to the first painted token; null without answered turns. */
   firstTokenMs: z.object({ p50: z.int().nullable(), p95: z.int().nullable() }),
-  /** Questions the Fox had no source for (not blocked), most asked first, PII already masked. */
-  unanswered: z.array(z.object({ question: z.string(), count: z.int().positive() })).max(10),
 });
 export type AssistantStatsDto = z.infer<typeof AssistantStatsSchema>;

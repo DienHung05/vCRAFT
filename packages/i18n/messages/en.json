@@ -865,15 +865,11 @@
         "limited": "Over the limit",
         "disabled": "Assistant off",
         "failures": "Errors",
-        "unansweredCount": "Unanswered",
         "feedback": "Ratings",
         "feedbackValue": "👍 {up} · 👎 {down}",
         "latency": "First token (p50 / p95)",
         "latencyValue": "{p50} / {p95}",
-        "ms": "{value} ms",
-        "unansweredTitle": "Questions Fox could not answer",
-        "unansweredEmpty": "No unanswered questions yet.",
-        "times": "{count, plural, one {# time} other {# times}}"
+        "ms": "{value} ms"
       }
     },
     "queue": {
