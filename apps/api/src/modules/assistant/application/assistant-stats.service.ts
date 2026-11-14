@@ -42,8 +42,8 @@ interface TurnGroup {
 
 /**
  * The Assistant card on the admin dashboard (FR-AST-08, GH#82): turns, guardrail blocks, limits, failures,
- * thumbs up/down, first-token latency (model turns only) and the questions the Fox could not answer, over the
- * last few days. Reads the anonymous log only, which holds at most 30 days. Everything is aggregated in SQL.
+ * thumbs up/down and first-token latency (model turns only), over the last few days. Reads the anonymous log
+ * only, which holds at most 30 days. Everything is aggregated in SQL.
  */
 @Injectable()
 export class AssistantStatsService {
@@ -63,7 +63,7 @@ export class AssistantStatsService {
       .groupBy(['blocked', 'blockReason', 'answered', 'intent'])
       .execute('all')) as unknown as TurnGroup[];
 
-    const counts = { turns: 0, blocked: 0, limited: 0, disabled: 0, failures: 0, unanswered: 0 };
+    const counts = { turns: 0, blocked: 0, limited: 0, disabled: 0, failures: 0 };
     for (const g of groups) {
       const n = Number(g.total);
       const reason = g.blockReason ?? '';
@@ -75,7 +75,6 @@ export class AssistantStatsService {
       } else if (!g.answered) {
         // Rows from before failures were tagged: a classifier outage was logged as intent `unknown`.
         if (FAILURE_REASONS.includes(reason) || g.intent === 'unknown') counts.failures += n;
-        else counts.unanswered += n;
       }
     }
 
@@ -114,20 +113,6 @@ export class AssistantStatsService {
       return row ? Number(row.firstTokenMs) : null;
     };
 
-    const unansweredRows = (await inWindow()
-      .select(['question', raw('count(*) as total')])
-      .where({
-        createdAt: { $gte: since },
-        blocked: false,
-        answered: false,
-        intent: { $ne: 'unknown' },
-        $or: [{ blockReason: null }, { blockReason: { $nin: FAILURE_REASONS } }],
-      })
-      .groupBy(['question'])
-      .orderBy([{ [raw('count(*)')]: 'desc' }, { question: 'asc' }])
-      .limit(10)
-      .execute('all')) as unknown as { question: string; total: number | string }[];
-
     return {
       days,
       turns: counts.turns,
@@ -136,12 +121,8 @@ export class AssistantStatsService {
       limited: counts.limited,
       disabled: counts.disabled,
       failures: counts.failures,
-      unansweredCount: counts.unanswered,
       feedback: { up: feedback('UP'), down: feedback('DOWN') },
       firstTokenMs: { p50: await atRank(50), p95: await atRank(95) },
-      unanswered: unansweredRows
-        .filter((r) => r.question.trim())
-        .map((r) => ({ question: r.question.trim(), count: Number(r.total) })),
     };
   }
 }

@@ -866,15 +866,11 @@
         "limited": "Vượt giới hạn",
         "disabled": "Trợ lý đang tắt",
         "failures": "Lỗi hệ thống",
-        "unansweredCount": "Chưa trả lời được",
         "feedback": "Đánh giá",
         "feedbackValue": "👍 {up} · 👎 {down}",
         "latency": "Chữ đầu tiên (p50 / p95)",
         "latencyValue": "{p50} / {p95}",
-        "ms": "{value} ms",
-        "unansweredTitle": "Câu Cáo chưa trả lời được",
-        "unansweredEmpty": "Chưa có câu nào bị bỏ lửng.",
-        "times": "{count} lần"
+        "ms": "{value} ms"
       }
     },
     "queue": {
