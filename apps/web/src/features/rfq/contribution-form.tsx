@@ -319,7 +319,7 @@ export function ContributionForm({
         </p>
       ) : null}
 
-      <p className="text-[0.75rem] text-ash">{demo ? t('demoNote') : t('liveNote')}</p>
+      {demo ? <p className="text-[0.75rem] text-ash">{t('demoNote')}</p> : null}
       <span id={`${formId}-hint`} className="sr-only">
         {t('privacyNote')}
       </span>
