@@ -31,6 +31,8 @@ async function main(): Promise<void> {
   }
   const args = new Set(process.argv.slice(2));
   const dryRun = args.has('--dry-run');
+  // `--variants-only`: add the missing ladder sizes (GH#530) to what is already seeded, upload nothing.
+  const variantsOnly = args.has('--variants-only');
   const flag = (name: string) =>
     process.argv
       .slice(2)
@@ -45,7 +47,7 @@ async function main(): Promise<void> {
   const orm = await MikroORM.init(createMikroOrmOptions(process.env) as unknown as Options);
   try {
     if (args.has('--check')) {
-      const problems = await checkDemoMediaObjects(orm, storage);
+      const problems = await checkDemoMediaObjects(orm, storage, { existingOnly: variantsOnly });
       for (const problem of problems) console.error(`FAIL  ${problem}`);
       console.log(
         problems.length === 0
@@ -72,8 +74,7 @@ async function main(): Promise<void> {
           specimenDir: join(ROOT, 'scripts', 'demo', 'photos', 'specimen-docs'),
           force: args.has('--force'),
           dryRun,
-          // `--variants-only`: add the missing ladder sizes (GH#530) to what is already seeded, upload nothing.
-          variantsOnly: args.has('--variants-only'),
+          variantsOnly,
           log: (message) => console.log(`  ${message}`),
         });
     console.log(`${prefix}: tải lên`, JSON.stringify(uploaded));
@@ -103,7 +104,7 @@ async function main(): Promise<void> {
       if (pruned.failed.length > 0) process.exitCode = 1;
     }
     if (!dryRun) {
-      const problems = await checkDemoMediaObjects(orm, storage);
+      const problems = await checkDemoMediaObjects(orm, storage, { existingOnly: variantsOnly });
       for (const problem of problems) console.error(`FAIL  ${problem}`);
       if (problems.length > 0) process.exitCode = 1;
     }

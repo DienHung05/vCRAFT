@@ -209,6 +209,11 @@ export async function publishDemoMedia(
       summary.documentsSkipped++;
       continue;
     }
+    // `--variants-only` promises to upload nothing; a document that is not seeded yet is left to a full run.
+    if (options.variantsOnly) {
+      log(`giấy tờ mẫu ${doc.id}: bỏ qua (chưa có trong kho, chế độ chỉ bổ sung biến thể)`);
+      continue;
+    }
     if (options.dryRun) {
       summary.documentsUploaded++;
       continue;
@@ -245,10 +250,15 @@ export async function publishDemoMedia(
   return summary;
 }
 
-/** Kiểm các tệp trong bucket đúng như dòng `media_asset` mô tả (đọc lại thật, không chỉ tin CSDL). */
+/**
+ * Kiểm các tệp trong bucket đúng như dòng `media_asset` mô tả (đọc lại thật, không chỉ tin CSDL).
+ * `existingOnly` (dùng với `--variants-only`) kiểm mọi bản ghi đã có nhưng không coi ảnh/giấy tờ trong
+ * bảng ánh xạ chưa từng được seed là lỗi: chế độ đó cố ý không tải lên. Mặc định vẫn kiểm đủ và chặt.
+ */
 export async function checkDemoMediaObjects(
   orm: MikroORM,
   storage: ObjectStorage,
+  options: { existingOnly?: boolean } = {},
 ): Promise<string[]> {
   const problems: string[] = [];
   const em = orm.em.fork();
@@ -257,7 +267,7 @@ export async function checkDemoMediaObjects(
     ...DEMO_VERIFICATION_DOCS.map((d) => demoDocumentAssetId(d.id)),
   ];
   const assets = await em.find(MediaAsset, { id: { $in: ids } });
-  if (assets.length !== ids.length)
+  if (!options.existingOnly && assets.length !== ids.length)
     problems.push(`thiếu ${ids.length - assets.length} dòng media_asset`);
   for (const asset of assets) {
     try {
