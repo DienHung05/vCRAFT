@@ -119,7 +119,10 @@ describe('HeroVase hand-over', () => {
     scene.onReady = undefined;
     facts.capable = true;
   });
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    document.documentElement.removeAttribute('data-hero-3d');
+  });
 
   it('renders nothing on devices that cannot run 3D', () => {
     facts.capable = false;
@@ -128,6 +131,15 @@ describe('HeroVase hand-over', () => {
       vi.advanceTimersByTime(3000);
     });
     expect(queryByTestId('hero-vase-3d')).toBeNull();
+    expect(document.documentElement.hasAttribute('data-hero-3d')).toBe(false);
+  });
+
+  it('sets the flag itself and mounts the 3D layer at once when the inline script did not run', () => {
+    expect(document.documentElement.hasAttribute('data-hero-3d')).toBe(false);
+    const { getByTestId } = render(<HeroVase sectionId="home-hero" />);
+    // No timers advanced: there is no idle wait.
+    expect(document.documentElement.hasAttribute('data-hero-3d')).toBe(true);
+    expect(getByTestId('hero-vase-3d')).toBeTruthy();
   });
 
   it('keeps the canvas hidden until the first frame has been drawn', () => {
@@ -140,5 +152,64 @@ describe('HeroVase hand-over', () => {
     expect(scene.onReady).toBeTypeOf('function');
     act(() => scene.onReady?.());
     expect(layer.className).toContain('opacity-100');
+  });
+  describe('with the data-hero-3d flag set before first paint (GH#527)', () => {
+    afterEach(() => {
+      document.documentElement.removeAttribute('data-hero-3d');
+      Reflect.deleteProperty(SVGElement.prototype, 'setCurrentTime');
+      Reflect.deleteProperty(SVGElement.prototype, 'pauseAnimations');
+      Reflect.deleteProperty(SVGElement.prototype, 'unpauseAnimations');
+    });
+
+    it('mounts the 3D layer at once and pauses the hidden SVG', () => {
+      document.documentElement.setAttribute('data-hero-3d', '');
+      const pauseAnimations = vi.fn();
+      Object.assign(SVGElement.prototype, { pauseAnimations });
+      const { getByTestId } = render(
+        <section id="hero-flag">
+          <TurningVase />
+          <HeroVase sectionId="hero-flag" />
+        </section>,
+      );
+      // No timers advanced: it did not wait for idle.
+      expect(getByTestId('hero-vase-3d')).toBeTruthy();
+      expect(pauseAnimations).toHaveBeenCalled();
+    });
+
+    it('falls back to the SVG when the scene is not ready in time', () => {
+      document.documentElement.setAttribute('data-hero-3d', '');
+      const setCurrentTime = vi.fn();
+      const unpauseAnimations = vi.fn();
+      Object.assign(SVGElement.prototype, {
+        setCurrentTime,
+        pauseAnimations: vi.fn(),
+        unpauseAnimations,
+      });
+      const { queryByTestId } = render(
+        <section id="hero-timeout">
+          <TurningVase />
+          <HeroVase sectionId="hero-timeout" />
+        </section>,
+      );
+      expect(queryByTestId('hero-vase-3d')).not.toBeNull();
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+      expect(document.documentElement.hasAttribute('data-hero-3d')).toBe(false);
+      expect(queryByTestId('hero-vase-3d')).toBeNull();
+      expect(setCurrentTime).toHaveBeenCalledWith(0);
+      expect(unpauseAnimations).toHaveBeenCalled();
+    });
+
+    it('keeps the flag when the scene reports ready before the timeout', () => {
+      document.documentElement.setAttribute('data-hero-3d', '');
+      const { queryByTestId } = render(<HeroVase sectionId="home-hero" />);
+      act(() => scene.onReady?.());
+      act(() => {
+        vi.advanceTimersByTime(10000);
+      });
+      expect(document.documentElement.hasAttribute('data-hero-3d')).toBe(true);
+      expect(queryByTestId('hero-vase-3d')).not.toBeNull();
+    });
   });
 });

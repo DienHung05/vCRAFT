@@ -1,8 +1,11 @@
 import { buttonVariants, WaveDivider } from '@vcraft/ui';
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { getTranslations } from 'next-intl/server';
 import { Suspense } from 'react';
 import { ImageSlot } from '@/components/image-slot';
+import { InlineScript } from '@/components/inline-script';
+import { HERO_3D_FLAG_SCRIPT } from '@/experience/hero-vase/capability';
 import { HeroVase } from '@/experience/hero-vase/hero-vase';
 import { TurningVase } from '@/experience/hero-vase/turning-vase';
 import { DayStory } from '@/experience/motion/day-story';
@@ -17,6 +20,7 @@ import { HomeNews } from '@/features/home/home-news';
 import { HeroTraceCta, HeroTraceSeal } from '@/features/home/home-showcase';
 import { VillageStats } from '@/features/home/home-stats';
 import { Link } from '@/i18n/navigation';
+import { NONCE_HEADER } from '@/lib/csp';
 import type { LogStage } from '@/lib/demo/data';
 import { dayPhoto } from '@/lib/demo/stage-photos';
 import { resolveLocale } from '@/lib/locale';
@@ -52,6 +56,8 @@ export async function generateMetadata({ params }: PageProps<'/[locale]'>): Prom
 export default async function HomePage({ params }: PageProps<'/[locale]'>) {
   const locale = await resolveLocale(params);
   const [t, stages] = await Promise.all([getTranslations('home'), getTranslations('stages')]);
+  // The CSP nonce from proxy.ts (NFR-SEC-04), read the same way as in the locale layout.
+  const nonce = (await headers()).get(NONCE_HEADER) ?? undefined;
 
   return (
     <>
@@ -89,8 +95,10 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             className="grid place-items-center"
           >
             {/* GH#316: no photo and never the flat figure. The shaded, CSS-turning vase is in the first
-                HTML and is the fallback on every device; on capable desktops the WebGL vase (GH#94)
-                cross-fades in over it, in the same box, once its first frame has been drawn. */}
+                HTML and is the fallback for devices that cannot run 3D. GH#527: on capable desktops this
+                script sets data-hero-3d before the SVG is parsed, which hides it, so the WebGL vase
+                (GH#94) is the only story: it fades in over the tinted box after its first frame. */}
+            <InlineScript code={HERO_3D_FLAG_SCRIPT} nonce={nonce} />
             <TurningVase className="absolute inset-0 size-full" />
             <HeroVase sectionId="home-hero" />
           </ImageSlot>
