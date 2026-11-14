@@ -184,15 +184,15 @@
 
 /*
  * Full-bleed between the sticky header (4rem + 1px border) and the footer. It stops 2.5rem short of the
- * fold so the footer's wave peeks in, and its bottom margin cancels the footer's `mt-section` so the scene
- * runs straight into the wave.
+ * fold so the footer's wave peeks in, and its bottom margin cancels the footer's `mt-6` (1.5rem, keep in sync
+ * with site-footer.tsx) so the scene ends exactly where the wave begins.
  */
 .kiln-scene {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   min-height: calc(100svh - 65px - 2.5rem);
-  margin-bottom: calc(-1 * var(--spacing-section));
+  margin-bottom: -1.5rem;
   background: var(--kiln-scene-glow), var(--color-paper);
 }
 /* Vignette: a static inset shadow. */
