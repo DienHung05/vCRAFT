@@ -32,7 +32,7 @@ export function KilnShell({
       className={cn(
         // Compact vertical rhythm so the tile's inputs and primary action fit the first view on phones and laptops.
         // The extra bottom room below `lg` (pb-16) keeps the card's wave band inside the scene, clear of the footer's wave.
-        'relative z-[2] mx-auto flex min-h-[inherit] w-full max-w-editorial flex-col items-center gap-2 px-gutter pt-1 pb-16md:pt-4 lg:gap-0 lg:pt-3 lg:pb-4',
+        'relative z-[2] mx-auto flex min-h-[inherit] w-full max-w-editorial flex-col items-center gap-2 px-gutter pt-1 pb-16 md:pt-4 lg:gap-0 lg:pt-3 lg:pb-4',
         !wide && 'lg:grid lg:grid-cols-12 lg:items-center lg:gap-x-8',
       )}
     >
