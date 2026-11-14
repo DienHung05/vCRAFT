@@ -6,6 +6,7 @@ import { Button, Card } from '@vcraft/ui';
 import { useFormatter, useTranslations } from 'next-intl';
 import { type ReactNode, useState } from 'react';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { PhotoPicker } from '@/components/photo-picker';
 import { prepareImage, sendMedia } from '@/features/media/prepare-image';
 import { browserAccessToken } from '@/lib/api/live-session';
 import { AllocationTimeline } from './allocation-timeline';
@@ -144,14 +145,7 @@ export function AllocationCard({
               className="rounded-input border border-ink/20 bg-paper p-2"
             />
           </label>
-          <label className="flex flex-col gap-1 text-small">
-            {t('photo')}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
-            />
-          </label>
+          <PhotoPicker label={t('photo')} accept="image/*" file={photo} onChange={setPhoto} />
           {problem ? (
             <p role="alert" className="text-small text-seal">
               {problem === 'invalidQty'
