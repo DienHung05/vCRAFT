@@ -381,7 +381,6 @@ function CoordinationWorkspace({ rfqId, client }: { rfqId: string; client: Quota
         <AllocationBoard
           key={request.version}
           rfqId={rfqId}
-          rfqCode={rfqId}
           requestVersion={request.version}
           quantity={request.quantity}
           unit={request.unit}

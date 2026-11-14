@@ -551,7 +551,7 @@
       "saving": "Saving draft…",
       "saved": "Draft saved",
       "savedLocal": "Saved in this browser for now",
-      "saveFailed": "The draft could not be saved to the server. Your text is still in this browser.",
+      "saveFailed": "The draft could not be saved. Your text is still in this browser.",
       "sendFailed": "The request could not be sent. Please try again.",
       "emailNotVerified": "Please verify your email before sending the request.",
       "noMatch": "No household works in this category yet. Choose specific households or ask the board to coordinate.",
@@ -775,10 +775,9 @@
       "sendingLabel": "Sending…",
       "sentRealLabel": "Sent",
       "sendFailed": "Sending failed. Please try again later.",
-      "liveNote": "Request {code}: the quotation will be sent to the server through the API with your signed-in session.",
       "sentReal": {
         "title": "Cooperative quotation sent",
-        "text": "The quotation for request {code} is saved on the server. The buyer will see the households, shares, completion dates and one complete total — never each household's private price."
+        "text": "Quotation saved. The buyer will see the households, shares, completion dates and one complete total — never each household's private price."
       },
       "sentToast": "Cooperative quotation sent to the buyer.",
       "confirmTitle": "Send the cooperative quotation?",
@@ -1453,13 +1452,12 @@
     "updatedLabel": "Updated",
     "simulatedLabel": "Previewed",
     "simulatedNote": "Previewed (not saved, no notifications sent). This only runs in this browser.",
-    "sentNote": "The offer is saved on the server. The management board will use this maximum, unit price and completion date to assemble the quotation.",
+    "sentNote": "Offer saved. The management board will use this maximum, unit price and completion date to assemble the quotation.",
     "withdraw": "Withdraw offer",
     "withdrawn": "The offer was withdrawn. Send again to rejoin.",
     "capacityExceeded": "The quantity is above the capacity you declared for this category. Lower it or update your capacity in the profile, then send again.",
     "sendFailed": "Sending failed. Please try again later.",
     "demoNote": "This only runs in your browser. Nothing is saved or sent to a server.",
-    "liveNote": "Only the village management board sees the unit price you offer; the buyer never sees the price of a single household.",
     "privacyNote": "Maximum, unit price and completion date are private between the household and the management board; the buyer only sees the household, its share and the completion date.",
     "loading": "Loading the request…",
     "signIn": "Sign in with a household representative account to submit a contribution offer.",
@@ -2886,6 +2884,11 @@
     "incense": "Drawing of an incense burner; this product has no photo yet",
     "generic": "Drawing of a piece of pottery; this product has no photo yet",
     "household": "Drawing of a piece of pottery; this household has no workshop photo yet"
+  },
+  "photoPicker": {
+    "upload": "Upload photo",
+    "remove": "Remove",
+    "none": "No photo chosen"
   },
   "privacy": {
     "title": "Privacy policy",

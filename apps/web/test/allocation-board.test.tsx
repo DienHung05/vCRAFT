@@ -40,7 +40,6 @@ const contributions = [
 function props(overrides: Partial<AllocationBoardProps> = {}): AllocationBoardProps {
   return {
     rfqId: '0b8f7a5e-1c2d-4e3f-a5b6-c7d8e9f0a1b2',
-    rfqCode: 'RFQ-2026-000131',
     requestVersion: 4,
     quantity: 3000,
     unit: 'bát',
@@ -179,6 +178,10 @@ describe('AllocationBoard (chia đơn thủ công, GH#10)', () => {
       deliveryTerms: 'INCLUDED',
     });
     expect(screen.getByText(/Đã gửi chào giá liên kết/)).toBeTruthy();
+    expect(screen.getByText(/Đã lưu chào giá\./)).toBeTruthy();
+    // GH#535: no backend plumbing or raw request id in the live view.
+    expect(document.body.textContent).not.toMatch(/\bAPI\b|phiên đăng nhập|máy chủ/i);
+    expect(document.body.textContent).not.toContain('0b8f7a5e-1c2d-4e3f-a5b6-c7d8e9f0a1b2');
   });
 
   it('callback từ chối thì hiện lỗi và cho gửi lại', async () => {
