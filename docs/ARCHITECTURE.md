@@ -439,7 +439,7 @@ sequenceDiagram
     A->>Q: enqueue media.process
     A-->>C: 202 {id, status: PROCESSING}
     Q->>W: job
-    W->>W: decode → xoay theo EXIF → XÓA EXIF/GPS → resize 320/640/1280/2048 → AVIF + WebP → thumbhash + màu chủ đạo
+    W->>W: decode → xoay theo EXIF → XÓA EXIF/GPS → resize 320/640/960/1280/2048 → AVIF + WebP → thumbhash + màu chủ đạo
     W->>P: ghi biến thể (key chứa hash ⇒ cache immutable)
     W-->>A: outbox: media.ready (Redis pub/sub)
     A-->>C: SSE media.ready ⇒ thay placeholder bằng ảnh thật

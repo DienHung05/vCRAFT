@@ -96,9 +96,9 @@ describe('luật upload media', () => {
 
 describe('mốc biến thể ảnh', () => {
   it('không phóng to: chỉ sinh các mốc không vượt ảnh gốc', () => {
-    expect(planVariantWidths(4032)).toEqual([320, 640, 1280, 2048]);
-    expect(planVariantWidths(1280)).toEqual([320, 640, 1280]);
-    expect(planVariantWidths(1000)).toEqual([320, 640]);
+    expect(planVariantWidths(4032)).toEqual([320, 640, 960, 1280, 2048]);
+    expect(planVariantWidths(1280)).toEqual([320, 640, 960, 1280]);
+    expect(planVariantWidths(1000)).toEqual([320, 640, 960]);
   });
 
   it('ảnh nhỏ hơn mốc nhỏ nhất vẫn có một biến thể bằng kích thước gốc', () => {
