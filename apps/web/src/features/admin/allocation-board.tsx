@@ -57,8 +57,6 @@ export interface BoardSubmitPayload {
 
 export interface AllocationBoardProps {
   rfqId: string;
-  /** Mã yêu cầu chỉ để hiển thị. */
-  rfqCode: string;
   requestVersion: number;
   quantity: number;
   unit: string;
@@ -100,7 +98,6 @@ type SubmitState =
  */
 export function AllocationBoard({
   rfqId,
-  rfqCode,
   requestVersion,
   quantity,
   unit,
@@ -589,9 +586,7 @@ export function AllocationBoard({
             {!ready && submit.kind !== 'sent' ? (
               <p className="text-[0.75rem] text-ash">{t('sendBlocked')}</p>
             ) : null}
-            <p className="text-[0.75rem] text-ash">
-              {demo ? t('demoNote') : t('liveNote', { code: rfqCode })}
-            </p>
+            {demo ? <p className="text-[0.75rem] text-ash">{t('demoNote')}</p> : null}
           </div>
         </Card>
       </div>
@@ -619,7 +614,7 @@ export function AllocationBoard({
           <div className="relative">
             <h2 className="text-h3 text-ink">{demo ? t('sent.title') : t('sentReal.title')}</h2>
             <p className="mt-1 text-ink/85">
-              {demo ? t('sent.text', { code: rfqId }) : t('sentReal.text', { code: rfqCode })}
+              {demo ? t('sent.text', { code: rfqId }) : t('sentReal.text')}
             </p>
           </div>
         </section>
