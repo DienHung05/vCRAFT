@@ -17,7 +17,8 @@ const ROOT = join(__dirname, '..', '..', '..', '..');
  * `media_asset`, nối chúng vào dữ liệu mẫu (`media_link` kèm mô tả vi/en, ảnh bìa, nhật ký và chuỗi băm), gỡ những ảnh
  * đã bị loại khỏi bảng ánh xạ (dòng, liên kết và tệp lưu trữ) rồi in tóm tắt.
  * Chạy lại được (lần hai báo 0 thay đổi); chạy sau mỗi `pnpm demo:reset`. `--dry-run` chỉ tính việc sẽ làm, không ghi gì;
- * `--force` làm lại cả tệp đã có; `--check` chỉ kiểm bucket đúng như CSDL mô tả.
+ * `--force` làm lại cả tệp đã có; `--variants-only` chỉ bổ sung mốc biến thể còn thiếu của ảnh đã seed (GH#530),
+ * không tải lên ảnh mới; `--check` chỉ kiểm bucket đúng như CSDL mô tả.
  * Chỉ chạy khi `APP_ENV` là `demo` hoặc `development`: bước này niêm phong lại chuỗi băm nhật ký của dữ liệu mẫu.
  */
 async function main(): Promise<void> {
@@ -60,6 +61,7 @@ async function main(): Promise<void> {
           photosUploaded: 0,
           photosSkipped: 0,
           photosMetadataUpdated: 0,
+          photosBackfilled: 0,
           documentsUploaded: 0,
           documentsSkipped: 0,
         }
@@ -70,6 +72,8 @@ async function main(): Promise<void> {
           specimenDir: join(ROOT, 'scripts', 'demo', 'photos', 'specimen-docs'),
           force: args.has('--force'),
           dryRun,
+          // `--variants-only`: add the missing ladder sizes (GH#530) to what is already seeded, upload nothing.
+          variantsOnly: args.has('--variants-only'),
           log: (message) => console.log(`  ${message}`),
         });
     console.log(`${prefix}: tải lên`, JSON.stringify(uploaded));

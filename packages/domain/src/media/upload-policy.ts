@@ -20,8 +20,11 @@ export const MEDIA_MAX_BYTES = 15 * 1024 * 1024;
 /** Chặn ảnh "bom giải nén": số điểm ảnh tối đa (50 MP) mà API nhận và worker chịu decode. */
 export const MEDIA_MAX_PIXELS = 50_000_000;
 
-/** Bề ngang các biến thể AVIF/WebP (ARCHITECTURE §7.1). */
-export const MEDIA_VARIANT_WIDTHS = [320, 640, 1280, 2048] as const;
+/**
+ * Bề ngang các biến thể AVIF/WebP (ARCHITECTURE §7.1). 960 sits between 640 and 1280 so a phone at
+ * 100vw (≈720 px at DPR 1.75, ≈820 px at DPR 2) picks it instead of the full 1280 file (GH#530).
+ */
+export const MEDIA_VARIANT_WIDTHS = [320, 640, 960, 1280, 2048] as const;
 
 const WEB_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'] as const;
 /**

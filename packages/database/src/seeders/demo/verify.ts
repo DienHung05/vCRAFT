@@ -1,5 +1,5 @@
 import type { EntityManager } from '@mikro-orm/core';
-import { type ChainEntry, verifyChain } from '@vcraft/domain';
+import { type ChainEntry, planVariantWidths, verifyChain } from '@vcraft/domain';
 import {
   AppUser,
   Artisan,
@@ -330,6 +330,23 @@ async function verifyMedia(
     noCredit.length === 0
       ? `${photoAssets.length} tệp đủ ghi công`
       : `thiếu ở ${noCredit.length} tệp`,
+  );
+  // A size added to the ladder (GH#530: 960w) reaches older photos only through the additive backfill
+  // of `demo:media`; without it the banner keeps downloading the wider file. Count them here, not as
+  // READY alone: the asset stays READY even when the backfill is still missing.
+  const missingSizes = readyPhotos.filter((a) => {
+    if (!a.width) return false; // a legacy row without an intrinsic width has no ladder to check
+    const have = new Set(a.variants.map((v) => `${v.width}.${v.format}`));
+    return planVariantWidths(a.width).some(
+      (width) => !have.has(`${width}.webp`) || !have.has(`${width}.avif`),
+    );
+  });
+  add(
+    'Ảnh minh hoạ: có đủ mốc biến thể hiện tại (320/640/960/1280)',
+    missingSizes.length === 0,
+    missingSizes.length === 0
+      ? `${readyPhotos.length} tệp đủ mốc`
+      : `${missingSizes.length} tệp thiếu mốc; chạy pnpm demo:media để bổ sung`,
   );
 
   const links = await em.find(MediaLink, { targetType: { $ne: 'HOUSEHOLD' } });

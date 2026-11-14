@@ -439,13 +439,13 @@ sequenceDiagram
     A->>Q: enqueue media.process
     A-->>C: 202 {id, status: PROCESSING}
     Q->>W: job
-    W->>W: decode → xoay theo EXIF → XÓA EXIF/GPS → resize 320/640/1280/2048 → AVIF + WebP → thumbhash + màu chủ đạo
+    W->>W: decode → xoay theo EXIF → XÓA EXIF/GPS → resize 320/640/960/1280/2048 → AVIF + WebP → thumbhash + màu chủ đạo
     W->>P: ghi biến thể (key chứa hash ⇒ cache immutable)
     W-->>A: outbox: media.ready (Redis pub/sub)
     A-->>C: SSE media.ready ⇒ thay placeholder bằng ảnh thật
 ```
 
-Frontend hiển thị bằng `<picture>` (AVIF → WebP) với `srcset` + `sizes`, `loading="lazy"`, `decoding="async"`, nền thumbhash ⇒ không giật layout, "hiện dần" mượt. Next `<Image>` dùng **custom loader** trỏ thẳng biến thể đã sinh (không tối ưu lần hai).
+Frontend hiển thị bằng `<picture>` (AVIF → WebP) với `srcset` + `sizes`, `loading="lazy"`, `decoding="async"`, nền thumbhash ⇒ không giật layout, "hiện dần" mượt. Next `<Image>` dùng **custom loader** trỏ thẳng biến thể đã sinh (không tối ưu lần hai). Mốc 960 nằm giữa 640 và 1280 để điện thoại ở `sizes="100vw"` (≈720 px ở DPR 1.75, ≈820 px ở DPR 2) chọn nó thay vì tải cả tệp 1280 (GH#530). Tệp đã `READY` từ trước khi có mốc mới được bổ sung thêm đúng mốc thiếu, không ghi lại các biến thể cũ.
 
 ### 7.2 Quét QR → trang truy xuất
 

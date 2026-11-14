@@ -4,8 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const encodeAvif = vi.fn();
 const convertImageInPhases = vi.fn();
+const convertMissingVariants = vi.fn();
 vi.mock('../src/processors/media/convert-image', () => ({
   convertImageInPhases: (...args: unknown[]) => convertImageInPhases(...args),
+  convertMissingVariants: (...args: unknown[]) => convertMissingVariants(...args),
 }));
 
 const { failMediaAsset, processMediaAsset } = await import('../src/processors/media/process-media');
@@ -62,6 +64,8 @@ beforeEach(() => {
     webp: [variant('webp', 640)],
     encodeAvif,
   });
+  // The additive backfill path (GH#530) encodes only the sizes a READY asset lacks.
+  convertMissingVariants.mockReset().mockResolvedValue([variant('avif', 640)]);
 });
 
 describe('failMediaAsset (GH#345)', () => {
@@ -133,7 +137,7 @@ describe('processMediaAsset resumability (GH#345)', () => {
       status: 'READY',
       variants: [{ format: 'webp', width: 640, height: 640, key: 'k', bytes: 1 }],
     });
-    convertImageInPhases.mockRejectedValue(new Error('bad'));
+    convertMissingVariants.mockRejectedValue(new Error('bad'));
     const { orm, storage } = setup(a);
     await processMediaAsset({ orm, storage }, 'a1');
     expect(a.status).toBe('READY');

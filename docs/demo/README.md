@@ -96,7 +96,7 @@ pnpm demo:auth -- --check
 
 ## 1B. Ảnh có giấy phép và giấy tờ mẫu
 
-**Cách làm (và vì sao):** `pnpm demo:media` đi đúng đường của API: bản gốc vào bucket riêng tư `originals/<chủ>/<id>`, dòng `media_asset` `PROCESSING`, rồi chính `processMediaAsset` của worker xóa metadata, sinh AVIF/WebP 320/640/1280 vào bucket công khai, đặt `READY`. Ảnh đầu vào là các ảnh Wikimedia Commons (CC0 / CC BY / CC BY-SA) đã cắt đúng tỉ lệ khung và đã nằm trong `apps/web/public/images/demo`, nên không cần mạng ngoài ngoài Supabase. Ghi công (tác giả, giấy phép, trang nguồn) và mô tả (`alt`) nằm trên chính dòng `media_asset` (`credit`, `alt_text`). Cân nhắc và phương án đã loại: xem mô tả PR GH#26.
+**Cách làm (và vì sao):** `pnpm demo:media` đi đúng đường của API: bản gốc vào bucket riêng tư `originals/<chủ>/<id>`, dòng `media_asset` `PROCESSING`, rồi chính `processMediaAsset` của worker xóa metadata, sinh AVIF/WebP 320/640/960/1280 vào bucket công khai, đặt `READY`. Chạy lại sau khi mốc biến thể đổi (GH#530 thêm 960w) chỉ bổ sung đúng mốc còn thiếu, không ghi lại bản gốc hay biến thể cũ; nếu một ảnh vẫn thiếu mốc sau đó, lệnh báo lỗi và thoát khác 0. Ảnh đầu vào là các ảnh Wikimedia Commons (CC0 / CC BY / CC BY-SA) đã cắt đúng tỉ lệ khung và đã nằm trong `apps/web/public/images/demo`, nên không cần mạng ngoài ngoài Supabase. Ghi công (tác giả, giấy phép, trang nguồn) và mô tả (`alt`) nằm trên chính dòng `media_asset` (`credit`, `alt_text`). Cân nhắc và phương án đã loại: xem mô tả PR GH#26.
 
 | Gắn vào | Cách | Số lượng |
 | --- | --- | --- |

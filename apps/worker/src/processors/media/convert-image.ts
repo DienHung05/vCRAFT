@@ -36,6 +36,12 @@ export interface ConvertOptions {
   heic?: boolean;
 }
 
+/** One size and format of the variant ladder. */
+export interface WantedVariant {
+  format: 'avif' | 'webp';
+  width: number;
+}
+
 const toHex = (value: number) => Math.round(value).toString(16).padStart(2, '0');
 
 /**
@@ -61,26 +67,66 @@ async function decodeHeicPhoto(
   };
 }
 
+async function encodeVariant(
+  oriented: Sharp,
+  target: number,
+  format: 'avif' | 'webp',
+): Promise<ConvertedVariant> {
+  const resized = oriented.clone().resize({ width: target, withoutEnlargement: true });
+  const encoded =
+    format === 'avif'
+      ? resized.clone().avif({ quality: 50, effort: 4 })
+      : resized.clone().webp({ quality: 75 });
+  const out = await encoded.toBuffer({ resolveWithObject: true });
+  return {
+    format,
+    width: out.info.width,
+    height: out.info.height,
+    hash: createHash('sha256').update(out.data).digest('hex').slice(0, 16),
+    bytes: new Uint8Array(out.data),
+  };
+}
+
 async function encodeVariants(
   oriented: Sharp,
   widths: readonly number[],
   format: 'avif' | 'webp',
 ): Promise<ConvertedVariant[]> {
   const variants: ConvertedVariant[] = [];
-  for (const target of widths) {
-    const resized = oriented.clone().resize({ width: target, withoutEnlargement: true });
-    const encoded =
-      format === 'avif'
-        ? resized.clone().avif({ quality: 50, effort: 4 })
-        : resized.clone().webp({ quality: 75 });
-    const out = await encoded.toBuffer({ resolveWithObject: true });
-    variants.push({
-      format,
-      width: out.info.width,
-      height: out.info.height,
-      hash: createHash('sha256').update(out.data).digest('hex').slice(0, 16),
-      bytes: new Uint8Array(out.data),
-    });
+  for (const target of widths) variants.push(await encodeVariant(oriented, target, format));
+  return variants;
+}
+
+/** Oriented pixels of an image and their intrinsic size; HEIC goes through the JS decoder. */
+async function decodeOriented(
+  original: Uint8Array,
+  options: ConvertOptions,
+): Promise<{ oriented: Sharp; width: number; height: number }> {
+  if (options.heic) {
+    const decoded = await decodeHeicPhoto(original);
+    return { oriented: decoded.image, width: decoded.width, height: decoded.height };
+  }
+  const base = sharp(original, { limitInputPixels: MEDIA_MAX_PIXELS, failOn: 'error' }).rotate();
+  const { data, info } = await base.clone().toBuffer({ resolveWithObject: true });
+  return { oriented: sharp(data), width: info.width, height: info.height };
+}
+
+/**
+ * Encodes only the given sizes and formats (GH#530). Used to fill a size that the variant ladder
+ * gained after an asset was already `READY`: the existing variants are never rewritten, so their
+ * immutable content-hash keys and every page already pointing at them stay valid. Sizes wider than
+ * the original are skipped, exactly like the normal pass (no upscaling).
+ */
+export async function convertMissingVariants(
+  original: Uint8Array,
+  wanted: readonly WantedVariant[],
+  options: ConvertOptions = {},
+): Promise<ConvertedVariant[]> {
+  if (wanted.length === 0) return [];
+  const { oriented, width } = await decodeOriented(original, options);
+  const variants: ConvertedVariant[] = [];
+  for (const want of wanted) {
+    if (want.width <= width) variants.push(await encodeVariant(oriented, want.width, want.format));
   }
   return variants;
 }
@@ -99,17 +145,7 @@ export async function convertImageInPhases(
   original: Uint8Array,
   options: ConvertOptions = {},
 ): Promise<ConvertedImageInPhases> {
-  let oriented: Sharp;
-  let width: number;
-  let height: number;
-  if (options.heic) {
-    ({ image: oriented, width, height } = await decodeHeicPhoto(original));
-  } else {
-    const base = sharp(original, { limitInputPixels: MEDIA_MAX_PIXELS, failOn: 'error' }).rotate();
-    const { data, info } = await base.clone().toBuffer({ resolveWithObject: true });
-    oriented = sharp(data);
-    ({ width, height } = info);
-  }
+  const { oriented, width, height } = await decodeOriented(original, options);
   const widths = planVariantWidths(width);
   const webp = await encodeVariants(oriented, widths, 'webp');
 

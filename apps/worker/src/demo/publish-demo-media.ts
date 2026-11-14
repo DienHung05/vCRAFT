@@ -15,7 +15,8 @@ import {
   RETIRED_DEMO_PHOTO_IDS,
 } from '@vcraft/database';
 import type { ObjectStorage } from '@vcraft/storage';
-import { processMediaAsset } from '../processors/media/process-media';
+import type { WantedVariant } from '../processors/media/convert-image';
+import { missingVariants, processMediaAsset } from '../processors/media/process-media';
 
 export interface PublishDemoMediaOptions {
   orm: MikroORM;
@@ -28,6 +29,12 @@ export interface PublishDemoMediaOptions {
   force?: boolean;
   /** Only count what would be done: nothing is uploaded or written. */
   dryRun?: boolean;
+  /**
+   * Only add the variants an already seeded photo lacks (GH#530), upload nothing: a photo missing from
+   * the bucket or the database is skipped instead of uploaded. For landing a new ladder size on a shared
+   * deployment without also publishing photos the manifest gained later.
+   */
+  variantsOnly?: boolean;
   log?: (message: string) => void;
 }
 
@@ -36,6 +43,11 @@ export interface PublishDemoMediaSummary {
   photosSkipped: number;
   /** Photos that were up to date but whose description or credit changed in the manifest. */
   photosMetadataUpdated: number;
+  /**
+   * Photos already `READY` with the same bytes that gained missing variants only (GH#530: a 960w size
+   * added to the ladder after they were seeded). The original is not re-uploaded, nothing is rewritten.
+   */
+  photosBackfilled: number;
   documentsUploaded: number;
   documentsSkipped: number;
 }
@@ -50,6 +62,10 @@ const sameCredit = (a: MediaCredit | null | undefined, b: MediaCredit): boolean 
   a.sourceUrl === b.sourceUrl;
 
 const sha256Of = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
+
+/** `960.webp, 960.avif` — what an additive backfill adds, for the run log. */
+const describeWanted = (wanted: readonly WantedVariant[]) =>
+  wanted.map((w) => `${w.width}.${w.format}`).join(', ');
 
 /**
  * Tải ảnh minh hoạ và giấy tờ mẫu lên object storage qua ĐÚNG đường của API: bản gốc vào bucket riêng tư
@@ -69,6 +85,7 @@ export async function publishDemoMedia(
     photosUploaded: 0,
     photosSkipped: 0,
     photosMetadataUpdated: 0,
+    photosBackfilled: 0,
     documentsUploaded: 0,
     documentsSkipped: 0,
   };
@@ -101,6 +118,35 @@ export async function publishDemoMedia(
           log(`ảnh ${photo.id}: cập nhật mô tả/ghi công`);
         }
       }
+      // Additive backfill (GH#530): a size the ladder gained after this photo was seeded. Keeps the
+      // original and every existing variant as they are, so a live page never loses its image.
+      const missing = missingVariants(existing);
+      if (missing.length === 0) continue;
+      if (options.dryRun) {
+        summary.photosBackfilled++;
+        log(`ảnh ${photo.id}: sẽ bổ sung ${describeWanted(missing)} (dry run)`);
+        continue;
+      }
+      await processMediaAsset({ orm: options.orm, storage: options.storage }, id);
+      const after = await options.orm.em.fork().findOne(MediaAsset, id);
+      if (after?.status !== 'READY') {
+        throw new Error(
+          `Ảnh ${photo.id} không bổ sung được: ${after?.failureReason ?? after?.status}`,
+        );
+      }
+      // The asset stays READY even when the backfill could not decode the original, so "READY" alone
+      // is not proof: a size still missing here must fail the run, never read as a completed backfill.
+      const remaining = missingVariants(after);
+      if (remaining.length > 0) {
+        throw new Error(`Ảnh ${photo.id} vẫn thiếu ${describeWanted(remaining)} sau khi bổ sung`);
+      }
+      summary.photosBackfilled++;
+      log(`ảnh ${photo.id}: bổ sung ${describeWanted(missing)}`);
+      continue;
+    }
+    // A photo that is not seeded yet is someone else's job in this mode: only fill what already exists.
+    if (options.variantsOnly) {
+      log(`ảnh ${photo.id}: bỏ qua (chưa có trong kho, chế độ chỉ bổ sung biến thể)`);
       continue;
     }
     if (options.dryRun) {
