@@ -724,6 +724,14 @@ li:last-child > .journey-dot .journey-dot-label {
 }
 
 /*
+ * GH#527: on devices that can run the 3D vase, an inline script sets data-hero-3d on <html> before first
+ * paint and the SVG vase stays hidden, so only the 3D story shows. HeroVase removes the flag if 3D fails.
+ */
+html[data-hero-3d] [data-testid="turning-vase"] {
+  visibility: hidden;
+}
+
+/*
  * Turning vase (GH#316, experience/hero-vase/turning-vase.tsx): the server-rendered hero vase. Glaze
  * motifs slide across the body inside the silhouette clip, one motif period per loop, so the loop is
  * seamless; a glint sweeps over the same body. Transform only, so it runs on the compositor and starts
