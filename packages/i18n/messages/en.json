@@ -314,7 +314,7 @@
     "browseProducts": "Browse products",
     "viewHousehold": "Meet the household",
     "contents": "Inside this craft book",
-    "checkJournal": "Journal integrity",
+    "checkJournal": "The story",
     "readJournal": "Production journal",
     "notFoundTitle": "This code isn't in vCraft",
     "notFoundText": "We couldn't find code {code}. This piece may not come from a craft village on vCraft, or the label may be counterfeit. Please check the code under the product again.",
@@ -323,28 +323,28 @@
     "integrity": {
       "householdVerified": "Household verified by the management board",
       "match": "This code matches a product from {household}.",
-      "checkingTitle": "Checking the log…",
-      "checkingText": "Your browser is recomputing the SHA-256 hash of every entry itself.",
-      "okTitle": "Log intact",
-      "okText": "Your browser recomputed {count, plural, one {# SHA-256 hash} other {# SHA-256 hashes}} and all of them match, chained from the first entry to the last.",
-      "okBadge": "Log chain intact · {count, plural, one {# entry} other {# entries}}",
-      "brokenTitle": "This log shows signs of tampering",
+      "checkingTitle": "Checking the journal…",
+      "checkingText": "Your browser is cross-checking every entry itself.",
+      "okTitle": "This journal hasn't been changed since it was written",
+      "okText": "Your browser cross-checked {count, plural, one {# entry} other {# entries}} and all of them match what was written.",
+      "brokenTitle": "This journal shows signs of tampering",
       "brokenAt": "Entry {n} ({stage}) failed the check.",
       "brokenLink": "Go to entry {n}",
       "reason": {
-        "hash": "This entry's content does not match its recorded hash, so it was changed after it was written.",
-        "prev": "This entry does not link to the hash of the entry right before it.",
+        "hash": "This entry differs from what was first written, so it was changed afterwards.",
+        "prev": "This entry does not link correctly to the entry right before it.",
         "seq": "The entry numbers are broken or out of order."
       },
       "unavailableTitle": "Can't check on this browser",
-      "unavailableText": "Verification needs Web Crypto, which is only available when the page is opened over HTTPS. The log below is not confirmed intact.",
-      "emptyTitle": "No log to check",
+      "unavailableText": "Checking needs the page to be opened over HTTPS. The journal below is not confirmed intact.",
+      "emptyTitle": "No journal to check",
       "emptyText": "This product has no production entries yet.",
-      "sentence": "Journal integrity: this journal has not been silently changed, deleted or reordered since it was recorded. It does not prove the stages happened as written, nor who physically made the object."
+      "howTitle": "How is this checked?",
+      "sentence": "Each entry is sealed the moment it is written and tied to the entry before it. Your browser recomputes those seals itself, so anything edited, deleted or reordered shows up. This does not prove the stages happened as written, nor who physically made the piece."
     },
     "scans": "{count, plural, one {# scan} other {# scans}}",
     "timelineTitle": "A journey through fire",
-    "timelineLead": "Each step was recorded by the maker themselves, with a hash and photos. A photo that names a source was taken at the craft village, not of this piece.",
+    "timelineLead": "Each step was recorded by the maker themselves, with photos. A photo that names a source was taken at the craft village, not of this piece.",
     "journeyIllustration": "A drawing of this kind of pottery, not a photograph of the piece.",
     "journalBy": "Journal published by {household}",
     "stageNotRecorded": "{stage}, not recorded",
@@ -363,14 +363,93 @@
     "correctedBy": "Corrected by entry {n}",
     "skipped": "Skipped earlier stages: <note>{reason}</note>",
     "inProgress": "In progress · not yet recorded: {stages}",
-    "hashHint": "SHA-256 hash of this entry, chained to the one before it.",
     "recordedBy": "Recorded by {household}",
     "storyTrack": "Stages of this piece",
     "pieceNote": "A drawing of the stages, not a photo of this piece.",
     "withdrawnTitle": "This piece is no longer on display",
     "withdrawnText": "The household withdrew it from the exhibition, so its journal is no longer public.",
     "lockedTitle": "We cannot verify this piece",
-    "lockedText": "The household behind code {code} is locked by the village board. Please be careful: vCraft does not currently vouch for this piece."
+    "lockedText": "The household behind code {code} is locked by the village board. Please be careful: vCraft does not currently vouch for this piece.",
+    "story": {
+      "kicker": "The story of this piece",
+      "chapterOf": "Chapter {n}/{total} · {stage}",
+      "chapterDots": "Chapters of the story",
+      "goToChapter": "Go to chapter {n}: {stage}",
+      "quoteBy": "{household}'s journal",
+      "gap": {
+        "same": "The same day",
+        "next": "The next day",
+        "days": "{n} days later",
+        "weeksExact": "{n, plural, one {# week} other {# weeks}} later",
+        "weeksNear": "Nearly {n, plural, one {# week} other {# weeks}} later",
+        "months": "About {n, plural, one {# month} other {# months}} later"
+      },
+      "title": {
+        "clay": "The first lump of clay",
+        "throw": "A shape appears",
+        "dry": "Waiting in the shade",
+        "paint": "Brushwork",
+        "glaze": "A coat of glaze",
+        "fire": "Into the fire",
+        "finish": "Out of the kiln"
+      },
+      "clay": {
+        "0": "Every piece of pottery begins as a heavy, wet lump of clay. The maker at {household} kneads it over and over until it is smooth and supple, with not a single air bubble left.",
+        "1": "At this point the clay has no shape yet, only an earthy smell and a warm weight in the palm. At the {household} workshop it is worked until it settles, ready for the wheel.",
+        "2": "It all starts quietly: a handful of clay, two hands and a lot of patience. The clay is kneaded well so it won't crack or blister in the fire later."
+      },
+      "throw": {
+        "0": "The clay goes onto the wheel and the maker's hands begin to pull. The walls grow thinner and taller, and the shape of the piece appears bit by bit.",
+        "1": "The wheel turns steadily and the wet clay slips under the fingers. One beat out of rhythm and the form collapses, so the maker keeps their hands steady and their breathing slow.",
+        "2": "From a round lump of clay, an empty space slowly opens. This is where the piece first takes shape, still soft and wet, but already itself."
+      },
+      "dry": {
+        "0": "Once the shape is pulled, the clay needs rest. The piece sits in the shade so the water leaves slowly and evenly, from the inside out.",
+        "1": "There is nothing to do but wait. The bare clay dries in the cool shade, growing lighter and paler until it is as soft as chalk.",
+        "2": "Hurry is the enemy at this stage. The piece sits still in the shade, drying evenly so it won't crack before it meets the fire."
+      },
+      "paint": {
+        "0": "With the clay dry, the brush goes to work. Underglaze goes onto the bare surface stroke by stroke, unhurried and sure.",
+        "1": "The glaze looks dull as it goes on, nothing like the colour it will become. The maker paints on faith in the fire, because a stroke, once down, can't be taken back.",
+        "2": "One brush, one cup of glaze and a great deal of focus. Every stroke on the piece is laid down by hand, one at a time."
+      },
+      "glaze": {
+        "0": "The glaze settles over the body as thin as a mist. Too thin and it goes dull, too thick and it runs; the maker has to know when to stop.",
+        "1": "The piece is dipped in glaze and lifted out, its surface coated evenly in a pale, chalky layer. The true colour of the glaze only appears after the fire.",
+        "2": "Glaze is the last coat before the kiln. The maker at {household} applies it with care, because this coat decides how the piece looks once it comes out of the fire."
+      },
+      "fire": {
+        "0": "The kiln door closes. In the glowing dark, clay turns to ceramic and the glaze melts into a thin glassy layer. All that is left is waiting.",
+        "1": "Fire is the one stage nobody fully controls. The maker watches the kiln, and the rest is left to heat, glaze and a little luck.",
+        "2": "The piece enters the kiln plain and unfinished. The fire will decide how it comes out; no one knows until the door opens."
+      },
+      "finish": {
+        "0": "The kiln opens and the heat still rolls out. The colour of the glaze shows at last, something that could only be imagined all along. {product} is done.",
+        "1": "Opening the kiln is the most tense moment. A light tap on the wall, a clear ring in answer, and the maker knows {product} has come through.",
+        "2": "After all those stages, {product} finally rests in the maker's hands. Every stroke and every layer of glaze has been fixed by the fire."
+      },
+      "skip": {
+        "0": "This entry moves on past an earlier stage, and the reason is written in the journal.",
+        "1": "A stage was not carried out, and the {household} workshop wrote that down rather than hiding it."
+      },
+      "correction": {
+        "0": "This entry corrects what was written in entry {n}.",
+        "1": "The {household} workshop came back to correct what was written in entry {n}."
+      },
+      "prologue": {
+        "0": "{product} didn't simply appear. It passed through earth, water, fire and the hands of the maker at {household}, and every step was written down. This is that story.",
+        "1": "Before it was in your hands, {product} was only a wet lump of clay. Retrace the journey {household} recorded in the journal.",
+        "2": "Every piece of pottery has a story; it is just rarely told. For {product}, the story is in the journal lines {household} recorded after each stage."
+      },
+      "epilogue": {
+        "0": "{count, plural, one {That was # chapter} other {That was # chapters}}. {product} is out of the kiln, ready to find its place in a home. The rest is up to you.",
+        "1": "And so {product} has made the whole journey, from wet clay to the piece you are looking at. Every quoted line above is the maker's own."
+      },
+      "epilogueOpen": {
+        "0": "The story of {product} is still being written. The maker at {household} will add the remaining stages as they happen.",
+        "1": "{product} hasn't come out of the kiln yet, so the story is unfinished. Come back later for the next chapter."
+      }
+    }
   },
   "orderProgress": {
     "label": "Allocation progress",

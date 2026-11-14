@@ -6,40 +6,25 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import type { LogStage } from '@/lib/demo/data';
 
-type State =
+export type ChainState =
   | { status: 'checking' }
   | { status: 'empty' }
   | { status: 'unavailable' }
   | { status: 'ok'; count: number }
   | { status: 'broken'; index: number; reason: ChainFailureReason };
 
-export interface ChainVerifierProps {
-  productId: string;
-  entries: readonly (ChainEntry & { stage: LogStage })[];
-  /** Hộ làm ra sản phẩm, dùng cho câu "mã này khớp với…". */
-  household: string;
-  /** The management board approved the household (FR-TRC-04); shown as a badge beside the seal. */
-  householdVerified?: boolean;
-  /** `SubtleCrypto` thay thế, chỉ để kiểm thử. Mặc định là Web Crypto của trình duyệt. */
-  subtle?: SubtleCrypto;
-}
+export type VerifiableEntry = ChainEntry & { stage: LogStage };
 
 /**
- * Tự kiểm chứng chuỗi băm nhật ký ngay trên trình duyệt (FR-TRC-05, BR-01) và hiện đúng kết quả:
- * đang kiểm, toàn vẹn, hoặc có mốc bị sửa. Ấn son (BRAND §6.3 #2) chỉ đóng khi chuỗi thật sự khớp.
- * Dữ liệu hiện là dữ liệu minh họa nên luôn kèm nhãn; và toàn vẹn chuỗi không chứng minh điều ghi
- * trong nhật ký là đúng ngoài đời.
+ * Re-checks the journal's chain in the browser itself (FR-TRC-05, BR-01). The result is what the page shows:
+ * checking, intact, or an entry that was changed. `subtle` replaces Web Crypto for tests only.
  */
-export function ChainVerifier({
-  productId,
-  entries,
-  household,
-  householdVerified = false,
-  subtle,
-}: ChainVerifierProps) {
-  const t = useTranslations('trace.integrity');
-  const stages = useTranslations('stages');
-  const [state, setState] = useState<State>(
+export function useChainVerification(
+  productId: string,
+  entries: readonly VerifiableEntry[],
+  subtle?: SubtleCrypto,
+): ChainState {
+  const [state, setState] = useState<ChainState>(
     entries.length === 0 ? { status: 'empty' } : { status: 'checking' },
   );
 
@@ -71,84 +56,118 @@ export function ChainVerifier({
     };
   }, [productId, entries, subtle]);
 
-  const broken = state.status === 'broken';
-  const title =
+  return state;
+}
+
+/**
+ * The warning shown at the top of the story card when an entry fails the check: it names the entry and links
+ * to it. The red seal colour is only used here; an intact journal never gets this block.
+ */
+export function ChainBrokenAlert({
+  state,
+  entries,
+}: {
+  state: Extract<ChainState, { status: 'broken' }>;
+  entries: readonly VerifiableEntry[];
+}) {
+  const t = useTranslations('trace.integrity');
+  const stages = useTranslations('stages');
+  return (
+    <div
+      role="alert"
+      data-chain-alert=""
+      className="relative mb-5 overflow-hidden rounded-card border border-seal/60 bg-seal/8 p-4"
+    >
+      <Crackle className="text-seal" opacity={0.3} />
+      <div className="relative flex items-start gap-3">
+        <span
+          aria-hidden="true"
+          className="grid size-10 shrink-0 place-items-center rounded-card border-2 border-dashed border-seal text-h3 text-seal"
+        >
+          !
+        </span>
+        <div>
+          <h3 className="text-h3 text-seal">{t('brokenTitle')}</h3>
+          <p className="mt-1 text-small text-ink/85">{t(`reason.${state.reason}`)}</p>
+          <p className="mt-1 text-small font-medium text-seal">
+            {t('brokenAt', {
+              n: state.index + 1,
+              stage: stages(`${entries[state.index]?.stage ?? 'clay'}.name` as const),
+            })}{' '}
+            <a href={`#log-${state.index + 1}`} className="underline underline-offset-2">
+              {t('brokenLink', { n: state.index + 1 })}
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The compact trust line at the foot of the story card: the seal and one plain sentence, the household badge,
+ * and a "how is this checked" disclosure that holds the honest explanation. The seal only closes when the
+ * browser really confirmed the journal (BRAND §6.3 #2). A broken journal is not shown here; see
+ * `ChainBrokenAlert`.
+ */
+export function JourneyTrust({
+  state,
+  household,
+  householdVerified = false,
+}: {
+  state: ChainState;
+  household: string;
+  householdVerified?: boolean | undefined;
+}) {
+  const t = useTranslations('trace.integrity');
+  if (state.status === 'broken') return null;
+  const line =
     state.status === 'ok'
       ? t('okTitle')
-      : state.status === 'broken'
-        ? t('brokenTitle')
-        : state.status === 'unavailable'
-          ? t('unavailableTitle')
-          : state.status === 'empty'
-            ? t('emptyTitle')
-            : t('checkingTitle');
-
+      : state.status === 'unavailable'
+        ? t('unavailableTitle')
+        : state.status === 'empty'
+          ? t('emptyTitle')
+          : t('checkingTitle');
   return (
-    <section
-      aria-labelledby="verify-title"
-      data-state={state.status}
-      className={cn(
-        'relative mx-5 mt-8 overflow-hidden rounded-card bg-surface p-6 shadow-warm',
-        broken && 'border border-seal/60',
-        state.status === 'ok' && stampShakeClass(),
-      )}
-    >
-      <Crackle className={broken ? 'text-seal' : 'text-glaze'} opacity={broken ? 0.3 : 0.18} />
-      <div className="relative flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
+    <div data-trust={state.status} className="mt-5 border-t border-ink/10 pt-4">
+      <div className="flex items-center gap-3">
         {state.status === 'ok' ? (
-          <SealStamp size={64} title={t('okTitle')} />
+          <span className={cn('shrink-0', stampShakeClass())}>
+            <SealStamp size={36} title={t('okTitle')} />
+          </span>
         ) : (
           <span
             aria-hidden="true"
             className={cn(
-              'grid size-16 shrink-0 place-items-center rounded-card border-2 border-dashed text-h3',
-              broken ? 'border-seal text-seal' : 'border-ash/50 text-ash',
+              'grid size-9 shrink-0 place-items-center rounded-full border-2 border-dashed border-ash/50 text-small text-ash',
               state.status === 'checking' && 'animate-pulse motion-reduce:animate-none',
             )}
           >
-            {broken ? '!' : '?'}
+            ?
           </span>
         )}
-        <div>
-          <div role="status" aria-live="polite">
-            <h2 id="verify-title" className={cn('text-h3', broken ? 'text-seal' : 'text-ink')}>
-              {title}
-            </h2>
-            <p className="mt-1 text-small text-ink/85">
-              {state.status === 'ok'
-                ? t('okText', { count: state.count })
-                : state.status === 'checking'
-                  ? t('checkingText')
-                  : state.status === 'unavailable'
-                    ? t('unavailableText')
-                    : state.status === 'empty'
-                      ? t('emptyText')
-                      : t(`reason.${state.reason}`)}
-            </p>
-            {state.status === 'broken' ? (
-              <p className="mt-1 text-small font-medium text-seal">
-                {t('brokenAt', {
-                  n: state.index + 1,
-                  stage: stages(`${entries[state.index]?.stage ?? 'clay'}.name` as const),
-                })}{' '}
-                <a href={`#log-${state.index + 1}`} className="underline underline-offset-2">
-                  {t('brokenLink', { n: state.index + 1 })}
-                </a>
-              </p>
-            ) : null}
-          </div>
-          {/* Câu cố định cạnh ấn (vCRAFT-9hg.4): nói rõ "Toàn vẹn nhật ký" bảo đảm gì và không bảo đảm gì. */}
-          <p className="mt-3 text-small text-ink/85">{t('sentence')}</p>
+        <p role="status" aria-live="polite" className="text-small font-medium text-ink">
+          {line}
+        </p>
+      </div>
+      {householdVerified ? (
+        <p className="mt-3">
+          <Badge tone="celadon">✓ {t('householdVerified')}</Badge>
+        </p>
+      ) : null}
+      <details className="mt-3 text-small text-ink/85">
+        <summary className="cursor-pointer text-clay underline-offset-4 hover:underline">
+          {t('howTitle')}
+        </summary>
+        <div className="mt-2 space-y-2">
+          {state.status === 'ok' ? <p>{t('okText', { count: state.count })}</p> : null}
+          {state.status === 'unavailable' ? <p>{t('unavailableText')}</p> : null}
+          {state.status === 'empty' ? <p>{t('emptyText')}</p> : null}
+          <p>{t('sentence')}</p>
+          <p>{t('match', { household })}</p>
         </div>
-      </div>
-
-      <div className="relative mt-5 flex flex-wrap gap-2">
-        {householdVerified ? <Badge tone="celadon">✓ {t('householdVerified')}</Badge> : null}
-        {state.status === 'ok' ? (
-          <Badge tone="celadon">✓ {t('okBadge', { count: state.count })}</Badge>
-        ) : null}
-      </div>
-      <p className="relative mt-4 text-small text-ink/85">{t('match', { household })}</p>
-    </section>
+      </details>
+    </div>
   );
 }

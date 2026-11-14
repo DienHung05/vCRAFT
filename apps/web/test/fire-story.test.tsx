@@ -6,6 +6,8 @@ import type { LogEntryView } from '@/features/catalog/view-models';
 import { focusedStep, heatProgress, recordedAt } from '@/features/traceability/fire-story-math';
 import { trackFireStory } from '@/features/traceability/fire-story-scroll';
 import { FireTimeline } from '@/features/traceability/fire-timeline';
+import { JourneyStoryCard } from '@/features/traceability/journey-story-card';
+import { JourneyStoryProvider } from '@/features/traceability/journey-story-context';
 import { PIECE_KINDS, pieceKindOf, pieceKindOfFigure } from '@/features/traceability/piece-shapes';
 import { formats } from '@/i18n/formats';
 import { renderVi } from './render';
@@ -241,5 +243,101 @@ describe('FireTimeline of a finished journal that has no entry for some stages (
     // The chip of a later stage still points at the right step now that the track skips Nhào đất.
     fireEvent.click(within(track).getByRole('button', { name: 'Nung lò' }));
     expect(stepsOf(container)[3]?.getAttribute('aria-current')).toBe('step');
+  });
+});
+
+describe('the story card follows the timeline through the shared context', () => {
+  const chapters = journal.map((e) => ({
+    seq: e.seq,
+    stage: e.stage,
+    title: `Tiêu đề ${e.stage}`,
+    date: `ngày ${e.seq + 1}`,
+    body: `Lời kể ${e.stage}`,
+    note: e.note,
+  }));
+
+  async function renderSpread() {
+    Object.defineProperty(window, 'innerWidth', {
+      value: 1440,
+      configurable: true,
+      writable: true,
+    });
+    const timeline = await FireTimeline({
+      entries: journal,
+      household: 'Gốm Minh Hải',
+      pieceKind: 'vase',
+      story: {
+        epilogue: 'Kết',
+        chapters: Object.fromEntries(chapters.map((c) => [c.seq, { body: c.body }])),
+      },
+    });
+    return renderVi(
+      <JourneyStoryProvider>
+        <JourneyStoryCard
+          productId="p1"
+          entries={[]}
+          household="Gốm Minh Hải"
+          locale="vi"
+          prologue="Mở đầu"
+          epilogue="Kết"
+          chapters={chapters}
+        />
+        {timeline}
+      </JourneyStoryProvider>,
+    );
+  }
+
+  it('shows the chapter of the step in focus and jumps to a step from its dots', async () => {
+    await renderSpread();
+    await act(async () => {});
+    const card = document.querySelector('#story') as HTMLElement;
+    expect(within(card).getByText('Mở đầu')).toBeTruthy();
+    expect(within(card).getByText('Lời kể clay')).toBeTruthy();
+    expect(within(card).getByText(/Chương 1\/5 · Nhào đất/)).toBeTruthy();
+
+    const call = vi.mocked(trackFireStory).mock.calls[0]?.[0];
+    act(() => call?.onFocus(3));
+    expect(within(card).getByText('Lời kể paint')).toBeTruthy();
+    expect(within(card).queryByText('Mở đầu')).toBeNull();
+    expect(within(card).getByText(/Chương 4\/5 · Vẽ lam/)).toBeTruthy();
+
+    fireEvent.click(within(card).getByRole('button', { name: /chương 5: Nung lò/ }));
+    expect(within(card).getByText('Lời kể fire')).toBeTruthy();
+    expect(within(card).getByText('Kết')).toBeTruthy();
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+    // The inline copies stay in the DOM for the static layout; CSS hides them in story mode.
+    expect(document.querySelectorAll('[data-step-story]')).toHaveLength(5);
+  });
+
+  it('shows only the prologue in the card on a narrow screen and the chapters in the steps', async () => {
+    Object.defineProperty(window, 'innerWidth', { value: 390, configurable: true, writable: true });
+    const timeline = await FireTimeline({
+      entries: journal,
+      story: { epilogue: 'Kết', chapters: { 0: { body: 'Lời kể clay' } } },
+    });
+    renderVi(
+      <JourneyStoryProvider>
+        <JourneyStoryCard
+          productId="p1"
+          entries={[]}
+          household="Gốm Minh Hải"
+          locale="vi"
+          prologue="Mở đầu"
+          epilogue="Kết"
+          chapters={chapters}
+        />
+        {timeline}
+      </JourneyStoryProvider>,
+    );
+    await act(async () => {});
+    const card = document.querySelector('#story') as HTMLElement;
+    expect(within(card).getByText('Mở đầu')).toBeTruthy();
+    expect(within(card).queryByText('Lời kể clay')).toBeNull();
+    expect(document.querySelector('[data-step-story]')?.textContent).toBe('Lời kể clay');
+    expect(document.querySelector('[data-step-quote] blockquote')?.textContent).toBe(
+      '“Ghi chú clay”',
+    );
+    expect(document.querySelector('[data-story-epilogue]')?.textContent).toBe('Kết');
+    expect(document.body.textContent).not.toMatch(/# [0-9a-f]{10}/);
   });
 });
