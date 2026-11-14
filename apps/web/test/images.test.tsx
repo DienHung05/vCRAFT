@@ -124,6 +124,23 @@ describe('<ImageSlot> priority image from Storage', () => {
     expect(lazy.querySelector('img')?.getAttribute('src')).toBe(`${storage}/640.webp`);
   });
 
+  it('maps an in-viewport image eagerly without raising its fetch priority', () => {
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://ref.supabase.co');
+    const { container } = renderVi(
+      <ImageSlot alt="Alt" tint="#888" inViewport {...slotPhoto(view)} />,
+    );
+    const img = container.querySelector('img');
+    expect(img?.getAttribute('src')).toBe('/media-cache/media/v/640.webp');
+    expect(img?.getAttribute('loading')).toBe('eager');
+    expect(img?.getAttribute('fetchpriority')).toBeNull();
+    expect(container.querySelector('source[type="image/avif"]')?.getAttribute('srcset')).toBe(
+      '/media-cache/media/v/640.avif 640w',
+    );
+    expect(container.querySelector('source[type="image/webp"]')?.getAttribute('srcset')).toBe(
+      '/media-cache/media/v/640.webp 640w',
+    );
+  });
+
   it('keeps the Storage URL when the project URL is not configured', () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', '');
     const { container } = renderVi(
