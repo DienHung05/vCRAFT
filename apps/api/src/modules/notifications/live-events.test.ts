@@ -104,3 +104,139 @@ describe('sleep abort listener', () => {
     await expect(pending).resolves.toBeUndefined();
   });
 });
+
+describe('liveStream wake-up (GH#537)', () => {
+  /** A fake `wake` source: records subscriptions and lets the test fire them. */
+  const wakeSource = () => {
+    const listeners = new Set<() => void>();
+    return {
+      listeners,
+      wake: (listener: () => void) => {
+        listeners.add(listener);
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+      fire: () => {
+        for (const listener of [...listeners]) listener();
+      },
+    };
+  };
+  const timing = { check: 60_000, heartbeat: 120_000, max: 120_000 };
+  const idle = async () => ({ unread: 0, latest: null as string | null });
+
+  it('checks right after a wake instead of waiting out a long interval, and unsubscribes at the end', async () => {
+    const source = wakeSource();
+    const pulses = [
+      { unread: 0, latest: null as string | null },
+      { unread: 1, latest: 'n1' as string | null },
+    ];
+    let i = 0;
+    const controller = new AbortController();
+    const out: string[] = [];
+    const stream = liveStream(
+      async () => pulses[Math.min(i++, pulses.length - 1)] as (typeof pulses)[number],
+      controller.signal,
+      timing,
+      undefined,
+      source.wake,
+    );
+    const started = Date.now();
+    const reader = (async () => {
+      for await (const chunk of stream) {
+        out.push(chunk);
+        if (chunk.includes('"activity"')) controller.abort();
+      }
+    })();
+    await vi.waitFor(() => expect(source.listeners.size).toBe(1));
+    source.fire();
+    await reader;
+    expect(Date.now() - started).toBeLessThan(2_000);
+    expect(events(out)).toEqual([
+      { type: 'ready', retryMs: 2000 },
+      { type: 'notifications', unreadCount: 0 },
+      { type: 'notifications', unreadCount: 1 },
+      { type: 'activity', at: 'n1' },
+    ]);
+    expect(source.listeners.size).toBe(0);
+  });
+
+  it('answers a burst of wakes with a single check', async () => {
+    const source = wakeSource();
+    let pulses = 0;
+    const controller = new AbortController();
+    const stream = liveStream(
+      async () => ({ unread: pulses++, latest: null }),
+      controller.signal,
+      timing,
+      undefined,
+      source.wake,
+    );
+    const out: string[] = [];
+    const reader = (async () => {
+      for await (const chunk of stream) {
+        out.push(chunk);
+        if (events(out).length === 3) controller.abort();
+      }
+    })();
+    await vi.waitFor(() => expect(source.listeners.size).toBe(1));
+    source.fire();
+    source.fire();
+    source.fire();
+    await reader;
+    // One pulse when the stream opened and one for the whole burst.
+    expect(pulses).toBe(2);
+  });
+
+  it('remembers a wake that lands while a check is running', async () => {
+    const source = wakeSource();
+    const controller = new AbortController();
+    let calls = 0;
+    const stream = liveStream(
+      async () => {
+        calls++;
+        // The notice commits while the second check is querying.
+        if (calls === 2) source.fire();
+        return { unread: calls, latest: null };
+      },
+      controller.signal,
+      timing,
+      undefined,
+      source.wake,
+    );
+    const out: string[] = [];
+    const reader = (async () => {
+      for await (const chunk of stream) {
+        out.push(chunk);
+        if (events(out).filter((e) => e.type === 'notifications').length === 3) controller.abort();
+      }
+    })();
+    await vi.waitFor(() => expect(source.listeners.size).toBe(1));
+    source.fire();
+    await reader;
+    expect(calls).toBe(3);
+  });
+
+  it('unsubscribes when the client goes away mid-wait', async () => {
+    const source = wakeSource();
+    const controller = new AbortController();
+    const stream = liveStream(idle, controller.signal, timing, undefined, source.wake);
+    const reader = (async () => {
+      for await (const _ of stream);
+    })();
+    await vi.waitFor(() => expect(source.listeners.size).toBe(1));
+    controller.abort();
+    await reader;
+    expect(source.listeners.size).toBe(0);
+  });
+
+  it('unsubscribes when the consumer stops reading', async () => {
+    const source = wakeSource();
+    const stream = liveStream(idle, new AbortController().signal, timing, undefined, source.wake);
+    await stream.next();
+    await stream.next();
+    expect(source.listeners.size).toBe(1);
+    await stream.return(undefined);
+    expect(source.listeners.size).toBe(0);
+  });
+});
