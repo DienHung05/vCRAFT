@@ -7,6 +7,10 @@ import { FavouriteButton } from '@/features/favourites/favourite-button';
 import { Link } from '@/i18n/navigation';
 import { type ProductCardView, slotPhoto } from './view-models';
 
+/** `sizes` of a card picture: the page also uses it for the cover preload, so both must match. */
+export const PRODUCT_CARD_IMAGE_SIZES =
+  '(min-width: 1440px) 312px, (min-width: 768px) calc(25vw - 3rem), calc(50vw - 1.5rem)';
+
 /**
  * Thẻ sản phẩm: ảnh 4:5 (BRAND §5), tên, giá; nhãn "Độc bản" dạng ấn. `heading` là cấp tiêu đề của
  * tên: h3 khi thẻ nằm dưới một h2 của trang, h2 khi ngay dưới h1 (không nhảy cấp). Giá `0` là chưa
@@ -43,7 +47,7 @@ export function ProductCard({
             tint={product.tint}
             ratio="4/5"
             {...slotPhoto(product.image)}
-            sizes="(min-width: 1440px) 312px, (min-width: 768px) calc(25vw - 3rem), calc(50vw - 1.5rem)"
+            sizes={PRODUCT_CARD_IMAGE_SIZES}
             priority={priority}
             className="grid place-items-center motion-safe:transition-transform motion-safe:duration-(--duration-slow) motion-safe:ease-clay motion-safe:group-hover:-translate-y-1"
           >
