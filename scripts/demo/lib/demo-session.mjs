@@ -11,7 +11,7 @@
  *      `POST /factors/{id}/verify` with the code computed from `DEMO_ADMIN_TOTP_SECRET` -> session (aal2)
  *
  * SAFETY: this file must never be reachable from the deployed API or web app. It lives under `scripts/`,
- * `.dependency-cruiser.cjs` forbids `apps/**` and `packages/**` from importing `scripts/`, and
+ * `.config/dependency-cruiser.cjs` forbids `apps/**` and `packages/**` from importing `scripts/`, and
  * `demo-session.test.mjs` fails when any source file under `apps/` or `packages/` mentions it. Only the
  * four allowlisted emails are accepted; anything else is refused BEFORE any request is made. Tokens are
  * never logged and never put in error messages.
