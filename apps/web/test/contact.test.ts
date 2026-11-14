@@ -30,7 +30,7 @@ describe('siteContact', () => {
     vi.stubEnv('NEXT_PUBLIC_CONTACT_FACEBOOK', '');
     expect(siteContact()).toEqual({
       phone: { display: '0963 316 273', href: 'tel:+84963316273' },
-      email: 'lienhe@vcraft-vn.vercel.app',
+      email: 'lienhe@vcraft.click',
       facebook: 'https://www.facebook.com/vcraft.battrang',
     });
   });

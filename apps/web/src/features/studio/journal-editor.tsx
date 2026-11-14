@@ -19,6 +19,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { ImageSlot } from '@/components/image-slot';
+import { PhotoPicker } from '@/components/photo-picker';
 import { EmptyState } from '@/components/states/empty-state';
 import { ErrorState } from '@/components/states/error-state';
 import { TableSkeleton } from '@/components/states/skeletons';
@@ -133,7 +134,11 @@ function EntryForm({
   const needsReason = !corrects && skippedStagesFor(facts, stage).length > 0;
 
   const onPhoto = async (file: File | undefined) => {
-    if (!file) return;
+    if (!file) {
+      setPhoto(null);
+      setExif('none');
+      return;
+    }
     const prepared = await prepareImage(file, new AbortController().signal);
     setPhoto(prepared.file);
     setStatus('idle');
@@ -207,15 +212,13 @@ function EntryForm({
         <h2 className="text-h3">
           {corrects ? t('correctionTitle', { n: corrects.seq + 1 }) : t('addStage')}
         </h2>
-        <label className="flex flex-col gap-1 text-small">
-          {t('photo')}
-          <input
-            type="file"
-            accept="image/*,.heic,.heif"
-            capture="environment"
-            onChange={(event) => void onPhoto(event.target.files?.[0])}
-          />
-        </label>
+        <PhotoPicker
+          label={t('photo')}
+          accept="image/*,.heic,.heif"
+          capture="environment"
+          file={photo}
+          onChange={(file) => void onPhoto(file ?? undefined)}
+        />
         {exif === 'filled' ? (
           <p role="status" className="text-small text-glaze">
             {t('exifFilled')}

@@ -173,6 +173,11 @@ describe('ContributionForm (đề xuất tham gia, GH#10)', () => {
     }
   });
 
+  it('shows no API or session sentence in live mode (GH#535)', () => {
+    renderVi(<ContributionForm {...props()} onSubmit={vi.fn()} />);
+    expect(document.body.textContent).not.toMatch(/\bAPI\b|phiên đăng nhập|máy chủ/i);
+  });
+
   it('callback từ chối thì hiện lỗi và sửa gửi lại được', async () => {
     const onSubmit = vi.fn().mockRejectedValueOnce(new Error('MẠNG LỖI'));
     renderVi(<ContributionForm {...props()} onSubmit={onSubmit} />);

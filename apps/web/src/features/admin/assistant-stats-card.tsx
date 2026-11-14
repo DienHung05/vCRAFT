@@ -10,8 +10,7 @@ const DAYS = 7;
 
 /**
  * The Fox assistant on the admin dashboard (FR-AST-08, GH#82): turns and block rate over the last week,
- * thumbs up/down, first-token latency and the questions it could not answer, so the knowledge base can
- * grow where visitors need it. Loads on its own so the main figures never wait for it.
+ * thumbs up/down and first-token latency. Loads on its own so the main figures never wait for it.
  */
 export function AssistantStatsCard({ client }: { client: AdminClient }) {
   const t = useTranslations('admin.dashboard.assistant');
@@ -71,7 +70,7 @@ export function AssistantStatsCard({ client }: { client: AdminClient }) {
               </dd>
             </div>
           </dl>
-          <dl className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-4 md:grid-cols-3">
             <div>
               <dt className="text-small text-ash">{t('limited')}</dt>
               <dd className="font-display text-h3">{format.number(stats.limited)}</dd>
@@ -84,26 +83,7 @@ export function AssistantStatsCard({ client }: { client: AdminClient }) {
               <dt className="text-small text-ash">{t('failures')}</dt>
               <dd className="font-display text-h3">{format.number(stats.failures)}</dd>
             </div>
-            <div>
-              <dt className="text-small text-ash">{t('unansweredCount')}</dt>
-              <dd className="font-display text-h3">{format.number(stats.unansweredCount)}</dd>
-            </div>
           </dl>
-          <div>
-            <h3 className="mb-2 font-medium">{t('unansweredTitle')}</h3>
-            {stats.unanswered.length === 0 ? (
-              <p className="text-small text-ash">{t('unansweredEmpty')}</p>
-            ) : (
-              <ol className="flex flex-col gap-1 text-small">
-                {stats.unanswered.map((item) => (
-                  <li key={item.question} className="flex justify-between gap-3">
-                    <span className="min-w-0 break-words">{item.question}</span>
-                    <span className="shrink-0 text-ash">{t('times', { count: item.count })}</span>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </div>
         </>
       ) : null}
     </Card>

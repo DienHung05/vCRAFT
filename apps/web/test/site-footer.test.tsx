@@ -54,8 +54,8 @@ describe('SiteFooter', () => {
     expect(href(within(contact).getByRole('link', { name: '0963 316 273' }))).toBe(
       'tel:+84963316273',
     );
-    expect(href(within(contact).getByRole('link', { name: 'lienhe@vcraft-vn.vercel.app' }))).toBe(
-      'mailto:lienhe@vcraft-vn.vercel.app',
+    expect(href(within(contact).getByRole('link', { name: 'lienhe@vcraft.click' }))).toBe(
+      'mailto:lienhe@vcraft.click',
     );
     const facebook = within(contact).getByRole('link', { name: /facebook\.com\/vcraft\.battrang/ });
     expect(href(facebook)).toBe('https://www.facebook.com/vcraft.battrang');

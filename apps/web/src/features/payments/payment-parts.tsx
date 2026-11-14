@@ -212,8 +212,8 @@ export function PaymentCheckout({ payment }: { payment: PaymentDto }) {
 }
 
 /**
- * Demo payment mode (ADR-0025): a QR of the link to our own confirm page, to scan with a phone. Labelled as a
- * rehearsal everywhere; no provider logo or look-alike branding.
+ * Demo payment mode (ADR-0025): a QR of the link to our own confirm page, to scan with a phone.
+ * Uses the normal checkout wording; the QR never contains a real bank or wallet payload.
  */
 function DemoCheckout({ payment, confirmUrl }: { payment: PaymentDto; confirmUrl: string }) {
   const t = useTranslations('payments.demo');
@@ -226,11 +226,6 @@ function DemoCheckout({ payment, confirmUrl }: { payment: PaymentDto; confirmUrl
       <h3 id={`demo-${payment.id}`} className="text-h4">
         {wallet ? t('titleWallet', { method: short(payment.method) }) : t('title')}
       </h3>
-      <p>
-        <Badge tone="outline" data-testid="demo-notice">
-          {t('notice')}
-        </Badge>
-      </p>
       <div className="flex flex-col gap-6 md:flex-row md:items-start">
         <DemoQr url={confirmUrl} label={t('qrLabel')} />
         <div className="flex min-w-0 flex-col gap-4">

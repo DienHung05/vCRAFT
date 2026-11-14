@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Read-only smoke checks of a deployed vCraft web origin (docs/operations/deploy.md section 8).
-# Usage: scripts/ci/smoke.sh https://vcraft-vn.vercel.app
+# Usage: scripts/ci/smoke.sh https://vcraft.click
 # Env: SMOKE_RETRIES (default 6), SMOKE_DELAY seconds between attempts (default 10).
 # Bodies and headers go to temp files, so large pages cannot break a pipe under pipefail.
 set -euo pipefail

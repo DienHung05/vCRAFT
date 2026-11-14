@@ -11,7 +11,7 @@
 - **Trang công khai của `apps/web` đọc API thật** (trang chủ, sản phẩm, nghệ nhân, truy xuất, bản đồ, tin tức). Màn yêu cầu báo giá, điều phối và Studio của hộ cũng đọc và ghi qua API thật, gồm cả **chào giá trực tiếp của nhiều hộ** (GH#479: Buyer so sánh các báo giá và chốt một, hộ gửi/sửa/rút báo giá; bước 11 ở §4); `apps/web/src/lib/demo/data.ts` chỉ còn được import cho kiểu dữ liệu (`LogStage`, `DemoPhotoRef`) ở trang chủ, trình kiểm chuỗi nhật ký, `ImageSlot` và `lib/demo/stage-photos.ts` (ảnh và ghi công nằm riêng ở `photo-credits.ts`), không còn là nguồn dữ liệu của màn nào.
 - Mọi bước của kịch bản e2e đều thao tác qua màn hình: Admin duyệt hộ ở `/admin/duyet-ho` (`household-review.tsx`: Duyệt, Từ chối, Yêu cầu bổ sung) và hộ xuất bản sản phẩm trong Studio (`product-list.tsx`, `product-editor.tsx`).
 - **Thanh toán trực tuyến ở chế độ demo** (ADR-0025): trên site đang chạy, Buyer chọn chuyển khoản, VNPay hoặc MoMo cho đơn, thấy mã QR dẫn tới trang xác nhận của chính vCraft, quét bằng điện thoại để xác nhận và trang trên máy tính chuyển sang "đã thanh toán"; mọi màn ghi "Thanh toán thử — không trừ tiền thật" và không có giao dịch thật ([ADR-0021](../adr/0021-online-payment-for-orders.md), [ADR-0024](../adr/0024-payment-gateways-in-production.md), [ADR-0025](../adr/0025-demo-payment-mode.md)). Bước này chưa nằm trong kịch bản e2e nên tập tay.
-- **Triển khai production (GH#39):** web trên Vercel, API + worker + Redis trên Render, CSDL/Auth/Storage ở Supabase ([ADR-16](../adr/0016-deploy-vercel-render.md)); cấu hình nằm trong repo (`render.yaml`, `apps/web/vercel.json`, `next.config.ts`), các bước tạo project và dán biến môi trường ở [docs/operations/deploy.md](../operations/deploy.md). Site đã chạy trên hạ tầng thật tại `https://vcraft-vn.vercel.app`, nên các bước dưới đây tập được trên bản triển khai chứ không chỉ ở máy phát triển.
+- **Triển khai production (GH#39):** web trên Vercel, API + worker + Redis trên Render, CSDL/Auth/Storage ở Supabase ([ADR-16](../adr/0016-deploy-vercel-render.md)); cấu hình nằm trong repo (`render.yaml`, `apps/web/vercel.json`, `next.config.ts`), các bước tạo project và dán biến môi trường ở [docs/operations/deploy.md](../operations/deploy.md). Site đã chạy trên hạ tầng thật tại `https://vcraft.click`, nên các bước dưới đây tập được trên bản triển khai chứ không chỉ ở máy phát triển.
 - **Đăng nhập khi chạy script:** production bật captcha (Turnstile) và bắt Admin dùng TOTP, nên script `demo:*` không đăng nhập bằng mật khẩu qua REST được; chúng cấp phiên bằng helper chỉ nằm trong `scripts/` (cách làm và việc chuẩn bị một lần: §7, phần "GH#480"). Người dùng thật vẫn phải qua captcha và TOTP.
 - **Chưa có kết quả ghi lại:** các lệnh và kiểm tra trong §7 chưa có lần chạy nào được ghi nhận trên bản triển khai (Lighthouse, tạo người dùng Auth thật, dựng Supabase cục bộ, tunnel dự phòng). Điền bảng "Kết quả chạy gần nhất" ở cuối §7 sau mỗi lần chạy, một lần trước ngày thi.
 
@@ -96,7 +96,7 @@ pnpm demo:auth -- --check
 
 ## 1B. Ảnh có giấy phép và giấy tờ mẫu
 
-**Cách làm (và vì sao):** `pnpm demo:media` đi đúng đường của API: bản gốc vào bucket riêng tư `originals/<chủ>/<id>`, dòng `media_asset` `PROCESSING`, rồi chính `processMediaAsset` của worker xóa metadata, sinh AVIF/WebP 320/640/1280 vào bucket công khai, đặt `READY`. Ảnh đầu vào là các ảnh Wikimedia Commons (CC0 / CC BY / CC BY-SA) đã cắt đúng tỉ lệ khung và đã nằm trong `apps/web/public/images/demo`, nên không cần mạng ngoài ngoài Supabase. Ghi công (tác giả, giấy phép, trang nguồn) và mô tả (`alt`) nằm trên chính dòng `media_asset` (`credit`, `alt_text`). Cân nhắc và phương án đã loại: xem mô tả PR GH#26.
+**Cách làm (và vì sao):** `pnpm demo:media` đi đúng đường của API: bản gốc vào bucket riêng tư `originals/<chủ>/<id>`, dòng `media_asset` `PROCESSING`, rồi chính `processMediaAsset` của worker xóa metadata, sinh AVIF/WebP 320/640/960/1280 vào bucket công khai, đặt `READY`. Ảnh đầu vào là các ảnh Wikimedia Commons (CC0 / CC BY / CC BY-SA) đã cắt đúng tỉ lệ khung và đã nằm trong `apps/web/public/images/demo`, nên không cần mạng ngoài ngoài Supabase. Ghi công (tác giả, giấy phép, trang nguồn) và mô tả (`alt`) nằm trên chính dòng `media_asset` (`credit`, `alt_text`). Cân nhắc và phương án đã loại: xem mô tả PR GH#26.
 
 | Gắn vào | Cách | Số lượng |
 | --- | --- | --- |
@@ -373,7 +373,7 @@ Kiểm tra máy không làm thay được, cần người: đọc thử mô tả
 
 ### Kết quả chạy gần nhất
 
-Điền sau mỗi lần chạy trên bản triển khai (`https://vcraft-vn.vercel.app`), **sau** `pnpm demo:reset`. Ghi cả lần đỏ cùng nguyên nhân. Chưa có dòng nào được điền: các lệnh dưới đây chưa được chạy và ghi lại trên production.
+Điền sau mỗi lần chạy trên bản triển khai (`https://vcraft.click`), **sau** `pnpm demo:reset`. Ghi cả lần đỏ cùng nguyên nhân. Chưa có dòng nào được điền: các lệnh dưới đây chưa được chạy và ghi lại trên production.
 
 | # §7 | Lệnh | Kết quả (PASS / FAIL, con số đo) | Ngày chạy | Người chạy |
 | --- | --- | --- | --- | --- |

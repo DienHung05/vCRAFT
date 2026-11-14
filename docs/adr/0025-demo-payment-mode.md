@@ -3,7 +3,7 @@
 **Status:** Accepted 2026-11-10 (owner decision for the project defense and the live demo). Complements [ADR-0021](0021-online-payment-for-orders.md) and [ADR-0024](0024-payment-gateways-in-production.md).
 **Date:** 2026-11-10
 **Deciders:** Project owner
-**Tracks:** GH#205
+**Tracks:** GH#205, GH#528
 
 ## Context
 
@@ -16,10 +16,13 @@ offered at all, so the journey cannot be shown today.
 ## Decision
 
 1. **A separate, explicit flag.** `PAYMENTS_DEMO_MODE=true` turns on demo payment mode. Unlike a sandbox gateway,
-   it is allowed under `APP_ENV=production`: it is its own flag, it is off by default, and every screen of it says
-   "Thanh toán thử — không trừ tiền thật" / "Chế độ demo: không có giao dịch tiền thật".
-2. **What it does.** All three methods are offered whatever credentials exist, every method is flagged as a test
-   method, the amount limits and the order rules are unchanged, and every payment expires after the wallet time
+   it is allowed under `APP_ENV=production`: it is its own flag and it is off by default. GH#528 amends the original
+   requirement for visible rehearsal notices. The method picker, QR checkout and confirmation page now use normal
+   payment wording in Vietnamese and English, without test badges or sandbox/demo notes.
+2. **What it does.** All three methods are offered whatever credentials exist, and the API still flags them as test
+   methods for operational use. GH#528 removes MoMo's upper amount limit only while this explicit demo flag is on,
+   so payments above 50 million VND use the same local confirmation flow without contacting MoMo's sandbox.
+   Minimum amounts, other methods' limits and order rules are unchanged. Every payment expires after the wallet time
    (`PAYMENT_WALLET_EXPIRES_IN_MINUTES`). Creating a payment uses the `DemoGateway` and never a real gateway, even
    one that is configured. It makes no outbound call. The status query and the provider sweep skip demo payments.
 3. **The QR is our own link, never a bank QR.** A real banking app that scanned an invented VietQR could send real
@@ -39,7 +42,8 @@ offered at all, so the journey cannot be shown today.
    start for an order. An explicit `PAYMENTS_DEPOSIT_REQUIRED` still wins.
 6. **Anyone holding the QR or link can confirm.** Accepted: no money moves, and the secret is per payment.
 7. **It must be switched off before real money.** Unset `PAYMENTS_DEMO_MODE` before any real method goes live
-   (ADR-0024 checklist). The boot log says `online payment is in DEMO mode` and warns while it is on; confirm links
+   (ADR-0024 checklist). GH#528 does not change real gateway settlement or production amount limits when the demo flag
+   is off. The boot log says `online payment is in DEMO mode` and warns while it is on; confirm links
    then answer 404 and pending demo payments expire.
 
 ## Options considered

@@ -15,6 +15,8 @@ export const BELL_POLL_MS = 30_000;
 /** While the live stream is up (GH#93) polling only backs it up, so it slows right down. */
 export const BELL_POLL_LIVE_MS = 5 * 60_000;
 const LIST_LIMIT = 30;
+/** How long the non-motion emphasis ring stays on the badge after a new notification. */
+const EMPHASIS_MS = 1200;
 
 /**
  * Chuông thông báo trong header cho mọi vai trò đã đăng nhập (GH#37, FR-NOTI-01/03). The unread count
@@ -58,11 +60,37 @@ function Bell({ client, align }: { client: AccountClient; align: 'start' | 'end'
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationDto[] | null>(null);
   const [unread, setUnread] = useState(0);
+  // New-notification cue (GH#536): `ring` re-keys the animated nodes, `emphasis` is the
+  // non-motion cue for reduced motion, `announcement` feeds the polite live region.
+  const [ring, setRing] = useState(0);
+  const [emphasis, setEmphasis] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
+  const known = useRef<{ primed: boolean; count: number }>({ primed: false, count: 0 });
+  const emphasisTimer = useRef<number | undefined>(undefined);
   const [failed, setFailed] = useState(false);
   // Giá trị `open` mới nhất cho nhịp hỏi lại mà không dựng lại bộ hẹn giờ mỗi lần mở/đóng.
   const openRef = useRef(open);
   openRef.current = open;
   const sequence = useRef(0);
+
+  // Every unread-count write goes through here. The first value only primes; later increases ring.
+  const applyUnread = useCallback(
+    (next: number) => {
+      const previous = known.current;
+      const increased = previous.primed && next > previous.count;
+      known.current = { primed: true, count: next };
+      setUnread(next);
+      if (!increased) return;
+      setRing((value) => value + 1);
+      setAnnouncement(t('bell.newArrived', { count: next }));
+      setEmphasis(true);
+      window.clearTimeout(emphasisTimer.current);
+      emphasisTimer.current = window.setTimeout(() => setEmphasis(false), EMPHASIS_MS);
+    },
+    [t],
+  );
+
+  useEffect(() => () => window.clearTimeout(emphasisTimer.current), []);
 
   const refresh = useCallback(async () => {
     const current = ++sequence.current;
@@ -71,18 +99,18 @@ function Bell({ client, align }: { client: AccountClient; align: 'start' | 'end'
         const next = await client.listNotifications(LIST_LIMIT);
         if (current !== sequence.current) return;
         setItems(next.data);
-        setUnread(next.unreadCount);
+        applyUnread(next.unreadCount);
       } else {
         const next = await client.unreadNotificationCount();
-        if (current === sequence.current) setUnread(next.unreadCount);
+        if (current === sequence.current) applyUnread(next.unreadCount);
       }
     } catch {
       // Lỗi tạm thời (mạng, 401) không xóa số đang hiện; lần hỏi sau thử lại.
     }
-  }, [client]);
+  }, [client, applyUnread]);
 
   const live = useLiveEvents((event) => {
-    if (event.type === 'notifications') setUnread(event.unreadCount);
+    if (event.type === 'notifications') applyUnread(event.unreadCount);
     // Something new arrived: an open panel shows it at once.
     if (event.type === 'activity' && openRef.current) void refresh();
   });
@@ -136,7 +164,7 @@ function Bell({ client, align }: { client: AccountClient; align: 'start' | 'end'
     sequence.current += 1;
     const readAt = new Date().toISOString();
     setItems((current) => current?.map((n) => (n.id === item.id ? { ...n, readAt } : n)) ?? null);
-    setUnread((count) => Math.max(0, count - 1));
+    applyUnread(Math.max(0, known.current.count - 1));
     try {
       await client.markNotificationRead(item.id);
     } catch {
@@ -152,7 +180,7 @@ function Bell({ client, align }: { client: AccountClient; align: 'start' | 'end'
       await client.markAllNotificationsRead();
       const readAt = new Date().toISOString();
       setItems((current) => current?.map((n) => (n.readAt ? n : { ...n, readAt })) ?? null);
-      setUnread(0);
+      applyUnread(0);
     } catch {
       setFailed(true);
     }
@@ -162,6 +190,9 @@ function Bell({ client, align }: { client: AccountClient; align: 'start' | 'end'
 
   return (
     <div ref={root} className="sm:relative">
+      <span role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </span>
       <button
         ref={button}
         type="button"
@@ -172,11 +203,26 @@ function Bell({ client, align }: { client: AccountClient; align: 'start' | 'end'
         onClick={() => setOpen((value) => !value)}
         className="relative grid size-9 place-items-center rounded-input text-ink hover:bg-ink/6 focus-visible:outline-2 focus-visible:outline-glaze"
       >
-        <BellIcon />
+        <span
+          key={`icon-${ring}`}
+          data-ring={ring}
+          className={
+            ring
+              ? 'inline-flex origin-top animate-bell-ring motion-reduce:animate-none'
+              : 'inline-flex'
+          }
+        >
+          <BellIcon />
+        </span>
         {unread > 0 ? (
           <span
+            key={`badge-${ring}`}
             aria-hidden="true"
-            className="absolute top-0 right-0 min-w-4 rounded-chip bg-seal px-1 text-center font-medium text-[0.65rem] text-paper leading-4"
+            className={cn(
+              'absolute top-0 right-0 min-w-4 rounded-chip bg-seal px-1 text-center font-medium text-[0.65rem] text-paper leading-4',
+              ring > 0 && 'animate-badge-pop motion-reduce:animate-none',
+              emphasis && 'motion-reduce:ring-2 motion-reduce:ring-seal/40',
+            )}
           >
             {unread > 99 ? '99+' : unread}
           </span>

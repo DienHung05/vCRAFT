@@ -551,7 +551,7 @@
       "saving": "Saving draft…",
       "saved": "Draft saved",
       "savedLocal": "Saved in this browser for now",
-      "saveFailed": "The draft could not be saved to the server. Your text is still in this browser.",
+      "saveFailed": "The draft could not be saved. Your text is still in this browser.",
       "sendFailed": "The request could not be sent. Please try again.",
       "emailNotVerified": "Please verify your email before sending the request.",
       "noMatch": "No household works in this category yet. Choose specific households or ask the board to coordinate.",
@@ -775,10 +775,9 @@
       "sendingLabel": "Sending…",
       "sentRealLabel": "Sent",
       "sendFailed": "Sending failed. Please try again later.",
-      "liveNote": "Request {code}: the quotation will be sent to the server through the API with your signed-in session.",
       "sentReal": {
         "title": "Cooperative quotation sent",
-        "text": "The quotation for request {code} is saved on the server. The buyer will see the households, shares, completion dates and one complete total — never each household's private price."
+        "text": "Quotation saved. The buyer will see the households, shares, completion dates and one complete total — never each household's private price."
       },
       "sentToast": "Cooperative quotation sent to the buyer.",
       "confirmTitle": "Send the cooperative quotation?",
@@ -866,15 +865,11 @@
         "limited": "Over the limit",
         "disabled": "Assistant off",
         "failures": "Errors",
-        "unansweredCount": "Unanswered",
         "feedback": "Ratings",
         "feedbackValue": "👍 {up} · 👎 {down}",
         "latency": "First token (p50 / p95)",
         "latencyValue": "{p50} / {p95}",
-        "ms": "{value} ms",
-        "unansweredTitle": "Questions Fox could not answer",
-        "unansweredEmpty": "No unanswered questions yet.",
-        "times": "{count, plural, one {# time} other {# times}}"
+        "ms": "{value} ms"
       }
     },
     "queue": {
@@ -1453,13 +1448,12 @@
     "updatedLabel": "Updated",
     "simulatedLabel": "Previewed",
     "simulatedNote": "Previewed (not saved, no notifications sent). This only runs in this browser.",
-    "sentNote": "The offer is saved on the server. The management board will use this maximum, unit price and completion date to assemble the quotation.",
+    "sentNote": "Offer saved. The management board will use this maximum, unit price and completion date to assemble the quotation.",
     "withdraw": "Withdraw offer",
     "withdrawn": "The offer was withdrawn. Send again to rejoin.",
     "capacityExceeded": "The quantity is above the capacity you declared for this category. Lower it or update your capacity in the profile, then send again.",
     "sendFailed": "Sending failed. Please try again later.",
     "demoNote": "This only runs in your browser. Nothing is saved or sent to a server.",
-    "liveNote": "Only the village management board sees the unit price you offer; the buyer never sees the price of a single household.",
     "privacyNote": "Maximum, unit price and completion date are private between the household and the management board; the buyer only sees the household, its share and the completion date.",
     "loading": "Loading the request…",
     "signIn": "Sign in with a household representative account to submit a contribution offer.",
@@ -1558,11 +1552,7 @@
         "MOMO": "Pay with MoMo"
       },
       "redirecting": "Taking you to {method}…",
-      "testBadge": "Test mode",
-      "sandboxNote": "Test mode: {methods} do not take real money.",
       "startDemo": "Create a payment QR code",
-      "demoNote": "Demo mode: no real transactions take place.",
-      "demoHint": "Create a QR code, then scan it with your phone to confirm the demo payment.",
       "overMax": "The amount is over the {max} limit of this method",
       "underMin": "The amount is under the {min} minimum of this method",
       "noneFit": "This amount does not fit the limits of any method. The management board will tell you how to pay."
@@ -1649,14 +1639,13 @@
     },
     "refundDue": "Refund due",
     "demo": {
-      "title": "Scan the code to pay (demo)",
-      "titleWallet": "Demo payment with {method}",
-      "notice": "Demo payment — no real money is taken",
-      "qrLabel": "QR code that opens the demo payment confirmation page",
+      "title": "Scan the code to pay",
+      "titleWallet": "Payment with {method}",
+      "qrLabel": "QR code that opens the payment confirmation page",
       "amount": "Amount",
       "method": "Method",
       "reference": "Payment code",
-      "stepsLabel": "Steps of the demo payment",
+      "stepsLabel": "Payment steps",
       "step1": "Open the camera or a QR scanner app on your phone.",
       "step2": "Tap “Confirm payment” on the page that opens.",
       "step3": "This page updates by itself once you have confirmed.",
@@ -1664,20 +1653,20 @@
       "paidToast": "Payment received"
     },
     "demoConfirm": {
-      "title": "Confirm the demo payment",
-      "loading": "Loading the demo payment…",
+      "title": "Confirm payment",
+      "loading": "Loading payment…",
       "amount": "Amount",
       "method": "Method",
       "kind": "Type",
       "reference": "Payment code",
       "confirm": "Confirm payment",
-      "decline": "Cancel the demo payment",
+      "decline": "Cancel payment",
       "sending": "Sending…",
       "invalid": "This link is not valid or has expired. Create the QR code again on the payment page.",
       "alreadyPaid": "This payment has already been paid",
-      "ended": "This demo payment has ended ({status}). Create a new QR code on the payment page.",
+      "ended": "This payment has ended ({status}). Create a new QR code on the payment page.",
       "confirmed": "Confirmed. Go back to your computer or the order page to see the result.",
-      "declined": "The demo payment was cancelled.",
+      "declined": "The payment was cancelled.",
       "viewResult": "View the payment result",
       "error": "The confirmation could not be sent. Please try again.",
       "retry": "Try again"
@@ -1775,6 +1764,7 @@
       "loading": "Loading notifications…",
       "unreadMark": "Unread",
       "markReadFor": "Mark as read: {title}",
+      "newArrived": "New notification. {count, plural, one {# unread} other {# unread}}",
       "settings": "Notification settings"
     },
     "kind": {
@@ -2886,6 +2876,11 @@
     "incense": "Drawing of an incense burner; this product has no photo yet",
     "generic": "Drawing of a piece of pottery; this product has no photo yet",
     "household": "Drawing of a piece of pottery; this household has no workshop photo yet"
+  },
+  "photoPicker": {
+    "upload": "Upload photo",
+    "remove": "Remove",
+    "none": "No photo chosen"
   },
   "privacy": {
     "title": "Privacy policy",

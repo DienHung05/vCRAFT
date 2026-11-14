@@ -14,7 +14,7 @@ type Seed = Partial<{
   createdAt: Date;
 }>;
 
-/** GH#410: the admin Assistant card separates guardrail blocks, limits, failures and unanswered questions, in SQL. */
+/** GH#410: the admin Assistant card separates guardrail blocks, limits, and failures, in SQL. */
 describe('Assistant stats categories', () => {
   let db: TestDatabase;
   let t: TestApp;
@@ -69,7 +69,7 @@ describe('Assistant stats categories', () => {
       { intent: 'unknown', blockReason: 'UPSTREAM', answered: false, question: 'down' },
       { blockReason: 'TIMEOUT', answered: false, question: 'slow' },
       { intent: 'unknown', answered: false, question: 'legacy outage row' },
-      // unanswered
+      // answered: false with a plain intent still counts as a turn, not a failure
       { answered: false, question: 'Có ship sang Nhật không?' },
       { answered: false, question: 'Có ship sang Nhật không?' },
       { answered: false, question: 'Giờ mở cửa chợ gốm?' },
@@ -95,13 +95,8 @@ describe('Assistant stats categories', () => {
       limited: 2,
       disabled: 1,
       failures: 3,
-      unansweredCount: 3,
       feedback: { up: 1, down: 1 },
       firstTokenMs: { p50: 300, p95: 900 },
-      unanswered: [
-        { question: 'Có ship sang Nhật không?', count: 2 },
-        { question: 'Giờ mở cửa chợ gốm?', count: 1 },
-      ],
     });
   });
 });

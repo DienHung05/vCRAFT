@@ -1,6 +1,7 @@
 import { MikroORM, type Options } from '@mikro-orm/core';
 import { Global, Inject, Module, type OnApplicationShutdown } from '@nestjs/common';
 import { createMikroOrmOptions } from '@vcraft/database';
+import { slowQueryOptions } from './slow-query-logger';
 
 /**
  * Cung cấp `MikroORM` cho toàn ứng dụng. Mỗi use case tự `em.fork()` / `em.transactional()` nên không
@@ -11,7 +12,8 @@ import { createMikroOrmOptions } from '@vcraft/database';
   providers: [
     {
       provide: MikroORM,
-      useFactory: () => MikroORM.init(createMikroOrmOptions() as unknown as Options),
+      useFactory: () =>
+        MikroORM.init(createMikroOrmOptions(process.env, slowQueryOptions()) as unknown as Options),
     },
   ],
   exports: [MikroORM],
