@@ -176,14 +176,20 @@ describe('online payment of orders (ADR-0021)', () => {
   });
 
   /** An accepted order of 100 units at 100 000 VND: total 10 000 000, deposit 3 000 000, balance 7 000 000. */
-  async function acceptedOrder() {
+  async function acceptedOrder({
+    quantity = 100,
+    unitPriceVnd = 100_000,
+  }: {
+    quantity?: number;
+    unitPriceVnd?: number;
+  } = {}) {
     const created = await t.request({
       method: 'POST',
       url: '/rfqs',
       auth: buyer.auth,
       body: {
         design: 'Logo cups',
-        quantity: 100,
+        quantity,
         unit: 'cup',
         destination: 'Ha Noi',
         requiredBy,
@@ -210,7 +216,7 @@ describe('online payment of orders (ADR-0021)', () => {
       method: 'POST',
       url: `/rfqs/${sent.body.id}/contributions`,
       auth: rep.auth,
-      body: { maxQuantity: 100, unitPriceVnd: 100_000, completionDate },
+      body: { maxQuantity: quantity, unitPriceVnd, completionDate },
     });
     expect(offer.status).toBe(201);
     const current = await t.request({
@@ -227,8 +233,8 @@ describe('online payment of orders (ADR-0021)', () => {
         parts: [
           {
             householdId: rep.householdId,
-            quantity: 100,
-            unitPriceVnd: 100_000,
+            quantity,
+            unitPriceVnd,
             completionDate,
             contributionVersion: offer.body.version,
           },
@@ -1522,6 +1528,31 @@ describe('online payment of orders (ADR-0021)', () => {
       }
     });
 
+    it('keeps the 50 million VND MoMo ceiling without demo mode (#528)', async () => {
+      // The same 60 million VND deposit that demo mode settles is refused by the real-mode limits.
+      const requestId = await acceptedOrder({ quantity: 200, unitPriceVnd: 1_000_000 });
+      momoRequests.length = 0;
+      const refused = await startPayment(requestId, 'DEPOSIT', 'MOMO');
+      expect(refused.status).toBe(409);
+      expect(refused.body.code).toBe('PAYMENT_AMOUNT_OUT_OF_RANGE');
+      expect(momoRequests).toHaveLength(0);
+      const summary = await t.request({
+        method: 'GET',
+        url: `/orders/${requestId}/payments`,
+        auth: buyer.auth,
+      });
+      expect(summary.body.methodOptions).toContainEqual({
+        method: 'MOMO',
+        sandbox: true,
+        minAmountVnd: 1_000,
+        maxAmountVnd: 50_000_000,
+      });
+      // A deposit within the ceiling still reaches the real (fake) gateway.
+      const small = await acceptedOrder();
+      expect((await startPayment(small, 'DEPOSIT', 'MOMO')).status).toBe(201);
+      expect(momoRequests).toHaveLength(1);
+    });
+
     it('gives a wallet payment the short expiry and a bank transfer the long one', async () => {
       const requestId = await acceptedOrder();
       const wallet = (await startPayment(requestId, 'DEPOSIT', 'VNPAY')).body;
@@ -1659,10 +1690,98 @@ describe('online payment of orders (ADR-0021)', () => {
         methodOptions: [
           { method: 'SEPAY_TRANSFER', sandbox: true, minAmountVnd: 1, maxAmountVnd: null },
           { method: 'VNPAY', sandbox: true, minAmountVnd: 5_000, maxAmountVnd: 999_999_999 },
-          { method: 'MOMO', sandbox: true, minAmountVnd: 1_000, maxAmountVnd: 50_000_000 },
+          // Demo mode has no provider ceiling to respect: only the minimum stays (#528).
+          { method: 'MOMO', sandbox: true, minAmountVnd: 1_000, maxAmountVnd: null },
         ],
         simulateAvailable: false,
       });
+    });
+
+    it('runs every method from create to a confirmed PAID payment, read back through the API (#528)', async () => {
+      const before = outbound();
+      for (const method of ['SEPAY_TRANSFER', 'VNPAY', 'MOMO'] as const) {
+        const requestId = await acceptedOrder();
+        const created = await startPayment(requestId, 'DEPOSIT', method);
+        expect(created.status).toBe(201);
+        expect(created.body).toMatchObject({ method, kind: 'DEPOSIT', status: 'PENDING' });
+        expect(created.body.checkout.type).toBe('DEMO');
+        expect((await status(created.body)).status).toBe('PENDING');
+        expect((await view(created.body)).body).toMatchObject({
+          referenceCode: created.body.referenceCode,
+          method,
+          status: 'PENDING',
+        });
+        const paid = await confirm(created.body, 'PAID');
+        expect(paid.status).toBe(200);
+        expect(paid.body).toMatchObject({
+          referenceCode: created.body.referenceCode,
+          method,
+          status: 'PAID',
+        });
+        expect((await status(created.body)).status).toBe('PAID');
+        // The order reflects the settled deposit through the public summary.
+        const summary = await t.request({
+          method: 'GET',
+          url: `/orders/${requestId}/payments`,
+          auth: buyer.auth,
+        });
+        expect(summary.body.depositPaidAt).not.toBeNull();
+        expect(summary.body.payments).toMatchObject([{ method, status: 'PAID' }]);
+      }
+      expect(outbound()).toBe(before);
+    });
+
+    it('accepts a MoMo deposit above 50 million VND and confirms it PAID (#528)', async () => {
+      // 200 units at 1 000 000 VND: total 200 000 000, so the 30 % deposit is 60 000 000, above the
+      // provider's one-time payment ceiling. The demo rate must still go through end to end.
+      const requestId = await acceptedOrder({ quantity: 200, unitPriceVnd: 1_000_000 });
+      const summary = await t.request({
+        method: 'GET',
+        url: `/orders/${requestId}/payments`,
+        auth: buyer.auth,
+      });
+      expect(summary.body).toMatchObject({
+        totalVnd: 200_000_000,
+        depositAmountVnd: 60_000_000,
+        balanceAmountVnd: 140_000_000,
+        methods: ['SEPAY_TRANSFER', 'VNPAY', 'MOMO'],
+      });
+      expect(summary.body.methodOptions).toContainEqual({
+        method: 'MOMO',
+        sandbox: true,
+        minAmountVnd: 1_000,
+        maxAmountVnd: null,
+      });
+
+      const created = await startPayment(requestId, 'DEPOSIT', 'MOMO');
+      expect(created.status).toBe(201);
+      expect(created.body).toMatchObject({
+        method: 'MOMO',
+        amountVnd: 60_000_000,
+        status: 'PENDING',
+      });
+
+      const viewBefore = await view(created.body);
+      expect(viewBefore.body).toMatchObject({
+        referenceCode: created.body.referenceCode,
+        amountVnd: 60_000_000,
+        method: 'MOMO',
+        kind: 'DEPOSIT',
+        status: 'PENDING',
+      });
+      const paid = await confirm(created.body, 'PAID');
+      expect(paid.status).toBe(200);
+      expect(paid.body.status).toBe('PAID');
+      expect((await status(created.body)).status).toBe('PAID');
+      expect(
+        (
+          await t.request({
+            method: 'GET',
+            url: `/orders/${requestId}/payments`,
+            auth: buyer.auth,
+          })
+        ).body.depositPaidAt,
+      ).not.toBeNull();
     });
 
     it('starts every method as a DEMO checkout: our own confirm link, no provider called', async () => {

@@ -181,7 +181,7 @@ describe('buyer payment panel', () => {
     expect(screen.queryByText('Chuyển khoản ngân hàng (VietQR)')).toBeNull();
   });
 
-  it('marks only the sandbox options as test mode and names them in one line', async () => {
+  it('shows normal method hints without test badges or sandbox notes', async () => {
     const orderPayments = vi.fn().mockResolvedValue(walletSummary());
     renderVi(
       <OrderPaymentPanel
@@ -191,12 +191,11 @@ describe('buyer payment panel', () => {
       />,
     );
     const vnpay = await screen.findByTestId('payment-method-VNPAY');
-    expect(within(vnpay).getByText('Thử nghiệm')).toBeTruthy();
-    expect(within(screen.getByTestId('payment-method-MOMO')).getByText('Thử nghiệm')).toBeTruthy();
+    expect(within(vnpay).getByText(/Thẻ ATM nội địa/)).toBeTruthy();
     expect(
-      within(screen.getByTestId('payment-method-SEPAY_TRANSFER')).queryByText('Thử nghiệm'),
-    ).toBeNull();
-    expect(screen.getByText('Chế độ thử nghiệm: VNPay và MoMo không trừ tiền thật.')).toBeTruthy();
+      within(screen.getByTestId('payment-method-MOMO')).getByText(/Thanh toán bằng ví MoMo/),
+    ).toBeTruthy();
+    expect(screen.getByTestId('payment-panel').textContent).not.toMatch(/thử|demo|mẫu/i);
     // The first enabled option is the default.
     expect(screen.getByRole('radio', { name: 'Chuyển khoản ngân hàng (VietQR)' })).toHaveProperty(
       'checked',
