@@ -51,7 +51,7 @@ Tất cả lấy từ Supabase Dashboard (đường dẫn trong ngoặc theo `.e
 | `NEWS_IMPORT_VILLAGES`, `NEWS_IMPORT_CRAFTS` | worker | Optional, comma-separated. A feed story is kept only if its headline or snippet names one village and one craft word (accents and case ignored). Defaults: `Bát Tràng`; `gốm,sứ,gốm sứ,ceramic,pottery` |
 | `NEWS_IMPORT_PUBLISH` | worker | Optional, default `true`. `false` saves imported stories as drafts for review in `/admin/tin-tuc` (filter "Origin") |
 | `NEWS_IMPORT_EVERY_MINUTES`, `NEWS_IMPORT_MAX_PER_RUN` | worker | Optional, defaults `360` and `5`. Positive integers: how often the import runs, and the most stories imported per run |
-| `WEB_REVALIDATE_URL`, `REVALIDATE_SECRET` | worker | ADR-0027. The worker's outbox relay calls `WEB_REVALIDATE_URL` (`https://<domain>/api/revalidate`, for example `https://vcraft-vn.vercel.app/api/revalidate`) with `Authorization: Bearer <REVALIDATE_SECRET>` so the web drops its cached public pages the moment a suspension, withdrawal or edit commits. `REVALIDATE_SECRET` is a long random value (`openssl rand -hex 32`), **the same on Vercel and on Render**. Either unset: nothing is sent and cached pages expire after 60 s. Behind Caddy use the web's own address, because `/api/*` goes to the API there. Check the worker boot log: "web revalidation off" means one of them is missing |
+| `WEB_REVALIDATE_URL`, `REVALIDATE_SECRET` | worker | ADR-0027. The worker's outbox relay calls `WEB_REVALIDATE_URL` (`https://<domain>/api/revalidate`, for example `https://vcraft.click/api/revalidate`) with `Authorization: Bearer <REVALIDATE_SECRET>` so the web drops its cached public pages the moment a suspension, withdrawal or edit commits. `REVALIDATE_SECRET` is a long random value (`openssl rand -hex 32`), **the same on Vercel and on Render**. Either unset: nothing is sent and cached pages expire after 60 s. Behind Caddy use the web's own address, because `/api/*` goes to the API there. Check the worker boot log: "web revalidation off" means one of them is missing |
 | `MEDIA_ORPHAN_SWEEP` | worker | Optional. Unset: the daily orphan media sweep (GH#381) only logs candidates; set `delete` to remove unlinked assets older than 7 days and their files (cannot be undone) |
 | `NEWS_FILLER_MIN_PUBLISHED` | worker | Optional, default `6`. When fewer stories than this went live in the last 30 days, and `OPENAI_API_KEY` is set, the job writes evergreen craft articles (clay, glazes, firing, care, history, visitor guide; no events, people, quotes or prices; references listed). Without an LLM key the filler is skipped and the import stores only title, link and a one-line snippet |
 | `API_RATE_LIMIT_PER_MINUTE` | API | Optional, default `600`. Requests per minute per caller across the whole API (NFR-SEC-04): a signed-in caller is counted by a hash of its bearer token, an anonymous one by IP; over it the API answers `429` problem+json (`RATE_LIMITED`) with `Retry-After`. `GET /health*` is never limited. Sign-in, sign-up and username checks keep their own stricter limits. Needs `TRUST_PROXY` set to the real hop count (see its row) so the IP is the visitor's, not the proxy's. Counting signed-in callers by token keeps page renders on Vercel, which share a few server IPs, from sharing one bucket; anonymous renders still share one, so raise the limit if many guests browse at once |
@@ -413,7 +413,7 @@ Variables (Settings → Secrets and variables → Actions → Variables):
 | `RENDER_SERVICE_ID` | `vcraft-api` service id, e.g. `srv-dbjfrvetlv9c73d3rs0g` |
 | `RENDER_WORKER_SERVICE_ID` | Optional. Id of a separate `vcraft-worker` service (starter Blueprint). Empty skips it |
 | `API_ORIGIN` | `https://vcraft-api.onrender.com` |
-| `PROD_ORIGIN` | `https://vcraft-vn.vercel.app` (or the custom domain) |
+| `PROD_ORIGIN` | `https://vcraft.click` |
 | `VERCEL_ORG_ID` | Vercel team id (Team Settings → General, or `.vercel/project.json` after `vercel link`) |
 | `VERCEL_PROJECT_ID` | e.g. `prj_SCqbRhbbXBnJO4mAZI2vFhDdO2uX` |
 
@@ -444,7 +444,7 @@ gh workflow run deploy-credentials.yml
 ```bash
 gh workflow run deploy.yml                  # redeploy the current tip of main
 gh workflow run deploy.yml -f ref=<sha>     # deploy a specific commit that is on main
-scripts/ci/smoke.sh https://vcraft-vn.vercel.app   # the same read-only checks, from your machine
+scripts/ci/smoke.sh https://vcraft.click   # the same read-only checks, from your machine
 ```
 
 Rolling back is unchanged: Vercel → Deployments → *Promote to Production*, Render → *Deploys* → *Rollback* (§9). To roll forward to an older commit, dispatch it with `ref`. The workflow never undoes a migration, so keep migrations backward compatible.

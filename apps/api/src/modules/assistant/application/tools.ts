@@ -146,7 +146,7 @@ function metSymbolToWmo(symbolCode: string | undefined): number {
 }
 
 /** MET Norway's terms require an identifying User-Agent, and coordinates with at most 4 decimals. */
-const MET_USER_AGENT = 'vCraft/1.0 https://vcraft-vn.vercel.app';
+const MET_USER_AGENT = 'vCraft/1.0 https://vcraft.click';
 
 interface MetSummary {
   summary?: { symbol_code?: string };
