@@ -48,7 +48,8 @@ for (const L of LOCALES) {
       // Trạng thái toàn vẹn do trình duyệt tự tính bằng Web Crypto (FR-TRC-05).
       const panel = page.locator('[data-state]').filter({ hasText: L.integrity }).first();
       await expect(panel).toHaveAttribute('data-state', 'ok');
-      await expect(panel.getByText(L.integrity).first()).toBeVisible();
+      // The trust line is the visible status; the same words also sit in the seal's (hidden) title.
+      await expect(panel.getByRole('status').filter({ hasText: L.integrity })).toBeVisible();
       await expect(page.locator('[data-state="broken"]')).toHaveCount(0);
     });
 

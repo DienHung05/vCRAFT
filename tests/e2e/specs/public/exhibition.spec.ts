@@ -34,7 +34,10 @@ test.describe('Triển lãm công khai', () => {
   }) => {
     await page.goto('/vi/truy-xuat/BT7K2QXM');
     await expect(page.locator('[data-state="ok"]')).toBeVisible();
-    await expect(page.getByText(/^Toàn vẹn nhật ký:/)).toBeVisible();
+    await expect(page.locator('#story-title')).toHaveText('Câu chuyện của món đồ');
+    await expect(page.locator('[data-trust="ok"]').getByRole('status')).toHaveText(
+      'Nhật ký được giữ nguyên từ ngày ghi',
+    );
     const logs = await page.locator('li[id^="log-"]').evaluateAll((els) => els.map((e) => e.id));
     // Seed data has 7 milestones, shown oldest first (FR-TRC-04); corrections are covered by the journal integration test.
     expect(logs[0]).toBe('log-1');
