@@ -19,7 +19,7 @@
 #   - RENDER_SERVICE_ID: Render service ID for vcraft-api
 #   - RENDER_WORKER_SERVICE_ID: (optional) Render service ID for vcraft-worker; empty = skip
 #   - API_ORIGIN: public API origin (e.g., https://vcraft-api.onrender.com)
-#   - PROD_ORIGIN: production web origin (e.g., https://vcraft-vn.vercel.app)
+#   - PROD_ORIGIN: production web origin (e.g., https://vcraft.click)
 #   - VERCEL_ORG_ID: Vercel org/team ID
 #   - VERCEL_PROJECT_ID: Vercel project ID
 #

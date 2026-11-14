@@ -10,7 +10,7 @@
 
 const DEFAULT_PHONE = '0963316273';
 // Placeholder accepted by the owner until a real mailbox exists.
-const DEFAULT_EMAIL = 'lienhe@vcraft-vn.vercel.app';
+const DEFAULT_EMAIL = 'lienhe@vcraft.click';
 // Placeholder accepted by the owner until the real page exists.
 const DEFAULT_FACEBOOK = 'https://www.facebook.com/vcraft.battrang';
 
