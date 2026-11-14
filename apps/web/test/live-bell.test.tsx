@@ -53,4 +53,49 @@ describe('notification bell over the live stream (GH#93)', () => {
     unmount();
     expect(live.stopped).toBe(1);
   });
+
+  describe('new-notification cue (GH#536)', () => {
+    const setup = async (initial: number) => {
+      const client = {
+        unreadNotificationCount: vi.fn().mockResolvedValue({ unreadCount: initial }),
+        listNotifications: vi.fn().mockResolvedValue({ data: [], unreadCount: initial }),
+      } as unknown as AccountClient;
+      const view = renderVi(<NotificationBell client={client} />);
+      await screen.findByRole('button', { name: `Thông báo, ${initial} chưa đọc` });
+      const wrapper = () => view.container.querySelector('[data-ring]') as HTMLElement;
+      const status = () => view.container.querySelector('[role="status"]') as HTMLElement;
+      const emit = (unreadCount: number) =>
+        act(() => {
+          live.options?.onEvent({ type: 'notifications', unreadCount });
+        });
+      return { wrapper, status, emit };
+    };
+
+    it('stays still after the initial load', async () => {
+      const { wrapper, status } = await setup(3);
+      expect(wrapper().className).not.toContain('animate-bell-ring');
+      expect(wrapper().dataset.ring).toBe('0');
+      expect(status().textContent).toBe('');
+    });
+
+    it('rings and announces on an increase, ignores decreases, and re-rings on the next increase', async () => {
+      const { wrapper, status, emit } = await setup(3);
+
+      emit(4);
+      expect(wrapper().className).toContain('animate-bell-ring');
+      expect(wrapper().dataset.ring).toBe('1');
+      expect(status().textContent).toBe('Có thông báo mới. 4 chưa đọc');
+
+      emit(2);
+      expect(wrapper().dataset.ring).toBe('1');
+      expect(status().textContent).toBe('Có thông báo mới. 4 chưa đọc');
+
+      emit(2);
+      expect(wrapper().dataset.ring).toBe('1');
+
+      emit(5);
+      expect(wrapper().dataset.ring).toBe('2');
+      expect(status().textContent).toBe('Có thông báo mới. 5 chưa đọc');
+    });
+  });
 });
