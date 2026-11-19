@@ -65,7 +65,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
       {/* Hero: the forming, turning 3D vase (BRAND §6.3 #1, experience/hero-vase) over the hand-drawn vase. */}
       <section
         id="home-hero"
-        className="mx-auto grid max-w-editorial items-center gap-10 px-gutter pt-12 pb-section md:grid-cols-12 md:pt-20"
+        className="mx-auto grid max-w-editorial items-center gap-10 px-gutter pt-12 pb-10 md:grid-cols-12 md:pt-20"
       >
         <div className="flex flex-col gap-7 md:col-span-7">
           <PressedHeadline className="text-display leading-[1.02] type-soft">
@@ -106,6 +106,19 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
             <HeroTraceSeal />
           </Suspense>
         </div>
+      </section>
+
+      {/* Village stats sit directly under the hero CTAs, above the wave. */}
+      <section
+        className="mx-auto max-w-editorial px-gutter pb-section"
+        aria-labelledby="stats-title"
+      >
+        <h2 id="stats-title" className="sr-only">
+          {t('stats.title')}
+        </h2>
+        <Suspense fallback={null}>
+          <VillageStats locale={locale} />
+        </Suspense>
       </section>
 
       <WaveDivider />
@@ -200,19 +213,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
       </section>
 
       <section
-        className="cv-auto mx-auto max-w-editorial px-gutter py-section"
-        aria-labelledby="stats-title"
-      >
-        <h2 id="stats-title" className="sr-only">
-          {t('stats.title')}
-        </h2>
-        <Suspense fallback={null}>
-          <VillageStats locale={locale} />
-        </Suspense>
-      </section>
-
-      <section
-        className="cv-auto mx-auto max-w-editorial px-gutter pb-section-tail"
+        className="cv-auto mx-auto max-w-editorial px-gutter pt-section pb-section-tail"
         aria-labelledby="news-title"
       >
         <Reveal>
