@@ -67,6 +67,39 @@ export function aboveTheFoldUrl(url: string): string {
   return sameOriginMediaUrl(url, process.env.NEXT_PUBLIC_SUPABASE_URL);
 }
 
+interface ImageSource {
+  type: 'image/avif' | 'image/webp';
+  srcSet: string;
+}
+
+/**
+ * Describes a picture and its preferred preload together, so both requests use the same format and origin.
+ * Without usable variants, keeps the single-file fallback and omits the preload. Callers own layout and loading.
+ */
+export function describeImageRequest({
+  src,
+  variants,
+  eager = false,
+}: {
+  src: string | undefined;
+  variants: readonly ImageVariant[] | undefined;
+  eager?: boolean;
+}) {
+  const mapUrl = eager ? aboveTheFoldUrl : (url: string) => url;
+  const { avif, webp, width, height } = buildResponsiveImage(variants, mapUrl);
+  const sources: ImageSource[] = [];
+  if (avif) sources.push({ type: 'image/avif', srcSet: avif });
+  if (webp) sources.push({ type: 'image/webp', srcSet: webp });
+  const resolvedSrc = src ? mapUrl(src) : src;
+  return {
+    src: resolvedSrc,
+    sources,
+    width,
+    height,
+    preload: resolvedSrc && sources[0] ? { src: resolvedSrc, ...sources[0] } : undefined,
+  };
+}
+
 /** Frame ratio bounds for a photo shown whole: a very tall or very wide file is letterboxed instead. */
 const MIN_FRAME_RATIO = 3 / 5;
 const MAX_FRAME_RATIO = 3 / 2;

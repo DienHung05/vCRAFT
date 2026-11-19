@@ -140,10 +140,10 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-ink/10 px-5 py-3">
         <Link
           href="/"
-          className="flex min-h-11 items-center gap-2 text-small text-ink hover:text-clay"
+          aria-label={t('home')}
+          className="flex min-h-11 min-w-11 items-center text-ink hover:text-clay"
         >
           <Logo size={26} />
-          <span>{t('home')}</span>
         </Link>
         <span className="text-small text-ash">{t('book')}</span>
         <LocaleSwitcher />
@@ -206,9 +206,6 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
             <VaseFigure className="mx-auto h-20 opacity-60" body="var(--color-ash)" />
             <h1 className="mt-6 text-h2">{t('withdrawnTitle')}</h1>
             <p className="mt-3 text-ink/85">{t('withdrawnText')}</p>
-            <Link href="/" className={`${buttonVariants({ variant: 'secondary' })} mt-6`}>
-              {t('home')}
-            </Link>
           </section>
         ) : !visible ? (
           // FR-TRC-08: mã không tồn tại hoặc hộ bị khóa ⇒ cảnh báo hàng không xác thực.
@@ -223,9 +220,6 @@ export default async function TracePage({ params }: PageProps<'/[locale]/truy-xu
                 ? t('lockedText', { code: code.toUpperCase() })
                 : t('notFoundText', { code: code.toUpperCase() })}
             </p>
-            <Link href="/" className={`${buttonVariants({ variant: 'secondary' })} relative mt-6`}>
-              {t('home')}
-            </Link>
           </section>
         ) : (
           <>

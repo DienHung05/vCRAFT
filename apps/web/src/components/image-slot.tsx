@@ -3,7 +3,7 @@ import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import type { DemoPhotoRef } from '@/lib/demo/data';
 import { PHOTO_BY_ID } from '@/lib/demo/photo-credits';
-import { aboveTheFoldUrl, buildResponsiveImage, type ImageVariant } from '@/lib/images';
+import { describeImageRequest, type ImageVariant } from '@/lib/images';
 import { thumbhashDataUrl } from '@/lib/thumbhash';
 
 export interface ImageSlotProps {
@@ -71,11 +71,8 @@ export function ImageSlot({
     credit?.widths.map((w) => `${base}-${w}.${ext} ${w}w`).join(', ');
   const smallest = credit ? Math.min(...credit.widths) : 0;
   const [rw = 1, rh = 1] = (ratio ?? credit?.ratio ?? '1/1').split('/').map(Number);
-  const responsive = buildResponsiveImage(
-    variants,
-    priority || inViewport ? aboveTheFoldUrl : undefined,
-  );
   const eager = priority || inViewport;
+  const request = describeImageRequest({ src, variants, eager });
   const fitClass = fit === 'contain' ? 'object-contain' : 'object-cover';
   const blurred = src && !credit ? thumbhashDataUrl(thumbhash) : undefined;
 
@@ -114,16 +111,13 @@ export function ImageSlot({
       ) : null}
       {src && !credit ? (
         <picture>
-          {responsive.avif ? (
-            <source type="image/avif" srcSet={responsive.avif} sizes={sizes} />
-          ) : null}
-          {responsive.webp ? (
-            <source type="image/webp" srcSet={responsive.webp} sizes={sizes} />
-          ) : null}
+          {request.sources.map((source) => (
+            <source key={source.type} {...source} sizes={sizes} />
+          ))}
           <img
-            src={eager ? aboveTheFoldUrl(src) : src}
+            src={request.src}
             alt={alt}
-            {...(responsive.width && { width: responsive.width, height: responsive.height })}
+            {...(request.width && { width: request.width, height: request.height })}
             loading={eager ? 'eager' : 'lazy'}
             fetchPriority={priority ? 'high' : undefined}
             decoding="async"

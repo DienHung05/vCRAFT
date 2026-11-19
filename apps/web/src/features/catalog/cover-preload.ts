@@ -1,5 +1,5 @@
 import { preload } from 'react-dom';
-import { aboveTheFoldUrl, buildResponsiveImage } from '@/lib/images';
+import { describeImageRequest } from '@/lib/images';
 import { PRODUCT_CARD_IMAGE_SIZES } from './product-card';
 import type { ProductCardView } from './view-models';
 
@@ -15,17 +15,19 @@ export const PRELOADED_COVER_COUNT = 2;
 export function preloadCardCovers(products: readonly ProductCardView[]): void {
   for (const product of products.slice(0, PRELOADED_COVER_COUNT)) {
     const image = product.image;
-    if (!image?.src || !image.variants?.length) continue;
-    const responsive = buildResponsiveImage(image.variants, aboveTheFoldUrl);
-    // The browser picks AVIF when it can (the first `<source>`), so that is the file to preload.
-    const srcSet = responsive.avif ?? responsive.webp;
-    if (!srcSet) continue;
-    preload(aboveTheFoldUrl(image.src), {
+    if (!image?.src) continue;
+    const { preload: hint } = describeImageRequest({
+      src: image.src,
+      variants: image.variants,
+      eager: true,
+    });
+    if (!hint) continue;
+    preload(hint.src, {
       as: 'image',
       fetchPriority: 'high',
-      imageSrcSet: srcSet,
+      imageSrcSet: hint.srcSet,
       imageSizes: PRODUCT_CARD_IMAGE_SIZES,
-      type: responsive.avif ? 'image/avif' : 'image/webp',
+      type: hint.type,
     });
   }
 }
