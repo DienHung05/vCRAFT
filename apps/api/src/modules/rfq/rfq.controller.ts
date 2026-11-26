@@ -34,6 +34,8 @@ import {
   ReallocateRequestSchema,
   type ReportProgressRequest,
   ReportProgressRequestSchema,
+  type SuggestHouseholdsQuery,
+  SuggestHouseholdsQuerySchema,
 } from '@vcraft/contracts';
 import { type Actor, CurrentActor, Roles } from '../../common/auth/auth.guard';
 import type { HttpReply } from '../../common/http/http-types';
@@ -74,6 +76,16 @@ export class RfqController {
     @Query(new ZodValidationPipe(ListRfqsQuerySchema)) query: ListRfqsQuery,
   ) {
     return this.rfqs.listRequests(actor, query);
+  }
+
+  /** BR-05: the households that fit a request being drafted, ranked like the automatic invitation. */
+  @Get('suggested-households')
+  @Header('Cache-Control', 'private, no-store')
+  @Roles('BUYER', 'ADMIN')
+  suggestedHouseholds(
+    @Query(new ZodValidationPipe(SuggestHouseholdsQuerySchema)) query: SuggestHouseholdsQuery,
+  ) {
+    return this.rfqs.suggestHouseholds(query);
   }
 
   @Put(':id')

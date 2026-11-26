@@ -1,7 +1,7 @@
 'use client';
 
 import { QuotationApiError, type QuotationClient } from '@vcraft/api-client';
-import type { HouseholdSummaryDto, RfqResponse } from '@vcraft/contracts';
+import type { HouseholdSummaryDto, RfqResponse, SuggestedHouseholdDto } from '@vcraft/contracts';
 import { PRIVACY_POLICY_VERSION, PRODUCT_CATEGORIES } from '@vcraft/domain';
 import { Button } from '@vcraft/ui';
 import { useTranslations } from 'next-intl';
@@ -17,6 +17,7 @@ import { useQuotationClient } from '@/lib/api/use-quotation-client';
 import { useSessionUserId } from '@/lib/auth/use-session-user-id';
 import { notify } from '@/lib/notify';
 import { useIdempotentAction } from '@/lib/use-idempotent-action';
+import { otherHouseholds } from './household-suggestions';
 import { AttachmentsField } from './rfq-attachments';
 import {
   clearStoredDraft,
@@ -37,10 +38,7 @@ import { RatingSummary } from './star-rating';
 const AUTOSAVE_MS = 800;
 const inputClass = 'w-full rounded-input border border-ink/20 bg-surface px-3 py-2 text-body';
 
-/** Best-rated households first; households with the same rating keep the order the API returned. */
-function byRating(households: readonly HouseholdSummaryDto[]): HouseholdSummaryDto[] {
-  return [...households].sort((a, b) => (b.ratingAverage ?? 0) - (a.ratingAverage ?? 0));
-}
+const SUGGEST_DEBOUNCE_MS = 400;
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'local' | 'failed';
 
@@ -128,6 +126,10 @@ function Form({
   );
   const [households, setHouseholds] = useState<readonly HouseholdSummaryDto[] | null>(null);
   const [householdsFailed, setHouseholdsFailed] = useState(false);
+  const [suggestedState, setSuggested] = useState<{
+    category: string;
+    data: readonly SuggestedHouseholdDto[];
+  } | null>(null);
   const saved = useRef<{ id: string; version: number } | null>(
     draft ? { id: draft.id, version: draft.version } : null,
   );
@@ -232,10 +234,46 @@ function Form({
       .catch(() => setHouseholdsFailed(true));
   }, [showHouseholds, households, client]);
 
+  // BR-05: the households that fit the category (and quantity), ranked like the automatic invitation.
+  const suggestCategory = values.category;
+  const suggestQuantity = Number(values.quantity);
+  useEffect(() => {
+    if (!showHouseholds || suggestCategory === '') return;
+    let active = true;
+    const quantity =
+      Number.isInteger(suggestQuantity) && suggestQuantity > 0 ? suggestQuantity : undefined;
+    const timer = window.setTimeout(() => {
+      Promise.resolve()
+        .then(() =>
+          client.suggestHouseholds({
+            category: suggestCategory,
+            ...(quantity !== undefined && { quantity }),
+          }),
+        )
+        .then((list) => {
+          if (active) setSuggested({ category: suggestCategory, data: list.data });
+        })
+        .catch(() => {
+          // Suggestions are optional: fall back to the plain list.
+        });
+    }, SUGGEST_DEBOUNCE_MS);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [client, showHouseholds, suggestCategory, suggestQuantity]);
+
   const set = <K extends keyof RfqFormValues>(key: K, value: RfqFormValues[K]) => {
     setTouched(true);
     setValues((current) => ({ ...current, [key]: value }));
   };
+
+  const suggested = suggestedState?.category === suggestCategory ? suggestedState.data : null;
+  const toggleHousehold = (id: string, checked: boolean) =>
+    set(
+      'householdIds',
+      checked ? [...values.householdIds, id] : values.householdIds.filter((value) => value !== id),
+    );
 
   const problems = rfqFormProblems(values, new Date(), mode);
   const problem = (field: RfqFormField) =>
@@ -573,24 +611,63 @@ function Form({
             ) : households === null ? (
               <p role="status">{t('householdsLoading')}</p>
             ) : (
-              byRating(households).map((household) => (
-                <label key={household.id} className="flex flex-wrap items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={values.householdIds.includes(household.id)}
-                    onChange={(event) =>
-                      set(
-                        'householdIds',
-                        event.target.checked
-                          ? [...values.householdIds, household.id]
-                          : values.householdIds.filter((id) => id !== household.id),
-                      )
-                    }
-                  />
-                  {household.name}
-                  <RatingSummary average={household.ratingAverage} count={household.ratingCount} />
-                </label>
-              ))
+              <>
+                {suggestCategory === '' ? null : suggested === null ? null : suggested.length ===
+                  0 ? (
+                  <p className="text-small text-ash">{t('suggestedEmpty')}</p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <p className="font-medium">{t('suggestedTitle')}</p>
+                    {suggested.map((household) => (
+                      <label key={household.id} className="flex flex-wrap items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={values.householdIds.includes(household.id)}
+                          onChange={(event) => toggleHousehold(household.id, event.target.checked)}
+                        />
+                        {household.name}
+                        <RatingSummary
+                          average={household.ratingAverage}
+                          count={household.ratingCount}
+                        />
+                        {household.capacityFit === 'UNKNOWN' ? null : (
+                          <span className="rounded-input bg-ink/5 px-2 text-small text-ash">
+                            {t(
+                              household.capacityFit === 'FITS'
+                                ? 'suggestedFits'
+                                : 'suggestedPartial',
+                            )}
+                          </span>
+                        )}
+                        {household.publishedProducts > 0 ? (
+                          <span className="rounded-input bg-ink/5 px-2 text-small text-ash">
+                            {t('suggestedProducts', { count: household.publishedProducts })}
+                          </span>
+                        ) : null}
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  {suggested !== null && suggested.length > 0 ? (
+                    <p className="font-medium">{t('othersTitle')}</p>
+                  ) : null}
+                  {otherHouseholds(households, suggested ?? []).map((household) => (
+                    <label key={household.id} className="flex flex-wrap items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={values.householdIds.includes(household.id)}
+                        onChange={(event) => toggleHousehold(household.id, event.target.checked)}
+                      />
+                      {household.name}
+                      <RatingSummary
+                        average={household.ratingAverage}
+                        count={household.ratingCount}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </>
             )}
           </fieldset>
         )}

@@ -361,4 +361,71 @@ describe('request requirements, attachments and household matching', () => {
       expect(res.status).toBe(422);
     });
   });
+
+  describe('suggested households for the request form', () => {
+    let big: { id: string };
+    let small: { id: string };
+    let seller: { id: string };
+    const suggest = (query: string, auth = buyer.auth) =>
+      t.request({ method: 'GET', url: `/rfqs/suggested-households${query}`, auth });
+
+    beforeAll(async () => {
+      big = await household('decor-big', { DECOR: 500 });
+      small = await household('decor-small', { DECOR: 80 });
+      await household('decor-opted-out', { DECOR: 0 });
+      await household('decor-tea-only', { TEA: 900 });
+      seller = await household('decor-seller');
+      const em = db.orm.em.fork();
+      em.create(Product, {
+        household: em.getReference(Household, seller.id),
+        name: 'Decor piece',
+        slug: 'decor-piece-suggest',
+        traceCode: 'SUGGESTDECOR',
+        description: 'A piece',
+        category: 'DECOR',
+        status: 'PUBLISHED',
+      });
+      await em.flush();
+    }, 240_000);
+
+    it('lists only the households of the category, best fit first, with the fit for the quantity', async () => {
+      const res = await suggest('?category=DECOR&quantity=100');
+      expect(res.status).toBe(200);
+      expect(res.body.data.map((h: { id: string }) => h.id)).toEqual([big.id, small.id, seller.id]);
+      expect(res.body.data.map((h: { capacityFit: string }) => h.capacityFit)).toEqual([
+        'FITS',
+        'PARTIAL',
+        'UNKNOWN',
+      ]);
+      expect(res.body.data[0]).toMatchObject({ name: 'decor-big', slug: 'decor-big' });
+      expect(res.body.data[0]).not.toHaveProperty('capacityByCategory');
+      expect(res.body.data[0]).not.toHaveProperty('remainingCapacity');
+      const noQuantity = await suggest('?category=DECOR');
+      expect(noQuantity.body.data.map((h: { capacityFit: string }) => h.capacityFit)).toEqual([
+        'UNKNOWN',
+        'UNKNOWN',
+        'UNKNOWN',
+      ]);
+    });
+
+    it('is open to an administrator and closed to a household role', async () => {
+      expect((await suggest('?category=DECOR', admin.auth)).status).toBe(200);
+      const rep = await t.createUser('HOUSEHOLD');
+      expect((await suggest('?category=DECOR', rep.auth)).status).toBe(403);
+    });
+
+    it('rejects a missing or unknown category and a bad quantity', async () => {
+      for (const query of ['', '?category=NOPE', '?category=DECOR&quantity=0'])
+        expect((await suggest(query)).status).toBe(422);
+    });
+
+    it('equals the households invited when the buyer picks nobody', async () => {
+      const suggested = await suggest('?category=DECOR');
+      const sent = await submit((await create({ category: 'DECOR' })).body);
+      expect(sent.status).toBe(200);
+      expect(sent.body.invitedHouseholdIds).toEqual(
+        suggested.body.data.map((h: { id: string }) => h.id),
+      );
+    });
+  });
 });
