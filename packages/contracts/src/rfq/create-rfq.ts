@@ -148,3 +148,26 @@ export const AcceptBidRequestSchema = z.strictObject({
   bidId: IdSchema,
 });
 export type AcceptBidRequest = z.infer<typeof AcceptBidRequestSchema>;
+
+/** `GET /rfqs/suggested-households`: the households that fit a request being drafted (BR-05). */
+export const SuggestHouseholdsQuerySchema = z.object({
+  category: z.enum(PRODUCT_CATEGORIES),
+  quantity: z.coerce.number().int().positive().optional(),
+});
+export type SuggestHouseholdsQuery = z.infer<typeof SuggestHouseholdsQuerySchema>;
+
+/** A household that fits the request; raw capacity figures stay private to the household and the board. */
+export const SuggestedHouseholdSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  village: z.string().nullable(),
+  ratingAverage: z.number().min(1).max(5).nullable(),
+  ratingCount: z.int().min(0),
+  publishedProducts: z.int().min(0),
+  capacityFit: z.enum(['FITS', 'PARTIAL', 'UNKNOWN']),
+});
+export type SuggestedHouseholdDto = z.infer<typeof SuggestedHouseholdSchema>;
+
+export const SuggestedHouseholdListSchema = z.object({ data: z.array(SuggestedHouseholdSchema) });
+export type SuggestedHouseholdListDto = z.infer<typeof SuggestedHouseholdListSchema>;

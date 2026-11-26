@@ -36,7 +36,7 @@ After a request is `DELIVERED` its owner calls `PUT /rfqs/:id/ratings/:household
 
 ### Matching households
 
-A request sent with no invited household and no coordination request is matched at `POST /rfqs/:id/submit` (BR-05). The category is then required. The system invites up to ten households that are APPROVED, whose representative is not locked and that work in the request's category: they declared capacity for it, or sell a published product in it. A declared capacity of zero opts a household out. The best fit comes first: declared capacity, then published products in the category, then the buyers' average rating (a household with no rating ranks last among equals). The model has no response-rate or "accepting orders" data, so BR-05's score is these three. The response lists the matched households in `invitedHouseholdIds`, and the buyer sees "Đã gửi tới N hộ phù hợp". When no household matches, the submit fails with `RFQ_NO_MATCHING_HOUSEHOLD` and the request stays a draft.
+A request sent with no invited household and no coordination request is matched at `POST /rfqs/:id/submit` (BR-05). The category is then required. The system invites up to ten households that are APPROVED, whose representative is not locked and that work in the request's category: they declared capacity for it, or sell a published product in it. A declared capacity of zero opts a household out. The best fit comes first: remaining capacity (declared capacity less the quantity of the household's other active allocations in the category; a household whose declared capacity is used up is left out), then published products in the category, then the buyers' average rating (a household with no rating ranks last among equals). The model has no response-rate or "accepting orders" data, so BR-05's score is these three. The response lists the matched households in `invitedHouseholdIds`, and the buyer sees "Đã gửi tới N hộ phù hợp". When no household matches, the submit fails with `RFQ_NO_MATCHING_HOUSEHOLD` and the request stays a draft.
 
 ### Order notices and reallocation
 
@@ -117,3 +117,7 @@ pnpm --filter @vcraft/api exec vitest run --config vitest.integration.config.mts
 ```
 
 The integration test requires a container runtime. It creates disposable PostgreSQL or MySQL databases through Testcontainers. Use `DB_DRIVER=mysql` for the MySQL run. It never uses the shared Supabase database. Both drivers have migrations and schema snapshots in `packages/database/src/migrations/`.
+
+### Suggested households
+
+`GET /rfqs/suggested-households?category=<ProductCategory>&quantity=<int>` (roles BUYER and ADMIN; `quantity` optional) returns `{ "data": [...] }`: the same top ten households, in the same order, that `POST /rfqs/:id/submit` would invite for a request without chosen households. Each item has `id`, `name`, `slug`, `village`, `ratingAverage`, `ratingCount`, `publishedProducts` and `capacityFit` (`FITS` when the remaining capacity covers `quantity`, `PARTIAL` when it does not, `UNKNOWN` when the household declared no capacity or no `quantity` was sent). Capacity figures are not returned. A missing or unknown `category` answers 422 `VALIDATION_FAILED`; other roles get 403. The request form shows these first under "Hộ phù hợp".
