@@ -38,6 +38,8 @@ import {
   ReportProgressRequestSchema,
   RfqListResponseSchema,
   RfqResponseSchema,
+  SuggestedHouseholdListSchema,
+  type SuggestHouseholdsQuery,
 } from '@vcraft/contracts';
 import { ApiError, type AuthedClientOptions, createAuthedRequest } from './http/authed-request';
 
@@ -185,6 +187,12 @@ export function createQuotationClient(options: QuotationClientOptions) {
     },
     listHouseholds() {
       return request('/households', HouseholdListResponseSchema);
+    },
+    /** BR-05: the households that fit a request being drafted, best fit first. */
+    suggestHouseholds(filters: SuggestHouseholdsQuery) {
+      const query = new URLSearchParams({ category: filters.category });
+      if (filters.quantity !== undefined) query.set('quantity', String(filters.quantity));
+      return request(`/rfqs/suggested-households?${query}`, SuggestedHouseholdListSchema);
     },
     getRequest(id: string) {
       return request(`/rfqs/${IdSchema.parse(id)}`, RfqResponseSchema);

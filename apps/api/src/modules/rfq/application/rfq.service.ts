@@ -23,6 +23,8 @@ import type {
   RfqAttachmentDto,
   RfqListDto,
   RfqResponse,
+  SuggestedHouseholdListDto,
+  SuggestHouseholdsQuery,
 } from '@vcraft/contracts';
 import { compactPhone } from '@vcraft/contracts';
 import {
@@ -54,12 +56,14 @@ import {
   isOpenCoordinatedRequest,
   isRatingEditable,
   liveShares,
+  type MatchCandidate,
   type ProductCategory,
   paymentTransition,
   projectBuyerQuotation,
   RATING_EDIT_WINDOW_DAYS,
   type RatingSummary,
   RFQ_ACCEPT_GRACE_MS,
+  rankMatchingHouseholds,
   ratingEditableUntil,
   remainingCapacity,
   selectMatchingHouseholds,
@@ -1848,38 +1852,75 @@ export class RfqService {
   }
 
   /**
-   * BR-05: approved households with an unlocked representative that work in the request's category,
-   * best fit first, capped. Capacity comes from the household's declared capacity and its published
-   * products in the category; the buyers' ratings break ties (FR-ORD-11). Response rates do not exist in the model.
+   * BR-05: approved households with an unlocked representative that work in the category, with what the
+   * ranking needs: declared capacity, quantity already committed, published products and the buyers' rating
+   * (FR-ORD-11). Response rates do not exist in the model.
    */
-  private async matchHouseholds(em: EntityManager, request: QuotationRequest): Promise<string[]> {
-    const category = request.category;
-    if (!category) return [];
+  private async matchCandidates(em: EntityManager, category: ProductCategory) {
     const households = await em.find(Household, {
       status: 'APPROVED',
       representative: { status: { $ne: 'LOCKED' } },
     });
-    if (households.length === 0) return [];
+    if (households.length === 0) return { households, candidates: [], ratings: new Map() };
+    const ids = households.map((household) => household.id);
     const products = await em.find(
       Product,
-      { status: 'PUBLISHED', category, household: { $in: households.map((h) => h.id) } },
+      { status: 'PUBLISHED', category, household: { $in: ids } },
       { fields: ['household'] },
     );
     const published = new Map<string, number>();
     for (const product of products)
       published.set(product.household.id, (published.get(product.household.id) ?? 0) + 1);
-    const ratings = await ratingSummaries(
-      em,
-      households.map((household) => household.id),
+    const ratings = await ratingSummaries(em, ids);
+    const committed = await committedByHousehold(em, ids, category);
+    const candidates: MatchCandidate[] = households.map((household) => ({
+      householdId: household.id,
+      declaredCapacity: household.capacityByCategory?.[category],
+      committed: committed.get(household.id) ?? 0,
+      publishedProducts: published.get(household.id) ?? 0,
+      ratingAverage: ratings.get(household.id)?.average ?? null,
+    }));
+    return { households, candidates, ratings };
+  }
+
+  /** BR-05: the households a request without chosen households is sent to, best fit first, capped. */
+  private async matchHouseholds(em: EntityManager, request: QuotationRequest): Promise<string[]> {
+    const category = request.category;
+    if (!category) return [];
+    const { candidates } = await this.matchCandidates(em, category);
+    return selectMatchingHouseholds(candidates);
+  }
+
+  /**
+   * The households that fit a request being drafted: the same ranking as the automatic invitation (BR-05),
+   * so "suggested" equals "invited when the buyer picks nobody".
+   */
+  async suggestHouseholds(query: SuggestHouseholdsQuery): Promise<SuggestedHouseholdListDto> {
+    const em = this.orm.em.fork();
+    const { households, candidates, ratings } = await this.matchCandidates(em, query.category);
+    const byId = new Map(households.map((household) => [household.id, household]));
+    const ranked = rankMatchingHouseholds(
+      candidates,
+      query.quantity === undefined ? {} : { quantity: query.quantity },
     );
-    return selectMatchingHouseholds(
-      households.map((household) => ({
-        householdId: household.id,
-        declaredCapacity: household.capacityByCategory?.[category],
-        publishedProducts: published.get(household.id) ?? 0,
-        ratingAverage: ratings.get(household.id)?.average ?? null,
-      })),
-    );
+    return {
+      data: ranked.flatMap((match) => {
+        const household = byId.get(match.householdId);
+        if (!household) return [];
+        return [
+          {
+            id: household.id,
+            name: household.name,
+            slug: household.slug,
+            village: household.village ?? null,
+            ratingAverage: match.ratingAverage,
+            ratingCount: ratings.get(household.id)?.count ?? 0,
+            publishedProducts: match.publishedProducts,
+            capacityFit: match.capacityFit,
+          },
+        ];
+      }),
+    };
   }
 
   /** The invited household's active (SUBMITTED) direct quotation on the request, if any. */

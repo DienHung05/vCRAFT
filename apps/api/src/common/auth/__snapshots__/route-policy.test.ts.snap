@@ -151,6 +151,7 @@ PUT /api/v1/rfqs/:id/ratings/:householdId ROLES(ADMIN,BUYER)
 POST /api/v1/rfqs/:id/receive ROLES(ADMIN,BUYER)
 POST /api/v1/rfqs/:id/start-production ROLES(ADMIN,HOUSEHOLD)
 POST /api/v1/rfqs/:id/submit ROLES(ADMIN,BUYER)
+GET /api/v1/rfqs/suggested-households ROLES(ADMIN,BUYER)
 GET /api/v1/search/suggest PUBLIC
 GET /api/v1/trace/:code PUBLIC
 POST /api/v1/trace/:code/scan PUBLIC
